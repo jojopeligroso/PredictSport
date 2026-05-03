@@ -1,5 +1,10 @@
 -- PredictSport initial schema
--- Run this in the Supabase SQL editor to create all tables
+
+-- Ensure gen_random_bytes is accessible in public schema
+create or replace function public.gen_random_bytes(int) returns bytea
+  language sql volatile as $$
+    select extensions.gen_random_bytes($1);
+  $$;
 
 -- Users (extends Supabase auth.users)
 create table public.users (

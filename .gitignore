@@ -62,3 +62,4 @@ venv/
 
 # Task queue (per-session, not shared)
 .queue/
+supabase/.temp/
