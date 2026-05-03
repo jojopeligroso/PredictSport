@@ -36,7 +36,7 @@ export async function NavBar() {
     profile?.avatar_url ?? authUser?.user_metadata?.avatar_url ?? null;
 
   return (
-    <nav className="border-b border-zinc-200 bg-white dark:border-zinc-800 dark:bg-zinc-950">
+    <nav className="relative border-b border-zinc-200 bg-white dark:border-zinc-800 dark:bg-zinc-950">
       <div className="mx-auto flex h-16 max-w-6xl items-center justify-between px-4 sm:px-6">
         {/* Logo */}
         <Link

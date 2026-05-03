@@ -100,8 +100,8 @@ export function ParticipantsSection({
       </div>
 
       {/* Members list */}
-      <div className="rounded-lg border border-zinc-200 dark:border-zinc-800 overflow-hidden">
-        <table className="w-full text-sm">
+      <div className="overflow-x-auto rounded-lg border border-zinc-200 dark:border-zinc-800">
+        <table className="w-full min-w-[480px] text-sm">
           <thead>
             <tr className="border-b border-zinc-200 bg-zinc-50 dark:border-zinc-800 dark:bg-zinc-900">
               <th className="px-4 py-2 text-left font-medium text-zinc-600 dark:text-zinc-400">
@@ -110,7 +110,7 @@ export function ParticipantsSection({
               <th className="px-4 py-2 text-left font-medium text-zinc-600 dark:text-zinc-400">
                 Role
               </th>
-              <th className="px-4 py-2 text-left font-medium text-zinc-600 dark:text-zinc-400">
+              <th className="hidden px-4 py-2 text-left font-medium text-zinc-600 sm:table-cell dark:text-zinc-400">
                 Joined
               </th>
               <th className="px-4 py-2 text-right font-medium text-zinc-600 dark:text-zinc-400">
@@ -159,7 +159,7 @@ export function ParticipantsSection({
                       </span>
                     )}
                   </td>
-                  <td className="px-4 py-3 text-zinc-500 dark:text-zinc-400">
+                  <td className="hidden px-4 py-3 text-zinc-500 sm:table-cell dark:text-zinc-400">
                     {new Date(member.joined_at).toLocaleDateString()}
                   </td>
                   <td className="px-4 py-3 text-right">

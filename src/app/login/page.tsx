@@ -21,7 +21,7 @@ export default async function LoginPage({
   const message = params?.message;
 
   return (
-    <div className="flex flex-1 flex-col items-center justify-center min-h-screen bg-zinc-50 dark:bg-zinc-950">
+    <div className="flex flex-1 flex-col items-center justify-center bg-zinc-50 dark:bg-zinc-950 px-4 py-12">
       <div className="w-full max-w-sm space-y-8 px-4">
         <div className="text-center">
           <h1 className="text-4xl font-bold tracking-tight text-zinc-900 dark:text-zinc-50">

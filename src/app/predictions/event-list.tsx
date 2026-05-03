@@ -23,33 +23,33 @@ interface EventListProps {
 type FilterSport = string;
 type FilterStatus = EventStatus | "all";
 
-function getEventOutcomeClass(
+function getEventAccentColor(
   event: Event,
   predictions: Prediction[]
 ): string {
   if (event.status === "upcoming") {
-    return "border-l-zinc-300 dark:border-l-zinc-600";
+    return "bg-zinc-300 dark:bg-zinc-600";
   }
   if (
     event.status === "locked" ||
     event.status === "postponed" ||
     event.status === "cancelled"
   ) {
-    return "border-l-zinc-400 dark:border-l-zinc-500";
+    return "bg-zinc-400 dark:bg-zinc-500";
   }
   // resulted
   if (predictions.length === 0) {
-    return "border-l-zinc-400 dark:border-l-zinc-500";
+    return "bg-zinc-400 dark:bg-zinc-500";
   }
   const hasCorrect = predictions.some((p) => p.is_correct === true);
   const hasPartial = predictions.some((p) => p.is_partial);
   const allWrong = predictions.every((p) => p.is_correct === false);
 
-  if (hasCorrect) return "border-l-emerald-500 dark:border-l-emerald-400";
-  if (hasPartial) return "border-l-amber-500 dark:border-l-amber-400";
-  if (allWrong) return "border-l-red-500 dark:border-l-red-400";
+  if (hasCorrect) return "bg-emerald-500 dark:bg-emerald-400";
+  if (hasPartial) return "bg-amber-500 dark:bg-amber-400";
+  if (allWrong) return "bg-red-500 dark:bg-red-400";
   // pending result evaluation
-  return "border-l-zinc-400 dark:border-l-zinc-500";
+  return "bg-zinc-400 dark:bg-zinc-500";
 }
 
 function getStatusBadge(status: EventStatus) {
@@ -304,8 +304,11 @@ export function EventList({ events, competitionId }: EventListProps) {
               return (
                 <div
                   key={event.id}
-                  className={`rounded-lg border border-zinc-200 border-l-4 bg-white p-4 dark:border-zinc-800 dark:bg-zinc-900 ${getEventOutcomeClass(event, event.predictions)}`}
+                  className="flex overflow-hidden rounded-lg border border-zinc-200 bg-white dark:border-zinc-800 dark:bg-zinc-900"
                 >
+                  {/* Accent bar */}
+                  <div className={`w-1 shrink-0 ${getEventAccentColor(event, event.predictions)}`} aria-hidden="true" />
+                  <div className="flex-1 min-w-0 p-4">
                   {/* Event header */}
                   <div className="flex flex-wrap items-start justify-between gap-2">
                     <div className="flex-1 min-w-0">
@@ -387,6 +390,7 @@ export function EventList({ events, competitionId }: EventListProps) {
                       No prediction types configured for this event.
                     </p>
                   )}
+                  </div>{/* end flex-1 inner wrapper */}
                 </div>
               );
             })}

@@ -111,38 +111,36 @@ export function EventsSection({ competition, events }: EventsSectionProps) {
               className="rounded-lg border border-zinc-200 bg-white dark:border-zinc-800 dark:bg-zinc-900"
             >
               {/* Event header */}
-              <div className="flex items-center justify-between p-4">
-                <div className="flex items-center gap-3 min-w-0">
-                  <div className="min-w-0">
-                    <div className="flex items-center gap-2">
-                      <h4 className="font-medium text-zinc-900 dark:text-zinc-50 truncate">
-                        {event.event_name}
-                      </h4>
-                      <StatusBadge status={event.status} type="event" />
-                      {event.result_confirmed && (
-                        <span className="inline-flex items-center rounded-full bg-green-100 px-2 py-0.5 text-xs font-medium text-green-700 dark:bg-green-900/30 dark:text-green-400">
-                          Confirmed
-                        </span>
-                      )}
-                    </div>
-                    <div className="mt-1 flex items-center gap-3 text-xs text-zinc-500 dark:text-zinc-400">
-                      <span className="capitalize">{event.sport.replace(/_/g, " ")}</span>
-                      <span>
-                        Start: {new Date(event.start_time).toLocaleString()}
+              <div className="flex flex-wrap items-start justify-between gap-3 p-4">
+                <div className="min-w-0 flex-1">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <h4 className="font-medium text-zinc-900 dark:text-zinc-50 truncate">
+                      {event.event_name}
+                    </h4>
+                    <StatusBadge status={event.status} type="event" />
+                    {event.result_confirmed && (
+                      <span className="inline-flex items-center rounded-full bg-green-100 px-2 py-0.5 text-xs font-medium text-green-700 dark:bg-green-900/30 dark:text-green-400">
+                        Confirmed
                       </span>
-                      <span>
-                        Lock: {new Date(event.lock_time).toLocaleString()}
+                    )}
+                  </div>
+                  <div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-zinc-500 dark:text-zinc-400">
+                    <span className="capitalize">{event.sport.replace(/_/g, " ")}</span>
+                    <span>
+                      Start: {new Date(event.start_time).toLocaleString()}
+                    </span>
+                    <span>
+                      Lock: {new Date(event.lock_time).toLocaleString()}
+                    </span>
+                    {event.external_event_id && (
+                      <span className="text-blue-600 dark:text-blue-400">
+                        Linked
                       </span>
-                      {event.external_event_id && (
-                        <span className="text-blue-600 dark:text-blue-400">
-                          Linked
-                        </span>
-                      )}
-                    </div>
+                    )}
                   </div>
                 </div>
 
-                <div className="flex items-center gap-2 shrink-0">
+                <div className="flex flex-wrap items-center gap-2 shrink-0">
                   {/* Fetch Result button for linked events */}
                   {event.external_event_id &&
                     !event.result_confirmed &&

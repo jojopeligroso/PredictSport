@@ -204,7 +204,7 @@ function ExpandedDetail({ entry }: { entry: LeaderboardEntry }) {
 
   return (
     <div className="overflow-x-auto px-4 pb-4 pt-2">
-      <table className="w-full text-sm">
+      <table className="w-full min-w-[560px] text-sm">
         <thead>
           <tr className="text-left text-xs font-medium uppercase tracking-wider text-zinc-500 dark:text-zinc-400">
             <th className="pb-2 pr-4">Event</th>

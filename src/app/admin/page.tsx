@@ -94,7 +94,7 @@ export default async function AdminPage() {
 
   return (
     <div className="mx-auto max-w-4xl p-6 sm:p-8">
-      <div className="flex items-center justify-between mb-6">
+      <div className="mb-6 flex flex-wrap items-start justify-between gap-3">
         <div>
           <h1 className="text-2xl font-bold tracking-tight text-zinc-900 dark:text-zinc-50">
             Admin Panel
@@ -105,7 +105,7 @@ export default async function AdminPage() {
         </div>
         <Link
           href="/"
-          className="rounded-md border border-zinc-300 px-3 py-1.5 text-sm font-medium text-zinc-700 transition-colors hover:bg-zinc-50 dark:border-zinc-700 dark:text-zinc-300 dark:hover:bg-zinc-800"
+          className="shrink-0 rounded-md border border-zinc-300 px-3 py-1.5 text-sm font-medium text-zinc-700 transition-colors hover:bg-zinc-50 dark:border-zinc-700 dark:text-zinc-300 dark:hover:bg-zinc-800"
         >
           Back to Home
         </Link>
@@ -155,7 +155,7 @@ export default async function AdminPage() {
                         {comp.description}
                       </p>
                     )}
-                    <div className="mt-2 flex items-center gap-4 text-xs text-zinc-500 dark:text-zinc-400">
+                    <div className="mt-2 flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-zinc-500 dark:text-zinc-400">
                       <span>{eventCount} event{eventCount !== 1 ? "s" : ""}</span>
                       <span>{memberCount} member{memberCount !== 1 ? "s" : ""}</span>
                       <span className="capitalize">{comp.visibility}</span>

@@ -37,7 +37,7 @@ export function CompetitionTabs({
     <div>
       {/* Tab bar */}
       <div className="border-b border-zinc-200 dark:border-zinc-800">
-        <nav className="-mb-px flex gap-4" aria-label="Tabs">
+        <nav className="-mb-px flex gap-1 overflow-x-auto sm:gap-4" aria-label="Tabs">
           {TABS.map((tab) => (
             <button
               key={tab}

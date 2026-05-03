@@ -125,12 +125,12 @@ export function NominationsSection({
                 key={nom.id}
                 className="rounded-lg border border-zinc-200 bg-white p-4 dark:border-zinc-800 dark:bg-zinc-900"
               >
-                <div className="flex items-start justify-between">
-                  <div>
+                <div className="flex flex-wrap items-start justify-between gap-3">
+                  <div className="min-w-0 flex-1">
                     <h5 className="font-medium text-zinc-900 dark:text-zinc-50">
                       {nom.event_name}
                     </h5>
-                    <div className="mt-1 flex items-center gap-3 text-xs text-zinc-500 dark:text-zinc-400">
+                    <div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-zinc-500 dark:text-zinc-400">
                       <span className="capitalize">
                         {nom.sport.replace(/_/g, " ")}
                       </span>
@@ -148,7 +148,7 @@ export function NominationsSection({
                     </div>
                   </div>
 
-                  <div className="flex items-center gap-2 shrink-0">
+                  <div className="flex shrink-0 items-center gap-2">
                     <button
                       onClick={() => handleApprove(nom.id)}
                       disabled={processingId === nom.id}

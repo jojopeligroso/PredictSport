@@ -61,6 +61,17 @@ Uses `@supabase/ssr` with cookie-based sessions. `src/middleware.ts` runs on eve
 - `PATCH /api/admin/nominations` — Approve (auto-creates event) or reject
 - `POST /api/admin/invite` — Generate invite token
 
+## Current Phase: Integration & Testing
+
+**Completed:** MVP scope, Supabase schema + RLS, Next.js scaffold, sports providers (8), all MVP pages (auth, predictions, leaderboard, admin), scoring engine.
+
+**Next priorities:**
+1. Deploy migration to Supabase project
+2. Configure Google OAuth in Supabase dashboard
+3. End-to-end testing with real data
+4. UI polish and responsive testing
+5. Vercel deployment
+
 ## Environment Variables
 
 See `.env.local.example`. Required: `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`. Optional server-side: `API_FOOTBALL_KEY`, `BALLDONTLIE_KEY`, `THERACING_API_KEY` (providers disabled if missing).
