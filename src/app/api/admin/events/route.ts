@@ -1,15 +1,23 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { verifyCompetitionAdmin } from "@/lib/admin";
-import type { EventStatus } from "@/types/database";
+import type { EventStatus, PredictionType } from "@/types/database";
+
+interface PredictionTypeInput {
+  prediction_type: PredictionType;
+  points?: number;
+  partial_points?: number;
+  config?: Record<string, unknown> | null;
+}
 
 interface CreateEventBody {
   competition_id: string;
+  round_id?: string;
   event_name: string;
   sport: string;
   start_time: string;
   lock_time: string;
-  prediction_types: Record<string, unknown>;
+  prediction_type_configs: PredictionTypeInput[];
   external_event_id?: string;
   nominated_by?: string;
 }
@@ -21,7 +29,7 @@ interface UpdateEventBody {
   sport?: string;
   start_time?: string;
   lock_time?: string;
-  prediction_types?: Record<string, unknown>;
+  prediction_type_configs?: PredictionTypeInput[];
   status?: EventStatus;
   result_data?: Record<string, unknown> | null;
   external_event_id?: string | null;
@@ -32,13 +40,52 @@ const VALID_SPORTS = [
   "gaa", "horse_racing", "snooker", "mlb", "nfl", "nba", "nhl",
 ];
 
+const VALID_PREDICTION_TYPES: PredictionType[] = [
+  "winner", "top_n", "head_to_head", "margin",
+  "over_under", "handicap", "yes_no", "progression",
+];
+
 const VALID_STATUSES: EventStatus[] = [
   "upcoming", "locked", "resulted", "postponed", "cancelled",
 ];
 
+/** Default points per prediction type (used when competition scoring_rules has no override). */
+const DEFAULT_POINTS: Record<PredictionType, number> = {
+  winner: 10, top_n: 5, head_to_head: 5, margin: 10,
+  over_under: 5, handicap: 5, yes_no: 10, progression: 10,
+};
+
+const DEFAULT_PARTIAL_POINTS: Record<string, number> = {
+  margin: 5, top_n: 3,
+};
+
+/**
+ * Resolve default points for a prediction type, falling back through:
+ * 1. Explicit value in the request
+ * 2. Competition scoring_rules
+ * 3. Hard-coded defaults
+ */
+function resolvePoints(
+  input: PredictionTypeInput,
+  scoringRules: Record<string, unknown>,
+): { points: number; partial_points: number } {
+  const srPoints = (scoringRules.points as Record<string, number> | undefined);
+  const srPartial = (scoringRules.partial_points as Record<string, number> | undefined);
+
+  return {
+    points: input.points
+      ?? srPoints?.[input.prediction_type]
+      ?? DEFAULT_POINTS[input.prediction_type],
+    partial_points: input.partial_points
+      ?? srPartial?.[input.prediction_type]
+      ?? DEFAULT_PARTIAL_POINTS[input.prediction_type]
+      ?? 0,
+  };
+}
+
 /**
  * POST /api/admin/events
- * Create a new event in a competition.
+ * Create a new event with event_prediction_types rows.
  */
 export async function POST(request: Request) {
   const supabase = await createClient();
@@ -106,15 +153,43 @@ export async function POST(request: Request) {
     );
   }
 
+  if (!body.prediction_type_configs || body.prediction_type_configs.length === 0) {
+    return NextResponse.json(
+      { error: "At least one prediction type is required" },
+      { status: 400 }
+    );
+  }
+
+  // Validate prediction types
+  for (const ptc of body.prediction_type_configs) {
+    if (!VALID_PREDICTION_TYPES.includes(ptc.prediction_type)) {
+      return NextResponse.json(
+        { error: `Invalid prediction type: ${ptc.prediction_type}` },
+        { status: 400 }
+      );
+    }
+  }
+
+  // Fetch competition scoring_rules for defaults
+  const { data: competition } = await supabase
+    .from("competitions")
+    .select("scoring_rules")
+    .eq("id", body.competition_id)
+    .single();
+
+  const scoringRules = (competition?.scoring_rules ?? {}) as Record<string, unknown>;
+
+  // Insert the event
   const { data: event, error } = await supabase
     .from("events")
     .insert({
       competition_id: body.competition_id,
+      round_id: body.round_id || null,
       event_name: body.event_name.trim(),
       sport: body.sport,
       start_time: body.start_time,
       lock_time: body.lock_time,
-      prediction_types: body.prediction_types || {},
+      prediction_types: {}, // deprecated, kept for backward compat
       external_event_id: body.external_event_id || null,
       nominated_by: body.nominated_by || null,
       status: "upcoming",
@@ -129,7 +204,36 @@ export async function POST(request: Request) {
     );
   }
 
-  return NextResponse.json({ event }, { status: 201 });
+  // Insert event_prediction_types rows
+  const eptRows = body.prediction_type_configs.map((ptc) => {
+    const { points, partial_points } = resolvePoints(ptc, scoringRules);
+    return {
+      event_id: event.id,
+      prediction_type: ptc.prediction_type,
+      points,
+      partial_points,
+      config: ptc.config ?? null,
+    };
+  });
+
+  const { data: predictionTypes, error: eptError } = await supabase
+    .from("event_prediction_types")
+    .insert(eptRows)
+    .select();
+
+  if (eptError) {
+    // Rollback: delete the event if prediction types fail
+    await supabase.from("events").delete().eq("id", event.id);
+    return NextResponse.json(
+      { error: "Failed to create prediction types", details: eptError.message },
+      { status: 500 }
+    );
+  }
+
+  return NextResponse.json(
+    { event, prediction_types: predictionTypes },
+    { status: 201 }
+  );
 }
 
 /**
@@ -185,33 +289,98 @@ export async function PATCH(request: Request) {
   if (body.sport !== undefined) updates.sport = body.sport;
   if (body.start_time !== undefined) updates.start_time = body.start_time;
   if (body.lock_time !== undefined) updates.lock_time = body.lock_time;
-  if (body.prediction_types !== undefined)
-    updates.prediction_types = body.prediction_types;
   if (body.status !== undefined) updates.status = body.status;
   if (body.result_data !== undefined) updates.result_data = body.result_data;
   if (body.external_event_id !== undefined)
     updates.external_event_id = body.external_event_id;
 
-  if (Object.keys(updates).length === 0) {
+  if (Object.keys(updates).length === 0 && !body.prediction_type_configs) {
     return NextResponse.json(
       { error: "No fields to update" },
       { status: 400 }
     );
   }
 
-  const { data: event, error } = await supabase
-    .from("events")
-    .update(updates)
-    .eq("id", body.event_id)
-    .eq("competition_id", body.competition_id)
-    .select()
-    .single();
+  let event = null;
+  if (Object.keys(updates).length > 0) {
+    const { data, error } = await supabase
+      .from("events")
+      .update(updates)
+      .eq("id", body.event_id)
+      .eq("competition_id", body.competition_id)
+      .select()
+      .single();
 
-  if (error) {
-    return NextResponse.json(
-      { error: "Failed to update event", details: error.message },
-      { status: 500 }
-    );
+    if (error) {
+      return NextResponse.json(
+        { error: "Failed to update event", details: error.message },
+        { status: 500 }
+      );
+    }
+    event = data;
+  }
+
+  // Update prediction types if provided (replace all)
+  if (body.prediction_type_configs) {
+    // Check that no predictions exist yet (immutable once predictions are made)
+    const { count } = await supabase
+      .from("predictions")
+      .select("id", { count: "exact", head: true })
+      .eq("event_id", body.event_id);
+
+    if (count && count > 0) {
+      return NextResponse.json(
+        { error: "Cannot modify prediction types after predictions have been submitted" },
+        { status: 409 }
+      );
+    }
+
+    // Fetch competition scoring_rules for defaults
+    const { data: competition } = await supabase
+      .from("competitions")
+      .select("scoring_rules")
+      .eq("id", body.competition_id)
+      .single();
+
+    const scoringRules = (competition?.scoring_rules ?? {}) as Record<string, unknown>;
+
+    // Delete existing and re-insert
+    await supabase
+      .from("event_prediction_types")
+      .delete()
+      .eq("event_id", body.event_id);
+
+    const eptRows = body.prediction_type_configs.map((ptc) => {
+      const { points, partial_points } = resolvePoints(ptc, scoringRules);
+      return {
+        event_id: body.event_id,
+        prediction_type: ptc.prediction_type,
+        points,
+        partial_points,
+        config: ptc.config ?? null,
+      };
+    });
+
+    const { error: eptError } = await supabase
+      .from("event_prediction_types")
+      .insert(eptRows);
+
+    if (eptError) {
+      return NextResponse.json(
+        { error: "Failed to update prediction types", details: eptError.message },
+        { status: 500 }
+      );
+    }
+  }
+
+  // Re-fetch event if not already fetched
+  if (!event) {
+    const { data } = await supabase
+      .from("events")
+      .select("*")
+      .eq("id", body.event_id)
+      .single();
+    event = data;
   }
 
   return NextResponse.json({ event });

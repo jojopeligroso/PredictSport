@@ -30,14 +30,36 @@ const SPORTS: { value: Sport; label: string }[] = [
   { value: "nhl", label: "NHL" },
 ];
 
-const PREDICTION_TYPES: { value: PredictionType; label: string }[] = [
-  { value: "winner", label: "Winner" },
-  { value: "top_n", label: "Top N Finish" },
-  { value: "head_to_head", label: "Head to Head" },
-  { value: "margin", label: "Margin of Victory" },
-  { value: "over_under", label: "Over / Under" },
-  { value: "handicap", label: "Beat the Handicap" },
+const PREDICTION_TYPES: { value: PredictionType; label: string; description: string }[] = [
+  { value: "winner", label: "Winner", description: "Pick the outright winner" },
+  { value: "yes_no", label: "Yes / No", description: "Binary outcome (Yes/No, Ireland/UK, etc.)" },
+  { value: "top_n", label: "Top N Finish", description: "Pick someone to finish in top N" },
+  { value: "head_to_head", label: "Head to Head", description: "Pick which of two finishes higher" },
+  { value: "margin", label: "Margin of Victory", description: "Predict winning margin range" },
+  { value: "over_under", label: "Over / Under", description: "Predict above or below a line" },
+  { value: "handicap", label: "Beat the Handicap", description: "Predict whether a team covers the spread" },
+  { value: "progression", label: "How Far Will They Go?", description: "Predict tournament progression stage" },
 ];
+
+interface PredictionTypeConfig {
+  prediction_type: PredictionType;
+  points?: number;
+  partial_points?: number;
+  config?: Record<string, unknown> | null;
+}
+
+function getDefaultConfig(pt: PredictionType): Record<string, unknown> | null {
+  switch (pt) {
+    case "yes_no":
+      return { options: ["Yes", "No"] };
+    case "top_n":
+      return { n: 5 };
+    case "progression":
+      return { stages: ["Group Stage", "Round of 16", "Quarter-Final", "Semi-Final", "Final", "Winner"] };
+    default:
+      return null;
+  }
+}
 
 export function AddEventForm({
   competitionId,
@@ -54,13 +76,14 @@ export function AddEventForm({
   const [sport, setSport] = useState<Sport>("soccer");
   const [startTime, setStartTime] = useState("");
   const [lockTime, setLockTime] = useState("");
-  const [selectedPredictionTypes, setSelectedPredictionTypes] = useState<
-    PredictionType[]
-  >(["winner"]);
   const [externalEventId, setExternalEventId] = useState<string | null>(null);
-  const [linkedFixtureName, setLinkedFixtureName] = useState<string | null>(
-    null
-  );
+  const [linkedFixtureName, setLinkedFixtureName] = useState<string | null>(null);
+
+  // Prediction type configs
+  const [selectedTypes, setSelectedTypes] = useState<PredictionTypeConfig[]>([
+    { prediction_type: "winner", config: null },
+  ]);
+  const [showAdvanced, setShowAdvanced] = useState(false);
 
   // -----------------------------------------------------------------------
   // Helpers
@@ -85,7 +108,6 @@ export function AddEventForm({
 
   const handleFixtureSelect = (fixture: NormalizedFixture) => {
     const [home, away] = fixture.participants;
-    // Build a display name: prefer "Home vs Away" when both teams known
     const name =
       home && away ? `${home} vs ${away}` : fixture.event_name;
 
@@ -100,7 +122,6 @@ export function AddEventForm({
     setStartTime(startLocal);
     applyLockTime(fixture.start_time);
 
-    // Switch to the form view so the admin can review / adjust before saving
     setMode("manual");
     setError(null);
   };
@@ -111,12 +132,33 @@ export function AddEventForm({
   };
 
   // -----------------------------------------------------------------------
-  // Prediction type toggle
+  // Prediction type management
   // -----------------------------------------------------------------------
 
+  const isTypeSelected = (pt: PredictionType) =>
+    selectedTypes.some((t) => t.prediction_type === pt);
+
   const togglePredictionType = (pt: PredictionType) => {
-    setSelectedPredictionTypes((prev) =>
-      prev.includes(pt) ? prev.filter((t) => t !== pt) : [...prev, pt]
+    if (isTypeSelected(pt)) {
+      setSelectedTypes((prev) =>
+        prev.filter((t) => t.prediction_type !== pt)
+      );
+    } else {
+      setSelectedTypes((prev) => [
+        ...prev,
+        { prediction_type: pt, config: getDefaultConfig(pt) },
+      ]);
+    }
+  };
+
+  const updateTypeConfig = (
+    pt: PredictionType,
+    updates: Partial<PredictionTypeConfig>
+  ) => {
+    setSelectedTypes((prev) =>
+      prev.map((t) =>
+        t.prediction_type === pt ? { ...t, ...updates } : t
+      )
     );
   };
 
@@ -141,7 +183,7 @@ export function AddEventForm({
       return;
     }
 
-    if (selectedPredictionTypes.length === 0) {
+    if (selectedTypes.length === 0) {
       setError("Select at least one prediction type");
       setIsSubmitting(false);
       return;
@@ -157,7 +199,7 @@ export function AddEventForm({
           sport,
           start_time: new Date(startTime).toISOString(),
           lock_time: new Date(lockTime).toISOString(),
-          prediction_types: { types: selectedPredictionTypes },
+          prediction_type_configs: selectedTypes,
           external_event_id: externalEventId ?? undefined,
         }),
       });
@@ -214,9 +256,7 @@ export function AddEventForm({
       </div>
 
       <div className="p-5">
-        {/* ----------------------------------------------------------------
-            Browse Fixtures tab
-        ---------------------------------------------------------------- */}
+        {/* Browse Fixtures tab */}
         {mode === "browse" && (
           <div>
             <p className="mb-3 text-sm text-zinc-500 dark:text-zinc-400">
@@ -226,9 +266,7 @@ export function AddEventForm({
           </div>
         )}
 
-        {/* ----------------------------------------------------------------
-            Manual / Review form
-        ---------------------------------------------------------------- */}
+        {/* Manual / Review form */}
         {mode === "manual" && (
           <form onSubmit={handleSubmit} noValidate>
             {error && (
@@ -356,8 +394,9 @@ export function AddEventForm({
                       key={pt.value}
                       type="button"
                       onClick={() => togglePredictionType(pt.value)}
+                      title={pt.description}
                       className={`rounded-full px-3 py-1 text-xs font-medium transition-colors ${
-                        selectedPredictionTypes.includes(pt.value)
+                        isTypeSelected(pt.value)
                           ? "bg-zinc-900 text-white dark:bg-zinc-50 dark:text-zinc-900"
                           : "border border-zinc-300 text-zinc-700 hover:bg-zinc-100 dark:border-zinc-700 dark:text-zinc-300 dark:hover:bg-zinc-800"
                       }`}
@@ -367,6 +406,109 @@ export function AddEventForm({
                   ))}
                 </div>
               </div>
+
+              {/* Yes/No options config (inline, always shown when yes_no is selected) */}
+              {isTypeSelected("yes_no") && (
+                <YesNoConfig
+                  config={selectedTypes.find((t) => t.prediction_type === "yes_no")!}
+                  onChange={(cfg) => updateTypeConfig("yes_no", cfg)}
+                />
+              )}
+
+              {/* Top N config (inline) */}
+              {isTypeSelected("top_n") && (
+                <TopNConfig
+                  config={selectedTypes.find((t) => t.prediction_type === "top_n")!}
+                  onChange={(cfg) => updateTypeConfig("top_n", cfg)}
+                />
+              )}
+
+              {/* Progression stages config (inline) */}
+              {isTypeSelected("progression") && (
+                <ProgressionConfig
+                  config={selectedTypes.find((t) => t.prediction_type === "progression")!}
+                  onChange={(cfg) => updateTypeConfig("progression", cfg)}
+                />
+              )}
+
+              {/* Advanced: per-type points override */}
+              {selectedTypes.length > 0 && (
+                <div>
+                  <button
+                    type="button"
+                    onClick={() => setShowAdvanced(!showAdvanced)}
+                    className="text-xs text-zinc-500 underline hover:text-zinc-700 dark:text-zinc-400 dark:hover:text-zinc-200"
+                  >
+                    {showAdvanced ? "Hide advanced scoring" : "Advanced: override points per type"}
+                  </button>
+
+                  {showAdvanced && (
+                    <div className="mt-3 rounded-md border border-zinc-200 p-4 dark:border-zinc-700">
+                      <p className="text-xs text-zinc-500 dark:text-zinc-400 mb-3">
+                        Override the default points from the competition scoring template.
+                      </p>
+                      <div className="space-y-3">
+                        {selectedTypes.map((ptc) => {
+                          const label = PREDICTION_TYPES.find(
+                            (p) => p.value === ptc.prediction_type
+                          )?.label ?? ptc.prediction_type;
+
+                          return (
+                            <div
+                              key={ptc.prediction_type}
+                              className="grid grid-cols-3 gap-3 items-end"
+                            >
+                              <div>
+                                <label className="block text-xs text-zinc-500 dark:text-zinc-400">
+                                  {label}
+                                </label>
+                              </div>
+                              <div>
+                                <label className="block text-xs text-zinc-500 dark:text-zinc-400">
+                                  Points
+                                </label>
+                                <input
+                                  type="number"
+                                  min={0}
+                                  value={ptc.points ?? ""}
+                                  placeholder="Default"
+                                  onChange={(e) =>
+                                    updateTypeConfig(ptc.prediction_type, {
+                                      points: e.target.value
+                                        ? parseInt(e.target.value)
+                                        : undefined,
+                                    })
+                                  }
+                                  className="mt-1 block w-full rounded-md border border-zinc-300 px-2 py-1 text-sm dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-50"
+                                />
+                              </div>
+                              <div>
+                                <label className="block text-xs text-zinc-500 dark:text-zinc-400">
+                                  Partial
+                                </label>
+                                <input
+                                  type="number"
+                                  min={0}
+                                  value={ptc.partial_points ?? ""}
+                                  placeholder="Default"
+                                  onChange={(e) =>
+                                    updateTypeConfig(ptc.prediction_type, {
+                                      partial_points: e.target.value
+                                        ? parseInt(e.target.value)
+                                        : undefined,
+                                    })
+                                  }
+                                  className="mt-1 block w-full rounded-md border border-zinc-300 px-2 py-1 text-sm dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-50"
+                                />
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
             </div>
 
             {/* Actions */}
@@ -396,6 +538,169 @@ export function AddEventForm({
           </form>
         )}
       </div>
+    </div>
+  );
+}
+
+// -----------------------------------------------------------------------
+// Config sub-components
+// -----------------------------------------------------------------------
+
+function YesNoConfig({
+  config,
+  onChange,
+}: {
+  config: PredictionTypeConfig;
+  onChange: (updates: Partial<PredictionTypeConfig>) => void;
+}) {
+  const options = (config.config?.options as string[]) ?? ["Yes", "No"];
+
+  const handleOptionChange = (index: number, value: string) => {
+    const newOptions = [...options];
+    newOptions[index] = value;
+    onChange({ config: { ...config.config, options: newOptions } });
+  };
+
+  const presets = [
+    { label: "Yes / No", options: ["Yes", "No"] },
+    { label: "Ireland / UK", options: ["Ireland", "UK"] },
+    { label: "Europe / USA", options: ["Europe", "USA"] },
+  ];
+
+  return (
+    <div className="rounded-md border border-zinc-200 p-3 dark:border-zinc-700">
+      <label className="block text-xs font-medium text-zinc-500 dark:text-zinc-400 mb-2">
+        Yes/No Options
+      </label>
+      <div className="flex flex-wrap gap-2 mb-2">
+        {presets.map((preset) => (
+          <button
+            key={preset.label}
+            type="button"
+            onClick={() =>
+              onChange({ config: { ...config.config, options: preset.options } })
+            }
+            className={`rounded-full px-2.5 py-1 text-xs transition-colors ${
+              options[0] === preset.options[0] && options[1] === preset.options[1]
+                ? "bg-zinc-200 text-zinc-900 dark:bg-zinc-700 dark:text-zinc-100"
+                : "border border-zinc-300 text-zinc-600 hover:bg-zinc-100 dark:border-zinc-600 dark:text-zinc-400 dark:hover:bg-zinc-800"
+            }`}
+          >
+            {preset.label}
+          </button>
+        ))}
+      </div>
+      <div className="grid grid-cols-2 gap-2">
+        <input
+          type="text"
+          value={options[0]}
+          onChange={(e) => handleOptionChange(0, e.target.value)}
+          placeholder="Option 1"
+          className="rounded-md border border-zinc-300 px-2 py-1 text-sm dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-50"
+        />
+        <input
+          type="text"
+          value={options[1]}
+          onChange={(e) => handleOptionChange(1, e.target.value)}
+          placeholder="Option 2"
+          className="rounded-md border border-zinc-300 px-2 py-1 text-sm dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-50"
+        />
+      </div>
+    </div>
+  );
+}
+
+function TopNConfig({
+  config,
+  onChange,
+}: {
+  config: PredictionTypeConfig;
+  onChange: (updates: Partial<PredictionTypeConfig>) => void;
+}) {
+  const n = (config.config?.n as number) ?? 5;
+
+  return (
+    <div className="rounded-md border border-zinc-200 p-3 dark:border-zinc-700">
+      <label className="block text-xs font-medium text-zinc-500 dark:text-zinc-400 mb-2">
+        Top N — how many positions count?
+      </label>
+      <input
+        type="number"
+        min={2}
+        max={50}
+        value={n}
+        onChange={(e) =>
+          onChange({
+            config: { ...config.config, n: parseInt(e.target.value) || 5 },
+          })
+        }
+        className="w-20 rounded-md border border-zinc-300 px-2 py-1 text-sm dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-50"
+      />
+    </div>
+  );
+}
+
+function ProgressionConfig({
+  config,
+  onChange,
+}: {
+  config: PredictionTypeConfig;
+  onChange: (updates: Partial<PredictionTypeConfig>) => void;
+}) {
+  const stages = (config.config?.stages as string[]) ?? [];
+  const stagesStr = stages.join(", ");
+
+  const presets = [
+    {
+      label: "World Cup",
+      stages: ["Group Stage", "Round of 16", "Quarter-Final", "Semi-Final", "Final", "Winner"],
+    },
+    {
+      label: "Champions League",
+      stages: ["Group Stage", "Round of 16", "Quarter-Final", "Semi-Final", "Final", "Winner"],
+    },
+    {
+      label: "Knockout (4 rounds)",
+      stages: ["Quarter-Final", "Semi-Final", "Final", "Winner"],
+    },
+  ];
+
+  return (
+    <div className="rounded-md border border-zinc-200 p-3 dark:border-zinc-700">
+      <label className="block text-xs font-medium text-zinc-500 dark:text-zinc-400 mb-2">
+        Progression Stages (earliest to best)
+      </label>
+      <div className="flex flex-wrap gap-2 mb-2">
+        {presets.map((preset) => (
+          <button
+            key={preset.label}
+            type="button"
+            onClick={() =>
+              onChange({ config: { ...config.config, stages: preset.stages } })
+            }
+            className="rounded-full border border-zinc-300 px-2.5 py-1 text-xs text-zinc-600 hover:bg-zinc-100 dark:border-zinc-600 dark:text-zinc-400 dark:hover:bg-zinc-800 transition-colors"
+          >
+            {preset.label}
+          </button>
+        ))}
+      </div>
+      <input
+        type="text"
+        value={stagesStr}
+        onChange={(e) =>
+          onChange({
+            config: {
+              ...config.config,
+              stages: e.target.value.split(",").map((s) => s.trim()).filter(Boolean),
+            },
+          })
+        }
+        placeholder="Stage 1, Stage 2, Stage 3, ..."
+        className="w-full rounded-md border border-zinc-300 px-2 py-1 text-sm dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-50"
+      />
+      <p className="mt-1 text-xs text-zinc-400 dark:text-zinc-500">
+        Comma-separated, from earliest exit to winner.
+      </p>
     </div>
   );
 }

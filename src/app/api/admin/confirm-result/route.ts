@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { verifyCompetitionAdmin } from "@/lib/admin";
 import { scorePrediction } from "@/lib/scoring";
-import type { PredictionType } from "@/types/database";
+import type { PredictionType, EventPredictionType } from "@/types/database";
 
 interface ConfirmResultBody {
   event_id: string;
@@ -18,7 +18,8 @@ interface ConfirmResultBody {
  * 1. Verify user is admin/co_admin of the event's competition
  * 2. Ensure event has result_data (either existing or provided in body)
  * 3. Set result_confirmed = true, status = 'resulted'
- * 4. Calculate and update points for all predictions on this event
+ * 4. Fetch event_prediction_types for per-type points
+ * 5. Calculate and update points for all predictions on this event
  */
 export async function POST(request: Request) {
   const supabase = await createClient();
@@ -47,7 +48,7 @@ export async function POST(request: Request) {
   // Fetch the event
   const { data: event, error: eventError } = await supabase
     .from("events")
-    .select("*, competitions!inner(id, scoring_rules)")
+    .select("*")
     .eq("id", body.event_id)
     .single();
 
@@ -102,6 +103,17 @@ export async function POST(request: Request) {
     );
   }
 
+  // Fetch event_prediction_types for this event
+  const { data: eptRows } = await supabase
+    .from("event_prediction_types")
+    .select("*")
+    .eq("event_id", body.event_id);
+
+  const eptMap = new Map<string, EventPredictionType>();
+  for (const row of eptRows ?? []) {
+    eptMap.set(row.prediction_type, row as EventPredictionType);
+  }
+
   // Fetch all predictions for this event
   const { data: predictions, error: predError } = await supabase
     .from("predictions")
@@ -115,19 +127,26 @@ export async function POST(request: Request) {
     );
   }
 
-  const scoringRules = (event.competitions as unknown as { scoring_rules: Record<string, unknown> })
-    ?.scoring_rules ?? {};
-
   // Score each prediction
   let scored = 0;
   let errors = 0;
 
   for (const prediction of predictions ?? []) {
+    const predType = prediction.prediction_type as PredictionType;
+    const ept = eptMap.get(predType);
+
+    // Use event_prediction_types row if available, otherwise fall back to defaults
+    const eptData = ept ?? {
+      points: 10,
+      partial_points: 0,
+      config: null,
+    };
+
     const result = scorePrediction(
-      prediction.prediction_type as PredictionType,
+      predType,
       prediction.prediction_data as Record<string, unknown>,
       resultData as Record<string, unknown>,
-      scoringRules as Record<string, unknown>
+      eptData
     );
 
     const { error: scoreError } = await supabase

@@ -5,11 +5,15 @@ import { EventsSection } from "./EventsSection";
 import { ParticipantsSection } from "./ParticipantsSection";
 import { NominationsSection } from "./NominationsSection";
 import { SettingsSection } from "./SettingsSection";
-import type { Competition, Event, CompetitionMember, EventNomination, InviteToken } from "@/types/database";
+import type { Competition, Event, CompetitionMember, EventNomination, InviteToken, EventPredictionType } from "@/types/database";
+
+interface EventWithPredictionTypes extends Event {
+  event_prediction_types: EventPredictionType[];
+}
 
 interface CompetitionTabsProps {
   competition: Competition;
-  events: Event[];
+  events: EventWithPredictionTypes[];
   members: (CompetitionMember & { user?: { display_name: string; email: string } })[];
   nominations: (EventNomination & { nominator?: { display_name: string } })[];
   inviteTokens: InviteToken[];

@@ -5,11 +5,15 @@ import { useRouter } from "next/navigation";
 import { StatusBadge } from "./CompetitionStatusBadge";
 import { AddEventForm } from "./AddEventForm";
 import { ResultPanel } from "./ResultPanel";
-import type { Competition, Event } from "@/types/database";
+import type { Competition, Event, EventPredictionType } from "@/types/database";
+
+interface EventWithPredictionTypes extends Event {
+  event_prediction_types: EventPredictionType[];
+}
 
 interface EventsSectionProps {
   competition: Competition;
-  events: Event[];
+  events: EventWithPredictionTypes[];
 }
 
 export function EventsSection({ competition, events }: EventsSectionProps) {
@@ -132,6 +136,13 @@ export function EventsSection({ competition, events }: EventsSectionProps) {
                     <span>
                       Lock: {new Date(event.lock_time).toLocaleString()}
                     </span>
+                    {(event.event_prediction_types ?? []).length > 0 && (
+                      <span className="text-zinc-400 dark:text-zinc-500">
+                        {(event.event_prediction_types ?? [])
+                          .map((ept) => ept.prediction_type.replace(/_/g, " "))
+                          .join(", ")}
+                      </span>
+                    )}
                     {event.external_event_id && (
                       <span className="text-blue-600 dark:text-blue-400">
                         Linked

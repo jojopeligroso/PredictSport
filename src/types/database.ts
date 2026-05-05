@@ -16,7 +16,9 @@ export type PredictionType =
   | "head_to_head"
   | "margin"
   | "over_under"
-  | "handicap";
+  | "handicap"
+  | "yes_no"
+  | "progression";
 
 export interface User {
   id: string;

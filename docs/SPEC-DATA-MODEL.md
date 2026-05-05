@@ -65,7 +65,7 @@ predictions
   id                      uuid PK
   event_id                uuid FK events
   user_id                 uuid FK users
-  prediction_type         text (which type this prediction is for)
+  prediction_type         text ('winner' | 'top_n' | 'head_to_head' | 'margin' | 'over_under' | 'handicap' | 'yes_no' | 'progression')
   prediction_data         jsonb (flexible — structure depends on type)
   is_correct              boolean nullable
   is_partial              boolean (default false)
@@ -89,10 +89,10 @@ tiebreaker_answers
 event_prediction_types
   id                      uuid PK
   event_id                uuid FK events
-  prediction_type         text ('winner' | 'top_n' | 'head_to_head' | 'margin' | 'over_under' | 'handicap')
+  prediction_type         text ('winner' | 'top_n' | 'head_to_head' | 'margin' | 'over_under' | 'handicap' | 'yes_no' | 'progression')
   points                  integer (default 10)
   partial_points          integer (default 0)
-  config                  jsonb nullable (type-specific, e.g. {"n": 5} for top_n)
+  config                  jsonb nullable (type-specific, e.g. {"n": 5} for top_n, {"options": ["Yes","No"]} for yes_no, {"stages": [...]} for progression)
   unique (event_id, prediction_type)
 
 event_nominations

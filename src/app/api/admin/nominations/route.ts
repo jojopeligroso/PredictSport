@@ -131,10 +131,7 @@ export async function PATCH(request: Request) {
         new Date(startTime).getTime() - lockDefaultMinutes * 60 * 1000
       ).toISOString();
 
-    const predictionTypes = overrides.prediction_types ??
-      (nomination.proposed_prediction_type
-        ? { types: [nomination.proposed_prediction_type] }
-        : {});
+    const predictionType = nomination.proposed_prediction_type ?? "winner";
 
     const { data: event, error: eventError } = await supabase
       .from("events")
@@ -144,7 +141,7 @@ export async function PATCH(request: Request) {
         sport: overrides.sport ?? nomination.sport,
         start_time: startTime,
         lock_time: lockTime,
-        prediction_types: predictionTypes,
+        prediction_types: {}, // deprecated
         nominated_by: nomination.nominated_by,
         status: "upcoming",
       })
@@ -160,6 +157,24 @@ export async function PATCH(request: Request) {
         { status: 500 }
       );
     }
+
+    // Create event_prediction_types row using competition defaults
+    const { data: compData } = await supabase
+      .from("competitions")
+      .select("scoring_rules")
+      .eq("id", body.competition_id)
+      .single();
+
+    const sr = (compData?.scoring_rules ?? {}) as Record<string, unknown>;
+    const srPoints = sr.points as Record<string, number> | undefined;
+    const srPartial = sr.partial_points as Record<string, number> | undefined;
+
+    await supabase.from("event_prediction_types").insert({
+      event_id: event.id,
+      prediction_type: predictionType,
+      points: srPoints?.[predictionType] ?? 10,
+      partial_points: srPartial?.[predictionType] ?? 0,
+    });
 
     createdEvent = event;
   }

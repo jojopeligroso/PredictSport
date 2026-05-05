@@ -40,11 +40,11 @@ Competition → CompetitionMembers
 ```
 
 - **Rounds** group events (can mix sports/leagues). `round_number` unique per competition.
-- **EventPredictionTypes** normalised table replacing old `prediction_types` JSONB. Each row = one prediction type for one event, with its own points/partial_points/config.
+- **EventPredictionTypes** normalised table. Each row = one prediction type for one event, with its own points/partial_points/config.
 - **Competition.scoring_rules** is the default template; `event_prediction_types` is source of truth per event.
 - **Competition.min_rounds_required** — minimum rounds to participate (null = all).
 - **Competition.allow_prediction_updates** — can participants change predictions before lock?
-- Old `events.prediction_types` JSONB column still exists but is being phased out.
+- `events.prediction_types` JSONB column is deprecated (set to `{}` for new events). All prediction type data is in `event_prediction_types` rows.
 
 ### Sports Provider System
 
@@ -93,10 +93,10 @@ Provider abstraction in `src/lib/sports/`. `BaseProvider` handles fetch, rate li
 
 **Next priorities:**
 1. Fixture search UX (search by team/competition/date, admin competition builder)
-2. Migrate admin UI from `prediction_types` JSONB to `event_prediction_types` rows
-3. WhatsApp notification integration (Cloud API)
-4. Wire up full prediction → result → scoring flow with real data
-5. Request Foireann API key and test GAA provider
+2. WhatsApp notification integration (Cloud API)
+3. Wire up full prediction → result → scoring flow with real data
+4. Request Foireann API key and test GAA provider
+5. Run seed script (`npx tsx scripts/seed-quiz-2026.ts`) and test full flow
 
 ## Environment Variables
 
@@ -124,3 +124,5 @@ Supabase, Playwright, Context7, GitHub, Firecrawl
 ## Multi-Session Warning
 
 **NEVER run `npm run dev` or port-binding commands without explicit user confirmation.**
+
+**Concurrent sessions:** `/PredictSport-next-task` runs `git status --short` first. If there are unstaged changes you didn't make, STOP — another session is active. List the modified files, ask which are safe to touch, and do not modify files another session is editing.

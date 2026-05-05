@@ -1,12 +1,4 @@
-import type { PredictionType } from "@/types/database";
-
-interface ScoringRules {
-  preset?: string;
-  points?: Record<string, number>;
-  partial_credit?: boolean;
-  partial_points?: Record<string, number>;
-  [key: string]: unknown;
-}
+import type { PredictionType, EventPredictionType } from "@/types/database";
 
 interface ScoringResult {
   is_correct: boolean | null;
@@ -15,99 +7,35 @@ interface ScoringResult {
 }
 
 /**
- * Default points per prediction type if not specified in scoring_rules.
- */
-const DEFAULT_POINTS: Record<PredictionType, number> = {
-  winner: 10,
-  top_n: 5,
-  head_to_head: 5,
-  margin: 10,
-  over_under: 5,
-  handicap: 5,
-};
-
-const DEFAULT_PARTIAL_POINTS: Record<string, number> = {
-  margin: 5,
-  top_n: 3,
-};
-
-function getPointsForType(
-  scoringRules: ScoringRules,
-  predictionType: PredictionType
-): number {
-  return (
-    (scoringRules.points as Record<string, number> | undefined)?.[
-      predictionType
-    ] ?? DEFAULT_POINTS[predictionType]
-  );
-}
-
-function getPartialPointsForType(
-  scoringRules: ScoringRules,
-  predictionType: PredictionType
-): number {
-  return (
-    (scoringRules.partial_points as Record<string, number> | undefined)?.[
-      predictionType
-    ] ?? DEFAULT_PARTIAL_POINTS[predictionType] ?? 0
-  );
-}
-
-/**
  * Score a single prediction against result data.
  *
- * prediction_data and result_data structures vary by prediction_type:
- *
- * winner:      prediction_data: { winner: "Team A" }
- *              result_data:     { winner: "Team A" } or { score: { home_team, away_team, home_score, away_score } }
- *
- * top_n:       prediction_data: { name: "Player X", n: 5 }
- *              result_data:     { positions: [{ position: 1, name: "..." }, ...] }
- *
- * head_to_head: prediction_data: { winner: "Driver A" }
- *               result_data:     { winner: "Driver A" } or { positions: [...] }
- *
- * margin:      prediction_data: { range_low: 1, range_high: 7, team: "Ireland" }
- *              result_data:     { margin: 5, winner: "Ireland" } or { score: {...} }
- *
- * over_under:  prediction_data: { selection: "over", line: 2.5, stat: "total_goals" }
- *              result_data:     { stats: { total_goals: 3 } } or { score: {...} }
- *
- * handicap:    prediction_data: { selection: "Team A", line: -12.5 }
- *              result_data:     { score: { home_team, away_team, home_score, away_score } }
+ * Points and partial_points come from the EventPredictionType row,
+ * not from competition-level scoring_rules.
  */
 export function scorePrediction(
   predictionType: PredictionType,
   predictionData: Record<string, unknown>,
   resultData: Record<string, unknown>,
-  scoringRules: ScoringRules
+  ept: Pick<EventPredictionType, "points" | "partial_points" | "config">
 ): ScoringResult {
-  const fullPoints = getPointsForType(scoringRules, predictionType);
-  const partialPoints = getPartialPointsForType(scoringRules, predictionType);
-  const allowPartial = scoringRules.partial_credit !== false;
+  const fullPoints = ept.points;
+  const partialPoints = ept.partial_points;
 
   switch (predictionType) {
     case "winner":
       return scoreWinner(predictionData, resultData, fullPoints);
 
+    case "yes_no":
+      return scoreYesNo(predictionData, resultData, fullPoints, ept.config);
+
     case "top_n":
-      return scoreTopN(
-        predictionData,
-        resultData,
-        fullPoints,
-        allowPartial ? partialPoints : 0
-      );
+      return scoreTopN(predictionData, resultData, fullPoints, partialPoints, ept.config);
 
     case "head_to_head":
       return scoreHeadToHead(predictionData, resultData, fullPoints);
 
     case "margin":
-      return scoreMargin(
-        predictionData,
-        resultData,
-        fullPoints,
-        allowPartial ? partialPoints : 0
-      );
+      return scoreMargin(predictionData, resultData, fullPoints, partialPoints);
 
     case "over_under":
       return scoreOverUnder(predictionData, resultData, fullPoints);
@@ -115,19 +43,68 @@ export function scorePrediction(
     case "handicap":
       return scoreHandicap(predictionData, resultData, fullPoints);
 
+    case "progression":
+      return scoreProgression(predictionData, resultData, fullPoints, partialPoints, ept.config);
+
     default:
       return { is_correct: null, is_partial: false, points_awarded: 0 };
   }
 }
+
+// ---------------------------------------------------------------------------
+// Legacy adapter: converts old competition-level scoring_rules into the
+// shape expected by the new scorer. Used only by callers that haven't been
+// migrated yet.
+// ---------------------------------------------------------------------------
+
+interface LegacyScoringRules {
+  points?: Record<string, number>;
+  partial_credit?: boolean;
+  partial_points?: Record<string, number>;
+  [key: string]: unknown;
+}
+
+const DEFAULT_POINTS: Record<PredictionType, number> = {
+  winner: 10, top_n: 5, head_to_head: 5, margin: 10,
+  over_under: 5, handicap: 5, yes_no: 10, progression: 10,
+};
+
+const DEFAULT_PARTIAL_POINTS: Record<string, number> = {
+  margin: 5, top_n: 3,
+};
+
+export function scorePredictionLegacy(
+  predictionType: PredictionType,
+  predictionData: Record<string, unknown>,
+  resultData: Record<string, unknown>,
+  scoringRules: LegacyScoringRules
+): ScoringResult {
+  const allowPartial = scoringRules.partial_credit !== false;
+  const points =
+    scoringRules.points?.[predictionType] ?? DEFAULT_POINTS[predictionType];
+  const partial = allowPartial
+    ? (scoringRules.partial_points?.[predictionType] ?? DEFAULT_PARTIAL_POINTS[predictionType] ?? 0)
+    : 0;
+
+  return scorePrediction(predictionType, predictionData, resultData, {
+    points,
+    partial_points: partial,
+    config: null,
+  });
+}
+
+// ---------------------------------------------------------------------------
+// Scorers
+// ---------------------------------------------------------------------------
 
 function scoreWinner(
   prediction: Record<string, unknown>,
   result: Record<string, unknown>,
   fullPoints: number
 ): ScoringResult {
-  const predicted = normalizeStr(prediction.winner);
+  // Accept both { winner: "X" } and { value: "X" } shapes
+  const predicted = normalizeStr(prediction.winner ?? prediction.value);
 
-  // Determine winner from result_data
   let actual: string;
   if (result.winner) {
     actual = normalizeStr(result.winner);
@@ -154,14 +131,46 @@ function scoreWinner(
   };
 }
 
+function scoreYesNo(
+  prediction: Record<string, unknown>,
+  result: Record<string, unknown>,
+  fullPoints: number,
+  config: Record<string, unknown> | null
+): ScoringResult {
+  // prediction_data: { selection: "Yes" } or { value: "Ireland" }
+  const predicted = normalizeStr(prediction.selection ?? prediction.value);
+
+  // result_data: { answer: "Yes" } or { winner: "Ireland" }
+  const actual = normalizeStr(result.answer ?? result.winner ?? result.value);
+
+  if (!predicted || !actual) {
+    return { is_correct: null, is_partial: false, points_awarded: 0 };
+  }
+
+  // Also check against config options for fuzzy matching
+  const options = (config?.options as string[] | undefined) ?? [];
+  const predictedIndex = options.findIndex((o) => normalizeStr(o) === predicted);
+  const actualIndex = options.findIndex((o) => normalizeStr(o) === actual);
+
+  const correct =
+    predicted === actual || (predictedIndex !== -1 && predictedIndex === actualIndex);
+
+  return {
+    is_correct: correct,
+    is_partial: false,
+    points_awarded: correct ? fullPoints : 0,
+  };
+}
+
 function scoreTopN(
   prediction: Record<string, unknown>,
   result: Record<string, unknown>,
   fullPoints: number,
-  partialPoints: number
+  partialPoints: number,
+  config: Record<string, unknown> | null
 ): ScoringResult {
-  const predictedName = normalizeStr(prediction.name);
-  const n = Number(prediction.n ?? 5);
+  const predictedName = normalizeStr(prediction.name ?? prediction.value);
+  const n = Number(config?.n ?? prediction.n ?? 5);
   const positions = (result.positions ?? []) as Array<{
     position: number;
     name: string;
@@ -176,19 +185,42 @@ function scoreTopN(
     .map((p) => normalizeStr(p.name));
 
   if (topN.includes(predictedName)) {
-    // Check if they predicted the exact winner
     const winner = positions.find((p) => p.position === 1);
     if (winner && normalizeStr(winner.name) === predictedName) {
       return { is_correct: true, is_partial: false, points_awarded: fullPoints };
     }
-    // In top N but not winner - partial credit if available
+    // In top N but not winner — partial credit
     if (partialPoints > 0) {
+      // Check for graduated scoring in config
+      const ladder = config?.points_ladder as
+        | Array<{ position: number; points: number }>
+        | undefined;
+      if (ladder) {
+        const actualPos = positions.find(
+          (p) => normalizeStr(p.name) === predictedName
+        );
+        if (actualPos) {
+          // Find the best matching ladder tier
+          const tier = [...ladder]
+            .sort((a, b) => a.position - b.position)
+            .find((t) => actualPos.position <= t.position);
+          if (tier) {
+            return {
+              is_correct: false,
+              is_partial: true,
+              points_awarded: tier.points,
+            };
+          }
+        }
+      }
+
       return {
         is_correct: false,
         is_partial: true,
         points_awarded: partialPoints,
       };
     }
+    // No partial credit configured, but they're in top N — full points
     return { is_correct: true, is_partial: false, points_awarded: fullPoints };
   }
 
@@ -200,13 +232,12 @@ function scoreHeadToHead(
   result: Record<string, unknown>,
   fullPoints: number
 ): ScoringResult {
-  const predicted = normalizeStr(prediction.winner);
+  const predicted = normalizeStr(prediction.winner ?? prediction.selection);
 
   let actual: string;
   if (result.winner) {
     actual = normalizeStr(result.winner);
   } else if (result.positions) {
-    // For position-based sports (F1, golf etc), compare positions
     const positions = result.positions as Array<{
       position: number;
       name: string;
@@ -264,17 +295,14 @@ function scoreMargin(
     return { is_correct: null, is_partial: false, points_awarded: 0 };
   }
 
-  // Wrong team predicted
   if (predictedTeam !== actualWinner) {
     return { is_correct: false, is_partial: false, points_awarded: 0 };
   }
 
-  // Exact range match
   if (actualMargin >= rangeLow && actualMargin <= rangeHigh) {
     return { is_correct: true, is_partial: false, points_awarded: fullPoints };
   }
 
-  // Adjacent range: margin is within 1 of the predicted range bounds
   if (
     partialPoints > 0 &&
     (actualMargin === rangeLow - 1 || actualMargin === rangeHigh + 1)
@@ -295,7 +323,7 @@ function scoreOverUnder(
   fullPoints: number
 ): ScoringResult {
   const selection = String(prediction.selection ?? "").toLowerCase();
-  const line = Number(prediction.line ?? 0);
+  const line = Number(prediction.line ?? prediction.threshold ?? 0);
   const stat = String(prediction.stat ?? "total_goals");
 
   let actualValue: number;
@@ -304,7 +332,6 @@ function scoreOverUnder(
     actualValue = (result.stats as Record<string, number>)[stat];
   } else if (result.score) {
     const score = result.score as Record<string, unknown>;
-    // Default: total_goals = home_score + away_score
     actualValue = Number(score.home_score ?? 0) + Number(score.away_score ?? 0);
   } else {
     return { is_correct: null, is_partial: false, points_awarded: 0 };
@@ -319,7 +346,6 @@ function scoreOverUnder(
     return { is_correct: null, is_partial: false, points_awarded: 0 };
   }
 
-  // Push (exact line) = no points
   return {
     is_correct: correct,
     is_partial: false,
@@ -345,7 +371,6 @@ function scoreHandicap(
   const homeScore = Number(score.home_score ?? 0);
   const awayScore = Number(score.away_score ?? 0);
 
-  // Handicap is applied to the selected team
   let adjustedDiff: number;
   if (selectedTeam === homeTeam) {
     adjustedDiff = homeScore + line - awayScore;
@@ -355,13 +380,51 @@ function scoreHandicap(
     return { is_correct: null, is_partial: false, points_awarded: 0 };
   }
 
-  // Covers if adjustedDiff > 0 (push at 0 = no points)
   const correct = adjustedDiff > 0;
   return {
     is_correct: correct,
     is_partial: false,
     points_awarded: correct ? fullPoints : 0,
   };
+}
+
+function scoreProgression(
+  prediction: Record<string, unknown>,
+  result: Record<string, unknown>,
+  fullPoints: number,
+  partialPoints: number,
+  config: Record<string, unknown> | null
+): ScoringResult {
+  const predictedStage = normalizeStr(prediction.stage ?? prediction.value);
+  const actualStage = normalizeStr(result.stage ?? result.value);
+  const stages = ((config?.stages ?? []) as string[]).map(normalizeStr);
+
+  if (!predictedStage || !actualStage || stages.length === 0) {
+    return { is_correct: null, is_partial: false, points_awarded: 0 };
+  }
+
+  const predictedIndex = stages.indexOf(predictedStage);
+  const actualIndex = stages.indexOf(actualStage);
+
+  if (predictedIndex === -1 || actualIndex === -1) {
+    return { is_correct: null, is_partial: false, points_awarded: 0 };
+  }
+
+  // Exact match = full points
+  if (predictedIndex === actualIndex) {
+    return { is_correct: true, is_partial: false, points_awarded: fullPoints };
+  }
+
+  // Off by one stage = partial credit (if configured)
+  if (partialPoints > 0 && Math.abs(predictedIndex - actualIndex) === 1) {
+    return {
+      is_correct: false,
+      is_partial: true,
+      points_awarded: partialPoints,
+    };
+  }
+
+  return { is_correct: false, is_partial: false, points_awarded: 0 };
 }
 
 function normalizeStr(val: unknown): string {

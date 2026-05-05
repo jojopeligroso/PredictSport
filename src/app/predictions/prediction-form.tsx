@@ -12,6 +12,7 @@ interface PredictionTypeConfig {
   n?: number;
   handicap?: number;
   team?: string;
+  stages?: string[];
 }
 
 interface PredictionFormProps {
@@ -30,11 +31,13 @@ function getLabel(config: PredictionTypeConfig): string {
   if (config.label) return config.label;
   const labels: Record<PredictionType, string> = {
     winner: "Pick the Winner",
+    yes_no: "Yes or No",
     top_n: `Top ${config.n ?? "N"} Finish`,
     head_to_head: "Head to Head",
     margin: "Margin of Victory",
     over_under: `Over/Under ${config.threshold ?? ""}`,
     handicap: `Handicap ${config.handicap ?? ""}`,
+    progression: "How Far Will They Go?",
   };
   return labels[config.type];
 }
@@ -52,7 +55,8 @@ export function PredictionForm({
     (existingData.value as string) ?? ""
   );
   const [selection, setSelection] = useState<string>(
-    (existingData.selection as string) ?? ""
+    (existingData.selection as string) ??
+    (existingData.stage as string) ?? ""
   );
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -74,6 +78,14 @@ export function PredictionForm({
           return;
         }
         predictionData = { value: value.trim() };
+        break;
+
+      case "yes_no":
+        if (!selection) {
+          setError("Make a selection");
+          return;
+        }
+        predictionData = { selection };
         break;
 
       case "top_n":
@@ -124,6 +136,14 @@ export function PredictionForm({
           team: config.team,
         };
         break;
+
+      case "progression":
+        if (!selection) {
+          setError("Select a stage");
+          return;
+        }
+        predictionData = { stage: selection };
+        break;
     }
 
     setIsSubmitting(true);
@@ -148,6 +168,13 @@ export function PredictionForm({
   const buttonClasses =
     "rounded-md bg-zinc-900 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-zinc-700 dark:bg-zinc-100 dark:text-zinc-900 dark:hover:bg-zinc-300 disabled:opacity-50 disabled:cursor-not-allowed";
 
+  const selectionBtnClasses = (opt: string) =>
+    `flex-1 rounded-md border px-3 py-2 text-sm font-medium transition-colors disabled:cursor-not-allowed ${
+      selection === opt
+        ? "border-zinc-900 bg-zinc-900 text-white dark:border-zinc-100 dark:bg-zinc-100 dark:text-zinc-900"
+        : "border-zinc-300 bg-white text-zinc-700 hover:bg-zinc-50 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-300 dark:hover:bg-zinc-700"
+    }`;
+
   function renderInput() {
     switch (config.type) {
       case "winner":
@@ -160,6 +187,23 @@ export function PredictionForm({
             disabled={isLocked}
             className={inputClasses}
           />
+        );
+
+      case "yes_no":
+        return (
+          <div className="flex gap-2">
+            {(config.options ?? ["Yes", "No"]).map((opt) => (
+              <button
+                key={opt}
+                type="button"
+                onClick={() => !isLocked && setSelection(opt)}
+                disabled={isLocked}
+                className={selectionBtnClasses(opt)}
+              >
+                {opt}
+              </button>
+            ))}
+          </div>
         );
 
       case "top_n":
@@ -183,11 +227,7 @@ export function PredictionForm({
                 type="button"
                 onClick={() => !isLocked && setSelection(opt)}
                 disabled={isLocked}
-                className={`flex-1 rounded-md border px-3 py-2 text-sm font-medium transition-colors disabled:cursor-not-allowed ${
-                  selection === opt
-                    ? "border-zinc-900 bg-zinc-900 text-white dark:border-zinc-100 dark:bg-zinc-100 dark:text-zinc-900"
-                    : "border-zinc-300 bg-white text-zinc-700 hover:bg-zinc-50 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-300 dark:hover:bg-zinc-700"
-                }`}
+                className={selectionBtnClasses(opt)}
               >
                 {opt}
               </button>
@@ -217,13 +257,9 @@ export function PredictionForm({
                 type="button"
                 onClick={() => !isLocked && setSelection(opt)}
                 disabled={isLocked}
-                className={`flex-1 rounded-md border px-3 py-2 text-sm font-medium capitalize transition-colors disabled:cursor-not-allowed ${
-                  selection === opt
-                    ? "border-zinc-900 bg-zinc-900 text-white dark:border-zinc-100 dark:bg-zinc-100 dark:text-zinc-900"
-                    : "border-zinc-300 bg-white text-zinc-700 hover:bg-zinc-50 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-300 dark:hover:bg-zinc-700"
-                }`}
+                className={selectionBtnClasses(opt)}
               >
-                {opt} {config.threshold}
+                <span className="capitalize">{opt}</span> {config.threshold}
               </button>
             ))}
           </div>
@@ -236,11 +272,7 @@ export function PredictionForm({
               type="button"
               onClick={() => !isLocked && setSelection("covers")}
               disabled={isLocked}
-              className={`flex-1 rounded-md border px-3 py-2 text-sm font-medium transition-colors disabled:cursor-not-allowed ${
-                selection === "covers"
-                  ? "border-zinc-900 bg-zinc-900 text-white dark:border-zinc-100 dark:bg-zinc-100 dark:text-zinc-900"
-                  : "border-zinc-300 bg-white text-zinc-700 hover:bg-zinc-50 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-300 dark:hover:bg-zinc-700"
-              }`}
+              className={selectionBtnClasses("covers")}
             >
               {config.team ?? "Team"} covers {config.handicap}
             </button>
@@ -248,14 +280,27 @@ export function PredictionForm({
               type="button"
               onClick={() => !isLocked && setSelection("fails")}
               disabled={isLocked}
-              className={`flex-1 rounded-md border px-3 py-2 text-sm font-medium transition-colors disabled:cursor-not-allowed ${
-                selection === "fails"
-                  ? "border-zinc-900 bg-zinc-900 text-white dark:border-zinc-100 dark:bg-zinc-100 dark:text-zinc-900"
-                  : "border-zinc-300 bg-white text-zinc-700 hover:bg-zinc-50 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-300 dark:hover:bg-zinc-700"
-              }`}
+              className={selectionBtnClasses("fails")}
             >
               Does not cover
             </button>
+          </div>
+        );
+
+      case "progression":
+        return (
+          <div className="flex flex-wrap gap-2">
+            {(config.stages ?? []).map((stage) => (
+              <button
+                key={stage}
+                type="button"
+                onClick={() => !isLocked && setSelection(stage)}
+                disabled={isLocked}
+                className={selectionBtnClasses(stage)}
+              >
+                {stage}
+              </button>
+            ))}
           </div>
         );
     }
@@ -310,6 +355,7 @@ export function PredictionForm({
 }
 
 function formatPredictionDisplay(data: Record<string, unknown>): string {
+  if (data.stage !== undefined) return String(data.stage);
   if (data.value !== undefined) return String(data.value);
   if (data.selection !== undefined) return String(data.selection);
   return JSON.stringify(data);

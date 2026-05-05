@@ -43,12 +43,29 @@ export default async function CompetitionDetailPage({ params }: PageProps) {
     notFound();
   }
 
-  // Fetch events
+  // Fetch events and their prediction types
   const { data: events } = await supabase
     .from("events")
     .select("*")
     .eq("competition_id", id)
     .order("start_time", { ascending: true });
+
+  // Fetch event_prediction_types for all events
+  const eventIds = (events ?? []).map((e) => e.id);
+  const { data: eventPredictionTypes } = eventIds.length > 0
+    ? await supabase
+        .from("event_prediction_types")
+        .select("*")
+        .in("event_id", eventIds)
+    : { data: [] };
+
+  // Merge prediction types into events
+  const eventsWithTypes = (events ?? []).map((e) => ({
+    ...e,
+    event_prediction_types: (eventPredictionTypes ?? []).filter(
+      (ept: { event_id: string }) => ept.event_id === e.id
+    ),
+  }));
 
   // Fetch members with user info
   const { data: members } = await supabase
@@ -114,7 +131,7 @@ export default async function CompetitionDetailPage({ params }: PageProps) {
       {/* Tabs */}
       <CompetitionTabs
         competition={competition}
-        events={events ?? []}
+        events={eventsWithTypes}
         members={
           (members ?? []).map((m) => ({
             ...m,

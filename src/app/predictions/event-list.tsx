@@ -7,12 +7,14 @@ import type {
   Prediction,
   PredictionType,
   EventStatus,
+  EventPredictionType,
 } from "@/types/database";
 import { Countdown } from "./countdown";
 import { PredictionForm } from "./prediction-form";
 
 interface EventWithPredictions extends Event {
   predictions: Prediction[];
+  event_prediction_types: EventPredictionType[];
 }
 
 interface EventListProps {
@@ -37,7 +39,6 @@ function getEventAccentColor(
   ) {
     return "bg-zinc-400 dark:bg-zinc-500";
   }
-  // resulted
   if (predictions.length === 0) {
     return "bg-zinc-400 dark:bg-zinc-500";
   }
@@ -48,7 +49,6 @@ function getEventAccentColor(
   if (hasCorrect) return "bg-emerald-500 dark:bg-emerald-400";
   if (hasPartial) return "bg-amber-500 dark:bg-amber-400";
   if (allWrong) return "bg-red-500 dark:bg-red-400";
-  // pending result evaluation
   return "bg-zinc-400 dark:bg-zinc-500";
 }
 
@@ -83,9 +83,8 @@ function getPointsSummary(predictions: Prediction[]): string | null {
   return `${total} pts`;
 }
 
-function parsePredictionTypes(
-  predictionTypes: Record<string, unknown>
-): Array<{
+/** Convert EventPredictionType row to PredictionTypeConfig for the form. */
+function eptToConfig(ept: EventPredictionType): {
   type: PredictionType;
   label?: string;
   options?: string[];
@@ -94,40 +93,19 @@ function parsePredictionTypes(
   n?: number;
   handicap?: number;
   team?: string;
-}> {
-  // prediction_types is stored as jsonb - could be an array of configs
-  if (Array.isArray(predictionTypes)) {
-    return predictionTypes.map((pt: Record<string, unknown>) => ({
-      type: (pt.type as PredictionType) ?? "winner",
-      label: pt.label as string | undefined,
-      options: pt.options as string[] | undefined,
-      line: pt.line as number | undefined,
-      threshold: pt.threshold as number | undefined,
-      n: pt.n as number | undefined,
-      handicap: pt.handicap as number | undefined,
-      team: pt.team as string | undefined,
-    }));
-  }
-  // fallback: single object with type
-  if (
-    predictionTypes &&
-    typeof predictionTypes === "object" &&
-    "type" in predictionTypes
-  ) {
-    return [
-      {
-        type: (predictionTypes.type as PredictionType) ?? "winner",
-        label: predictionTypes.label as string | undefined,
-        options: predictionTypes.options as string[] | undefined,
-        line: predictionTypes.line as number | undefined,
-        threshold: predictionTypes.threshold as number | undefined,
-        n: predictionTypes.n as number | undefined,
-        handicap: predictionTypes.handicap as number | undefined,
-        team: predictionTypes.team as string | undefined,
-      },
-    ];
-  }
-  return [];
+  stages?: string[];
+} {
+  const cfg = ept.config ?? {};
+  return {
+    type: ept.prediction_type,
+    options: cfg.options as string[] | undefined,
+    line: cfg.line as number | undefined,
+    threshold: cfg.line as number | undefined,
+    n: cfg.n as number | undefined,
+    handicap: cfg.line as number | undefined,
+    team: cfg.team as string | undefined,
+    stages: cfg.stages as string[] | undefined,
+  };
 }
 
 export function EventList({ events, competitionId }: EventListProps) {
@@ -141,7 +119,6 @@ export function EventList({ events, competitionId }: EventListProps) {
     (searchParams.get("status") as FilterStatus) ?? "all"
   );
 
-  // Extract unique sports for filter
   const sports = useMemo(() => {
     const set = new Set(events.map((e) => e.sport));
     return Array.from(set).sort();
@@ -155,7 +132,6 @@ export function EventList({ events, competitionId }: EventListProps) {
     });
   }, [events, filterSport, filterStatus]);
 
-  // Group events by status priority: upcoming first, then locked, then resulted
   const groupedEvents = useMemo(() => {
     const statusOrder: Record<EventStatus, number> = {
       upcoming: 0,
@@ -168,7 +144,6 @@ export function EventList({ events, competitionId }: EventListProps) {
     const sorted = [...filteredEvents].sort((a, b) => {
       const statusDiff = statusOrder[a.status] - statusOrder[b.status];
       if (statusDiff !== 0) return statusDiff;
-      // Within same status, sort by start_time
       return (
         new Date(a.start_time).getTime() - new Date(b.start_time).getTime()
       );
@@ -218,7 +193,6 @@ export function EventList({ events, competitionId }: EventListProps) {
         );
       }
 
-      // Refresh server data
       router.refresh();
     },
     [competitionId, router]
@@ -296,9 +270,7 @@ export function EventList({ events, competitionId }: EventListProps) {
               const isLocked =
                 new Date(event.lock_time).getTime() <= Date.now() ||
                 event.status !== "upcoming";
-              const predictionTypes = parsePredictionTypes(
-                event.prediction_types
-              );
+              const predictionTypeConfigs = (event.event_prediction_types ?? []).map(eptToConfig);
               const pointsSummary = getPointsSummary(event.predictions);
 
               return (
@@ -363,9 +335,9 @@ export function EventList({ events, competitionId }: EventListProps) {
                   )}
 
                   {/* Prediction forms */}
-                  {predictionTypes.length > 0 && (
+                  {predictionTypeConfigs.length > 0 && (
                     <div className="mt-3 space-y-3 border-t border-zinc-100 pt-3 dark:border-zinc-800">
-                      {predictionTypes.map((ptConfig) => {
+                      {predictionTypeConfigs.map((ptConfig) => {
                         const existingPrediction =
                           (event.predictions ?? []).find(
                             (p) => p.prediction_type === ptConfig.type
@@ -385,7 +357,7 @@ export function EventList({ events, competitionId }: EventListProps) {
                     </div>
                   )}
 
-                  {predictionTypes.length === 0 && (
+                  {predictionTypeConfigs.length === 0 && (
                     <p className="mt-2 text-xs text-zinc-400 dark:text-zinc-500 italic">
                       No prediction types configured for this event.
                     </p>
@@ -403,9 +375,10 @@ export function EventList({ events, competitionId }: EventListProps) {
 
 function formatResult(resultData: Record<string, unknown>): string {
   if (resultData.winner) return String(resultData.winner);
+  if (resultData.answer) return String(resultData.answer);
   if (resultData.score) return String(resultData.score);
   if (resultData.value !== undefined) return String(resultData.value);
-  // Fallback: show key-value pairs
+  if (resultData.stage) return String(resultData.stage);
   const entries = Object.entries(resultData);
   if (entries.length === 0) return "Result recorded";
   return entries

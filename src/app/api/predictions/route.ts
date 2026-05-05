@@ -15,6 +15,8 @@ const VALID_PREDICTION_TYPES = [
   "margin",
   "over_under",
   "handicap",
+  "yes_no",
+  "progression",
 ] as const;
 
 export async function POST(request: NextRequest) {

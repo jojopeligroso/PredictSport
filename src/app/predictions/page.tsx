@@ -2,7 +2,7 @@ import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { EventList } from "./event-list";
 import { CompetitionSelector } from "./competition-selector";
-import type { Competition, Event, Prediction } from "@/types/database";
+import type { Competition, Event, Prediction, EventPredictionType } from "@/types/database";
 
 interface SearchParams {
   competition?: string;
@@ -126,24 +126,35 @@ export default async function PredictionsPage({
 
   const typedEvents = (events ?? []) as Event[];
 
-  // Fetch user's predictions for all events in this competition
+  // Fetch user's predictions and event_prediction_types for all events
   const eventIds = typedEvents.map((e) => e.id);
   let predictions: Prediction[] = [];
+  let eventPredictionTypes: EventPredictionType[] = [];
 
   if (eventIds.length > 0) {
-    const { data: predData } = await supabase
-      .from("predictions")
-      .select("*")
-      .eq("user_id", user.id)
-      .in("event_id", eventIds);
+    const [predResult, eptResult] = await Promise.all([
+      supabase
+        .from("predictions")
+        .select("*")
+        .eq("user_id", user.id)
+        .in("event_id", eventIds),
+      supabase
+        .from("event_prediction_types")
+        .select("*")
+        .in("event_id", eventIds),
+    ]);
 
-    predictions = (predData ?? []) as Prediction[];
+    predictions = (predResult.data ?? []) as Prediction[];
+    eventPredictionTypes = (eptResult.data ?? []) as EventPredictionType[];
   }
 
-  // Merge predictions into events
+  // Merge predictions and prediction types into events
   const eventsWithPredictions = typedEvents.map((event) => ({
     ...event,
     predictions: predictions.filter((p) => p.event_id === event.id),
+    event_prediction_types: eventPredictionTypes.filter(
+      (ept) => ept.event_id === event.id
+    ),
   }));
 
   return (
