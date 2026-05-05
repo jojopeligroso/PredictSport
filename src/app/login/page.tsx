@@ -1,7 +1,6 @@
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { LoginButton } from "@/components/LoginButton";
-import { DevLoginButton } from "@/components/DevLoginButton";
 
 export default async function LoginPage({
   searchParams,
@@ -50,7 +49,6 @@ export default async function LoginPage({
         )}
 
         <LoginButton />
-        <DevLoginButton />
 
         <p className="text-center text-xs text-zinc-500 dark:text-zinc-500">
           By signing in, you agree to participate in friendly sports prediction

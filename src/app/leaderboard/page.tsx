@@ -22,7 +22,7 @@ export default async function LeaderboardPage({ searchParams }: PageProps) {
   } = await supabase.auth.getUser();
 
   if (!user) {
-    redirect("/auth/login");
+    redirect("/login");
   }
 
   // Fetch competitions the user belongs to

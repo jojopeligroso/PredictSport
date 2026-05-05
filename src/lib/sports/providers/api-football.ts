@@ -53,7 +53,10 @@ export class ApiFootballProvider extends BaseProvider {
     this.config = {
       apiKey,
       baseUrl: "https://v3.football.api-sports.io/",
-      rateLimit: { requests: 100, windowMs: 86_400_000 }, // 100/day
+      // Free tier: 100 req/day. Budget as 4/hour so in-memory limiter
+      // stays safe across serverless cold starts (resets give a fresh 4,
+      // never exceeding the hourly budget).
+      rateLimit: { requests: 4, windowMs: 3_600_000 }, // 4/hour ≈ 96/day max
     };
   }
 

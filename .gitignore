@@ -1,5 +1,8 @@
 # Dependencies
 node_modules/
+
+# Playwright auth state
+e2e/.auth/
 /.pnp
 .pnp.*
 .yarn/*

@@ -7,16 +7,19 @@ import type {
 } from "../types";
 
 interface ESPNCompetitor {
-  team: { displayName: string };
+  team?: { displayName: string };
+  athlete?: { displayName: string };
   score: string;
-  homeAway: "home" | "away";
+  homeAway?: "home" | "away";
   winner?: boolean;
+  order?: number;
 }
 
 interface ESPNEvent {
   id: string;
   name: string;
   date: string;
+  shortName?: string;
   status: { type: { completed: boolean; description: string } };
   competitions: Array<{
     competitors: ESPNCompetitor[];
@@ -27,17 +30,25 @@ interface ESPNScoreboardResponse {
   events: ESPNEvent[];
 }
 
-/** Maps our Sport to ESPN's URL path segment */
+/** Sports where ESPN uses individual competitors / leaderboard format */
+const POSITION_SPORTS: Sport[] = ["golf", "tennis"];
+
+/** Maps our Sport to ESPN's URL path segment(s). First entry is the default league. */
 const SPORT_PATHS: Partial<Record<Sport, string>> = {
   nfl: "football/nfl",
   nhl: "hockey/nhl",
   nba: "basketball/nba",
-  soccer: "soccer/eng.1", // Premier League default
+  mlb: "baseball/mlb",
+  soccer: "soccer/eng.1",
+  rugby: "rugby/270557", // Premiership; others available via league param
+  golf: "golf/pga",
+  tennis: "tennis/atp",
+  snooker: "general/snooker", // limited coverage
 };
 
 /**
  * ESPN unofficial API — undocumented, no API key.
- * Covers NFL, NHL. Fallback for NBA.
+ * Broad coverage: NFL, NHL, NBA, MLB, soccer, rugby, golf, tennis.
  * site.api.espn.com — may break without notice.
  */
 export class ESPNProvider extends BaseProvider {
@@ -46,7 +57,12 @@ export class ESPNProvider extends BaseProvider {
     "nfl",
     "nhl",
     "nba",
+    "mlb",
     "soccer",
+    "rugby",
+    "golf",
+    "tennis",
+    "snooker",
   ] as const satisfies readonly Sport[];
 
   protected readonly config: ProviderConfig = {
@@ -103,7 +119,9 @@ export class ESPNProvider extends BaseProvider {
     const limit = options?.limit ?? 10;
     return filtered.slice(0, limit).map((e) => {
       const competitors =
-        e.competitions[0]?.competitors.map((c) => c.team.displayName) ?? [];
+        e.competitions[0]?.competitors.map(
+          (c) => c.athlete?.displayName ?? c.team?.displayName ?? "Unknown"
+        ) ?? [];
       return {
         external_event_id: e.id,
         event_name: e.name,
@@ -118,13 +136,28 @@ export class ESPNProvider extends BaseProvider {
 
   private normalizeEvent(sport: Sport, event: ESPNEvent): NormalizedResult {
     const competitors = event.competitions[0]?.competitors ?? [];
+
+    // Position-based sports (golf, tennis) — use leaderboard/positions
+    if (POSITION_SPORTS.includes(sport)) {
+      return this.normalizePositionEvent(sport, event, competitors);
+    }
+
+    // Team-based sports — use home/away scores
+    return this.normalizeTeamEvent(sport, event, competitors);
+  }
+
+  private normalizeTeamEvent(
+    sport: Sport,
+    event: ESPNEvent,
+    competitors: ESPNCompetitor[]
+  ): NormalizedResult {
     const home = competitors.find((c) => c.homeAway === "home");
     const away = competitors.find((c) => c.homeAway === "away");
 
     const homeScore = home ? parseInt(home.score) || 0 : 0;
     const awayScore = away ? parseInt(away.score) || 0 : 0;
-    const homeName = home?.team.displayName ?? "Home";
-    const awayName = away?.team.displayName ?? "Away";
+    const homeName = home?.team?.displayName ?? home?.athlete?.displayName ?? "Home";
+    const awayName = away?.team?.displayName ?? away?.athlete?.displayName ?? "Away";
 
     let winner: string | null = null;
     if (home?.winner) winner = homeName;
@@ -147,9 +180,45 @@ export class ESPNProvider extends BaseProvider {
       },
       winner,
       margin: Math.abs(homeScore - awayScore),
-      stats: {
-        total_points: homeScore + awayScore,
-      },
+      stats: { total_points: homeScore + awayScore },
+      raw: event,
+    };
+  }
+
+  private normalizePositionEvent(
+    sport: Sport,
+    event: ESPNEvent,
+    competitors: ESPNCompetitor[]
+  ): NormalizedResult {
+    const sorted = [...competitors].sort(
+      (a, b) => (a.order ?? 999) - (b.order ?? 999)
+    );
+
+    const positions = sorted.map((c, i) => ({
+      position: c.order ?? i + 1,
+      name: c.athlete?.displayName ?? c.team?.displayName ?? "Unknown",
+      team: null,
+    }));
+
+    const winnerEntry = sorted.find((c) => c.winner);
+    const winner =
+      winnerEntry?.athlete?.displayName ??
+      winnerEntry?.team?.displayName ??
+      positions[0]?.name ??
+      null;
+
+    return {
+      provider: this.name,
+      fetched_at: new Date().toISOString(),
+      sport,
+      external_event_id: event.id,
+      event_name: event.name,
+      is_final: event.status.type.completed,
+      positions,
+      score: null,
+      winner,
+      margin: null,
+      stats: null,
       raw: event,
     };
   }

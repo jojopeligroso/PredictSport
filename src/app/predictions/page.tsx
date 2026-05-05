@@ -22,7 +22,7 @@ export default async function PredictionsPage({
   } = await supabase.auth.getUser();
 
   if (!user) {
-    redirect("/auth/login");
+    redirect("/login");
   }
 
   // Fetch user's competitions via competition_members

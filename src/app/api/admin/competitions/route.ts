@@ -14,6 +14,8 @@ interface CreateCompetitionBody {
   scoring_rules: Record<string, unknown>;
   lock_default_minutes?: number;
   allow_nominations?: boolean;
+  min_rounds_required?: number | null;
+  allow_prediction_updates?: boolean;
   tiebreaker_question?: string;
 }
 
@@ -72,14 +74,17 @@ export async function POST(request: Request) {
       scoring_rules: body.scoring_rules || {},
       lock_default_minutes: body.lock_default_minutes ?? 5,
       allow_nominations: body.allow_nominations ?? true,
+      min_rounds_required: body.min_rounds_required ?? null,
+      allow_prediction_updates: body.allow_prediction_updates ?? true,
       created_by: user.id,
     })
     .select()
     .single();
 
   if (compError) {
+    console.error("[CREATE COMPETITION]", compError.message, compError.code, compError.details);
     return NextResponse.json(
-      { error: "Failed to create competition", details: compError.message },
+      { error: "Failed to create competition", details: compError.message, code: compError.code },
       { status: 500 }
     );
   }

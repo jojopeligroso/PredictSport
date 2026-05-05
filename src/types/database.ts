@@ -2,6 +2,7 @@ export type UserRole = "admin" | "co_admin" | "participant";
 export type CompetitionType = "fixed" | "open";
 export type CompetitionVisibility = "public" | "private";
 export type CompetitionStatus = "draft" | "active" | "completed";
+export type RoundStatus = "draft" | "open" | "locked" | "scored";
 export type EventStatus =
   | "upcoming"
   | "locked"
@@ -37,6 +38,8 @@ export interface Competition {
   scoring_rules: Record<string, unknown>;
   lock_default_minutes: number;
   allow_nominations: boolean;
+  min_rounds_required: number | null;
+  allow_prediction_updates: boolean;
   created_by: string;
   invite_code: string;
   created_at: string;
@@ -50,9 +53,29 @@ export interface CompetitionMember {
   joined_at: string;
 }
 
+export interface Round {
+  id: string;
+  competition_id: string;
+  name: string;
+  round_number: number;
+  deadline: string | null;
+  status: RoundStatus;
+  created_at: string;
+}
+
+export interface EventPredictionType {
+  id: string;
+  event_id: string;
+  prediction_type: PredictionType;
+  points: number;
+  partial_points: number;
+  config: Record<string, unknown> | null;
+}
+
 export interface Event {
   id: string;
   competition_id: string;
+  round_id: string | null;
   event_name: string;
   sport: string;
   start_time: string;

@@ -70,6 +70,8 @@ export function CreateCompetitionForm() {
   const [type, setType] = useState<CompetitionType>("open");
   const [visibility, setVisibility] = useState<CompetitionVisibility>("private");
   const [selectedPreset, setSelectedPreset] = useState("classic_quiz");
+  const [allowPredictionUpdates, setAllowPredictionUpdates] = useState(true);
+  const [minRoundsRequired, setMinRoundsRequired] = useState<string>("");
   const [tiebreakerQuestion, setTiebreakerQuestion] = useState("");
 
   // Custom scoring state
@@ -108,6 +110,8 @@ export function CreateCompetitionForm() {
           type,
           visibility,
           scoring_rules: scoringRules,
+          allow_prediction_updates: allowPredictionUpdates,
+          min_rounds_required: minRoundsRequired ? parseInt(minRoundsRequired) : null,
           tiebreaker_question: tiebreakerQuestion.trim() || undefined,
         }),
       });
@@ -349,6 +353,42 @@ export function CreateCompetitionForm() {
             )}
           </div>
         )}
+
+        {/* Participation rules */}
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+          <div>
+            <label
+              htmlFor="min-rounds"
+              className="block text-sm font-medium text-zinc-700 dark:text-zinc-300"
+            >
+              Min. Rounds Required
+            </label>
+            <input
+              id="min-rounds"
+              type="number"
+              min={1}
+              value={minRoundsRequired}
+              onChange={(e) => setMinRoundsRequired(e.target.value)}
+              placeholder="All (leave blank)"
+              className="mt-1 block w-full rounded-md border border-zinc-300 px-3 py-2 text-sm shadow-sm focus:border-zinc-500 focus:outline-none focus:ring-1 focus:ring-zinc-500 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-50"
+            />
+            <p className="mt-1 text-xs text-zinc-500 dark:text-zinc-400">
+              How many rounds participants must play. Blank = all.
+            </p>
+          </div>
+          <div className="flex items-start pt-6">
+            <label className="flex items-center gap-2">
+              <input
+                type="checkbox"
+                checked={allowPredictionUpdates}
+                onChange={(e) => setAllowPredictionUpdates(e.target.checked)}
+              />
+              <span className="text-sm text-zinc-700 dark:text-zinc-300">
+                Allow prediction updates before lock
+              </span>
+            </label>
+          </div>
+        </div>
 
         {/* Tiebreaker */}
         <div>

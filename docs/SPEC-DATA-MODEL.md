@@ -19,9 +19,11 @@ competitions
   type                    text ('fixed' | 'open')
   visibility              text ('public' | 'private')
   status                  text ('draft' | 'active' | 'completed')
-  scoring_rules           jsonb (preset name + overrides)
+  scoring_rules           jsonb (default scoring template for new events)
   lock_default_minutes    integer (default 5)
   allow_nominations       boolean (default true)
+  min_rounds_required     integer nullable (null = all rounds required)
+  allow_prediction_updates boolean (default true)
   created_by              uuid FK users
   invite_code             text unique
   created_at              timestamp
@@ -33,9 +35,19 @@ competition_members
   role                    text ('admin' | 'co_admin' | 'participant')
   joined_at               timestamp
 
+rounds
+  id                      uuid PK
+  competition_id          uuid FK competitions
+  name                    text
+  round_number            integer (unique per competition)
+  deadline                timestamp nullable
+  status                  text ('draft' | 'open' | 'locked' | 'scored')
+  created_at              timestamp
+
 events
   id                      uuid PK
   competition_id          uuid FK competitions
+  round_id                uuid FK rounds nullable
   event_name              text
   sport                   text
   start_time              timestamp
@@ -74,6 +86,15 @@ tiebreaker_answers
   value                   integer
   submitted_at            timestamp
 
+event_prediction_types
+  id                      uuid PK
+  event_id                uuid FK events
+  prediction_type         text ('winner' | 'top_n' | 'head_to_head' | 'margin' | 'over_under' | 'handicap')
+  points                  integer (default 10)
+  partial_points          integer (default 0)
+  config                  jsonb nullable (type-specific, e.g. {"n": 5} for top_n)
+  unique (event_id, prediction_type)
+
 event_nominations
   id                      uuid PK
   competition_id          uuid FK competitions
@@ -104,9 +125,12 @@ invite_tokens
 2. **Predictions hidden until lock.** Other users' answers invisible before lock. Admin cannot see them either.
 3. **After lock, all predictions visible.** Everyone can see what everyone else picked.
 4. **Results: provisional then confirmed.** API-fetched results are provisional until admin confirms with one click. Manual results also go through confirmation.
-5. **Scoring is automatic on confirmation.** Once admin confirms a result, points are calculated for all users immediately.
-6. **Scoring rules immutable after competition starts.** Set at creation, cannot change mid-competition.
+5. **Scoring is automatic on confirmation.** Once admin confirms a result, points are calculated for all users immediately. Points come from `event_prediction_types` rows, not competition-level `scoring_rules`.
+6. **Scoring rules immutable after competition starts.** `scoring_rules` on competition is a default template. Per-event scoring (`event_prediction_types`) is set when the event is created and immutable once predictions exist.
 7. **Competition type immutable after creation.** Fixed stays fixed, open stays open.
+8. **Rounds group events.** Events belong to a round. Rounds belong to a competition. A round can contain events from different sports/leagues.
+9. **Participation is flexible.** `min_rounds_required` sets how many rounds a participant must play. NULL means all rounds required. Participants opt in/out per round.
+10. **Prediction updates.** If `allow_prediction_updates` is true, participants can change predictions any time before `lock_time`. If false, predictions are final on first submission.
 
 ## Roles
 

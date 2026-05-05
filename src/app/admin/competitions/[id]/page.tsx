@@ -16,7 +16,7 @@ export default async function CompetitionDetailPage({ params }: PageProps) {
   } = await supabase.auth.getUser();
 
   if (!user) {
-    redirect("/auth/login");
+    redirect("/login");
   }
 
   // Verify user is admin/co_admin of this competition
