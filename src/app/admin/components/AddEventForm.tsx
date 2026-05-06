@@ -33,7 +33,8 @@ const SPORTS: { value: Sport; label: string }[] = [
 const PREDICTION_TYPES: { value: PredictionType; label: string; description: string }[] = [
   { value: "winner", label: "Winner", description: "Pick the outright winner" },
   { value: "yes_no", label: "Yes / No", description: "Binary outcome (Yes/No, Ireland/UK, etc.)" },
-  { value: "top_n", label: "Top N Finish", description: "Pick someone to finish in top N" },
+  { value: "top_n", label: "Top Finishers", description: "Pick someone to finish in the top positions" },
+  { value: "final_standings", label: "Final Standings", description: "Rank multiple competitors in predicted finishing order" },
   { value: "head_to_head", label: "Head to Head", description: "Pick which of two finishes higher" },
   { value: "margin", label: "Margin of Victory", description: "Predict winning margin range" },
   { value: "over_under", label: "Over / Under", description: "Predict above or below a line" },
@@ -62,6 +63,12 @@ function getDefaultConfig(pt: PredictionType): Record<string, unknown> | null {
           { position: 4, points: 4 },
           { position: 5, points: 2 },
         ],
+      };
+    case "final_standings":
+      return {
+        positions: 5,
+        points_per_correct: 10,
+        points_per_included: 3,
       };
     case "progression":
       return { stages: ["Group Stage", "Round of 16", "Quarter-Final", "Semi-Final", "Final", "Winner"] };
@@ -432,6 +439,14 @@ export function AddEventForm({
                 />
               )}
 
+              {/* Final Standings config (inline) */}
+              {isTypeSelected("final_standings") && (
+                <FinalStandingsConfig
+                  config={selectedTypes.find((t) => t.prediction_type === "final_standings")!}
+                  onChange={(cfg) => updateTypeConfig("final_standings", cfg)}
+                />
+              )}
+
               {/* Progression stages config (inline) */}
               {isTypeSelected("progression") && (
                 <ProgressionConfig
@@ -675,7 +690,7 @@ function TopNConfig({
       }),
     },
     {
-      label: "F1 Podium",
+      label: "Podium Pick (races)",
       apply: () => onChange({
         config: {
           n: 3,
@@ -712,7 +727,7 @@ function TopNConfig({
   return (
     <div className="rounded-md border border-zinc-200 p-3 dark:border-zinc-700">
       <label className="block text-xs font-medium text-zinc-500 dark:text-zinc-400 mb-2">
-        Top N — points per finishing position
+        Top Finishers — points per finishing position
       </label>
 
       <div className="flex flex-wrap gap-2 mb-3">
@@ -836,6 +851,110 @@ function ProgressionConfig({
       />
       <p className="mt-1 text-xs text-zinc-400 dark:text-zinc-500">
         Comma-separated, from earliest exit to winner.
+      </p>
+    </div>
+  );
+}
+
+function FinalStandingsConfig({
+  config,
+  onChange,
+}: {
+  config: PredictionTypeConfig;
+  onChange: (updates: Partial<PredictionTypeConfig>) => void;
+}) {
+  const positions = (config.config?.positions as number) ?? 5;
+  const pointsPerCorrect = (config.config?.points_per_correct as number) ?? 10;
+  const pointsPerIncluded = (config.config?.points_per_included as number) ?? 3;
+
+  const updateField = (field: string, value: number) => {
+    onChange({ config: { ...config.config, [field]: value } });
+  };
+
+  const presets = [
+    {
+      label: "Top 3",
+      apply: () => onChange({
+        config: { positions: 3, points_per_correct: 10, points_per_included: 3 },
+      }),
+    },
+    {
+      label: "Top 5",
+      apply: () => onChange({
+        config: { positions: 5, points_per_correct: 10, points_per_included: 3 },
+      }),
+    },
+    {
+      label: "Top 10",
+      apply: () => onChange({
+        config: { positions: 10, points_per_correct: 8, points_per_included: 2 },
+      }),
+    },
+  ];
+
+  return (
+    <div className="rounded-md border border-zinc-200 p-3 dark:border-zinc-700">
+      <label className="block text-xs font-medium text-zinc-500 dark:text-zinc-400 mb-2">
+        Final Standings — rank competitors in order
+      </label>
+
+      <div className="flex flex-wrap gap-2 mb-3">
+        {presets.map((preset) => (
+          <button
+            key={preset.label}
+            type="button"
+            onClick={preset.apply}
+            className="rounded-full border border-zinc-300 px-2.5 py-1 text-xs text-zinc-600 hover:bg-zinc-100 dark:border-zinc-600 dark:text-zinc-400 dark:hover:bg-zinc-800 transition-colors"
+          >
+            {preset.label}
+          </button>
+        ))}
+      </div>
+
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+        <div>
+          <span className="block text-xs text-zinc-500 dark:text-zinc-400 mb-1">
+            Positions to predict
+          </span>
+          <input
+            type="number"
+            min={2}
+            max={50}
+            value={positions}
+            onChange={(e) => updateField("positions", parseInt(e.target.value) || 5)}
+            className="w-full rounded-md border border-zinc-300 px-2 py-1 text-sm dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-50"
+          />
+        </div>
+        <div>
+          <span className="block text-xs text-zinc-500 dark:text-zinc-400 mb-1">
+            Pts per correct position
+          </span>
+          <input
+            type="number"
+            min={0}
+            value={pointsPerCorrect}
+            onChange={(e) => updateField("points_per_correct", parseInt(e.target.value) || 0)}
+            className="w-full rounded-md border border-zinc-300 px-2 py-1 text-sm dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-50"
+          />
+        </div>
+        <div>
+          <span className="block text-xs text-zinc-500 dark:text-zinc-400 mb-1">
+            Pts per correct name, wrong position
+          </span>
+          <input
+            type="number"
+            min={0}
+            value={pointsPerIncluded}
+            onChange={(e) => updateField("points_per_included", parseInt(e.target.value) || 0)}
+            className="w-full rounded-md border border-zinc-300 px-2 py-1 text-sm dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-50"
+          />
+        </div>
+      </div>
+
+      <p className="mt-2 text-xs text-zinc-400 dark:text-zinc-500">
+        Participants rank {positions} competitors in order. They earn {pointsPerCorrect} pts for each
+        correctly placed competitor, and {pointsPerIncluded} pts for naming someone who finishes
+        in the top {positions} but in the wrong position.
       </p>
     </div>
   );

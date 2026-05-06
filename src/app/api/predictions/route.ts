@@ -11,6 +11,7 @@ interface PredictionRequestBody {
 const VALID_PREDICTION_TYPES = [
   "winner",
   "top_n",
+  "final_standings",
   "head_to_head",
   "margin",
   "over_under",

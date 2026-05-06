@@ -41,7 +41,7 @@ const VALID_SPORTS = [
 ];
 
 const VALID_PREDICTION_TYPES: PredictionType[] = [
-  "winner", "top_n", "head_to_head", "margin",
+  "winner", "top_n", "final_standings", "head_to_head", "margin",
   "over_under", "handicap", "yes_no", "progression",
 ];
 
@@ -57,7 +57,7 @@ const ALLOWED_ROUND_TRANSITIONS: Record<RoundStatus, RoundStatus[]> = {
 };
 
 const DEFAULT_POINTS: Record<PredictionType, number> = {
-  winner: 10, top_n: 5, head_to_head: 5, margin: 10,
+  winner: 10, top_n: 5, final_standings: 10, head_to_head: 5, margin: 10,
   over_under: 5, handicap: 5, yes_no: 10, progression: 10,
 };
 

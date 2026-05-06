@@ -10,6 +10,7 @@ interface PredictionTypeConfig {
   line?: number;
   threshold?: number;
   n?: number;
+  positions?: number;
   handicap?: number;
   team?: string;
   stages?: string[];
@@ -32,7 +33,8 @@ function getLabel(config: PredictionTypeConfig): string {
   const labels: Record<PredictionType, string> = {
     winner: "Pick the Winner",
     yes_no: "Yes or No",
-    top_n: `Top ${config.n ?? "N"} Finish`,
+    top_n: `Top ${config.n ?? "N"} Finishers`,
+    final_standings: `Predict the Top ${config.positions ?? config.n ?? "N"}`,
     head_to_head: "Head to Head",
     margin: "Margin of Victory",
     over_under: `Over/Under ${config.threshold ?? ""}`,
@@ -58,6 +60,17 @@ export function PredictionForm({
     (existingData.selection as string) ??
     (existingData.stage as string) ?? ""
   );
+  const numPositions = predictionTypeConfig.positions ?? predictionTypeConfig.n ?? 5;
+  const existingRankings = (existingData.rankings as Array<{ position: number; name: string }>) ?? [];
+  const [rankings, setRankings] = useState<string[]>(() => {
+    const arr = Array.from({ length: numPositions }, () => "");
+    for (const r of existingRankings) {
+      if (r.position >= 1 && r.position <= numPositions) {
+        arr[r.position - 1] = r.name;
+      }
+    }
+    return arr;
+  });
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
@@ -95,6 +108,18 @@ export function PredictionForm({
         }
         predictionData = { value: value.trim(), n: config.n };
         break;
+
+      case "final_standings": {
+        const filledRankings = rankings
+          .map((name, i) => ({ position: i + 1, name: name.trim() }))
+          .filter((r) => r.name !== "");
+        if (filledRankings.length < numPositions) {
+          setError(`Fill in all ${numPositions} positions`);
+          return;
+        }
+        predictionData = { rankings: filledRankings };
+        break;
+      }
 
       case "head_to_head":
         if (!selection) {
@@ -216,6 +241,31 @@ export function PredictionForm({
             disabled={isLocked}
             className={inputClasses}
           />
+        );
+
+      case "final_standings":
+        return (
+          <div className="space-y-1.5">
+            {rankings.map((name, i) => (
+              <div key={i} className="flex items-center gap-2">
+                <span className="text-xs font-medium text-zinc-500 dark:text-zinc-400 w-8 text-right tabular-nums">
+                  {i + 1}{i === 0 ? "st" : i === 1 ? "nd" : i === 2 ? "rd" : "th"}
+                </span>
+                <input
+                  type="text"
+                  placeholder={`Position ${i + 1}`}
+                  value={name}
+                  onChange={(e) => {
+                    const updated = [...rankings];
+                    updated[i] = e.target.value;
+                    setRankings(updated);
+                  }}
+                  disabled={isLocked}
+                  className={inputClasses}
+                />
+              </div>
+            ))}
+          </div>
         );
 
       case "head_to_head":
@@ -355,6 +405,13 @@ export function PredictionForm({
 }
 
 function formatPredictionDisplay(data: Record<string, unknown>): string {
+  if (data.rankings) {
+    const rankings = data.rankings as Array<{ position: number; name: string }>;
+    return rankings
+      .sort((a, b) => a.position - b.position)
+      .map((r) => `${r.position}. ${r.name}`)
+      .join(", ");
+  }
   if (data.stage !== undefined) return String(data.stage);
   if (data.value !== undefined) return String(data.value);
   if (data.selection !== undefined) return String(data.selection);

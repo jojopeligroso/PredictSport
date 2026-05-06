@@ -31,6 +31,9 @@ export function scorePrediction(
     case "top_n":
       return scoreTopN(predictionData, resultData, fullPoints, partialPoints, ept.config);
 
+    case "final_standings":
+      return scoreFinalStandings(predictionData, resultData, ept.config);
+
     case "head_to_head":
       return scoreHeadToHead(predictionData, resultData, fullPoints);
 
@@ -65,7 +68,7 @@ interface LegacyScoringRules {
 }
 
 const DEFAULT_POINTS: Record<PredictionType, number> = {
-  winner: 10, top_n: 5, head_to_head: 5, margin: 10,
+  winner: 10, top_n: 5, final_standings: 10, head_to_head: 5, margin: 10,
   over_under: 5, handicap: 5, yes_no: 10, progression: 10,
 };
 
@@ -237,6 +240,59 @@ function scoreTopN(
 
   // In top N, no partial configured — full points
   return { is_correct: true, is_partial: false, points_awarded: fullPoints };
+}
+
+function scoreFinalStandings(
+  prediction: Record<string, unknown>,
+  result: Record<string, unknown>,
+  config: Record<string, unknown> | null
+): ScoringResult {
+  const rankings = (prediction.rankings ?? []) as Array<{
+    position: number;
+    name: string;
+  }>;
+  const positions = (result.positions ?? []) as Array<{
+    position: number;
+    name: string;
+  }>;
+
+  if (rankings.length === 0 || positions.length === 0) {
+    return { is_correct: null, is_partial: false, points_awarded: 0 };
+  }
+
+  const n = Number(config?.positions ?? rankings.length);
+  const pointsPerCorrect = Number(config?.points_per_correct ?? 10);
+  const pointsPerIncluded = Number(config?.points_per_included ?? 3);
+
+  const topPositions = positions.filter((p) => p.position <= n);
+  const topNames = topPositions.map((p) => normalizeStr(p.name));
+
+  let totalPoints = 0;
+  let correctCount = 0;
+
+  for (const rank of rankings) {
+    if (rank.position > n) continue;
+
+    const predictedName = normalizeStr(rank.name);
+    const actualAtPosition = topPositions.find((p) => p.position === rank.position);
+
+    if (actualAtPosition && normalizeStr(actualAtPosition.name) === predictedName) {
+      // Right person, right position
+      totalPoints += pointsPerCorrect;
+      correctCount++;
+    } else if (topNames.includes(predictedName)) {
+      // Right person, wrong position
+      totalPoints += pointsPerIncluded;
+    }
+  }
+
+  const allCorrect = correctCount === Math.min(n, rankings.length) && correctCount > 0;
+
+  return {
+    is_correct: allCorrect,
+    is_partial: !allCorrect && totalPoints > 0,
+    points_awarded: totalPoints,
+  };
 }
 
 function scoreHeadToHead(

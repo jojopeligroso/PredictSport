@@ -13,6 +13,7 @@ export type NominationStatus = "pending" | "approved" | "rejected";
 export type PredictionType =
   | "winner"
   | "top_n"
+  | "final_standings"
   | "head_to_head"
   | "margin"
   | "over_under"
