@@ -53,7 +53,16 @@ function getDefaultConfig(pt: PredictionType): Record<string, unknown> | null {
     case "yes_no":
       return { options: ["Yes", "No"] };
     case "top_n":
-      return { n: 5 };
+      return {
+        n: 5,
+        points_ladder: [
+          { position: 1, points: 10 },
+          { position: 2, points: 8 },
+          { position: 3, points: 6 },
+          { position: 4, points: 4 },
+          { position: 5, points: 2 },
+        ],
+      };
     case "progression":
       return { stages: ["Group Stage", "Round of 16", "Quarter-Final", "Semi-Final", "Final", "Winner"] };
     default:
@@ -618,24 +627,151 @@ function TopNConfig({
   onChange: (updates: Partial<PredictionTypeConfig>) => void;
 }) {
   const n = (config.config?.n as number) ?? 5;
+  const ladder = (config.config?.points_ladder as Array<{ position: number; points: number }>) ?? [];
+
+  // Build a per-position ladder from 1 to n, filling gaps with 0
+  const buildFullLadder = (newN: number, existing: Array<{ position: number; points: number }>) => {
+    return Array.from({ length: newN }, (_, i) => {
+      const pos = i + 1;
+      const match = existing.find((t) => t.position === pos);
+      return { position: pos, points: match?.points ?? 0 };
+    });
+  };
+
+  const handleNChange = (newN: number) => {
+    const newLadder = buildFullLadder(newN, ladder);
+    onChange({ config: { ...config.config, n: newN, points_ladder: newLadder } });
+  };
+
+  const updatePositionPoints = (position: number, points: number) => {
+    const newLadder = ladder.map((t) =>
+      t.position === position ? { ...t, points } : t
+    );
+    onChange({ config: { ...config.config, points_ladder: newLadder } });
+  };
+
+  // Initialize ladder if empty
+  const ensureLadder = () => {
+    if (ladder.length === 0) {
+      handleNChange(n);
+    }
+  };
+
+  // Presets generate a full per-position ladder
+  const presets = [
+    {
+      label: "Golf (Top 5)",
+      apply: () => onChange({
+        config: {
+          n: 5,
+          points_ladder: [
+            { position: 1, points: 10 },
+            { position: 2, points: 8 },
+            { position: 3, points: 6 },
+            { position: 4, points: 4 },
+            { position: 5, points: 2 },
+          ],
+        },
+      }),
+    },
+    {
+      label: "F1 Podium",
+      apply: () => onChange({
+        config: {
+          n: 3,
+          points_ladder: [
+            { position: 1, points: 25 },
+            { position: 2, points: 18 },
+            { position: 3, points: 15 },
+          ],
+        },
+      }),
+    },
+    {
+      label: "Top 10 (F1 style)",
+      apply: () => onChange({
+        config: {
+          n: 10,
+          points_ladder: [
+            { position: 1, points: 25 },
+            { position: 2, points: 18 },
+            { position: 3, points: 15 },
+            { position: 4, points: 12 },
+            { position: 5, points: 10 },
+            { position: 6, points: 8 },
+            { position: 7, points: 6 },
+            { position: 8, points: 4 },
+            { position: 9, points: 2 },
+            { position: 10, points: 1 },
+          ],
+        },
+      }),
+    },
+  ];
 
   return (
     <div className="rounded-md border border-zinc-200 p-3 dark:border-zinc-700">
       <label className="block text-xs font-medium text-zinc-500 dark:text-zinc-400 mb-2">
-        Top N — how many positions count?
+        Top N — points per finishing position
       </label>
-      <input
-        type="number"
-        min={2}
-        max={50}
-        value={n}
-        onChange={(e) =>
-          onChange({
-            config: { ...config.config, n: parseInt(e.target.value) || 5 },
-          })
-        }
-        className="w-20 rounded-md border border-zinc-300 px-2 py-1 text-sm dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-50"
-      />
+
+      <div className="flex flex-wrap gap-2 mb-3">
+        {presets.map((preset) => (
+          <button
+            key={preset.label}
+            type="button"
+            onClick={preset.apply}
+            className="rounded-full border border-zinc-300 px-2.5 py-1 text-xs text-zinc-600 hover:bg-zinc-100 dark:border-zinc-600 dark:text-zinc-400 dark:hover:bg-zinc-800 transition-colors"
+          >
+            {preset.label}
+          </button>
+        ))}
+      </div>
+
+      <div className="flex items-center gap-2 mb-3">
+        <span className="text-xs text-zinc-500 dark:text-zinc-400">Positions:</span>
+        <input
+          type="number"
+          min={1}
+          max={50}
+          value={n}
+          onChange={(e) => handleNChange(parseInt(e.target.value) || 5)}
+          onFocus={ensureLadder}
+          className="w-16 rounded-md border border-zinc-300 px-2 py-1 text-sm dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-50"
+        />
+      </div>
+
+      {ladder.length > 0 && (
+        <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+          {ladder.map((tier) => (
+            <div key={tier.position} className="flex items-center gap-1.5">
+              <span className="text-xs text-zinc-500 dark:text-zinc-400 w-10 text-right tabular-nums">
+                {tier.position === 1 ? "1st" : tier.position === 2 ? "2nd" : tier.position === 3 ? "3rd" : `${tier.position}th`}:
+              </span>
+              <input
+                type="number"
+                min={0}
+                value={tier.points}
+                onChange={(e) =>
+                  updatePositionPoints(tier.position, parseInt(e.target.value) || 0)
+                }
+                className="w-14 rounded-md border border-zinc-300 px-2 py-1 text-xs dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-50"
+              />
+              <span className="text-xs text-zinc-400">pts</span>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {ladder.length === 0 && (
+        <button
+          type="button"
+          onClick={ensureLadder}
+          className="text-xs text-zinc-500 underline hover:text-zinc-700 dark:text-zinc-400 dark:hover:text-zinc-200"
+        >
+          Set points per position
+        </button>
+      )}
     </div>
   );
 }

@@ -596,7 +596,6 @@ async function main() {
         sport: def.sport,
         start_time: startTime.toISOString(),
         lock_time: lockTime.toISOString(),
-        prediction_types: {}, // deprecated
         status: "upcoming",
       })
       .select()

@@ -184,47 +184,59 @@ function scoreTopN(
     .filter((p) => p.position <= n)
     .map((p) => normalizeStr(p.name));
 
-  if (topN.includes(predictedName)) {
-    const winner = positions.find((p) => p.position === 1);
-    if (winner && normalizeStr(winner.name) === predictedName) {
-      return { is_correct: true, is_partial: false, points_awarded: fullPoints };
-    }
-    // In top N but not winner — partial credit
-    if (partialPoints > 0) {
-      // Check for graduated scoring in config
-      const ladder = config?.points_ladder as
-        | Array<{ position: number; points: number }>
-        | undefined;
-      if (ladder) {
-        const actualPos = positions.find(
-          (p) => normalizeStr(p.name) === predictedName
-        );
-        if (actualPos) {
-          // Find the best matching ladder tier
-          const tier = [...ladder]
-            .sort((a, b) => a.position - b.position)
-            .find((t) => actualPos.position <= t.position);
-          if (tier) {
-            return {
-              is_correct: false,
-              is_partial: true,
-              points_awarded: tier.points,
-            };
-          }
-        }
-      }
+  if (!topN.includes(predictedName)) {
+    return { is_correct: false, is_partial: false, points_awarded: 0 };
+  }
 
+  // Find the actual finishing position of the predicted name
+  const actualPos = positions.find(
+    (p) => normalizeStr(p.name) === predictedName
+  );
+
+  // Per-position points ladder: look up exact points for this finishing position
+  const ladder = config?.points_ladder as
+    | Array<{ position: number; points: number }>
+    | undefined;
+
+  if (ladder && ladder.length > 0 && actualPos) {
+    // Exact position match first
+    const exactMatch = ladder.find((t) => t.position === actualPos.position);
+    if (exactMatch) {
       return {
-        is_correct: false,
-        is_partial: true,
-        points_awarded: partialPoints,
+        is_correct: actualPos.position === 1,
+        is_partial: actualPos.position !== 1,
+        points_awarded: exactMatch.points,
       };
     }
-    // No partial credit configured, but they're in top N — full points
+    // Fallback: nearest tier at or above the position
+    const tier = [...ladder]
+      .sort((a, b) => a.position - b.position)
+      .find((t) => actualPos.position <= t.position);
+    if (tier) {
+      return {
+        is_correct: actualPos.position === 1,
+        is_partial: actualPos.position !== 1,
+        points_awarded: tier.points,
+      };
+    }
+  }
+
+  // No ladder — simple full/partial scoring
+  const isWinner = actualPos?.position === 1;
+  if (isWinner) {
     return { is_correct: true, is_partial: false, points_awarded: fullPoints };
   }
 
-  return { is_correct: false, is_partial: false, points_awarded: 0 };
+  if (partialPoints > 0) {
+    return {
+      is_correct: false,
+      is_partial: true,
+      points_awarded: partialPoints,
+    };
+  }
+
+  // In top N, no partial configured — full points
+  return { is_correct: true, is_partial: false, points_awarded: fullPoints };
 }
 
 function scoreHeadToHead(

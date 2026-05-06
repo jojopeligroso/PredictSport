@@ -82,7 +82,6 @@ export interface Event {
   sport: string;
   start_time: string;
   lock_time: string;
-  prediction_types: Record<string, unknown>;
   result_data: Record<string, unknown> | null;
   result_confirmed: boolean;
   result_confirmed_by: string | null;

@@ -268,7 +268,6 @@ export async function POST(request: Request) {
     sport: evt.sport,
     start_time: evt.start_time,
     lock_time: evt.lock_time,
-    prediction_types: {},
     external_event_id: evt.external_event_id ?? null,
     status: "upcoming",
   }));

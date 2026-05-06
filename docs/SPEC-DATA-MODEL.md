@@ -52,7 +52,6 @@ events
   sport                   text
   start_time              timestamp
   lock_time               timestamp
-  prediction_types        jsonb (which types are active + config)
   result_data             jsonb nullable (raw result from API or manual)
   result_confirmed        boolean (default false)
   result_confirmed_by     uuid FK nullable

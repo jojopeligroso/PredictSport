@@ -189,7 +189,6 @@ export async function POST(request: Request) {
       sport: body.sport,
       start_time: body.start_time,
       lock_time: body.lock_time,
-      prediction_types: {}, // deprecated, kept for backward compat
       external_event_id: body.external_event_id || null,
       nominated_by: body.nominated_by || null,
       status: "upcoming",

@@ -44,7 +44,7 @@ Competition → CompetitionMembers
 - **Competition.scoring_rules** is the default template; `event_prediction_types` is source of truth per event.
 - **Competition.min_rounds_required** — minimum rounds to participate (null = all).
 - **Competition.allow_prediction_updates** — can participants change predictions before lock?
-- `events.prediction_types` JSONB column is deprecated (set to `{}` for new events). All prediction type data is in `event_prediction_types` rows.
+- `events.prediction_types` JSONB column has been dropped. All prediction type data is in `event_prediction_types` rows.
 
 ### Sports Provider System
 

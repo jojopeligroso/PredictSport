@@ -14,7 +14,6 @@ interface ReviewNominationBody {
     sport?: string;
     start_time?: string;
     lock_time?: string;
-    prediction_types?: Record<string, unknown>;
   };
 }
 
@@ -141,7 +140,6 @@ export async function PATCH(request: Request) {
         sport: overrides.sport ?? nomination.sport,
         start_time: startTime,
         lock_time: lockTime,
-        prediction_types: {}, // deprecated
         nominated_by: nomination.nominated_by,
         status: "upcoming",
       })
