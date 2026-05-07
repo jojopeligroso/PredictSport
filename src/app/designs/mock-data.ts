@@ -24,6 +24,7 @@ export const leaderboard = [
     movement: 0,
     form: ["W", "W", "P", "W", "W"] as const,
     funFact: "Has predicted every F1 race winner correctly this season",
+    callout: "Parker's fantasy nous notes...",
   },
   {
     rank: 2,
@@ -39,6 +40,7 @@ export const leaderboard = [
     movement: 1,
     form: ["L", "W", "W", "P", "W"] as const,
     funFact: "Only person to back Wexford FC in every match",
+    callout: "Paddy Spoilsport Wind-up Merchant Nolan will have you know...",
   },
   {
     rank: 3,
@@ -54,6 +56,7 @@ export const leaderboard = [
     movement: -1,
     form: ["W", "L", "W", "L", "L"] as const,
     funFact: "3 correct tiebreakers in a row — the luckiest man alive",
+    callout: "Tommo's taxi-rank wisdom...",
   },
   {
     rank: 4,
@@ -69,6 +72,7 @@ export const leaderboard = [
     movement: 2,
     form: ["L", "L", "W", "W", "P"] as const,
     funFact: "Picked 3 correct upsets nobody else saw coming",
+    callout: "Jay's suss...",
   },
   {
     rank: 5,
@@ -84,6 +88,7 @@ export const leaderboard = [
     movement: -2,
     form: ["W", "P", "L", "L", "L"] as const,
     funFact: "Hasn't picked a winner since April 12th",
+    callout: "Robbo's gut feeling...",
   },
   {
     rank: 6,
@@ -99,6 +104,7 @@ export const leaderboard = [
     movement: 0,
     form: ["L", "W", "L", "P", "W"] as const,
     funFact: "Best GAA predictor in the group — worst at everything else",
+    callout: "Nidge, the hurling oracle, declares...",
   },
 ];
 
