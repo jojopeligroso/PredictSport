@@ -114,6 +114,90 @@ function formatResultValue(data: Record<string, unknown> | null): string {
   return str.length > 60 ? str.slice(0, 57) + "..." : str;
 }
 
+/**
+ * Derive rivalry text from the two closest-scoring entries at the top.
+ */
+function getRivalryBanner(entries: LeaderboardEntry[]): { headline: string; body: string } | null {
+  if (entries.length < 2) return null;
+  const top = entries[0]!;
+  const second = entries[1]!;
+  const gap = top.total_points - second.total_points;
+  if (gap > 10) return null; // only show when it's close
+  if (gap === 0) {
+    return {
+      headline: "Dead heat",
+      body: `${top.display_name} and ${second.display_name} are level on points — tiebreaker decides it.`,
+    };
+  }
+  return {
+    headline: "Going to the wire",
+    body: `${top.display_name} leads by just ${gap} point${gap === 1 ? "" : "s"} — ${second.display_name} is right on their heels.`,
+  };
+}
+
+/**
+ * Compute per-sport accuracy leaders from all entries.
+ */
+function getBestInClass(
+  entries: LeaderboardEntry[]
+): Array<{ sport: string; name: string; pct: number }> {
+  // Build per-sport per-user accuracy
+  const perSportUser = new Map<string, Map<string, { correct: number; total: number; name: string }>>();
+  for (const entry of entries) {
+    for (const pred of entry.predictions) {
+      if (pred.is_correct === null) continue;
+      const sport = pred.sport;
+      if (!perSportUser.has(sport)) perSportUser.set(sport, new Map());
+      const userMap = perSportUser.get(sport)!;
+      const existing = userMap.get(entry.user_id) ?? { correct: 0, total: 0, name: entry.display_name };
+      existing.total++;
+      if (pred.is_correct) existing.correct++;
+      userMap.set(entry.user_id, existing);
+    }
+  }
+
+  const result: Array<{ sport: string; name: string; pct: number }> = [];
+  for (const [sport, userMap] of perSportUser) {
+    let best: { name: string; pct: number } | null = null;
+    for (const { correct, total, name } of userMap.values()) {
+      if (total < 2) continue; // need at least 2 predictions to qualify
+      const pct = Math.round((correct / total) * 100);
+      if (!best || pct > best.pct) {
+        best = { name, pct };
+      }
+    }
+    if (best) {
+      result.push({ sport, name: best.name, pct: best.pct });
+    }
+  }
+
+  return result.slice(0, 3);
+}
+
+const SPORT_META: Record<string, { emoji: string; label: string }> = {
+  soccer: { emoji: "⚽", label: "Soccer" },
+  football: { emoji: "⚽", label: "Football" },
+  gaa: { emoji: "🏐", label: "GAA" },
+  f1: { emoji: "🏎️", label: "F1" },
+  rugby: { emoji: "🏉", label: "Rugby" },
+  golf: { emoji: "⛳", label: "Golf" },
+  tennis: { emoji: "🎾", label: "Tennis" },
+  basketball: { emoji: "🏀", label: "Basketball" },
+  nfl: { emoji: "🏈", label: "NFL" },
+  nba: { emoji: "🏀", label: "NBA" },
+  baseball: { emoji: "⚾", label: "Baseball" },
+  mlb: { emoji: "⚾", label: "MLB" },
+  hockey: { emoji: "🏒", label: "Hockey" },
+  nhl: { emoji: "🏒", label: "NHL" },
+  snooker: { emoji: "🎱", label: "Snooker" },
+  horseracing: { emoji: "🐎", label: "Racing" },
+  horse_racing: { emoji: "🐎", label: "Racing" },
+};
+
+function sportMeta(sport: string): { emoji: string; label: string } {
+  return SPORT_META[sport.toLowerCase()] ?? { emoji: "🏆", label: sport };
+}
+
 // -- Outcome badge (for expanded detail table) --
 
 function OutcomeBadge({ isCorrect, isPartial }: { isCorrect: boolean | null; isPartial: boolean }) {
@@ -273,25 +357,24 @@ function TiebreakerSection({ entries }: { entries: LeaderboardEntry[] }) {
   );
 }
 
-// -- Podium card (top 3) --
+// -- Podium card config --
 
 const PODIUM_CONFIG = {
   1: {
     gradient: "from-[#3b82f6] to-[#8b5cf6]",
     medal: "🥇",
-    label: "1ST",
   },
   2: {
     gradient: "from-[#94a3b8] to-[#475569]",
     medal: "🥈",
-    label: "2ND",
   },
   3: {
     gradient: "from-[#d97706] to-[#92400e]",
     medal: "🥉",
-    label: "3RD",
   },
 } as const;
+
+// -- Podium card (top 3 — vertical stack, gradient bg) --
 
 function PodiumCard({
   entry,
@@ -315,12 +398,13 @@ function PodiumCard({
         onClick={onExpand}
         aria-expanded={isExpanded}
         aria-controls={`detail-${entry.user_id}`}
-        className={`relative w-full overflow-hidden bg-gradient-to-r ${config.gradient} p-4 text-left`}
+        className={`relative w-full overflow-hidden bg-gradient-to-r ${config.gradient} p-[12px_14px] text-left`}
+        style={{ boxShadow: "0 2px 10px rgba(0,0,0,0.10)" }}
       >
-        {/* Faded rank watermark */}
+        {/* Faded rank watermark — bottom-right, 110px, 10% opacity */}
         <span
-          className="pointer-events-none absolute bottom-0 right-2 font-extrabold leading-none text-white/10 select-none"
-          style={{ fontSize: "clamp(4rem, 12vw, 7rem)" }}
+          className="pointer-events-none absolute select-none font-display leading-none text-white/10"
+          style={{ fontSize: 110, bottom: -22, right: -6 }}
           aria-hidden="true"
         >
           {entry.rank}
@@ -328,48 +412,64 @@ function PodiumCard({
 
         <div className="relative flex items-center gap-3">
           {/* Medal + Avatar */}
-          <div className="flex flex-col items-center gap-1">
-            <span className="text-xl leading-none" aria-hidden="true">
+          <div className="flex shrink-0 flex-col items-center gap-1.5">
+            <span className="text-[22px] leading-none" style={{ filter: "drop-shadow(0 1px 2px rgba(0,0,0,0.3))" }} aria-hidden="true">
               {config.medal}
             </span>
             <Avatar
               initials={initials}
               color={color}
-              size={44}
-              ring="0 0 0 2px rgba(255,255,255,0.6)"
+              size={42}
+              ring="0 0 0 2px rgba(255,255,255,0.5)"
             />
           </div>
 
-          {/* Name + form */}
+          {/* Name + form badges */}
           <div className="min-w-0 flex-1">
-            <p className="truncate text-sm font-bold text-white/70 uppercase tracking-widest">
-              {config.label}
-            </p>
-            <p className="truncate font-bold text-[22px] leading-tight text-white">
+            <p
+              className="truncate font-bold text-white"
+              style={{ fontSize: 14, letterSpacing: 0.2 }}
+            >
               {entry.display_name}
             </p>
             {form.length > 0 && (
-              <div className="mt-1.5 flex items-center gap-1">
+              <div className="mt-1 flex items-center gap-[3px]">
                 {form.map((letter, i) => (
-                  <FormBadge key={i} letter={letter} size={18} />
+                  // Form badges on gradient: white-tinted squares matching prototype
+                  <span
+                    key={i}
+                    className="inline-flex items-center justify-center font-extrabold text-white"
+                    style={{
+                      width: 16,
+                      height: 16,
+                      borderRadius: 4,
+                      background: "rgba(255,255,255,0.2)",
+                      fontSize: 9,
+                    }}
+                  >
+                    {letter}
+                  </span>
                 ))}
               </div>
             )}
           </div>
 
-          {/* Points */}
+          {/* Points — Bebas Neue 26px */}
           <div className="shrink-0 text-right">
-            <p className="font-extrabold text-[36px] leading-none text-white">
+            <p className="font-display leading-none text-white" style={{ fontSize: 26, letterSpacing: 0.6 }}>
               {entry.total_points}
             </p>
-            <p className="mt-0.5 text-xs font-bold uppercase tracking-widest text-white/60">
-              pts
+            <p
+              className="mt-0.5 font-bold uppercase text-white/85"
+              style={{ fontSize: 9, letterSpacing: 1 }}
+            >
+              points
             </p>
           </div>
         </div>
 
         {/* Expand chevron */}
-        <div className="absolute top-3 right-3">
+        <div className="absolute right-3 top-3">
           <ChevronIcon isOpen={isExpanded} light />
         </div>
       </button>
@@ -411,79 +511,54 @@ function TableRow({
         onClick={onExpand}
         aria-expanded={isExpanded}
         aria-controls={`detail-${entry.user_id}`}
-        className={`group w-full px-4 py-3 text-left transition-colors hover:bg-ps-chip ${
+        className={`group w-full px-3 py-[11px] text-left transition-colors hover:bg-ps-chip ${
           !isLast ? "border-b border-ps-border" : ""
         }`}
       >
-        {/* Mobile */}
-        <div className="flex items-center justify-between sm:hidden">
-          <div className="flex items-center gap-3">
-            <span className="w-6 text-center text-sm font-bold tabular-nums text-ps-text-ter">
-              {entry.rank}
-            </span>
-            <Avatar initials={initials} color={color} size={34} />
-            <div className="min-w-0">
-              <p className="truncate text-sm font-semibold text-ps-text">
-                {entry.display_name}
-              </p>
-              {form.length > 0 && (
-                <div className="mt-1 flex gap-0.5">
-                  {form.map((letter, i) => (
-                    <FormBadge key={i} letter={letter} size={16} />
-                  ))}
-                </div>
-              )}
-            </div>
-          </div>
-          <div className="flex items-center gap-3 shrink-0">
-            <span className="font-extrabold text-xl text-ps-text">
-              {entry.total_points}
-            </span>
-            <ChevronIcon isOpen={isExpanded} />
-          </div>
-        </div>
-
-        {/* Desktop */}
-        <div className="hidden sm:flex sm:items-center sm:gap-3">
+        <div className="flex items-center gap-[10px]">
           {/* Rank */}
-          <span className="w-6 shrink-0 text-center text-sm font-bold tabular-nums text-ps-text-ter">
+          <span
+            className="w-[18px] shrink-0 text-center font-extrabold tabular-nums text-ps-text-ter"
+            style={{ fontSize: 12.5 }}
+          >
             {entry.rank}
           </span>
 
           {/* Avatar */}
-          <Avatar initials={initials} color={color} size={34} />
+          <Avatar initials={initials} color={color} size={30} />
 
-          {/* Name */}
-          <span className="min-w-0 flex-1 truncate text-sm font-semibold text-ps-text">
-            {entry.display_name}
-          </span>
-
-          {/* Form badges */}
-          <div className="flex items-center gap-0.5">
-            {form.length > 0 ? (
-              form.map((letter, i) => <FormBadge key={i} letter={letter} size={20} />)
-            ) : (
-              <span className="text-xs text-ps-text-ter">—</span>
+          {/* Name + form */}
+          <div className="min-w-0 flex-1">
+            <p className="truncate font-bold text-ps-text" style={{ fontSize: 13 }}>
+              {entry.display_name}
+            </p>
+            {form.length > 0 && (
+              <div className="mt-[3px] flex gap-[2px]">
+                {form.map((letter, i) => (
+                  <FormBadge key={i} letter={letter} size={14} />
+                ))}
+              </div>
             )}
           </div>
 
           {/* Accuracy ring */}
-          <div className="shrink-0">
-            {entry.total_predictions > 0 ? (
-              <AccuracyRing value={accuracyValue} size={36} />
-            ) : (
-              <span className="text-xs text-ps-text-ter">—</span>
-            )}
-          </div>
+          {entry.total_predictions > 0 ? (
+            <AccuracyRing value={accuracyValue} size={32} />
+          ) : (
+            <span className="w-8 text-center text-xs text-ps-text-ter">—</span>
+          )}
 
-          {/* Points */}
-          <span className="w-14 shrink-0 text-right font-extrabold text-xl text-ps-text">
-            {entry.total_points}
-          </span>
-
-          {/* Movement */}
-          <div className="w-8 shrink-0 text-right">
-            <MovementBadge mv={0} />
+          {/* Points + movement stacked */}
+          <div className="shrink-0 min-w-[40px] text-right">
+            <p
+              className="font-extrabold tabular-nums leading-none text-ps-text"
+              style={{ fontSize: 16 }}
+            >
+              {entry.total_points}
+            </p>
+            <div className="mt-1">
+              <MovementBadge mv={0} />
+            </div>
           </div>
 
           {/* Chevron */}
@@ -500,6 +575,44 @@ function TableRow({
           <ExpandedDetail entry={entry} />
         </div>
       )}
+    </div>
+  );
+}
+
+// -- Best in Class section --
+
+function BestInClass({ entries }: { entries: LeaderboardEntry[] }) {
+  const bests = getBestInClass(entries);
+  if (bests.length === 0) return null;
+
+  return (
+    <div className="mt-[14px]">
+      <SectionHeader label="Best in Class" accent="var(--ps-green)" />
+      <div className="mt-3 grid grid-cols-3 gap-2">
+        {bests.map((b) => {
+          const meta = sportMeta(b.sport);
+          return (
+            <div
+              key={b.sport}
+              className="rounded-xl border border-ps-border bg-ps-surface px-2 py-[10px] text-center"
+            >
+              <div className="text-[18px] leading-none">{meta.emoji}</div>
+              <div
+                className="mt-0.5 font-extrabold uppercase text-ps-text-sec"
+                style={{ fontSize: 9, letterSpacing: 1 }}
+              >
+                {meta.label}
+              </div>
+              <div className="mt-1 font-extrabold text-ps-text" style={{ fontSize: 13 }}>
+                {b.name}
+              </div>
+              <div className="mt-0.5 font-bold text-ps-green" style={{ fontSize: 11 }}>
+                {b.pct}% acc
+              </div>
+            </div>
+          );
+        })}
+      </div>
     </div>
   );
 }
@@ -523,12 +636,37 @@ export function LeaderboardTable({ entries }: { entries: LeaderboardEntry[] }) {
 
   const podium = entries.filter((e) => e.rank <= 3);
   const rest = entries.filter((e) => e.rank > 3);
+  const rivalry = getRivalryBanner(entries);
 
   return (
     <>
-      {/* Podium cards */}
+      {/* Rivalry banner — amber dashed border, shown when top 2 are close */}
+      {rivalry && (
+        <div
+          className="mx-0 mt-[6px] mb-3 flex items-center gap-[10px] rounded-xl px-3 py-[10px]"
+          style={{
+            background: "rgba(245,158,11,0.14)",
+            border: "1px dashed var(--ps-amber)",
+          }}
+        >
+          <span className="text-[18px] leading-none" aria-hidden="true">🔥</span>
+          <div className="min-w-0 flex-1">
+            <p
+              className="font-extrabold uppercase text-ps-amber-deep"
+              style={{ fontSize: 9.5, letterSpacing: 1.2 }}
+            >
+              {rivalry.headline}
+            </p>
+            <p className="mt-0.5 text-ps-text" style={{ fontSize: 12, lineHeight: 1.35 }}>
+              {rivalry.body}
+            </p>
+          </div>
+        </div>
+      )}
+
+      {/* Podium cards — stacked vertically */}
       {podium.length > 0 && (
-        <div className="mt-6 flex flex-col gap-3">
+        <div className="flex flex-col gap-2">
           {podium.map((entry) => (
             <PodiumCard
               key={entry.user_id}
@@ -540,33 +678,11 @@ export function LeaderboardTable({ entries }: { entries: LeaderboardEntry[] }) {
         </div>
       )}
 
-      {/* Rest of the table */}
+      {/* "The Rest" table */}
       {rest.length > 0 && (
-        <div className="mt-8">
+        <div className="mt-[14px]">
           <SectionHeader label="The Rest" accent="var(--ps-blue)" />
           <div className="mt-3 overflow-hidden rounded-2xl border border-ps-border bg-ps-surface">
-            {/* Column headers — desktop only */}
-            <div className="hidden border-b border-ps-border px-4 py-2 sm:flex sm:items-center sm:gap-3">
-              <span className="w-6 shrink-0" />
-              <span className="w-[34px] shrink-0" />
-              <span className="flex-1 text-[10px] font-bold uppercase tracking-widest text-ps-text-ter">
-                Player
-              </span>
-              <span className="text-[10px] font-bold uppercase tracking-widest text-ps-text-ter">
-                Form
-              </span>
-              <span className="w-9 shrink-0 text-[10px] font-bold uppercase tracking-widest text-ps-text-ter">
-                Acc
-              </span>
-              <span className="w-14 shrink-0 text-right text-[10px] font-bold uppercase tracking-widest text-ps-text-ter">
-                Pts
-              </span>
-              <span className="w-8 shrink-0 text-right text-[10px] font-bold uppercase tracking-widest text-ps-text-ter">
-                Mv
-              </span>
-              <span className="w-4 shrink-0" />
-            </div>
-
             {rest.map((entry, idx) => (
               <TableRow
                 key={entry.user_id}
@@ -580,6 +696,10 @@ export function LeaderboardTable({ entries }: { entries: LeaderboardEntry[] }) {
         </div>
       )}
 
+      {/* Best in Class */}
+      <BestInClass entries={entries} />
+
+      {/* Tiebreaker resolution (shown only when relevant) */}
       <TiebreakerSection entries={entries} />
     </>
   );

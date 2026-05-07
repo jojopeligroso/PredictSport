@@ -36,16 +36,19 @@ export async function NavBar() {
     profile?.avatar_url ?? authUser?.user_metadata?.avatar_url ?? null;
 
   return (
-    <nav className="relative border-b border-ps-border bg-ps-surface">
-      <div className="mx-auto flex h-14 max-w-[600px] items-center justify-between px-4 sm:px-6">
-        {/* Logo */}
-        <Link href="/" className="flex items-center gap-2.5">
-          <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-br from-[#f59e0b] to-[#d97706]">
-            <span className="text-sm font-bold leading-none text-[#1c1917]">
+    <nav className="relative bg-ps-bg">
+      <div className="mx-auto flex h-12 max-w-[600px] items-center justify-between px-4 sm:px-6">
+        {/* Logo: 28px square + wordmark */}
+        <Link href="/" className="flex items-center gap-2">
+          <div
+            className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-gradient-to-br from-[#f59e0b] to-[#d97706]"
+            aria-hidden="true"
+          >
+            <span className="font-display text-base leading-none tracking-wide text-[#1c1917]">
               PS
             </span>
           </div>
-          <span className="text-xl tracking-wide uppercase">
+          <span className="text-lg uppercase tracking-wide">
             <span className="font-light text-ps-text">Predict</span>
             <span className="font-bold text-ps-amber-deep">Sport</span>
           </span>
@@ -57,27 +60,30 @@ export async function NavBar() {
             <Link
               key={link.href}
               href={link.href}
-              className="rounded-md px-3 py-2 text-sm font-medium text-ps-text-sec transition-colors hover:bg-ps-chip hover:text-ps-text"
+              className="rounded-md px-3 py-1.5 text-sm font-medium text-ps-text-sec transition-colors hover:bg-ps-chip hover:text-ps-text"
             >
               {link.label}
             </Link>
           ))}
         </div>
 
-        {/* Right side: auth */}
-        <div className="flex items-center gap-3">
-          {authUser ? (
-            <UserMenu displayName={displayName} avatarUrl={avatarUrl} />
-          ) : (
-            <Link
-              href="/login"
-              className="rounded-lg border border-ps-border-strong px-4 py-2 text-sm font-semibold text-ps-text transition-colors hover:bg-ps-chip"
-            >
-              Log in
-            </Link>
-          )}
+        {/* Right side: auth + mobile toggle */}
+        <div className="flex items-center gap-2">
+          {/* Desktop auth */}
+          <div className="hidden md:block">
+            {authUser ? (
+              <UserMenu displayName={displayName} avatarUrl={avatarUrl} />
+            ) : (
+              <Link
+                href="/login"
+                className="rounded-lg px-3 py-1.5 text-sm font-semibold text-ps-text-sec transition-colors hover:bg-ps-chip hover:text-ps-text"
+              >
+                Log in
+              </Link>
+            )}
+          </div>
 
-          {/* Mobile menu toggle */}
+          {/* Mobile hamburger */}
           <MobileNav
             isLoggedIn={!!authUser}
             displayName={displayName}

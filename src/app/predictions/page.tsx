@@ -174,6 +174,7 @@ export default async function PredictionsPage({
       <EventList
         events={eventsWithPredictions}
         competitionId={selectedCompetition.id}
+        competitionName={selectedCompetition.name}
       />
     </div>
   );

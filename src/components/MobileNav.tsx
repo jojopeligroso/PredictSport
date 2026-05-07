@@ -63,7 +63,7 @@ export function MobileNav({ isLoggedIn, displayName, avatarUrl }: MobileNavProps
 
       {/* Mobile menu panel */}
       {isOpen && (
-        <div className="absolute left-0 right-0 top-16 z-50 border-b border-ps-border bg-ps-surface">
+        <div className="absolute left-0 right-0 top-12 z-50 border-b border-ps-border bg-ps-surface">
           <div className="space-y-1 px-4 py-3">
             {navLinks.map((link) => (
               <Link

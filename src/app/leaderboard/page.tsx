@@ -44,13 +44,11 @@ export default async function LeaderboardPage({ searchParams }: PageProps) {
 
   if (competitions.length === 0) {
     return (
-      <div className="mx-auto max-w-4xl p-4 sm:p-8">
-        <h1 className="font-light text-2xl uppercase tracking-[0.06em] text-ps-text">
+      <div className="mx-auto max-w-2xl p-4 sm:p-6">
+        <p className="text-[11px] font-bold uppercase tracking-widest text-ps-text-sec">The Sheet</p>
+        <h1 className="mt-0.5 font-display text-[32px] leading-none tracking-wider text-ps-text">
           THE TABLE
         </h1>
-        <p className="mt-2 text-sm text-ps-text-sec">
-          See how everyone is doing across the competition.
-        </p>
         <div className="mt-8 rounded-2xl border border-ps-border bg-ps-surface p-12 text-center text-ps-text-sec">
           No competitions joined yet
         </div>
@@ -66,8 +64,9 @@ export default async function LeaderboardPage({ searchParams }: PageProps) {
 
   if (!selectedId) {
     return (
-      <div className="mx-auto max-w-4xl p-4 sm:p-8">
-        <h1 className="font-light text-2xl uppercase tracking-[0.06em] text-ps-text">
+      <div className="mx-auto max-w-2xl p-4 sm:p-6">
+        <p className="text-[11px] font-bold uppercase tracking-widest text-ps-text-sec">The Sheet</p>
+        <h1 className="mt-0.5 font-display text-[32px] leading-none tracking-wider text-ps-text">
           THE TABLE
         </h1>
         <div className="mt-8 rounded-2xl border border-ps-border bg-ps-surface p-12 text-center text-ps-text-sec">
@@ -304,15 +303,15 @@ export default async function LeaderboardPage({ searchParams }: PageProps) {
   }
 
   return (
-    <div className="mx-auto max-w-5xl p-4 sm:p-8">
+    <div className="mx-auto max-w-2xl p-4 sm:p-6">
       {/* Page header */}
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
         <div>
           <p className="text-[11px] font-bold uppercase tracking-widest text-ps-text-sec">
             The Sheet
             {selectedCompetition ? ` · ${selectedCompetition.name}` : ""}
           </p>
-          <h1 className="font-light text-2xl uppercase tracking-[0.06em] text-ps-text">
+          <h1 className="mt-0.5 font-display text-[32px] leading-none tracking-wider text-ps-text">
             THE TABLE
           </h1>
         </div>
@@ -322,45 +321,9 @@ export default async function LeaderboardPage({ searchParams }: PageProps) {
         />
       </div>
 
-      {/* Summary stats */}
-      {entries.length > 0 && eventList.length > 0 && (
-        <div className="mt-5 grid grid-cols-2 gap-3 sm:grid-cols-4">
-          <StatCard label="Players" value={entries.length} />
-          <StatCard label="Events Resulted" value={eventList.length} />
-          <StatCard label="Total Predictions" value={predictionList.length} />
-          <StatCard
-            label="Leader"
-            value={entries[0]?.display_name ?? "--"}
-            subtitle={`${entries[0]?.total_points ?? 0} pts`}
-          />
-        </div>
-      )}
-
-      <LeaderboardTable entries={entries} />
-    </div>
-  );
-}
-
-function StatCard({
-  label,
-  value,
-  subtitle,
-}: {
-  label: string;
-  value: string | number;
-  subtitle?: string;
-}) {
-  return (
-    <div className="rounded-2xl border border-ps-border bg-ps-surface px-4 py-3">
-      <p className="text-[10px] font-bold uppercase tracking-widest text-ps-text-ter">
-        {label}
-      </p>
-      <p className="mt-1 font-extrabold text-xl text-ps-text">
-        {value}
-      </p>
-      {subtitle && (
-        <p className="text-xs text-ps-text-sec">{subtitle}</p>
-      )}
+      <div className="mt-4">
+        <LeaderboardTable entries={entries} />
+      </div>
     </div>
   );
 }
