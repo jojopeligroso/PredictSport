@@ -26,7 +26,7 @@ export function PointsStamp({ earned, max, state }: PointsStampProps) {
       style={{ background: GRADIENT[state] }}
       aria-label={`${LABEL[state]}: ${earned} of ${max} points`}
     >
-      <span>+{earned}</span>
+      <span className="font-display">+{earned}</span>
       <span className="opacity-70">/</span>
       <span className="opacity-70">{max}</span>
     </span>

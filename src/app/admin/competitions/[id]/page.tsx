@@ -1,7 +1,5 @@
 import { redirect, notFound } from "next/navigation";
-import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
-import { StatusBadge } from "../../components/CompetitionStatusBadge";
 import { CompetitionTabs } from "../../components/CompetitionTabs";
 
 interface PageProps {
@@ -89,43 +87,28 @@ export default async function CompetitionDetailPage({ params }: PageProps) {
 
   return (
     <div className="mx-auto max-w-5xl p-6 sm:p-8">
-      {/* Header */}
-      <div className="mb-6">
-        <Link
-          href="/admin"
-          className="inline-flex items-center gap-1 text-sm text-ps-text-sec hover:text-ps-text mb-3"
-        >
-          <svg
-            className="h-4 w-4"
-            fill="none"
-            viewBox="0 0 24 24"
-            strokeWidth={1.5}
-            stroke="currentColor"
+      {/* Header — Match Day Desk */}
+      <div className="mb-6 flex items-center justify-between">
+        <div>
+          <p
+            className="font-bold uppercase text-ps-text-sec"
+            style={{ fontSize: 11, letterSpacing: 0.8 }}
           >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              d="M15.75 19.5L8.25 12l7.5-7.5"
-            />
-          </svg>
-          Back to Admin
-        </Link>
-
-        <div className="flex flex-wrap items-center gap-2">
-          <h1 className="font-light text-2xl uppercase tracking-[0.06em] text-ps-text">
-            {competition.name}
-          </h1>
-          <StatusBadge status={competition.status} type="competition" />
-          <span className="text-xs text-ps-text-ter capitalize">
-            {competition.type}
-          </span>
-        </div>
-
-        {competition.description && (
-          <p className="mt-1 text-sm text-ps-text-sec">
-            {competition.description}
+            Admin · {competition.name}
           </p>
-        )}
+          <h1
+            className="mt-0.5 font-display text-ps-text"
+            style={{ fontSize: 32, lineHeight: 1, letterSpacing: 1 }}
+          >
+            MATCH DAY DESK
+          </h1>
+        </div>
+        <span
+          className="rounded-full bg-ps-amber-soft px-2.5 py-1 text-ps-amber-deep"
+          style={{ fontSize: 10, fontWeight: 800, letterSpacing: 0.8, textTransform: "uppercase" as const }}
+        >
+          {membership.role === "admin" ? "Admin" : "Co-Admin"}
+        </span>
       </div>
 
       {/* Tabs */}

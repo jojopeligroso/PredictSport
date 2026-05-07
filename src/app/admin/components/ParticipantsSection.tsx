@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { PersonaCallout, Avatar } from "@/components/ui";
 import type { Competition, CompetitionMember, InviteToken, UserRole } from "@/types/database";
 
 interface ParticipantsSectionProps {
@@ -22,6 +23,17 @@ export function ParticipantsSection({
   const [isGeneratingInvite, setIsGeneratingInvite] = useState(false);
   const [inviteError, setInviteError] = useState<string | null>(null);
   const [copiedToken, setCopiedToken] = useState<string | null>(null);
+  const [editingCalloutId, setEditingCalloutId] = useState<string | null>(null);
+  const [calloutDrafts, setCalloutDrafts] = useState<Record<string, string>>(
+    () => {
+      const drafts: Record<string, string> = {};
+      for (const m of members ?? []) {
+        drafts[m.user_id] = m.callout_label ?? `${m.user?.display_name ?? "Unknown"} reckons...`;
+      }
+      return drafts;
+    }
+  );
+  const [savingCallout, setSavingCallout] = useState(false);
 
   const sortedMembers = [...(members ?? [])].sort((a, b) => {
     const roleOrder: Record<UserRole, number> = { admin: 0, co_admin: 1, participant: 2 };
@@ -48,6 +60,30 @@ export function ParticipantsSection({
       }
     } finally {
       setUpdatingMemberId(null);
+    }
+  };
+
+  const handleSaveCallout = async (memberUserId: string) => {
+    setSavingCallout(true);
+    try {
+      const res = await fetch("/api/admin/members", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          competition_id: competition.id,
+          member_user_id: memberUserId,
+          callout_label: calloutDrafts[memberUserId] || null,
+        }),
+      });
+      if (res.ok) {
+        setEditingCalloutId(null);
+        router.refresh();
+      } else {
+        const data = await res.json();
+        alert(data.error || "Failed to update callout label");
+      }
+    } finally {
+      setSavingCallout(false);
     }
   };
 
@@ -99,102 +135,151 @@ export function ParticipantsSection({
         </h3>
       </div>
 
-      {/* Members list */}
-      <div className="overflow-x-auto rounded-2xl border border-ps-border">
-        <table className="w-full min-w-[480px] text-sm">
-          <thead>
-            <tr className="border-b border-ps-border bg-ps-bg">
-              <th className="px-4 py-2 text-left font-medium text-ps-text-sec">
-                Name
-              </th>
-              <th className="px-4 py-2 text-left font-medium text-ps-text-sec">
-                Role
-              </th>
-              <th className="hidden px-4 py-2 text-left font-medium text-ps-text-sec sm:table-cell">
-                Joined
-              </th>
-              <th className="px-4 py-2 text-right font-medium text-ps-text-sec">
-                Actions
-              </th>
-            </tr>
-          </thead>
-          <tbody>
-            {sortedMembers.map((member) => {
-              const isCreator = member.user_id === competition.created_by;
-              const isSelf = member.user_id === currentUserId;
+      {/* Callout explainer */}
+      <div
+        className="mb-4 rounded-r-[10px] border-l-[3px] border-l-ps-amber px-3 py-2.5"
+        style={{ background: "rgba(245,158,11,0.08)" }}
+      >
+        <p className="text-xs leading-relaxed text-ps-text">
+          Each lad gets their own callout — it sits above the fun fact on every
+          event card. Make &apos;em earn it.
+        </p>
+      </div>
 
-              return (
-                <tr
-                  key={member.id}
-                  className="border-b border-ps-border last:border-b-0"
-                >
-                  <td className="px-4 py-3">
-                    <div className="font-medium text-ps-text">
-                      {member.user?.display_name ?? "Unknown"}
-                      {isSelf && (
-                        <span className="ml-2 text-xs text-ps-text-ter">
-                          (you)
-                        </span>
-                      )}
-                    </div>
-                    <div className="text-xs text-ps-text-ter">
-                      {member.user?.email ?? ""}
-                    </div>
-                  </td>
-                  <td className="px-4 py-3">
-                    <span
-                      className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium capitalize ${
-                        member.role === "admin"
-                          ? "bg-ps-violet text-white"
-                          : member.role === "co_admin"
-                            ? "bg-ps-amber-soft text-ps-amber-deep"
-                            : "bg-ps-chip text-ps-text-sec"
-                      }`}
-                    >
-                      {member.role.replace("_", " ")}
+      {/* Members list */}
+      <div className="overflow-hidden rounded-[14px] border border-ps-border bg-ps-surface">
+        {sortedMembers.map((member, i) => {
+          const isCreator = member.user_id === competition.created_by;
+          const isSelf = member.user_id === currentUserId;
+          const isEditing = editingCalloutId === member.user_id;
+          const displayName = member.user?.display_name ?? "Unknown";
+          const initials = displayName.slice(0, 2).toUpperCase();
+
+          return (
+            <div
+              key={member.id}
+              className={`${i < sortedMembers.length - 1 ? "border-b border-ps-border" : ""} ${
+                isEditing ? "bg-[rgba(245,158,11,0.05)]" : ""
+              }`}
+            >
+              <button
+                onClick={() => setEditingCalloutId(isEditing ? null : member.user_id)}
+                className="flex w-full items-center gap-2.5 p-3 text-left"
+              >
+                <Avatar initials={initials} color="#f59e0b" size={34} />
+                <div className="min-w-0 flex-1">
+                  <div className="flex items-center gap-1.5">
+                    <span className="text-[13.5px] font-bold text-ps-text">
+                      {displayName}
                     </span>
-                    {isCreator && (
-                      <span className="ml-1 text-xs text-ps-text-ter">
-                        (creator)
+                    {member.role === "admin" && (
+                      <span
+                        className="rounded bg-ps-amber-soft px-1.5 py-px text-ps-amber-deep"
+                        style={{ fontSize: 9, fontWeight: 800, letterSpacing: 0.5, textTransform: "uppercase" as const }}
+                      >
+                        Admin
                       </span>
                     )}
-                  </td>
-                  <td className="hidden px-4 py-3 text-ps-text-ter sm:table-cell">
-                    {new Date(member.joined_at).toLocaleDateString()}
-                  </td>
-                  <td className="px-4 py-3 text-right">
+                    {isSelf && (
+                      <span className="text-xs text-ps-text-ter">(you)</span>
+                    )}
+                  </div>
+                  {!isEditing && (
+                    <p className="mt-0.5 truncate text-[11px] italic text-ps-text-sec">
+                      {calloutDrafts[member.user_id] ?? `${displayName} reckons...`}
+                    </p>
+                  )}
+                </div>
+                {!isEditing && (
+                  <svg width="8" height="14" viewBox="0 0 8 14" fill="none" className="shrink-0 text-ps-text-ter">
+                    <path d="M1 1l6 6-6 6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                  </svg>
+                )}
+              </button>
+
+              {isEditing && (
+                <div className="px-3 pb-4">
+                  <p
+                    className="mb-1.5 text-ps-text-sec"
+                    style={{ fontSize: 9.5, fontWeight: 800, letterSpacing: 1.1, textTransform: "uppercase" as const }}
+                  >
+                    Callout label
+                  </p>
+                  <input
+                    type="text"
+                    value={calloutDrafts[member.user_id] ?? ""}
+                    onChange={(e) =>
+                      setCalloutDrafts((d) => ({ ...d, [member.user_id]: e.target.value }))
+                    }
+                    onClick={(e) => e.stopPropagation()}
+                    className="w-full rounded-[10px] border-[1.5px] border-ps-amber bg-ps-surface p-2.5 text-[13px] italic text-ps-text outline-none"
+                    placeholder={`${displayName} reckons...`}
+                  />
+
+                  {/* Live preview */}
+                  <div className="mt-2.5">
+                    <PersonaCallout
+                      calloutLabel={calloutDrafts[member.user_id] || `${displayName} reckons...`}
+                      fact="Arsenal have won 4 of their last 5 at the Emirates — and Saka's back from the knock."
+                      variant="border"
+                    />
+                  </div>
+
+                  {/* Role + actions */}
+                  <div className="mt-3 flex items-center gap-2">
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleSaveCallout(member.user_id);
+                      }}
+                      disabled={savingCallout}
+                      className="rounded-[9px] bg-ps-amber px-4 py-2 text-[12.5px] font-extrabold text-[#1a1208] disabled:opacity-50"
+                    >
+                      {savingCallout ? "Saving..." : "Save"}
+                    </button>
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setEditingCalloutId(null);
+                      }}
+                      className="rounded-[9px] border border-ps-border-strong bg-transparent px-3.5 py-2 text-xs font-bold text-ps-text"
+                    >
+                      Cancel
+                    </button>
                     {!isSelf && !isCreator && (
-                      <div className="flex justify-end gap-1">
+                      <div className="ml-auto flex gap-1">
                         {member.role === "participant" && (
                           <button
-                            onClick={() =>
-                              handleRoleChange(member.user_id, "co_admin")
-                            }
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleRoleChange(member.user_id, "co_admin");
+                            }}
                             disabled={updatingMemberId === member.user_id}
-                            className="rounded-xl px-2 py-1 text-xs font-medium text-ps-amber-deep transition-colors hover:bg-ps-amber-soft disabled:opacity-50"
+                            className="rounded-xl px-2 py-1 text-xs font-medium text-ps-amber-deep hover:bg-ps-amber-soft disabled:opacity-50"
                           >
                             Promote
                           </button>
                         )}
                         {member.role === "co_admin" && (
                           <button
-                            onClick={() =>
-                              handleRoleChange(member.user_id, "participant")
-                            }
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleRoleChange(member.user_id, "participant");
+                            }}
                             disabled={updatingMemberId === member.user_id}
-                            className="rounded-xl px-2 py-1 text-xs font-medium text-ps-text-sec transition-colors hover:bg-ps-chip disabled:opacity-50"
+                            className="rounded-xl px-2 py-1 text-xs font-medium text-ps-text-sec hover:bg-ps-chip disabled:opacity-50"
                           >
                             Demote
                           </button>
                         )}
                       </div>
                     )}
-                  </td>
-                </tr>
-              );
-            })}
-          </tbody>
-        </table>
+                  </div>
+                </div>
+              )}
+            </div>
+          );
+        })}
       </div>
 
       {/* Invite links section */}

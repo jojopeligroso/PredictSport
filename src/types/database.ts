@@ -89,6 +89,7 @@ export interface Event {
   result_data: Record<string, unknown> | null;
   result_confirmed: boolean;
   result_confirmed_by: string | null;
+  pick_reveal_at: string | null;
   status: EventStatus;
   nominated_by: string | null;
   external_event_id: string | null;

@@ -2,6 +2,7 @@
 
 import { useState, useMemo, useCallback } from "react";
 
+import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import type {
   Event,
@@ -20,9 +21,12 @@ import {
   PersonaCallout,
   PickButton,
   SectionHeader,
+  SendToThread,
   SPORT_CONFIG,
   type SportKey,
 } from "@/components/ui";
+import { psDefaultSheetCopy } from "@/lib/whatsapp";
+import { ResultCard } from "./ResultCard";
 
 interface EventWithPredictions extends Event {
   predictions: Prediction[];
@@ -181,6 +185,8 @@ export function EventList({
     (searchParams.get("chip") as FilterChip) ?? "all"
   );
 
+  const [viewMode, setViewMode] = useState<"sheet" | "damage">("sheet");
+
   // Derive sports present in the events list
   const sportsInEvents = useMemo(() => {
     const set = new Set<SportKey>();
@@ -194,6 +200,11 @@ export function EventList({
   // Compute hero stats
   const upcomingEvents = useMemo(
     () => events.filter((e) => e.status === "upcoming"),
+    [events]
+  );
+
+  const resultedEvents = useMemo(
+    () => events.filter((e) => e.status === "resulted"),
     [events]
   );
 
@@ -430,87 +441,169 @@ export function EventList({
         </div>
       </div>
 
-      {/* ── Filter Chips ───────────────────────────────────────────────── */}
-      <div className="flex gap-1.5 overflow-x-auto px-4 pb-0 pt-2 scrollbar-none">
-        {chipDefs.map(({ id, label }) => (
-          <button
-            key={id}
-            onClick={() => setFilterChip(id)}
-            className={[
-              "shrink-0 rounded-full px-3 py-1.5 font-semibold transition-colors",
-              filterChip === id
-                ? "bg-ps-text text-ps-bg"
-                : "border border-ps-border bg-ps-surface text-ps-text-sec",
-            ].join(" ")}
-            style={{ fontSize: 11.5, whiteSpace: "nowrap" }}
-          >
-            {label}
-          </button>
-        ))}
+      {/* ── View Toggle: The Sheet / The Damage ──────────────────────── */}
+      <div className="px-4 pt-2">
+        <div
+          className="grid grid-cols-2 gap-0.5 rounded-[10px] p-[3px]"
+          style={{ background: "rgba(40,30,20,0.06)" }}
+        >
+          {(["sheet", "damage"] as const).map((mode) => (
+            <button
+              key={mode}
+              onClick={() => setViewMode(mode)}
+              className={`rounded-[7px] py-[7px] text-center text-[11px] font-bold transition-colors ${
+                viewMode === mode
+                  ? "bg-ps-surface text-ps-text shadow-[0_1px_3px_rgba(40,30,20,0.08)]"
+                  : "text-ps-text-sec"
+              }`}
+            >
+              {mode === "sheet" ? "The Sheet" : "The Damage"}
+            </button>
+          ))}
+        </div>
       </div>
 
-      {/* ── Event Cards ────────────────────────────────────────────────── */}
-      <div className="space-y-3 px-4 pb-4 pt-3">
-        {filteredEvents.length === 0 && (
-          <div className="rounded-lg border border-ps-border bg-ps-surface p-8 text-center text-ps-text-sec">
-            No events match the selected filter.
+      {viewMode === "sheet" ? (
+        <>
+          {/* ── Filter Chips ───────────────────────────────────────────────── */}
+          <div className="flex gap-1.5 overflow-x-auto px-4 pb-0 pt-2 scrollbar-none">
+            {chipDefs.map(({ id, label }) => (
+              <button
+                key={id}
+                onClick={() => setFilterChip(id)}
+                className={[
+                  "shrink-0 rounded-full px-3 py-1.5 font-semibold transition-colors",
+                  filterChip === id
+                    ? "bg-ps-text text-ps-bg"
+                    : "border border-ps-border bg-ps-surface text-ps-text-sec",
+                ].join(" ")}
+                style={{ fontSize: 11.5, whiteSpace: "nowrap" }}
+              >
+                {label}
+              </button>
+            ))}
           </div>
-        )}
 
-        {Object.entries(groupedEvents).map(([groupLabel, groupEvents]) => (
-          <div key={groupLabel} className="space-y-3">
-            {/* Group section header — only show when multiple groups visible */}
-            {Object.keys(groupedEvents).length > 1 && (
-              <SectionHeader label={`${groupLabel} (${groupEvents.length})`} />
+          {/* ── Event Cards ────────────────────────────────────────────────── */}
+          <div className="space-y-2.5 px-4 pb-4 pt-3">
+            {filteredEvents.length === 0 && (
+              <div className="rounded-lg border border-ps-border bg-ps-surface p-8 text-center text-ps-text-sec">
+                No events match the selected filter.
+              </div>
             )}
 
-            {groupEvents.map((event) => {
-              const sportKey = toSportKey(event.sport);
-              const isLocked =
-                new Date(event.lock_time).getTime() <= Date.now() ||
-                event.status !== "upcoming";
-              const lockDiff =
-                new Date(event.lock_time).getTime() - Date.now();
-              const isUrgent = lockDiff > 0 && lockDiff < 60 * 60 * 1000;
-              const predictionTypeConfigs = (
-                event.event_prediction_types ?? []
-              ).map(eptToConfig);
-              const pointsSummary = getPointsSummary(event.predictions);
+            {Object.entries(groupedEvents).map(([groupLabel, groupEvents]) => (
+              <div key={groupLabel} className="space-y-2.5">
+                {Object.keys(groupedEvents).length > 1 && (
+                  <SectionHeader label={`${groupLabel} (${groupEvents.length})`} />
+                )}
 
-              // Community data: aggregate across all pick-button EPTs
-              const communityData: Record<string, number> = {};
-              for (const ept of event.event_prediction_types ?? []) {
-                const opts = getPickOptions(ept);
-                if (opts) {
-                  for (const o of opts) {
-                    // Placeholder — real community data would come from a
-                    // separate aggregate query. Use 0 for now so donut renders.
-                    if (!(o.id in communityData)) communityData[o.id] = 0;
+                {groupEvents.map((event) => {
+                  const sportKey = toSportKey(event.sport);
+                  const isLocked =
+                    new Date(event.lock_time).getTime() <= Date.now() ||
+                    event.status !== "upcoming";
+                  const lockDiff =
+                    new Date(event.lock_time).getTime() - Date.now();
+                  const isUrgent = lockDiff > 0 && lockDiff < 60 * 60 * 1000;
+                  const predictionTypeConfigs = (
+                    event.event_prediction_types ?? []
+                  ).map(eptToConfig);
+                  const pointsSummary = getPointsSummary(event.predictions);
+
+                  const communityData: Record<string, number> = {};
+                  for (const ept of event.event_prediction_types ?? []) {
+                    const opts = getPickOptions(ept);
+                    if (opts) {
+                      for (const o of opts) {
+                        if (!(o.id in communityData)) communityData[o.id] = 0;
+                      }
+                    }
                   }
-                }
-              }
 
-              return (
-                <EventCard
-                  key={event.id}
-                  event={event}
-                  sportKey={sportKey}
-                  isLocked={isLocked}
-                  lockDiff={lockDiff}
-                  isUrgent={isUrgent}
-                  predictionTypeConfigs={predictionTypeConfigs}
-                  pointsSummary={pointsSummary}
-                  communityData={communityData}
-                  onSubmit={handleSubmitPrediction}
-                />
-              );
-            })}
+                  return (
+                    <EventCard
+                      key={event.id}
+                      event={event}
+                      sportKey={sportKey}
+                      isLocked={isLocked}
+                      lockDiff={lockDiff}
+                      isUrgent={isUrgent}
+                      predictionTypeConfigs={predictionTypeConfigs}
+                      pointsSummary={pointsSummary}
+                      communityData={communityData}
+                      onSubmit={handleSubmitPrediction}
+                    />
+                  );
+                })}
+              </div>
+            ))}
           </div>
-        ))}
-      </div>
 
-      {/* ── Tiebreaker placeholder ─────────────────────────────────────── */}
-      {/* Tiebreaker section would be rendered here if round data includes one */}
+          {/* ── Tiebreaker placeholder ─────────────────────────────────────── */}
+          {/* Tiebreaker section would be rendered here if round data includes one */}
+        </>
+      ) : (
+        /* ── The Damage: Result Cards ─────────────────────────────────── */
+        <div className="px-4 pb-4 pt-2">
+          <div className="flex items-center justify-between mb-3">
+            <div>
+              <p
+                className="font-bold uppercase text-ps-text-sec"
+                style={{ fontSize: 11, letterSpacing: 0.8 }}
+              >
+                Last Round
+              </p>
+              <h2
+                className="font-display text-ps-text"
+                style={{ fontSize: 32, lineHeight: 1, letterSpacing: 1 }}
+              >
+                THE DAMAGE
+              </h2>
+            </div>
+            <div className="text-right">
+              <p
+                className="uppercase text-ps-text-ter"
+                style={{ fontSize: 9, fontWeight: 800, letterSpacing: 1.2 }}
+              >
+                You
+              </p>
+              <p
+                className="mt-1 font-display text-ps-green"
+                style={{ fontSize: 28, lineHeight: 1 }}
+              >
+                +{resultedEvents.reduce((sum, e) => sum + (e.predictions?.[0]?.points_awarded ?? 0), 0)}
+                <span
+                  className="text-ps-text-sec"
+                  style={{ fontSize: 14, letterSpacing: 0.4 }}
+                >
+                  {" "}/ {resultedEvents.length * 10}
+                </span>
+              </p>
+            </div>
+          </div>
+
+          <div className="space-y-2.5">
+            {resultedEvents.length === 0 ? (
+              <div className="rounded-[14px] border border-ps-border bg-ps-surface p-8 text-center text-ps-text-sec">
+                No results yet — check back once events start resolving.
+              </div>
+            ) : (
+              resultedEvents.map((event) => {
+                const prediction = (event.predictions ?? [])[0];
+                if (!prediction) return null;
+                return (
+                  <ResultCard
+                    key={event.id}
+                    event={event}
+                    prediction={prediction}
+                  />
+                );
+              })
+            )}
+          </div>
+        </div>
+      )}
     </div>
   );
 }
@@ -545,22 +638,28 @@ function EventCard({
   onSubmit,
 }: EventCardProps) {
   return (
-    <div className="overflow-hidden rounded-2xl border border-ps-border bg-ps-surface">
+    <div className="overflow-hidden rounded-[14px] border border-ps-border bg-ps-surface">
       {/* Sport colour bar */}
       <SportBar sport={sportKey} height={3} />
 
-      <div className="p-4">
-        {/* Row 1: SportPill + CountdownChip / status badge */}
+      <div className="p-3">
+        {/* Row 1: SportPill + CountdownChip + WA share */}
         <div className="flex items-center justify-between gap-2">
           <SportPill sport={sportKey} size="sm" />
-          {event.status === "upcoming" && lockDiff > 0 ? (
-            <CountdownChip
-              text={formatCountdownText(event.lock_time)}
-              urgent={isUrgent}
+          <div className="flex items-center gap-1.5">
+            {event.status === "upcoming" && lockDiff > 0 ? (
+              <CountdownChip
+                text={formatCountdownText(event.lock_time)}
+                urgent={isUrgent}
+              />
+            ) : event.status !== "upcoming" ? (
+              <StatusBadge status={event.status} />
+            ) : null}
+            <SendToThread
+              variant="icon"
+              defaultText={psDefaultSheetCopy(event.event_name)}
             />
-          ) : event.status !== "upcoming" ? (
-            <StatusBadge status={event.status} />
-          ) : null}
+          </div>
         </div>
 
         {/* Row 2: Title + CommunityDonut */}
@@ -568,13 +667,15 @@ function EventCard({
           <div className="min-w-0 flex-1">
             <h4
               className="font-extrabold leading-snug text-ps-text"
-              style={{ fontSize: 17 }}
+              style={{ fontSize: 16 }}
             >
-              {event.event_name}
+              <Link href={`/predictions/${event.id}`} className="hover:underline">
+                {event.event_name}
+              </Link>
             </h4>
             <p
               className="mt-0.5 text-ps-text-sec"
-              style={{ fontSize: 11.5 }}
+              style={{ fontSize: 12 }}
             >
               {formatSubtitle(event)}
             </p>

@@ -1,13 +1,16 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
 import {
   Avatar,
   FormBadge,
   AccuracyRing,
   MovementBadge,
   SectionHeader,
+  SendToThread,
 } from "@/components/ui";
+import { psDefaultLeaderboardCopy } from "@/lib/whatsapp";
 
 // -- Types for data passed from the server component --
 
@@ -426,12 +429,14 @@ function PodiumCard({
 
           {/* Name + form badges */}
           <div className="min-w-0 flex-1">
-            <p
-              className="truncate font-bold text-white"
+            <Link
+              href={`/leaderboard/${entry.user_id}`}
+              className="truncate font-bold text-white hover:underline"
               style={{ fontSize: 14, letterSpacing: 0.2 }}
+              onClick={(e) => e.stopPropagation()}
             >
               {entry.display_name}
-            </p>
+            </Link>
             {form.length > 0 && (
               <div className="mt-1 flex items-center gap-[3px]">
                 {form.map((letter, i) => (
@@ -529,9 +534,14 @@ function TableRow({
 
           {/* Name + form */}
           <div className="min-w-0 flex-1">
-            <p className="truncate font-bold text-ps-text" style={{ fontSize: 13 }}>
+            <Link
+              href={`/leaderboard/${entry.user_id}`}
+              className="truncate font-bold text-ps-text hover:underline"
+              style={{ fontSize: 13 }}
+              onClick={(e) => e.stopPropagation()}
+            >
               {entry.display_name}
-            </p>
+            </Link>
             {form.length > 0 && (
               <div className="mt-[3px] flex gap-[2px]">
                 {form.map((letter, i) => (
@@ -559,6 +569,18 @@ function TableRow({
             <div className="mt-1">
               <MovementBadge mv={0} />
             </div>
+          </div>
+
+          {/* WA share */}
+          <div onClick={(e) => e.stopPropagation()}>
+            <SendToThread
+              variant="icon"
+              defaultText={psDefaultLeaderboardCopy({
+                name: entry.display_name,
+                points: entry.total_points,
+                movement: 0,
+              })}
+            />
           </div>
 
           {/* Chevron */}

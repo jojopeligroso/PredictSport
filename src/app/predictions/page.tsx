@@ -126,6 +126,16 @@ export default async function PredictionsPage({
 
   const typedEvents = (events ?? []) as Event[];
 
+  // Fetch the active round for round name in hero
+  const { data: activeRound } = await supabase
+    .from("rounds")
+    .select("round_number, name")
+    .eq("competition_id", selectedCompetition.id)
+    .in("status", ["open", "locked"])
+    .order("round_number", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+
   // Fetch user's predictions and event_prediction_types for all events
   const eventIds = typedEvents.map((e) => e.id);
   let predictions: Prediction[] = [];
@@ -158,14 +168,7 @@ export default async function PredictionsPage({
   }));
 
   return (
-    <div className="mx-auto max-w-4xl p-4 sm:p-8">
-      <h1 className="font-light text-2xl uppercase tracking-[0.06em] text-ps-text">
-        My Predictions
-      </h1>
-      <p className="mt-2 text-ps-text-sec">
-        Submit your predictions before each event locks.
-      </p>
-
+    <div>
       <CompetitionSelector
         competitions={competitions}
         selectedId={selectedCompetitionId}
@@ -175,6 +178,8 @@ export default async function PredictionsPage({
         events={eventsWithPredictions}
         competitionId={selectedCompetition.id}
         competitionName={selectedCompetition.name}
+        roundNumber={activeRound?.round_number}
+        roundName={activeRound?.name}
       />
     </div>
   );

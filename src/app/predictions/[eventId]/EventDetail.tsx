@@ -1,0 +1,692 @@
+"use client";
+
+import { useState, useCallback } from "react";
+import { useRouter } from "next/navigation";
+import Link from "next/link";
+import {
+  SectionHeader,
+  PickButton,
+  PersonaCallout,
+  EmojiReactions,
+  PickNote,
+  SendToThread,
+  Avatar,
+  SPORT_CONFIG,
+  type SportKey,
+} from "@/components/ui";
+import { psDefaultPickCopy, psDefaultSheetCopy } from "@/lib/whatsapp";
+import type {
+  Event,
+  EventPredictionType,
+  Prediction,
+  PredictionType,
+  NoteVisibility,
+} from "@/types/database";
+
+// ── Types ────────────────────────────────────────────────────────────────────
+
+interface Member {
+  user_id: string;
+  display_name: string;
+  callout_label: string | null;
+}
+
+interface CommunityPick {
+  count: number;
+  users: Array<{ user_id: string; display_name: string }>;
+}
+
+interface EventDetailProps {
+  event: Event;
+  competitionName: string;
+  predictionTypes: EventPredictionType[];
+  userPredictions: Prediction[];
+  communityPredictions: Record<string, CommunityPick>;
+  allPredictions: Array<{ id: string; user_id: string }>;
+  members: Member[];
+  reactions: Record<string, Record<string, number>>;
+  isLocked: boolean;
+  picksRevealed: boolean;
+  currentUserId: string;
+}
+
+// ── Helpers ──────────────────────────────────────────────────────────────────
+
+const VALID_SPORT_KEYS: SportKey[] = ["soccer", "f1", "gaa", "nba", "golf"];
+
+function toSportKey(sport: string): SportKey {
+  const lower = sport.toLowerCase() as SportKey;
+  return VALID_SPORT_KEYS.includes(lower) ? lower : "soccer";
+}
+
+function formatCountdown(lockTime: string): string {
+  const diff = new Date(lockTime).getTime() - Date.now();
+  if (diff <= 0) return "LOCKED";
+  const d = Math.floor(diff / 86400000);
+  const h = Math.floor((diff / 3600000) % 24);
+  const m = Math.floor((diff / 60000) % 60);
+  return [d > 0 ? `${d}d` : "", `${h}h`, `${m}m`].filter(Boolean).join(" ");
+}
+
+function getPickOptions(
+  ept: EventPredictionType
+): { id: string; label: string; sub?: string }[] | null {
+  const cfg = ept.config ?? {};
+  switch (ept.prediction_type) {
+    case "winner": {
+      const opts = cfg.options as string[] | undefined;
+      return opts?.map((o) => ({ id: o, label: o })) ?? null;
+    }
+    case "over_under": {
+      const line = (cfg.line ?? cfg.threshold ?? "") as string | number;
+      return [
+        { id: "over", label: "Over", sub: String(line) },
+        { id: "under", label: "Under", sub: String(line) },
+      ];
+    }
+    case "head_to_head": {
+      const opts = cfg.options as string[] | undefined;
+      if (!opts || opts.length === 0) return null;
+      return opts.map((o) => ({ id: o, label: o }));
+    }
+    case "yes_no": {
+      const opts =
+        (cfg.options as string[] | undefined) ?? ["Yes", "No"];
+      return opts.map((o) => ({ id: o, label: o }));
+    }
+    default:
+      return null;
+  }
+}
+
+function getPickValue(prediction: Prediction | undefined): string | null {
+  if (!prediction) return null;
+  const data = prediction.prediction_data ?? {};
+  if (data.value !== undefined) return String(data.value);
+  if (data.selection !== undefined) return String(data.selection);
+  return null;
+}
+
+function getInitials(name: string): string {
+  return name
+    .split(" ")
+    .map((w) => w[0])
+    .join("")
+    .toUpperCase()
+    .slice(0, 2);
+}
+
+// Palette for community pick rows
+const PICK_COLORS = [
+  "#f59e0b",
+  "#2563eb",
+  "#dc2626",
+  "#059669",
+  "#7c3aed",
+  "#ea580c",
+];
+
+// ── Component ────────────────────────────────────────────────────────────────
+
+export function EventDetail({
+  event,
+  competitionName,
+  predictionTypes,
+  userPredictions,
+  communityPredictions,
+  allPredictions,
+  members,
+  reactions,
+  isLocked,
+  picksRevealed,
+  currentUserId,
+}: EventDetailProps) {
+  const router = useRouter();
+  const [submitting, setSubmitting] = useState(false);
+  const [noteText, setNoteText] = useState(
+    userPredictions[0]?.note_text ?? ""
+  );
+  const [noteVisibility, setNoteVisibility] = useState<NoteVisibility>(
+    userPredictions[0]?.note_visibility ?? "public"
+  );
+  const [activePicks, setActivePicks] = useState<Record<string, string>>(() => {
+    const picks: Record<string, string> = {};
+    for (const pred of userPredictions) {
+      const val = getPickValue(pred);
+      if (val) picks[pred.prediction_type] = val;
+    }
+    return picks;
+  });
+
+  const sportKey = toSportKey(event.sport);
+  const sportCfg = SPORT_CONFIG[sportKey];
+
+  // Total points available
+  const totalPoints = predictionTypes.reduce((sum, ept) => sum + ept.points, 0);
+
+  // Has the user made a pick for this page visit?
+  const hasActivePick = Object.keys(activePicks).length > 0;
+
+  // ── Handlers ─────────────────────────────────────────────────────────────
+
+  const handlePick = useCallback(
+    async (optionId: string, eptType: PredictionType) => {
+      setActivePicks((prev) => ({ ...prev, [eptType]: optionId }));
+    },
+    []
+  );
+
+  const handleSubmit = useCallback(async () => {
+    if (submitting || !hasActivePick) return;
+    setSubmitting(true);
+    try {
+      for (const ept of predictionTypes) {
+        const pick = activePicks[ept.prediction_type];
+        if (!pick) continue;
+
+        // Build prediction_data based on type
+        let predictionData: Record<string, unknown>;
+        switch (ept.prediction_type) {
+          case "winner":
+          case "top_n":
+            predictionData = { value: pick };
+            break;
+          case "over_under":
+            predictionData = {
+              selection: pick,
+              threshold: (ept.config as Record<string, unknown>)?.line ??
+                (ept.config as Record<string, unknown>)?.threshold,
+            };
+            break;
+          default:
+            predictionData = { selection: pick };
+        }
+
+        await fetch("/api/predictions", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            event_id: event.id,
+            competition_id: event.competition_id,
+            prediction_type: ept.prediction_type,
+            prediction_data: predictionData,
+            note_text: noteText || undefined,
+            note_visibility: noteVisibility,
+          }),
+        });
+      }
+      router.refresh();
+    } finally {
+      setSubmitting(false);
+    }
+  }, [
+    submitting,
+    hasActivePick,
+    predictionTypes,
+    activePicks,
+    event.id,
+    event.competition_id,
+    noteText,
+    noteVisibility,
+    router,
+  ]);
+
+  const handleReact = useCallback(
+    async (predictionId: string, emoji: string) => {
+      await fetch("/api/reactions", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ prediction_id: predictionId, emoji }),
+      });
+      router.refresh();
+    },
+    [router]
+  );
+
+  // ── Build community pick rows ────────────────────────────────────────────
+
+  const allPickRows = (() => {
+    if (!picksRevealed) return [];
+
+    // Build a flat list of all picks with user info
+    const rows: Array<{
+      userId: string;
+      displayName: string;
+      initials: string;
+      optionLabel: string;
+      color: string;
+      predictionId: string | null;
+      note: { text: string; visibility: NoteVisibility } | null;
+      reactions: Record<string, number>;
+    }> = [];
+
+    // Map user_id -> prediction_id from allPredictions
+    const userPredMap = new Map<string, string>();
+    for (const p of allPredictions) {
+      userPredMap.set(p.user_id, p.id);
+    }
+
+    // Assign colors by option
+    const optionColors = new Map<string, string>();
+    let colorIdx = 0;
+
+    for (const [optionLabel, group] of Object.entries(communityPredictions)) {
+      if (!optionColors.has(optionLabel)) {
+        optionColors.set(optionLabel, PICK_COLORS[colorIdx % PICK_COLORS.length]);
+        colorIdx++;
+      }
+      const color = optionColors.get(optionLabel)!;
+
+      for (const u of group.users) {
+        const member = members.find((m) => m.user_id === u.user_id);
+        const predId = userPredMap.get(u.user_id) ?? null;
+
+        // Find note from userPredictions if this is the current user
+        let note: { text: string; visibility: NoteVisibility } | null = null;
+        if (u.user_id === currentUserId && userPredictions[0]?.note_text) {
+          note = {
+            text: userPredictions[0].note_text,
+            visibility: userPredictions[0].note_visibility,
+          };
+        }
+
+        rows.push({
+          userId: u.user_id,
+          displayName: member?.display_name ?? u.display_name,
+          initials: getInitials(member?.display_name ?? u.display_name),
+          optionLabel,
+          color,
+          predictionId: predId,
+          note,
+          reactions: predId ? (reactions[predId] ?? {}) : {},
+        });
+      }
+    }
+
+    return rows;
+  })();
+
+  const totalPicks = allPickRows.length;
+
+  // Callout member
+  const calloutMember = members.find((m) => m.callout_label);
+
+  // ── Render ───────────────────────────────────────────────────────────────
+
+  return (
+    <div className="min-h-screen" style={{ background: "#efe9de" }}>
+      {/* ── 1. Sport-gradient hero ─────────────────────────────────────── */}
+      <div
+        style={{
+          background: `linear-gradient(135deg, ${sportCfg.from}, ${sportCfg.to})`,
+          color: "#fff",
+          padding: "16px 16px 22px",
+        }}
+      >
+        {/* Back + sport label */}
+        <div className="flex items-center justify-between">
+          <Link
+            href="/predictions"
+            className="flex items-center justify-center rounded-full"
+            style={{
+              width: 32,
+              height: 32,
+              background: "rgba(255,255,255,0.18)",
+            }}
+          >
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none">
+              <path
+                d="M15 18l-6-6 6-6"
+                stroke="#fff"
+                strokeWidth="2.4"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              />
+            </svg>
+          </Link>
+          <span
+            style={{
+              fontSize: 10,
+              fontWeight: 700,
+              letterSpacing: 1.2,
+              textTransform: "uppercase",
+              opacity: 0.85,
+            }}
+          >
+            {sportCfg.emoji} {sportCfg.name}
+          </span>
+          <div style={{ width: 32 }} />
+        </div>
+
+        {/* League subtitle */}
+        <p
+          className="mt-4"
+          style={{
+            fontSize: 11,
+            opacity: 0.85,
+            fontWeight: 600,
+            letterSpacing: 0.4,
+            textTransform: "uppercase",
+          }}
+        >
+          {competitionName}
+        </p>
+
+        {/* Bebas title */}
+        <h1
+          className="mt-1.5 font-display"
+          style={{ fontSize: 32, lineHeight: 1.0, letterSpacing: 0.8 }}
+        >
+          {event.event_name}
+        </h1>
+
+        {/* Kickoff time */}
+        <div
+          className="mt-2 flex gap-3.5"
+          style={{ fontSize: 11.5, opacity: 0.92, fontWeight: 500 }}
+        >
+          <span>
+            {new Date(event.start_time).toLocaleDateString("en-IE", {
+              weekday: "short",
+              hour: "2-digit",
+              minute: "2-digit",
+            })}
+          </span>
+        </div>
+
+        {/* Post-lock WhatsApp share */}
+        {isLocked && picksRevealed && (
+          <div className="mt-3.5">
+            <SendToThread
+              variant="block"
+              defaultText={psDefaultSheetCopy(event.event_name)}
+              label="Send to the WhatsApp group"
+            />
+          </div>
+        )}
+      </div>
+
+      {/* ── 2. Lock indicator card ─────────────────────────────────────── */}
+      <div
+        className="mx-4 -mt-3.5 mb-0 flex items-center justify-between rounded-xl border border-ps-border bg-ps-surface p-2.5"
+        style={{ boxShadow: "0 4px 14px rgba(40,30,20,0.06)" }}
+      >
+        <div>
+          <p
+            style={{
+              fontSize: 9,
+              fontWeight: 800,
+              letterSpacing: 1.2,
+              textTransform: "uppercase",
+            }}
+            className="text-ps-text-sec"
+          >
+            {isLocked ? "Locked" : "Locks in"}
+          </p>
+          <p
+            className="mt-0.5 font-display text-ps-amber-deep"
+            style={{ fontSize: 18, letterSpacing: 0.6 }}
+          >
+            {isLocked ? "LOCKED" : formatCountdown(event.lock_time)}
+          </p>
+        </div>
+        <div className="flex items-center gap-1.5">
+          <span
+            style={{ fontSize: 10.5 }}
+            className="font-semibold text-ps-text-sec"
+          >
+            worth
+          </span>
+          <span
+            className="rounded-lg bg-ps-amber-soft px-2.5 py-1 font-display text-ps-amber-deep"
+            style={{ fontSize: 13, fontWeight: 800, letterSpacing: 0.5 }}
+          >
+            +{totalPoints} PTS
+          </span>
+        </div>
+      </div>
+
+      {/* ── 3. Pick section ────────────────────────────────────────────── */}
+      <div className="px-4 mt-4">
+        {predictionTypes.map((ept) => {
+          const options = getPickOptions(ept);
+          if (!options) return null;
+
+          const existingPred = userPredictions.find(
+            (p) => p.prediction_type === ept.prediction_type
+          );
+          const currentPick =
+            activePicks[ept.prediction_type] ?? getPickValue(existingPred);
+
+          const typeLabel =
+            ept.prediction_type === "winner"
+              ? "Winner"
+              : ept.prediction_type === "over_under"
+              ? "Over/Under"
+              : ept.prediction_type === "head_to_head"
+              ? "Head to Head"
+              : ept.prediction_type === "yes_no"
+              ? "Yes/No"
+              : ept.prediction_type;
+
+          const gridCols =
+            options.length <= 3
+              ? `repeat(${options.length}, 1fr)`
+              : "1fr";
+
+          return (
+            <div key={ept.id} className="mb-3">
+              <SectionHeader
+                label={`Your Pick \u00B7 ${typeLabel}`}
+              />
+              <div
+                className="grid gap-1.5 mt-2"
+                style={{ gridTemplateColumns: gridCols }}
+              >
+                {options.map((opt) => (
+                  <PickButton
+                    key={opt.id}
+                    label={opt.label}
+                    sub={opt.sub}
+                    selected={currentPick === opt.id}
+                    disabled={isLocked || submitting}
+                    onClick={() =>
+                      handlePick(opt.id, ept.prediction_type)
+                    }
+                  />
+                ))}
+              </div>
+            </div>
+          );
+        })}
+      </div>
+
+      {/* ── 4. PickNote (pre-lock) ─────────────────────────────────────── */}
+      {!isLocked && (
+        <div className="px-4 mt-2">
+          <PickNote
+            initialText={userPredictions[0]?.note_text ?? ""}
+            initialVisibility={userPredictions[0]?.note_visibility ?? "public"}
+            onChange={(text, vis) => {
+              setNoteText(text);
+              setNoteVisibility(vis);
+            }}
+          />
+        </div>
+      )}
+
+      {/* ── 5. CTA button (pre-lock) ──────────────────────────────────── */}
+      {!isLocked && (
+        <div className="px-4 mt-3.5 mb-3">
+          <button
+            onClick={handleSubmit}
+            disabled={submitting || !hasActivePick}
+            className="w-full rounded-xl py-3.5 font-extrabold disabled:opacity-60"
+            style={{
+              fontSize: 14.5,
+              background: hasActivePick
+                ? "linear-gradient(135deg, #f59e0b, #d97706)"
+                : "rgba(40,30,20,0.08)",
+              color: hasActivePick ? "#1a1208" : undefined,
+              letterSpacing: 0.4,
+            }}
+          >
+            {submitting
+              ? "Locking it in..."
+              : hasActivePick
+              ? "Lock it in"
+              : "Pick to continue"}
+          </button>
+          <p className="mt-2 text-center text-[11px] text-ps-text-ter">
+            You can change your pick until kickoff.
+          </p>
+        </div>
+      )}
+
+      {/* ── 6. Community picks (post-lock, revealed) ───────────────────── */}
+      {picksRevealed && allPickRows.length > 0 && (
+        <div className="px-4 mt-3.5">
+          <SectionHeader
+            label={`The Lads' Picks \u00B7 ${totalPicks} in`}
+            accent="var(--ps-blue)"
+          />
+
+          {/* Stacked bar */}
+          <div className="flex h-3.5 overflow-hidden rounded-[7px] mb-3 mt-2">
+            {Object.entries(communityPredictions).map(
+              ([optionLabel, group], idx) => {
+                const pct =
+                  totalPicks > 0
+                    ? (group.count / totalPicks) * 100
+                    : 0;
+                return (
+                  <div
+                    key={optionLabel}
+                    style={{
+                      width: `${pct}%`,
+                      background:
+                        PICK_COLORS[idx % PICK_COLORS.length],
+                      minWidth: pct > 0 ? 4 : 0,
+                    }}
+                    title={`${optionLabel}: ${group.count}`}
+                  />
+                );
+              }
+            )}
+          </div>
+
+          {/* Legend */}
+          <div className="flex flex-wrap gap-2 mb-3">
+            {Object.entries(communityPredictions).map(
+              ([optionLabel, group], idx) => (
+                <div key={optionLabel} className="flex items-center gap-1.5">
+                  <div
+                    className="rounded-full"
+                    style={{
+                      width: 8,
+                      height: 8,
+                      background: PICK_COLORS[idx % PICK_COLORS.length],
+                    }}
+                  />
+                  <span
+                    className="text-ps-text-sec font-semibold"
+                    style={{ fontSize: 11 }}
+                  >
+                    {optionLabel} ({group.count})
+                  </span>
+                </div>
+              )
+            )}
+          </div>
+
+          {/* Individual pick rows */}
+          {allPickRows.map((row) => (
+            <div
+              key={row.userId}
+              className="mb-2 rounded-xl border border-ps-border bg-ps-surface p-2.5"
+            >
+              <div className="flex items-center gap-2.5">
+                <Avatar
+                  initials={row.initials}
+                  color="#f59e0b"
+                  size={32}
+                />
+                <div className="flex-1 min-w-0">
+                  <span className="text-[12.5px] font-bold text-ps-text">
+                    {row.displayName}
+                    {row.userId === currentUserId && (
+                      <span className="text-ps-text-ter font-normal">
+                        {" "}
+                        (you)
+                      </span>
+                    )}
+                  </span>
+                  <div className="mt-0.5">
+                    <span
+                      className="rounded px-1.5 py-0.5 text-[10.5px] font-extrabold"
+                      style={{
+                        background: row.color + "20",
+                        color: row.color,
+                      }}
+                    >
+                      {row.optionLabel}
+                    </span>
+                  </div>
+                </div>
+                <SendToThread
+                  variant="icon"
+                  defaultText={psDefaultPickCopy({
+                    eventName: event.event_name,
+                    optionLabel: row.optionLabel,
+                    ownerName: row.displayName,
+                  })}
+                />
+              </div>
+
+              {/* PickNote (readonly) */}
+              {row.note && (
+                <div className="mt-2">
+                  <PickNote
+                    locked
+                    initialText={row.note.text}
+                    initialVisibility={row.note.visibility}
+                    ownerIsYou={row.userId === currentUserId}
+                  />
+                </div>
+              )}
+
+              {/* EmojiReactions */}
+              {row.predictionId && (
+                <div className="mt-2">
+                  <EmojiReactions
+                    reactions={row.reactions}
+                    onReact={(emoji) =>
+                      handleReact(row.predictionId!, emoji)
+                    }
+                  />
+                </div>
+              )}
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* ── 7. Intel Report ────────────────────────────────────────────── */}
+      {calloutMember && (
+        <div className="px-4 mt-3.5 pb-6">
+          <SectionHeader label="Intel Report" />
+          <div className="mt-2">
+            <PersonaCallout
+              calloutLabel={calloutMember.callout_label!}
+              fact="The inside word from the group's resident expert."
+              variant="border"
+            />
+          </div>
+        </div>
+      )}
+
+      {/* Bottom padding */}
+      <div className="h-8" />
+    </div>
+  );
+}

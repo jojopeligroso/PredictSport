@@ -20,8 +20,7 @@ interface CompetitionTabsProps {
   currentUserId: string;
 }
 
-const TABS = ["Events", "Participants", "Nominations", "Settings"] as const;
-type Tab = (typeof TABS)[number];
+type Tab = "Confirm Results" | "Add Event" | "Nominations" | "Members" | "Settings";
 
 export function CompetitionTabs({
   competition,
@@ -31,47 +30,66 @@ export function CompetitionTabs({
   inviteTokens,
   currentUserId,
 }: CompetitionTabsProps) {
-  const [activeTab, setActiveTab] = useState<Tab>("Events");
+  const [activeTab, setActiveTab] = useState<Tab>("Confirm Results");
 
   const pendingNominationCount = (nominations ?? []).filter(
     (n) => n.status === "pending"
   ).length;
 
+  const eventsToConfirm = (events ?? []).filter(
+    (e) => e.result_data && !e.result_confirmed && e.status !== "cancelled"
+  ).length;
+
+  const tabs: Array<{ id: Tab; label: string; count?: number }> = [
+    { id: "Confirm Results", label: "Confirm Results", count: eventsToConfirm || undefined },
+    { id: "Add Event", label: "Add Event" },
+    { id: "Nominations", label: "Nominations", count: pendingNominationCount || undefined },
+    { id: "Members", label: "Members" },
+    { id: "Settings", label: "Settings" },
+  ];
+
   return (
     <div>
-      {/* Tab bar */}
-      <div className="border-b border-ps-border">
-        <nav className="-mb-px flex gap-1 overflow-x-auto sm:gap-4" aria-label="Tabs">
-          {TABS.map((tab) => (
-            <button
-              key={tab}
-              onClick={() => setActiveTab(tab)}
-              className={`relative whitespace-nowrap border-b-2 px-1 py-3 text-sm font-medium transition-colors ${
-                activeTab === tab
-                  ? "border-ps-amber text-ps-text"
-                  : "border-transparent text-ps-text-sec hover:border-ps-border-strong hover:text-ps-text"
-              }`}
-            >
-              {tab}
-              {tab === "Nominations" && pendingNominationCount > 0 && (
-                <span className="ml-2 inline-flex h-5 w-5 items-center justify-center rounded-full bg-ps-amber text-xs font-bold text-[#1a1208]">
-                  {pendingNominationCount}
-                </span>
-              )}
-            </button>
-          ))}
-        </nav>
+      {/* Pill-style segmented tab bar */}
+      <div
+        className="grid gap-0.5 rounded-[10px] p-[3px]"
+        style={{
+          background: "rgba(40,30,20,0.06)",
+          gridTemplateColumns: `repeat(${tabs.length}, 1fr)`,
+        }}
+      >
+        {tabs.map((tab) => (
+          <button
+            key={tab.id}
+            onClick={() => setActiveTab(tab.id)}
+            className={`flex items-center justify-center gap-1.5 rounded-[7px] py-[7px] px-1.5 text-[11px] font-bold transition-colors ${
+              activeTab === tab.id
+                ? "bg-ps-surface text-ps-text shadow-[0_1px_3px_rgba(40,30,20,0.08)]"
+                : "text-ps-text-sec"
+            }`}
+          >
+            {tab.label}
+            {tab.count != null && tab.count > 0 && (
+              <span
+                className="rounded-full bg-ps-amber text-[#1a1208]"
+                style={{ padding: "1px 5px", fontSize: 9, fontWeight: 800 }}
+              >
+                {tab.count}
+              </span>
+            )}
+          </button>
+        ))}
       </div>
 
       {/* Tab content */}
       <div className="mt-6">
-        {activeTab === "Events" && (
+        {(activeTab === "Confirm Results" || activeTab === "Add Event") && (
           <EventsSection
             competition={competition}
             events={events}
           />
         )}
-        {activeTab === "Participants" && (
+        {activeTab === "Members" && (
           <ParticipantsSection
             competition={competition}
             members={members}

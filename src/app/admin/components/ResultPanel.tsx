@@ -140,38 +140,67 @@ export function ResultPanel({ event, onConfirmed }: ResultPanelProps) {
       )}
 
       {/* Show fetched result data */}
-      {hasResult && (
-        <div className="mb-4">
-          <h5 className="text-sm font-medium text-ps-text-sec mb-2">
-            Provisional Result (from API)
-          </h5>
-          <pre className="rounded-xl bg-ps-bg p-3 text-xs text-ps-text overflow-x-auto max-h-48">
-            {JSON.stringify(resultData, null, 2)}
-          </pre>
+      {hasResult && (() => {
+        const provider = (resultData?.provider ?? resultData?.source ?? "manual") as string;
+        const isAuto = provider !== "manual";
+        const resultDisplay = resultData?.winner
+          ? String(resultData.winner)
+          : resultData?.score
+            ? `${(resultData.score as Record<string, unknown>)?.home_team ?? ""} ${(resultData.score as Record<string, unknown>)?.home_score ?? ""}-${(resultData.score as Record<string, unknown>)?.away_score ?? ""} ${(resultData.score as Record<string, unknown>)?.away_team ?? ""}`
+            : JSON.stringify(resultData).slice(0, 60);
 
-          <button
-            onClick={() => handleConfirm()}
-            disabled={isConfirming}
-            className="mt-3 rounded-xl bg-ps-green px-4 py-2 text-sm font-medium text-white transition-opacity hover:opacity-90 disabled:opacity-50"
-          >
-            {isConfirming ? "Confirming..." : "Confirm Result"}
-          </button>
-        </div>
-      )}
+        return (
+          <div className="mb-4">
+            <div className="flex items-center gap-2 mb-2">
+              {isAuto && (
+                <span
+                  className="inline-flex items-center gap-1.5 rounded-full bg-ps-green-soft px-2 py-0.5 text-ps-green"
+                  style={{ fontSize: 9, fontWeight: 800, letterSpacing: 0.6, textTransform: "uppercase" as const }}
+                >
+                  <span className="inline-block h-[5px] w-[5px] rounded-full bg-ps-green" />
+                  Auto &middot; {provider}
+                </span>
+              )}
+            </div>
+            <div
+              className="rounded-[8px] px-2.5 py-2 text-[12.5px] font-bold"
+              style={{ background: "rgba(40,30,20,0.04)" }}
+            >
+              Result &middot; <span className="text-ps-amber-deep">{resultDisplay}</span>
+            </div>
+
+            <div className="mt-2.5 flex gap-2">
+              <button
+                onClick={() => handleConfirm()}
+                disabled={isConfirming}
+                className="flex-1 rounded-[10px] px-4 py-2.5 text-[12.5px] font-extrabold text-white"
+                style={{ background: "linear-gradient(135deg, var(--ps-green), #059669)" }}
+              >
+                {isConfirming ? "Confirming..." : "\u2713 Confirm & score"}
+              </button>
+              <button
+                type="button"
+                onClick={() => setShowManualEntry(!showManualEntry)}
+                className="rounded-[10px] border border-ps-border-strong bg-transparent px-3.5 py-2.5 text-xs font-bold text-ps-text"
+              >
+                Edit
+              </button>
+            </div>
+          </div>
+        );
+      })()}
 
       {/* Manual entry */}
       <div>
-        <button
-          type="button"
-          onClick={() => setShowManualEntry(!showManualEntry)}
-          className="text-sm text-ps-amber-deep hover:text-ps-text underline hover:no-underline"
-        >
-          {showManualEntry
-            ? "Hide manual entry"
-            : hasResult
-              ? "Override with manual result"
-              : "Enter result manually"}
-        </button>
+        {!hasResult && (
+          <button
+            type="button"
+            onClick={() => setShowManualEntry(!showManualEntry)}
+            className="text-sm text-ps-amber-deep hover:text-ps-text underline hover:no-underline"
+          >
+            {showManualEntry ? "Hide manual entry" : "Enter result manually"}
+          </button>
+        )}
 
         {showManualEntry && (
           <form
