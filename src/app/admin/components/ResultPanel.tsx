@@ -113,11 +113,11 @@ export function ResultPanel({ event, onConfirmed }: ResultPanelProps) {
   if (event.result_confirmed) {
     return (
       <div>
-        <h5 className="text-sm font-medium text-green-700 dark:text-green-400 mb-2">
+        <h5 className="text-sm font-medium text-ps-green mb-2">
           Result Confirmed
         </h5>
         {hasResult && (
-          <pre className="rounded-md bg-zinc-50 p-3 text-xs text-zinc-700 dark:bg-zinc-800 dark:text-zinc-300 overflow-x-auto">
+          <pre className="rounded-xl bg-ps-bg p-3 text-xs text-ps-text overflow-x-auto">
             {JSON.stringify(resultData, null, 2)}
           </pre>
         )}
@@ -128,13 +128,13 @@ export function ResultPanel({ event, onConfirmed }: ResultPanelProps) {
   return (
     <div>
       {error && (
-        <div className="mb-3 rounded-md bg-red-50 p-3 text-sm text-red-700 dark:bg-red-900/30 dark:text-red-400">
+        <div className="mb-3 rounded-xl bg-ps-red-soft p-3 text-sm text-ps-red">
           {error}
         </div>
       )}
 
       {successMessage && (
-        <div className="mb-3 rounded-md bg-green-50 p-3 text-sm text-green-700 dark:bg-green-900/30 dark:text-green-400">
+        <div className="mb-3 rounded-xl bg-ps-green-soft p-3 text-sm text-ps-green">
           {successMessage}
         </div>
       )}
@@ -142,17 +142,17 @@ export function ResultPanel({ event, onConfirmed }: ResultPanelProps) {
       {/* Show fetched result data */}
       {hasResult && (
         <div className="mb-4">
-          <h5 className="text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-2">
+          <h5 className="text-sm font-medium text-ps-text-sec mb-2">
             Provisional Result (from API)
           </h5>
-          <pre className="rounded-md bg-zinc-50 p-3 text-xs text-zinc-700 dark:bg-zinc-800 dark:text-zinc-300 overflow-x-auto max-h-48">
+          <pre className="rounded-xl bg-ps-bg p-3 text-xs text-ps-text overflow-x-auto max-h-48">
             {JSON.stringify(resultData, null, 2)}
           </pre>
 
           <button
             onClick={() => handleConfirm()}
             disabled={isConfirming}
-            className="mt-3 rounded-md bg-green-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-green-700 disabled:opacity-50"
+            className="mt-3 rounded-xl bg-ps-green px-4 py-2 text-sm font-medium text-white transition-opacity hover:opacity-90 disabled:opacity-50"
           >
             {isConfirming ? "Confirming..." : "Confirm Result"}
           </button>
@@ -164,7 +164,7 @@ export function ResultPanel({ event, onConfirmed }: ResultPanelProps) {
         <button
           type="button"
           onClick={() => setShowManualEntry(!showManualEntry)}
-          className="text-sm text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300"
+          className="text-sm text-ps-amber-deep hover:text-ps-text underline hover:no-underline"
         >
           {showManualEntry
             ? "Hide manual entry"
@@ -176,9 +176,9 @@ export function ResultPanel({ event, onConfirmed }: ResultPanelProps) {
         {showManualEntry && (
           <form
             onSubmit={handleManualSubmit}
-            className="mt-3 rounded-md border border-zinc-200 p-4 dark:border-zinc-700"
+            className="mt-3 rounded-xl border border-ps-border p-4"
           >
-            <p className="text-xs text-zinc-500 dark:text-zinc-400 mb-3">
+            <p className="text-xs text-ps-text-ter mb-3">
               Enter either a winner name (for individual sports) or a score (for team sports).
             </p>
 
@@ -186,7 +186,7 @@ export function ResultPanel({ event, onConfirmed }: ResultPanelProps) {
             <div className="mb-3">
               <label
                 htmlFor="manual-winner"
-                className="block text-sm font-medium text-zinc-700 dark:text-zinc-300"
+                className="block text-sm font-medium text-ps-text-sec"
               >
                 Winner
               </label>
@@ -196,16 +196,16 @@ export function ResultPanel({ event, onConfirmed }: ResultPanelProps) {
                 value={manualWinner}
                 onChange={(e) => setManualWinner(e.target.value)}
                 placeholder="e.g. Rory McIlroy"
-                className="mt-1 block w-full rounded-md border border-zinc-300 px-3 py-1.5 text-sm dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-50"
+                className="mt-1 block w-full rounded-xl border border-ps-border bg-ps-bg px-3 py-1.5 text-sm text-ps-text"
               />
             </div>
 
             <div className="relative my-4">
               <div className="absolute inset-0 flex items-center">
-                <div className="w-full border-t border-zinc-200 dark:border-zinc-700" />
+                <div className="w-full border-t border-ps-border" />
               </div>
               <div className="relative flex justify-center text-xs">
-                <span className="bg-white px-2 text-zinc-400 dark:bg-zinc-900 dark:text-zinc-500">
+                <span className="bg-ps-surface px-2 text-ps-text-ter">
                   OR enter score
                 </span>
               </div>
@@ -214,7 +214,7 @@ export function ResultPanel({ event, onConfirmed }: ResultPanelProps) {
             {/* Score (for team sports) */}
             <div className="grid grid-cols-2 gap-3">
               <div>
-                <label className="block text-xs font-medium text-zinc-600 dark:text-zinc-400">
+                <label className="block text-xs font-medium text-ps-text-sec">
                   Home Team
                 </label>
                 <input
@@ -222,11 +222,11 @@ export function ResultPanel({ event, onConfirmed }: ResultPanelProps) {
                   value={manualHomeTeam}
                   onChange={(e) => setManualHomeTeam(e.target.value)}
                   placeholder="Home team name"
-                  className="mt-1 block w-full rounded-md border border-zinc-300 px-2 py-1 text-sm dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-50"
+                  className="mt-1 block w-full rounded-xl border border-ps-border bg-ps-bg px-2 py-1 text-sm text-ps-text"
                 />
               </div>
               <div>
-                <label className="block text-xs font-medium text-zinc-600 dark:text-zinc-400">
+                <label className="block text-xs font-medium text-ps-text-sec">
                   Away Team
                 </label>
                 <input
@@ -234,11 +234,11 @@ export function ResultPanel({ event, onConfirmed }: ResultPanelProps) {
                   value={manualAwayTeam}
                   onChange={(e) => setManualAwayTeam(e.target.value)}
                   placeholder="Away team name"
-                  className="mt-1 block w-full rounded-md border border-zinc-300 px-2 py-1 text-sm dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-50"
+                  className="mt-1 block w-full rounded-xl border border-ps-border bg-ps-bg px-2 py-1 text-sm text-ps-text"
                 />
               </div>
               <div>
-                <label className="block text-xs font-medium text-zinc-600 dark:text-zinc-400">
+                <label className="block text-xs font-medium text-ps-text-sec">
                   Home Score
                 </label>
                 <input
@@ -246,11 +246,11 @@ export function ResultPanel({ event, onConfirmed }: ResultPanelProps) {
                   min={0}
                   value={manualHomeScore}
                   onChange={(e) => setManualHomeScore(e.target.value)}
-                  className="mt-1 block w-full rounded-md border border-zinc-300 px-2 py-1 text-sm dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-50"
+                  className="mt-1 block w-full rounded-xl border border-ps-border bg-ps-bg px-2 py-1 text-sm text-ps-text"
                 />
               </div>
               <div>
-                <label className="block text-xs font-medium text-zinc-600 dark:text-zinc-400">
+                <label className="block text-xs font-medium text-ps-text-sec">
                   Away Score
                 </label>
                 <input
@@ -258,7 +258,7 @@ export function ResultPanel({ event, onConfirmed }: ResultPanelProps) {
                   min={0}
                   value={manualAwayScore}
                   onChange={(e) => setManualAwayScore(e.target.value)}
-                  className="mt-1 block w-full rounded-md border border-zinc-300 px-2 py-1 text-sm dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-50"
+                  className="mt-1 block w-full rounded-xl border border-ps-border bg-ps-bg px-2 py-1 text-sm text-ps-text"
                 />
               </div>
             </div>
@@ -269,7 +269,7 @@ export function ResultPanel({ event, onConfirmed }: ResultPanelProps) {
                 isConfirming ||
                 (!manualWinner.trim() && (!manualHomeTeam.trim() || !manualAwayTeam.trim()))
               }
-              className="mt-4 rounded-md bg-green-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-green-700 disabled:opacity-50"
+              className="mt-4 rounded-xl bg-ps-green px-4 py-2 text-sm font-medium text-white transition-opacity hover:opacity-90 disabled:opacity-50"
             >
               {isConfirming ? "Confirming..." : "Confirm Manual Result"}
             </button>

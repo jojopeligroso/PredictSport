@@ -27,7 +27,7 @@ export function CompetitionSelector({
     <div className="mt-4">
       <label
         htmlFor="competition-select"
-        className="block text-xs font-medium uppercase tracking-wider text-zinc-500 dark:text-zinc-400"
+        className="block text-xs font-medium uppercase tracking-wider text-ps-text-sec"
       >
         Competition
       </label>
@@ -35,7 +35,7 @@ export function CompetitionSelector({
         id="competition-select"
         value={selectedId ?? ""}
         onChange={(e) => handleChange(e.target.value)}
-        className="mt-1 rounded-md border border-zinc-300 bg-white px-3 py-2 text-sm font-medium text-zinc-900 focus:border-zinc-500 focus:outline-none focus:ring-1 focus:ring-zinc-500 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-100 dark:focus:border-zinc-400 dark:focus:ring-zinc-400"
+        className="mt-1 rounded-xl border border-ps-border-strong bg-ps-surface px-3 py-2 text-sm font-medium text-ps-text focus:border-ps-amber focus:outline-none focus:ring-1 focus:ring-ps-amber"
       >
         {competitions.map((comp) => (
           <option key={comp.id} value={comp.id}>

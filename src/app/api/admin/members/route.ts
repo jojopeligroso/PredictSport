@@ -108,3 +108,68 @@ export async function PATCH(request: Request) {
 
   return NextResponse.json({ member: updated });
 }
+
+interface UpdateCalloutBody {
+  competition_id: string;
+  member_user_id: string;
+  callout_label: string | null;
+}
+
+/**
+ * PUT /api/admin/members
+ * Update a member's callout label in a competition.
+ * Only admin/co_admin can update callout labels.
+ */
+export async function PUT(request: Request) {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (!user) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
+  let body: UpdateCalloutBody;
+  try {
+    body = await request.json();
+  } catch {
+    return NextResponse.json({ error: "Invalid JSON body" }, { status: 400 });
+  }
+
+  if (!body.competition_id || !body.member_user_id) {
+    return NextResponse.json(
+      { error: "competition_id and member_user_id are required" },
+      { status: 400 }
+    );
+  }
+
+  const member = await verifyCompetitionAdmin(
+    supabase,
+    user.id,
+    body.competition_id
+  );
+  if (!member) {
+    return NextResponse.json(
+      { error: "You are not an admin of this competition" },
+      { status: 403 }
+    );
+  }
+
+  const { data: updated, error } = await supabase
+    .from("competition_members")
+    .update({ callout_label: body.callout_label })
+    .eq("competition_id", body.competition_id)
+    .eq("user_id", body.member_user_id)
+    .select()
+    .single();
+
+  if (error) {
+    return NextResponse.json(
+      { error: "Failed to update callout label", details: error.message },
+      { status: 500 }
+    );
+  }
+
+  return NextResponse.json({ member: updated });
+}

@@ -33,7 +33,7 @@ export function Countdown({ lockTime }: CountdownProps) {
 
   if (!remaining) {
     return (
-      <span className="text-xs font-medium text-zinc-500 dark:text-zinc-400">
+      <span className="text-xs font-medium text-ps-text-ter">
         Locked
       </span>
     );
@@ -51,9 +51,7 @@ export function Countdown({ lockTime }: CountdownProps) {
   return (
     <span
       className={`text-xs font-mono font-medium ${
-        isUrgent
-          ? "text-amber-600 dark:text-amber-400"
-          : "text-zinc-500 dark:text-zinc-400"
+        isUrgent ? "text-ps-amber-deep" : "text-ps-text-ter"
       }`}
     >
       Locks in {parts.join(" ")}

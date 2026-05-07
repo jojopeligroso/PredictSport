@@ -90,31 +90,31 @@ export function NominationsSection({
 
   return (
     <div>
-      <h3 className="text-lg font-semibold text-zinc-900 dark:text-zinc-50 mb-4">
+      <h3 className="text-lg font-semibold text-ps-text mb-4">
         Event Nominations
       </h3>
 
       {error && (
-        <div className="mb-4 rounded-md bg-red-50 p-3 text-sm text-red-700 dark:bg-red-900/30 dark:text-red-400">
+        <div className="mb-4 rounded-xl bg-ps-red-soft p-3 text-sm text-ps-red">
           {error}
         </div>
       )}
 
       {!competition.allow_nominations && (
-        <div className="mb-4 rounded-md bg-amber-50 p-3 text-sm text-amber-700 dark:bg-amber-900/20 dark:text-amber-400">
+        <div className="mb-4 rounded-xl bg-ps-amber-soft p-3 text-sm text-ps-amber-deep">
           Nominations are disabled for this competition.
         </div>
       )}
 
       {/* Pending nominations */}
       <div className="mb-8">
-        <h4 className="text-sm font-medium text-zinc-600 dark:text-zinc-400 mb-3">
+        <h4 className="text-sm font-medium text-ps-text-sec mb-3">
           Pending Review ({pendingNominations.length})
         </h4>
 
         {pendingNominations.length === 0 ? (
-          <div className="rounded-lg border border-dashed border-zinc-300 p-6 text-center dark:border-zinc-700">
-            <p className="text-zinc-500 dark:text-zinc-400">
+          <div className="rounded-2xl border border-dashed border-ps-border p-6 text-center">
+            <p className="text-ps-text-sec">
               No pending nominations
             </p>
           </div>
@@ -123,14 +123,14 @@ export function NominationsSection({
             {pendingNominations.map((nom) => (
               <div
                 key={nom.id}
-                className="rounded-lg border border-zinc-200 bg-white p-4 dark:border-zinc-800 dark:bg-zinc-900"
+                className="rounded-2xl border border-ps-border bg-ps-surface p-4"
               >
                 <div className="flex flex-wrap items-start justify-between gap-3">
                   <div className="min-w-0 flex-1">
-                    <h5 className="font-medium text-zinc-900 dark:text-zinc-50">
+                    <h5 className="font-medium text-ps-text">
                       {nom.event_name}
                     </h5>
-                    <div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-zinc-500 dark:text-zinc-400">
+                    <div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-ps-text-ter">
                       <span className="capitalize">
                         {nom.sport.replace(/_/g, " ")}
                       </span>
@@ -152,7 +152,7 @@ export function NominationsSection({
                     <button
                       onClick={() => handleApprove(nom.id)}
                       disabled={processingId === nom.id}
-                      className="rounded-md bg-green-600 px-3 py-1.5 text-xs font-medium text-white transition-colors hover:bg-green-700 disabled:opacity-50"
+                      className="rounded-xl bg-ps-green px-3 py-1.5 text-xs font-medium text-white transition-opacity hover:opacity-90 disabled:opacity-50"
                     >
                       {processingId === nom.id ? "..." : "Approve"}
                     </button>
@@ -165,7 +165,7 @@ export function NominationsSection({
                         }
                       }}
                       disabled={processingId === nom.id}
-                      className="rounded-md border border-red-300 px-3 py-1.5 text-xs font-medium text-red-700 transition-colors hover:bg-red-50 disabled:opacity-50 dark:border-red-700 dark:text-red-400 dark:hover:bg-red-900/20"
+                      className="rounded-xl border border-ps-red px-3 py-1.5 text-xs font-medium text-ps-red transition-colors hover:bg-ps-red-soft disabled:opacity-50"
                     >
                       Reject
                     </button>
@@ -180,14 +180,14 @@ export function NominationsSection({
                       value={rejectNote}
                       onChange={(e) => setRejectNote(e.target.value)}
                       placeholder="Optional reason for rejection..."
-                      className="block w-full rounded-md border border-zinc-300 px-3 py-1.5 text-sm dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-50"
+                      className="block w-full rounded-xl border border-ps-border bg-ps-bg px-3 py-1.5 text-sm text-ps-text"
                       autoFocus
                     />
                     <div className="mt-2 flex gap-2">
                       <button
                         onClick={() => handleReject(nom.id)}
                         disabled={processingId === nom.id}
-                        className="rounded-md bg-red-600 px-3 py-1 text-xs font-medium text-white transition-colors hover:bg-red-700 disabled:opacity-50"
+                        className="rounded-xl bg-ps-red px-3 py-1 text-xs font-medium text-white transition-opacity hover:opacity-90 disabled:opacity-50"
                       >
                         Confirm Rejection
                       </button>
@@ -196,7 +196,7 @@ export function NominationsSection({
                           setRejectNoteId(null);
                           setRejectNote("");
                         }}
-                        className="rounded-md border border-zinc-300 px-3 py-1 text-xs text-zinc-600 dark:border-zinc-700 dark:text-zinc-400"
+                        className="rounded-xl border border-ps-border-strong bg-transparent px-3 py-1 text-xs text-ps-text-sec"
                       >
                         Cancel
                       </button>
@@ -212,26 +212,26 @@ export function NominationsSection({
       {/* Reviewed nominations */}
       {reviewedNominations.length > 0 && (
         <div>
-          <h4 className="text-sm font-medium text-zinc-600 dark:text-zinc-400 mb-3">
+          <h4 className="text-sm font-medium text-ps-text-sec mb-3">
             Previously Reviewed
           </h4>
           <div className="space-y-2">
             {reviewedNominations.map((nom) => (
               <div
                 key={nom.id}
-                className="flex items-center justify-between rounded-md border border-zinc-100 p-3 dark:border-zinc-800"
+                className="flex items-center justify-between rounded-xl border border-ps-border p-3"
               >
                 <div className="flex items-center gap-3">
                   <StatusBadge status={nom.status} type="nomination" />
-                  <span className="text-sm text-zinc-700 dark:text-zinc-300">
+                  <span className="text-sm text-ps-text">
                     {nom.event_name}
                   </span>
-                  <span className="text-xs text-zinc-400 dark:text-zinc-500 capitalize">
+                  <span className="text-xs text-ps-text-ter capitalize">
                     {nom.sport.replace(/_/g, " ")}
                   </span>
                 </div>
                 {nom.admin_note && (
-                  <span className="text-xs text-zinc-500 dark:text-zinc-400 italic">
+                  <span className="text-xs text-ps-text-ter italic">
                     {nom.admin_note}
                   </span>
                 )}

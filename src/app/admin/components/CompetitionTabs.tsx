@@ -40,7 +40,7 @@ export function CompetitionTabs({
   return (
     <div>
       {/* Tab bar */}
-      <div className="border-b border-zinc-200 dark:border-zinc-800">
+      <div className="border-b border-ps-border">
         <nav className="-mb-px flex gap-1 overflow-x-auto sm:gap-4" aria-label="Tabs">
           {TABS.map((tab) => (
             <button
@@ -48,13 +48,13 @@ export function CompetitionTabs({
               onClick={() => setActiveTab(tab)}
               className={`relative whitespace-nowrap border-b-2 px-1 py-3 text-sm font-medium transition-colors ${
                 activeTab === tab
-                  ? "border-zinc-900 text-zinc-900 dark:border-zinc-50 dark:text-zinc-50"
-                  : "border-transparent text-zinc-500 hover:border-zinc-300 hover:text-zinc-700 dark:text-zinc-400 dark:hover:border-zinc-600 dark:hover:text-zinc-300"
+                  ? "border-ps-amber text-ps-text"
+                  : "border-transparent text-ps-text-sec hover:border-ps-border-strong hover:text-ps-text"
               }`}
             >
               {tab}
               {tab === "Nominations" && pendingNominationCount > 0 && (
-                <span className="ml-2 inline-flex h-5 w-5 items-center justify-center rounded-full bg-amber-500 text-xs font-bold text-white">
+                <span className="ml-2 inline-flex h-5 w-5 items-center justify-center rounded-full bg-ps-amber text-xs font-bold text-[#1a1208]">
                   {pendingNominationCount}
                 </span>
               )}

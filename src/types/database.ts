@@ -48,11 +48,14 @@ export interface Competition {
   created_at: string;
 }
 
+export type NoteVisibility = "public" | "private";
+
 export interface CompetitionMember {
   id: string;
   competition_id: string;
   user_id: string;
   role: UserRole;
+  callout_label: string | null;
   joined_at: string;
 }
 
@@ -101,8 +104,18 @@ export interface Prediction {
   is_correct: boolean | null;
   is_partial: boolean;
   points_awarded: number;
+  note_text: string | null;
+  note_visibility: NoteVisibility;
   submitted_at: string;
   updated_at: string;
+}
+
+export interface PredictionReaction {
+  id: string;
+  prediction_id: string;
+  user_id: string;
+  emoji: string;
+  created_at: string;
 }
 
 export interface Tiebreaker {

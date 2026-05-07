@@ -26,7 +26,7 @@ export function UserMenu({ displayName, avatarUrl }: UserMenuProps) {
     <div className="relative hidden md:block" ref={menuRef}>
       <button
         onClick={() => setIsOpen(!isOpen)}
-        className="flex items-center gap-2 rounded-md px-2 py-1.5 text-sm transition-colors hover:bg-zinc-100 dark:hover:bg-zinc-800"
+        className="flex items-center gap-2 rounded-md px-2 py-1.5 text-sm transition-colors hover:bg-ps-chip"
         aria-expanded={isOpen}
         aria-haspopup="true"
       >
@@ -38,15 +38,15 @@ export function UserMenu({ displayName, avatarUrl }: UserMenuProps) {
             referrerPolicy="no-referrer"
           />
         ) : (
-          <div className="flex h-7 w-7 items-center justify-center rounded-full bg-zinc-200 text-xs font-medium text-zinc-700 dark:bg-zinc-700 dark:text-zinc-300">
+          <div className="flex h-7 w-7 items-center justify-center rounded-full bg-ps-chip text-xs font-medium text-ps-text-sec">
             {displayName.charAt(0).toUpperCase()}
           </div>
         )}
-        <span className="max-w-[120px] truncate text-zinc-700 dark:text-zinc-300">
+        <span className="max-w-[120px] truncate text-ps-text-sec">
           {displayName}
         </span>
         <svg
-          className={`h-4 w-4 text-zinc-500 transition-transform ${isOpen ? "rotate-180" : ""}`}
+          className={`h-4 w-4 text-ps-text-ter transition-transform ${isOpen ? "rotate-180" : ""}`}
           fill="none"
           viewBox="0 0 24 24"
           strokeWidth={2}
@@ -62,9 +62,9 @@ export function UserMenu({ displayName, avatarUrl }: UserMenuProps) {
       </button>
 
       {isOpen && (
-        <div className="absolute right-0 z-50 mt-1 w-48 rounded-lg border border-zinc-200 bg-white py-1 shadow-lg dark:border-zinc-700 dark:bg-zinc-900">
-          <div className="border-b border-zinc-200 px-4 py-2 dark:border-zinc-700">
-            <p className="truncate text-sm font-medium text-zinc-900 dark:text-zinc-50">
+        <div className="absolute right-0 z-50 mt-1 w-48 rounded-lg border border-ps-border bg-ps-surface py-1 shadow-lg">
+          <div className="border-b border-ps-border px-4 py-2">
+            <p className="truncate text-sm font-medium text-ps-text">
               {displayName}
             </p>
           </div>

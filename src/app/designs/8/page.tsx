@@ -393,7 +393,7 @@ export default function HybridDesign() {
           <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
             {upcoming.map((event) => {
               const sg = sportGrad[event.sport] ?? { from: C.blue, to: C.violet };
-              const gp = event.groupPredictions as Record<string, number>;
+              const gp = event.groupPredictions as unknown as Record<string, number>;
               const total = Object.values(gp).reduce((a, b) => a + b, 0);
               const keys = Object.keys(gp);
 

@@ -93,7 +93,7 @@ export default async function CompetitionDetailPage({ params }: PageProps) {
       <div className="mb-6">
         <Link
           href="/admin"
-          className="inline-flex items-center gap-1 text-sm text-zinc-500 hover:text-zinc-700 dark:text-zinc-400 dark:hover:text-zinc-300 mb-3"
+          className="inline-flex items-center gap-1 text-sm text-ps-text-sec hover:text-ps-text mb-3"
         >
           <svg
             className="h-4 w-4"
@@ -112,17 +112,17 @@ export default async function CompetitionDetailPage({ params }: PageProps) {
         </Link>
 
         <div className="flex flex-wrap items-center gap-2">
-          <h1 className="text-2xl font-bold tracking-tight text-zinc-900 dark:text-zinc-50">
+          <h1 className="font-display text-[32px] tracking-wide text-ps-text">
             {competition.name}
           </h1>
           <StatusBadge status={competition.status} type="competition" />
-          <span className="text-xs text-zinc-400 dark:text-zinc-500 capitalize">
+          <span className="text-xs text-ps-text-ter capitalize">
             {competition.type}
           </span>
         </div>
 
         {competition.description && (
-          <p className="mt-1 text-sm text-zinc-500 dark:text-zinc-400">
+          <p className="mt-1 text-sm text-ps-text-sec">
             {competition.description}
           </p>
         )}

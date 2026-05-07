@@ -96,16 +96,16 @@ export default async function AdminPage() {
     <div className="mx-auto max-w-4xl p-6 sm:p-8">
       <div className="mb-6 flex flex-wrap items-start justify-between gap-3">
         <div>
-          <h1 className="text-2xl font-bold tracking-tight text-zinc-900 dark:text-zinc-50">
-            Admin Panel
+          <h1 className="font-display text-[32px] tracking-wide text-ps-text">
+            Match Day Desk
           </h1>
-          <p className="mt-1 text-sm text-zinc-600 dark:text-zinc-400">
+          <p className="mt-1 text-sm text-ps-text-sec">
             Manage your competitions, events, results, and participants.
           </p>
         </div>
         <Link
           href="/"
-          className="shrink-0 rounded-md border border-zinc-300 px-3 py-1.5 text-sm font-medium text-zinc-700 transition-colors hover:bg-zinc-50 dark:border-zinc-700 dark:text-zinc-300 dark:hover:bg-zinc-800"
+          className="shrink-0 rounded-xl border border-ps-border-strong bg-transparent px-3 py-1.5 text-sm font-medium text-ps-text transition-colors hover:bg-ps-chip"
         >
           Back to Home
         </Link>
@@ -118,11 +118,11 @@ export default async function AdminPage() {
 
       {/* Competition List */}
       {competitions.length === 0 ? (
-        <div className="rounded-lg border border-dashed border-zinc-300 p-12 text-center dark:border-zinc-700">
-          <h2 className="text-lg font-medium text-zinc-700 dark:text-zinc-300">
+        <div className="rounded-2xl border border-dashed border-ps-border p-12 text-center">
+          <h2 className="text-lg font-medium text-ps-text-sec">
             No competitions
           </h2>
-          <p className="mt-2 text-sm text-zinc-500 dark:text-zinc-400">
+          <p className="mt-2 text-sm text-ps-text-ter">
             Create your first competition to get started.
           </p>
         </div>
@@ -137,25 +137,25 @@ export default async function AdminPage() {
               <Link
                 key={comp.id}
                 href={`/admin/competitions/${comp.id}`}
-                className="block rounded-lg border border-zinc-200 bg-white p-5 transition-shadow hover:shadow-md dark:border-zinc-800 dark:bg-zinc-900"
+                className="block rounded-2xl border border-ps-border bg-ps-surface p-5 transition-shadow hover:shadow-md"
               >
                 <div className="flex items-start justify-between">
                   <div className="min-w-0 flex-1">
                     <div className="flex items-center gap-2">
-                      <h2 className="text-base font-semibold text-zinc-900 dark:text-zinc-50 truncate">
+                      <h2 className="text-base font-semibold text-ps-text truncate">
                         {comp.name}
                       </h2>
                       <StatusBadge status={comp.status} type="competition" />
-                      <span className="text-xs text-zinc-400 dark:text-zinc-500 capitalize">
+                      <span className="text-xs text-ps-text-ter capitalize">
                         {comp.type}
                       </span>
                     </div>
                     {comp.description && (
-                      <p className="mt-1 text-sm text-zinc-500 dark:text-zinc-400 line-clamp-1">
+                      <p className="mt-1 text-sm text-ps-text-ter line-clamp-1">
                         {comp.description}
                       </p>
                     )}
-                    <div className="mt-2 flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-zinc-500 dark:text-zinc-400">
+                    <div className="mt-2 flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-ps-text-ter">
                       <span>{eventCount} event{eventCount !== 1 ? "s" : ""}</span>
                       <span>{memberCount} member{memberCount !== 1 ? "s" : ""}</span>
                       <span className="capitalize">{comp.visibility}</span>
@@ -164,14 +164,14 @@ export default async function AdminPage() {
                         <span className="font-medium">{comp.role.replace("_", " ")}</span>
                       </span>
                       {pendingCount > 0 && (
-                        <span className="inline-flex items-center rounded-full bg-amber-100 px-2 py-0.5 text-xs font-medium text-amber-700 dark:bg-amber-900/30 dark:text-amber-400">
+                        <span className="inline-flex items-center rounded-full bg-ps-amber-soft px-2 py-0.5 text-xs font-medium text-ps-amber-deep">
                           {pendingCount} pending nomination{pendingCount !== 1 ? "s" : ""}
                         </span>
                       )}
                     </div>
                   </div>
                   <svg
-                    className="h-5 w-5 shrink-0 text-zinc-400 dark:text-zinc-600"
+                    className="h-5 w-5 shrink-0 text-ps-text-ter"
                     fill="none"
                     viewBox="0 0 24 24"
                     strokeWidth={1.5}

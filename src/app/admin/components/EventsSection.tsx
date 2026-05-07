@@ -73,12 +73,12 @@ export function EventsSection({ competition, events }: EventsSectionProps) {
   return (
     <div>
       <div className="flex items-center justify-between mb-4">
-        <h3 className="text-lg font-semibold text-zinc-900 dark:text-zinc-50">
+        <h3 className="text-lg font-semibold text-ps-text">
           Events
         </h3>
         <button
           onClick={() => setShowAddForm(!showAddForm)}
-          className="rounded-md bg-zinc-900 px-3 py-1.5 text-sm font-medium text-white transition-colors hover:bg-zinc-700 dark:bg-zinc-50 dark:text-zinc-900 dark:hover:bg-zinc-300"
+          className="rounded-xl bg-gradient-to-r from-[#f59e0b] to-[#d97706] px-3 py-1.5 text-sm font-medium text-[#1a1208] transition-opacity hover:opacity-90"
         >
           {showAddForm ? "Cancel" : "Add Event"}
         </button>
@@ -99,11 +99,11 @@ export function EventsSection({ competition, events }: EventsSectionProps) {
       )}
 
       {sortedEvents.length === 0 ? (
-        <div className="rounded-lg border border-dashed border-zinc-300 p-8 text-center dark:border-zinc-700">
-          <p className="text-zinc-500 dark:text-zinc-400">
+        <div className="rounded-2xl border border-dashed border-ps-border p-8 text-center">
+          <p className="text-ps-text-sec">
             No events added yet
           </p>
-          <p className="mt-1 text-sm text-zinc-400 dark:text-zinc-500">
+          <p className="mt-1 text-sm text-ps-text-ter">
             Add your first event to get started.
           </p>
         </div>
@@ -112,23 +112,23 @@ export function EventsSection({ competition, events }: EventsSectionProps) {
           {sortedEvents.map((event) => (
             <div
               key={event.id}
-              className="rounded-lg border border-zinc-200 bg-white dark:border-zinc-800 dark:bg-zinc-900"
+              className="rounded-2xl border border-ps-border bg-ps-surface"
             >
               {/* Event header */}
               <div className="flex flex-wrap items-start justify-between gap-3 p-4">
                 <div className="min-w-0 flex-1">
                   <div className="flex flex-wrap items-center gap-2">
-                    <h4 className="font-medium text-zinc-900 dark:text-zinc-50 truncate">
+                    <h4 className="font-medium text-ps-text truncate">
                       {event.event_name}
                     </h4>
                     <StatusBadge status={event.status} type="event" />
                     {event.result_confirmed && (
-                      <span className="inline-flex items-center rounded-full bg-green-100 px-2 py-0.5 text-xs font-medium text-green-700 dark:bg-green-900/30 dark:text-green-400">
+                      <span className="inline-flex items-center rounded-full bg-ps-green-soft px-2 py-0.5 text-xs font-medium text-ps-green">
                         Confirmed
                       </span>
                     )}
                   </div>
-                  <div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-zinc-500 dark:text-zinc-400">
+                  <div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-ps-text-ter">
                     <span className="capitalize">{event.sport.replace(/_/g, " ")}</span>
                     <span>
                       Start: {new Date(event.start_time).toLocaleString()}
@@ -137,14 +137,14 @@ export function EventsSection({ competition, events }: EventsSectionProps) {
                       Lock: {new Date(event.lock_time).toLocaleString()}
                     </span>
                     {(event.event_prediction_types ?? []).length > 0 && (
-                      <span className="text-zinc-400 dark:text-zinc-500">
+                      <span className="text-ps-text-ter">
                         {(event.event_prediction_types ?? [])
                           .map((ept) => ept.prediction_type.replace(/_/g, " "))
                           .join(", ")}
                       </span>
                     )}
                     {event.external_event_id && (
-                      <span className="text-blue-600 dark:text-blue-400">
+                      <span className="text-ps-amber-deep">
                         Linked
                       </span>
                     )}
@@ -158,7 +158,7 @@ export function EventsSection({ competition, events }: EventsSectionProps) {
                     event.status !== "cancelled" && (
                       <button
                         onClick={() => handleFetchResult(event)}
-                        className="rounded-md border border-blue-300 px-2.5 py-1 text-xs font-medium text-blue-700 transition-colors hover:bg-blue-50 dark:border-blue-700 dark:text-blue-400 dark:hover:bg-blue-900/20"
+                        className="rounded-xl border border-ps-border-strong px-2.5 py-1 text-xs font-medium text-ps-text transition-colors hover:bg-ps-chip"
                       >
                         Fetch Result
                       </button>
@@ -170,14 +170,14 @@ export function EventsSection({ competition, events }: EventsSectionProps) {
                       <button
                         onClick={() => handleStatusChange(event.id, "postponed")}
                         disabled={updatingStatus === event.id}
-                        className="rounded-md border border-orange-300 px-2.5 py-1 text-xs font-medium text-orange-700 transition-colors hover:bg-orange-50 disabled:opacity-50 dark:border-orange-700 dark:text-orange-400 dark:hover:bg-orange-900/20"
+                        className="rounded-xl border border-ps-amber px-2.5 py-1 text-xs font-medium text-ps-amber-deep transition-colors hover:bg-ps-amber-soft disabled:opacity-50"
                       >
                         Postpone
                       </button>
                       <button
                         onClick={() => handleStatusChange(event.id, "cancelled")}
                         disabled={updatingStatus === event.id}
-                        className="rounded-md border border-red-300 px-2.5 py-1 text-xs font-medium text-red-700 transition-colors hover:bg-red-50 disabled:opacity-50 dark:border-red-700 dark:text-red-400 dark:hover:bg-red-900/20"
+                        className="rounded-xl border border-ps-red px-2.5 py-1 text-xs font-medium text-ps-red transition-colors hover:bg-ps-red-soft disabled:opacity-50"
                       >
                         Cancel
                       </button>
@@ -192,7 +192,7 @@ export function EventsSection({ competition, events }: EventsSectionProps) {
                           expandedEventId === event.id ? null : event.id
                         )
                       }
-                      className="rounded-md border border-zinc-300 px-2.5 py-1 text-xs font-medium text-zinc-700 transition-colors hover:bg-zinc-50 dark:border-zinc-700 dark:text-zinc-300 dark:hover:bg-zinc-800"
+                      className="rounded-xl border border-ps-border-strong bg-transparent px-2.5 py-1 text-xs font-medium text-ps-text transition-colors hover:bg-ps-chip"
                     >
                       {expandedEventId === event.id ? "Hide" : "Results"}
                     </button>
@@ -202,7 +202,7 @@ export function EventsSection({ competition, events }: EventsSectionProps) {
 
               {/* Expanded result panel */}
               {expandedEventId === event.id && (
-                <div className="border-t border-zinc-200 p-4 dark:border-zinc-800">
+                <div className="border-t border-ps-border p-4">
                   <ResultPanel
                     event={event}
                     competitionId={competition.id}

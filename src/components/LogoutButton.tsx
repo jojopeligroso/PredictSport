@@ -16,7 +16,7 @@ export function LogoutButton() {
   return (
     <button
       onClick={handleLogout}
-      className="flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-sm text-zinc-700 transition-colors hover:bg-zinc-100 dark:text-zinc-300 dark:hover:bg-zinc-800"
+      className="flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-sm text-ps-text-sec transition-colors hover:bg-ps-chip hover:text-ps-text"
     >
       <svg
         className="h-4 w-4"

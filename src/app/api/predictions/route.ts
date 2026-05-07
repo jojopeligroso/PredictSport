@@ -6,6 +6,8 @@ interface PredictionRequestBody {
   competition_id?: string;
   prediction_type?: string;
   prediction_data?: Record<string, unknown>;
+  note_text?: string;
+  note_visibility?: "public" | "private";
 }
 
 const VALID_PREDICTION_TYPES = [
@@ -46,7 +48,7 @@ export async function POST(request: NextRequest) {
     );
   }
 
-  const { event_id, competition_id, prediction_type, prediction_data } = body;
+  const { event_id, competition_id, prediction_type, prediction_data, note_text, note_visibility } = body;
 
   // Validate required fields
   if (!event_id || !competition_id || !prediction_type || !prediction_data) {
@@ -136,6 +138,8 @@ export async function POST(request: NextRequest) {
       .from("predictions")
       .update({
         prediction_data,
+        ...(note_text !== undefined && { note_text }),
+        ...(note_visibility && { note_visibility }),
         updated_at: new Date().toISOString(),
       })
       .eq("id", existing.id)
@@ -160,6 +164,8 @@ export async function POST(request: NextRequest) {
       user_id: user.id,
       prediction_type,
       prediction_data,
+      ...(note_text !== undefined && { note_text }),
+      ...(note_visibility && { note_visibility }),
     })
     .select()
     .single();

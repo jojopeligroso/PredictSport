@@ -239,20 +239,20 @@ export function AddEventForm({
   // -----------------------------------------------------------------------
 
   return (
-    <div className="rounded-lg border border-zinc-200 bg-white dark:border-zinc-800 dark:bg-zinc-900">
+    <div className="rounded-2xl border border-ps-border bg-ps-surface">
       {/* Header + tab switcher */}
-      <div className="flex items-center justify-between border-b border-zinc-200 px-5 py-4 dark:border-zinc-800">
-        <h4 className="text-base font-semibold text-zinc-900 dark:text-zinc-50">
+      <div className="flex items-center justify-between border-b border-ps-border px-5 py-4">
+        <h4 className="text-base font-semibold text-ps-text">
           Add New Event
         </h4>
-        <div className="flex rounded-md border border-zinc-300 text-sm dark:border-zinc-700">
+        <div className="flex rounded-xl border border-ps-border text-sm overflow-hidden">
           <button
             type="button"
             onClick={() => setMode("browse")}
-            className={`rounded-l-md px-3 py-1.5 transition-colors ${
+            className={`px-3 py-1.5 transition-colors ${
               mode === "browse"
-                ? "bg-zinc-900 text-white dark:bg-zinc-50 dark:text-zinc-900"
-                : "text-zinc-600 hover:bg-zinc-100 dark:text-zinc-400 dark:hover:bg-zinc-800"
+                ? "bg-gradient-to-r from-[#f59e0b] to-[#d97706] text-[#1a1208] font-medium"
+                : "text-ps-text-sec hover:bg-ps-chip"
             }`}
           >
             Browse Fixtures
@@ -260,10 +260,10 @@ export function AddEventForm({
           <button
             type="button"
             onClick={() => setMode("manual")}
-            className={`rounded-r-md px-3 py-1.5 transition-colors ${
+            className={`px-3 py-1.5 transition-colors ${
               mode === "manual"
-                ? "bg-zinc-900 text-white dark:bg-zinc-50 dark:text-zinc-900"
-                : "text-zinc-600 hover:bg-zinc-100 dark:text-zinc-400 dark:hover:bg-zinc-800"
+                ? "bg-gradient-to-r from-[#f59e0b] to-[#d97706] text-[#1a1208] font-medium"
+                : "text-ps-text-sec hover:bg-ps-chip"
             }`}
           >
             Manual Entry
@@ -275,7 +275,7 @@ export function AddEventForm({
         {/* Browse Fixtures tab */}
         {mode === "browse" && (
           <div>
-            <p className="mb-3 text-sm text-zinc-500 dark:text-zinc-400">
+            <p className="mb-3 text-sm text-ps-text-ter">
               Select an upcoming fixture to auto-fill the event details.
             </p>
             <FixtureBrowser onSelect={handleFixtureSelect} />
@@ -286,31 +286,31 @@ export function AddEventForm({
         {mode === "manual" && (
           <form onSubmit={handleSubmit} noValidate>
             {error && (
-              <div className="mb-4 rounded-md bg-red-50 p-3 text-sm text-red-700 dark:bg-red-900/30 dark:text-red-400">
+              <div className="mb-4 rounded-xl bg-ps-red-soft p-3 text-sm text-ps-red">
                 {error}
               </div>
             )}
 
             {/* Linked fixture banner */}
             {externalEventId && (
-              <div className="mb-4 flex items-center justify-between rounded-md bg-green-50 px-3 py-2 text-sm dark:bg-green-900/20">
+              <div className="mb-4 flex items-center justify-between rounded-xl bg-ps-green-soft px-3 py-2 text-sm">
                 <div>
-                  <span className="font-medium text-green-800 dark:text-green-300">
+                  <span className="font-medium text-ps-green">
                     Linked to fixture
                   </span>
                   {linkedFixtureName && (
-                    <span className="ml-1 text-green-700 dark:text-green-400">
+                    <span className="ml-1 text-ps-green">
                       — {linkedFixtureName}
                     </span>
                   )}
-                  <div className="text-xs text-green-600 dark:text-green-500 mt-0.5">
+                  <div className="text-xs text-ps-green mt-0.5 opacity-80">
                     ID: {externalEventId}
                   </div>
                 </div>
                 <button
                   type="button"
                   onClick={handleUnlink}
-                  className="ml-3 shrink-0 text-xs text-red-500 underline hover:no-underline dark:text-red-400"
+                  className="ml-3 shrink-0 text-xs text-ps-red underline hover:no-underline"
                 >
                   Unlink
                 </button>
@@ -322,7 +322,7 @@ export function AddEventForm({
               <div>
                 <label
                   htmlFor="event-name"
-                  className="block text-sm font-medium text-zinc-700 dark:text-zinc-300"
+                  className="block text-sm font-medium text-ps-text-sec"
                 >
                   Event Name *
                 </label>
@@ -333,7 +333,7 @@ export function AddEventForm({
                   value={eventName}
                   onChange={(e) => setEventName(e.target.value)}
                   placeholder="e.g. Liverpool vs Man City"
-                  className="mt-1 block w-full rounded-md border border-zinc-300 px-3 py-2 text-sm shadow-sm focus:border-zinc-500 focus:outline-none focus:ring-1 focus:ring-zinc-500 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-50"
+                  className="mt-1 block w-full rounded-xl border border-ps-border bg-ps-bg px-3 py-2 text-sm text-ps-text shadow-sm focus:border-ps-amber focus:outline-none focus:ring-1 focus:ring-ps-amber"
                 />
               </div>
 
@@ -341,7 +341,7 @@ export function AddEventForm({
               <div>
                 <label
                   htmlFor="event-sport"
-                  className="block text-sm font-medium text-zinc-700 dark:text-zinc-300"
+                  className="block text-sm font-medium text-ps-text-sec"
                 >
                   Sport *
                 </label>
@@ -349,7 +349,7 @@ export function AddEventForm({
                   id="event-sport"
                   value={sport}
                   onChange={(e) => setSport(e.target.value as Sport)}
-                  className="mt-1 block w-full rounded-md border border-zinc-300 px-3 py-2 text-sm shadow-sm focus:border-zinc-500 focus:outline-none focus:ring-1 focus:ring-zinc-500 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-50"
+                  className="mt-1 block w-full rounded-xl border border-ps-border bg-ps-bg px-3 py-2 text-sm text-ps-text shadow-sm focus:border-ps-amber focus:outline-none focus:ring-1 focus:ring-ps-amber"
                 >
                   {SPORTS.map((s) => (
                     <option key={s.value} value={s.value}>
@@ -364,7 +364,7 @@ export function AddEventForm({
                 <div>
                   <label
                     htmlFor="event-start"
-                    className="block text-sm font-medium text-zinc-700 dark:text-zinc-300"
+                    className="block text-sm font-medium text-ps-text-sec"
                   >
                     Start Time *
                   </label>
@@ -374,13 +374,13 @@ export function AddEventForm({
                     required
                     value={startTime}
                     onChange={(e) => handleStartTimeChange(e.target.value)}
-                    className="mt-1 block w-full rounded-md border border-zinc-300 px-3 py-2 text-sm shadow-sm focus:border-zinc-500 focus:outline-none focus:ring-1 focus:ring-zinc-500 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-50"
+                    className="mt-1 block w-full rounded-xl border border-ps-border bg-ps-bg px-3 py-2 text-sm text-ps-text shadow-sm focus:border-ps-amber focus:outline-none focus:ring-1 focus:ring-ps-amber"
                   />
                 </div>
                 <div>
                   <label
                     htmlFor="event-lock"
-                    className="block text-sm font-medium text-zinc-700 dark:text-zinc-300"
+                    className="block text-sm font-medium text-ps-text-sec"
                   >
                     Lock Time *
                   </label>
@@ -390,9 +390,9 @@ export function AddEventForm({
                     required
                     value={lockTime}
                     onChange={(e) => setLockTime(e.target.value)}
-                    className="mt-1 block w-full rounded-md border border-zinc-300 px-3 py-2 text-sm shadow-sm focus:border-zinc-500 focus:outline-none focus:ring-1 focus:ring-zinc-500 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-50"
+                    className="mt-1 block w-full rounded-xl border border-ps-border bg-ps-bg px-3 py-2 text-sm text-ps-text shadow-sm focus:border-ps-amber focus:outline-none focus:ring-1 focus:ring-ps-amber"
                   />
-                  <p className="mt-1 text-xs text-zinc-500 dark:text-zinc-400">
+                  <p className="mt-1 text-xs text-ps-text-ter">
                     Auto-set to {lockDefaultMinutes} min before start. You can
                     adjust.
                   </p>
@@ -401,7 +401,7 @@ export function AddEventForm({
 
               {/* Prediction types */}
               <div>
-                <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-2">
+                <label className="block text-sm font-medium text-ps-text-sec mb-2">
                   Prediction Types *
                 </label>
                 <div className="flex flex-wrap gap-2">
@@ -413,8 +413,8 @@ export function AddEventForm({
                       title={pt.description}
                       className={`rounded-full px-3 py-1 text-xs font-medium transition-colors ${
                         isTypeSelected(pt.value)
-                          ? "bg-zinc-900 text-white dark:bg-zinc-50 dark:text-zinc-900"
-                          : "border border-zinc-300 text-zinc-700 hover:bg-zinc-100 dark:border-zinc-700 dark:text-zinc-300 dark:hover:bg-zinc-800"
+                          ? "bg-gradient-to-r from-[#f59e0b] to-[#d97706] text-[#1a1208]"
+                          : "border border-ps-border text-ps-text-sec hover:bg-ps-chip"
                       }`}
                     >
                       {pt.label}
@@ -461,14 +461,14 @@ export function AddEventForm({
                   <button
                     type="button"
                     onClick={() => setShowAdvanced(!showAdvanced)}
-                    className="text-xs text-zinc-500 underline hover:text-zinc-700 dark:text-zinc-400 dark:hover:text-zinc-200"
+                    className="text-xs text-ps-text-ter underline hover:text-ps-text"
                   >
                     {showAdvanced ? "Hide advanced scoring" : "Advanced: override points per type"}
                   </button>
 
                   {showAdvanced && (
-                    <div className="mt-3 rounded-md border border-zinc-200 p-4 dark:border-zinc-700">
-                      <p className="text-xs text-zinc-500 dark:text-zinc-400 mb-3">
+                    <div className="mt-3 rounded-xl border border-ps-border p-4">
+                      <p className="text-xs text-ps-text-ter mb-3">
                         Override the default points from the competition scoring template.
                       </p>
                       <div className="space-y-3">
@@ -483,12 +483,12 @@ export function AddEventForm({
                               className="grid grid-cols-3 gap-3 items-end"
                             >
                               <div>
-                                <label className="block text-xs text-zinc-500 dark:text-zinc-400">
+                                <label className="block text-xs text-ps-text-ter">
                                   {label}
                                 </label>
                               </div>
                               <div>
-                                <label className="block text-xs text-zinc-500 dark:text-zinc-400">
+                                <label className="block text-xs text-ps-text-ter">
                                   Points
                                 </label>
                                 <input
@@ -503,11 +503,11 @@ export function AddEventForm({
                                         : undefined,
                                     })
                                   }
-                                  className="mt-1 block w-full rounded-md border border-zinc-300 px-2 py-1 text-sm dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-50"
+                                  className="mt-1 block w-full rounded-xl border border-ps-border bg-ps-bg px-2 py-1 text-sm text-ps-text"
                                 />
                               </div>
                               <div>
-                                <label className="block text-xs text-zinc-500 dark:text-zinc-400">
+                                <label className="block text-xs text-ps-text-ter">
                                   Partial
                                 </label>
                                 <input
@@ -522,7 +522,7 @@ export function AddEventForm({
                                         : undefined,
                                     })
                                   }
-                                  className="mt-1 block w-full rounded-md border border-zinc-300 px-2 py-1 text-sm dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-50"
+                                  className="mt-1 block w-full rounded-xl border border-ps-border bg-ps-bg px-2 py-1 text-sm text-ps-text"
                                 />
                               </div>
                             </div>
@@ -540,21 +540,21 @@ export function AddEventForm({
               <button
                 type="submit"
                 disabled={isSubmitting}
-                className="rounded-md bg-zinc-900 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-zinc-700 disabled:opacity-50 dark:bg-zinc-50 dark:text-zinc-900 dark:hover:bg-zinc-300"
+                className="rounded-xl bg-gradient-to-r from-[#f59e0b] to-[#d97706] px-4 py-2 text-sm font-medium text-[#1a1208] transition-opacity hover:opacity-90 disabled:opacity-50"
               >
                 {isSubmitting ? "Adding..." : "Add Event"}
               </button>
               <button
                 type="button"
                 onClick={() => setMode("browse")}
-                className="rounded-md border border-zinc-300 px-4 py-2 text-sm font-medium text-zinc-700 transition-colors hover:bg-zinc-50 dark:border-zinc-700 dark:text-zinc-300 dark:hover:bg-zinc-800"
+                className="rounded-xl border border-ps-border-strong bg-transparent px-4 py-2 text-sm font-medium text-ps-text transition-colors hover:bg-ps-chip"
               >
                 Back to fixtures
               </button>
               <button
                 type="button"
                 onClick={onCancel}
-                className="rounded-md border border-zinc-300 px-4 py-2 text-sm font-medium text-zinc-700 transition-colors hover:bg-zinc-50 dark:border-zinc-700 dark:text-zinc-300 dark:hover:bg-zinc-800"
+                className="rounded-xl border border-ps-border-strong bg-transparent px-4 py-2 text-sm font-medium text-ps-text transition-colors hover:bg-ps-chip"
               >
                 Cancel
               </button>
@@ -592,8 +592,8 @@ function YesNoConfig({
   ];
 
   return (
-    <div className="rounded-md border border-zinc-200 p-3 dark:border-zinc-700">
-      <label className="block text-xs font-medium text-zinc-500 dark:text-zinc-400 mb-2">
+    <div className="rounded-xl border border-ps-border p-3">
+      <label className="block text-xs font-medium text-ps-text-ter mb-2">
         Yes/No Options
       </label>
       <div className="flex flex-wrap gap-2 mb-2">
@@ -606,8 +606,8 @@ function YesNoConfig({
             }
             className={`rounded-full px-2.5 py-1 text-xs transition-colors ${
               options[0] === preset.options[0] && options[1] === preset.options[1]
-                ? "bg-zinc-200 text-zinc-900 dark:bg-zinc-700 dark:text-zinc-100"
-                : "border border-zinc-300 text-zinc-600 hover:bg-zinc-100 dark:border-zinc-600 dark:text-zinc-400 dark:hover:bg-zinc-800"
+                ? "bg-ps-chip text-ps-text"
+                : "border border-ps-border text-ps-text-sec hover:bg-ps-chip"
             }`}
           >
             {preset.label}
@@ -620,14 +620,14 @@ function YesNoConfig({
           value={options[0]}
           onChange={(e) => handleOptionChange(0, e.target.value)}
           placeholder="Option 1"
-          className="rounded-md border border-zinc-300 px-2 py-1 text-sm dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-50"
+          className="rounded-xl border border-ps-border bg-ps-bg px-2 py-1 text-sm text-ps-text"
         />
         <input
           type="text"
           value={options[1]}
           onChange={(e) => handleOptionChange(1, e.target.value)}
           placeholder="Option 2"
-          className="rounded-md border border-zinc-300 px-2 py-1 text-sm dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-50"
+          className="rounded-xl border border-ps-border bg-ps-bg px-2 py-1 text-sm text-ps-text"
         />
       </div>
     </div>
@@ -725,8 +725,8 @@ function TopNConfig({
   ];
 
   return (
-    <div className="rounded-md border border-zinc-200 p-3 dark:border-zinc-700">
-      <label className="block text-xs font-medium text-zinc-500 dark:text-zinc-400 mb-2">
+    <div className="rounded-xl border border-ps-border p-3">
+      <label className="block text-xs font-medium text-ps-text-ter mb-2">
         Top Finishers — points per finishing position
       </label>
 
@@ -736,7 +736,7 @@ function TopNConfig({
             key={preset.label}
             type="button"
             onClick={preset.apply}
-            className="rounded-full border border-zinc-300 px-2.5 py-1 text-xs text-zinc-600 hover:bg-zinc-100 dark:border-zinc-600 dark:text-zinc-400 dark:hover:bg-zinc-800 transition-colors"
+            className="rounded-full border border-ps-border px-2.5 py-1 text-xs text-ps-text-sec hover:bg-ps-chip transition-colors"
           >
             {preset.label}
           </button>
@@ -744,7 +744,7 @@ function TopNConfig({
       </div>
 
       <div className="flex items-center gap-2 mb-3">
-        <span className="text-xs text-zinc-500 dark:text-zinc-400">Positions:</span>
+        <span className="text-xs text-ps-text-ter">Positions:</span>
         <input
           type="number"
           min={1}
@@ -752,7 +752,7 @@ function TopNConfig({
           value={n}
           onChange={(e) => handleNChange(parseInt(e.target.value) || 5)}
           onFocus={ensureLadder}
-          className="w-16 rounded-md border border-zinc-300 px-2 py-1 text-sm dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-50"
+          className="w-16 rounded-xl border border-ps-border bg-ps-bg px-2 py-1 text-sm text-ps-text"
         />
       </div>
 
@@ -760,7 +760,7 @@ function TopNConfig({
         <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
           {ladder.map((tier) => (
             <div key={tier.position} className="flex items-center gap-1.5">
-              <span className="text-xs text-zinc-500 dark:text-zinc-400 w-10 text-right tabular-nums">
+              <span className="text-xs text-ps-text-ter w-10 text-right tabular-nums">
                 {tier.position === 1 ? "1st" : tier.position === 2 ? "2nd" : tier.position === 3 ? "3rd" : `${tier.position}th`}:
               </span>
               <input
@@ -770,9 +770,9 @@ function TopNConfig({
                 onChange={(e) =>
                   updatePositionPoints(tier.position, parseInt(e.target.value) || 0)
                 }
-                className="w-14 rounded-md border border-zinc-300 px-2 py-1 text-xs dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-50"
+                className="w-14 rounded-xl border border-ps-border bg-ps-bg px-2 py-1 text-xs text-ps-text"
               />
-              <span className="text-xs text-zinc-400">pts</span>
+              <span className="text-xs text-ps-text-ter">pts</span>
             </div>
           ))}
         </div>
@@ -782,7 +782,7 @@ function TopNConfig({
         <button
           type="button"
           onClick={ensureLadder}
-          className="text-xs text-zinc-500 underline hover:text-zinc-700 dark:text-zinc-400 dark:hover:text-zinc-200"
+          className="text-xs text-ps-text-ter underline hover:text-ps-text"
         >
           Set points per position
         </button>
@@ -817,8 +817,8 @@ function ProgressionConfig({
   ];
 
   return (
-    <div className="rounded-md border border-zinc-200 p-3 dark:border-zinc-700">
-      <label className="block text-xs font-medium text-zinc-500 dark:text-zinc-400 mb-2">
+    <div className="rounded-xl border border-ps-border p-3">
+      <label className="block text-xs font-medium text-ps-text-ter mb-2">
         Progression Stages (earliest to best)
       </label>
       <div className="flex flex-wrap gap-2 mb-2">
@@ -829,7 +829,7 @@ function ProgressionConfig({
             onClick={() =>
               onChange({ config: { ...config.config, stages: preset.stages } })
             }
-            className="rounded-full border border-zinc-300 px-2.5 py-1 text-xs text-zinc-600 hover:bg-zinc-100 dark:border-zinc-600 dark:text-zinc-400 dark:hover:bg-zinc-800 transition-colors"
+            className="rounded-full border border-ps-border px-2.5 py-1 text-xs text-ps-text-sec hover:bg-ps-chip transition-colors"
           >
             {preset.label}
           </button>
@@ -847,9 +847,9 @@ function ProgressionConfig({
           })
         }
         placeholder="Stage 1, Stage 2, Stage 3, ..."
-        className="w-full rounded-md border border-zinc-300 px-2 py-1 text-sm dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-50"
+        className="w-full rounded-xl border border-ps-border bg-ps-bg px-2 py-1 text-sm text-ps-text"
       />
-      <p className="mt-1 text-xs text-zinc-400 dark:text-zinc-500">
+      <p className="mt-1 text-xs text-ps-text-ter">
         Comma-separated, from earliest exit to winner.
       </p>
     </div>
@@ -893,8 +893,8 @@ function FinalStandingsConfig({
   ];
 
   return (
-    <div className="rounded-md border border-zinc-200 p-3 dark:border-zinc-700">
-      <label className="block text-xs font-medium text-zinc-500 dark:text-zinc-400 mb-2">
+    <div className="rounded-xl border border-ps-border p-3">
+      <label className="block text-xs font-medium text-ps-text-ter mb-2">
         Final Standings — rank competitors in order
       </label>
 
@@ -904,7 +904,7 @@ function FinalStandingsConfig({
             key={preset.label}
             type="button"
             onClick={preset.apply}
-            className="rounded-full border border-zinc-300 px-2.5 py-1 text-xs text-zinc-600 hover:bg-zinc-100 dark:border-zinc-600 dark:text-zinc-400 dark:hover:bg-zinc-800 transition-colors"
+            className="rounded-full border border-ps-border px-2.5 py-1 text-xs text-ps-text-sec hover:bg-ps-chip transition-colors"
           >
             {preset.label}
           </button>
@@ -913,7 +913,7 @@ function FinalStandingsConfig({
 
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
         <div>
-          <span className="block text-xs text-zinc-500 dark:text-zinc-400 mb-1">
+          <span className="block text-xs text-ps-text-ter mb-1">
             Positions to predict
           </span>
           <input
@@ -922,11 +922,11 @@ function FinalStandingsConfig({
             max={50}
             value={positions}
             onChange={(e) => updateField("positions", parseInt(e.target.value) || 5)}
-            className="w-full rounded-md border border-zinc-300 px-2 py-1 text-sm dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-50"
+            className="w-full rounded-xl border border-ps-border bg-ps-bg px-2 py-1 text-sm text-ps-text"
           />
         </div>
         <div>
-          <span className="block text-xs text-zinc-500 dark:text-zinc-400 mb-1">
+          <span className="block text-xs text-ps-text-ter mb-1">
             Pts per correct position
           </span>
           <input
@@ -934,11 +934,11 @@ function FinalStandingsConfig({
             min={0}
             value={pointsPerCorrect}
             onChange={(e) => updateField("points_per_correct", parseInt(e.target.value) || 0)}
-            className="w-full rounded-md border border-zinc-300 px-2 py-1 text-sm dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-50"
+            className="w-full rounded-xl border border-ps-border bg-ps-bg px-2 py-1 text-sm text-ps-text"
           />
         </div>
         <div>
-          <span className="block text-xs text-zinc-500 dark:text-zinc-400 mb-1">
+          <span className="block text-xs text-ps-text-ter mb-1">
             Pts per correct name, wrong position
           </span>
           <input
@@ -946,12 +946,12 @@ function FinalStandingsConfig({
             min={0}
             value={pointsPerIncluded}
             onChange={(e) => updateField("points_per_included", parseInt(e.target.value) || 0)}
-            className="w-full rounded-md border border-zinc-300 px-2 py-1 text-sm dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-50"
+            className="w-full rounded-xl border border-ps-border bg-ps-bg px-2 py-1 text-sm text-ps-text"
           />
         </div>
       </div>
 
-      <p className="mt-2 text-xs text-zinc-400 dark:text-zinc-500">
+      <p className="mt-2 text-xs text-ps-text-ter">
         Participants rank {positions} competitors in order. They earn {pointsPerCorrect} pts for each
         correctly placed competitor, and {pointsPerIncluded} pts for naming someone who finishes
         in the top {positions} but in the wrong position.

@@ -207,33 +207,33 @@ function FixtureRow({
     <button
       type="button"
       onClick={() => onSelect(fixture)}
-      className="group w-full rounded-md border border-zinc-200 bg-white p-3 text-left transition-colors hover:border-zinc-400 hover:bg-zinc-50 dark:border-zinc-700 dark:bg-zinc-900 dark:hover:border-zinc-500 dark:hover:bg-zinc-800"
+      className="group w-full rounded-xl border border-ps-border bg-ps-surface p-3 text-left transition-colors hover:border-ps-border-strong hover:bg-ps-chip"
     >
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0 flex-1">
           {hasTeams ? (
-            <div className="text-sm font-medium text-zinc-900 dark:text-zinc-50">
+            <div className="text-sm font-medium text-ps-text">
               {home}{" "}
-              <span className="text-xs font-normal text-zinc-400 dark:text-zinc-500">
+              <span className="text-xs font-normal text-ps-text-ter">
                 vs
               </span>{" "}
               {away}
             </div>
           ) : (
-            <div className="text-sm font-medium text-zinc-900 dark:text-zinc-50 truncate">
+            <div className="text-sm font-medium text-ps-text truncate">
               {fixture.event_name}
             </div>
           )}
-          <div className="mt-0.5 flex flex-wrap items-center gap-x-2 text-xs text-zinc-500 dark:text-zinc-400">
+          <div className="mt-0.5 flex flex-wrap items-center gap-x-2 text-xs text-ps-text-ter">
             <span>{formatFixtureDate(fixture.start_time)}</span>
             {fixture.round && (
-              <span className="text-zinc-400 dark:text-zinc-500">
+              <span className="text-ps-text-ter">
                 Round {fixture.round}
               </span>
             )}
           </div>
         </div>
-        <span className="shrink-0 rounded-md bg-zinc-100 px-2 py-1 text-xs font-medium text-zinc-600 opacity-0 transition-opacity group-hover:opacity-100 dark:bg-zinc-700 dark:text-zinc-300">
+        <span className="shrink-0 rounded-lg bg-ps-amber-soft px-2 py-1 text-xs font-medium text-ps-amber-deep opacity-0 transition-opacity group-hover:opacity-100">
           Select
         </span>
       </div>
@@ -298,7 +298,7 @@ export function FixtureBrowser({ onSelect }: FixtureBrowserProps) {
       <div>
         <label
           htmlFor="fixture-league"
-          className="block text-sm font-medium text-zinc-700 dark:text-zinc-300"
+          className="block text-sm font-medium text-ps-text-sec"
         >
           Competition
         </label>
@@ -306,7 +306,7 @@ export function FixtureBrowser({ onSelect }: FixtureBrowserProps) {
           id="fixture-league"
           value={selectedLeagueId}
           onChange={(e) => handleLeagueChange(e.target.value)}
-          className="mt-1 block w-full rounded-md border border-zinc-300 px-3 py-2 text-sm shadow-sm focus:border-zinc-500 focus:outline-none focus:ring-1 focus:ring-zinc-500 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-50"
+          className="mt-1 block w-full rounded-xl border border-ps-border bg-ps-bg px-3 py-2 text-sm text-ps-text shadow-sm focus:border-ps-amber focus:outline-none focus:ring-1 focus:ring-ps-amber"
         >
           {LEAGUE_GROUPS.map((group) => (
             <optgroup key={group.label} label={group.label}>
@@ -323,7 +323,7 @@ export function FixtureBrowser({ onSelect }: FixtureBrowserProps) {
       {/* Fixtures list */}
       <div>
         {isLoading && (
-          <div className="flex items-center justify-center py-8 text-sm text-zinc-400 dark:text-zinc-500">
+          <div className="flex items-center justify-center py-8 text-sm text-ps-text-ter">
             <svg
               className="mr-2 h-4 w-4 animate-spin"
               viewBox="0 0 24 24"
@@ -349,7 +349,7 @@ export function FixtureBrowser({ onSelect }: FixtureBrowserProps) {
         )}
 
         {!isLoading && error && (
-          <div className="rounded-md bg-red-50 p-3 text-sm text-red-700 dark:bg-red-900/30 dark:text-red-400">
+          <div className="rounded-xl bg-ps-red-soft p-3 text-sm text-ps-red">
             {error}
             <button
               type="button"
@@ -369,7 +369,7 @@ export function FixtureBrowser({ onSelect }: FixtureBrowserProps) {
         )}
 
         {!isLoading && !error && fixtures.length === 0 && (
-          <div className="rounded-md border border-dashed border-zinc-300 py-8 text-center text-sm text-zinc-400 dark:border-zinc-700 dark:text-zinc-500">
+          <div className="rounded-xl border border-dashed border-ps-border py-8 text-center text-sm text-ps-text-ter">
             No upcoming fixtures found for this competition.
           </div>
         )}

@@ -145,7 +145,7 @@ export function CreateCompetitionForm() {
     return (
       <button
         onClick={() => setIsOpen(true)}
-        className="rounded-lg bg-zinc-900 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-zinc-700 dark:bg-zinc-50 dark:text-zinc-900 dark:hover:bg-zinc-300"
+        className="rounded-xl bg-gradient-to-r from-[#f59e0b] to-[#d97706] px-4 py-2 text-sm font-medium text-[#1a1208] transition-opacity hover:opacity-90"
       >
         Create Competition
       </button>
@@ -155,14 +155,14 @@ export function CreateCompetitionForm() {
   return (
     <form
       onSubmit={handleSubmit}
-      className="rounded-lg border border-zinc-200 bg-white p-6 dark:border-zinc-800 dark:bg-zinc-900"
+      className="rounded-2xl border border-ps-border bg-ps-surface p-6"
     >
-      <h3 className="text-lg font-semibold text-zinc-900 dark:text-zinc-50 mb-4">
+      <h3 className="text-lg font-semibold text-ps-text mb-4">
         New Competition
       </h3>
 
       {error && (
-        <div className="mb-4 rounded-md bg-red-50 p-3 text-sm text-red-700 dark:bg-red-900/30 dark:text-red-400">
+        <div className="mb-4 rounded-xl bg-ps-red-soft p-3 text-sm text-ps-red">
           {error}
         </div>
       )}
@@ -172,7 +172,7 @@ export function CreateCompetitionForm() {
         <div>
           <label
             htmlFor="comp-name"
-            className="block text-sm font-medium text-zinc-700 dark:text-zinc-300"
+            className="block text-sm font-medium text-ps-text-sec"
           >
             Name *
           </label>
@@ -183,7 +183,7 @@ export function CreateCompetitionForm() {
             value={name}
             onChange={(e) => setName(e.target.value)}
             placeholder="e.g. Wexford FC Prediction League 2026"
-            className="mt-1 block w-full rounded-md border border-zinc-300 px-3 py-2 text-sm shadow-sm focus:border-zinc-500 focus:outline-none focus:ring-1 focus:ring-zinc-500 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-50"
+            className="mt-1 block w-full rounded-xl border border-ps-border bg-ps-bg px-3 py-2 text-sm text-ps-text shadow-sm focus:border-ps-amber focus:outline-none focus:ring-1 focus:ring-ps-amber"
           />
         </div>
 
@@ -191,7 +191,7 @@ export function CreateCompetitionForm() {
         <div>
           <label
             htmlFor="comp-desc"
-            className="block text-sm font-medium text-zinc-700 dark:text-zinc-300"
+            className="block text-sm font-medium text-ps-text-sec"
           >
             Description
           </label>
@@ -201,7 +201,7 @@ export function CreateCompetitionForm() {
             onChange={(e) => setDescription(e.target.value)}
             rows={2}
             placeholder="Optional description..."
-            className="mt-1 block w-full rounded-md border border-zinc-300 px-3 py-2 text-sm shadow-sm focus:border-zinc-500 focus:outline-none focus:ring-1 focus:ring-zinc-500 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-50"
+            className="mt-1 block w-full rounded-xl border border-ps-border bg-ps-bg px-3 py-2 text-sm text-ps-text shadow-sm focus:border-ps-amber focus:outline-none focus:ring-1 focus:ring-ps-amber"
           />
         </div>
 
@@ -210,7 +210,7 @@ export function CreateCompetitionForm() {
           <div>
             <label
               htmlFor="comp-type"
-              className="block text-sm font-medium text-zinc-700 dark:text-zinc-300"
+              className="block text-sm font-medium text-ps-text-sec"
             >
               Type *
             </label>
@@ -218,12 +218,12 @@ export function CreateCompetitionForm() {
               id="comp-type"
               value={type}
               onChange={(e) => setType(e.target.value as CompetitionType)}
-              className="mt-1 block w-full rounded-md border border-zinc-300 px-3 py-2 text-sm shadow-sm focus:border-zinc-500 focus:outline-none focus:ring-1 focus:ring-zinc-500 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-50"
+              className="mt-1 block w-full rounded-xl border border-ps-border bg-ps-bg px-3 py-2 text-sm text-ps-text shadow-sm focus:border-ps-amber focus:outline-none focus:ring-1 focus:ring-ps-amber"
             >
               <option value="open">Open / Rolling</option>
               <option value="fixed">Fixed</option>
             </select>
-            <p className="mt-1 text-xs text-zinc-500 dark:text-zinc-400">
+            <p className="mt-1 text-xs text-ps-text-ter">
               {type === "fixed"
                 ? "All events defined at creation"
                 : "Events added throughout the competition"}
@@ -233,7 +233,7 @@ export function CreateCompetitionForm() {
           <div>
             <label
               htmlFor="comp-visibility"
-              className="block text-sm font-medium text-zinc-700 dark:text-zinc-300"
+              className="block text-sm font-medium text-ps-text-sec"
             >
               Visibility
             </label>
@@ -243,7 +243,7 @@ export function CreateCompetitionForm() {
               onChange={(e) =>
                 setVisibility(e.target.value as CompetitionVisibility)
               }
-              className="mt-1 block w-full rounded-md border border-zinc-300 px-3 py-2 text-sm shadow-sm focus:border-zinc-500 focus:outline-none focus:ring-1 focus:ring-zinc-500 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-50"
+              className="mt-1 block w-full rounded-xl border border-ps-border bg-ps-bg px-3 py-2 text-sm text-ps-text shadow-sm focus:border-ps-amber focus:outline-none focus:ring-1 focus:ring-ps-amber"
             >
               <option value="private">Private (invite only)</option>
               <option value="public">Public (open join)</option>
@@ -253,17 +253,17 @@ export function CreateCompetitionForm() {
 
         {/* Scoring Preset */}
         <div>
-          <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-2">
+          <label className="block text-sm font-medium text-ps-text-sec mb-2">
             Scoring Template *
           </label>
           <div className="grid gap-2 sm:grid-cols-2">
             {Object.entries(SCORING_PRESETS).map(([key, preset]) => (
               <label
                 key={key}
-                className={`flex cursor-pointer items-start gap-3 rounded-md border p-3 transition-colors ${
+                className={`flex cursor-pointer items-start gap-3 rounded-xl border p-3 transition-colors ${
                   selectedPreset === key
-                    ? "border-zinc-900 bg-zinc-50 dark:border-zinc-400 dark:bg-zinc-800"
-                    : "border-zinc-200 hover:border-zinc-400 dark:border-zinc-700 dark:hover:border-zinc-600"
+                    ? "border-ps-amber bg-ps-amber-soft"
+                    : "border-ps-border hover:border-ps-border-strong"
                 }`}
               >
                 <input
@@ -275,10 +275,10 @@ export function CreateCompetitionForm() {
                   className="mt-0.5"
                 />
                 <div>
-                  <div className="text-sm font-medium text-zinc-900 dark:text-zinc-50">
+                  <div className="text-sm font-medium text-ps-text">
                     {preset.label}
                   </div>
-                  <div className="text-xs text-zinc-500 dark:text-zinc-400">
+                  <div className="text-xs text-ps-text-ter">
                     {preset.description}
                   </div>
                 </div>
@@ -289,14 +289,14 @@ export function CreateCompetitionForm() {
 
         {/* Custom scoring details */}
         {selectedPreset === "custom" && (
-          <div className="rounded-md border border-zinc-200 p-4 dark:border-zinc-700">
-            <h4 className="text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-3">
+          <div className="rounded-xl border border-ps-border p-4">
+            <h4 className="text-sm font-medium text-ps-text-sec mb-3">
               Points per Prediction Type
             </h4>
             <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
               {Object.entries(customPoints).map(([pType, pts]) => (
                 <div key={pType}>
-                  <label className="block text-xs text-zinc-500 dark:text-zinc-400 capitalize">
+                  <label className="block text-xs text-ps-text-ter capitalize">
                     {pType.replace(/_/g, " ")}
                   </label>
                   <input
@@ -309,7 +309,7 @@ export function CreateCompetitionForm() {
                         [pType]: parseInt(e.target.value) || 0,
                       }))
                     }
-                    className="mt-1 block w-full rounded-md border border-zinc-300 px-2 py-1 text-sm dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-50"
+                    className="mt-1 block w-full rounded-xl border border-ps-border bg-ps-bg px-2 py-1 text-sm text-ps-text"
                   />
                 </div>
               ))}
@@ -322,7 +322,7 @@ export function CreateCompetitionForm() {
                   checked={partialCredit}
                   onChange={(e) => setPartialCredit(e.target.checked)}
                 />
-                <span className="text-sm text-zinc-700 dark:text-zinc-300">
+                <span className="text-sm text-ps-text-sec">
                   Allow partial credit
                 </span>
               </label>
@@ -332,7 +332,7 @@ export function CreateCompetitionForm() {
               <div className="mt-3 grid grid-cols-2 gap-3">
                 {Object.entries(partialPoints).map(([pType, pts]) => (
                   <div key={pType}>
-                    <label className="block text-xs text-zinc-500 dark:text-zinc-400 capitalize">
+                    <label className="block text-xs text-ps-text-ter capitalize">
                       {pType.replace(/_/g, " ")} (partial)
                     </label>
                     <input
@@ -345,7 +345,7 @@ export function CreateCompetitionForm() {
                           [pType]: parseInt(e.target.value) || 0,
                         }))
                       }
-                      className="mt-1 block w-full rounded-md border border-zinc-300 px-2 py-1 text-sm dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-50"
+                      className="mt-1 block w-full rounded-xl border border-ps-border bg-ps-bg px-2 py-1 text-sm text-ps-text"
                     />
                   </div>
                 ))}
@@ -359,7 +359,7 @@ export function CreateCompetitionForm() {
           <div>
             <label
               htmlFor="min-rounds"
-              className="block text-sm font-medium text-zinc-700 dark:text-zinc-300"
+              className="block text-sm font-medium text-ps-text-sec"
             >
               Min. Rounds Required
             </label>
@@ -370,9 +370,9 @@ export function CreateCompetitionForm() {
               value={minRoundsRequired}
               onChange={(e) => setMinRoundsRequired(e.target.value)}
               placeholder="All (leave blank)"
-              className="mt-1 block w-full rounded-md border border-zinc-300 px-3 py-2 text-sm shadow-sm focus:border-zinc-500 focus:outline-none focus:ring-1 focus:ring-zinc-500 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-50"
+              className="mt-1 block w-full rounded-xl border border-ps-border bg-ps-bg px-3 py-2 text-sm text-ps-text shadow-sm focus:border-ps-amber focus:outline-none focus:ring-1 focus:ring-ps-amber"
             />
-            <p className="mt-1 text-xs text-zinc-500 dark:text-zinc-400">
+            <p className="mt-1 text-xs text-ps-text-ter">
               How many rounds participants must play. Blank = all.
             </p>
           </div>
@@ -383,7 +383,7 @@ export function CreateCompetitionForm() {
                 checked={allowPredictionUpdates}
                 onChange={(e) => setAllowPredictionUpdates(e.target.checked)}
               />
-              <span className="text-sm text-zinc-700 dark:text-zinc-300">
+              <span className="text-sm text-ps-text-sec">
                 Allow prediction updates before lock
               </span>
             </label>
@@ -394,7 +394,7 @@ export function CreateCompetitionForm() {
         <div>
           <label
             htmlFor="tiebreaker"
-            className="block text-sm font-medium text-zinc-700 dark:text-zinc-300"
+            className="block text-sm font-medium text-ps-text-sec"
           >
             Tiebreaker Question
           </label>
@@ -404,9 +404,9 @@ export function CreateCompetitionForm() {
             value={tiebreakerQuestion}
             onChange={(e) => setTiebreakerQuestion(e.target.value)}
             placeholder='e.g. "Total goals in the World Cup"'
-            className="mt-1 block w-full rounded-md border border-zinc-300 px-3 py-2 text-sm shadow-sm focus:border-zinc-500 focus:outline-none focus:ring-1 focus:ring-zinc-500 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-50"
+            className="mt-1 block w-full rounded-xl border border-ps-border bg-ps-bg px-3 py-2 text-sm text-ps-text shadow-sm focus:border-ps-amber focus:outline-none focus:ring-1 focus:ring-ps-amber"
           />
-          <p className="mt-1 text-xs text-zinc-500 dark:text-zinc-400">
+          <p className="mt-1 text-xs text-ps-text-ter">
             Optional. A numeric question used to break ties. Closest to actual value wins.
           </p>
         </div>
@@ -417,14 +417,14 @@ export function CreateCompetitionForm() {
         <button
           type="submit"
           disabled={isSubmitting}
-          className="rounded-md bg-zinc-900 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-zinc-700 disabled:opacity-50 dark:bg-zinc-50 dark:text-zinc-900 dark:hover:bg-zinc-300"
+          className="rounded-xl bg-gradient-to-r from-[#f59e0b] to-[#d97706] px-4 py-2 text-sm font-medium text-[#1a1208] transition-opacity hover:opacity-90 disabled:opacity-50"
         >
           {isSubmitting ? "Creating..." : "Create Competition"}
         </button>
         <button
           type="button"
           onClick={() => setIsOpen(false)}
-          className="rounded-md border border-zinc-300 px-4 py-2 text-sm font-medium text-zinc-700 transition-colors hover:bg-zinc-50 dark:border-zinc-700 dark:text-zinc-300 dark:hover:bg-zinc-800"
+          className="rounded-xl border border-ps-border-strong bg-transparent px-4 py-2 text-sm font-medium text-ps-text transition-colors hover:bg-ps-chip"
         >
           Cancel
         </button>

@@ -31,7 +31,7 @@ export function LoginButton() {
       <button
         onClick={handleLogin}
         disabled={isLoading}
-        className="flex w-full items-center justify-center gap-3 rounded-lg border border-zinc-300 bg-white px-4 py-3 text-sm font-medium text-zinc-900 transition-colors hover:bg-zinc-50 disabled:cursor-not-allowed disabled:opacity-50 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-100 dark:hover:bg-zinc-700"
+        className="flex w-full items-center justify-center gap-3 rounded-lg border border-ps-border bg-ps-bg px-4 py-3 text-sm font-medium text-ps-text transition-colors hover:bg-ps-chip disabled:cursor-not-allowed disabled:opacity-50"
       >
         <svg className="h-5 w-5" viewBox="0 0 24 24" aria-hidden="true">
           <path
@@ -55,7 +55,7 @@ export function LoginButton() {
       </button>
 
       {error && (
-        <p className="text-center text-sm text-red-600 dark:text-red-400">
+        <p className="text-center text-sm text-red-600">
           {error}
         </p>
       )}

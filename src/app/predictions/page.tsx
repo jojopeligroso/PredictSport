@@ -34,10 +34,10 @@ export default async function PredictionsPage({
   if (membershipsError) {
     return (
       <div className="mx-auto max-w-4xl p-4 sm:p-8">
-        <h1 className="text-3xl font-bold tracking-tight text-zinc-900 dark:text-zinc-50">
+        <h1 className="font-display text-4xl tracking-wide text-ps-text">
           My Predictions
         </h1>
-        <div className="mt-8 rounded-lg border border-red-200 bg-red-50 p-6 text-red-700 dark:border-red-800 dark:bg-red-900/20 dark:text-red-400">
+        <div className="mt-8 rounded-lg border border-ps-red bg-ps-red-soft p-6 text-ps-red">
           Failed to load competitions. Please try again later.
         </div>
       </div>
@@ -56,17 +56,17 @@ export default async function PredictionsPage({
   if (competitions.length === 0) {
     return (
       <div className="mx-auto max-w-4xl p-4 sm:p-8">
-        <h1 className="text-3xl font-bold tracking-tight text-zinc-900 dark:text-zinc-50">
+        <h1 className="font-display text-4xl tracking-wide text-ps-text">
           My Predictions
         </h1>
-        <p className="mt-2 text-zinc-600 dark:text-zinc-400">
+        <p className="mt-2 text-ps-text-sec">
           Submit your predictions before each event locks.
         </p>
-        <div className="mt-8 rounded-lg border border-zinc-200 bg-white p-12 text-center dark:border-zinc-800 dark:bg-zinc-900">
-          <p className="text-zinc-500 dark:text-zinc-400">
+        <div className="mt-8 rounded-lg border border-ps-border bg-ps-surface p-12 text-center">
+          <p className="text-ps-text-sec">
             You haven&apos;t joined any competitions yet.
           </p>
-          <p className="mt-2 text-sm text-zinc-400 dark:text-zinc-500">
+          <p className="mt-2 text-sm text-ps-text-ter">
             Ask a friend for an invite link, or join a public competition to get
             started.
           </p>
@@ -86,14 +86,14 @@ export default async function PredictionsPage({
   if (!selectedCompetition) {
     return (
       <div className="mx-auto max-w-4xl p-4 sm:p-8">
-        <h1 className="text-3xl font-bold tracking-tight text-zinc-900 dark:text-zinc-50">
+        <h1 className="font-display text-4xl tracking-wide text-ps-text">
           My Predictions
         </h1>
         <CompetitionSelector
           competitions={competitions}
           selectedId={selectedCompetitionId}
         />
-        <div className="mt-8 rounded-lg border border-zinc-200 bg-white p-12 text-center text-zinc-500 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-400">
+        <div className="mt-8 rounded-lg border border-ps-border bg-ps-surface p-12 text-center text-ps-text-sec">
           Competition not found. Select a different one above.
         </div>
       </div>
@@ -110,14 +110,14 @@ export default async function PredictionsPage({
   if (eventsError) {
     return (
       <div className="mx-auto max-w-4xl p-4 sm:p-8">
-        <h1 className="text-3xl font-bold tracking-tight text-zinc-900 dark:text-zinc-50">
+        <h1 className="font-display text-4xl tracking-wide text-ps-text">
           My Predictions
         </h1>
         <CompetitionSelector
           competitions={competitions}
           selectedId={selectedCompetitionId}
         />
-        <div className="mt-8 rounded-lg border border-red-200 bg-red-50 p-6 text-red-700 dark:border-red-800 dark:bg-red-900/20 dark:text-red-400">
+        <div className="mt-8 rounded-lg border border-ps-red bg-ps-red-soft p-6 text-ps-red">
           Failed to load events. Please try again later.
         </div>
       </div>
@@ -159,10 +159,10 @@ export default async function PredictionsPage({
 
   return (
     <div className="mx-auto max-w-4xl p-4 sm:p-8">
-      <h1 className="text-3xl font-bold tracking-tight text-zinc-900 dark:text-zinc-50">
+      <h1 className="font-display text-4xl tracking-wide text-ps-text">
         My Predictions
       </h1>
-      <p className="mt-2 text-zinc-600 dark:text-zinc-400">
+      <p className="mt-2 text-ps-text-sec">
         Submit your predictions before each event locks.
       </p>
 

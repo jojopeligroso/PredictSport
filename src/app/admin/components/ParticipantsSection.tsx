@@ -94,26 +94,26 @@ export function ParticipantsSection({
   return (
     <div>
       <div className="flex items-center justify-between mb-4">
-        <h3 className="text-lg font-semibold text-zinc-900 dark:text-zinc-50">
+        <h3 className="text-lg font-semibold text-ps-text">
           Participants ({(members ?? []).length})
         </h3>
       </div>
 
       {/* Members list */}
-      <div className="overflow-x-auto rounded-lg border border-zinc-200 dark:border-zinc-800">
+      <div className="overflow-x-auto rounded-2xl border border-ps-border">
         <table className="w-full min-w-[480px] text-sm">
           <thead>
-            <tr className="border-b border-zinc-200 bg-zinc-50 dark:border-zinc-800 dark:bg-zinc-900">
-              <th className="px-4 py-2 text-left font-medium text-zinc-600 dark:text-zinc-400">
+            <tr className="border-b border-ps-border bg-ps-bg">
+              <th className="px-4 py-2 text-left font-medium text-ps-text-sec">
                 Name
               </th>
-              <th className="px-4 py-2 text-left font-medium text-zinc-600 dark:text-zinc-400">
+              <th className="px-4 py-2 text-left font-medium text-ps-text-sec">
                 Role
               </th>
-              <th className="hidden px-4 py-2 text-left font-medium text-zinc-600 sm:table-cell dark:text-zinc-400">
+              <th className="hidden px-4 py-2 text-left font-medium text-ps-text-sec sm:table-cell">
                 Joined
               </th>
-              <th className="px-4 py-2 text-right font-medium text-zinc-600 dark:text-zinc-400">
+              <th className="px-4 py-2 text-right font-medium text-ps-text-sec">
                 Actions
               </th>
             </tr>
@@ -126,18 +126,18 @@ export function ParticipantsSection({
               return (
                 <tr
                   key={member.id}
-                  className="border-b border-zinc-100 last:border-b-0 dark:border-zinc-800"
+                  className="border-b border-ps-border last:border-b-0"
                 >
                   <td className="px-4 py-3">
-                    <div className="font-medium text-zinc-900 dark:text-zinc-50">
+                    <div className="font-medium text-ps-text">
                       {member.user?.display_name ?? "Unknown"}
                       {isSelf && (
-                        <span className="ml-2 text-xs text-zinc-400 dark:text-zinc-500">
+                        <span className="ml-2 text-xs text-ps-text-ter">
                           (you)
                         </span>
                       )}
                     </div>
-                    <div className="text-xs text-zinc-500 dark:text-zinc-400">
+                    <div className="text-xs text-ps-text-ter">
                       {member.user?.email ?? ""}
                     </div>
                   </td>
@@ -145,21 +145,21 @@ export function ParticipantsSection({
                     <span
                       className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium capitalize ${
                         member.role === "admin"
-                          ? "bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400"
+                          ? "bg-ps-violet text-white"
                           : member.role === "co_admin"
-                            ? "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400"
-                            : "bg-zinc-100 text-zinc-700 dark:bg-zinc-800 dark:text-zinc-400"
+                            ? "bg-ps-amber-soft text-ps-amber-deep"
+                            : "bg-ps-chip text-ps-text-sec"
                       }`}
                     >
                       {member.role.replace("_", " ")}
                     </span>
                     {isCreator && (
-                      <span className="ml-1 text-xs text-zinc-400 dark:text-zinc-500">
+                      <span className="ml-1 text-xs text-ps-text-ter">
                         (creator)
                       </span>
                     )}
                   </td>
-                  <td className="hidden px-4 py-3 text-zinc-500 sm:table-cell dark:text-zinc-400">
+                  <td className="hidden px-4 py-3 text-ps-text-ter sm:table-cell">
                     {new Date(member.joined_at).toLocaleDateString()}
                   </td>
                   <td className="px-4 py-3 text-right">
@@ -171,7 +171,7 @@ export function ParticipantsSection({
                               handleRoleChange(member.user_id, "co_admin")
                             }
                             disabled={updatingMemberId === member.user_id}
-                            className="rounded-md px-2 py-1 text-xs font-medium text-blue-600 transition-colors hover:bg-blue-50 disabled:opacity-50 dark:text-blue-400 dark:hover:bg-blue-900/20"
+                            className="rounded-xl px-2 py-1 text-xs font-medium text-ps-amber-deep transition-colors hover:bg-ps-amber-soft disabled:opacity-50"
                           >
                             Promote
                           </button>
@@ -182,7 +182,7 @@ export function ParticipantsSection({
                               handleRoleChange(member.user_id, "participant")
                             }
                             disabled={updatingMemberId === member.user_id}
-                            className="rounded-md px-2 py-1 text-xs font-medium text-orange-600 transition-colors hover:bg-orange-50 disabled:opacity-50 dark:text-orange-400 dark:hover:bg-orange-900/20"
+                            className="rounded-xl px-2 py-1 text-xs font-medium text-ps-text-sec transition-colors hover:bg-ps-chip disabled:opacity-50"
                           >
                             Demote
                           </button>
@@ -200,36 +200,36 @@ export function ParticipantsSection({
       {/* Invite links section */}
       <div className="mt-8">
         <div className="flex items-center justify-between mb-3">
-          <h4 className="text-base font-semibold text-zinc-900 dark:text-zinc-50">
+          <h4 className="text-base font-semibold text-ps-text">
             Invite Links
           </h4>
           <button
             onClick={handleGenerateInvite}
             disabled={isGeneratingInvite}
-            className="rounded-md bg-zinc-900 px-3 py-1.5 text-sm font-medium text-white transition-colors hover:bg-zinc-700 disabled:opacity-50 dark:bg-zinc-50 dark:text-zinc-900 dark:hover:bg-zinc-300"
+            className="rounded-xl bg-gradient-to-r from-[#f59e0b] to-[#d97706] px-3 py-1.5 text-sm font-medium text-[#1a1208] transition-opacity hover:opacity-90 disabled:opacity-50"
           >
             {isGeneratingInvite ? "Generating..." : "Generate Invite Link"}
           </button>
         </div>
 
         {inviteError && (
-          <div className="mb-3 rounded-md bg-red-50 p-3 text-sm text-red-700 dark:bg-red-900/30 dark:text-red-400">
+          <div className="mb-3 rounded-xl bg-ps-red-soft p-3 text-sm text-ps-red">
             {inviteError}
           </div>
         )}
 
         {/* Competition invite code */}
-        <div className="mb-4 rounded-md border border-zinc-200 p-3 dark:border-zinc-700">
+        <div className="mb-4 rounded-xl border border-ps-border p-3">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm font-medium text-zinc-700 dark:text-zinc-300">
+              <p className="text-sm font-medium text-ps-text">
                 Competition Code
               </p>
-              <p className="text-xs text-zinc-500 dark:text-zinc-400">
+              <p className="text-xs text-ps-text-ter">
                 Share this code for quick join
               </p>
             </div>
-            <code className="rounded bg-zinc-100 px-3 py-1 text-sm font-mono text-zinc-900 dark:bg-zinc-800 dark:text-zinc-50">
+            <code className="rounded-lg bg-ps-chip px-3 py-1 text-sm font-mono text-ps-text">
               {competition.invite_code}
             </code>
           </div>
@@ -247,25 +247,25 @@ export function ParticipantsSection({
               return (
                 <div
                   key={invite.id}
-                  className={`flex items-center justify-between rounded-md border p-3 ${
+                  className={`flex items-center justify-between rounded-xl border p-3 ${
                     isExpired || isMaxed
-                      ? "border-zinc-200 bg-zinc-50 opacity-60 dark:border-zinc-800 dark:bg-zinc-900"
-                      : "border-zinc-200 dark:border-zinc-700"
+                      ? "border-ps-border bg-ps-bg opacity-60"
+                      : "border-ps-border"
                   }`}
                 >
                   <div className="min-w-0 flex-1">
                     <div className="flex items-center gap-2">
-                      <code className="text-xs font-mono text-zinc-600 dark:text-zinc-400 truncate">
+                      <code className="text-xs font-mono text-ps-text-sec truncate">
                         {getInviteUrl(invite.token)}
                       </code>
                       {isExpired && (
-                        <span className="shrink-0 text-xs text-red-500">Expired</span>
+                        <span className="shrink-0 text-xs text-ps-red">Expired</span>
                       )}
                       {isMaxed && (
-                        <span className="shrink-0 text-xs text-amber-500">Max uses reached</span>
+                        <span className="shrink-0 text-xs text-ps-amber-deep">Max uses reached</span>
                       )}
                     </div>
-                    <div className="mt-1 text-xs text-zinc-400 dark:text-zinc-500">
+                    <div className="mt-1 text-xs text-ps-text-ter">
                       Uses: {invite.use_count}
                       {invite.max_uses !== null ? `/${invite.max_uses}` : ""}
                       {invite.expires_at &&
@@ -275,7 +275,7 @@ export function ParticipantsSection({
                   {!isExpired && !isMaxed && (
                     <button
                       onClick={() => handleCopyInvite(invite.token)}
-                      className="ml-3 shrink-0 rounded-md border border-zinc-300 px-2.5 py-1 text-xs font-medium text-zinc-700 transition-colors hover:bg-zinc-50 dark:border-zinc-700 dark:text-zinc-300 dark:hover:bg-zinc-800"
+                      className="ml-3 shrink-0 rounded-xl border border-ps-border-strong bg-transparent px-2.5 py-1 text-xs font-medium text-ps-text transition-colors hover:bg-ps-chip"
                     >
                       {copiedToken === invite.token ? "Copied" : "Copy"}
                     </button>
@@ -285,7 +285,7 @@ export function ParticipantsSection({
             })}
           </div>
         ) : (
-          <p className="text-sm text-zinc-500 dark:text-zinc-400">
+          <p className="text-sm text-ps-text-ter">
             No invite links generated yet. Create one to share with others.
           </p>
         )}

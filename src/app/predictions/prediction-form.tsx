@@ -188,16 +188,13 @@ export function PredictionForm({
   }
 
   const inputClasses =
-    "w-full rounded-md border border-zinc-300 bg-white px-3 py-2 text-sm text-zinc-900 placeholder:text-zinc-400 focus:border-zinc-500 focus:outline-none focus:ring-1 focus:ring-zinc-500 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-100 dark:placeholder:text-zinc-500 dark:focus:border-zinc-400 dark:focus:ring-zinc-400 disabled:opacity-50 disabled:cursor-not-allowed";
-
-  const buttonClasses =
-    "rounded-md bg-zinc-900 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-zinc-700 dark:bg-zinc-100 dark:text-zinc-900 dark:hover:bg-zinc-300 disabled:opacity-50 disabled:cursor-not-allowed";
+    "w-full rounded-md border border-ps-border-strong bg-ps-surface px-3 py-2 text-sm text-ps-text placeholder:text-ps-text-ter focus:border-ps-amber focus:outline-none focus:ring-1 focus:ring-ps-amber disabled:opacity-50 disabled:cursor-not-allowed";
 
   const selectionBtnClasses = (opt: string) =>
     `flex-1 rounded-md border px-3 py-2 text-sm font-medium transition-colors disabled:cursor-not-allowed ${
       selection === opt
-        ? "border-zinc-900 bg-zinc-900 text-white dark:border-zinc-100 dark:bg-zinc-100 dark:text-zinc-900"
-        : "border-zinc-300 bg-white text-zinc-700 hover:bg-zinc-50 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-300 dark:hover:bg-zinc-700"
+        ? "border-ps-amber bg-ps-amber-soft text-ps-text"
+        : "border-ps-border bg-ps-surface text-ps-text-sec hover:border-ps-border-strong"
     }`;
 
   function renderInput() {
@@ -248,7 +245,7 @@ export function PredictionForm({
           <div className="space-y-1.5">
             {rankings.map((name, i) => (
               <div key={i} className="flex items-center gap-2">
-                <span className="text-xs font-medium text-zinc-500 dark:text-zinc-400 w-8 text-right tabular-nums">
+                <span className="text-xs font-medium text-ps-text-ter w-8 text-right tabular-nums">
                   {i + 1}{i === 0 ? "st" : i === 1 ? "nd" : i === 2 ? "rd" : "th"}
                 </span>
                 <input
@@ -358,7 +355,7 @@ export function PredictionForm({
 
   return (
     <form onSubmit={handleSubmit} className="mt-2 space-y-2">
-      <label className="block text-xs font-medium text-zinc-500 dark:text-zinc-400">
+      <label className="block text-xs font-medium text-ps-text-sec">
         {getLabel(config)}
       </label>
       {renderInput()}
@@ -367,7 +364,7 @@ export function PredictionForm({
           <button
             type="submit"
             disabled={isSubmitting || isLocked}
-            className={buttonClasses}
+            className="rounded-md bg-gradient-to-r from-[#f59e0b] to-[#d97706] px-4 py-2 text-sm font-extrabold text-[#1a1208] transition-opacity hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {isSubmitting
               ? "Saving..."
@@ -376,27 +373,27 @@ export function PredictionForm({
                 : "Submit"}
           </button>
           {success && (
-            <span className="text-xs font-medium text-emerald-600 dark:text-emerald-400">
+            <span className="text-xs font-medium text-ps-green">
               Saved
             </span>
           )}
           {error && (
-            <span className="text-xs font-medium text-red-600 dark:text-red-400">
+            <span className="text-xs font-medium text-ps-red">
               {error}
             </span>
           )}
         </div>
       )}
       {isLocked && existingPrediction && (
-        <p className="text-xs text-zinc-500 dark:text-zinc-400">
+        <p className="text-xs text-ps-text-sec">
           Your prediction:{" "}
-          <span className="font-medium text-zinc-700 dark:text-zinc-300">
+          <span className="font-medium text-ps-text">
             {formatPredictionDisplay(existingPrediction.prediction_data)}
           </span>
         </p>
       )}
       {isLocked && !existingPrediction && (
-        <p className="text-xs text-zinc-400 dark:text-zinc-500 italic">
+        <p className="text-xs text-ps-text-ter italic">
           No prediction submitted
         </p>
       )}

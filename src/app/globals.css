@@ -1,26 +1,125 @@
 @import "tailwindcss";
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
-}
+/* ── PredictSport Design Tokens ─────────────────────────────────────────── */
 
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+:root {
+  /* Core palette — light mode */
+  --ps-bg: #efe9de;
+  --ps-bg-alt: #e7dfd0;
+  --ps-surface: #ffffff;
+  --ps-surface2: #faf6ee;
+  --ps-border: rgba(40, 30, 20, 0.10);
+  --ps-border-strong: rgba(40, 30, 20, 0.18);
+  --ps-text: #191512;
+  --ps-text-sec: #5e554a;
+  --ps-text-ter: #8b8275;
+  --ps-chip: rgba(40, 30, 20, 0.04);
+  --ps-overlay: rgba(255, 253, 247, 0.85);
+
+  /* Semantic — same in both modes */
+  --ps-amber: #f59e0b;
+  --ps-amber-deep: #d97706;
+  --ps-amber-soft: rgba(245, 158, 11, 0.12);
+  --ps-green: #0aa86d;
+  --ps-green-soft: rgba(10, 168, 109, 0.14);
+  --ps-red: #e23d4f;
+  --ps-red-soft: rgba(226, 61, 79, 0.14);
+  --ps-blue: #3b82f6;
+  --ps-violet: #8b5cf6;
+
+  /* Sport gradients */
+  --ps-soccer-from: #2563eb;
+  --ps-soccer-to: #7c3aed;
+  --ps-soccer-pill-bg: rgba(37, 99, 235, 0.12);
+  --ps-soccer-pill-fg: #1e40af;
+
+  --ps-f1-from: #dc2626;
+  --ps-f1-to: #ea580c;
+  --ps-f1-pill-bg: rgba(220, 38, 38, 0.12);
+  --ps-f1-pill-fg: #991b1b;
+
+  --ps-gaa-from: #059669;
+  --ps-gaa-to: #047857;
+  --ps-gaa-pill-bg: rgba(5, 150, 105, 0.12);
+  --ps-gaa-pill-fg: #065f46;
+
+  --ps-nba-from: #d97706;
+  --ps-nba-to: #dc2626;
+  --ps-nba-pill-bg: rgba(217, 119, 6, 0.12);
+  --ps-nba-pill-fg: #92400e;
+
+  --ps-golf-from: #4f46e5;
+  --ps-golf-to: #7c3aed;
+  --ps-golf-pill-bg: rgba(79, 70, 229, 0.12);
+  --ps-golf-pill-fg: #3730a3;
 }
 
 @media (prefers-color-scheme: dark) {
   :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+    --ps-bg: #0e1116;
+    --ps-bg-alt: #161a21;
+    --ps-surface: #1a1f27;
+    --ps-surface2: #222831;
+    --ps-border: rgba(255, 255, 255, 0.08);
+    --ps-border-strong: rgba(255, 255, 255, 0.16);
+    --ps-text: #f1ece2;
+    --ps-text-sec: rgba(241, 236, 226, 0.62);
+    --ps-text-ter: rgba(241, 236, 226, 0.36);
+    --ps-chip: rgba(255, 255, 255, 0.05);
+    --ps-overlay: rgba(20, 24, 30, 0.85);
+
+    /* Sport pill foreground — dark mode */
+    --ps-soccer-pill-fg: #a5b4fc;
+    --ps-f1-pill-fg: #fca5a5;
+    --ps-gaa-pill-fg: #6ee7b7;
+    --ps-nba-pill-fg: #fcd34d;
+    --ps-golf-pill-fg: #c4b5fd;
   }
 }
 
-body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: var(--font-sans), system-ui, sans-serif;
+@theme inline {
+  /* Fonts */
+  --font-sans: var(--font-inter), system-ui, -apple-system, sans-serif;
+  --font-display: var(--font-bebas), "Inter", sans-serif;
+  --font-serif: var(--font-instrument), Georgia, serif;
+
+  /* PS Colors — mapped to Tailwind utilities */
+  --color-ps-bg: var(--ps-bg);
+  --color-ps-bg-alt: var(--ps-bg-alt);
+  --color-ps-surface: var(--ps-surface);
+  --color-ps-surface2: var(--ps-surface2);
+  --color-ps-border: var(--ps-border);
+  --color-ps-border-strong: var(--ps-border-strong);
+  --color-ps-text: var(--ps-text);
+  --color-ps-text-sec: var(--ps-text-sec);
+  --color-ps-text-ter: var(--ps-text-ter);
+  --color-ps-chip: var(--ps-chip);
+  --color-ps-overlay: var(--ps-overlay);
+
+  --color-ps-amber: var(--ps-amber);
+  --color-ps-amber-deep: var(--ps-amber-deep);
+  --color-ps-amber-soft: var(--ps-amber-soft);
+  --color-ps-green: var(--ps-green);
+  --color-ps-green-soft: var(--ps-green-soft);
+  --color-ps-red: var(--ps-red);
+  --color-ps-red-soft: var(--ps-red-soft);
+  --color-ps-blue: var(--ps-blue);
+  --color-ps-violet: var(--ps-violet);
 }
+
+/* ── Base styles ────────────────────────────────────────────────────────── */
+
+body {
+  background: var(--ps-bg);
+  color: var(--ps-text);
+  font-family: var(--font-sans);
+}
+
+/* Text wrap */
+p, h1, h2, h3, h4, h5, h6 {
+  text-wrap: pretty;
+}
+
+/* Hide scrollbars in scroll containers */
+.ps-scroll::-webkit-scrollbar { display: none; }
+.ps-scroll { scrollbar-width: none; }

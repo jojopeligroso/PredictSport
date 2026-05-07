@@ -11,6 +11,13 @@ import type {
 } from "@/types/database";
 import { Countdown } from "./countdown";
 import { PredictionForm } from "./prediction-form";
+import {
+  SportBar,
+  SportPill,
+  CountdownChip,
+  SectionHeader,
+  type SportKey,
+} from "@/components/ui";
 
 interface EventWithPredictions extends Event {
   predictions: Prediction[];
@@ -25,45 +32,20 @@ interface EventListProps {
 type FilterSport = string;
 type FilterStatus = EventStatus | "all";
 
-function getEventAccentColor(
-  event: Event,
-  predictions: Prediction[]
-): string {
-  if (event.status === "upcoming") {
-    return "bg-zinc-300 dark:bg-zinc-600";
-  }
-  if (
-    event.status === "locked" ||
-    event.status === "postponed" ||
-    event.status === "cancelled"
-  ) {
-    return "bg-zinc-400 dark:bg-zinc-500";
-  }
-  if (predictions.length === 0) {
-    return "bg-zinc-400 dark:bg-zinc-500";
-  }
-  const hasCorrect = predictions.some((p) => p.is_correct === true);
-  const hasPartial = predictions.some((p) => p.is_partial);
-  const allWrong = predictions.every((p) => p.is_correct === false);
+const VALID_SPORT_KEYS: SportKey[] = ["soccer", "f1", "gaa", "nba", "golf"];
 
-  if (hasCorrect) return "bg-emerald-500 dark:bg-emerald-400";
-  if (hasPartial) return "bg-amber-500 dark:bg-amber-400";
-  if (allWrong) return "bg-red-500 dark:bg-red-400";
-  return "bg-zinc-400 dark:bg-zinc-500";
+function toSportKey(sport: string): SportKey {
+  const lower = sport.toLowerCase() as SportKey;
+  return VALID_SPORT_KEYS.includes(lower) ? lower : VALID_SPORT_KEYS[0];
 }
 
 function getStatusBadge(status: EventStatus) {
   const styles: Record<EventStatus, string> = {
-    upcoming:
-      "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400",
-    locked:
-      "bg-zinc-100 text-zinc-600 dark:bg-zinc-800 dark:text-zinc-400",
-    resulted:
-      "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400",
-    postponed:
-      "bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400",
-    cancelled:
-      "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400",
+    upcoming: "bg-ps-amber-soft text-ps-amber-deep",
+    locked: "bg-ps-chip text-ps-text-sec",
+    resulted: "bg-ps-green-soft text-ps-green",
+    postponed: "bg-ps-amber-soft text-ps-amber-deep",
+    cancelled: "bg-ps-red-soft text-ps-red",
   };
 
   return (
@@ -107,6 +89,15 @@ function eptToConfig(ept: EventPredictionType): {
     stages: cfg.stages as string[] | undefined,
   };
 }
+
+const STATUS_OPTIONS: { value: FilterStatus; label: string }[] = [
+  { value: "all", label: "All" },
+  { value: "upcoming", label: "Upcoming" },
+  { value: "locked", label: "Locked" },
+  { value: "resulted", label: "Resulted" },
+  { value: "postponed", label: "Postponed" },
+  { value: "cancelled", label: "Cancelled" },
+];
 
 export function EventList({ events, competitionId }: EventListProps) {
   const router = useRouter();
@@ -198,12 +189,9 @@ export function EventList({ events, competitionId }: EventListProps) {
     [competitionId, router]
   );
 
-  const selectClasses =
-    "rounded-md border border-zinc-300 bg-white px-3 py-1.5 text-sm text-zinc-900 focus:border-zinc-500 focus:outline-none focus:ring-1 focus:ring-zinc-500 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-100 dark:focus:border-zinc-400 dark:focus:ring-zinc-400";
-
   if (events.length === 0) {
     return (
-      <div className="mt-8 rounded-lg border border-zinc-200 bg-white p-12 text-center text-zinc-500 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-400">
+      <div className="mt-8 rounded-lg border border-ps-border bg-ps-surface p-12 text-center text-ps-text-sec">
         No events in this competition yet. Check back later.
       </div>
     );
@@ -211,33 +199,50 @@ export function EventList({ events, competitionId }: EventListProps) {
 
   return (
     <div className="mt-6 space-y-6">
-      {/* Filters */}
-      <div className="flex flex-wrap gap-3">
-        <select
-          value={filterSport}
-          onChange={(e) => setFilterSport(e.target.value)}
-          className={selectClasses}
-        >
-          <option value="all">All Sports</option>
+      {/* Sport filter chips */}
+      <div className="flex flex-col gap-3">
+        <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-none">
+          <button
+            onClick={() => setFilterSport("all")}
+            className={`shrink-0 rounded-full px-4 py-1.5 text-sm font-medium transition-colors ${
+              filterSport === "all"
+                ? "bg-ps-text text-ps-bg"
+                : "border border-ps-border bg-ps-surface text-ps-text-sec hover:border-ps-border-strong"
+            }`}
+          >
+            All Sports
+          </button>
           {sports.map((sport) => (
-            <option key={sport} value={sport}>
+            <button
+              key={sport}
+              onClick={() => setFilterSport(sport)}
+              className={`shrink-0 rounded-full px-4 py-1.5 text-sm font-medium capitalize transition-colors ${
+                filterSport === sport
+                  ? "bg-ps-text text-ps-bg"
+                  : "border border-ps-border bg-ps-surface text-ps-text-sec hover:border-ps-border-strong"
+              }`}
+            >
               {sport}
-            </option>
+            </button>
           ))}
-        </select>
+        </div>
 
-        <select
-          value={filterStatus}
-          onChange={(e) => setFilterStatus(e.target.value as FilterStatus)}
-          className={selectClasses}
-        >
-          <option value="all">All Statuses</option>
-          <option value="upcoming">Upcoming</option>
-          <option value="locked">Locked</option>
-          <option value="resulted">Resulted</option>
-          <option value="postponed">Postponed</option>
-          <option value="cancelled">Cancelled</option>
-        </select>
+        {/* Status filter chips */}
+        <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-none">
+          {STATUS_OPTIONS.map(({ value, label }) => (
+            <button
+              key={value}
+              onClick={() => setFilterStatus(value)}
+              className={`shrink-0 rounded-full px-4 py-1.5 text-sm font-medium transition-colors ${
+                filterStatus === value
+                  ? "bg-ps-text text-ps-bg"
+                  : "border border-ps-border bg-ps-surface text-ps-text-sec hover:border-ps-border-strong"
+              }`}
+            >
+              {label}
+            </button>
+          ))}
+        </div>
 
         {(filterSport !== "all" || filterStatus !== "all") && (
           <button
@@ -245,7 +250,7 @@ export function EventList({ events, competitionId }: EventListProps) {
               setFilterSport("all");
               setFilterStatus("all");
             }}
-            className="text-sm text-zinc-500 underline hover:text-zinc-700 dark:text-zinc-400 dark:hover:text-zinc-200"
+            className="self-start text-sm text-ps-text-ter underline hover:text-ps-text-sec"
           >
             Clear filters
           </button>
@@ -253,7 +258,7 @@ export function EventList({ events, competitionId }: EventListProps) {
       </div>
 
       {filteredEvents.length === 0 && (
-        <div className="rounded-lg border border-zinc-200 bg-white p-8 text-center text-zinc-500 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-400">
+        <div className="rounded-lg border border-ps-border bg-ps-surface p-8 text-center text-ps-text-sec">
           No events match the selected filters.
         </div>
       )}
@@ -261,37 +266,49 @@ export function EventList({ events, competitionId }: EventListProps) {
       {/* Grouped event cards */}
       {Object.entries(groupedEvents).map(([groupLabel, groupEvents]) => (
         <div key={groupLabel}>
-          <h3 className="mb-3 text-sm font-semibold uppercase tracking-wider text-zinc-500 dark:text-zinc-400">
-            {groupLabel}{" "}
-            <span className="font-normal">({groupEvents.length})</span>
-          </h3>
-          <div className="space-y-3">
+          <SectionHeader
+            label={`${groupLabel} (${groupEvents.length})`}
+          />
+          <div className="mt-3 space-y-3">
             {groupEvents.map((event) => {
               const isLocked =
                 new Date(event.lock_time).getTime() <= Date.now() ||
                 event.status !== "upcoming";
               const predictionTypeConfigs = (event.event_prediction_types ?? []).map(eptToConfig);
               const pointsSummary = getPointsSummary(event.predictions);
+              const sportKey = toSportKey(event.sport);
+
+              const lockDiff = new Date(event.lock_time).getTime() - Date.now();
+              const isUrgent = lockDiff > 0 && lockDiff < 60 * 60 * 1000;
 
               return (
                 <div
                   key={event.id}
-                  className="flex overflow-hidden rounded-lg border border-zinc-200 bg-white dark:border-zinc-800 dark:bg-zinc-900"
+                  className="overflow-hidden rounded-2xl border border-ps-border bg-ps-surface"
                 >
-                  {/* Accent bar */}
-                  <div className={`w-1 shrink-0 ${getEventAccentColor(event, event.predictions)}`} aria-hidden="true" />
-                  <div className="flex-1 min-w-0 p-4">
-                  {/* Event header */}
-                  <div className="flex flex-wrap items-start justify-between gap-2">
-                    <div className="flex-1 min-w-0">
-                      <h4 className="font-semibold text-zinc-900 dark:text-zinc-100">
-                        {event.event_name}
-                      </h4>
-                      <div className="mt-1 flex flex-wrap items-center gap-2 text-xs text-zinc-500 dark:text-zinc-400">
-                        <span className="rounded bg-zinc-100 px-1.5 py-0.5 font-medium dark:bg-zinc-800">
-                          {event.sport}
-                        </span>
-                        <span>
+                  {/* Sport colour bar across the top */}
+                  <SportBar sport={sportKey} height={4} />
+
+                  <div className="p-4">
+                    {/* Top row: SportPill + countdown chip */}
+                    <div className="flex items-center justify-between gap-2">
+                      <SportPill sport={sportKey} size="sm" />
+                      {event.status === "upcoming" && lockDiff > 0 && (
+                        <CountdownChip
+                          text={formatCountdownText(event.lock_time)}
+                          urgent={isUrgent}
+                        />
+                      )}
+                      {event.status !== "upcoming" && getStatusBadge(event.status)}
+                    </div>
+
+                    {/* Event title + subtitle */}
+                    <div className="mt-2 flex flex-wrap items-start justify-between gap-2">
+                      <div className="flex-1 min-w-0">
+                        <h4 className="text-[17px] font-extrabold text-ps-text leading-snug">
+                          {event.event_name}
+                        </h4>
+                        <p className="mt-0.5 text-[11.5px] text-ps-text-sec">
                           {new Date(event.start_time).toLocaleDateString(
                             "en-IE",
                             {
@@ -302,67 +319,63 @@ export function EventList({ events, competitionId }: EventListProps) {
                               minute: "2-digit",
                             }
                           )}
-                        </span>
+                        </p>
                       </div>
-                    </div>
-                    <div className="flex items-center gap-2">
                       {pointsSummary && (
-                        <span className="text-sm font-semibold text-zinc-700 dark:text-zinc-300">
+                        <span className="text-sm font-semibold text-ps-amber-deep">
                           {pointsSummary}
                         </span>
                       )}
-                      {getStatusBadge(event.status)}
                     </div>
+
+                    {/* Live countdown text for upcoming events */}
+                    {event.status === "upcoming" && (
+                      <div className="mt-2">
+                        <Countdown lockTime={event.lock_time} />
+                      </div>
+                    )}
+
+                    {/* Result display for resulted events */}
+                    {event.status === "resulted" && event.result_data && (
+                      <div className="mt-2 rounded-lg bg-ps-chip px-3 py-2 text-sm">
+                        <span className="text-xs font-medium uppercase text-ps-text-ter">
+                          Result:{" "}
+                        </span>
+                        <span className="font-medium text-ps-text">
+                          {formatResult(event.result_data)}
+                        </span>
+                      </div>
+                    )}
+
+                    {/* Prediction forms */}
+                    {predictionTypeConfigs.length > 0 && (
+                      <div className="mt-3 space-y-3 border-t border-ps-border pt-3">
+                        {predictionTypeConfigs.map((ptConfig) => {
+                          const existingPrediction =
+                            (event.predictions ?? []).find(
+                              (p) => p.prediction_type === ptConfig.type
+                            ) ?? null;
+
+                          return (
+                            <PredictionForm
+                              key={`${event.id}-${ptConfig.type}`}
+                              eventId={event.id}
+                              predictionTypeConfig={ptConfig}
+                              existingPrediction={existingPrediction}
+                              isLocked={isLocked}
+                              onSubmit={handleSubmitPrediction}
+                            />
+                          );
+                        })}
+                      </div>
+                    )}
+
+                    {predictionTypeConfigs.length === 0 && (
+                      <p className="mt-2 text-xs text-ps-text-ter italic">
+                        No prediction types configured for this event.
+                      </p>
+                    )}
                   </div>
-
-                  {/* Lock countdown for upcoming */}
-                  {event.status === "upcoming" && (
-                    <div className="mt-2">
-                      <Countdown lockTime={event.lock_time} />
-                    </div>
-                  )}
-
-                  {/* Result display for resulted events */}
-                  {event.status === "resulted" && event.result_data && (
-                    <div className="mt-2 rounded bg-zinc-50 px-3 py-2 text-sm dark:bg-zinc-800">
-                      <span className="text-xs font-medium uppercase text-zinc-500 dark:text-zinc-400">
-                        Result:{" "}
-                      </span>
-                      <span className="font-medium text-zinc-900 dark:text-zinc-100">
-                        {formatResult(event.result_data)}
-                      </span>
-                    </div>
-                  )}
-
-                  {/* Prediction forms */}
-                  {predictionTypeConfigs.length > 0 && (
-                    <div className="mt-3 space-y-3 border-t border-zinc-100 pt-3 dark:border-zinc-800">
-                      {predictionTypeConfigs.map((ptConfig) => {
-                        const existingPrediction =
-                          (event.predictions ?? []).find(
-                            (p) => p.prediction_type === ptConfig.type
-                          ) ?? null;
-
-                        return (
-                          <PredictionForm
-                            key={`${event.id}-${ptConfig.type}`}
-                            eventId={event.id}
-                            predictionTypeConfig={ptConfig}
-                            existingPrediction={existingPrediction}
-                            isLocked={isLocked}
-                            onSubmit={handleSubmitPrediction}
-                          />
-                        );
-                      })}
-                    </div>
-                  )}
-
-                  {predictionTypeConfigs.length === 0 && (
-                    <p className="mt-2 text-xs text-zinc-400 dark:text-zinc-500 italic">
-                      No prediction types configured for this event.
-                    </p>
-                  )}
-                  </div>{/* end flex-1 inner wrapper */}
                 </div>
               );
             })}
@@ -371,6 +384,19 @@ export function EventList({ events, competitionId }: EventListProps) {
       ))}
     </div>
   );
+}
+
+function formatCountdownText(lockTime: string): string {
+  const diff = new Date(lockTime).getTime() - Date.now();
+  if (diff <= 0) return "Locked";
+  const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+  const hours = Math.floor((diff / (1000 * 60 * 60)) % 24);
+  const minutes = Math.floor((diff / (1000 * 60)) % 60);
+  const parts: string[] = [];
+  if (days > 0) parts.push(`${days}d`);
+  if (hours > 0 || days > 0) parts.push(`${hours}h`);
+  parts.push(`${minutes}m`);
+  return `Locks in ${parts.join(" ")}`;
 }
 
 function formatResult(resultData: Record<string, unknown>): string {

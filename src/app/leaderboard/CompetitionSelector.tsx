@@ -33,7 +33,7 @@ export function CompetitionSelector({
     <div className="flex items-center gap-3">
       <label
         htmlFor="competition-select"
-        className="text-sm font-medium text-zinc-600 dark:text-zinc-400"
+        className="text-sm font-medium text-ps-text-sec"
       >
         Competition
       </label>
@@ -41,7 +41,7 @@ export function CompetitionSelector({
         id="competition-select"
         value={selectedId ?? ""}
         onChange={handleChange}
-        className="rounded-lg border border-zinc-300 bg-white px-3 py-2 text-sm text-zinc-900 shadow-sm transition-colors focus:border-zinc-500 focus:outline-none focus:ring-2 focus:ring-zinc-500/20 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-100 dark:focus:border-zinc-500"
+        className="rounded-xl border border-ps-border-strong bg-ps-surface px-3 py-2 text-sm text-ps-text shadow-sm transition-colors focus:border-ps-amber focus:outline-none focus:ring-2 focus:ring-[rgba(245,158,11,0.2)]"
       >
         {competitions.map((c) => (
           <option key={c.id} value={c.id}>

@@ -24,7 +24,7 @@ export function MobileNav({ isLoggedIn, displayName, avatarUrl }: MobileNavProps
       {/* Hamburger button */}
       <button
         onClick={() => setIsOpen(!isOpen)}
-        className="rounded-md p-2 text-zinc-600 transition-colors hover:bg-zinc-100 dark:text-zinc-400 dark:hover:bg-zinc-800"
+        className="rounded-md p-2 text-ps-text-sec transition-colors hover:bg-ps-chip"
         aria-label={isOpen ? "Close menu" : "Open menu"}
         aria-expanded={isOpen}
       >
@@ -63,21 +63,21 @@ export function MobileNav({ isLoggedIn, displayName, avatarUrl }: MobileNavProps
 
       {/* Mobile menu panel */}
       {isOpen && (
-        <div className="absolute left-0 right-0 top-16 z-50 border-b border-zinc-200 bg-white dark:border-zinc-800 dark:bg-zinc-950">
+        <div className="absolute left-0 right-0 top-16 z-50 border-b border-ps-border bg-ps-surface">
           <div className="space-y-1 px-4 py-3">
             {navLinks.map((link) => (
               <Link
                 key={link.href}
                 href={link.href}
                 onClick={() => setIsOpen(false)}
-                className="block rounded-md px-3 py-2 text-sm font-medium text-zinc-600 transition-colors hover:bg-zinc-100 hover:text-zinc-900 dark:text-zinc-400 dark:hover:bg-zinc-800 dark:hover:text-zinc-50"
+                className="block rounded-md px-3 py-2 text-sm font-medium text-ps-text-sec transition-colors hover:bg-ps-chip hover:text-ps-text"
               >
                 {link.label}
               </Link>
             ))}
           </div>
 
-          <div className="border-t border-zinc-200 px-4 py-3 dark:border-zinc-800">
+          <div className="border-t border-ps-border px-4 py-3">
             {isLoggedIn ? (
               <div className="space-y-2">
                 <div className="flex items-center gap-2 px-3 py-1">
@@ -89,11 +89,11 @@ export function MobileNav({ isLoggedIn, displayName, avatarUrl }: MobileNavProps
                       referrerPolicy="no-referrer"
                     />
                   ) : (
-                    <div className="flex h-7 w-7 items-center justify-center rounded-full bg-zinc-200 text-xs font-medium text-zinc-700 dark:bg-zinc-700 dark:text-zinc-300">
+                    <div className="flex h-7 w-7 items-center justify-center rounded-full bg-ps-chip text-xs font-medium text-ps-text-sec">
                       {displayName.charAt(0).toUpperCase()}
                     </div>
                   )}
-                  <span className="text-sm font-medium text-zinc-900 dark:text-zinc-50">
+                  <span className="text-sm font-medium text-ps-text">
                     {displayName}
                   </span>
                 </div>
@@ -103,7 +103,7 @@ export function MobileNav({ isLoggedIn, displayName, avatarUrl }: MobileNavProps
               <Link
                 href="/login"
                 onClick={() => setIsOpen(false)}
-                className="block rounded-md bg-zinc-900 px-4 py-2 text-center text-sm font-medium text-white transition-colors hover:bg-zinc-700 dark:bg-zinc-50 dark:text-zinc-900 dark:hover:bg-zinc-300"
+                className="block rounded-md bg-ps-text px-4 py-2 text-center text-sm font-medium text-ps-bg transition-colors hover:opacity-90"
               >
                 Log in
               </Link>

@@ -79,82 +79,82 @@ export function SettingsSection({ competition }: SettingsSectionProps) {
 
   return (
     <div className="space-y-8">
-      <h3 className="text-lg font-semibold text-zinc-900 dark:text-zinc-50">
+      <h3 className="text-lg font-semibold text-ps-text">
         Competition Settings
       </h3>
 
       {error && (
-        <div className="rounded-md bg-red-50 p-3 text-sm text-red-700 dark:bg-red-900/30 dark:text-red-400">
+        <div className="rounded-xl bg-ps-red-soft p-3 text-sm text-ps-red">
           {error}
         </div>
       )}
 
       {/* General Info */}
       <section>
-        <h4 className="text-sm font-medium text-zinc-600 dark:text-zinc-400 mb-3">
+        <h4 className="text-sm font-medium text-ps-text-sec mb-3">
           General
         </h4>
-        <div className="rounded-lg border border-zinc-200 bg-white dark:border-zinc-800 dark:bg-zinc-900">
-          <dl className="divide-y divide-zinc-100 dark:divide-zinc-800">
+        <div className="rounded-2xl border border-ps-border bg-ps-surface">
+          <dl className="divide-y divide-ps-border">
             <div className="flex justify-between px-4 py-3">
-              <dt className="text-sm text-zinc-500 dark:text-zinc-400">Name</dt>
-              <dd className="text-sm font-medium text-zinc-900 dark:text-zinc-50">
+              <dt className="text-sm text-ps-text-sec">Name</dt>
+              <dd className="text-sm font-medium text-ps-text">
                 {competition.name}
               </dd>
             </div>
             <div className="flex justify-between px-4 py-3">
-              <dt className="text-sm text-zinc-500 dark:text-zinc-400">
+              <dt className="text-sm text-ps-text-sec">
                 Description
               </dt>
-              <dd className="text-sm text-zinc-700 dark:text-zinc-300">
+              <dd className="text-sm text-ps-text">
                 {competition.description || "No description"}
               </dd>
             </div>
             <div className="flex justify-between px-4 py-3">
-              <dt className="text-sm text-zinc-500 dark:text-zinc-400">Type</dt>
-              <dd className="text-sm font-medium text-zinc-900 dark:text-zinc-50 capitalize">
+              <dt className="text-sm text-ps-text-sec">Type</dt>
+              <dd className="text-sm font-medium text-ps-text capitalize">
                 {competition.type}
               </dd>
             </div>
             <div className="flex justify-between px-4 py-3">
-              <dt className="text-sm text-zinc-500 dark:text-zinc-400">
+              <dt className="text-sm text-ps-text-sec">
                 Visibility
               </dt>
-              <dd className="text-sm font-medium text-zinc-900 dark:text-zinc-50 capitalize">
+              <dd className="text-sm font-medium text-ps-text capitalize">
                 {competition.visibility}
               </dd>
             </div>
             <div className="flex justify-between px-4 py-3">
-              <dt className="text-sm text-zinc-500 dark:text-zinc-400">
+              <dt className="text-sm text-ps-text-sec">
                 Lock Default
               </dt>
-              <dd className="text-sm text-zinc-700 dark:text-zinc-300">
+              <dd className="text-sm text-ps-text">
                 {competition.lock_default_minutes} minutes before start
               </dd>
             </div>
             <div className="flex justify-between px-4 py-3">
-              <dt className="text-sm text-zinc-500 dark:text-zinc-400">
+              <dt className="text-sm text-ps-text-sec">
                 Nominations
               </dt>
-              <dd className="text-sm text-zinc-700 dark:text-zinc-300">
+              <dd className="text-sm text-ps-text">
                 {competition.allow_nominations ? "Enabled" : "Disabled"}
               </dd>
             </div>
             <div className="flex justify-between px-4 py-3">
-              <dt className="text-sm text-zinc-500 dark:text-zinc-400">
+              <dt className="text-sm text-ps-text-sec">
                 Invite Code
               </dt>
               <dd>
-                <code className="rounded bg-zinc-100 px-2 py-0.5 text-xs font-mono text-zinc-900 dark:bg-zinc-800 dark:text-zinc-50">
+                <code className="rounded-lg bg-ps-chip px-2 py-0.5 text-xs font-mono text-ps-text">
                   {competition.invite_code}
                 </code>
               </dd>
             </div>
             <div className="flex justify-between px-4 py-3">
-              <dt className="text-sm text-zinc-500 dark:text-zinc-400">
+              <dt className="text-sm text-ps-text-sec">
                 Created
               </dt>
-              <dd className="text-sm text-zinc-700 dark:text-zinc-300">
+              <dd className="text-sm text-ps-text">
                 {new Date(competition.created_at).toLocaleDateString()}
               </dd>
             </div>
@@ -164,12 +164,12 @@ export function SettingsSection({ competition }: SettingsSectionProps) {
 
       {/* Status Management */}
       <section>
-        <h4 className="text-sm font-medium text-zinc-600 dark:text-zinc-400 mb-3">
+        <h4 className="text-sm font-medium text-ps-text-sec mb-3">
           Status
         </h4>
-        <div className="rounded-lg border border-zinc-200 bg-white p-4 dark:border-zinc-800 dark:bg-zinc-900">
+        <div className="rounded-2xl border border-ps-border bg-ps-surface p-4">
           <div className="flex items-center gap-3 mb-4">
-            <span className="text-sm text-zinc-500 dark:text-zinc-400">
+            <span className="text-sm text-ps-text-sec">
               Current:
             </span>
             <StatusBadge status={competition.status} type="competition" />
@@ -182,10 +182,10 @@ export function SettingsSection({ competition }: SettingsSectionProps) {
                   key={nextStatus}
                   onClick={() => handleStatusChange(nextStatus)}
                   disabled={isUpdating}
-                  className={`rounded-md px-4 py-2 text-sm font-medium transition-colors disabled:opacity-50 ${
+                  className={`rounded-xl px-4 py-2 text-sm font-medium transition-opacity disabled:opacity-50 ${
                     nextStatus === "active"
-                      ? "bg-green-600 text-white hover:bg-green-700"
-                      : "bg-blue-600 text-white hover:bg-blue-700"
+                      ? "bg-ps-green text-white hover:opacity-90"
+                      : "bg-ps-amber text-[#1a1208] hover:opacity-90"
                   }`}
                 >
                   {isUpdating
@@ -197,7 +197,7 @@ export function SettingsSection({ competition }: SettingsSectionProps) {
               ))}
             </div>
           ) : (
-            <p className="text-sm text-zinc-500 dark:text-zinc-400">
+            <p className="text-sm text-ps-text-ter">
               {competition.status === "completed"
                 ? "This competition is completed. No further status changes."
                 : "No status changes available."}
@@ -205,7 +205,7 @@ export function SettingsSection({ competition }: SettingsSectionProps) {
           )}
 
           {competition.status === "draft" && (
-            <p className="mt-3 text-xs text-zinc-500 dark:text-zinc-400">
+            <p className="mt-3 text-xs text-ps-text-ter">
               Activating will lock scoring rules and competition type. Make sure
               everything is configured correctly first.
             </p>
@@ -215,17 +215,17 @@ export function SettingsSection({ competition }: SettingsSectionProps) {
 
       {/* Scoring Rules */}
       <section>
-        <h4 className="text-sm font-medium text-zinc-600 dark:text-zinc-400 mb-3">
+        <h4 className="text-sm font-medium text-ps-text-sec mb-3">
           Scoring Rules
           {competition.status !== "draft" && (
-            <span className="ml-2 text-xs text-amber-600 dark:text-amber-400">
+            <span className="ml-2 text-xs text-ps-amber-deep">
               (locked)
             </span>
           )}
         </h4>
-        <div className="rounded-lg border border-zinc-200 bg-white p-4 dark:border-zinc-800 dark:bg-zinc-900">
+        <div className="rounded-2xl border border-ps-border bg-ps-surface p-4">
           {presetName && (
-            <p className="text-sm text-zinc-700 dark:text-zinc-300 mb-3">
+            <p className="text-sm text-ps-text mb-3">
               Preset:{" "}
               <span className="font-medium capitalize">
                 {presetName.replace(/_/g, " ")}
@@ -235,19 +235,19 @@ export function SettingsSection({ competition }: SettingsSectionProps) {
 
           {pointsMap && (
             <div className="mb-3">
-              <p className="text-xs font-medium text-zinc-500 dark:text-zinc-400 mb-2">
+              <p className="text-xs font-medium text-ps-text-ter mb-2">
                 Points per Type
               </p>
               <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
                 {Object.entries(pointsMap).map(([key, val]) => (
                   <div
                     key={key}
-                    className="flex justify-between rounded-md bg-zinc-50 px-3 py-1.5 text-sm dark:bg-zinc-800"
+                    className="flex justify-between rounded-xl bg-ps-bg px-3 py-1.5 text-sm"
                   >
-                    <span className="text-zinc-600 dark:text-zinc-400 capitalize">
+                    <span className="text-ps-text-sec capitalize">
                       {key.replace(/_/g, " ")}
                     </span>
-                    <span className="font-medium text-zinc-900 dark:text-zinc-50">
+                    <span className="font-medium text-ps-text">
                       {Number(val)}pts
                     </span>
                   </div>
@@ -256,7 +256,7 @@ export function SettingsSection({ competition }: SettingsSectionProps) {
             </div>
           )}
 
-          <div className="text-sm text-zinc-600 dark:text-zinc-400">
+          <div className="text-sm text-ps-text-sec">
             Partial credit:{" "}
             <span className="font-medium">
               {scoringRules.partial_credit !== false ? "Enabled" : "Disabled"}
@@ -268,12 +268,12 @@ export function SettingsSection({ competition }: SettingsSectionProps) {
               {Object.entries(partialPointsMap).map(([key, val]) => (
                 <div
                   key={key}
-                  className="flex justify-between rounded-md bg-zinc-50 px-3 py-1.5 text-xs dark:bg-zinc-800"
+                  className="flex justify-between rounded-xl bg-ps-bg px-3 py-1.5 text-xs"
                 >
-                  <span className="text-zinc-500 dark:text-zinc-400 capitalize">
+                  <span className="text-ps-text-ter capitalize">
                     {key.replace(/_/g, " ")} (partial)
                   </span>
-                  <span className="font-medium text-zinc-700 dark:text-zinc-300">
+                  <span className="font-medium text-ps-text-sec">
                     {Number(val)}pts
                   </span>
                 </div>
