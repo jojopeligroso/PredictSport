@@ -112,7 +112,7 @@ export default async function CompetitionDetailPage({ params }: PageProps) {
         </Link>
 
         <div className="flex flex-wrap items-center gap-2">
-          <h1 className="font-display text-[32px] tracking-wide text-ps-text">
+          <h1 className="font-light text-2xl uppercase tracking-[0.06em] text-ps-text">
             {competition.name}
           </h1>
           <StatusBadge status={competition.status} type="competition" />

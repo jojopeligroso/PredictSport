@@ -319,7 +319,7 @@ function PodiumCard({
       >
         {/* Faded rank watermark */}
         <span
-          className="pointer-events-none absolute bottom-0 right-2 font-display leading-none text-white/10 select-none"
+          className="pointer-events-none absolute bottom-0 right-2 font-extrabold leading-none text-white/10 select-none"
           style={{ fontSize: "clamp(4rem, 12vw, 7rem)" }}
           aria-hidden="true"
         >
@@ -345,7 +345,7 @@ function PodiumCard({
             <p className="truncate text-sm font-bold text-white/70 uppercase tracking-widest">
               {config.label}
             </p>
-            <p className="truncate font-display text-[22px] leading-tight tracking-wide text-white">
+            <p className="truncate font-bold text-[22px] leading-tight text-white">
               {entry.display_name}
             </p>
             {form.length > 0 && (
@@ -359,7 +359,7 @@ function PodiumCard({
 
           {/* Points */}
           <div className="shrink-0 text-right">
-            <p className="font-display text-[36px] leading-none tracking-wide text-white">
+            <p className="font-extrabold text-[36px] leading-none text-white">
               {entry.total_points}
             </p>
             <p className="mt-0.5 text-xs font-bold uppercase tracking-widest text-white/60">
@@ -436,7 +436,7 @@ function TableRow({
             </div>
           </div>
           <div className="flex items-center gap-3 shrink-0">
-            <span className="font-display text-xl tracking-wide text-ps-text">
+            <span className="font-extrabold text-xl text-ps-text">
               {entry.total_points}
             </span>
             <ChevronIcon isOpen={isExpanded} />
@@ -477,7 +477,7 @@ function TableRow({
           </div>
 
           {/* Points */}
-          <span className="w-14 shrink-0 text-right font-display text-xl tracking-wide text-ps-text">
+          <span className="w-14 shrink-0 text-right font-extrabold text-xl text-ps-text">
             {entry.total_points}
           </span>
 

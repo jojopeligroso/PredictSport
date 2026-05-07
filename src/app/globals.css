@@ -80,8 +80,6 @@
 @theme inline {
   /* Fonts */
   --font-sans: var(--font-inter), system-ui, -apple-system, sans-serif;
-  --font-display: var(--font-bebas), "Inter", sans-serif;
-  --font-serif: var(--font-instrument), Georgia, serif;
 
   /* PS Colors — mapped to Tailwind utilities */
   --color-ps-bg: var(--ps-bg);
@@ -118,6 +116,15 @@ body {
 /* Text wrap */
 p, h1, h2, h3, h4, h5, h6 {
   text-wrap: pretty;
+}
+
+/* Mobile container — max 480px, centred */
+.ps-container {
+  max-width: 480px;
+  margin-left: auto;
+  margin-right: auto;
+  padding-left: 16px;
+  padding-right: 16px;
 }
 
 /* Hide scrollbars in scroll containers */

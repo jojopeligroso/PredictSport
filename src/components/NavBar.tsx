@@ -4,8 +4,8 @@ import { UserMenu } from "./UserMenu";
 import { MobileNav } from "./MobileNav";
 
 const navLinks = [
-  { href: "/predictions", label: "My Predictions" },
-  { href: "/leaderboard", label: "Leaderboard" },
+  { href: "/predictions", label: "Predictions" },
+  { href: "/leaderboard", label: "Table" },
   { href: "/admin", label: "Admin" },
 ] as const;
 
@@ -37,16 +37,17 @@ export async function NavBar() {
 
   return (
     <nav className="relative border-b border-ps-border bg-ps-surface">
-      <div className="mx-auto flex h-16 max-w-6xl items-center justify-between px-4 sm:px-6">
+      <div className="mx-auto flex h-14 max-w-[600px] items-center justify-between px-4 sm:px-6">
         {/* Logo */}
         <Link href="/" className="flex items-center gap-2.5">
           <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-br from-[#f59e0b] to-[#d97706]">
-            <span className="font-display text-sm leading-none text-[#1c1917]">
+            <span className="text-sm font-bold leading-none text-[#1c1917]">
               PS
             </span>
           </div>
-          <span className="font-display text-xl tracking-wide text-ps-text">
-            PredictSport
+          <span className="text-xl tracking-wide uppercase">
+            <span className="font-light text-ps-text">Predict</span>
+            <span className="font-bold text-ps-amber-deep">Sport</span>
           </span>
         </Link>
 
@@ -70,7 +71,7 @@ export async function NavBar() {
           ) : (
             <Link
               href="/login"
-              className="rounded-md bg-ps-text px-4 py-2 text-sm font-medium text-ps-bg transition-colors hover:opacity-90"
+              className="rounded-lg border border-ps-border-strong px-4 py-2 text-sm font-semibold text-ps-text transition-colors hover:bg-ps-chip"
             >
               Log in
             </Link>

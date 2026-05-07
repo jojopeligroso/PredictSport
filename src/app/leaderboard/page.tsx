@@ -45,7 +45,7 @@ export default async function LeaderboardPage({ searchParams }: PageProps) {
   if (competitions.length === 0) {
     return (
       <div className="mx-auto max-w-4xl p-4 sm:p-8">
-        <h1 className="font-display text-4xl tracking-wide text-ps-text">
+        <h1 className="font-light text-2xl uppercase tracking-[0.06em] text-ps-text">
           THE TABLE
         </h1>
         <p className="mt-2 text-sm text-ps-text-sec">
@@ -67,7 +67,7 @@ export default async function LeaderboardPage({ searchParams }: PageProps) {
   if (!selectedId) {
     return (
       <div className="mx-auto max-w-4xl p-4 sm:p-8">
-        <h1 className="font-display text-4xl tracking-wide text-ps-text">
+        <h1 className="font-light text-2xl uppercase tracking-[0.06em] text-ps-text">
           THE TABLE
         </h1>
         <div className="mt-8 rounded-2xl border border-ps-border bg-ps-surface p-12 text-center text-ps-text-sec">
@@ -312,7 +312,7 @@ export default async function LeaderboardPage({ searchParams }: PageProps) {
             The Sheet
             {selectedCompetition ? ` · ${selectedCompetition.name}` : ""}
           </p>
-          <h1 className="font-display text-[32px] tracking-wide text-ps-text">
+          <h1 className="font-light text-2xl uppercase tracking-[0.06em] text-ps-text">
             THE TABLE
           </h1>
         </div>
@@ -355,7 +355,7 @@ function StatCard({
       <p className="text-[10px] font-bold uppercase tracking-widest text-ps-text-ter">
         {label}
       </p>
-      <p className="mt-1 font-display text-xl tracking-wide text-ps-text">
+      <p className="mt-1 font-extrabold text-xl text-ps-text">
         {value}
       </p>
       {subtitle && (

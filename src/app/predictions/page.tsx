@@ -34,7 +34,7 @@ export default async function PredictionsPage({
   if (membershipsError) {
     return (
       <div className="mx-auto max-w-4xl p-4 sm:p-8">
-        <h1 className="font-display text-4xl tracking-wide text-ps-text">
+        <h1 className="font-light text-2xl uppercase tracking-[0.06em] text-ps-text">
           My Predictions
         </h1>
         <div className="mt-8 rounded-lg border border-ps-red bg-ps-red-soft p-6 text-ps-red">
@@ -56,7 +56,7 @@ export default async function PredictionsPage({
   if (competitions.length === 0) {
     return (
       <div className="mx-auto max-w-4xl p-4 sm:p-8">
-        <h1 className="font-display text-4xl tracking-wide text-ps-text">
+        <h1 className="font-light text-2xl uppercase tracking-[0.06em] text-ps-text">
           My Predictions
         </h1>
         <p className="mt-2 text-ps-text-sec">
@@ -86,7 +86,7 @@ export default async function PredictionsPage({
   if (!selectedCompetition) {
     return (
       <div className="mx-auto max-w-4xl p-4 sm:p-8">
-        <h1 className="font-display text-4xl tracking-wide text-ps-text">
+        <h1 className="font-light text-2xl uppercase tracking-[0.06em] text-ps-text">
           My Predictions
         </h1>
         <CompetitionSelector
@@ -110,7 +110,7 @@ export default async function PredictionsPage({
   if (eventsError) {
     return (
       <div className="mx-auto max-w-4xl p-4 sm:p-8">
-        <h1 className="font-display text-4xl tracking-wide text-ps-text">
+        <h1 className="font-light text-2xl uppercase tracking-[0.06em] text-ps-text">
           My Predictions
         </h1>
         <CompetitionSelector
@@ -159,7 +159,7 @@ export default async function PredictionsPage({
 
   return (
     <div className="mx-auto max-w-4xl p-4 sm:p-8">
-      <h1 className="font-display text-4xl tracking-wide text-ps-text">
+      <h1 className="font-light text-2xl uppercase tracking-[0.06em] text-ps-text">
         My Predictions
       </h1>
       <p className="mt-2 text-ps-text-sec">
