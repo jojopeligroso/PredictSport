@@ -28,6 +28,8 @@ export interface User {
   avatar_url: string | null;
   is_super_admin: boolean;
   notification_prefs: Record<string, unknown> | null;
+  telegram_id: number | null;
+  telegram_username: string | null;
   created_at: string;
 }
 
