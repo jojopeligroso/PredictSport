@@ -72,6 +72,10 @@ function getDefaultConfig(pt: PredictionType): Record<string, unknown> | null {
       };
     case "progression":
       return { stages: ["Group Stage", "Round of 16", "Quarter-Final", "Semi-Final", "Final", "Winner"] };
+    case "over_under":
+      return { line: 2.5, stat: "total_goals" };
+    case "handicap":
+      return { line: -1.5, team: "", options: [] };
     default:
       return null;
   }
@@ -444,6 +448,23 @@ export function AddEventForm({
                 <FinalStandingsConfig
                   config={selectedTypes.find((t) => t.prediction_type === "final_standings")!}
                   onChange={(cfg) => updateTypeConfig("final_standings", cfg)}
+                />
+              )}
+
+              {/* Over/Under config (inline) */}
+              {isTypeSelected("over_under") && (
+                <OverUnderConfig
+                  config={selectedTypes.find((t) => t.prediction_type === "over_under")!}
+                  onChange={(cfg) => updateTypeConfig("over_under", cfg)}
+                />
+              )}
+
+              {/* Handicap config (inline) */}
+              {isTypeSelected("handicap") && (
+                <HandicapConfig
+                  config={selectedTypes.find((t) => t.prediction_type === "handicap")!}
+                  onChange={(cfg) => updateTypeConfig("handicap", cfg)}
+                  eventName={eventName}
                 />
               )}
 
@@ -955,6 +976,230 @@ function FinalStandingsConfig({
         Participants rank {positions} competitors in order. They earn {pointsPerCorrect} pts for each
         correctly placed competitor, and {pointsPerIncluded} pts for naming someone who finishes
         in the top {positions} but in the wrong position.
+      </p>
+    </div>
+  );
+}
+
+function OverUnderConfig({
+  config,
+  onChange,
+}: {
+  config: PredictionTypeConfig;
+  onChange: (updates: Partial<PredictionTypeConfig>) => void;
+}) {
+  const line = (config.config?.line as number) ?? 2.5;
+  const stat = (config.config?.stat as string) ?? "total_goals";
+
+  const updateField = (field: string, value: unknown) => {
+    onChange({ config: { ...config.config, [field]: value } });
+  };
+
+  const presets = [
+    { label: "Goals 2.5", line: 2.5, stat: "total_goals" },
+    { label: "Goals 1.5", line: 1.5, stat: "total_goals" },
+    { label: "Goals 3.5", line: 3.5, stat: "total_goals" },
+    { label: "Points 40.5", line: 40.5, stat: "total_points" },
+    { label: "Points 200.5", line: 200.5, stat: "total_points" },
+    { label: "Corners 9.5", line: 9.5, stat: "total_corners" },
+  ];
+
+  return (
+    <div className="rounded-xl border border-ps-border p-3">
+      <label className="block text-xs font-medium text-ps-text-ter mb-2">
+        Over / Under Line
+      </label>
+
+      <div className="flex flex-wrap gap-2 mb-3">
+        {presets.map((preset) => (
+          <button
+            key={preset.label}
+            type="button"
+            onClick={() =>
+              onChange({ config: { ...config.config, line: preset.line, stat: preset.stat } })
+            }
+            className={`rounded-full px-2.5 py-1 text-xs transition-colors ${
+              line === preset.line && stat === preset.stat
+                ? "bg-ps-chip text-ps-text"
+                : "border border-ps-border text-ps-text-sec hover:bg-ps-chip"
+            }`}
+          >
+            {preset.label}
+          </button>
+        ))}
+      </div>
+
+      <div className="grid grid-cols-2 gap-3">
+        <div>
+          <span className="block text-xs text-ps-text-ter mb-1">Line</span>
+          <input
+            type="number"
+            step="0.5"
+            min={0}
+            value={line}
+            onChange={(e) => updateField("line", parseFloat(e.target.value) || 0)}
+            className="w-full rounded-xl border border-ps-border bg-ps-bg px-2 py-1 text-sm text-ps-text"
+          />
+        </div>
+        <div>
+          <span className="block text-xs text-ps-text-ter mb-1">Stat</span>
+          <select
+            value={stat}
+            onChange={(e) => updateField("stat", e.target.value)}
+            className="w-full rounded-xl border border-ps-border bg-ps-bg px-2 py-1 text-sm text-ps-text"
+          >
+            <option value="total_goals">Total Goals</option>
+            <option value="total_points">Total Points</option>
+            <option value="total_corners">Total Corners</option>
+            <option value="total_cards">Total Cards</option>
+            <option value="total_tries">Total Tries</option>
+            <option value="total_sets">Total Sets</option>
+          </select>
+        </div>
+      </div>
+
+      <p className="mt-2 text-xs text-ps-text-ter">
+        Participants predict whether the {stat.replace("total_", "")} total will
+        be over or under {line}.
+      </p>
+    </div>
+  );
+}
+
+function HandicapConfig({
+  config,
+  onChange,
+  eventName,
+}: {
+  config: PredictionTypeConfig;
+  onChange: (updates: Partial<PredictionTypeConfig>) => void;
+  eventName: string;
+}) {
+  const line = (config.config?.line as number) ?? -1.5;
+  const team = (config.config?.team as string) ?? "";
+  const options = (config.config?.options as string[]) ?? [];
+
+  // Try to extract team names from event name (e.g. "Liverpool vs Man City")
+  const inferredTeams = eventName
+    .split(/\s+vs?\s+/i)
+    .map((t) => t.trim())
+    .filter(Boolean);
+
+  const availableTeams =
+    options.length >= 2 ? options : inferredTeams.length >= 2 ? inferredTeams : [];
+
+  const updateField = (field: string, value: unknown) => {
+    onChange({ config: { ...config.config, [field]: value } });
+  };
+
+  // Auto-populate options from event name if not set
+  const ensureOptions = () => {
+    if (options.length < 2 && inferredTeams.length >= 2) {
+      onChange({
+        config: {
+          ...config.config,
+          options: inferredTeams,
+          team: team || inferredTeams[0],
+        },
+      });
+    }
+  };
+
+  const presets = [
+    { label: "-1.5", line: -1.5 },
+    { label: "-2.5", line: -2.5 },
+    { label: "-3.5", line: -3.5 },
+    { label: "-6.5", line: -6.5 },
+    { label: "-12.5", line: -12.5 },
+    { label: "+1.5", line: 1.5 },
+  ];
+
+  return (
+    <div className="rounded-xl border border-ps-border p-3">
+      <label className="block text-xs font-medium text-ps-text-ter mb-2">
+        Handicap / Spread
+      </label>
+
+      <div className="flex flex-wrap gap-2 mb-3">
+        {presets.map((preset) => (
+          <button
+            key={preset.label}
+            type="button"
+            onClick={() => updateField("line", preset.line)}
+            className={`rounded-full px-2.5 py-1 text-xs transition-colors ${
+              line === preset.line
+                ? "bg-ps-chip text-ps-text"
+                : "border border-ps-border text-ps-text-sec hover:bg-ps-chip"
+            }`}
+          >
+            {preset.label}
+          </button>
+        ))}
+      </div>
+
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+        <div>
+          <span className="block text-xs text-ps-text-ter mb-1">Spread</span>
+          <input
+            type="number"
+            step="0.5"
+            value={line}
+            onChange={(e) => updateField("line", parseFloat(e.target.value) || 0)}
+            className="w-full rounded-xl border border-ps-border bg-ps-bg px-2 py-1 text-sm text-ps-text"
+          />
+        </div>
+        <div>
+          <span className="block text-xs text-ps-text-ter mb-1">Favoured team</span>
+          {availableTeams.length >= 2 ? (
+            <select
+              value={team}
+              onChange={(e) => updateField("team", e.target.value)}
+              onFocus={ensureOptions}
+              className="w-full rounded-xl border border-ps-border bg-ps-bg px-2 py-1 text-sm text-ps-text"
+            >
+              <option value="">Select team...</option>
+              {availableTeams.map((t) => (
+                <option key={t} value={t}>
+                  {t}
+                </option>
+              ))}
+            </select>
+          ) : (
+            <input
+              type="text"
+              value={team}
+              onChange={(e) => updateField("team", e.target.value)}
+              placeholder="e.g. Liverpool"
+              className="w-full rounded-xl border border-ps-border bg-ps-bg px-2 py-1 text-sm text-ps-text"
+            />
+          )}
+        </div>
+        <div>
+          <span className="block text-xs text-ps-text-ter mb-1">Teams</span>
+          <input
+            type="text"
+            value={availableTeams.join(", ")}
+            onChange={(e) =>
+              onChange({
+                config: {
+                  ...config.config,
+                  options: e.target.value
+                    .split(",")
+                    .map((s) => s.trim())
+                    .filter(Boolean),
+                },
+              })
+            }
+            placeholder="Team A, Team B"
+            className="w-full rounded-xl border border-ps-border bg-ps-bg px-2 py-1 text-sm text-ps-text"
+          />
+        </div>
+      </div>
+
+      <p className="mt-2 text-xs text-ps-text-ter">
+        {team
+          ? `"${team} covers ${line}" — participants predict whether ${team} wins by more than ${Math.abs(line)} ${line > 0 ? "(given a head start)" : ""}.`
+          : "Select a favoured team to preview the prediction."}
       </p>
     </div>
   );
