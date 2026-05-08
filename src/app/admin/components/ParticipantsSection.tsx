@@ -114,7 +114,7 @@ export function ParticipantsSection({
 
   const getInviteUrl = (token: string) => {
     if (typeof window === "undefined") return "";
-    return `${window.location.origin}/invite/${token}`;
+    return `${window.location.origin}/join?token=${token}`;
   };
 
   const handleCopyInvite = async (token: string) => {

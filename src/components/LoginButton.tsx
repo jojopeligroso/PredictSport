@@ -3,11 +3,20 @@
 import { useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 
-export function LoginButton() {
+interface LoginButtonProps {
+  redirectTo?: string;
+}
+
+export function LoginButton({ redirectTo }: LoginButtonProps) {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [email, setEmail] = useState("");
+  const [magicLinkSent, setMagicLinkSent] = useState(false);
+  const [isSendingMagicLink, setIsSendingMagicLink] = useState(false);
 
-  async function handleLogin() {
+  const callbackUrl = `${typeof window !== "undefined" ? window.location.origin : ""}/auth/callback?next=${encodeURIComponent(redirectTo || "/")}`;
+
+  async function handleGoogleLogin() {
     setIsLoading(true);
     setError(null);
 
@@ -15,7 +24,7 @@ export function LoginButton() {
     const { error } = await supabase.auth.signInWithOAuth({
       provider: "google",
       options: {
-        redirectTo: `${window.location.origin}/auth/callback`,
+        redirectTo: callbackUrl,
       },
     });
 
@@ -26,12 +35,40 @@ export function LoginButton() {
     // If successful, the browser will redirect to Google OAuth
   }
 
+  async function handleMagicLink() {
+    if (!email.trim()) {
+      setError("Please enter your email address");
+      return;
+    }
+
+    setIsSendingMagicLink(true);
+    setError(null);
+    setMagicLinkSent(false);
+
+    const supabase = createClient();
+    const { error } = await supabase.auth.signInWithOtp({
+      email: email.trim(),
+      options: {
+        emailRedirectTo: callbackUrl,
+      },
+    });
+
+    if (error) {
+      setError(error.message);
+    } else {
+      setMagicLinkSent(true);
+    }
+
+    setIsSendingMagicLink(false);
+  }
+
   return (
     <div className="space-y-3">
       <button
-        onClick={handleLogin}
+        onClick={handleGoogleLogin}
         disabled={isLoading}
         className="flex w-full items-center justify-center gap-2.5 rounded-xl bg-[#111] px-4 py-3.5 text-sm font-semibold text-white transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50"
+        style={{ minHeight: "44px" }}
       >
         {/* Google G mark — white version */}
         <svg
@@ -56,9 +93,47 @@ export function LoginButton() {
             d="M24 47.5c6 0 11-2 14.7-5.3l-7.4-5.7c-2 1.4-4.6 2.2-7.3 2.2-6.6 0-12-4-14-9.7l-7.5 5.8C6.6 42.3 14.6 47.5 24 47.5z"
           />
         </svg>
-        {isLoading ? "Redirecting…" : "Continue with Google"}
+        {isLoading ? "Redirecting..." : "Continue with Google"}
       </button>
 
+      {/* Divider */}
+      <div className="flex items-center gap-3">
+        <div className="h-px flex-1 bg-ps-border" />
+        <span className="text-xs text-ps-text-ter">or</span>
+        <div className="h-px flex-1 bg-ps-border" />
+      </div>
+
+      {/* Magic link form */}
+      <div className="space-y-2.5">
+        <input
+          type="email"
+          value={email}
+          onChange={(e) => setEmail(e.target.value)}
+          onKeyDown={(e) => {
+            if (e.key === "Enter") handleMagicLink();
+          }}
+          placeholder="Email address"
+          className="w-full rounded-xl border border-ps-border bg-ps-surface p-3 text-sm text-ps-text placeholder:text-ps-text-ter focus:border-ps-text-sec focus:outline-none"
+          disabled={isSendingMagicLink}
+        />
+        <button
+          onClick={handleMagicLink}
+          disabled={isSendingMagicLink}
+          className="flex w-full items-center justify-center rounded-xl border border-ps-border bg-transparent px-4 py-3 text-sm font-medium text-ps-text transition-colors hover:bg-ps-surface disabled:cursor-not-allowed disabled:opacity-50"
+          style={{ minHeight: "44px" }}
+        >
+          {isSendingMagicLink ? "Sending..." : "Send magic link"}
+        </button>
+      </div>
+
+      {/* Success message */}
+      {magicLinkSent && (
+        <p className="text-center text-sm text-green-600">
+          Check your email for a login link
+        </p>
+      )}
+
+      {/* Error message */}
       {error && (
         <p className="text-center text-sm text-red-500">{error}</p>
       )}

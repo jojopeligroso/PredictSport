@@ -4,19 +4,19 @@ import { useState } from "react";
 import Link from "next/link";
 import { LogoutButton } from "./LogoutButton";
 
-const navLinks = [
+const publicNavLinks = [
   { href: "/predictions", label: "My Predictions" },
   { href: "/leaderboard", label: "Leaderboard" },
-  { href: "/admin", label: "Admin" },
 ] as const;
 
 interface MobileNavProps {
   isLoggedIn: boolean;
+  isAdmin: boolean;
   displayName: string;
   avatarUrl: string | null;
 }
 
-export function MobileNav({ isLoggedIn, displayName, avatarUrl }: MobileNavProps) {
+export function MobileNav({ isLoggedIn, isAdmin, displayName, avatarUrl }: MobileNavProps) {
   const [isOpen, setIsOpen] = useState(false);
 
   return (
@@ -65,7 +65,7 @@ export function MobileNav({ isLoggedIn, displayName, avatarUrl }: MobileNavProps
       {isOpen && (
         <div className="absolute left-0 right-0 top-12 z-50 border-b border-ps-border bg-ps-surface">
           <div className="space-y-1 px-4 py-3">
-            {navLinks.map((link) => (
+            {publicNavLinks.map((link) => (
               <Link
                 key={link.href}
                 href={link.href}
@@ -75,6 +75,15 @@ export function MobileNav({ isLoggedIn, displayName, avatarUrl }: MobileNavProps
                 {link.label}
               </Link>
             ))}
+            {isAdmin && (
+              <Link
+                href="/admin"
+                onClick={() => setIsOpen(false)}
+                className="block rounded-md px-3 py-2 text-sm font-medium text-ps-text-sec transition-colors hover:bg-ps-chip hover:text-ps-text"
+              >
+                Admin
+              </Link>
+            )}
           </div>
 
           <div className="border-t border-ps-border px-4 py-3">

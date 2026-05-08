@@ -1,0 +1,147 @@
+import { redirect } from "next/navigation";
+import { createClient } from "@/lib/supabase/server";
+import { LoginButton } from "@/components/LoginButton";
+import { JoinCard } from "./join-card";
+
+export default async function JoinPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ token?: string }>;
+}) {
+  const params = await searchParams;
+  const token = params?.token;
+
+  // No token provided — redirect home
+  if (!token) {
+    redirect("/");
+  }
+
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  // Not authenticated — show login with redirect back
+  if (!user) {
+    return (
+      <div className="flex flex-1 flex-col items-center justify-center px-4 py-16">
+        <div className="w-full max-w-sm rounded-[22px] bg-ps-bg px-5 pb-7 pt-5 shadow-[0_-10px_40px_rgba(0,0,0,0.18)]">
+          <div className="mx-auto mb-4 h-1 w-9 rounded-full bg-ps-border" />
+
+          {/* Logo row */}
+          <div className="mb-4 flex items-center gap-2.5">
+            <div
+              className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-[#f59e0b] to-[#d97706]"
+              aria-hidden="true"
+            >
+              <span className="font-display text-[22px] leading-none tracking-wide text-[#1a1208]">
+                PS
+              </span>
+            </div>
+            <div>
+              <p className="text-base font-bold leading-tight text-ps-text">
+                PredictSport
+              </p>
+              <p className="text-[11.5px] leading-tight text-ps-text-sec">
+                Sign in to join
+              </p>
+            </div>
+          </div>
+
+          <p className="mb-4 text-sm leading-snug text-ps-text">
+            You&apos;ve been invited to a competition. Sign in to join.
+          </p>
+
+          <LoginButton
+            redirectTo={`/join?token=${encodeURIComponent(token)}`}
+          />
+        </div>
+      </div>
+    );
+  }
+
+  // Authenticated — look up token and competition info
+  const { data: invite } = await supabase
+    .from("invite_tokens")
+    .select("*, competitions(id, name)")
+    .eq("token", token)
+    .single();
+
+  // Token invalid
+  if (!invite) {
+    return (
+      <div className="flex flex-1 flex-col items-center justify-center px-4 py-16">
+        <div className="w-full max-w-sm rounded-[22px] bg-ps-bg px-5 pb-7 pt-5 shadow-[0_-10px_40px_rgba(0,0,0,0.18)]">
+          <div className="mx-auto mb-4 h-1 w-9 rounded-full bg-ps-border" />
+          <div className="rounded-xl border border-ps-red bg-ps-red-soft p-4 text-sm text-ps-red">
+            This invite link is invalid or has been revoked.
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // Token expired
+  if (invite.expires_at && new Date(invite.expires_at) < new Date()) {
+    return (
+      <div className="flex flex-1 flex-col items-center justify-center px-4 py-16">
+        <div className="w-full max-w-sm rounded-[22px] bg-ps-bg px-5 pb-7 pt-5 shadow-[0_-10px_40px_rgba(0,0,0,0.18)]">
+          <div className="mx-auto mb-4 h-1 w-9 rounded-full bg-ps-border" />
+          <div className="rounded-xl border border-ps-red bg-ps-red-soft p-4 text-sm text-ps-red">
+            This invite link has expired.
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // Max uses reached
+  if (invite.max_uses !== null && invite.use_count >= invite.max_uses) {
+    return (
+      <div className="flex flex-1 flex-col items-center justify-center px-4 py-16">
+        <div className="w-full max-w-sm rounded-[22px] bg-ps-bg px-5 pb-7 pt-5 shadow-[0_-10px_40px_rgba(0,0,0,0.18)]">
+          <div className="mx-auto mb-4 h-1 w-9 rounded-full bg-ps-border" />
+          <div className="rounded-xl border border-ps-red bg-ps-red-soft p-4 text-sm text-ps-red">
+            This invite link has reached its maximum uses.
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // Check if already a member
+  const { data: existingMember } = await supabase
+    .from("competition_members")
+    .select("id")
+    .eq("competition_id", invite.competition_id)
+    .eq("user_id", user.id)
+    .single();
+
+  if (existingMember) {
+    redirect(`/predictions?competition=${invite.competition_id}`);
+  }
+
+  // Get member count
+  const { count: memberCount } = await supabase
+    .from("competition_members")
+    .select("id", { count: "exact", head: true })
+    .eq("competition_id", invite.competition_id);
+
+  // Extract competition info from the join
+  const competition = (invite as Record<string, unknown>).competitions as {
+    id: string;
+    name: string;
+  } | null;
+
+  const competitionName = competition?.name ?? "Competition";
+
+  return (
+    <div className="flex flex-1 flex-col items-center justify-center px-4 py-16">
+      <JoinCard
+        token={token}
+        competitionName={competitionName}
+        memberCount={memberCount ?? 0}
+      />
+    </div>
+  );
+}

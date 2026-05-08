@@ -5,7 +5,7 @@ import { LoginButton } from "@/components/LoginButton";
 export default async function LoginPage({
   searchParams,
 }: {
-  searchParams: Promise<{ error?: string; message?: string }>;
+  searchParams: Promise<{ error?: string; message?: string; next?: string }>;
 }) {
   const supabase = await createClient();
   const {
@@ -19,6 +19,7 @@ export default async function LoginPage({
   const params = await searchParams;
   const error = params?.error;
   const message = params?.message;
+  const next = params?.next;
 
   return (
     /* Full-viewport centering; bg-ps-bg so the page behind the card matches */
@@ -48,17 +49,10 @@ export default async function LoginPage({
               PredictSport
             </p>
             <p className="text-[11.5px] leading-tight text-ps-text-sec">
-              The Sheet · 12 lads
+              Predict. Compete. Have the craic.
             </p>
           </div>
         </div>
-
-        {/* Invite teaser */}
-        <p className="mb-4 text-sm leading-snug text-ps-text">
-          You&apos;ve been invited to{" "}
-          <strong>Round 7 — Wexford Sheet</strong>. 5 events, locks at
-          kickoff.
-        </p>
 
         {/* Error / info banners */}
         {error && (
@@ -75,12 +69,12 @@ export default async function LoginPage({
           </div>
         )}
 
-        {/* Big black CTA */}
-        <LoginButton />
+        {/* Auth buttons */}
+        <LoginButton redirectTo={next} />
 
         {/* Caption */}
         <p className="mt-2.5 text-center text-[11px] text-ps-text-ter">
-          One tap. You&apos;ll be auto-joined to the Sheet.
+          Sign in to join your competition.
         </p>
       </div>
     </div>

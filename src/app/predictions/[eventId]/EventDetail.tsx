@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback } from "react";
+import { useState, useCallback, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import {
@@ -94,6 +94,21 @@ function getPickOptions(
         (cfg.options as string[] | undefined) ?? ["Yes", "No"];
       return opts.map((o) => ({ id: o, label: o }));
     }
+    case "top_n": {
+      const opts = cfg.options as string[] | undefined;
+      return opts?.map((o) => ({ id: o, label: o })) ?? null;
+    }
+    case "progression": {
+      const stages = cfg.stages as string[] | undefined;
+      return stages?.map((s) => ({ id: s, label: s })) ?? null;
+    }
+    case "handicap": {
+      const opts = cfg.options as string[] | undefined;
+      const line = cfg.line as number | undefined;
+      const lineStr =
+        line !== undefined ? (line > 0 ? `+${line}` : String(line)) : "";
+      return opts?.map((o) => ({ id: o, label: o, sub: lineStr })) ?? null;
+    }
     default:
       return null;
   }
@@ -104,6 +119,14 @@ function getPickValue(prediction: Prediction | undefined): string | null {
   const data = prediction.prediction_data ?? {};
   if (data.value !== undefined) return String(data.value);
   if (data.selection !== undefined) return String(data.selection);
+  // margin: reconstruct compound key
+  if (data.team !== undefined && data.range_low !== undefined) {
+    return `${data.team}|${data.range_low}-${data.range_high}`;
+  }
+  // final_standings: reconstruct JSON rankings
+  if (data.rankings !== undefined) {
+    return JSON.stringify(data.rankings);
+  }
   return null;
 }
 
@@ -188,9 +211,30 @@ export function EventDetail({
         let predictionData: Record<string, unknown>;
         switch (ept.prediction_type) {
           case "winner":
-          case "top_n":
             predictionData = { value: pick };
             break;
+          case "top_n":
+            predictionData = { value: pick, name: pick };
+            break;
+          case "progression":
+            predictionData = { value: pick, stage: pick };
+            break;
+          case "handicap":
+            predictionData = {
+              selection: pick,
+              line: (ept.config as Record<string, unknown>)?.line ?? 0,
+            };
+            break;
+          case "margin": {
+            const [team, range] = pick.split("|");
+            const [low, high] = (range ?? "0-0").split("-").map(Number);
+            predictionData = { team, range_low: low, range_high: high };
+            break;
+          }
+          case "final_standings": {
+            predictionData = { rankings: JSON.parse(pick) };
+            break;
+          }
           case "over_under":
             predictionData = {
               selection: pick,
@@ -449,9 +493,6 @@ export function EventDetail({
       {/* ── 3. Pick section ────────────────────────────────────────────── */}
       <div className="px-4 mt-4">
         {predictionTypes.map((ept) => {
-          const options = getPickOptions(ept);
-          if (!options) return null;
-
           const existingPred = userPredictions.find(
             (p) => p.prediction_type === ept.prediction_type
           );
@@ -467,7 +508,202 @@ export function EventDetail({
               ? "Head to Head"
               : ept.prediction_type === "yes_no"
               ? "Yes/No"
+              : ept.prediction_type === "top_n"
+              ? "Top N"
+              : ept.prediction_type === "progression"
+              ? "How Far?"
+              : ept.prediction_type === "handicap"
+              ? "Handicap"
+              : ept.prediction_type === "margin"
+              ? "Winning Margin"
+              : ept.prediction_type === "final_standings"
+              ? "Final Standings"
               : ept.prediction_type;
+
+          // ── Margin: two-step picker ──
+          if (ept.prediction_type === "margin") {
+            const cfg = ept.config ?? {};
+            const teams = (cfg.options as string[] | undefined) ?? [];
+            const ranges = (cfg.ranges as number[][] | undefined) ?? [
+              [1, 2],
+              [3, 4],
+              [5, 99],
+            ];
+            // Parse current pick
+            const [selectedTeam, selectedRange] = (currentPick ?? "").split("|");
+
+            return (
+              <div key={ept.id} className="mb-3">
+                <SectionHeader label={`Your Pick \u00B7 ${typeLabel}`} />
+                {/* Step 1: Team */}
+                <div
+                  className="grid gap-1.5 mt-2"
+                  style={{
+                    gridTemplateColumns:
+                      teams.length <= 3
+                        ? `repeat(${teams.length}, 1fr)`
+                        : "1fr",
+                  }}
+                >
+                  {teams.map((team) => (
+                    <PickButton
+                      key={team}
+                      label={team}
+                      selected={selectedTeam === team}
+                      disabled={isLocked || submitting}
+                      onClick={() => {
+                        // If team changes, clear range
+                        if (selectedTeam !== team) {
+                          setActivePicks((prev) => ({
+                            ...prev,
+                            [ept.prediction_type]: `${team}|`,
+                          }));
+                        }
+                      }}
+                    />
+                  ))}
+                </div>
+                {/* Step 2: Range (shown after team selected) */}
+                {selectedTeam && (
+                  <div className="grid gap-1.5 mt-2" style={{ gridTemplateColumns: `repeat(${ranges.length}, 1fr)` }}>
+                    {ranges.map((r) => {
+                      const rangeLabel =
+                        r[1] >= 99 ? `${r[0]}+` : `${r[0]}-${r[1]}`;
+                      const rangeKey = `${r[0]}-${r[1]}`;
+                      return (
+                        <PickButton
+                          key={rangeKey}
+                          label={rangeLabel}
+                          selected={selectedRange === rangeKey}
+                          disabled={isLocked || submitting}
+                          onClick={() => {
+                            setActivePicks((prev) => ({
+                              ...prev,
+                              [ept.prediction_type]: `${selectedTeam}|${rangeKey}`,
+                            }));
+                          }}
+                        />
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+            );
+          }
+
+          // ── Final Standings: tap-to-rank ──
+          if (ept.prediction_type === "final_standings") {
+            const cfg = ept.config ?? {};
+            const options = (cfg.options as string[] | undefined) ?? [];
+            const positions = (cfg.positions as number | undefined) ?? options.length;
+
+            // Parse current rankings from pick (JSON string)
+            let rankings: Array<{ position: number; name: string }> = [];
+            if (currentPick) {
+              try {
+                rankings = JSON.parse(currentPick);
+              } catch {
+                rankings = [];
+              }
+            }
+
+            const nextPosition = rankings.length + 1;
+            const isComplete = rankings.length >= positions;
+
+            return (
+              <div key={ept.id} className="mb-3">
+                <SectionHeader label={`Your Pick \u00B7 ${typeLabel}`} />
+                <p className="text-[11px] text-ps-text-ter mt-1 mb-2">
+                  Tap in order: 1st, 2nd, 3rd...{" "}
+                  {!isLocked && rankings.length > 0 && (
+                    <button
+                      className="text-ps-amber-deep font-semibold underline"
+                      onClick={() =>
+                        setActivePicks((prev) => ({
+                          ...prev,
+                          [ept.prediction_type]: "[]",
+                        }))
+                      }
+                    >
+                      Reset
+                    </button>
+                  )}
+                </p>
+                <div className="flex flex-col gap-1.5 mt-2">
+                  {options.map((opt) => {
+                    const assigned = rankings.find((r) => r.name === opt);
+                    const isAssigned = !!assigned;
+                    return (
+                      <button
+                        key={opt}
+                        disabled={isLocked || submitting || (isComplete && !isAssigned)}
+                        className="flex items-center gap-2.5 rounded-xl border px-3 py-2.5 text-left transition-all disabled:opacity-50"
+                        style={{
+                          borderColor: isAssigned
+                            ? "#f59e0b"
+                            : "var(--ps-border, #e5e0d5)",
+                          background: isAssigned
+                            ? "rgba(245,158,11,0.08)"
+                            : "var(--ps-surface, #fff)",
+                        }}
+                        onClick={() => {
+                          if (isLocked || submitting) return;
+                          let newRankings: Array<{ position: number; name: string }>;
+                          if (isAssigned) {
+                            // Remove and reorder
+                            newRankings = rankings
+                              .filter((r) => r.name !== opt)
+                              .map((r, i) => ({ ...r, position: i + 1 }));
+                          } else if (!isComplete) {
+                            newRankings = [
+                              ...rankings,
+                              { position: nextPosition, name: opt },
+                            ];
+                          } else {
+                            return;
+                          }
+                          setActivePicks((prev) => ({
+                            ...prev,
+                            [ept.prediction_type]: JSON.stringify(newRankings),
+                          }));
+                        }}
+                      >
+                        {/* Position badge */}
+                        <span
+                          className="flex items-center justify-center rounded-full font-display text-[12px]"
+                          style={{
+                            width: 26,
+                            height: 26,
+                            background: isAssigned
+                              ? "#f59e0b"
+                              : "rgba(40,30,20,0.06)",
+                            color: isAssigned ? "#fff" : "var(--ps-text-sec)",
+                            fontWeight: 800,
+                          }}
+                        >
+                          {isAssigned ? assigned.position : ""}
+                        </span>
+                        <span
+                          className="text-[13px] font-semibold"
+                          style={{
+                            color: isAssigned
+                              ? "var(--ps-text)"
+                              : "var(--ps-text-sec)",
+                          }}
+                        >
+                          {opt}
+                        </span>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            );
+          }
+
+          // ── Standard option-button types ──
+          const options = getPickOptions(ept);
+          if (!options) return null;
 
           const gridCols =
             options.length <= 3

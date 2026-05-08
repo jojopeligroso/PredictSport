@@ -41,6 +41,13 @@ export default async function CompetitionDetailPage({ params }: PageProps) {
     notFound();
   }
 
+  // Fetch rounds
+  const { data: rounds } = await supabase
+    .from("rounds")
+    .select("*")
+    .eq("competition_id", id)
+    .order("round_number", { ascending: true });
+
   // Fetch events and their prediction types
   const { data: events } = await supabase
     .from("events")
@@ -115,6 +122,7 @@ export default async function CompetitionDetailPage({ params }: PageProps) {
       <CompetitionTabs
         competition={competition}
         events={eventsWithTypes}
+        rounds={rounds ?? []}
         members={
           (members ?? []).map((m) => ({
             ...m,

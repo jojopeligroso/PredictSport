@@ -24,7 +24,7 @@ interface CreateRoundBody {
   name: string;
   round_number: number;
   deadline?: string;
-  events: EventInput[];
+  events?: EventInput[];
 }
 
 interface UpdateRoundBody {
@@ -182,15 +182,10 @@ export async function POST(request: Request) {
     );
   }
 
-  if (!body.events || body.events.length === 0) {
-    return NextResponse.json(
-      { error: "At least one event is required" },
-      { status: 400 }
-    );
-  }
+  const events = body.events ?? [];
 
   // Validate events
-  for (const evt of body.events) {
+  for (const evt of events) {
     if (!evt.event_name?.trim()) {
       return NextResponse.json(
         { error: "Each event must have an event_name" },
@@ -260,8 +255,16 @@ export async function POST(request: Request) {
     );
   }
 
+  // If no events provided, return the round immediately
+  if (events.length === 0) {
+    return NextResponse.json(
+      { round, events: [], event_count: 0 },
+      { status: 201 }
+    );
+  }
+
   // 2. Create all events
-  const eventRows = body.events.map((evt) => ({
+  const eventRows = events.map((evt) => ({
     competition_id: body.competition_id,
     round_id: round.id,
     event_name: evt.event_name.trim(),
@@ -272,7 +275,7 @@ export async function POST(request: Request) {
     status: "upcoming",
   }));
 
-  const { data: events, error: eventsError } = await supabase
+  const { data: createdEvents, error: eventsError } = await supabase
     .from("events")
     .insert(eventRows)
     .select();
@@ -287,8 +290,8 @@ export async function POST(request: Request) {
   }
 
   // 3. Create event_prediction_types for each event
-  const eptRows = events.flatMap((event, i) => {
-    const configs = body.events[i].prediction_type_configs;
+  const eptRows = createdEvents.flatMap((event, i) => {
+    const configs = events[i].prediction_type_configs;
     return configs.map((ptc) => {
       const { points, partial_points } = resolvePoints(ptc, scoringRules);
       return {
@@ -316,7 +319,7 @@ export async function POST(request: Request) {
   }
 
   return NextResponse.json(
-    { round, events, event_count: events.length },
+    { round, events: createdEvents, event_count: createdEvents.length },
     { status: 201 }
   );
 }
