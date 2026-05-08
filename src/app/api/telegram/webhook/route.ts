@@ -50,8 +50,13 @@ export async function POST(request: Request) {
     const handler = webhookCallback(bot, "std/http");
     return await handler(request);
   } catch (err) {
-    // Log server-side only — never leak internals to the caller
-    console.error("Telegram webhook error:", err instanceof Error ? err.message : "Unknown error");
+    // Log full error server-side — never leak internals to the caller
+    if (err instanceof Error) {
+      console.error("Telegram webhook error:", err.message);
+      console.error("Stack:", err.stack);
+    } else {
+      console.error("Telegram webhook error:", err);
+    }
     // Return 200 to Telegram so it doesn't retry with the same bad update.
     // Telegram retries on non-2xx, which could cause infinite loops on bad data.
     return NextResponse.json({ ok: true });

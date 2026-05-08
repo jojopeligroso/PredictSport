@@ -7,6 +7,11 @@ import { Bot, InlineKeyboard } from "grammy";
  * No conversation state is stored in memory.
  */
 export function registerCommands(bot: Bot): void {
+  // Catch errors within grammY's handler pipeline
+  bot.catch((err) => {
+    console.error("grammY error:", err.message);
+    console.error("Update that caused error:", JSON.stringify(err.ctx?.update));
+  });
   const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? "https://predictsport-rust.vercel.app";
 
   bot.command("start", async (ctx) => {
