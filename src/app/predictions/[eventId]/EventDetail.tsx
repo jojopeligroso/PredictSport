@@ -166,6 +166,7 @@ export function EventDetail({
 }: EventDetailProps) {
   const router = useRouter();
   const [submitting, setSubmitting] = useState(false);
+  const [submitError, setSubmitError] = useState<string | null>(null);
   const [noteText, setNoteText] = useState(
     userPredictions[0]?.note_text ?? ""
   );
@@ -202,6 +203,7 @@ export function EventDetail({
   const handleSubmit = useCallback(async () => {
     if (submitting || !hasActivePick) return;
     setSubmitting(true);
+    setSubmitError(null);
     try {
       for (const ept of predictionTypes) {
         const pick = activePicks[ept.prediction_type];
@@ -246,7 +248,7 @@ export function EventDetail({
             predictionData = { selection: pick };
         }
 
-        await fetch("/api/predictions", {
+        const res = await fetch("/api/predictions", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
@@ -258,8 +260,17 @@ export function EventDetail({
             note_visibility: noteVisibility,
           }),
         });
+
+        if (!res.ok) {
+          const errBody = await res.json().catch(() => ({}));
+          throw new Error(
+            (errBody as { error?: string }).error ?? "Failed to submit prediction"
+          );
+        }
       }
       router.refresh();
+    } catch (err) {
+      setSubmitError(err instanceof Error ? err.message : "Something went wrong. Please try again.");
     } finally {
       setSubmitting(false);
     }
@@ -358,7 +369,7 @@ export function EventDetail({
   // ── Render ───────────────────────────────────────────────────────────────
 
   return (
-    <div className="min-h-screen" style={{ background: "#efe9de" }}>
+    <div className="min-h-screen bg-ps-bg">
       {/* ── 1. Sport-gradient hero ─────────────────────────────────────── */}
       <div
         style={{
@@ -640,11 +651,11 @@ export function EventDetail({
                         className="flex items-center gap-2.5 rounded-xl border px-3 py-2.5 text-left transition-all disabled:opacity-50"
                         style={{
                           borderColor: isAssigned
-                            ? "#f59e0b"
-                            : "var(--ps-border, #e5e0d5)",
+                            ? "var(--ps-amber)"
+                            : "var(--ps-border)",
                           background: isAssigned
-                            ? "rgba(245,158,11,0.08)"
-                            : "var(--ps-surface, #fff)",
+                            ? "var(--ps-amber-soft)"
+                            : "var(--ps-surface)",
                         }}
                         onClick={() => {
                           if (isLocked || submitting) return;
@@ -675,9 +686,9 @@ export function EventDetail({
                             width: 26,
                             height: 26,
                             background: isAssigned
-                              ? "#f59e0b"
-                              : "rgba(40,30,20,0.06)",
-                            color: isAssigned ? "#fff" : "var(--ps-text-sec)",
+                              ? "var(--ps-amber)"
+                              : "var(--ps-chip)",
+                            color: isAssigned ? "var(--ps-surface)" : "var(--ps-text-sec)",
                             fontWeight: 800,
                           }}
                         >
@@ -761,9 +772,9 @@ export function EventDetail({
             style={{
               fontSize: 14.5,
               background: hasActivePick
-                ? "linear-gradient(135deg, #f59e0b, #d97706)"
-                : "rgba(40,30,20,0.08)",
-              color: hasActivePick ? "#1a1208" : undefined,
+                ? "linear-gradient(135deg, var(--ps-amber), var(--ps-amber-deep))"
+                : "var(--ps-chip)",
+              color: hasActivePick ? "var(--ps-text)" : undefined,
               letterSpacing: 0.4,
             }}
           >
@@ -773,9 +784,16 @@ export function EventDetail({
               ? "Lock it in"
               : "Pick to continue"}
           </button>
-          <p className="mt-2 text-center text-[11px] text-ps-text-ter">
-            You can change your pick until kickoff.
-          </p>
+          {submitError && (
+            <p className="mt-2 text-center text-[12px] font-medium text-ps-red">
+              {submitError}
+            </p>
+          )}
+          {!submitError && (
+            <p className="mt-2 text-center text-[11px] text-ps-text-ter">
+              You can change your pick until kickoff.
+            </p>
+          )}
         </div>
       )}
 
@@ -844,7 +862,7 @@ export function EventDetail({
               <div className="flex items-center gap-2.5">
                 <Avatar
                   initials={row.initials}
-                  color="#f59e0b"
+                  color="var(--ps-amber)"
                   size={32}
                 />
                 <div className="flex-1 min-w-0">

@@ -24,6 +24,13 @@ const instrumentSerif = Instrument_Serif({
 export const metadata: Metadata = {
   title: "PredictSport — The Sheet",
   description: "Social sports prediction platform for friend groups",
+  openGraph: {
+    title: "PredictSport",
+    description: "Predict. Compete. Have the craic.",
+    type: "website",
+    url: "https://predictsport-rust.vercel.app",
+    siteName: "PredictSport",
+  },
 };
 
 export default function RootLayout({

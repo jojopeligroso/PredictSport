@@ -37,7 +37,7 @@ export default async function PredictionsPage({
         <h1 className="font-light text-2xl uppercase tracking-[0.06em] text-ps-text">
           My Predictions
         </h1>
-        <div className="mt-8 rounded-lg border border-ps-red bg-ps-red-soft p-6 text-ps-red">
+        <div className="mt-8 rounded-xl border border-ps-red bg-ps-red-soft p-6 text-ps-red">
           Failed to load competitions. Please try again later.
         </div>
       </div>
@@ -62,7 +62,7 @@ export default async function PredictionsPage({
         <p className="mt-2 text-ps-text-sec">
           Submit your predictions before each event locks.
         </p>
-        <div className="mt-8 rounded-lg border border-ps-border bg-ps-surface p-12 text-center">
+        <div className="mt-8 rounded-xl border border-ps-border bg-ps-surface p-12 text-center">
           <p className="text-ps-text-sec">
             You haven&apos;t joined any competitions yet.
           </p>
@@ -93,7 +93,7 @@ export default async function PredictionsPage({
           competitions={competitions}
           selectedId={selectedCompetitionId}
         />
-        <div className="mt-8 rounded-lg border border-ps-border bg-ps-surface p-12 text-center text-ps-text-sec">
+        <div className="mt-8 rounded-xl border border-ps-border bg-ps-surface p-12 text-center text-ps-text-sec">
           Competition not found. Select a different one above.
         </div>
       </div>
@@ -117,7 +117,7 @@ export default async function PredictionsPage({
           competitions={competitions}
           selectedId={selectedCompetitionId}
         />
-        <div className="mt-8 rounded-lg border border-ps-red bg-ps-red-soft p-6 text-ps-red">
+        <div className="mt-8 rounded-xl border border-ps-red bg-ps-red-soft p-6 text-ps-red">
           Failed to load events. Please try again later.
         </div>
       </div>

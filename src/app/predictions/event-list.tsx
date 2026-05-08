@@ -322,7 +322,7 @@ export function EventList({
 
   if (events.length === 0) {
     return (
-      <div className="mt-8 rounded-lg border border-ps-border bg-ps-surface p-12 text-center text-ps-text-sec">
+      <div className="mt-8 rounded-xl border border-ps-border bg-ps-surface p-12 text-center text-ps-text-sec">
         No events in this competition yet. Check back later.
       </div>
     );
@@ -357,7 +357,7 @@ export function EventList({
               height: 32,
               background:
                 "linear-gradient(135deg, #f59e0b, #d97706)",
-              color: "#1a1208",
+              color: "var(--ps-text)",
               letterSpacing: "0.5px",
             }}
           >
@@ -427,14 +427,14 @@ export function EventList({
           className="mt-2.5 overflow-hidden rounded-full"
           style={{
             height: 5,
-            background: "rgba(40,30,20,0.10)",
+            background: "var(--ps-border)",
           }}
         >
           <div
             className="h-full rounded-full"
             style={{
               width: `${pickProgress}%`,
-              background: "linear-gradient(90deg, #f59e0b, #d97706)",
+              background: "linear-gradient(90deg, var(--ps-amber), var(--ps-amber-deep))",
               transition: "width 0.4s ease",
             }}
           />
@@ -445,7 +445,7 @@ export function EventList({
       <div className="px-4 pt-2">
         <div
           className="grid grid-cols-2 gap-0.5 rounded-[10px] p-[3px]"
-          style={{ background: "rgba(40,30,20,0.06)" }}
+          style={{ background: "var(--ps-chip)" }}
         >
           {(["sheet", "damage"] as const).map((mode) => (
             <button
@@ -487,7 +487,7 @@ export function EventList({
           {/* ── Event Cards ────────────────────────────────────────────────── */}
           <div className="space-y-2.5 px-4 pb-4 pt-3">
             {filteredEvents.length === 0 && (
-              <div className="rounded-lg border border-ps-border bg-ps-surface p-8 text-center text-ps-text-sec">
+              <div className="rounded-xl border border-ps-border bg-ps-surface p-8 text-center text-ps-text-sec">
                 No events match the selected filter.
               </div>
             )}

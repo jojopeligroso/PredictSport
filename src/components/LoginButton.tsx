@@ -67,7 +67,7 @@ export function LoginButton({ redirectTo }: LoginButtonProps) {
       <button
         onClick={handleGoogleLogin}
         disabled={isLoading}
-        className="flex w-full items-center justify-center gap-2.5 rounded-xl bg-[#111] px-4 py-3.5 text-sm font-semibold text-white transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50"
+        className="flex w-full items-center justify-center gap-2.5 rounded-xl bg-ps-text px-4 py-3.5 text-sm font-semibold text-ps-bg transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50"
         style={{ minHeight: "44px" }}
       >
         {/* Google G mark — white version */}
@@ -128,14 +128,14 @@ export function LoginButton({ redirectTo }: LoginButtonProps) {
 
       {/* Success message */}
       {magicLinkSent && (
-        <p className="text-center text-sm text-green-600">
+        <p className="text-center text-sm text-ps-green">
           Check your email for a login link
         </p>
       )}
 
       {/* Error message */}
       {error && (
-        <p className="text-center text-sm text-red-500">{error}</p>
+        <p className="text-center text-sm text-ps-red">{error}</p>
       )}
     </div>
   );

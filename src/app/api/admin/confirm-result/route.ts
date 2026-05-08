@@ -78,15 +78,9 @@ export async function POST(request: Request) {
     );
   }
 
-  if (event.result_confirmed) {
-    return NextResponse.json(
-      { error: "Result has already been confirmed for this event" },
-      { status: 409 }
-    );
-  }
-
-  // Update event: set result as confirmed
-  const { error: updateError } = await supabase
+  // Atomically set result_confirmed = true only if it is currently false.
+  // This prevents two concurrent requests both scoring predictions.
+  const { data: confirmedEvent, error: updateError } = await supabase
     .from("events")
     .update({
       result_data: resultData,
@@ -94,12 +88,23 @@ export async function POST(request: Request) {
       result_confirmed_by: user.id,
       status: "resulted",
     })
-    .eq("id", body.event_id);
+    .eq("id", body.event_id)
+    .eq("result_confirmed", false)
+    .select("id")
+    .maybeSingle();
 
   if (updateError) {
     return NextResponse.json(
       { error: "Failed to confirm result", details: updateError.message },
       { status: 500 }
+    );
+  }
+
+  if (!confirmedEvent) {
+    // No row was updated — result was already confirmed by a concurrent request
+    return NextResponse.json(
+      { error: "Result has already been confirmed for this event" },
+      { status: 409 }
     );
   }
 

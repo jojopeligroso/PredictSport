@@ -52,7 +52,7 @@ export function JoinCard({ token, competitionName, memberCount }: JoinCardProps)
           className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-[#f59e0b] to-[#d97706]"
           aria-hidden="true"
         >
-          <span className="font-display text-[22px] leading-none tracking-wide text-[#1a1208]">
+          <span className="font-display text-[22px] leading-none tracking-wide text-ps-text">
             PS
           </span>
         </div>
@@ -83,7 +83,7 @@ export function JoinCard({ token, competitionName, memberCount }: JoinCardProps)
       <button
         onClick={handleJoin}
         disabled={isJoining}
-        className="flex w-full items-center justify-center rounded-xl bg-gradient-to-r from-[#f59e0b] to-[#d97706] px-4 py-3.5 text-sm font-extrabold text-[#1a1208] transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50"
+        className="flex w-full items-center justify-center rounded-xl bg-gradient-to-r from-[#f59e0b] to-[#d97706] px-4 py-3.5 text-sm font-extrabold text-ps-text transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50"
         style={{ minHeight: "44px" }}
       >
         {isJoining ? "Joining..." : `Join ${competitionName}`}

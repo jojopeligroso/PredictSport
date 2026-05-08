@@ -34,7 +34,7 @@ export default async function JoinPage({
               className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-[#f59e0b] to-[#d97706]"
               aria-hidden="true"
             >
-              <span className="font-display text-[22px] leading-none tracking-wide text-[#1a1208]">
+              <span className="font-display text-[22px] leading-none tracking-wide text-ps-text">
                 PS
               </span>
             </div>

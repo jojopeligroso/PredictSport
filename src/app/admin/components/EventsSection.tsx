@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { StatusBadge } from "./CompetitionStatusBadge";
 import { AddEventForm } from "./AddEventForm";
 import { ResultPanel } from "./ResultPanel";
-import type { Competition, Event, EventPredictionType } from "@/types/database";
+import type { Competition, Event, EventPredictionType, Round } from "@/types/database";
 
 interface EventWithPredictionTypes extends Event {
   event_prediction_types: EventPredictionType[];
@@ -14,9 +14,10 @@ interface EventWithPredictionTypes extends Event {
 interface EventsSectionProps {
   competition: Competition;
   events: EventWithPredictionTypes[];
+  rounds: Round[];
 }
 
-export function EventsSection({ competition, events }: EventsSectionProps) {
+export function EventsSection({ competition, events, rounds }: EventsSectionProps) {
   const router = useRouter();
   const [showAddForm, setShowAddForm] = useState(false);
   const [expandedEventId, setExpandedEventId] = useState<string | null>(null);

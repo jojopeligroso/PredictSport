@@ -53,7 +53,7 @@ export async function NavBar() {
             className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-gradient-to-br from-[#f59e0b] to-[#d97706]"
             aria-hidden="true"
           >
-            <span className="font-display text-base leading-none tracking-wide text-[#1c1917]">
+            <span className="font-display text-base leading-none tracking-wide text-ps-text">
               PS
             </span>
           </div>

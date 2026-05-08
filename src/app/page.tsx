@@ -22,7 +22,7 @@ export default async function Home() {
           className="flex h-14 w-14 items-center justify-center rounded-2xl bg-gradient-to-br from-[#f59e0b] to-[#d97706] shadow-lg"
           aria-hidden="true"
         >
-          <span className="font-display text-3xl leading-none tracking-wide text-[#1a1208]">
+          <span className="font-display text-3xl leading-none tracking-wide text-ps-text">
             PS
           </span>
         </div>
@@ -46,7 +46,7 @@ export default async function Home() {
         <div className="w-full">
           <Link
             href="/login"
-            className="block w-full rounded-xl bg-[#111] px-6 py-3.5 text-center text-sm font-semibold text-white transition-opacity hover:opacity-90"
+            className="block w-full rounded-xl bg-ps-text px-6 py-3.5 text-center text-sm font-semibold text-ps-bg transition-opacity hover:opacity-90"
           >
             Get started
           </Link>

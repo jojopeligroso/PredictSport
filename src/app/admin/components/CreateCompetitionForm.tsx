@@ -145,7 +145,7 @@ export function CreateCompetitionForm() {
     return (
       <button
         onClick={() => setIsOpen(true)}
-        className="rounded-xl bg-gradient-to-r from-[#f59e0b] to-[#d97706] px-4 py-2 text-sm font-medium text-[#1a1208] transition-opacity hover:opacity-90"
+        className="rounded-xl bg-gradient-to-r from-[#f59e0b] to-[#d97706] px-4 py-2 text-sm font-medium text-ps-text transition-opacity hover:opacity-90"
       >
         Create Competition
       </button>
@@ -417,7 +417,7 @@ export function CreateCompetitionForm() {
         <button
           type="submit"
           disabled={isSubmitting}
-          className="rounded-xl bg-gradient-to-r from-[#f59e0b] to-[#d97706] px-4 py-2 text-sm font-medium text-[#1a1208] transition-opacity hover:opacity-90 disabled:opacity-50"
+          className="rounded-xl bg-gradient-to-r from-[#f59e0b] to-[#d97706] px-4 py-2 text-sm font-medium text-ps-text transition-opacity hover:opacity-90 disabled:opacity-50"
         >
           {isSubmitting ? "Creating..." : "Create Competition"}
         </button>

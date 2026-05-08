@@ -17,8 +17,16 @@ export async function POST(request: NextRequest) {
   }
 
   // 2. Parse body
-  const body = await request.json();
-  const { token } = body as { token?: string };
+  let body: { token?: string };
+  try {
+    body = await request.json();
+  } catch {
+    return NextResponse.json(
+      { error: "Invalid request body" },
+      { status: 400 }
+    );
+  }
+  const { token } = body;
 
   if (!token) {
     return NextResponse.json(
@@ -90,14 +98,28 @@ export async function POST(request: NextRequest) {
     });
 
   if (insertError) {
+    // Handle concurrent duplicate join gracefully
+    if (insertError.code === "23505") {
+      const { data: comp } = await supabase
+        .from("competitions")
+        .select("name")
+        .eq("id", invite.competition_id)
+        .single();
+
+      return NextResponse.json({
+        competition_id: invite.competition_id,
+        competition_name: comp?.name ?? "Competition",
+        already_member: true,
+      });
+    }
     console.error("Failed to join competition:", insertError);
     return NextResponse.json({ error: "Failed to join" }, { status: 500 });
   }
 
-  // 8. Increment use_count
+  // 8. Increment use_count atomically
   await supabase
     .from("invite_tokens")
-    .update({ use_count: invite.use_count + 1 })
+    .update({ use_count: (invite.use_count ?? 0) + 1 })
     .eq("id", invite.id);
 
   // 9. Fetch competition name

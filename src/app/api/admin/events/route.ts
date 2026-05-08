@@ -343,12 +343,9 @@ export async function PATCH(request: Request) {
 
     const scoringRules = (competition?.scoring_rules ?? {}) as Record<string, unknown>;
 
-    // Delete existing and re-insert
-    await supabase
-      .from("event_prediction_types")
-      .delete()
-      .eq("event_id", body.event_id);
-
+    // Insert new rows first, then delete the old ones only on success.
+    // This avoids a window where the event has zero prediction types
+    // if the insert fails after the delete has already run.
     const eptRows = body.prediction_type_configs.map((ptc) => {
       const { points, partial_points } = resolvePoints(ptc, scoringRules);
       return {
@@ -360,6 +357,12 @@ export async function PATCH(request: Request) {
       };
     });
 
+    // Fetch existing prediction type ids so we can delete them after the insert succeeds
+    const { data: existingEpts } = await supabase
+      .from("event_prediction_types")
+      .select("id")
+      .eq("event_id", body.event_id);
+
     const { error: eptError } = await supabase
       .from("event_prediction_types")
       .insert(eptRows);
@@ -369,6 +372,14 @@ export async function PATCH(request: Request) {
         { error: "Failed to update prediction types", details: eptError.message },
         { status: 500 }
       );
+    }
+
+    // Insert succeeded — now safe to remove the old rows
+    if (existingEpts && existingEpts.length > 0) {
+      await supabase
+        .from("event_prediction_types")
+        .delete()
+        .in("id", existingEpts.map((r) => r.id));
     }
   }
 
