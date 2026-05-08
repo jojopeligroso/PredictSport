@@ -53,7 +53,7 @@ export default async function Home() {
         </div>
 
         <p className="text-xs text-ps-text-ter">
-          No betting. No wagering. Just bragging rights.
+          The fight for bragging rights starts here.
         </p>
       </div>
     </div>
