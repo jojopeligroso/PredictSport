@@ -2,6 +2,7 @@ import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { EventList } from "./event-list";
 import { CompetitionSelector } from "./competition-selector";
+import JoinCompetitionCard from "./join-competition-card";
 import type { Competition, Event, Prediction, EventPredictionType } from "@/types/database";
 
 interface SearchParams {
@@ -70,6 +71,9 @@ export default async function PredictionsPage({
             Ask a friend for an invite link, or join a public competition to get
             started.
           </p>
+        </div>
+        <div className="mt-6">
+          <JoinCompetitionCard />
         </div>
       </div>
     );
@@ -181,6 +185,10 @@ export default async function PredictionsPage({
         roundNumber={activeRound?.round_number}
         roundName={activeRound?.name}
       />
+
+      <div className="mx-auto max-w-4xl px-4 pb-8">
+        <JoinCompetitionCard />
+      </div>
     </div>
   );
 }

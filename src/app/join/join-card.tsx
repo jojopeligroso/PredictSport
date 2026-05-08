@@ -68,8 +68,12 @@ export function JoinCard({ token, competitionName, memberCount }: JoinCardProps)
 
       {/* Competition name */}
       <p className="mb-1 text-lg font-bold text-ps-text">{competitionName}</p>
-      <p className="mb-5 text-sm text-ps-text-sec">
-        You&apos;ve been invited to join this competition.
+
+      {/* Confirmation copy */}
+      <p className="mb-5 text-sm leading-relaxed text-ps-text">
+        You are about to join{" "}
+        <span className="font-bold">{competitionName}</span>. Please confirm
+        that you would like to join.
       </p>
 
       {/* Error */}
@@ -79,20 +83,25 @@ export function JoinCard({ token, competitionName, memberCount }: JoinCardProps)
         </div>
       )}
 
-      {/* Join CTA */}
-      <button
-        onClick={handleJoin}
-        disabled={isJoining}
-        className="flex w-full items-center justify-center rounded-xl bg-gradient-to-r from-[#f59e0b] to-[#d97706] px-4 py-3.5 text-sm font-extrabold text-ps-text transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50"
-        style={{ minHeight: "44px" }}
-      >
-        {isJoining ? "Joining..." : `Join ${competitionName}`}
-      </button>
-
-      {/* Caption */}
-      <p className="mt-2.5 text-center text-[11px] text-ps-text-ter">
-        You&apos;ll be added as a participant.
-      </p>
+      {/* Action buttons */}
+      <div className="flex gap-3">
+        <button
+          onClick={handleJoin}
+          disabled={isJoining}
+          className="flex flex-1 items-center justify-center rounded-xl bg-gradient-to-r from-[#f59e0b] to-[#d97706] px-4 py-3.5 text-sm font-semibold text-ps-text transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50"
+          style={{ minHeight: "44px" }}
+        >
+          {isJoining ? "Joining..." : "Yes, join"}
+        </button>
+        <button
+          onClick={() => router.push("/predictions")}
+          disabled={isJoining}
+          className="flex flex-1 items-center justify-center rounded-xl border border-ps-border-strong bg-transparent px-4 py-3.5 text-sm font-semibold text-ps-text-sec transition-colors hover:bg-ps-chip disabled:cursor-not-allowed disabled:opacity-50"
+          style={{ minHeight: "44px" }}
+        >
+          No thanks
+        </button>
+      </div>
     </div>
   );
 }

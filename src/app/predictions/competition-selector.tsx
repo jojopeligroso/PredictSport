@@ -15,9 +15,7 @@ export function CompetitionSelector({
   const router = useRouter();
   const searchParams = useSearchParams();
 
-  if (competitions.length <= 1) return null;
-
-  function handleChange(competitionId: string) {
+  function handleSelect(competitionId: string) {
     const params = new URLSearchParams(searchParams.toString());
     params.set("competition", competitionId);
     router.push(`/predictions?${params.toString()}`);
@@ -25,25 +23,39 @@ export function CompetitionSelector({
 
   return (
     <div className="mt-4">
-      <label
-        htmlFor="competition-select"
-        className="block text-xs font-medium uppercase tracking-wider text-ps-text-sec"
-      >
+      <p className="mb-2 text-xs font-medium uppercase tracking-wider text-ps-text-sec">
         Competition
-      </label>
-      <select
-        id="competition-select"
-        value={selectedId ?? ""}
-        onChange={(e) => handleChange(e.target.value)}
-        className="mt-1 rounded-xl border border-ps-border-strong bg-ps-surface px-3 py-2 text-sm font-medium text-ps-text focus:border-ps-amber focus:outline-none focus:ring-1 focus:ring-ps-amber"
+      </p>
+      <div
+        className="ps-scroll flex gap-2 overflow-x-auto pb-1"
+        role="tablist"
+        aria-label="Competition selector"
       >
-        {competitions.map((comp) => (
-          <option key={comp.id} value={comp.id}>
-            {comp.name}
-            {comp.status !== "active" ? ` (${comp.status})` : ""}
-          </option>
-        ))}
-      </select>
+        {competitions.map((comp) => {
+          const isActive = comp.id === selectedId;
+          const label =
+            comp.status !== "active"
+              ? `${comp.name} (${comp.status})`
+              : comp.name;
+
+          return (
+            <button
+              key={comp.id}
+              role="tab"
+              aria-selected={isActive}
+              onClick={() => handleSelect(comp.id)}
+              className={[
+                "flex-shrink-0 rounded-xl border px-3 py-1.5 text-sm font-semibold transition-colors",
+                isActive
+                  ? "border-ps-amber bg-ps-amber-soft text-ps-amber-deep"
+                  : "border-transparent bg-ps-chip text-ps-text-sec hover:text-ps-text",
+              ].join(" ")}
+            >
+              {label}
+            </button>
+          );
+        })}
+      </div>
     </div>
   );
 }
