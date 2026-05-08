@@ -96,7 +96,6 @@ Provider abstraction in `src/lib/sports/`. `BaseProvider` handles fetch, rate li
 2. WhatsApp notification integration (Cloud API)
 3. Wire up full prediction → result → scoring flow with real data
 4. Request Foireann API key and test GAA provider
-5. Run seed script (`npx tsx scripts/seed-quiz-2026.ts`) and test full flow
 
 ## Environment Variables
 
