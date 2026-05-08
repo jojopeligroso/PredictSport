@@ -172,7 +172,7 @@ export function PersonDetail({
 
       {/* Picks vs Results */}
       <div className="px-4 mt-5">
-        <SectionHeader label={`Picks vs Results \u00B7 ${competitionName}`} accent="var(--ps-violet)" />
+        <SectionHeader label="Picks vs Results" accent="var(--ps-violet)" />
         {predictions.length === 0 ? (
           <div className="mt-3 rounded-[14px] border border-ps-border bg-ps-surface p-8 text-center text-sm text-ps-text-sec">
             No resulted predictions yet

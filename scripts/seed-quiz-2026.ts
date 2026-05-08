@@ -324,7 +324,7 @@ async function main() {
       scoring_rules: scoringRules,
       lock_default_minutes: 5,
       allow_nominations: false,
-      allow_prediction_updates: true,
+      allow_prediction_updates: false,
       created_by: adminUser.id,
     })
     .select()
@@ -378,12 +378,15 @@ async function main() {
   let eptCount = 0;
   let predCount = 0;
 
+  // All predictions are submitted upfront (paper sheet model).
+  // Lock time is set to before the first event — no changes after sheets are in.
+  const SHEET_DEADLINE = "2026-03-01T00:00:00Z";
+
   // Map question number to event_id for prediction insertion
   const eventMap = new Map<number, { id: string; prediction_type: string }>();
 
   for (const def of EVENTS) {
     const startTime = new Date(`${def.date}T12:00:00Z`);
-    const lockTime = new Date(startTime.getTime() - 5 * 60 * 1000);
 
     const { data: event, error: eventError } = await supabase
       .from("events")
@@ -393,8 +396,8 @@ async function main() {
         event_name: def.event_name,
         sport: def.sport,
         start_time: startTime.toISOString(),
-        lock_time: lockTime.toISOString(),
-        status: "upcoming",
+        lock_time: SHEET_DEADLINE,
+        status: "locked",
       })
       .select()
       .single();

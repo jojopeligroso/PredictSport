@@ -417,7 +417,6 @@ export default async function LeaderboardPage({ searchParams }: PageProps) {
         <div>
           <p className="text-[11px] font-bold uppercase tracking-widest text-ps-text-sec">
             The Sheet
-            {selectedCompetition ? ` · ${selectedCompetition.name}` : ""}
           </p>
           <h1 className="mt-0.5 font-display text-[32px] leading-none tracking-wider text-ps-text">
             THE TABLE

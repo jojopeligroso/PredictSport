@@ -88,6 +88,27 @@ export async function POST(request: NextRequest) {
     );
   }
 
+  // Verify competition is active and check prediction update rules
+  const { data: competition, error: compError } = await supabase
+    .from("competitions")
+    .select("id, status, allow_prediction_updates")
+    .eq("id", competition_id)
+    .maybeSingle();
+
+  if (compError || !competition) {
+    return NextResponse.json(
+      { error: "Competition not found" },
+      { status: 404 }
+    );
+  }
+
+  if (competition.status !== "active") {
+    return NextResponse.json(
+      { error: "Competition is not active" },
+      { status: 403 }
+    );
+  }
+
   // Verify event exists, belongs to the competition, and is not locked
   const { data: event, error: eventError } = await supabase
     .from("events")
@@ -131,6 +152,14 @@ export async function POST(request: NextRequest) {
     .eq("user_id", user.id)
     .eq("prediction_type", prediction_type)
     .maybeSingle();
+
+  // Block updates when competition disallows prediction changes
+  if (existing && !competition.allow_prediction_updates) {
+    return NextResponse.json(
+      { error: "Prediction updates are not allowed for this competition" },
+      { status: 403 }
+    );
+  }
 
   if (existing) {
     // Update existing prediction

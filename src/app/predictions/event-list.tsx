@@ -232,9 +232,9 @@ export function EventList({
       : 0;
 
   // Hero display text
-  const heroTitle = roundName ?? competitionName ?? "YOUR PICKS";
+  const heroTitle = roundName ?? "YOUR PICKS";
   const roundLabel = roundNumber != null ? `Round ${roundNumber}` : null;
-  const sheetLabel = competitionName ?? "THE SHEET";
+  const sheetLabel = "THE SHEET";
 
   // Filter events
   const filteredEvents = useMemo(() => {
