@@ -24,7 +24,6 @@ const LEAGUE_GROUPS: LeagueGroup[] = [
     leagues: [
       { id: "4328", label: "Premier League", sport: "soccer" },
       { id: "4329", label: "Championship", sport: "soccer" },
-      { id: "4346", label: "FA Cup", sport: "soccer" },
       { id: "4350", label: "League Cup", sport: "soccer" },
     ],
   },
@@ -262,7 +261,7 @@ function FixtureRow({
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0 flex-1">
           {hasTeams ? (
-            <div className="text-sm font-medium text-ps-text">
+            <div className="truncate text-sm font-medium text-ps-text">
               {home}{" "}
               <span className="text-xs font-normal text-ps-text-ter">vs</span>{" "}
               {away}
@@ -272,13 +271,13 @@ function FixtureRow({
               {fixture.event_name}
             </div>
           )}
-          <div className="mt-0.5 flex flex-wrap items-center gap-x-2 text-xs text-ps-text-ter">
-            <span>{formatFixtureTime(fixture.start_time)}</span>
+          <div className="mt-0.5 flex flex-wrap items-center gap-1.5 text-xs text-ps-text-ter">
+            <span className="shrink-0">{formatFixtureTime(fixture.start_time)}</span>
             {fixture.round && (
-              <span className="text-ps-text-ter">Round {fixture.round}</span>
+              <span className="shrink-0 text-ps-text-ter">R{fixture.round}</span>
             )}
             {leagueLabel && (
-              <span className="rounded-full bg-ps-chip px-1.5 py-px text-[10px] text-ps-text-ter">
+              <span className="truncate rounded-full bg-ps-chip px-1.5 py-px text-[10px] text-ps-text-ter">
                 {leagueLabel}
               </span>
             )}
@@ -554,8 +553,8 @@ export function FixtureBrowser({ onSelect }: FixtureBrowserProps) {
     <>
       <div className="space-y-3">
         {/* Favourite leagues bar */}
-        <div className="flex items-center gap-2">
-          <div className="flex min-w-0 flex-1 gap-1.5 overflow-x-auto pb-0.5">
+        <div className="flex flex-wrap items-center gap-2">
+          <div className="flex min-w-0 flex-1 flex-wrap gap-1.5">
             {favouriteIds.map((id) => {
               const league = LEAGUE_MAP.get(id);
               if (!league) return null;

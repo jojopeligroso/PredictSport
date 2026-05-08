@@ -6,7 +6,7 @@ const LEAGUE_SPORT_MAP: Record<string, Sport> = {
   // Soccer — England
   "4328": "soccer", // Premier League
   "4329": "soccer", // Championship
-  "4346": "soccer", // FA Cup
+  // "4346" removed — TheSportsDB maps this ID to MLS, not FA Cup
   "4350": "soccer", // League Cup
   // Soccer — Europe
   "4480": "soccer", // Champions League
