@@ -7,27 +7,22 @@ import { Bot, InlineKeyboard } from "grammy";
  * No conversation state is stored in memory.
  */
 export function registerCommands(bot: Bot): void {
-  // Catch errors within grammY's handler pipeline
+  // Catch errors within grammY's handler pipeline — single-line log for Vercel
   bot.catch((err) => {
-    console.error("grammY error:", err.message);
-    console.error("Update that caused error:", JSON.stringify(err.ctx?.update));
+    console.error(`BOT_ERROR: ${err.message} | update: ${JSON.stringify(err.ctx?.update)}`);
   });
+
   const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? "https://predictsport-rust.vercel.app";
 
-  bot.command("start", async (ctx) => {
-    const keyboard = new InlineKeyboard().webApp(
-      "Open PredictSport",
-      `${appUrl}/telegram`
-    );
+  // Debug: respond to ANY message so we can confirm the bot is processing
+  bot.on("message", async (ctx, next) => {
+    console.log(`INCOMING: chat=${ctx.chat.id} type=${ctx.chat.type} text=${ctx.message?.text}`);
+    await next();
+  });
 
-    await ctx.reply(
-      "Welcome to PredictSport! Make predictions, compete with friends, and track the leaderboard.\n\n" +
-        "Commands:\n" +
-        "/predict - Make your predictions\n" +
-        "/standings - View the leaderboard\n" +
-        "/results - Latest round results",
-      { reply_markup: keyboard }
-    );
+  bot.command("start", async (ctx) => {
+    // Simple text reply first — no inline keyboard — to isolate the issue
+    await ctx.reply("PredictSport bot is alive! Commands: /predict /standings /results");
   });
 
   bot.command("predict", async (ctx) => {
