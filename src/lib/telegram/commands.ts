@@ -14,15 +14,20 @@ export function registerCommands(bot: Bot): void {
 
   const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? "https://predictsport-rust.vercel.app";
 
-  // Debug: respond to ANY message so we can confirm the bot is processing
-  bot.on("message", async (ctx, next) => {
-    console.log(`INCOMING: chat=${ctx.chat.id} type=${ctx.chat.type} text=${ctx.message?.text}`);
-    await next();
-  });
-
   bot.command("start", async (ctx) => {
-    // Simple text reply first — no inline keyboard — to isolate the issue
-    await ctx.reply("PredictSport bot is alive! Commands: /predict /standings /results");
+    const keyboard = new InlineKeyboard().webApp(
+      "Open PredictSport",
+      `${appUrl}/telegram`
+    );
+
+    await ctx.reply(
+      "Welcome to PredictSport! Make predictions, compete with friends, and track the leaderboard.\n\n" +
+        "Commands:\n" +
+        "/predict - Make your predictions\n" +
+        "/standings - View the leaderboard\n" +
+        "/results - Latest round results",
+      { reply_markup: keyboard }
+    );
   });
 
   bot.command("predict", async (ctx) => {
