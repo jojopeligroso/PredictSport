@@ -22,7 +22,6 @@ export function EventsSection({ competition, events, rounds }: EventsSectionProp
   const [showAddForm, setShowAddForm] = useState(false);
   const [expandedEventId, setExpandedEventId] = useState<string | null>(null);
   const [updatingStatus, setUpdatingStatus] = useState<string | null>(null);
-  const [rescheduleEventId, setRescheduleEventId] = useState<string | null>(null);
 
   const sortedEvents = [...(events ?? [])].sort(
     (a, b) => new Date(a.start_time).getTime() - new Date(b.start_time).getTime()
@@ -190,13 +189,11 @@ export function EventsSection({ competition, events, rounds }: EventsSectionProp
                   {event.status === "postponed" && (
                     <div className="flex gap-1">
                       <button
-                        onClick={() => setRescheduleEventId(
-                          rescheduleEventId === event.id ? null : event.id
-                        )}
+                        onClick={() => handleStatusChange(event.id, "upcoming")}
                         disabled={updatingStatus === event.id}
                         className="rounded-xl border border-ps-green px-2.5 py-1 text-xs font-medium text-ps-green transition-colors hover:bg-ps-green-soft disabled:opacity-50"
                       >
-                        Reschedule
+                        Reinstate
                       </button>
                       <button
                         onClick={() => handleStatusChange(event.id, "cancelled")}
@@ -235,22 +232,6 @@ export function EventsSection({ competition, events, rounds }: EventsSectionProp
                 </div>
               </div>
 
-              {/* Reschedule panel */}
-              {rescheduleEventId === event.id && (
-                <div className="border-t border-ps-border p-4">
-                  <ReschedulePanel
-                    event={event}
-                    competitionId={competition.id}
-                    lockDefaultMinutes={competition.lock_default_minutes}
-                    onDone={() => {
-                      setRescheduleEventId(null);
-                      router.refresh();
-                    }}
-                    onCancel={() => setRescheduleEventId(null)}
-                  />
-                </div>
-              )}
-
               {/* Expanded result panel */}
               {expandedEventId === event.id && (
                 <div className="border-t border-ps-border p-4">
@@ -272,128 +253,3 @@ export function EventsSection({ competition, events, rounds }: EventsSectionProp
   );
 }
 
-// ---- Reschedule panel for postponed events ----------------------------------
-
-function ReschedulePanel({
-  event,
-  competitionId,
-  lockDefaultMinutes,
-  onDone,
-  onCancel,
-}: {
-  event: Event;
-  competitionId: string;
-  lockDefaultMinutes: number;
-  onDone: () => void;
-  onCancel: () => void;
-}) {
-  const [startTime, setStartTime] = useState("");
-  const [lockTime, setLockTime] = useState("");
-  const [saving, setSaving] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-
-  const applyLockTime = (startIso: string) => {
-    const d = new Date(startIso);
-    const lock = new Date(d.getTime() - lockDefaultMinutes * 60 * 1000);
-    setLockTime(lock.toISOString().slice(0, 16));
-  };
-
-  const handleStartChange = (value: string) => {
-    setStartTime(value);
-    if (value) applyLockTime(value);
-  };
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!startTime || !lockTime) {
-      setError("Both times are required");
-      return;
-    }
-    setSaving(true);
-    setError(null);
-    try {
-      const res = await fetch("/api/admin/events", {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          event_id: event.id,
-          competition_id: competitionId,
-          start_time: new Date(startTime).toISOString(),
-          lock_time: new Date(lockTime).toISOString(),
-          status: "upcoming",
-        }),
-      });
-      if (!res.ok) {
-        const data = await res.json();
-        setError(data.error ?? "Failed to reschedule");
-        return;
-      }
-      onDone();
-    } catch {
-      setError("Network error");
-    } finally {
-      setSaving(false);
-    }
-  };
-
-  return (
-    <form onSubmit={handleSubmit} className="space-y-3">
-      <p className="text-sm font-medium text-ps-text">
-        Reschedule &ldquo;{event.event_name}&rdquo;
-      </p>
-
-      {error && (
-        <div className="rounded-xl bg-ps-red-soft px-3 py-2 text-xs text-ps-red">
-          {error}
-        </div>
-      )}
-
-      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-        <div>
-          <label className="block text-xs text-ps-text-ter mb-1">
-            New Start Time
-          </label>
-          <input
-            type="datetime-local"
-            required
-            value={startTime}
-            onChange={(e) => handleStartChange(e.target.value)}
-            className="w-full rounded-xl border border-ps-border bg-ps-bg px-3 py-1.5 text-sm text-ps-text focus:border-ps-amber focus:outline-none focus:ring-1 focus:ring-ps-amber"
-          />
-        </div>
-        <div>
-          <label className="block text-xs text-ps-text-ter mb-1">
-            New Lock Time
-          </label>
-          <input
-            type="datetime-local"
-            required
-            value={lockTime}
-            onChange={(e) => setLockTime(e.target.value)}
-            className="w-full rounded-xl border border-ps-border bg-ps-bg px-3 py-1.5 text-sm text-ps-text focus:border-ps-amber focus:outline-none focus:ring-1 focus:ring-ps-amber"
-          />
-          <p className="mt-0.5 text-[10px] text-ps-text-ter">
-            Auto-set {lockDefaultMinutes} min before start
-          </p>
-        </div>
-      </div>
-
-      <div className="flex gap-2">
-        <button
-          type="submit"
-          disabled={saving}
-          className="rounded-xl bg-ps-green px-3 py-1.5 text-xs font-medium text-white transition-opacity hover:opacity-90 disabled:opacity-50"
-        >
-          {saving ? "Saving..." : "Reschedule & Reopen"}
-        </button>
-        <button
-          type="button"
-          onClick={onCancel}
-          className="rounded-xl border border-ps-border px-3 py-1.5 text-xs text-ps-text-sec hover:bg-ps-chip"
-        >
-          Cancel
-        </button>
-      </div>
-    </form>
-  );
-}
