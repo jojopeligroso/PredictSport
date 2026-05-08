@@ -44,6 +44,10 @@ export interface LeaderboardEntry {
   total_predictions: number;
   accuracy: number;
   streak: number;
+  percentage: number;
+  rounds_participated: number;
+  total_rounds: number;
+  qualified: boolean;
   tiebreaker: TiebreakerInfo | null;
   predictions: EventPrediction[];
 }
@@ -121,20 +125,22 @@ function formatResultValue(data: Record<string, unknown> | null): string {
  * Derive rivalry text from the two closest-scoring entries at the top.
  */
 function getRivalryBanner(entries: LeaderboardEntry[]): { headline: string; body: string } | null {
-  if (entries.length < 2) return null;
-  const top = entries[0]!;
-  const second = entries[1]!;
-  const gap = top.total_points - second.total_points;
-  if (gap > 10) return null; // only show when it's close
+  // Only consider qualified entries for rivalry
+  const qualified = entries.filter((e) => e.qualified);
+  if (qualified.length < 2) return null;
+  const top = qualified[0]!;
+  const second = qualified[1]!;
+  const gap = top.percentage - second.percentage;
+  if (gap > 5) return null; // only show when within 5 percentage points
   if (gap === 0) {
     return {
       headline: "Dead heat",
-      body: `${top.display_name} and ${second.display_name} are level on points — tiebreaker decides it.`,
+      body: `${top.display_name} and ${second.display_name} are level — tiebreaker decides it.`,
     };
   }
   return {
     headline: "Going to the wire",
-    body: `${top.display_name} leads by just ${gap} point${gap === 1 ? "" : "s"} — ${second.display_name} is right on their heels.`,
+    body: `${top.display_name} leads by just ${gap.toFixed(1)}% — ${second.display_name} is right on their heels.`,
   };
 }
 
@@ -282,16 +288,18 @@ function ExpandedDetail({ entry }: { entry: LeaderboardEntry }) {
 // -- Tiebreaker section --
 
 function TiebreakerSection({ entries }: { entries: LeaderboardEntry[] }) {
-  const pointGroups = new Map<number, LeaderboardEntry[]>();
-  for (const e of entries) {
-    const group = pointGroups.get(e.total_points) ?? [];
+  // Group by percentage (rounded to 4dp string key to avoid float precision issues)
+  const pctGroups = new Map<string, LeaderboardEntry[]>();
+  for (const e of entries.filter((e) => e.qualified)) {
+    const key = e.percentage.toFixed(4);
+    const group = pctGroups.get(key) ?? [];
     group.push(e);
-    pointGroups.set(e.total_points, group);
+    pctGroups.set(key, group);
   }
 
-  const tiedGroups = Array.from(pointGroups.entries())
+  const tiedGroups = Array.from(pctGroups.entries())
     .filter(([, group]) => group.length > 1 && group.some((e) => e.tiebreaker))
-    .sort(([a], [b]) => b - a);
+    .sort(([a], [b]) => parseFloat(b) - parseFloat(a));
 
   if (tiedGroups.length === 0) return null;
 
@@ -459,16 +467,16 @@ function PodiumCard({
             )}
           </div>
 
-          {/* Points — Bebas Neue 26px */}
+          {/* Percentage — Bebas Neue 26px, with pts sub-label */}
           <div className="shrink-0 text-right">
             <p className="font-display leading-none text-white" style={{ fontSize: 26, letterSpacing: 0.6 }}>
-              {entry.total_points}
+              {entry.percentage.toFixed(1)}%
             </p>
             <p
               className="mt-0.5 font-bold uppercase text-white/85"
               style={{ fontSize: 9, letterSpacing: 1 }}
             >
-              points
+              {entry.total_points}pts · {entry.rounds_participated}/{entry.total_rounds}r
             </p>
           </div>
         </div>
@@ -509,9 +517,10 @@ function TableRow({
   const color = avatarColor(entry.user_id);
   const form = getForm(entry.predictions);
   const accuracyValue = entry.accuracy / 100;
+  const dimmed = !entry.qualified;
 
   return (
-    <div>
+    <div className={dimmed ? "opacity-50" : undefined}>
       <button
         onClick={onExpand}
         aria-expanded={isExpanded}
@@ -526,22 +535,29 @@ function TableRow({
             className="w-[18px] shrink-0 text-center font-extrabold tabular-nums text-ps-text-ter"
             style={{ fontSize: 12.5 }}
           >
-            {entry.rank}
+            {dimmed ? "—" : entry.rank}
           </span>
 
           {/* Avatar */}
           <Avatar initials={initials} color={color} size={30} />
 
-          {/* Name + form */}
+          {/* Name + form + qualification */}
           <div className="min-w-0 flex-1">
-            <Link
-              href={`/leaderboard/${entry.user_id}`}
-              className="truncate font-bold text-ps-text hover:underline"
-              style={{ fontSize: 13 }}
-              onClick={(e) => e.stopPropagation()}
-            >
-              {entry.display_name}
-            </Link>
+            <div className="flex items-center gap-1.5">
+              <Link
+                href={`/leaderboard/${entry.user_id}`}
+                className="truncate font-bold text-ps-text hover:underline"
+                style={{ fontSize: 13 }}
+                onClick={(e) => e.stopPropagation()}
+              >
+                {entry.display_name}
+              </Link>
+              {dimmed && (
+                <span className="shrink-0 rounded bg-ps-chip px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wider text-ps-text-ter">
+                  Not qualified
+                </span>
+              )}
+            </div>
             {form.length > 0 && (
               <div className="mt-[3px] flex gap-[2px]">
                 {form.map((letter, i) => (
@@ -558,15 +574,18 @@ function TableRow({
             <span className="w-8 text-center text-xs text-ps-text-ter">—</span>
           )}
 
-          {/* Points + movement stacked */}
-          <div className="shrink-0 min-w-[40px] text-right">
+          {/* Percentage + rounds stacked */}
+          <div className="shrink-0 min-w-[48px] text-right">
             <p
               className="font-extrabold tabular-nums leading-none text-ps-text"
               style={{ fontSize: 16 }}
             >
-              {entry.total_points}
+              {entry.percentage.toFixed(1)}%
             </p>
-            <div className="mt-1">
+            <p className="mt-0.5 tabular-nums text-ps-text-ter" style={{ fontSize: 9 }}>
+              {entry.rounds_participated}/{entry.total_rounds}r
+            </p>
+            <div className="mt-0.5">
               <MovementBadge mv={0} />
             </div>
           </div>
@@ -656,8 +675,10 @@ export function LeaderboardTable({ entries }: { entries: LeaderboardEntry[] }) {
     );
   }
 
-  const podium = entries.filter((e) => e.rank <= 3);
-  const rest = entries.filter((e) => e.rank > 3);
+  const qualifiedEntries = entries.filter((e) => e.qualified);
+  const unqualifiedEntries = entries.filter((e) => !e.qualified);
+  const podium = qualifiedEntries.filter((e) => e.rank <= 3);
+  const rest = qualifiedEntries.filter((e) => e.rank > 3);
   const rivalry = getRivalryBanner(entries);
 
   return (
@@ -700,7 +721,7 @@ export function LeaderboardTable({ entries }: { entries: LeaderboardEntry[] }) {
         </div>
       )}
 
-      {/* "The Rest" table */}
+      {/* "The Rest" table — qualified only */}
       {rest.length > 0 && (
         <div className="mt-[14px]">
           <SectionHeader label="The Rest" accent="var(--ps-blue)" />
@@ -712,6 +733,27 @@ export function LeaderboardTable({ entries }: { entries: LeaderboardEntry[] }) {
                 onExpand={() => toggleExpand(entry.user_id)}
                 isExpanded={expandedUserId === entry.user_id}
                 isLast={idx === rest.length - 1}
+              />
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Unqualified entries — below a divider */}
+      {unqualifiedEntries.length > 0 && (
+        <div className="mt-[14px]">
+          <SectionHeader label="Not yet qualified" accent="var(--ps-text-ter)" />
+          <p className="mt-1 mb-3 text-[11px] text-ps-text-ter">
+            Requires at least 1/3 of all scored rounds to qualify.
+          </p>
+          <div className="overflow-hidden rounded-2xl border border-ps-border bg-ps-surface">
+            {unqualifiedEntries.map((entry, idx) => (
+              <TableRow
+                key={entry.user_id}
+                entry={entry}
+                onExpand={() => toggleExpand(entry.user_id)}
+                isExpanded={expandedUserId === entry.user_id}
+                isLast={idx === unqualifiedEntries.length - 1}
               />
             ))}
           </div>

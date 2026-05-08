@@ -81,18 +81,18 @@ export default async function LeaderboardPage({ searchParams }: PageProps) {
   // Fetch all data in parallel
   const [
     { data: members },
-    { data: events },
+    { data: allEvents },
     { data: tiebreakers },
   ] = await Promise.all([
     supabase
       .from("competition_members")
       .select("user_id, users(id, display_name, avatar_url)")
       .eq("competition_id", selectedId),
+    // Fetch ALL events (not just resulted) so we can determine round participation
     supabase
       .from("events")
-      .select("id, event_name, sport, status, result_data")
-      .eq("competition_id", selectedId)
-      .eq("status", "resulted"),
+      .select("id, event_name, sport, status, result_data, round_id")
+      .eq("competition_id", selectedId),
     supabase
       .from("tiebreakers")
       .select("id, question_text, correct_value")
@@ -100,12 +100,19 @@ export default async function LeaderboardPage({ searchParams }: PageProps) {
   ]);
 
   const memberList = members ?? [];
-  const eventList = events ?? [];
+  const allEventList = allEvents ?? [];
   const tiebreakerList = tiebreakers ?? [];
 
-  const eventIds = eventList.map((e) => e.id);
+  // Resulted events only — for scoring display
+  const resultedEventList = allEventList.filter((e) => e.status === "resulted");
+  const allEventIds = allEventList.map((e) => e.id);
 
-  // Fetch predictions for resulted events (if any)
+  // Fetch event_prediction_types for ALL events (needed for max possible points)
+  // and ALL predictions (needed for round participation detection)
+  let eventPredictionTypeList: Array<{
+    event_id: string;
+    points: number;
+  }> = [];
   let predictionList: Array<{
     id: string;
     event_id: string;
@@ -117,13 +124,20 @@ export default async function LeaderboardPage({ searchParams }: PageProps) {
     submitted_at: string;
   }> = [];
 
-  if (eventIds.length > 0) {
-    const { data: predictions } = await supabase
-      .from("predictions")
-      .select(
-        "id, event_id, user_id, prediction_data, is_correct, is_partial, points_awarded, submitted_at"
-      )
-      .in("event_id", eventIds);
+  if (allEventIds.length > 0) {
+    const [{ data: epts }, { data: predictions }] = await Promise.all([
+      supabase
+        .from("event_prediction_types")
+        .select("event_id, points")
+        .in("event_id", allEventIds),
+      supabase
+        .from("predictions")
+        .select(
+          "id, event_id, user_id, prediction_data, is_correct, is_partial, points_awarded, submitted_at"
+        )
+        .in("event_id", allEventIds),
+    ]);
+    eventPredictionTypeList = epts ?? [];
     predictionList = predictions ?? [];
   }
 
@@ -143,9 +157,48 @@ export default async function LeaderboardPage({ searchParams }: PageProps) {
     tiebreakerAnswerList = tbAnswers ?? [];
   }
 
-  // Build a map of event_id -> event details
-  const eventMap = new Map(
-    eventList.map((e) => [
+  // --- Round-based scoring setup ---
+
+  // Group all events by round_id (null round_id events go into a "null" bucket)
+  const eventsByRound = new Map<string | null, typeof allEventList>();
+  for (const ev of allEventList) {
+    const roundKey = ev.round_id ?? null;
+    const bucket = eventsByRound.get(roundKey) ?? [];
+    bucket.push(ev);
+    eventsByRound.set(roundKey, bucket);
+  }
+
+  // Max possible points per round: sum of event_prediction_types.points for events in that round
+  const eptByEvent = new Map<string, number>();
+  for (const ept of eventPredictionTypeList) {
+    eptByEvent.set(ept.event_id, (eptByEvent.get(ept.event_id) ?? 0) + ept.points);
+  }
+
+  const maxPointsByRound = new Map<string | null, number>();
+  for (const [roundKey, evs] of eventsByRound) {
+    const max = evs.reduce((sum, ev) => sum + (eptByEvent.get(ev.id) ?? 0), 0);
+    maxPointsByRound.set(roundKey, max);
+  }
+
+  // Count "scored" rounds — rounds that have at least one resulted event
+  const resultedEventIdSet = new Set(resultedEventList.map((e) => e.id));
+  const scoredRoundKeys = new Set<string | null>();
+  for (const [roundKey, evs] of eventsByRound) {
+    if (evs.some((ev) => resultedEventIdSet.has(ev.id))) {
+      scoredRoundKeys.add(roundKey);
+    }
+  }
+  const totalScoredRounds = scoredRoundKeys.size;
+
+  // Map each event_id -> round_id (null if no round)
+  const eventToRound = new Map<string, string | null>();
+  for (const ev of allEventList) {
+    eventToRound.set(ev.id, ev.round_id ?? null);
+  }
+
+  // Build a map of event_id -> resulted event details (for the scored predictions display)
+  const resultedEventMap = new Map(
+    resultedEventList.map((e) => [
       e.id,
       {
         event_name: e.event_name,
@@ -155,10 +208,19 @@ export default async function LeaderboardPage({ searchParams }: PageProps) {
     ])
   );
 
-  // Build predictions grouped by user
+  // Build predictions grouped by user — only resulted events feed the display predictions
   const predictionsByUser = new Map<string, EventPrediction[]>();
+  // Also track all predictions by user for round participation (includes non-resulted events)
+  const allPredsByUser = new Map<string, typeof predictionList>();
+
   for (const p of predictionList) {
-    const ev = eventMap.get(p.event_id);
+    // All preds for round participation
+    const allList = allPredsByUser.get(p.user_id) ?? [];
+    allList.push(p);
+    allPredsByUser.set(p.user_id, allList);
+
+    // Only resulted event preds go into the display list
+    const ev = resultedEventMap.get(p.event_id);
     if (!ev) continue;
     const list = predictionsByUser.get(p.user_id) ?? [];
     list.push({
@@ -237,7 +299,11 @@ export default async function LeaderboardPage({ searchParams }: PageProps) {
     const userId = userObj?.id ?? m.user_id;
     const displayName = userObj?.display_name ?? "Unknown";
     const avatarUrl = userObj?.avatar_url ?? null;
+
+    // Display predictions (resulted events only)
     const preds = predictionsByUser.get(userId) ?? [];
+    // All predictions (for round participation)
+    const allUserPreds = allPredsByUser.get(userId) ?? [];
 
     const totalPoints = preds.reduce((sum, p) => sum + p.points_awarded, 0);
     const correctCount = preds.filter((p) => p.is_correct === true).length;
@@ -252,6 +318,32 @@ export default async function LeaderboardPage({ searchParams }: PageProps) {
         : 0;
     const streak = calculateStreak(preds);
 
+    // --- Percentage scoring ---
+    // Determine which scored rounds this user participated in
+    // (submitted at least 1 prediction for any event in that round)
+    const userRoundsParticipated = new Set<string | null>();
+    for (const p of allUserPreds) {
+      const roundKey = eventToRound.get(p.event_id);
+      if (roundKey !== undefined && scoredRoundKeys.has(roundKey)) {
+        userRoundsParticipated.add(roundKey);
+      }
+    }
+
+    // Max possible points across participated rounds
+    const maxPossible = Array.from(userRoundsParticipated).reduce(
+      (sum, rk) => sum + (maxPointsByRound.get(rk) ?? 0),
+      0
+    );
+
+    const percentage = maxPossible > 0 ? (totalPoints / maxPossible) * 100 : 0;
+    const roundsParticipated = userRoundsParticipated.size;
+
+    // Qualification: participated in at least 1/3 of all scored rounds
+    const qualified =
+      totalScoredRounds === 0
+        ? false
+        : roundsParticipated >= Math.ceil(totalScoredRounds / 3);
+
     return {
       user_id: userId,
       display_name: displayName,
@@ -264,36 +356,45 @@ export default async function LeaderboardPage({ searchParams }: PageProps) {
       total_predictions: preds.length,
       accuracy,
       streak,
+      percentage,
+      rounds_participated: roundsParticipated,
+      total_rounds: totalScoredRounds,
+      qualified,
       tiebreaker: tiebreakerByUser.get(userId) ?? null,
       predictions: preds,
     };
   });
 
-  // Sort: total points desc, then tiebreaker distance asc (lower is better)
-  entries.sort((a, b) => {
-    if (b.total_points !== a.total_points) {
-      return b.total_points - a.total_points;
+  // Sort qualified entries by percentage desc, then tiebreaker distance asc
+  // Unqualified entries are sorted the same way but placed after
+  function sortKey(a: LeaderboardEntry, b: LeaderboardEntry): number {
+    if (b.percentage !== a.percentage) {
+      return b.percentage - a.percentage;
     }
-    // Tiebreaker: closer to correct value wins
     const aDist = a.tiebreaker?.distance ?? Infinity;
     const bDist = b.tiebreaker?.distance ?? Infinity;
     return aDist - bDist;
-  });
+  }
 
-  // Assign ranks (tied users share the same rank)
+  const qualifiedEntries = entries.filter((e) => e.qualified).sort(sortKey);
+  const unqualifiedEntries = entries.filter((e) => !e.qualified).sort(sortKey);
+
+  const sortedEntries = [...qualifiedEntries, ...unqualifiedEntries];
+
+  // Assign ranks only among qualified entries (tied users share the same rank)
   let currentRank = 1;
-  for (let i = 0; i < entries.length; i++) {
+  for (let i = 0; i < qualifiedEntries.length; i++) {
     if (i === 0) {
-      entries[i]!.rank = 1;
+      qualifiedEntries[i]!.rank = 1;
     } else {
-      const prev = entries[i - 1]!;
-      const curr = entries[i]!;
-      const samePoints = curr.total_points === prev.total_points;
+      const prev = qualifiedEntries[i - 1]!;
+      const curr = qualifiedEntries[i]!;
+      const samePct = curr.percentage === prev.percentage;
       const sameTiebreaker =
         (curr.tiebreaker?.distance ?? Infinity) ===
         (prev.tiebreaker?.distance ?? Infinity);
 
-      if (samePoints && sameTiebreaker) {
+      if (samePct && sameTiebreaker) {
         curr.rank = prev.rank;
       } else {
         currentRank = i + 1;
@@ -301,6 +402,13 @@ export default async function LeaderboardPage({ searchParams }: PageProps) {
       }
     }
   }
+
+  // Unqualified entries get rank 0 (displayed as "—" in the table)
+  for (const e of unqualifiedEntries) {
+    e.rank = 0;
+  }
+
+  const entries_final = sortedEntries;
 
   return (
     <div className="mx-auto max-w-2xl p-4 sm:p-6">
@@ -322,7 +430,7 @@ export default async function LeaderboardPage({ searchParams }: PageProps) {
       </div>
 
       <div className="mt-4">
-        <LeaderboardTable entries={entries} />
+        <LeaderboardTable entries={entries_final} />
       </div>
     </div>
   );
