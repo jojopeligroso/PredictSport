@@ -15,9 +15,9 @@ export function registerCommands(bot: Bot): void {
   const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? "https://predictsport-rust.vercel.app";
 
   bot.command("start", async (ctx) => {
-    const keyboard = new InlineKeyboard().webApp(
+    const keyboard = new InlineKeyboard().url(
       "Open PredictSport",
-      `${appUrl}/telegram`
+      appUrl
     );
 
     await ctx.reply(
@@ -31,9 +31,9 @@ export function registerCommands(bot: Bot): void {
   });
 
   bot.command("predict", async (ctx) => {
-    const keyboard = new InlineKeyboard().webApp(
+    const keyboard = new InlineKeyboard().url(
       "Make Predictions",
-      `${appUrl}/telegram?startapp=predict`
+      `${appUrl}/predictions`
     );
 
     await ctx.reply("Tap below to make your predictions:", {
@@ -42,9 +42,9 @@ export function registerCommands(bot: Bot): void {
   });
 
   bot.command("standings", async (ctx) => {
-    const keyboard = new InlineKeyboard().webApp(
+    const keyboard = new InlineKeyboard().url(
       "View Full Leaderboard",
-      `${appUrl}/telegram?startapp=standings`
+      `${appUrl}/leaderboard`
     );
 
     await ctx.reply("Tap below to see the full leaderboard:", {
@@ -53,9 +53,9 @@ export function registerCommands(bot: Bot): void {
   });
 
   bot.command("results", async (ctx) => {
-    const keyboard = new InlineKeyboard().webApp(
+    const keyboard = new InlineKeyboard().url(
       "View Results",
-      `${appUrl}/telegram?startapp=results`
+      `${appUrl}/predictions`
     );
 
     await ctx.reply("Tap below to see the latest results:", {
