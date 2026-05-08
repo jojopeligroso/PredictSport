@@ -6,7 +6,7 @@ test.describe("Competition creation", () => {
   }) => {
     await page.goto("/admin");
     await expect(
-      page.getByRole("heading", { name: "Admin Panel" })
+      page.getByRole("heading", { name: /match day desk/i })
     ).toBeVisible();
 
     // Open the create form

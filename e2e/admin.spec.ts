@@ -1,11 +1,11 @@
 import { test, expect } from "@playwright/test";
 
 test.describe("Admin page (authenticated)", () => {
-  test("renders admin panel heading and description", async ({ page }) => {
+  test("renders Match Day Desk heading and description", async ({ page }) => {
     await page.goto("/admin");
 
     await expect(
-      page.getByRole("heading", { name: "Admin Panel" })
+      page.getByRole("heading", { name: /match day desk/i })
     ).toBeVisible();
 
     await expect(

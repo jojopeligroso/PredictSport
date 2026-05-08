@@ -61,6 +61,11 @@ async function loginAs(page: Page, email: string, password: string) {
 }
 
 test.describe("Wexford FC Quiz 2026", () => {
+  // Requires seeded data: run `npx tsx scripts/seed-quiz-2026.ts` first
+  test.skip(
+    () => !process.env.SEEDED,
+    "Requires seeded quiz data — set SEEDED=1 after running seed script"
+  );
   test.use({ storageState: { cookies: [], origins: [] } });
 
   test.beforeEach(async ({ page }) => {
@@ -72,7 +77,7 @@ test.describe("Wexford FC Quiz 2026", () => {
     await page.waitForLoadState("networkidle");
 
     await expect(
-      page.getByRole("heading", { name: "My Predictions" })
+      page.getByRole("heading", { name: /my predictions/i })
     ).toBeVisible({ timeout: 10000 });
 
     // Jay is auto-selected into the quiz (only competition)
@@ -114,7 +119,7 @@ test.describe("Wexford FC Quiz 2026", () => {
     await page.waitForLoadState("networkidle");
 
     await expect(
-      page.getByRole("heading", { name: "Leaderboard" })
+      page.getByRole("heading", { name: /the table/i })
     ).toBeVisible({ timeout: 10000 });
 
     // Jay should appear in the leaderboard
@@ -128,15 +133,15 @@ test.describe("Wexford FC Quiz 2026", () => {
     await page.waitForLoadState("networkidle");
 
     await expect(
-      page.getByRole("heading", { name: "My Predictions" })
+      page.getByRole("heading", { name: /my predictions/i })
     ).toBeVisible({ timeout: 10000 });
 
     // Navigate to leaderboard
-    await page.getByRole("link", { name: /leaderboard/i }).click();
+    await page.getByRole("link", { name: /table/i }).click();
     await page.waitForLoadState("networkidle");
 
     await expect(
-      page.getByRole("heading", { name: "Leaderboard" })
+      page.getByRole("heading", { name: /the table/i })
     ).toBeVisible({ timeout: 10000 });
 
     // Navigate back to predictions
@@ -144,7 +149,7 @@ test.describe("Wexford FC Quiz 2026", () => {
     await page.waitForLoadState("networkidle");
 
     await expect(
-      page.getByRole("heading", { name: "My Predictions" })
+      page.getByRole("heading", { name: /my predictions/i })
     ).toBeVisible({ timeout: 10000 });
   });
 });
