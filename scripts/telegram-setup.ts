@@ -63,6 +63,7 @@ async function main() {
       { command: "predict", description: "Make your predictions" },
       { command: "standings", description: "View the leaderboard" },
       { command: "results", description: "Latest round results" },
+      { command: "post", description: "Post open events to group (admin)" },
       { command: "start", description: "Get started" },
     ],
   });

@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 import { notifyDeadline } from "@/lib/telegram/notify";
+import { revealPredictions } from "@/lib/telegram/predictions";
 
 /**
  * GET /api/notifications/cron
@@ -38,7 +39,6 @@ export async function GET(request: Request) {
 
   const now = new Date();
   const twoHoursFromNow = new Date(now.getTime() + 2 * 60 * 60 * 1000);
-  const oneHourAgo = new Date(now.getTime() - 1 * 60 * 60 * 1000);
 
   // Find events that lock within the next 2 hours and haven't been notified yet.
   // We check lock_time > oneHourAgo to avoid re-notifying events from previous cron runs
@@ -72,11 +72,33 @@ export async function GET(request: Request) {
     }
   }
 
+  // ── Reveal predictions for events that just locked ──────────────────
+  // Find events whose lock_time fell within the last hour (since cron runs hourly)
+  const oneHourAgo = new Date(now.getTime() - 1 * 60 * 60 * 1000);
+  const { data: lockedEvents } = await supabase
+    .from("events")
+    .select("id, event_name")
+    .in("status", ["upcoming", "locked"])
+    .lte("lock_time", now.toISOString())
+    .gt("lock_time", oneHourAgo.toISOString());
+
+  let revealed = 0;
+  for (const event of lockedEvents ?? []) {
+    try {
+      await revealPredictions(telegramGroupId, event.id);
+      revealed++;
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : "Unknown error";
+      console.error(`Cron: failed to reveal ${event.event_name}: ${msg}`);
+    }
+  }
+
   return NextResponse.json({
     ok: true,
     checked_at: now.toISOString(),
     events_found: (events ?? []).length,
     notifications_sent: sent,
+    predictions_revealed: revealed,
     errors: errors.length > 0 ? errors : undefined,
   });
 }
