@@ -1,0 +1,127 @@
+{
+  "competition": "Garrison Games",
+  "round": 1,
+  "weekend": "2026-05-09/2026-05-10",
+  "fixtures": [
+    {
+      "id": 1,
+      "sport": "Rugby",
+      "competition": "Guinness Women's Six Nations",
+      "home": "Ireland Women",
+      "away": "Wales Women",
+      "venue": "Affidea Stadium, Belfast",
+      "date": "2026-05-09",
+      "time": "18:30",
+      "broadcast": "RTE",
+      "handicap": { "line": -24, "favourite": "Ireland Women" }
+    },
+    {
+      "id": 2,
+      "sport": "Rugby",
+      "competition": "BKT United Rugby Championship",
+      "home": "Connacht",
+      "away": "Munster",
+      "venue": "Dexcom Stadium, Galway",
+      "date": "2026-05-09",
+      "time": "19:45",
+      "broadcast": null,
+      "handicap": { "line": -2, "favourite": "Connacht" }
+    },
+    {
+      "id": 3,
+      "sport": "Hurling",
+      "competition": "Leinster SHC Round 3",
+      "home": "Kildare",
+      "away": "Galway",
+      "venue": "Cedral St Conleth's Park",
+      "date": "2026-05-09",
+      "time": "15:30",
+      "broadcast": null,
+      "handicap": null
+    },
+    {
+      "id": 4,
+      "sport": "Hurling",
+      "competition": "Leinster SHC Round 3",
+      "home": "Wexford",
+      "away": "Dublin",
+      "venue": "Chadwicks Wexford Park",
+      "date": "2026-05-09",
+      "time": "16:00",
+      "broadcast": "RTE",
+      "handicap": { "line": -4, "favourite": "Dublin" }
+    },
+    {
+      "id": 5,
+      "sport": "Hurling",
+      "competition": "Munster SHC Round 3",
+      "home": "Waterford",
+      "away": "Cork",
+      "venue": "Azzurri Walsh Park",
+      "date": "2026-05-09",
+      "time": "18:00",
+      "broadcast": "RTE",
+      "handicap": null
+    },
+    {
+      "id": 6,
+      "sport": "Gaelic Football",
+      "competition": "Munster SFC Final",
+      "home": "Kerry",
+      "away": "Cork",
+      "venue": "Fitzgerald Stadium, Killarney",
+      "date": "2026-05-10",
+      "time": "13:45",
+      "broadcast": "RTE",
+      "handicap": { "line": -9, "favourite": "Kerry" }
+    },
+    {
+      "id": 7,
+      "sport": "Gaelic Football",
+      "competition": "Connacht SFC Final",
+      "home": "Roscommon",
+      "away": "Galway",
+      "venue": "Dr Hyde Park, Roscommon",
+      "date": "2026-05-10",
+      "time": "16:15",
+      "broadcast": "RTE",
+      "handicap": { "line": -2, "favourite": "Galway" }
+    },
+    {
+      "id": 8,
+      "sport": "Hurling",
+      "competition": "Leinster SHC Round 3",
+      "home": "Offaly",
+      "away": "Kilkenny",
+      "venue": "Glenisk O'Connor Park",
+      "date": "2026-05-10",
+      "time": "15:00",
+      "broadcast": null,
+      "handicap": null
+    },
+    {
+      "id": 9,
+      "sport": "Gaelic Football",
+      "competition": "Tailteann Cup Round 1",
+      "home": "Wexford",
+      "away": "Limerick",
+      "venue": "Chadwicks Wexford Park",
+      "date": "2026-05-09",
+      "time": "18:00",
+      "broadcast": null,
+      "handicap": null
+    },
+    {
+      "id": 10,
+      "sport": "Gaelic Football",
+      "competition": "Tailteann Cup Round 1",
+      "home": "Clare",
+      "away": "Offaly",
+      "venue": "Páirc Chísóg",
+      "date": "2026-05-09",
+      "time": "16:00",
+      "broadcast": null,
+      "handicap": null
+    }
+  ]
+}
