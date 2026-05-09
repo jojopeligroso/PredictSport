@@ -395,3 +395,90 @@ export async function PATCH(request: Request) {
 
   return NextResponse.json({ event });
 }
+
+/**
+ * DELETE /api/admin/events
+ *
+ * Delete an event and its prediction types. Only allowed if the event has no
+ * predictions submitted against it.
+ */
+export async function DELETE(request: Request) {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
+  const body = await request.json();
+  const { event_id, competition_id } = body as {
+    event_id: string;
+    competition_id: string;
+  };
+
+  if (!event_id || !competition_id) {
+    return NextResponse.json(
+      { error: "event_id and competition_id are required" },
+      { status: 400 }
+    );
+  }
+
+  // Verify admin access
+  const adminError = await verifyCompetitionAdmin(supabase, user.id, competition_id);
+  if (adminError) {
+    return NextResponse.json({ error: adminError }, { status: 403 });
+  }
+
+  // Verify the event belongs to this competition
+  const { data: event, error: eventError } = await supabase
+    .from("events")
+    .select("id, competition_id")
+    .eq("id", event_id)
+    .single();
+
+  if (eventError || !event) {
+    return NextResponse.json({ error: "Event not found" }, { status: 404 });
+  }
+
+  if (event.competition_id !== competition_id) {
+    return NextResponse.json(
+      { error: "Event does not belong to this competition" },
+      { status: 403 }
+    );
+  }
+
+  // Check for existing predictions — block deletion if any exist
+  const { count } = await supabase
+    .from("predictions")
+    .select("id", { count: "exact", head: true })
+    .eq("event_id", event_id);
+
+  if (count && count > 0) {
+    return NextResponse.json(
+      { error: `Cannot delete: ${count} prediction(s) already submitted. Cancel the event instead.` },
+      { status: 409 }
+    );
+  }
+
+  // Delete prediction types first (FK constraint)
+  await supabase
+    .from("event_prediction_types")
+    .delete()
+    .eq("event_id", event_id);
+
+  // Delete the event
+  const { error: deleteError } = await supabase
+    .from("events")
+    .delete()
+    .eq("id", event_id);
+
+  if (deleteError) {
+    return NextResponse.json(
+      { error: "Failed to delete event", details: deleteError.message },
+      { status: 500 }
+    );
+  }
+
+  return NextResponse.json({ deleted: true });
+}

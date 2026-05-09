@@ -50,6 +50,29 @@ export function EventsSection({ competition, events, rounds }: EventsSectionProp
     }
   };
 
+  const handleDeleteEvent = async (event: EventWithPredictionTypes) => {
+    if (!confirm(`Delete "${event.event_name}"? This cannot be undone.`)) return;
+    setUpdatingStatus(event.id);
+    try {
+      const res = await fetch("/api/admin/events", {
+        method: "DELETE",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          event_id: event.id,
+          competition_id: competition.id,
+        }),
+      });
+      if (res.ok) {
+        router.refresh();
+      } else {
+        const data = await res.json();
+        alert(data.error ?? "Failed to delete event");
+      }
+    } finally {
+      setUpdatingStatus(null);
+    }
+  };
+
   const handleFetchResult = async (event: Event) => {
     if (!event.external_event_id) return;
 
@@ -227,6 +250,18 @@ export function EventsSection({ competition, events, rounds }: EventsSectionProp
                       className="rounded-xl border border-ps-border-strong bg-transparent px-2.5 py-1 text-xs font-medium text-ps-text transition-colors hover:bg-ps-chip"
                     >
                       {expandedEventId === event.id ? "Hide" : "Results"}
+                    </button>
+                  )}
+
+                  {/* Delete event */}
+                  {!event.result_confirmed && (
+                    <button
+                      onClick={() => handleDeleteEvent(event)}
+                      disabled={updatingStatus === event.id}
+                      className="rounded-xl border border-ps-red/30 px-2.5 py-1 text-xs font-medium text-ps-red/70 transition-colors hover:border-ps-red hover:bg-ps-red-soft hover:text-ps-red disabled:opacity-50"
+                      title="Delete event"
+                    >
+                      Delete
                     </button>
                   )}
                 </div>
