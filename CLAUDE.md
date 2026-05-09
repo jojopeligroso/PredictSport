@@ -116,6 +116,7 @@ When creating events via Supabase API/SQL (not through admin UI), always verify:
 2. **`lock_time`** is set before `start_time` (typically 30min before).
 3. **`event_prediction_types`** rows are created for each prediction type on the event.
 4. **`round_id`** is set if the event belongs to a round.
+5. **`config.options`** on `winner` prediction types must list the team/participant names for A/B selection buttons. Without `config.options`, the UI falls back to a free-text input. For head-to-head matches: `{"options": ["Team A", "Team B"]}`. Use short team names (e.g. "Wexford" not "Wexford GAA Hurling").
 
 ## MCP Servers
 
