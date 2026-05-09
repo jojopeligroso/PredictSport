@@ -14,4 +14,4 @@ export { EmojiReactions } from "./EmojiReactions";
 export { PickNote } from "./PickNote";
 export { SendToThread } from "./SendToThread";
 export { WAIcon } from "./WAIcon";
-export { SPORT_CONFIG, type SportKey } from "./sport-config";
+export { SPORT_CONFIG, type SportKey, toSportKey } from "./sport-config";

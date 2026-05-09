@@ -8,16 +8,10 @@ import {
   SendToThread,
   SPORT_CONFIG,
   type SportKey,
+  toSportKey,
 } from "@/components/ui";
 import { psDefaultResultCopy } from "@/lib/whatsapp";
 import type { Event, Prediction } from "@/types/database";
-
-const VALID_SPORT_KEYS: SportKey[] = ["soccer", "f1", "gaa", "nba", "golf"];
-
-function toSportKey(sport: string): SportKey {
-  const lower = sport.toLowerCase() as SportKey;
-  return VALID_SPORT_KEYS.includes(lower) ? lower : "soccer";
-}
 
 function getResultState(prediction: Prediction): "correct" | "wrong" | "partial" {
   if (prediction.is_correct === true) return "correct";

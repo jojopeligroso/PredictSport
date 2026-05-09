@@ -8,6 +8,7 @@ import {
   PersonaCallout,
   SPORT_CONFIG,
   type SportKey,
+  toSportKey,
 } from "@/components/ui";
 
 const AVATAR_PALETTE = [
@@ -180,8 +181,8 @@ export function PersonDetail({
         ) : (
           <div className="mt-3 overflow-hidden rounded-[14px] border border-ps-border bg-ps-surface">
             {predictions.map((p, i) => {
-              const sportKey = p.sport.toLowerCase() as SportKey;
-              const sportCfg = SPORT_CONFIG[sportKey] ?? SPORT_CONFIG.soccer;
+              const sportKey = toSportKey(p.sport);
+              const sportCfg = SPORT_CONFIG[sportKey];
               const stateColor =
                 p.isCorrect === true
                   ? "var(--ps-green)"
