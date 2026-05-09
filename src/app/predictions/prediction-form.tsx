@@ -14,6 +14,8 @@ interface PredictionTypeConfig {
   handicap?: number;
   team?: string;
   stages?: string[];
+  allow_draw?: boolean;
+  draw_points?: number;
 }
 
 interface PredictionFormProps {
@@ -388,10 +390,12 @@ export function PredictionForm({
         );
       }
 
-      case "head_to_head":
+      case "head_to_head": {
+        const h2hOptions = [...(config.options ?? [])];
+        if (config.allow_draw) h2hOptions.push("Draw");
         return (
           <div className="flex gap-2">
-            {(config.options ?? []).map((opt) => (
+            {h2hOptions.map((opt) => (
               <button
                 key={opt}
                 type="button"
@@ -404,6 +408,7 @@ export function PredictionForm({
             ))}
           </div>
         );
+      }
 
       case "margin":
         return (

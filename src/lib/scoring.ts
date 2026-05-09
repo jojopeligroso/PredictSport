@@ -35,7 +35,7 @@ export function scorePrediction(
       return scoreFinalStandings(predictionData, resultData, ept.config);
 
     case "head_to_head":
-      return scoreHeadToHead(predictionData, resultData, fullPoints);
+      return scoreHeadToHead(predictionData, resultData, fullPoints, ept.config);
 
     case "margin":
       return scoreMargin(predictionData, resultData, fullPoints, partialPoints);
@@ -298,9 +298,12 @@ function scoreFinalStandings(
 function scoreHeadToHead(
   prediction: Record<string, unknown>,
   result: Record<string, unknown>,
-  fullPoints: number
+  fullPoints: number,
+  config: Record<string, unknown> | null
 ): ScoringResult {
   const predicted = normalizeStr(prediction.winner ?? prediction.selection);
+  const allowDraw = config?.allow_draw === true;
+  const drawPoints = Number(config?.draw_points ?? fullPoints);
 
   let actual: string;
   if (result.winner) {
@@ -309,21 +312,61 @@ function scoreHeadToHead(
     const positions = result.positions as Array<{
       position: number;
       name: string;
+      dnf?: boolean;
     }>;
-    const participant1 = normalizeStr(prediction.participant1);
-    const participant2 = normalizeStr(prediction.participant2);
+    const options = (config?.options ?? []) as string[];
+    const participant1 = normalizeStr(options[0] ?? prediction.participant1);
+    const participant2 = normalizeStr(options[1] ?? prediction.participant2);
 
-    const p1Pos = positions.find((p) => normalizeStr(p.name) === participant1);
-    const p2Pos = positions.find((p) => normalizeStr(p.name) === participant2);
+    const p1 = positions.find((p) => normalizeStr(p.name) === participant1);
+    const p2 = positions.find((p) => normalizeStr(p.name) === participant2);
 
-    if (!p1Pos || !p2Pos) {
+    // Both DNF = void
+    if (p1?.dnf && p2?.dnf) {
       return { is_correct: null, is_partial: false, points_awarded: 0 };
     }
 
-    actual =
-      p1Pos.position < p2Pos.position ? participant1 : participant2;
+    if (!p1 || !p2) {
+      return { is_correct: null, is_partial: false, points_awarded: 0 };
+    }
+
+    if (p1.position === p2.position) {
+      actual = "draw";
+    } else {
+      actual = p1.position < p2.position ? participant1 : participant2;
+    }
+  } else if (result.score) {
+    // Team sport: derive from score
+    const score = result.score as Record<string, unknown>;
+    const homeScore = Number(score.home_score ?? 0);
+    const awayScore = Number(score.away_score ?? 0);
+    if (homeScore === awayScore) {
+      actual = "draw";
+    } else {
+      actual = homeScore > awayScore
+        ? normalizeStr(score.home_team)
+        : normalizeStr(score.away_team);
+    }
   } else {
     return { is_correct: null, is_partial: false, points_awarded: 0 };
+  }
+
+  // Handle draw result
+  if (actual === "draw") {
+    if (predicted === "draw" && allowDraw) {
+      return { is_correct: true, is_partial: false, points_awarded: drawPoints };
+    }
+    // Draw not enabled: void the prediction (no one gains or loses)
+    if (!allowDraw) {
+      return { is_correct: null, is_partial: false, points_awarded: 0 };
+    }
+    // Draw enabled but user picked a side: wrong
+    return { is_correct: false, is_partial: false, points_awarded: 0 };
+  }
+
+  // User picked draw but result wasn't a draw
+  if (predicted === "draw") {
+    return { is_correct: false, is_partial: false, points_awarded: 0 };
   }
 
   const correct = predicted === actual;
@@ -402,6 +445,11 @@ function scoreOverUnder(
     const score = result.score as Record<string, unknown>;
     actualValue = Number(score.home_score ?? 0) + Number(score.away_score ?? 0);
   } else {
+    return { is_correct: null, is_partial: false, points_awarded: 0 };
+  }
+
+  // Exact line hit = push (void, no points)
+  if (actualValue === line) {
     return { is_correct: null, is_partial: false, points_awarded: 0 };
   }
 
