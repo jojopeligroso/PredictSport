@@ -13,6 +13,7 @@ import {
   Avatar,
   SPORT_CONFIG,
   type SportKey,
+  toSportKey,
 } from "@/components/ui";
 import { psDefaultPickCopy, psDefaultSheetCopy } from "@/lib/whatsapp";
 import type {
@@ -22,6 +23,7 @@ import type {
   PredictionType,
   NoteVisibility,
 } from "@/types/database";
+import { parseWinnerOptions } from "@/lib/parse-options";
 
 // ── Types ────────────────────────────────────────────────────────────────────
 
@@ -52,13 +54,6 @@ interface EventDetailProps {
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
 
-const VALID_SPORT_KEYS: SportKey[] = ["soccer", "f1", "gaa", "nba", "golf"];
-
-function toSportKey(sport: string): SportKey {
-  const lower = sport.toLowerCase() as SportKey;
-  return VALID_SPORT_KEYS.includes(lower) ? lower : "soccer";
-}
-
 function formatCountdown(lockTime: string): string {
   const diff = new Date(lockTime).getTime() - Date.now();
   if (diff <= 0) return "LOCKED";
@@ -69,13 +64,21 @@ function formatCountdown(lockTime: string): string {
 }
 
 function getPickOptions(
-  ept: EventPredictionType
+  ept: EventPredictionType,
+  eventName?: string,
+  sport?: string
 ): { id: string; label: string; sub?: string }[] | null {
   const cfg = ept.config ?? {};
   switch (ept.prediction_type) {
     case "winner": {
       const opts = cfg.options as string[] | undefined;
-      return opts?.map((o) => ({ id: o, label: o })) ?? null;
+      if (opts && opts.length > 0) return opts.map((o) => ({ id: o, label: o }));
+      // Fallback: derive from event name
+      if (eventName) {
+        const derived = parseWinnerOptions(eventName, sport);
+        if (derived.length > 0) return derived.map((o) => ({ id: o, label: o }));
+      }
+      return null;
     }
     case "over_under": {
       const line = (cfg.line ?? cfg.threshold ?? "") as string | number;
@@ -713,7 +716,7 @@ export function EventDetail({
           }
 
           // ── Standard option-button types ──
-          const options = getPickOptions(ept);
+          const options = getPickOptions(ept, event.event_name, event.sport);
           if (!options) return null;
 
           const gridCols =

@@ -24,9 +24,11 @@ import {
   SendToThread,
   SPORT_CONFIG,
   type SportKey,
+  toSportKey,
 } from "@/components/ui";
 import { psDefaultSheetCopy } from "@/lib/whatsapp";
 import { ResultCard } from "./ResultCard";
+import { parseWinnerOptions } from "@/lib/parse-options";
 
 interface EventWithPredictions extends Event {
   predictions: Prediction[];
@@ -43,12 +45,6 @@ interface EventListProps {
 
 type FilterChip = "all" | "open" | "locked" | SportKey;
 
-const VALID_SPORT_KEYS: SportKey[] = ["soccer", "f1", "gaa", "nba", "golf"];
-
-function toSportKey(sport: string): SportKey {
-  const lower = sport.toLowerCase() as SportKey;
-  return VALID_SPORT_KEYS.includes(lower) ? lower : VALID_SPORT_KEYS[0];
-}
 
 /** Convert EventPredictionType row to PredictionTypeConfig for the form. */
 function eptToConfig(ept: EventPredictionType): {
@@ -132,14 +128,21 @@ function formatSubtitle(event: Event): string {
  * Returns null for types that need a form (text input, rankings, etc.).
  */
 function getPickOptions(
-  ept: EventPredictionType
+  ept: EventPredictionType,
+  eventName?: string,
+  sport?: string
 ): { id: string; label: string; sub?: string }[] | null {
   const cfg = ept.config ?? {};
   switch (ept.prediction_type) {
     case "winner": {
       const opts = cfg.options as string[] | undefined;
-      if (!opts || opts.length === 0) return null;
-      return opts.map((o) => ({ id: o, label: o }));
+      if (opts && opts.length > 0) return opts.map((o) => ({ id: o, label: o }));
+      // Fallback: derive from event name
+      if (eventName) {
+        const derived = parseWinnerOptions(eventName, sport);
+        if (derived.length > 0) return derived.map((o) => ({ id: o, label: o }));
+      }
+      return null;
     }
     case "yes_no": {
       const opts = (cfg.options as string[] | undefined) ?? ["Yes", "No"];
@@ -151,6 +154,11 @@ function getPickOptions(
         { id: "over", label: "Over", sub: String(threshold) },
         { id: "under", label: "Under", sub: String(threshold) },
       ];
+    }
+    case "top_n": {
+      const opts = cfg.options as string[] | undefined;
+      if (opts && opts.length > 0) return opts.map((o) => ({ id: o, label: o }));
+      return null;
     }
     case "head_to_head": {
       const opts = cfg.options as string[] | undefined;
@@ -513,7 +521,7 @@ export function EventList({
 
                   const communityData: Record<string, number> = {};
                   for (const ept of event.event_prediction_types ?? []) {
-                    const opts = getPickOptions(ept);
+                    const opts = getPickOptions(ept, event.event_name, event.sport);
                     if (opts) {
                       for (const o of opts) {
                         if (!(o.id in communityData)) communityData[o.id] = 0;
@@ -732,7 +740,7 @@ function EventCard({
                   (p) => p.prediction_type === ept.prediction_type
                 ) ?? null;
 
-              const pickOptions = getPickOptions(ept);
+              const pickOptions = getPickOptions(ept, event.event_name, event.sport);
 
               if (pickOptions) {
                 return (

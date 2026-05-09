@@ -199,7 +199,29 @@ export function PredictionForm({
 
   function renderInput() {
     switch (config.type) {
-      case "winner":
+      case "winner": {
+        const winnerOpts = config.options;
+        if (winnerOpts && winnerOpts.length > 0) {
+          return (
+            <div className="flex flex-wrap gap-2">
+              {winnerOpts.map((opt) => (
+                <button
+                  key={opt}
+                  type="button"
+                  onClick={() => !isLocked && setValue(opt)}
+                  disabled={isLocked}
+                  className={`flex-1 rounded-md border px-3 py-2 text-sm font-medium transition-colors disabled:cursor-not-allowed ${
+                    value === opt
+                      ? "border-ps-amber bg-ps-amber-soft text-ps-text"
+                      : "border-ps-border bg-ps-surface text-ps-text-sec hover:border-ps-border-strong"
+                  }`}
+                >
+                  {opt}
+                </button>
+              ))}
+            </div>
+          );
+        }
         return (
           <input
             type="text"
@@ -210,6 +232,7 @@ export function PredictionForm({
             className={inputClasses}
           />
         );
+      }
 
       case "yes_no":
         return (
@@ -228,7 +251,29 @@ export function PredictionForm({
           </div>
         );
 
-      case "top_n":
+      case "top_n": {
+        const topNOpts = config.options;
+        if (topNOpts && topNOpts.length > 0) {
+          return (
+            <div className="flex flex-wrap gap-2">
+              {topNOpts.map((opt) => (
+                <button
+                  key={opt}
+                  type="button"
+                  onClick={() => !isLocked && setValue(opt)}
+                  disabled={isLocked}
+                  className={`flex-1 rounded-md border px-3 py-2 text-sm font-medium transition-colors disabled:cursor-not-allowed ${
+                    value === opt
+                      ? "border-ps-amber bg-ps-amber-soft text-ps-text"
+                      : "border-ps-border bg-ps-surface text-ps-text-sec hover:border-ps-border-strong"
+                  }`}
+                >
+                  {opt}
+                </button>
+              ))}
+            </div>
+          );
+        }
         return (
           <input
             type="text"
@@ -239,8 +284,85 @@ export function PredictionForm({
             className={inputClasses}
           />
         );
+      }
 
-      case "final_standings":
+      case "final_standings": {
+        const standingsOpts = config.options;
+        if (standingsOpts && standingsOpts.length > 0) {
+          // Tap-to-rank UI: tap competitors in order
+          const isComplete = rankings.filter((n) => n !== "").length >= numPositions;
+          return (
+            <div>
+              <p className="text-[11px] text-ps-text-ter mb-2">
+                Tap in order: 1st, 2nd, 3rd...{" "}
+                {!isLocked && rankings.some((n) => n !== "") && (
+                  <button
+                    type="button"
+                    className="text-ps-amber-deep font-semibold underline"
+                    onClick={() => setRankings(Array.from({ length: numPositions }, () => ""))}
+                  >
+                    Reset
+                  </button>
+                )}
+              </p>
+              <div className="flex flex-col gap-1.5">
+                {standingsOpts.map((opt) => {
+                  const assignedIdx = rankings.indexOf(opt);
+                  const isAssigned = assignedIdx !== -1;
+                  return (
+                    <button
+                      key={opt}
+                      type="button"
+                      disabled={isLocked || (isComplete && !isAssigned)}
+                      className="flex items-center gap-2.5 rounded-xl border px-3 py-2.5 text-left transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                      style={{
+                        borderColor: isAssigned ? "var(--ps-amber)" : "var(--ps-border)",
+                        background: isAssigned ? "var(--ps-amber-soft)" : "var(--ps-surface)",
+                      }}
+                      onClick={() => {
+                        if (isLocked) return;
+                        const updated = [...rankings];
+                        if (isAssigned) {
+                          // Remove and collapse
+                          updated[assignedIdx] = "";
+                          const filled = updated.filter((n) => n !== "");
+                          const collapsed = Array.from({ length: numPositions }, (_, i) => filled[i] ?? "");
+                          setRankings(collapsed);
+                        } else if (!isComplete) {
+                          // Add to next empty slot
+                          const nextSlot = updated.indexOf("");
+                          if (nextSlot !== -1) {
+                            updated[nextSlot] = opt;
+                            setRankings(updated);
+                          }
+                        }
+                      }}
+                    >
+                      <span
+                        className="flex items-center justify-center rounded-full font-bold text-[12px]"
+                        style={{
+                          width: 26,
+                          height: 26,
+                          background: isAssigned ? "var(--ps-amber)" : "var(--ps-chip)",
+                          color: isAssigned ? "var(--ps-surface)" : "var(--ps-text-sec)",
+                        }}
+                      >
+                        {isAssigned ? assignedIdx + 1 : ""}
+                      </span>
+                      <span
+                        className="text-[13px] font-semibold"
+                        style={{ color: isAssigned ? "var(--ps-text)" : "var(--ps-text-sec)" }}
+                      >
+                        {opt}
+                      </span>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          );
+        }
+        // Fallback: text inputs per position
         return (
           <div className="space-y-1.5">
             {rankings.map((name, i) => (
@@ -264,6 +386,7 @@ export function PredictionForm({
             ))}
           </div>
         );
+      }
 
       case "head_to_head":
         return (

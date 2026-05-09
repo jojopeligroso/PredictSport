@@ -5,6 +5,8 @@ import { CompetitionSelector } from "./competition-selector";
 import JoinCompetitionCard from "./join-competition-card";
 import type { Competition, Event, Prediction, EventPredictionType } from "@/types/database";
 
+export const dynamic = "force-dynamic";
+
 interface SearchParams {
   competition?: string;
 }

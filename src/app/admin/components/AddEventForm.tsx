@@ -5,6 +5,7 @@ import type { PredictionType } from "@/types/database";
 import type { Sport } from "@/lib/sports/types";
 import { FixtureBrowser } from "./FixtureBrowser";
 import type { NormalizedFixture } from "./FixtureBrowser";
+import { parseWinnerOptions } from "@/lib/parse-options";
 
 interface AddEventFormProps {
   competitionId: string;
@@ -142,6 +143,20 @@ export function AddEventForm({
     setStartTime(startLocal);
     applyLockTime(fixture.start_time);
 
+    // Auto-populate winner options from fixture participants
+    if (home && away) {
+      const winnerOpts = parseWinnerOptions(name, fixture.sport);
+      if (winnerOpts.length > 0) {
+        setSelectedTypes((prev) =>
+          prev.map((t) =>
+            t.prediction_type === "winner"
+              ? { ...t, config: { ...t.config, options: winnerOpts } }
+              : t
+          )
+        );
+      }
+    }
+
     setMode("manual");
     setError(null);
   };
@@ -209,6 +224,20 @@ export function AddEventForm({
       return;
     }
 
+    // Auto-populate winner options from event name if not already set
+    const finalTypes = selectedTypes.map((t) => {
+      if (
+        t.prediction_type === "winner" &&
+        (!(t.config?.options as string[] | undefined)?.length)
+      ) {
+        const opts = parseWinnerOptions(eventName.trim(), sport);
+        if (opts.length > 0) {
+          return { ...t, config: { ...t.config, options: opts } };
+        }
+      }
+      return t;
+    });
+
     try {
       const res = await fetch("/api/admin/events", {
         method: "POST",
@@ -219,7 +248,7 @@ export function AddEventForm({
           sport,
           start_time: new Date(startTime).toISOString(),
           lock_time: new Date(lockTime).toISOString(),
-          prediction_type_configs: selectedTypes,
+          prediction_type_configs: finalTypes,
           external_event_id: externalEventId ?? undefined,
         }),
       });
@@ -664,6 +693,7 @@ function TopNConfig({
 }) {
   const n = (config.config?.n as number) ?? 5;
   const ladder = (config.config?.points_ladder as Array<{ position: number; points: number }>) ?? [];
+  const options = (config.config?.options as string[] | undefined) ?? [];
 
   // Build a per-position ladder from 1 to n, filling gaps with 0
   const buildFullLadder = (newN: number, existing: Array<{ position: number; points: number }>) => {
@@ -808,6 +838,29 @@ function TopNConfig({
           Set points per position
         </button>
       )}
+
+      <div className="mt-3 border-t border-ps-border pt-3">
+        <label className="block text-xs font-medium text-ps-text-ter mb-1">
+          Competitor options (one per line)
+        </label>
+        <textarea
+          value={options.join("\n")}
+          onChange={(e) =>
+            onChange({
+              config: {
+                ...config.config,
+                options: e.target.value.split("\n").map((s) => s.trim()).filter(Boolean),
+              },
+            })
+          }
+          placeholder={"Scheffler\nMcIlroy\nRahm\n..."}
+          rows={4}
+          className="w-full rounded-xl border border-ps-border bg-ps-bg px-2 py-1 text-sm text-ps-text"
+        />
+        <p className="mt-1 text-xs text-ps-text-ter">
+          If provided, participants pick from buttons instead of typing names.
+        </p>
+      </div>
     </div>
   );
 }
@@ -887,6 +940,7 @@ function FinalStandingsConfig({
   const positions = (config.config?.positions as number) ?? 5;
   const pointsPerCorrect = (config.config?.points_per_correct as number) ?? 10;
   const pointsPerIncluded = (config.config?.points_per_included as number) ?? 3;
+  const options = (config.config?.options as string[] | undefined) ?? [];
 
   const updateField = (field: string, value: number) => {
     onChange({ config: { ...config.config, [field]: value } });
@@ -977,6 +1031,29 @@ function FinalStandingsConfig({
         correctly placed competitor, and {pointsPerIncluded} pts for naming someone who finishes
         in the top {positions} but in the wrong position.
       </p>
+
+      <div className="mt-3 border-t border-ps-border pt-3">
+        <label className="block text-xs font-medium text-ps-text-ter mb-1">
+          Competitor options (one per line)
+        </label>
+        <textarea
+          value={options.join("\n")}
+          onChange={(e) =>
+            onChange({
+              config: {
+                ...config.config,
+                options: e.target.value.split("\n").map((s) => s.trim()).filter(Boolean),
+              },
+            })
+          }
+          placeholder={"Scheffler\nMcIlroy\nRahm\n..."}
+          rows={4}
+          className="w-full rounded-xl border border-ps-border bg-ps-bg px-2 py-1 text-sm text-ps-text"
+        />
+        <p className="mt-1 text-xs text-ps-text-ter">
+          If provided, participants tap to rank from buttons instead of typing names.
+        </p>
+      </div>
     </div>
   );
 }
