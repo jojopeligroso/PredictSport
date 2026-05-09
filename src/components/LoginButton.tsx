@@ -25,6 +25,10 @@ export function LoginButton({ redirectTo }: LoginButtonProps) {
       provider: "google",
       options: {
         redirectTo: callbackUrl,
+        queryParams: {
+          prompt: "select_account",
+          access_type: "offline",
+        },
       },
     });
 
