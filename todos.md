@@ -6,10 +6,10 @@ Audit date: 2026-05-09.
 
 ## P0 — Blocking launch
 
-- [ ] §15.1 — Fix Google OAuth on deployed app (redirect URL config)
-- [ ] §15.2 — User profile page (display name, avatar, notification prefs)
-- [ ] §15.3 — Competition activation UI (draft → active button in admin)
-- [ ] §15.4 — Competition completion/archive flow in admin
+- [-] §15.1 — Fix Google OAuth on deployed app (redirect URL config)
+- [x] §15.2 — User profile page (display name, avatar, notification prefs)
+- [x] §15.3 — Competition activation UI (draft → active button in admin)
+- [x] §15.4 — Competition completion/archive flow in admin
 
 ## P1 — Core functionality gaps
 

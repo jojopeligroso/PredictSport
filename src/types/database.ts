@@ -1,7 +1,7 @@
 export type UserRole = "admin" | "co_admin" | "participant";
 export type CompetitionType = "fixed" | "open";
 export type CompetitionVisibility = "public" | "private";
-export type CompetitionStatus = "draft" | "active" | "completed";
+export type CompetitionStatus = "draft" | "active" | "completed" | "archived";
 export type RoundStatus = "draft" | "open" | "locked" | "scored";
 export type EventStatus =
   | "upcoming"

@@ -4,6 +4,7 @@ const COMPETITION_STATUS_STYLES: Record<CompetitionStatus, string> = {
   draft: "bg-ps-chip text-ps-text-sec",
   active: "bg-ps-green-soft text-ps-green",
   completed: "bg-ps-amber-soft text-ps-amber-deep",
+  archived: "bg-ps-chip text-ps-text-ter",
 };
 
 const EVENT_STATUS_STYLES: Record<EventStatus, string> = {

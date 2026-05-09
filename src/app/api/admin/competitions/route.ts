@@ -118,11 +118,12 @@ export async function POST(request: Request) {
   return NextResponse.json({ competition }, { status: 201 });
 }
 
-const VALID_STATUSES: CompetitionStatus[] = ["draft", "active", "completed"];
+const VALID_STATUSES: CompetitionStatus[] = ["draft", "active", "completed", "archived"];
 const ALLOWED_TRANSITIONS: Record<CompetitionStatus, CompetitionStatus[]> = {
   draft: ["active"],
   active: ["completed"],
-  completed: [],
+  completed: ["archived"],
+  archived: [],
 };
 
 /**

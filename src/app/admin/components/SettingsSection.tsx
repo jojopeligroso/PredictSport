@@ -12,7 +12,8 @@ interface SettingsSectionProps {
 const STATUS_TRANSITIONS: Record<CompetitionStatus, CompetitionStatus[]> = {
   draft: ["active"],
   active: ["completed"],
-  completed: [],
+  completed: ["archived"],
+  archived: [],
 };
 
 export function SettingsSection({ competition }: SettingsSectionProps) {
@@ -44,6 +45,15 @@ export function SettingsSection({ competition }: SettingsSectionProps) {
       newStatus === "completed" &&
       !confirm(
         "Completing the competition will prevent further predictions. Are you sure?"
+      )
+    ) {
+      return;
+    }
+
+    if (
+      newStatus === "archived" &&
+      !confirm(
+        "Archiving will move this competition to historical records. Are you sure?"
       )
     ) {
       return;
@@ -185,21 +195,25 @@ export function SettingsSection({ competition }: SettingsSectionProps) {
                   className={`rounded-xl px-4 py-2 text-sm font-medium transition-opacity disabled:opacity-50 ${
                     nextStatus === "active"
                       ? "bg-ps-green text-white hover:opacity-90"
-                      : "bg-ps-amber text-[#1a1208] hover:opacity-90"
+                      : nextStatus === "archived"
+                        ? "border border-ps-border bg-transparent text-ps-text-sec hover:bg-ps-chip"
+                        : "bg-ps-amber text-[#1a1208] hover:opacity-90"
                   }`}
                 >
                   {isUpdating
                     ? "Updating..."
                     : nextStatus === "active"
                       ? "Activate Competition"
-                      : "Complete Competition"}
+                      : nextStatus === "completed"
+                        ? "Complete Competition"
+                        : "Archive Competition"}
                 </button>
               ))}
             </div>
           ) : (
             <p className="text-sm text-ps-text-ter">
-              {competition.status === "completed"
-                ? "This competition is completed. No further status changes."
+              {competition.status === "archived"
+                ? "This competition is archived."
                 : "No status changes available."}
             </p>
           )}
