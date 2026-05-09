@@ -71,7 +71,7 @@ Provider abstraction in `src/lib/sports/`. `BaseProvider` handles fetch, rate li
 - `GET /api/sports/search?sport=X&q=Y` — Search events across providers
 - `POST /api/sports/fetch-result` — Fetch result from provider chain
 - `POST /api/admin/competitions` — Create; `PATCH` for status transitions
-- `POST /api/admin/events` — Create; `PATCH` to update/postpone/cancel
+- `POST /api/admin/events` — Create; `PATCH` to update/postpone/cancel; `DELETE` to remove (blocked if predictions exist)
 - `POST /api/admin/confirm-result` — Confirm + auto-score all predictions
 
 ### Auth
@@ -108,6 +108,14 @@ Optional: `API_FOOTBALL_KEY`, `BALLDONTLIE_KEY`, `THERACING_API_KEY`, `FOIREANN_
 - RLS for access control — don't duplicate in API routes
 - Handle loading/error states (see global CLAUDE.md pitfalls)
 - Feature branches off `master`
+
+## Manual Event Creation Checklist
+
+When creating events via Supabase API/SQL (not through admin UI), always verify:
+1. **`sport` field matches the actual sport** — not the provider default. Rugby is `rugby`, GAA is `gaa`, F1 is `formula_1`, etc. Never default to `soccer`.
+2. **`lock_time`** is set before `start_time` (typically 30min before).
+3. **`event_prediction_types`** rows are created for each prediction type on the event.
+4. **`round_id`** is set if the event belongs to a round.
 
 ## MCP Servers
 
