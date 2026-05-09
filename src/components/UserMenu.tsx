@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useRef, useEffect } from "react";
+import Link from "next/link";
 import { LogoutButton } from "./LogoutButton";
 
 interface UserMenuProps {
@@ -69,6 +70,12 @@ export function UserMenu({ displayName, avatarUrl }: UserMenuProps) {
             </p>
           </div>
           <div className="px-2 py-1">
+            <Link
+              href="/profile"
+              className="block rounded-md px-2 py-1.5 text-sm text-ps-text-sec transition-colors hover:bg-ps-chip hover:text-ps-text"
+            >
+              Profile
+            </Link>
             <LogoutButton />
           </div>
         </div>

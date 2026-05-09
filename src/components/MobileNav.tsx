@@ -106,6 +106,13 @@ export function MobileNav({ isLoggedIn, isAdmin, displayName, avatarUrl }: Mobil
                     {displayName}
                   </span>
                 </div>
+                <Link
+                  href="/profile"
+                  onClick={() => setIsOpen(false)}
+                  className="block rounded-md px-3 py-2 text-sm font-medium text-ps-text-sec transition-colors hover:bg-ps-chip hover:text-ps-text"
+                >
+                  Profile
+                </Link>
                 <LogoutButton />
               </div>
             ) : (
