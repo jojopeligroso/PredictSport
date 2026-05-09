@@ -45,6 +45,9 @@ Competition → CompetitionMembers
 - **Competition.min_rounds_required** — minimum rounds to participate (null = all).
 - **Competition.allow_prediction_updates** — can participants change predictions before lock?
 - `events.prediction_types` JSONB column has been dropped. All prediction type data is in `event_prediction_types` rows.
+- **9 prediction types:** winner, yes_no, head_to_head, top_n, final_standings, margin, over_under, handicap, progression. See SPEC.md §6 for full reference.
+- **H2H draws** are sport-dependent. `config.allow_draw` enables draw option; `config.draw_points` sets points for correct draw prediction. Both-DNF = void (null). See SPEC.md §6.
+- **Pick reveal** (`pick_reveal_at`): defaults to `lock_time` but admin can delay for dramatic tension. RLS enforces visibility.
 
 ### Sports Provider System
 
@@ -91,11 +94,15 @@ Provider abstraction in `src/lib/sports/`. `BaseProvider` handles fetch, rate li
 - MVP pages (auth, predictions, leaderboard, admin)
 - Scoring engine, UI polish, E2E scaffolding
 
-**Next priorities:**
-1. Fixture search UX (search by team/competition/date, admin competition builder)
-2. WhatsApp notification integration (Cloud API)
-3. Wire up full prediction → result → scoring flow with real data
-4. Request Foireann API key and test GAA provider
+**Known gaps — see SPEC.md §15 and todos.md (all three files kept in sync):**
+1. §15.1 — Google OAuth broken on deploy (redirect URL config)
+2. §15.2 — No user profile editing page
+3. §15.3 — No competition activation UI (draft → active)
+4. §15.4 — No competition completion/archive flow
+5. §15.5 — H2H draw support not yet in scorer
+6. §15.6 — Over/under push (exact line hit) returns wrong instead of void
+7. §15.7 — UI vocabulary: "The Damage" → "Results", "The Sheet" → "The Round"
+8. §15.8 — WhatsApp integration not yet built (Telegram done)
 
 ## Environment Variables
 
@@ -122,12 +129,11 @@ When creating events via Supabase API/SQL (not through admin UI), always verify:
 
 Supabase, Playwright, Context7, GitHub, Firecrawl
 
-## Specs (read when working on relevant area)
+## Specification
 
-- [docs/SPEC-MVP.md](docs/SPEC-MVP.md) — MVP philosophy, competition structure, nominations
-- [docs/SPEC-PREDICTIONS.md](docs/SPEC-PREDICTIONS.md) — 6 prediction types, scoring, presets
-- [docs/SPEC-SPORTS-DATA.md](docs/SPEC-SPORTS-DATA.md) — API coverage, data flow, rate limits
-- [docs/SPEC-DATA-MODEL.md](docs/SPEC-DATA-MODEL.md) — Full schema, domain rules, roles
+**[SPEC.md](SPEC.md)** — Single source of truth for product requirements, data model, scoring rules, prediction types, auth, competition lifecycle, and known gaps. Read before any feature work.
+
+The `docs/SPEC-*.md` files are superseded by SPEC.md and kept only for historical reference.
 
 ## Multi-Session Warning
 

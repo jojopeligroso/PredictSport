@@ -1,48 +1,33 @@
-# PredictSport - TODO
+# PredictSport - MVP Punch List
 
-## Scoring Template Redesign (HIGH PRIORITY)
+Priority order. Mirrors SPEC.md §15. **Keep both files in sync.**
 
-The current scoring template UI is too simplistic. Each template needs:
-- Clear explanation of how it works in practice
-- Example scenarios showing how points are awarded
-- Visual distinction between templates
+Audit date: 2026-05-09.
 
-### Templates to improve:
+## P0 — Blocking launch
 
-**Classic Quiz**
-- 10pts correct, 20pts dual questions, 10pts partial
-- Needs: explain what "dual questions" means, show example of partial credit
+- [ ] §15.1 — Fix Google OAuth on deployed app (redirect URL config)
+- [ ] §15.2 — User profile page (display name, avatar, notification prefs)
+- [ ] §15.3 — Competition activation UI (draft → active button in admin)
+- [ ] §15.4 — Competition completion/archive flow in admin
 
-**Tournament**
-- 10pts winner, 5pts top 5, 3pts top 10
-- Needs: explain this is for predicting tournament outcomes (e.g. golf majors, World Cup)
+## P1 — Core functionality gaps
 
-**Weekly Fixtures**
-- 3pts correct result, 1pt correct draw
-- Needs: explain this is for predicting match results across a gameweek
+- [ ] §15.5 — H2H draw support: `allow_draw` config, draw option in UI, scorer update
+- [ ] §15.6 — Over/under push handling: exact line hit → void (null), not wrong
+- [ ] §15.7 — UI vocabulary: rename "The Damage" → "Results", "The Sheet" → "The Round", review AI-generated copy
+- [ ] §15.8 — WhatsApp Cloud API integration (reminders, results, leaderboard)
 
-**Head to Head Series**
-- 5pts per correct H2H, bonus for clean sweep
-- Needs: explain the "clean sweep" bonus, show how series scoring works
+## P2 — Polish & quality of life
 
-**Custom**
-- "Define your own scoring" is too vague
-- Needs: guided builder with contextual help, not just raw number inputs
+- [ ] §15.9 — Scoring template redesign (clear explanations, examples, visual distinction)
+- [ ] §15.10 — Logo redesign (current PS mark is placeholder)
+- [ ] §15.11 — Persona callout configuration in settings
 
-### Design goals:
-- User should immediately understand what each template is FOR (what type of competition)
-- Show concrete examples inline (e.g. "If you pick Team A to win and they do: +3pts")
-- Custom should feel like a power-user option, not a confusing spreadsheet
+## Post-Launch
 
-## WhatsApp Integration
-
-- Notification channel (not input for MVP)
-- WhatsApp Cloud API (Meta) — 1,000 free service conversations/month
-- Notifications: reminders before lock, result confirmations, leaderboard updates, invite links
-- Requires: WhatsApp Business Account, dedicated phone number, user opt-in
-
-## Sports Data
-
-- TheSportsDB — primary for most sports
-- Foireann — investigate for GAA results (no public API known, may need scraping)
-- Manual entry — fallback for everything else
+- [ ] Event nominations by participants (submission UI)
+- [ ] Public competition browsing/discovery page
+- [ ] Tiebreaker submission UI
+- [ ] Co-admin appointment UI
+- [ ] "New Season" clone from archived competition
