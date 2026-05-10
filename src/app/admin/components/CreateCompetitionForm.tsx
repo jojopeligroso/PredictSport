@@ -7,10 +7,20 @@ import type {
   CompetitionVisibility,
 } from "@/types/database";
 
-const SCORING_PRESETS: Record<string, { label: string; description: string; rules: Record<string, unknown> }> = {
+interface ScoringPreset {
+  label: string;
+  description: string;
+  example: string;
+  icon: string;
+  rules: Record<string, unknown>;
+}
+
+const SCORING_PRESETS: Record<string, ScoringPreset> = {
   classic_quiz: {
     label: "Classic Quiz",
-    description: "10pts correct, 20pts dual questions, 10pts partial",
+    description: "Mirrors the original paper prediction sheet. High-value margin questions reward bold picks.",
+    example: "Winner 10pts | Margin 20pts (10 partial) | Top N 10pts (5 partial)",
+    icon: "Q",
     rules: {
       preset: "classic_quiz",
       points: { winner: 10, top_n: 10, head_to_head: 10, margin: 20, over_under: 10, handicap: 10 },
@@ -20,7 +30,9 @@ const SCORING_PRESETS: Record<string, { label: string; description: string; rule
   },
   tournament: {
     label: "Tournament",
-    description: "10pts winner, 5pts top 5, 3pts top 10",
+    description: "Best for golf majors, World Cups, and multi-round events. Rewards picking the eventual winner.",
+    example: "Winner 10pts | Top 5 pick 5pts (3 partial) | Margin 10pts (5 partial)",
+    icon: "T",
     rules: {
       preset: "tournament",
       points: { winner: 10, top_n: 5, head_to_head: 5, margin: 10, over_under: 5, handicap: 5 },
@@ -30,7 +42,9 @@ const SCORING_PRESETS: Record<string, { label: string; description: string; rule
   },
   weekly_fixtures: {
     label: "Weekly Fixtures",
-    description: "3pts correct result, 1pt correct draw",
+    description: "Quick rounds of match results. Low stakes per pick, high volume. Great for Premier League weekends.",
+    example: "All picks 3pts | Margin 5pts (1 partial)",
+    icon: "W",
     rules: {
       preset: "weekly_fixtures",
       points: { winner: 3, top_n: 3, head_to_head: 3, margin: 5, over_under: 3, handicap: 3 },
@@ -40,7 +54,9 @@ const SCORING_PRESETS: Record<string, { label: string; description: string; rule
   },
   head_to_head_series: {
     label: "Head to Head Series",
-    description: "5pts per correct H2H, bonus for clean sweep",
+    description: "Pure pick-em format. No partial credit -- you're right or you're wrong. Clean and simple.",
+    example: "All picks 5pts | Margin 10pts | No partial credit",
+    icon: "H",
     rules: {
       preset: "head_to_head_series",
       points: { winner: 5, top_n: 5, head_to_head: 5, margin: 10, over_under: 5, handicap: 5 },
@@ -49,7 +65,9 @@ const SCORING_PRESETS: Record<string, { label: string; description: string; rule
   },
   custom: {
     label: "Custom",
-    description: "Define your own scoring",
+    description: "Set your own points per prediction type. Full control over scoring and partial credit.",
+    example: "You decide",
+    icon: "*",
     rules: {
       preset: "custom",
       points: { winner: 10, top_n: 5, head_to_head: 5, margin: 10, over_under: 5, handicap: 5 },
@@ -256,14 +274,14 @@ export function CreateCompetitionForm() {
           <label className="block text-sm font-medium text-ps-text-sec mb-2">
             Scoring Template *
           </label>
-          <div className="grid gap-2 sm:grid-cols-2">
+          <div className="grid gap-2.5 sm:grid-cols-2">
             {Object.entries(SCORING_PRESETS).map(([key, preset]) => (
               <label
                 key={key}
-                className={`flex cursor-pointer items-start gap-3 rounded-xl border p-3 transition-colors ${
+                className={`flex cursor-pointer gap-3 rounded-xl border p-3.5 transition-colors ${
                   selectedPreset === key
                     ? "border-ps-amber bg-ps-amber-soft"
-                    : "border-ps-border hover:border-ps-border-strong"
+                    : "border-ps-border hover:border-ps-text-ter"
                 }`}
               >
                 <input
@@ -272,14 +290,26 @@ export function CreateCompetitionForm() {
                   value={key}
                   checked={selectedPreset === key}
                   onChange={(e) => setSelectedPreset(e.target.value)}
-                  className="mt-0.5"
+                  className="sr-only"
                 />
-                <div>
-                  <div className="text-sm font-medium text-ps-text">
+                <div
+                  className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-lg text-sm font-bold ${
+                    selectedPreset === key
+                      ? "bg-ps-amber-deep text-[#1a1208]"
+                      : "bg-ps-chip text-ps-text-sec"
+                  }`}
+                >
+                  {preset.icon}
+                </div>
+                <div className="min-w-0">
+                  <div className="text-sm font-semibold text-ps-text">
                     {preset.label}
                   </div>
-                  <div className="text-xs text-ps-text-ter">
+                  <div className="mt-0.5 text-xs leading-relaxed text-ps-text-ter">
                     {preset.description}
+                  </div>
+                  <div className="mt-1.5 text-[10px] font-medium uppercase tracking-wider text-ps-text-sec">
+                    {preset.example}
                   </div>
                 </div>
               </label>
