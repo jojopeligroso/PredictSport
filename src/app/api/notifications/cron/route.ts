@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 import { notifyDeadline } from "@/lib/telegram/notify";
 import { revealPredictions } from "@/lib/telegram/predictions";
+import { sendPushToAll } from "@/lib/push/send";
 
 /**
  * GET /api/notifications/cron
@@ -69,6 +70,27 @@ export async function GET(request: Request) {
       const msg = err instanceof Error ? err.message : "Unknown error";
       console.error(`Cron: failed to notify for ${event.event_name}: ${msg}`);
       errors.push(event.event_name);
+    }
+  }
+
+  // ── Web Push notifications for deadline reminders ──────────────────
+  for (const event of events ?? []) {
+    const lockTime = new Date(event.lock_time);
+    const hoursLeft = Math.round(
+      (lockTime.getTime() - now.getTime()) / (1000 * 60 * 60)
+    );
+    try {
+      await sendPushToAll(
+        {
+          title: "Predictions closing soon",
+          body: `${event.event_name} locks in ~${hoursLeft}h — submit your picks!`,
+          url: `/predictions/${event.id}`,
+          tag: `deadline-${event.id}`,
+        },
+        "prediction_reminders"
+      );
+    } catch (err) {
+      console.error(`Push: failed for ${event.event_name}:`, err);
     }
   }
 

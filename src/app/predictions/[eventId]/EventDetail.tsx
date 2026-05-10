@@ -15,6 +15,7 @@ import {
   type SportKey,
   toSportKey,
 } from "@/components/ui";
+import { PwaInstallGuide } from "@/components/PwaInstallGuide";
 import { psDefaultPickCopy, psDefaultSheetCopy } from "@/lib/whatsapp";
 import type {
   Event,
@@ -176,6 +177,7 @@ export function EventDetail({
   const [noteVisibility, setNoteVisibility] = useState<NoteVisibility>(
     userPredictions[0]?.note_visibility ?? "public"
   );
+  const [showPwaGuide, setShowPwaGuide] = useState(false);
   const [activePicks, setActivePicks] = useState<Record<string, string>>(() => {
     const picks: Record<string, string> = {};
     for (const pred of userPredictions) {
@@ -272,6 +274,7 @@ export function EventDetail({
         }
       }
       router.refresh();
+      setShowPwaGuide(true);
     } catch (err) {
       setSubmitError(err instanceof Error ? err.message : "Something went wrong. Please try again.");
     } finally {
@@ -944,6 +947,9 @@ export function EventDetail({
 
       {/* Bottom padding */}
       <div className="h-8" />
+
+      {/* PWA install guide — shown after successful prediction submission on iOS */}
+      {showPwaGuide && <PwaInstallGuide />}
     </div>
   );
 }

@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Inter, Bebas_Neue, Instrument_Serif } from "next/font/google";
 import { NavBar } from "@/components/NavBar";
+import { PushPromptWrapper } from "@/components/PushPromptWrapper";
 import "./globals.css";
 
 const inter = Inter({
@@ -43,6 +44,10 @@ export default function RootLayout({
       lang="en"
       className={`${inter.variable} ${bebasNeue.variable} ${instrumentSerif.variable} h-full antialiased`}
     >
+      <head>
+        <link rel="manifest" href="/manifest.json" />
+        <meta name="theme-color" content="#f59e0b" />
+      </head>
       <body className="min-h-full flex flex-col bg-ps-bg text-ps-text">
         <NavBar />
         <main className="flex flex-1 flex-col">
@@ -50,6 +55,7 @@ export default function RootLayout({
             {children}
           </div>
         </main>
+        <PushPromptWrapper />
       </body>
     </html>
   );
