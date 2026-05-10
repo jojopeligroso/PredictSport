@@ -23,6 +23,7 @@ Audit date: 2026-05-09.
 - [x] §15.9 — Scoring template redesign (clear explanations, examples, visual distinction)
 - [ ] §15.10 — Logo redesign (current PS mark is placeholder)
 - [x] §15.12 — ~~Google OAuth consent screen branding~~ — won't fix (requires Supabase custom domain, Pro plan)
+- [x] §15.14 — Privacy policy, terms of service pages + Google OAuth consent URLs configured
 - [ ] §15.13 — Alternative auth for in-app browsers (magic link for Telegram/Messenger webviews)
 - [x] §15.11 — Persona callout configuration in settings
 

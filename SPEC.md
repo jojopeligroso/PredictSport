@@ -509,3 +509,4 @@ Tracked in `todos.md` as a prioritised punch list. Keep both files in sync.
 11. ~~**Persona callout configuration**~~ — ✓ Built
 12. ~~**OAuth consent screen branding**~~ — Won't fix; Google sign-in shows Supabase domain because redirect URI is on Supabase. Requires Supabase custom domain (Pro plan) to change.
 13. **Alternative auth for in-app browsers** — magic link or similar for Telegram/Messenger webviews where Google OAuth is blocked
+14. ~~**Privacy policy & terms of service**~~ — ✓ Built. `/privacy` and `/terms` pages created, footer added site-wide, login page links both docs. Google OAuth consent screen URLs configured.
