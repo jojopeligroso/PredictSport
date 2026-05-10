@@ -85,7 +85,7 @@ export default async function CompetitionsPage() {
             Competitions
           </h1>
           <p className="mt-1 text-sm text-ps-text-sec">
-            Your competitions and leagues.
+            Your predictions, all in one place.
           </p>
         </div>
         <Link
@@ -100,16 +100,16 @@ export default async function CompetitionsPage() {
       {competitions.length === 0 ? (
         <div className="rounded-2xl border border-dashed border-ps-border p-12 text-center">
           <h2 className="text-lg font-medium text-ps-text-sec">
-            No competitions yet
+            Nothing here yet
           </h2>
           <p className="mt-2 text-sm text-ps-text-ter">
-            Create your first competition or ask a mate for an invite link.
+            Start one yourself, or ask a friend to send you an invite link.
           </p>
           <Link
             href="/competitions/new"
             className="mt-4 inline-block rounded-xl bg-gradient-to-r from-[#f59e0b] to-[#d97706] px-4 py-2.5 text-sm font-semibold text-ps-text"
           >
-            Create Competition
+            Start a Competition
           </Link>
         </div>
       ) : (
@@ -139,15 +139,15 @@ export default async function CompetitionsPage() {
                     )}
                     <div className="mt-2 flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-ps-text-ter">
                       <span>
-                        {eventCount} event{eventCount !== 1 ? "s" : ""}
+                        {eventCount} match{eventCount !== 1 ? "es" : ""}
                       </span>
                       <span>
-                        {memberCount} member{memberCount !== 1 ? "s" : ""}
+                        {memberCount} player{memberCount !== 1 ? "s" : ""}
                       </span>
-                      <span className="capitalize">
-                        {comp.role.replace("_", " ")}
+                      <span>
+                        {comp.role === "admin" ? "Admin" : comp.role === "co_admin" ? "Co-Admin" : "Player"}
                       </span>
-                      <span className="capitalize">{comp.visibility}</span>
+                      <span>{comp.visibility === "private" ? "Invite only" : "Open"}</span>
                     </div>
                   </div>
                   <svg

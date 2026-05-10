@@ -23,10 +23,10 @@ export default async function NewCompetitionPage() {
       </Link>
 
       <h1 className="font-display font-extrabold text-xl uppercase tracking-tight text-ps-text mt-4">
-        New Competition
+        Start a Competition
       </h1>
       <p className="text-sm text-ps-text-sec mt-1">
-        Set up a prediction league for your group.
+        Give it a name, pick a scoring style, and you&apos;re away.
       </p>
 
       <div className="mt-6">
