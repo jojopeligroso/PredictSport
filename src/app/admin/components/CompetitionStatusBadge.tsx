@@ -1,4 +1,4 @@
-import type { CompetitionStatus, EventStatus, NominationStatus } from "@/types/database";
+import type { CompetitionStatus, EventStatus, NominationStatus, RoundStatus } from "@/types/database";
 
 const COMPETITION_STATUS_STYLES: Record<CompetitionStatus, string> = {
   draft: "bg-ps-chip text-ps-text-sec",
@@ -21,9 +21,16 @@ const NOMINATION_STATUS_STYLES: Record<NominationStatus, string> = {
   rejected: "bg-ps-red-soft text-ps-red",
 };
 
+const ROUND_STATUS_STYLES: Record<RoundStatus, string> = {
+  draft: "bg-ps-chip text-ps-text-sec",
+  open: "bg-ps-green-soft text-ps-green",
+  locked: "bg-ps-amber-soft text-ps-amber-deep",
+  scored: "bg-ps-chip text-ps-text-ter",
+};
+
 interface StatusBadgeProps {
   status: string;
-  type: "competition" | "event" | "nomination";
+  type: "competition" | "event" | "nomination" | "round";
 }
 
 export function StatusBadge({ status, type }: StatusBadgeProps) {
@@ -32,6 +39,8 @@ export function StatusBadge({ status, type }: StatusBadgeProps) {
     styles = COMPETITION_STATUS_STYLES[status as CompetitionStatus] ?? COMPETITION_STATUS_STYLES.draft;
   } else if (type === "event") {
     styles = EVENT_STATUS_STYLES[status as EventStatus] ?? EVENT_STATUS_STYLES.upcoming;
+  } else if (type === "round") {
+    styles = ROUND_STATUS_STYLES[status as RoundStatus] ?? ROUND_STATUS_STYLES.draft;
   } else {
     styles = NOMINATION_STATUS_STYLES[status as NominationStatus] ?? NOMINATION_STATUS_STYLES.pending;
   }

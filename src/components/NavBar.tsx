@@ -7,6 +7,7 @@ import { BrandMark } from "./BrandMark";
 const publicNavLinks = [
   { href: "/predictions", label: "Predictions" },
   { href: "/leaderboard", label: "Table" },
+  { href: "/competitions", label: "Competitions" },
 ] as const;
 
 export async function NavBar() {
@@ -18,23 +19,13 @@ export async function NavBar() {
   // Fetch the user profile from the users table for display_name and avatar
   let profile: { display_name: string; avatar_url: string | null } | null =
     null;
-  let isAdmin = false;
   if (authUser) {
-    const [profileRes, adminRes] = await Promise.all([
-      supabase
-        .from("users")
-        .select("display_name, avatar_url")
-        .eq("id", authUser.id)
-        .single(),
-      supabase
-        .from("competition_members")
-        .select("role")
-        .eq("user_id", authUser.id)
-        .in("role", ["admin", "co_admin"])
-        .limit(1),
-    ]);
+    const profileRes = await supabase
+      .from("users")
+      .select("display_name, avatar_url")
+      .eq("id", authUser.id)
+      .single();
     profile = profileRes.data;
-    isAdmin = (adminRes.data?.length ?? 0) > 0;
   }
 
   const displayName =
@@ -67,14 +58,6 @@ export async function NavBar() {
               {link.label}
             </Link>
           ))}
-          {isAdmin && (
-            <Link
-              href="/admin"
-              className="rounded-md px-3 py-1.5 text-sm font-medium text-ps-text-sec transition-colors hover:bg-ps-chip hover:text-ps-text"
-            >
-              Admin
-            </Link>
-          )}
         </div>
 
         {/* Right side: auth + mobile toggle */}
@@ -96,7 +79,6 @@ export async function NavBar() {
           {/* Mobile hamburger */}
           <MobileNav
             isLoggedIn={!!authUser}
-            isAdmin={isAdmin}
             displayName={displayName}
             avatarUrl={avatarUrl}
           />

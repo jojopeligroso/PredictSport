@@ -77,9 +77,13 @@ const SCORING_PRESETS: Record<string, ScoringPreset> = {
   },
 };
 
-export function CreateCompetitionForm() {
+interface CreateCompetitionFormProps {
+  alwaysOpen?: boolean;
+}
+
+export function CreateCompetitionForm({ alwaysOpen = false }: CreateCompetitionFormProps) {
   const router = useRouter();
-  const [isOpen, setIsOpen] = useState(false);
+  const [isOpen, setIsOpen] = useState(alwaysOpen);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -150,7 +154,7 @@ export function CreateCompetitionForm() {
       setIsOpen(false);
 
       // Navigate to the new competition detail page
-      router.push(`/admin/competitions/${data.competition.id}`);
+      router.push(alwaysOpen ? `/competitions/${data.competition.id}` : `/admin/competitions/${data.competition.id}`);
       router.refresh();
     } catch {
       setError("Network error. Please try again.");
@@ -159,7 +163,7 @@ export function CreateCompetitionForm() {
     }
   };
 
-  if (!isOpen) {
+  if (!isOpen && !alwaysOpen) {
     return (
       <button
         onClick={() => setIsOpen(true)}
@@ -451,13 +455,15 @@ export function CreateCompetitionForm() {
         >
           {isSubmitting ? "Creating..." : "Create Competition"}
         </button>
-        <button
-          type="button"
-          onClick={() => setIsOpen(false)}
-          className="rounded-xl border border-ps-border-strong bg-transparent px-4 py-2 text-sm font-medium text-ps-text transition-colors hover:bg-ps-chip"
-        >
-          Cancel
-        </button>
+        {!alwaysOpen && (
+          <button
+            type="button"
+            onClick={() => setIsOpen(false)}
+            className="rounded-xl border border-ps-border-strong bg-transparent px-4 py-2 text-sm font-medium text-ps-text transition-colors hover:bg-ps-chip"
+          >
+            Cancel
+          </button>
+        )}
       </div>
     </form>
   );

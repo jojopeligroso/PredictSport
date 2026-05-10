@@ -9,6 +9,7 @@ export const dynamic = "force-dynamic";
 
 interface SearchParams {
   competition?: string;
+  round?: string;
 }
 
 export default async function PredictionsPage({
@@ -132,15 +133,26 @@ export default async function PredictionsPage({
 
   const typedEvents = (events ?? []) as Event[];
 
-  // Fetch the active round for round name in hero
-  const { data: activeRound } = await supabase
+  // Fetch all rounds for the competition
+  const { data: rounds } = await supabase
     .from("rounds")
-    .select("round_number, name")
+    .select("id, competition_id, round_number, name, status")
     .eq("competition_id", selectedCompetition.id)
-    .in("status", ["open", "locked"])
-    .order("round_number", { ascending: false })
-    .limit(1)
-    .maybeSingle();
+    .order("round_number", { ascending: false });
+
+  const typedRounds = (rounds ?? []) as Array<{
+    id: string;
+    competition_id: string;
+    round_number: number;
+    name: string | null;
+    status: string;
+  }>;
+
+  // Determine selected round: from searchParams or default to latest open/locked round
+  const latestActiveRound = typedRounds.find(
+    (r) => r.status === "open" || r.status === "locked"
+  );
+  const selectedRoundId = params.round ?? latestActiveRound?.id ?? undefined;
 
   // Fetch user's predictions and event_prediction_types for all events
   const eventIds = typedEvents.map((e) => e.id);
@@ -184,8 +196,8 @@ export default async function PredictionsPage({
         events={eventsWithPredictions}
         competitionId={selectedCompetition.id}
         competitionName={selectedCompetition.name}
-        roundNumber={activeRound?.round_number}
-        roundName={activeRound?.name}
+        rounds={typedRounds}
+        selectedRoundId={selectedRoundId}
       />
 
       <div className="mx-auto max-w-[480px] px-4 pb-8">

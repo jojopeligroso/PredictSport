@@ -55,12 +55,21 @@ interface EventWithPredictions extends Event {
   event_prediction_types: EventPredictionType[];
 }
 
+interface RoundSummary {
+  id: string;
+  round_number: number;
+  name: string | null;
+  status: string;
+}
+
 interface EventListProps {
   events: EventWithPredictions[];
   competitionId: string;
   competitionName?: string;
   roundNumber?: number;
   roundName?: string;
+  rounds?: RoundSummary[];
+  selectedRoundId?: string;
 }
 
 type FilterChip = "all" | "open" | "locked" | SportKey;
@@ -205,6 +214,8 @@ export function EventList({
   competitionName,
   roundNumber,
   roundName,
+  rounds = [],
+  selectedRoundId: initialRoundId,
 }: EventListProps) {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -213,27 +224,59 @@ export function EventList({
     (searchParams.get("chip") as FilterChip) ?? "all"
   );
 
+  // Round switcher state — "all" means no round filter
+  const [activeRoundId, setActiveRoundId] = useState<string | "all">(
+    initialRoundId ?? "all"
+  );
+
   const [viewMode, setViewMode] = useState<"sheet" | "damage">("sheet");
 
-  // Derive sports present in the events list
+  // Filter events by active round (client-side)
+  const roundFilteredEvents = useMemo(() => {
+    if (activeRoundId === "all") return events;
+    return events.filter((e) => e.round_id === activeRoundId);
+  }, [events, activeRoundId]);
+
+  // Derive the active round object
+  const activeRound = useMemo(
+    () => rounds.find((r) => r.id === activeRoundId) ?? null,
+    [rounds, activeRoundId]
+  );
+
+  // Per-round pick progress for switcher pills
+  const roundPickProgress = useMemo(() => {
+    const map: Record<string, { picked: number; total: number }> = {};
+    for (const r of rounds) {
+      const roundEvents = events.filter(
+        (e) => e.round_id === r.id && e.status === "upcoming"
+      );
+      map[r.id] = {
+        total: roundEvents.length,
+        picked: roundEvents.filter((e) => (e.predictions ?? []).length > 0).length,
+      };
+    }
+    return map;
+  }, [events, rounds]);
+
+  // Derive sports present in the round-filtered events list
   const sportsInEvents = useMemo(() => {
     const set = new Set<SportKey>();
-    for (const e of events) {
+    for (const e of roundFilteredEvents) {
       const key = toSportKey(e.sport);
       set.add(key);
     }
     return Array.from(set);
-  }, [events]);
+  }, [roundFilteredEvents]);
 
-  // Compute hero stats
+  // Compute hero stats (scoped to active round filter)
   const upcomingEvents = useMemo(
-    () => events.filter((e) => e.status === "upcoming"),
-    [events]
+    () => roundFilteredEvents.filter((e) => e.status === "upcoming"),
+    [roundFilteredEvents]
   );
 
   const resultedEvents = useMemo(
-    () => events.filter((e) => e.status === "resulted"),
-    [events]
+    () => roundFilteredEvents.filter((e) => e.status === "resulted"),
+    [roundFilteredEvents]
   );
 
   const pickedCount = useMemo(
@@ -259,16 +302,17 @@ export function EventList({
       ? Math.round((pickedCount / upcomingEvents.length) * 100)
       : 0;
 
-  // Hero display text
-  const heroTitle = roundName ?? "YOUR PICKS";
-  const roundLabel = roundNumber != null ? `Round ${roundNumber}` : null;
+  // Hero display text — derived from active round switcher selection
+  const heroTitle = activeRound?.name ?? (activeRound ? `Round ${activeRound.round_number}` : roundName ?? "YOUR PICKS");
+  const derivedRoundNumber = activeRound?.round_number ?? roundNumber;
+  const roundLabel = derivedRoundNumber != null && !activeRound?.name ? `Round ${derivedRoundNumber}` : null;
   const sheetLabel = "THE ROUND";
 
-  // Filter events
+  // Filter events (chip filter applied on top of round filter)
   const filteredEvents = useMemo(() => {
     // eslint-disable-next-line react-hooks/purity
     const now = Date.now();
-    return events.filter((e) => {
+    return roundFilteredEvents.filter((e) => {
       if (filterChip === "all") return true;
       if (filterChip === "open") return e.status === "upcoming";
       if (filterChip === "locked")
@@ -280,7 +324,7 @@ export function EventList({
       // sport key filter
       return toSportKey(e.sport) === filterChip;
     });
-  }, [events, filterChip]);
+  }, [roundFilteredEvents, filterChip]);
 
   // Sort: upcoming → locked → resulted → postponed → cancelled, then by time
   const sortedEvents = useMemo(() => {
@@ -356,6 +400,8 @@ export function EventList({
     );
   }
 
+  const hasRounds = rounds.length > 0;
+
   // Build filter chip definitions
   type ChipDef = { id: FilterChip; label: string };
   const chipDefs: ChipDef[] = [{ id: "all", label: "All" }];
@@ -368,6 +414,78 @@ export function EventList({
 
   return (
     <div className="mt-0 space-y-0">
+      {/* ── Round Switcher ─────────────────────────────────────────────── */}
+      {hasRounds && (
+        <div className="flex gap-1.5 overflow-x-auto px-4 pb-0 pt-3 scrollbar-none">
+          <button
+            onClick={() => setActiveRoundId("all")}
+            className={[
+              "shrink-0 rounded-full px-3 py-1.5 font-semibold transition-colors",
+              activeRoundId === "all"
+                ? "bg-ps-text text-ps-bg"
+                : "border border-ps-border bg-ps-surface text-ps-text-sec",
+            ].join(" ")}
+            style={{ fontSize: 11.5, whiteSpace: "nowrap" }}
+          >
+            All
+          </button>
+          {[...rounds].reverse().map((round) => {
+            const isActive = activeRoundId === round.id;
+            const isLocked = round.status === "locked" || round.status === "scored" || round.status === "closed";
+            const label = round.name ?? `Round ${round.round_number}`;
+            const progress = roundPickProgress[round.id];
+            const showProgress = progress && progress.total > 0;
+
+            return (
+              <button
+                key={round.id}
+                onClick={() => setActiveRoundId(round.id)}
+                className={[
+                  "shrink-0 rounded-full px-3 py-1.5 font-semibold transition-colors",
+                  isActive
+                    ? "bg-ps-text text-ps-bg"
+                    : "border border-ps-border bg-ps-surface",
+                  !isActive && isLocked ? "text-ps-text-ter" : !isActive ? "text-ps-text-sec" : "",
+                ].join(" ")}
+                style={{ fontSize: 11.5, whiteSpace: "nowrap" }}
+              >
+                <span className="inline-flex items-center gap-1">
+                  {isLocked && (
+                    <svg
+                      width="10"
+                      height="10"
+                      viewBox="0 0 10 10"
+                      fill="none"
+                      xmlns="http://www.w3.org/2000/svg"
+                      aria-hidden="true"
+                      className="shrink-0"
+                    >
+                      <rect x="2" y="4.5" width="6" height="5" rx="1" fill="currentColor" />
+                      <path
+                        d="M3.5 4.5V3a1.5 1.5 0 0 1 3 0v1.5"
+                        stroke="currentColor"
+                        strokeWidth="1.1"
+                        strokeLinecap="round"
+                        fill="none"
+                      />
+                    </svg>
+                  )}
+                  {label}
+                  {showProgress && !isActive && (
+                    <span
+                      className="ml-0.5 opacity-60"
+                      style={{ fontSize: 10 }}
+                    >
+                      {progress.picked}/{progress.total}
+                    </span>
+                  )}
+                </span>
+              </button>
+            );
+          })}
+        </div>
+      )}
+
       {/* ── Hero Header ───────────────────────────────────────────────── */}
       <div
         className="px-4 pb-4 pt-5"

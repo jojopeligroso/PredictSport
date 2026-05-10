@@ -19,9 +19,10 @@ interface CompetitionTabsProps {
   nominations: (EventNomination & { nominator?: { display_name: string } })[];
   inviteTokens: InviteToken[];
   currentUserId: string;
+  userRole?: "admin" | "co_admin" | "participant";
 }
 
-type Tab = "Confirm Results" | "Add Event" | "Nominations" | "Members" | "Settings";
+type Tab = "Events" | "Confirm Results" | "Add Event" | "Nominations" | "Members" | "Settings";
 
 export function CompetitionTabs({
   competition,
@@ -31,8 +32,11 @@ export function CompetitionTabs({
   nominations,
   inviteTokens,
   currentUserId,
+  userRole = "admin",
 }: CompetitionTabsProps) {
-  const [activeTab, setActiveTab] = useState<Tab>("Confirm Results");
+  const isAdmin = userRole === "admin" || userRole === "co_admin";
+  const defaultTab: Tab = isAdmin ? "Confirm Results" : "Events";
+  const [activeTab, setActiveTab] = useState<Tab>(defaultTab);
 
   const pendingNominationCount = (nominations ?? []).filter(
     (n) => n.status === "pending"
@@ -42,13 +46,16 @@ export function CompetitionTabs({
     (e) => e.result_data && !e.result_confirmed && e.status !== "cancelled"
   ).length;
 
-  const tabs: Array<{ id: Tab; label: string; count?: number }> = [
-    { id: "Confirm Results", label: "Confirm Results", count: eventsToConfirm || undefined },
-    { id: "Add Event", label: "Add Event" },
-    { id: "Nominations", label: "Nominations", count: pendingNominationCount || undefined },
-    { id: "Members", label: "Members" },
-    { id: "Settings", label: "Settings" },
+  const allTabs: Array<{ id: Tab; label: string; count?: number; adminOnly?: boolean }> = [
+    { id: "Events", label: "Events", adminOnly: false },
+    { id: "Confirm Results", label: "Confirm Results", count: eventsToConfirm || undefined, adminOnly: true },
+    { id: "Add Event", label: "Add Event", adminOnly: true },
+    { id: "Nominations", label: "Nominations", count: pendingNominationCount || undefined, adminOnly: true },
+    { id: "Members", label: "Members", adminOnly: false },
+    { id: "Settings", label: "Settings", adminOnly: true },
   ];
+
+  const tabs = allTabs.filter((tab) => isAdmin || !tab.adminOnly);
 
   return (
     <div>
@@ -85,7 +92,7 @@ export function CompetitionTabs({
 
       {/* Tab content */}
       <div className="mt-6">
-        {(activeTab === "Confirm Results" || activeTab === "Add Event") && (
+        {(activeTab === "Events" || activeTab === "Confirm Results" || activeTab === "Add Event") && (
           <EventsSection
             competition={competition}
             events={events}

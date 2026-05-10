@@ -148,8 +148,8 @@ async function Dashboard({ userId }: { userId: string }) {
         .eq("user_id", userId)
         .in("event_id", eventIds);
 
-      for (const p of (preds ?? []) as Array<{ event_id: string; events: { round_id: string | null } }>) {
-        const rid = p.events?.round_id;
+      for (const p of (preds ?? []) as Array<{ event_id: string; events: { round_id: string | null }[] }>) {
+        const rid = p.events?.[0]?.round_id;
         if (rid) pickCounts[rid] = (pickCounts[rid] ?? 0) + 1;
       }
     }
@@ -164,13 +164,19 @@ async function Dashboard({ userId }: { userId: string }) {
       </div>
 
       {comps.length === 0 ? (
-        <div className="rounded-2xl border border-ps-border bg-ps-surface p-8 text-center">
+        <div className="rounded-2xl border border-dashed border-ps-border bg-ps-surface p-8 text-center">
           <p className="text-sm font-medium text-ps-text-sec">
             No active competitions yet.
           </p>
           <p className="mt-2 text-xs text-ps-text-ter">
-            Ask a mate for an invite link to get started.
+            Create your own competition or ask a mate for an invite link.
           </p>
+          <Link
+            href="/competitions/new"
+            className="mt-4 inline-block rounded-xl bg-gradient-to-r from-[#f59e0b] to-[#d97706] px-4 py-2.5 text-sm font-semibold text-ps-text"
+          >
+            Create Competition
+          </Link>
         </div>
       ) : (
         <div className="space-y-4">
