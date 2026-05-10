@@ -170,6 +170,7 @@ const SEARCH_SPORTS: { value: Sport; label: string }[] = [
   { value: "rugby", label: "Rugby" },
   { value: "tennis", label: "Tennis" },
   { value: "golf", label: "Golf" },
+  { value: "athletics", label: "Athletics" },
 ];
 
 function loadFavourites(): string[] {

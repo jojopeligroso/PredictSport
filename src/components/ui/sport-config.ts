@@ -6,7 +6,7 @@
  * See design/README.md: "Avoid slot-machine gradients, shiny chrome."
  */
 
-export type SportKey = 'soccer' | 'f1' | 'gaa' | 'nba' | 'golf' | 'rugby' | 'tennis' | 'horse_racing' | 'snooker' | 'cricket' | 'mlb' | 'nfl' | 'nhl';
+export type SportKey = 'soccer' | 'f1' | 'gaa' | 'nba' | 'golf' | 'rugby' | 'tennis' | 'horse_racing' | 'snooker' | 'cricket' | 'athletics' | 'mlb' | 'nfl' | 'nhl';
 
 // Unified warm pill style — ink text on muted amber background.
 // Sport differentiation is via emoji + label, not color.
@@ -93,6 +93,12 @@ export const SPORT_CONFIG: Record<
   cricket: {
     name: 'Cricket',
     emoji: '\ud83c\udfcf',
+    ...BAR_STYLE,
+    ...PILL_STYLE,
+  },
+  athletics: {
+    name: 'Athletics',
+    emoji: '\ud83c\udfc3',
     ...BAR_STYLE,
     ...PILL_STYLE,
   },

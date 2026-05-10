@@ -94,6 +94,8 @@ const SPORT_OPTIONS = [
   { value: "nfl", label: "NFL" },
   { value: "nba", label: "NBA" },
   { value: "nhl", label: "NHL" },
+  { value: "cricket", label: "Cricket" },
+  { value: "athletics", label: "Athletics" },
 ];
 
 const LEAGUE_OPTIONS: Record<string, { id: string; label: string }[]> = {

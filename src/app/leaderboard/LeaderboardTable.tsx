@@ -201,6 +201,8 @@ const SPORT_META: Record<string, { emoji: string; label: string }> = {
   snooker: { emoji: "🎱", label: "Snooker" },
   horseracing: { emoji: "🐎", label: "Racing" },
   horse_racing: { emoji: "🐎", label: "Racing" },
+  cricket: { emoji: "🏏", label: "Cricket" },
+  athletics: { emoji: "🏃", label: "Athletics" },
 };
 
 function sportMeta(sport: string): { emoji: string; label: string } {

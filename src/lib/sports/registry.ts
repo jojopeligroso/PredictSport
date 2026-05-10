@@ -41,6 +41,7 @@ const sportProviders: Record<Sport, SportsProvider[]> = {
   gaa: [providers.foireann, providers.manual],
   horse_racing: [providers.theRacingAPI],
   cricket: [providers.espn, providers.theSportsDB, providers.manual],
+  athletics: [providers.manual],
   snooker: [providers.espn, providers.manual],
   mlb: [providers.mlbStats, providers.espn, providers.ballDontLie],
   nfl: [providers.espn, providers.ballDontLie],

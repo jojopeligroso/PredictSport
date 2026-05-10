@@ -9,6 +9,7 @@ export type Sport =
   | "horse_racing"
   | "snooker"
   | "cricket"
+  | "athletics"
   | "mlb"
   | "nfl"
   | "nba"

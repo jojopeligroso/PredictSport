@@ -37,7 +37,7 @@ interface UpdateRoundBody {
 
 const VALID_SPORTS = [
   "formula_1", "soccer", "golf", "rugby", "tennis",
-  "gaa", "horse_racing", "snooker", "cricket", "mlb", "nfl", "nba", "nhl",
+  "gaa", "horse_racing", "snooker", "cricket", "athletics", "mlb", "nfl", "nba", "nhl",
 ];
 
 const VALID_PREDICTION_TYPES: PredictionType[] = [
