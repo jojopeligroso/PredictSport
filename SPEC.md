@@ -500,7 +500,7 @@ Tracked in `todos.md` as a prioritised punch list. Keep both files in sync.
 5. ~~**H2H draw support**~~ — ✓ Built
 6. ~~**Over/under push**~~ — ✓ Fixed
 7. ~~**UI vocabulary**~~ — ✓ Renamed
-8. **WhatsApp integration** — specified but not yet implemented (Telegram is done)
+8. ~~**WhatsApp integration**~~ — Replaced with web push notifications (PWA). Built.
 
 ### P2 — Polish
 

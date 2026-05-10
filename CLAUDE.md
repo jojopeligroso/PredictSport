@@ -95,15 +95,14 @@ Provider abstraction in `src/lib/sports/`. `BaseProvider` handles fetch, rate li
 - Scoring engine, UI polish, E2E scaffolding
 
 **Known gaps — see SPEC.md §15 and todos.md (all three files kept in sync):**
-1. §15.8 — WhatsApp integration not yet built (Telegram done)
-2. §15.10 — Logo redesign (placeholder)
-3. §15.12 — Google OAuth consent screen branding (shows Supabase URI)
-4. §15.13 — Alternative auth for in-app browsers (magic link for Telegram/Messenger)
+1. §15.10 — Logo redesign (placeholder)
+2. §15.12 — Google OAuth consent screen branding (shows Supabase URI)
+3. §15.13 — Alternative auth for in-app browsers (magic link for Telegram/Messenger)
 
 ## Environment Variables
 
 See `.env.local.example`. Required: `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`.
-Optional: `API_FOOTBALL_KEY`, `BALLDONTLIE_KEY`, `THERACING_API_KEY`, `FOIREANN_API_KEY`.
+Optional: `API_FOOTBALL_KEY`, `BALLDONTLIE_KEY`, `THERACING_API_KEY`, `FOIREANN_API_KEY`, `NEXT_PUBLIC_VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY`.
 
 ## Conventions
 
