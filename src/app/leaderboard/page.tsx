@@ -45,7 +45,7 @@ export default async function LeaderboardPage({ searchParams }: PageProps) {
   if (competitions.length === 0) {
     return (
       <div className="mx-auto max-w-2xl p-4 sm:p-6">
-        <p className="text-[11px] font-bold uppercase tracking-widest text-ps-text-sec">PredictSport</p>
+        <p className="text-[11px] font-extrabold lowercase tracking-tight text-ps-text">sports<span className="text-ps-amber">predict.</span></p>
         <h1 className="mt-0.5 font-display text-[32px] leading-none tracking-wider text-ps-text">
           THE TABLE
         </h1>
@@ -65,7 +65,7 @@ export default async function LeaderboardPage({ searchParams }: PageProps) {
   if (!selectedId) {
     return (
       <div className="mx-auto max-w-2xl p-4 sm:p-6">
-        <p className="text-[11px] font-bold uppercase tracking-widest text-ps-text-sec">PredictSport</p>
+        <p className="text-[11px] font-extrabold lowercase tracking-tight text-ps-text">sports<span className="text-ps-amber">predict.</span></p>
         <h1 className="mt-0.5 font-display text-[32px] leading-none tracking-wider text-ps-text">
           THE TABLE
         </h1>

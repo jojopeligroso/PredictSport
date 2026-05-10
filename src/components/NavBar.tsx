@@ -2,6 +2,7 @@ import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import { UserMenu } from "./UserMenu";
 import { MobileNav } from "./MobileNav";
+import { BrandMark } from "./BrandMark";
 
 const publicNavLinks = [
   { href: "/predictions", label: "Predictions" },
@@ -47,19 +48,11 @@ export async function NavBar() {
   return (
     <nav className="relative bg-ps-bg">
       <div className="mx-auto flex h-12 max-w-[480px] items-center justify-between px-4 sm:px-6">
-        {/* Logo: 28px square + wordmark */}
-        <Link href="/" className="flex items-center gap-2">
-          <div
-            className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-gradient-to-br from-[#f59e0b] to-[#d97706]"
-            aria-hidden="true"
-          >
-            <span className="font-display text-base leading-none tracking-wide text-ps-text">
-              PS
-            </span>
-          </div>
-          <span className="text-lg uppercase tracking-wide">
-            <span className="font-light text-ps-text">Predict</span>
-            <span className="font-bold text-ps-amber-deep">Sport</span>
+        {/* Logo: brand mark + wordmark */}
+        <Link href="/" className="flex items-center gap-1.5">
+          <BrandMark className="h-7 w-auto shrink-0" />
+          <span className="text-[1.1rem] font-extrabold lowercase tracking-tight text-ps-text">
+            sports<span className="text-ps-amber">predict.</span>
           </span>
         </Link>
 

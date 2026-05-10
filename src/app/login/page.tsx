@@ -1,6 +1,7 @@
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { LoginButton } from "@/components/LoginButton";
+import { BrandMark } from "@/components/BrandMark";
 
 export default async function LoginPage({
   searchParams,
@@ -34,16 +35,9 @@ export default async function LoginPage({
         {/* Drag handle (decorative, matches bottom-sheet prototype) */}
         <div className="mx-auto mb-4 h-1 w-9 rounded-full bg-ps-border" />
 
-        {/* Logo row: 44px square + name + subtitle */}
+        {/* Logo row: brand mark + name + subtitle */}
         <div className="mb-4 flex items-center gap-2.5">
-          <div
-            className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-[#f59e0b] to-[#d97706]"
-            aria-hidden="true"
-          >
-            <span className="font-display text-[22px] leading-none tracking-wide text-ps-text">
-              PS
-            </span>
-          </div>
+          <BrandMark className="h-11 w-auto shrink-0" />
           <div>
             <p className="text-base font-extrabold lowercase leading-tight tracking-tight text-ps-text">
               sports<span className="text-ps-amber">predict.</span>

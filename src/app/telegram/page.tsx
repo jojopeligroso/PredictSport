@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useCallback } from "react";
 import { LoginButton } from "@/components/LoginButton";
+import { BrandMark } from "@/components/BrandMark";
 import { createClient } from "@/lib/supabase/client";
 
 /**
@@ -143,14 +144,7 @@ export default function TelegramPage() {
 
         {/* Logo */}
         <div className="mb-4 flex items-center gap-2.5">
-          <div
-            className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-[#f59e0b] to-[#d97706]"
-            aria-hidden="true"
-          >
-            <span className="font-display text-[22px] leading-none tracking-wide text-ps-text">
-              PS
-            </span>
-          </div>
+          <BrandMark className="h-11 w-auto shrink-0" />
           <div>
             <p className="text-base font-extrabold lowercase leading-tight tracking-tight text-ps-text">
               sports<span className="text-ps-amber">predict.</span>

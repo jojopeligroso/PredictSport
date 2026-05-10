@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
+import { BrandMark } from "@/components/BrandMark";
 
 export default async function Home() {
   // Redirect authenticated users straight to predictions
@@ -18,14 +19,7 @@ export default async function Home() {
     <div className="flex flex-1 flex-col items-center justify-center px-4 py-16">
       <div className="flex w-full max-w-sm flex-col items-center gap-10 text-center">
         {/* Brand mark — big, centered, commanding */}
-        <div
-          className="flex h-24 w-24 items-center justify-center rounded-3xl bg-gradient-to-br from-[#f59e0b] to-[#d97706] shadow-lg"
-          aria-hidden="true"
-        >
-          <span className="font-display text-5xl font-extrabold leading-none tracking-wide text-ps-text">
-            PS
-          </span>
-        </div>
+        <BrandMark className="h-24 w-auto" />
 
         {/* Wordmark + tagline */}
         <div>

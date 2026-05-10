@@ -4,6 +4,7 @@ import { useState, useMemo, useCallback } from "react";
 
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
+import { BrandMark } from "@/components/BrandMark";
 import type {
   Event,
   Prediction,
@@ -356,21 +357,9 @@ export function EventList({
             "linear-gradient(180deg, rgba(245,158,11,0.08) 0%, transparent 100%)",
         }}
       >
-        {/* PS logo row */}
+        {/* Brand mark row */}
         <div className="mb-4 flex items-center gap-2.5">
-          <div
-            className="flex shrink-0 items-center justify-center rounded-[9px] font-display text-[17px] leading-none tracking-wide"
-            style={{
-              width: 32,
-              height: 32,
-              background:
-                "linear-gradient(135deg, #f59e0b, #d97706)",
-              color: "var(--ps-text)",
-              letterSpacing: "0.5px",
-            }}
-          >
-            PS
-          </div>
+          <BrandMark className="h-8 w-auto shrink-0" />
           <div className="flex flex-col gap-0.5">
             <span
               className="font-bold uppercase tracking-[0.06em] text-ps-text-sec"
