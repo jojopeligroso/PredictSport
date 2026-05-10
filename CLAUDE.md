@@ -96,7 +96,7 @@ Provider abstraction in `src/lib/sports/`. `BaseProvider` handles fetch, rate li
 
 **Known gaps — see SPEC.md §15 and todos.md (all three files kept in sync):**
 1. §15.10 — Logo redesign (placeholder)
-2. §15.12 — Google OAuth consent screen branding (shows Supabase URI)
+2. ~~§15.12~~ — Won't fix (needs Supabase Pro custom domain)
 3. §15.13 — Alternative auth for in-app browsers (magic link for Telegram/Messenger)
 
 ## Environment Variables

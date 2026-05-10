@@ -507,5 +507,5 @@ Tracked in `todos.md` as a prioritised punch list. Keep both files in sync.
 9. ~~**Scoring template redesign**~~ — ✓ Built
 10. **Logo redesign** — current PS mark is a placeholder
 11. ~~**Persona callout configuration**~~ — ✓ Built
-12. **OAuth consent screen branding** — Google consent screen shows Supabase URI instead of "PredictSport" (Google Cloud Console change)
+12. ~~**OAuth consent screen branding**~~ — Won't fix; Google sign-in shows Supabase domain because redirect URI is on Supabase. Requires Supabase custom domain (Pro plan) to change.
 13. **Alternative auth for in-app browsers** — magic link or similar for Telegram/Messenger webviews where Google OAuth is blocked
