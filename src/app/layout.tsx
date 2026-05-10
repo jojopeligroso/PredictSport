@@ -22,7 +22,7 @@ const instrumentSerif = Instrument_Serif({
 });
 
 export const metadata: Metadata = {
-  title: "PredictSport — The Sheet",
+  title: "PredictSport — Social Sports Predictions",
   description: "Social sports prediction platform for friend groups",
   openGraph: {
     title: "PredictSport",

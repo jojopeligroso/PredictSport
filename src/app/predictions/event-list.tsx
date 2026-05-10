@@ -242,7 +242,7 @@ export function EventList({
   // Hero display text
   const heroTitle = roundName ?? "YOUR PICKS";
   const roundLabel = roundNumber != null ? `Round ${roundNumber}` : null;
-  const sheetLabel = "THE SHEET";
+  const sheetLabel = "THE ROUND";
 
   // Filter events
   const filteredEvents = useMemo(() => {
@@ -449,7 +449,7 @@ export function EventList({
         </div>
       </div>
 
-      {/* ── View Toggle: The Sheet / The Damage ──────────────────────── */}
+      {/* ── View Toggle: The Round / Results ──────────────────────── */}
       <div className="px-4 pt-2">
         <div
           className="grid grid-cols-2 gap-0.5 rounded-[10px] p-[3px]"
@@ -465,7 +465,7 @@ export function EventList({
                   : "text-ps-text-sec"
               }`}
             >
-              {mode === "sheet" ? "The Sheet" : "The Damage"}
+              {mode === "sheet" ? "The Round" : "Results"}
             </button>
           ))}
         </div>
@@ -552,7 +552,7 @@ export function EventList({
           {/* Tiebreaker section would be rendered here if round data includes one */}
         </>
       ) : (
-        /* ── The Damage: Result Cards ─────────────────────────────────── */
+        /* ── Results: Result Cards ────────────────────────────────────── */
         <div className="px-4 pb-4 pt-2">
           <div className="flex items-center justify-between mb-3">
             <div>
@@ -566,7 +566,7 @@ export function EventList({
                 className="font-display text-ps-text"
                 style={{ fontSize: 32, lineHeight: 1, letterSpacing: 1 }}
               >
-                THE DAMAGE
+                RESULTS
               </h2>
             </div>
             <div className="text-right">

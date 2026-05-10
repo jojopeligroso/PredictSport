@@ -33,7 +33,7 @@ export default async function Home() {
             <span className="font-light text-ps-text">Predict</span>
             <span className="font-bold text-ps-amber-deep">Sport</span>
           </h1>
-          <p className="mt-1.5 text-sm text-ps-text-ter">The Sheet</p>
+          <p className="mt-1.5 text-sm text-ps-text-ter">Social sports predictions</p>
         </div>
 
         {/* Tagline */}

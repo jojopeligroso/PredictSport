@@ -15,7 +15,7 @@ Audit date: 2026-05-09.
 
 - [x] §15.5 — H2H draw support: `allow_draw` config, draw option in UI, scorer update
 - [x] §15.6 — Over/under push handling: exact line hit → void (null), not wrong
-- [ ] §15.7 — UI vocabulary: rename "The Damage" → "Results", "The Sheet" → "The Round", review AI-generated copy
+- [x] §15.7 — UI vocabulary: rename "The Damage" → "Results", "The Sheet" → "The Round", review AI-generated copy
 - [ ] §15.8 — WhatsApp Cloud API integration (reminders, results, leaderboard)
 
 ## P2 — Polish & quality of life
