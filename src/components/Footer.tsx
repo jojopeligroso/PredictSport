@@ -5,7 +5,7 @@ export function Footer() {
     <footer className="mt-auto border-t border-ps-border py-5">
       <div className="mx-auto max-w-[480px] px-4 text-center">
         <p className="text-[11px] font-extrabold lowercase tracking-tight text-ps-text-ter">
-          predict<span className="text-ps-amber">sport.</span>
+          sports<span className="text-ps-amber">predict.</span>
         </p>
         <p className="mt-1.5 font-serif text-[11px] italic text-ps-text-ter">
           Built for bragging rights, not betting slips.
