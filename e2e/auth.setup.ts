@@ -38,6 +38,12 @@ setup("authenticate", async ({ page }) => {
   await page.goto("/login");
   await page.waitForLoadState("networkidle");
 
+  // Derive cookie domain from the actual base URL
+  const baseURL =
+    process.env.PLAYWRIGHT_BASE_URL ?? "http://localhost:3000";
+  const cookieDomain = new URL(baseURL).hostname;
+  const isSecure = new URL(baseURL).protocol === "https:";
+
   // Set the auth cookie in the format @supabase/ssr createBrowserClient uses.
   // The library stores the full session JSON as the cookie value, chunked.
   const sessionData = JSON.stringify({
@@ -57,10 +63,10 @@ setup("authenticate", async ({ page }) => {
     cookies.push({
       name: `sb-${projectRef}-auth-token.${Math.floor(i / chunkSize)}`,
       value: encoded.slice(i, i + chunkSize),
-      domain: "localhost",
+      domain: cookieDomain,
       path: "/",
       httpOnly: false,
-      secure: false,
+      secure: isSecure,
       sameSite: "Lax" as const,
     });
   }
