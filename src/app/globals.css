@@ -27,31 +27,7 @@
   --ps-blue: #3b82f6;
   --ps-violet: #8b5cf6;
 
-  /* Sport gradients */
-  --ps-soccer-from: #2563eb;
-  --ps-soccer-to: #7c3aed;
-  --ps-soccer-pill-bg: rgba(37, 99, 235, 0.12);
-  --ps-soccer-pill-fg: #1e40af;
-
-  --ps-f1-from: #dc2626;
-  --ps-f1-to: #ea580c;
-  --ps-f1-pill-bg: rgba(220, 38, 38, 0.12);
-  --ps-f1-pill-fg: #991b1b;
-
-  --ps-gaa-from: #059669;
-  --ps-gaa-to: #047857;
-  --ps-gaa-pill-bg: rgba(5, 150, 105, 0.12);
-  --ps-gaa-pill-fg: #065f46;
-
-  --ps-nba-from: #d97706;
-  --ps-nba-to: #dc2626;
-  --ps-nba-pill-bg: rgba(217, 119, 6, 0.12);
-  --ps-nba-pill-fg: #92400e;
-
-  --ps-golf-from: #4f46e5;
-  --ps-golf-to: #7c3aed;
-  --ps-golf-pill-bg: rgba(79, 70, 229, 0.12);
-  --ps-golf-pill-fg: #3730a3;
+  /* Sport pills — unified warm tones (no per-sport hues) */
 }
 
 @media (prefers-color-scheme: dark) {
@@ -68,12 +44,7 @@
     --ps-chip: rgba(255, 255, 255, 0.05);
     --ps-overlay: rgba(20, 24, 30, 0.85);
 
-    /* Sport pill foreground — dark mode */
-    --ps-soccer-pill-fg: #a5b4fc;
-    --ps-f1-pill-fg: #fca5a5;
-    --ps-gaa-pill-fg: #6ee7b7;
-    --ps-nba-pill-fg: #fcd34d;
-    --ps-golf-pill-fg: #c4b5fd;
+    /* Sport pills use --ps-text-sec in dark mode (no per-sport overrides) */
   }
 }
 
