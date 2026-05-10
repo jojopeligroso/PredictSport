@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Inter, Bebas_Neue, Instrument_Serif } from "next/font/google";
 import { NavBar } from "@/components/NavBar";
+import { Footer } from "@/components/Footer";
 import { PushPromptWrapper } from "@/components/PushPromptWrapper";
 import "./globals.css";
 
@@ -55,6 +56,7 @@ export default function RootLayout({
             {children}
           </div>
         </main>
+        <Footer />
         <PushPromptWrapper />
       </body>
     </html>

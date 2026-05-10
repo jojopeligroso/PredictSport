@@ -74,7 +74,9 @@ export default async function LoginPage({
 
         {/* Caption */}
         <p className="mt-2.5 text-center text-[11px] text-ps-text-ter">
-          Sign in to join your competition.
+          By signing in you agree to our{" "}
+          <a href="/terms" className="underline hover:text-ps-text">Terms</a> and{" "}
+          <a href="/privacy" className="underline hover:text-ps-text">Privacy Policy</a>.
         </p>
       </div>
     </div>
