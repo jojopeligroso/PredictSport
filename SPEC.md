@@ -490,20 +490,22 @@ Tracked in `todos.md` as a prioritised punch list. Keep both files in sync.
 
 ### P0 — Blocking launch
 
-1. **Google OAuth broken on deploy** — redirect URL configuration needs investigation
-2. **No user profile editing page** — users can't change display name, avatar, or notification prefs
-3. **Competition activation UI** — no button to transition draft → active
-4. **Competition completion/archive flow** — no UI for completing or archiving a competition
+1. ~~**Google OAuth broken on deploy**~~ — ✓ Fixed
+2. ~~**No user profile editing page**~~ — ✓ Built
+3. ~~**Competition activation UI**~~ — ✓ Built
+4. ~~**Competition completion/archive flow**~~ — ✓ Built
 
 ### P1 — Core functionality gaps
 
-5. **H2H draw support** — scorer doesn't handle draws; needs `allow_draw` config and UI
-6. **Over/under push** — scorer returns `is_correct: false` for exact line hit; should be null/void
-7. **UI vocabulary** — rename "The Damage" → "Results", "The Sheet" → "The Round", review all AI-generated placeholder copy
+5. ~~**H2H draw support**~~ — ✓ Built
+6. ~~**Over/under push**~~ — ✓ Fixed
+7. ~~**UI vocabulary**~~ — ✓ Renamed
 8. **WhatsApp integration** — specified but not yet implemented (Telegram is done)
 
 ### P2 — Polish
 
-9. **Scoring template redesign** — templates need clear explanations, inline examples, visual distinction
+9. ~~**Scoring template redesign**~~ — ✓ Built
 10. **Logo redesign** — current PS mark is a placeholder
-11. **Persona callout configuration** — settings UI for custom callout labels per member
+11. ~~**Persona callout configuration**~~ — ✓ Built
+12. **OAuth consent screen branding** — Google consent screen shows Supabase URI instead of "PredictSport" (Google Cloud Console change)
+13. **Alternative auth for in-app browsers** — magic link or similar for Telegram/Messenger webviews where Google OAuth is blocked

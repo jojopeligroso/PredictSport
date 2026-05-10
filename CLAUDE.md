@@ -95,14 +95,10 @@ Provider abstraction in `src/lib/sports/`. `BaseProvider` handles fetch, rate li
 - Scoring engine, UI polish, E2E scaffolding
 
 **Known gaps — see SPEC.md §15 and todos.md (all three files kept in sync):**
-1. §15.1 — Google OAuth broken on deploy (redirect URL config)
-2. §15.2 — No user profile editing page
-3. §15.3 — No competition activation UI (draft → active)
-4. §15.4 — No competition completion/archive flow
-5. §15.5 — H2H draw support not yet in scorer
-6. §15.6 — Over/under push (exact line hit) returns wrong instead of void
-7. §15.7 — UI vocabulary: "The Damage" → "Results", "The Sheet" → "The Round"
-8. §15.8 — WhatsApp integration not yet built (Telegram done)
+1. §15.8 — WhatsApp integration not yet built (Telegram done)
+2. §15.10 — Logo redesign (placeholder)
+3. §15.12 — Google OAuth consent screen branding (shows Supabase URI)
+4. §15.13 — Alternative auth for in-app browsers (magic link for Telegram/Messenger)
 
 ## Environment Variables
 

@@ -6,7 +6,7 @@ Audit date: 2026-05-09.
 
 ## P0 — Blocking launch
 
-- [-] §15.1 — Fix Google OAuth on deployed app (redirect URL config)
+- [x] §15.1 — Fix Google OAuth on deployed app (redirect URL config)
 - [x] §15.2 — User profile page (display name, avatar, notification prefs)
 - [x] §15.3 — Competition activation UI (draft → active button in admin)
 - [x] §15.4 — Competition completion/archive flow in admin
@@ -22,6 +22,8 @@ Audit date: 2026-05-09.
 
 - [x] §15.9 — Scoring template redesign (clear explanations, examples, visual distinction)
 - [ ] §15.10 — Logo redesign (current PS mark is placeholder)
+- [ ] §15.12 — Google OAuth consent screen branding (shows Supabase URI instead of "PredictSport")
+- [ ] §15.13 — Alternative auth for in-app browsers (magic link for Telegram/Messenger webviews)
 - [x] §15.11 — Persona callout configuration in settings
 
 ## Post-Launch
