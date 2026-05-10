@@ -95,9 +95,10 @@ Provider abstraction in `src/lib/sports/`. `BaseProvider` handles fetch, rate li
 - Scoring engine, UI polish, E2E scaffolding
 
 **Known gaps — see SPEC.md §15 and todos.md (all three files kept in sync):**
-1. §15.10 — Logo redesign (placeholder)
+1. ~~§15.10~~ — Logo redesign (GAA umpire mark, done)
 2. ~~§15.12~~ — Won't fix (needs Supabase Pro custom domain)
 3. §15.13 — Alternative auth for in-app browsers (magic link for Telegram/Messenger)
+4. §15.14 — Privacy policy & terms of service (pages done, OAuth consent screen not yet published)
 
 ## Environment Variables
 
