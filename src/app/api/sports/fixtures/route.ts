@@ -25,19 +25,7 @@ const LEAGUE_SPORT_MAP: Record<string, Sport> = {
   // Soccer — International
   "4429": "soccer", // FIFA World Cup
   "4501": "soccer", // Copa Libertadores
-  // GAA — Football
-  "5564": "gaa",    // All-Ireland Senior Football Championship
-  "5566": "gaa",    // Connacht Senior Football Championship
-  "5567": "gaa",    // Leinster Senior Football Championship
-  "5568": "gaa",    // Munster Senior Football Championship
-  "5569": "gaa",    // Ulster Senior Football Championship
-  "5576": "gaa",    // Tailteann Cup
-  // GAA — Hurling
-  "5565": "gaa",    // All-Ireland Senior Hurling Championship
-  "5570": "gaa",    // Munster Senior Hurling Championship
-  "5571": "gaa",    // Leinster Senior Hurling Championship
-  "5572": "gaa",    // Joe McDonagh Cup
-  "5573": "gaa",    // Christy Ring Cup
+  // GAA — removed from TheSportsDB (no data); use Foireann API instead
   // US Sports
   "4387": "nba",    // NBA
   "4424": "mlb",    // MLB
@@ -46,39 +34,10 @@ const LEAGUE_SPORT_MAP: Record<string, Sport> = {
   // Motorsport
   "4370": "formula_1", // Formula 1
   "4407": "formula_1", // MotoGP
-  // Combat Sports
-  "4443": "soccer", // UFC
   // Snooker
-  "4555": "soccer", // World Snooker
-  // Darts
-  "4554": "soccer", // PDC Darts
-  // Cycling
-  "4465": "soccer", // UCI World Tour
-  // Cricket — International
-  "4844": "soccer", // Test Match Series
-  "4801": "soccer", // ODI Series
-  "4979": "soccer", // T20I Series
-  "4575": "soccer", // Cricket World Cup
-  "5587": "soccer", // ICC Champions Trophy
-  "5103": "soccer", // ICC Men's T20 World Cup
-  "5100": "soccer", // ICC World Test Championship
-  // Cricket — T20 Leagues
-  "4460": "soccer", // IPL
-  "4461": "soccer", // Big Bash League
-  "4463": "soccer", // English T20 Blast
-  "5177": "soccer", // The Hundred
-  "5176": "soccer", // Caribbean Premier League
-  "5067": "soccer", // Pakistan Super League
-  "5532": "soccer", // SA20
-  "5175": "soccer", // Lanka Premier League
-  "5174": "soccer", // NZ Super Smash
-  "5490": "soccer", // International League T20
-  "5401": "soccer", // Major League Cricket
-  // Cricket — Domestic
-  "4458": "soccer", // County Championship Div 1
-  "4459": "soccer", // County Championship Div 2
-  "5530": "soccer", // Sheffield Shield
-  "5606": "soccer", // Cricket Ireland Inter-Provincial T20
+  "4555": "snooker", // World Snooker
+  // Cricket — disabled until cricket Sport type is added (all were mapped to "soccer")
+  // See task: add cricket provider + Sport type
   // Rugby
   "4415": "rugby",  // Super League
   "4416": "rugby",  // NRL

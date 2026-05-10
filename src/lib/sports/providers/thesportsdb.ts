@@ -68,7 +68,7 @@ export class TheSportsDBProvider extends BaseProvider {
   }
 
   async searchEvents(
-    _sport: Sport,
+    sport: Sport,
     query: string,
     options?: { date?: string; limit?: number }
   ): Promise<SearchableEvent[]> {
@@ -82,7 +82,7 @@ export class TheSportsDBProvider extends BaseProvider {
     return data.event.slice(0, limit).map((e) => ({
       external_event_id: e.idEvent,
       event_name: e.strEvent,
-      sport: this.mapSport(e.strSport),
+      sport: this.mapSport(e.strSport, sport),
       start_time: `${e.dateEvent}T${e.strTime || "00:00:00"}Z`,
       competition_name: e.strLeague,
       participants: [e.strHomeTeam, e.strAwayTeam].filter(Boolean),
@@ -140,7 +140,7 @@ export class TheSportsDBProvider extends BaseProvider {
     };
   }
 
-  private mapSport(tsdbSport: string): Sport {
+  private mapSport(tsdbSport: string, fallback: Sport): Sport {
     const map: Record<string, Sport> = {
       Soccer: "soccer",
       Football: "soccer",
@@ -148,6 +148,6 @@ export class TheSportsDBProvider extends BaseProvider {
       Rugby: "rugby",
       Tennis: "tennis",
     };
-    return map[tsdbSport] ?? "soccer";
+    return map[tsdbSport] ?? fallback;
   }
 }

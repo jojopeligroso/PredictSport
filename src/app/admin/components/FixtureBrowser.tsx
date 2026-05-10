@@ -56,22 +56,7 @@ const LEAGUE_GROUPS: LeagueGroup[] = [
       { id: "4501", label: "Copa Libertadores", sport: "soccer" },
     ],
   },
-  {
-    label: "GAA",
-    leagues: [
-      { id: "5564", label: "All-Ireland Senior Football", sport: "gaa" },
-      { id: "5566", label: "Connacht Senior Football", sport: "gaa" },
-      { id: "5567", label: "Leinster Senior Football", sport: "gaa" },
-      { id: "5568", label: "Munster Senior Football", sport: "gaa" },
-      { id: "5569", label: "Ulster Senior Football", sport: "gaa" },
-      { id: "5576", label: "Tailteann Cup", sport: "gaa" },
-      { id: "5565", label: "All-Ireland Senior Hurling", sport: "gaa" },
-      { id: "5570", label: "Munster Senior Hurling", sport: "gaa" },
-      { id: "5571", label: "Leinster Senior Hurling", sport: "gaa" },
-      { id: "5572", label: "Joe McDonagh Cup", sport: "gaa" },
-      { id: "5573", label: "Christy Ring Cup", sport: "gaa" },
-    ],
-  },
+  // GAA removed — TheSportsDB has no GAA data; use Foireann API search instead
   {
     label: "US Sports",
     leagues: [
@@ -88,12 +73,7 @@ const LEAGUE_GROUPS: LeagueGroup[] = [
       { id: "4407", label: "MotoGP", sport: "formula_1" },
     ],
   },
-  {
-    label: "Combat Sports",
-    leagues: [
-      { id: "4443", label: "UFC", sport: "soccer" },
-    ],
-  },
+  // Combat Sports removed — no Sport type for UFC
   {
     label: "Rugby",
     leagues: [
@@ -113,64 +93,18 @@ const LEAGUE_GROUPS: LeagueGroup[] = [
   {
     label: "Snooker",
     leagues: [
-      { id: "4555", label: "World Snooker", sport: "soccer" },
+      { id: "4555", label: "World Snooker", sport: "snooker" },
     ],
   },
-  {
-    label: "Darts",
-    leagues: [
-      { id: "4554", label: "PDC Darts", sport: "soccer" },
-    ],
-  },
-  {
-    label: "Cycling",
-    leagues: [
-      { id: "4465", label: "UCI World Tour", sport: "soccer" },
-    ],
-  },
+  // Darts removed — no Sport type (was mapped to "soccer")
+  // Cycling removed — no Sport type (was mapped to "soccer")
   {
     label: "Golf",
     leagues: [
       { id: "4758", label: "European Tour", sport: "golf" },
     ],
   },
-  {
-    label: "Cricket — International",
-    leagues: [
-      { id: "4844", label: "Test Match Series", sport: "soccer" },
-      { id: "4801", label: "ODI Series", sport: "soccer" },
-      { id: "4979", label: "T20I Series", sport: "soccer" },
-      { id: "4575", label: "Cricket World Cup", sport: "soccer" },
-      { id: "5587", label: "ICC Champions Trophy", sport: "soccer" },
-      { id: "5103", label: "ICC Men's T20 World Cup", sport: "soccer" },
-      { id: "5100", label: "ICC World Test Championship", sport: "soccer" },
-    ],
-  },
-  {
-    label: "Cricket — T20 Leagues",
-    leagues: [
-      { id: "4460", label: "Indian Premier League (IPL)", sport: "soccer" },
-      { id: "4461", label: "Big Bash League", sport: "soccer" },
-      { id: "4463", label: "English T20 Blast", sport: "soccer" },
-      { id: "5177", label: "The Hundred", sport: "soccer" },
-      { id: "5176", label: "Caribbean Premier League", sport: "soccer" },
-      { id: "5067", label: "Pakistan Super League", sport: "soccer" },
-      { id: "5532", label: "SA20", sport: "soccer" },
-      { id: "5175", label: "Lanka Premier League", sport: "soccer" },
-      { id: "5174", label: "NZ Super Smash", sport: "soccer" },
-      { id: "5490", label: "International League T20 (UAE)", sport: "soccer" },
-      { id: "5401", label: "Major League Cricket (USA)", sport: "soccer" },
-    ],
-  },
-  {
-    label: "Cricket — Domestic",
-    leagues: [
-      { id: "4458", label: "County Championship Div 1", sport: "soccer" },
-      { id: "4459", label: "County Championship Div 2", sport: "soccer" },
-      { id: "5530", label: "Sheffield Shield", sport: "soccer" },
-      { id: "5606", label: "Ireland Inter-Provincial T20", sport: "soccer" },
-    ],
-  },
+  // Cricket leagues disabled — need cricket Sport type + provider first
 ];
 
 // Flat lookup map for quick label resolution
@@ -180,11 +114,11 @@ const LEAGUE_MAP = new Map<string, LeagueOption>(
 
 const DEFAULT_FAVOURITE_IDS = [
   "4328", // Premier League - soccer
-  "5564", // All-Ireland Football - gaa
   "4370", // Formula 1 - motorsport
   "4391", // NFL - nfl
   "4446", // URC - rugby
   "4464", // ATP - tennis
+  "4643", // League of Ireland Premier - soccer
 ];
 const LS_KEY = "ps-favourite-leagues";
 
