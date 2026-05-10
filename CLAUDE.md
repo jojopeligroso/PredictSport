@@ -105,6 +105,24 @@ Provider abstraction in `src/lib/sports/`. `BaseProvider` handles fetch, rate li
 See `.env.local.example`. Required: `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`.
 Optional: `API_FOOTBALL_KEY`, `BALLDONTLIE_KEY`, `THERACING_API_KEY`, `FOIREANN_API_KEY`, `NEXT_PUBLIC_VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY`.
 
+## Design System
+
+See `design/README.md` for full brand brief and asset references.
+
+**Mobile-first.** Primary target is 390px (iPhone 14). App pages use `max-w-[480px]` containers. Desktop should look intentional but is secondary — widen nav/footer (max-w-3xl), scale up landing page, keep app screens narrow and centered.
+
+**Palette:** Cream `#efe9de` (bg), Ink `#191512` (text), Amber `#f59e0b` (accent), Green `#0aa86d` (correct), Red `#e23d4f` (wrong). All via `ps-*` Tailwind tokens.
+
+**Typography:** Inter 800 (`font-display font-extrabold`) for headlines/wordmark. Inter 600 for UI labels. Inter 500 for body. JetBrains Mono (`font-mono`) for scores/stats/metadata. Instrument Serif italic (`font-serif italic`) for taglines/quips.
+
+**Wordmark:** `sportspredict.` — Inter 800, lowercase, tight tracking. `sports` in ink, `predict.` in amber with period. Never "PredictSport" or "PS".
+
+**Brand marks:** Three rotating marks via `<BrandMark>` component (daily-stable weighted random): Oracle Dot (60%), GAA Umpire (30% / always for GAA), Bubble Call (10%). All use `currentColor` for auto dark mode inversion.
+
+**Personality:** "Confident, cheeky, craftsman-warm. Never gambly." — pub chalkboard, not sportsbook.
+
+**Layout container:** `layout.tsx` does NOT wrap children in a container. Each page provides its own `max-w-[480px]` wrapper. Landing page is full-width hero. NavBar/Footer use `max-w-3xl`.
+
 ## Conventions
 
 - Server components by default, client only for interactivity
