@@ -22,7 +22,7 @@ Audit date: 2026-05-09.
 
 - [x] §15.9 — Scoring template redesign (clear explanations, examples, visual distinction)
 - [ ] §15.10 — Logo redesign (current PS mark is placeholder)
-- [ ] §15.11 — Persona callout configuration in settings
+- [x] §15.11 — Persona callout configuration in settings
 
 ## Post-Launch
 
