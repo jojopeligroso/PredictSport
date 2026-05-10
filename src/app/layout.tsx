@@ -23,14 +23,14 @@ const instrumentSerif = Instrument_Serif({
 });
 
 export const metadata: Metadata = {
-  title: "PredictSport — Social Sports Predictions",
+  title: "sportspredict. — Call it before the lads do.",
   description: "Social sports prediction platform for friend groups",
   openGraph: {
-    title: "PredictSport",
-    description: "Predict. Compete. Have the craic.",
+    title: "sportspredict.",
+    description: "Call it before the lads do.",
     type: "website",
     url: "https://predictsport-rust.vercel.app",
-    siteName: "PredictSport",
+    siteName: "sportspredict.",
   },
 };
 
@@ -52,9 +52,7 @@ export default function RootLayout({
       <body className="min-h-full flex flex-col bg-ps-bg text-ps-text">
         <NavBar />
         <main className="flex flex-1 flex-col">
-          <div className="mx-auto w-full max-w-[480px] px-4">
-            {children}
-          </div>
+          {children}
         </main>
         <Footer />
         <PushPromptWrapper />

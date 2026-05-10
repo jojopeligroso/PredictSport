@@ -3,7 +3,7 @@ import Link from "next/link";
 export function Footer() {
   return (
     <footer className="mt-auto border-t border-ps-border py-5">
-      <div className="mx-auto max-w-[480px] px-4 text-center">
+      <div className="mx-auto max-w-3xl px-4 text-center">
         <p className="text-[11px] font-extrabold lowercase tracking-tight text-ps-text-ter">
           sports<span className="text-ps-amber">predict.</span>
         </p>

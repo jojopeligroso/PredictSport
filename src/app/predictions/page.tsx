@@ -36,7 +36,7 @@ export default async function PredictionsPage({
 
   if (membershipsError) {
     return (
-      <div className="mx-auto max-w-4xl p-4 sm:p-8">
+      <div className="mx-auto max-w-[480px] px-4 py-4">
         <h1 className="font-light text-2xl uppercase tracking-[0.06em] text-ps-text">
           My Predictions
         </h1>
@@ -58,7 +58,7 @@ export default async function PredictionsPage({
   // No competitions
   if (competitions.length === 0) {
     return (
-      <div className="mx-auto max-w-4xl p-4 sm:p-8">
+      <div className="mx-auto max-w-[480px] px-4 py-4">
         <h1 className="font-light text-2xl uppercase tracking-[0.06em] text-ps-text">
           My Predictions
         </h1>
@@ -91,7 +91,7 @@ export default async function PredictionsPage({
 
   if (!selectedCompetition) {
     return (
-      <div className="mx-auto max-w-4xl p-4 sm:p-8">
+      <div className="mx-auto max-w-[480px] px-4 py-4">
         <h1 className="font-light text-2xl uppercase tracking-[0.06em] text-ps-text">
           My Predictions
         </h1>
@@ -115,7 +115,7 @@ export default async function PredictionsPage({
 
   if (eventsError) {
     return (
-      <div className="mx-auto max-w-4xl p-4 sm:p-8">
+      <div className="mx-auto max-w-[480px] px-4 py-4">
         <h1 className="font-light text-2xl uppercase tracking-[0.06em] text-ps-text">
           My Predictions
         </h1>
@@ -188,7 +188,7 @@ export default async function PredictionsPage({
         roundName={activeRound?.name}
       />
 
-      <div className="mx-auto max-w-4xl px-4 pb-8">
+      <div className="mx-auto max-w-[480px] px-4 pb-8">
         <JoinCompetitionCard />
       </div>
     </div>
