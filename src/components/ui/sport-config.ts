@@ -1,4 +1,4 @@
-export type SportKey = 'soccer' | 'f1' | 'gaa' | 'nba' | 'golf' | 'rugby' | 'tennis' | 'horse_racing' | 'snooker' | 'mlb' | 'nfl' | 'nhl';
+export type SportKey = 'soccer' | 'f1' | 'gaa' | 'nba' | 'golf' | 'rugby' | 'tennis' | 'horse_racing' | 'snooker' | 'cricket' | 'mlb' | 'nfl' | 'nhl';
 
 export const SPORT_CONFIG: Record<
   SportKey,
@@ -92,6 +92,16 @@ export const SPORT_CONFIG: Record<
     pillFg: '#5b21b6',
     pillFgDark: '#c4b5fd',
     pillFgVar: 'var(--ps-horse_racing-pill-fg)',
+  },
+  cricket: {
+    name: 'Cricket',
+    emoji: '🏏',
+    from: '#1e40af',
+    to: '#059669',
+    pillBg: 'rgba(30,64,175,0.12)',
+    pillFg: '#1e3a8a',
+    pillFgDark: '#93c5fd',
+    pillFgVar: 'var(--ps-cricket-pill-fg)',
   },
   snooker: {
     name: 'Snooker',

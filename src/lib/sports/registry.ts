@@ -23,33 +23,24 @@ const providers = {
 } as const;
 
 /**
- * Priority-ordered provider list per sport.
- * First provider to return a non-null result wins.
- * If all fail, the system falls back to manual entry.
- */
-/**
  * Priority-ordered provider chains per sport.
  *
  * Design:
- * - Sport-specific APIs first (best data quality)
- * - TheSportsDB second (free, broad coverage)
- * - ESPN third (free, unofficial — broad fallback)
+ * - Sport-specific APIs first (best data quality for results)
+ * - ESPN second (reliable scoreboard search + broad coverage)
+ * - TheSportsDB third (round-based fixture browsing, backup results)
  * - BallDontLie last for US sports (free NBA, paid others)
- * - Manual is always the implicit final fallback via getProvidersForSport()
- *
- * To add a new sport:
- * 1. Add to the Sport type in types.ts
- * 2. Add a provider chain here
- * 3. Either use existing providers or create a new one extending BaseProvider
+ * - Manual is always the implicit final fallback
  */
 const sportProviders: Record<Sport, SportsProvider[]> = {
   formula_1: [providers.openf1],
-  soccer: [providers.apiFootball, providers.theSportsDB, providers.espn, providers.ballDontLie],
-  golf: [providers.theSportsDB, providers.espn],
-  rugby: [providers.theSportsDB, providers.espn],
-  tennis: [providers.theSportsDB, providers.espn],
+  soccer: [providers.apiFootball, providers.espn, providers.theSportsDB, providers.ballDontLie],
+  golf: [providers.espn, providers.theSportsDB],
+  rugby: [providers.espn, providers.theSportsDB],
+  tennis: [providers.espn, providers.theSportsDB],
   gaa: [providers.foireann, providers.manual],
   horse_racing: [providers.theRacingAPI],
+  cricket: [providers.espn, providers.theSportsDB, providers.manual],
   snooker: [providers.espn, providers.manual],
   mlb: [providers.mlbStats, providers.espn, providers.ballDontLie],
   nfl: [providers.espn, providers.ballDontLie],

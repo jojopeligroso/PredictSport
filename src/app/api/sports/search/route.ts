@@ -5,7 +5,7 @@ import type { Sport } from "@/lib/sports/types";
 
 const VALID_SPORTS: Sport[] = [
   "formula_1", "soccer", "golf", "rugby", "tennis",
-  "gaa", "horse_racing", "snooker", "mlb", "nfl", "nba", "nhl",
+  "gaa", "horse_racing", "snooker", "cricket", "mlb", "nfl", "nba", "nhl",
 ];
 
 /**

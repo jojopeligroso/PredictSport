@@ -36,8 +36,25 @@ const LEAGUE_SPORT_MAP: Record<string, Sport> = {
   "4407": "formula_1", // MotoGP
   // Snooker
   "4555": "snooker", // World Snooker
-  // Cricket — disabled until cricket Sport type is added (all were mapped to "soccer")
-  // See task: add cricket provider + Sport type
+  // Cricket — International
+  "4844": "cricket", // Test Match Series
+  "4801": "cricket", // ODI Series
+  "4979": "cricket", // T20I Series
+  "4575": "cricket", // Cricket World Cup
+  "5587": "cricket", // ICC Champions Trophy
+  "5103": "cricket", // ICC Men's T20 World Cup
+  "5100": "cricket", // ICC World Test Championship
+  // Cricket — T20 Leagues
+  "4460": "cricket", // IPL
+  "4461": "cricket", // Big Bash League
+  "4463": "cricket", // English T20 Blast
+  "5177": "cricket", // The Hundred
+  "5176": "cricket", // Caribbean Premier League
+  "5067": "cricket", // Pakistan Super League
+  "5532": "cricket", // SA20
+  // Cricket — Domestic
+  "4458": "cricket", // County Championship Div 1
+  "4459": "cricket", // County Championship Div 2
   // Rugby
   "4415": "rugby",  // Super League
   "4416": "rugby",  // NRL

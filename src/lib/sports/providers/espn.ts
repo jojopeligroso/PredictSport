@@ -40,9 +40,10 @@ const SPORT_PATHS: Partial<Record<Sport, string>> = {
   nba: "basketball/nba",
   mlb: "baseball/mlb",
   soccer: "soccer/eng.1",
-  rugby: "rugby/270557", // Premiership; others available via league param
+  rugby: "rugby/270557", // URC; others available via league param
   golf: "golf/pga",
   tennis: "tennis/atp",
+  cricket: "cricket/8048", // IPL default; others via league param
   snooker: "general/snooker", // limited coverage
 };
 
@@ -62,6 +63,7 @@ export class ESPNProvider extends BaseProvider {
     "rugby",
     "golf",
     "tennis",
+    "cricket",
     "snooker",
   ] as const satisfies readonly Sport[];
 

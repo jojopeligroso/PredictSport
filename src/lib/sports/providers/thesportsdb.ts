@@ -42,6 +42,7 @@ export class TheSportsDBProvider extends BaseProvider {
     "golf",
     "rugby",
     "tennis",
+    "cricket",
   ] as const satisfies readonly Sport[];
 
   protected readonly config: ProviderConfig = {
@@ -147,6 +148,7 @@ export class TheSportsDBProvider extends BaseProvider {
       Golf: "golf",
       Rugby: "rugby",
       Tennis: "tennis",
+      Cricket: "cricket",
     };
     return map[tsdbSport] ?? fallback;
   }

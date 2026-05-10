@@ -104,7 +104,36 @@ const LEAGUE_GROUPS: LeagueGroup[] = [
       { id: "4758", label: "European Tour", sport: "golf" },
     ],
   },
-  // Cricket leagues disabled — need cricket Sport type + provider first
+  {
+    label: "Cricket — International",
+    leagues: [
+      { id: "4844", label: "Test Match Series", sport: "cricket" },
+      { id: "4801", label: "ODI Series", sport: "cricket" },
+      { id: "4979", label: "T20I Series", sport: "cricket" },
+      { id: "4575", label: "Cricket World Cup", sport: "cricket" },
+      { id: "5587", label: "ICC Champions Trophy", sport: "cricket" },
+      { id: "5103", label: "ICC Men's T20 World Cup", sport: "cricket" },
+    ],
+  },
+  {
+    label: "Cricket — T20 Leagues",
+    leagues: [
+      { id: "4460", label: "IPL", sport: "cricket" },
+      { id: "4461", label: "Big Bash League", sport: "cricket" },
+      { id: "4463", label: "English T20 Blast", sport: "cricket" },
+      { id: "5177", label: "The Hundred", sport: "cricket" },
+      { id: "5176", label: "Caribbean Premier League", sport: "cricket" },
+      { id: "5067", label: "Pakistan Super League", sport: "cricket" },
+      { id: "5532", label: "SA20", sport: "cricket" },
+    ],
+  },
+  {
+    label: "Cricket — Domestic",
+    leagues: [
+      { id: "4458", label: "County Championship Div 1", sport: "cricket" },
+      { id: "4459", label: "County Championship Div 2", sport: "cricket" },
+    ],
+  },
 ];
 
 // Flat lookup map for quick label resolution
@@ -124,6 +153,7 @@ const LS_KEY = "ps-favourite-leagues";
 
 const SEARCH_SPORTS: { value: Sport; label: string }[] = [
   { value: "soccer", label: "Soccer" },
+  { value: "cricket", label: "Cricket" },
   { value: "gaa", label: "GAA" },
   { value: "nba", label: "NBA" },
   { value: "nfl", label: "NFL" },
