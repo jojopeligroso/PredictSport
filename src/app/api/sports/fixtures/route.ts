@@ -25,7 +25,10 @@ const LEAGUE_SPORT_MAP: Record<string, Sport> = {
   // Soccer — International
   "4429": "soccer", // FIFA World Cup
   "4501": "soccer", // Copa Libertadores
-  // GAA — removed from TheSportsDB (no data); use Foireann API instead
+  // GAA — routed through Foireann API
+  "gaa-football": "gaa",
+  "gaa-hurling": "gaa",
+  "gaa-camogie": "gaa",
   // US Sports
   "4387": "nba",    // NBA
   "4424": "mlb",    // MLB
@@ -69,6 +72,193 @@ const LEAGUE_SPORT_MAP: Record<string, Sport> = {
 
 const VALID_LEAGUE_IDS = new Set(Object.keys(LEAGUE_SPORT_MAP));
 
+// ---------- ESPN routing ----------
+// Maps our league IDs to ESPN scoreboard paths for sports where ESPN
+// returns better fixture data than TheSportsDB.
+
+const ESPN_LEAGUE_MAP: Record<string, string> = {
+  // Cricket — ESPN has live/current data, TheSportsDB is weak
+  "4460": "cricket/8048",   // IPL
+  "4461": "cricket/8044",   // Big Bash League
+  "4463": "cricket/8172",   // English T20 Blast
+  "5177": "cricket/12210",  // The Hundred
+  // US Sports — ESPN is authoritative
+  "4387": "basketball/nba",
+  "4424": "baseball/mlb",
+  "4380": "hockey/nhl",
+  "4391": "football/nfl",
+};
+
+// ---------- Foireann routing ----------
+// Maps GAA league IDs to Foireann API activity filters.
+
+const FOIREANN_LEAGUE_MAP: Record<string, { activity?: string }> = {
+  "gaa-football": { activity: "football" },
+  "gaa-hurling": { activity: "hurling" },
+  "gaa-camogie": { activity: "camogie" },
+};
+
+// ---------- Shared types ----------
+
+export interface NormalizedFixture {
+  external_event_id: string;
+  event_name: string;
+  sport: Sport;
+  competition_name: string;
+  start_time: string;
+  participants: string[];
+  round: string | null;
+  season: string | null;
+}
+
+// ---------- ESPN fixture fetching ----------
+
+const ESPN_BASE = "https://site.api.espn.com/apis/site/v2/sports";
+const ESPN_FETCH_OPTS = {
+  headers: { "User-Agent": "PredictSport/1.0" },
+  next: { revalidate: 300 } as NextFetchRequestConfig,
+};
+
+interface ESPNCompetitor {
+  team?: { displayName: string };
+  athlete?: { displayName: string };
+  homeAway?: string;
+}
+
+interface ESPNEvent {
+  id: string;
+  name: string;
+  date: string;
+  shortName?: string;
+  status: { type: { completed: boolean; description: string } };
+  competitions: Array<{
+    competitors: ESPNCompetitor[];
+    venue?: { fullName: string };
+  }>;
+  season?: { year: number };
+}
+
+interface ESPNScoreboardResponse {
+  events: ESPNEvent[];
+  leagues?: Array<{ name: string; season?: { year: number } }>;
+}
+
+async function fetchESPNFixtures(
+  espnPath: string,
+  sport: Sport,
+): Promise<NormalizedFixture[]> {
+  try {
+    const res = await fetch(
+      `${ESPN_BASE}/${espnPath}/scoreboard`,
+      ESPN_FETCH_OPTS,
+    );
+    if (!res.ok) return [];
+
+    const data: ESPNScoreboardResponse = await res.json();
+    if (!data?.events?.length) return [];
+
+    const leagueName = data.leagues?.[0]?.name ?? espnPath;
+    const season = data.leagues?.[0]?.season?.year?.toString() ?? null;
+
+    return data.events
+      .filter((e) => !e.status.type.completed)
+      .map((e) => {
+        const competitors = e.competitions[0]?.competitors ?? [];
+        const home = competitors.find((c) => c.homeAway === "home");
+        const away = competitors.find((c) => c.homeAway === "away");
+        const homeName = home?.team?.displayName ?? home?.athlete?.displayName ?? "";
+        const awayName = away?.team?.displayName ?? away?.athlete?.displayName ?? "";
+        const participants = [homeName, awayName].filter(Boolean);
+
+        return {
+          external_event_id: e.id,
+          event_name: e.name,
+          sport,
+          competition_name: leagueName,
+          start_time: e.date,
+          participants,
+          round: null,
+          season,
+        };
+      });
+  } catch {
+    return [];
+  }
+}
+
+// ---------- Foireann fixture fetching ----------
+
+interface FoireannFixtureItem {
+  id: string;
+  homeTeam: { name: string };
+  awayTeam: { name: string };
+  startDate: string;
+  isResult: boolean;
+  round: string | null;
+  competition: { name: string; season: string };
+  division: { name: string } | null;
+  postponed: boolean;
+  abandoned: boolean;
+}
+
+async function fetchFoireannFixtures(
+  config: { activity?: string },
+): Promise<NormalizedFixture[]> {
+  const apiKey = process.env.FOIREANN_API_KEY;
+  if (!apiKey) return [];
+
+  try {
+    const today = new Date().toISOString().split("T")[0];
+    const endDate = new Date();
+    endDate.setDate(endDate.getDate() + 30);
+    const endStr = endDate.toISOString().split("T")[0];
+
+    const params = new URLSearchParams({
+      page: "0",
+      size: "50",
+      sort: "startDate,asc",
+      "competition.type": "inter_county",
+      startDateFrom: today,
+      startDateTo: endStr,
+    });
+    if (config.activity) params.set("activity", config.activity);
+
+    const res = await fetch(
+      `https://api.foireann.ie/open-data/v1/fixtures?${params}`,
+      {
+        headers: {
+          Authorization: `Bearer ${apiKey}`,
+          "User-Agent": "PredictSport/1.0",
+        },
+        next: { revalidate: 300 } as NextFetchRequestConfig,
+      },
+    );
+    if (!res.ok) return [];
+
+    const data = await res.json();
+    const fixtures: FoireannFixtureItem[] = data?.content ?? [];
+
+    return fixtures
+      .filter((f) => !f.isResult && !f.postponed && !f.abandoned)
+      .map((f) => ({
+        external_event_id: f.id,
+        event_name: `${f.homeTeam.name} v ${f.awayTeam.name}`,
+        sport: "gaa" as Sport,
+        competition_name: f.division
+          ? `${f.competition.name} - ${f.division.name}`
+          : f.competition.name,
+        start_time: f.startDate,
+        participants: [f.homeTeam.name, f.awayTeam.name],
+        round: f.round ?? null,
+        season: f.competition.season ?? null,
+      }));
+  } catch {
+    return [];
+  }
+}
+
+// ---------- TheSportsDB fixture fetching (existing logic) ----------
+
 interface TSDBFixture {
   idEvent: string;
   strEvent: string;
@@ -86,18 +276,13 @@ interface TSDBFixturesResponse {
   events: TSDBFixture[] | null;
 }
 
-export interface NormalizedFixture {
-  external_event_id: string;
-  event_name: string;
-  sport: Sport;
-  competition_name: string;
-  start_time: string;
-  participants: string[];
-  round: string | null;
-  season: string | null;
-}
+const TSDB_BASE = "https://www.thesportsdb.com/api/v1/json/3";
+const TSDB_FETCH_OPTS = {
+  headers: { "User-Agent": "PredictSport/1.0" },
+  next: { revalidate: 300 } as NextFetchRequestConfig,
+};
 
-function normalizeFixture(e: TSDBFixture, sport: Sport): NormalizedFixture {
+function normalizeTSDBFixture(e: TSDBFixture, sport: Sport): NormalizedFixture {
   const timeStr = e.strTime ?? "00:00:00";
   const startTime = e.dateEvent
     ? `${e.dateEvent}T${timeStr}Z`
@@ -115,22 +300,86 @@ function normalizeFixture(e: TSDBFixture, sport: Sport): NormalizedFixture {
   };
 }
 
-const TSDB_BASE = "https://www.thesportsdb.com/api/v1/json/3";
-const FETCH_OPTS = {
-  headers: { "User-Agent": "PredictSport/1.0" },
-  next: { revalidate: 300 } as NextFetchRequestConfig,
-};
+/**
+ * Fetch fixtures from TheSportsDB using the round-expansion strategy:
+ * 1. Call eventsnextleague to get the current round number and season
+ * 2. Call eventsround for current + next 2 rounds in parallel
+ * 3. Merge, deduplicate, filter to future events only
+ */
+async function fetchTSDBFixtures(
+  leagueId: string,
+  sport: Sport,
+): Promise<NormalizedFixture[]> {
+  const nextRes = await fetch(
+    `${TSDB_BASE}/eventsnextleague.php?id=${leagueId}`,
+    TSDB_FETCH_OPTS,
+  );
+  if (!nextRes.ok) return [];
+
+  const nextData: TSDBFixturesResponse = await nextRes.json();
+  if (!nextData.events?.length) return [];
+
+  const firstEvent = nextData.events[0];
+  const currentRound = parseInt(firstEvent.intRound ?? "0", 10);
+  const season = firstEvent.strSeason ?? "";
+
+  // Cup competitions without round numbers — return eventsnextleague as-is
+  if (!currentRound || !season) {
+    return nextData.events.map((e) => normalizeTSDBFixture(e, sport));
+  }
+
+  // Fetch current round + next 2 rounds in parallel
+  const roundNumbers = [currentRound, currentRound + 1, currentRound + 2];
+  const roundResults = await Promise.allSettled(
+    roundNumbers.map(async (r) => {
+      const res = await fetch(
+        `${TSDB_BASE}/eventsround.php?id=${leagueId}&r=${r}&s=${season}`,
+        TSDB_FETCH_OPTS,
+      );
+      if (!res.ok) return [];
+      const data: TSDBFixturesResponse = await res.json();
+      return data.events ?? [];
+    }),
+  );
+
+  // Merge, deduplicate
+  const seen = new Set<string>();
+  const allEvents: TSDBFixture[] = [];
+
+  for (const result of roundResults) {
+    if (result.status !== "fulfilled") continue;
+    for (const event of result.value) {
+      if (!seen.has(event.idEvent)) {
+        seen.add(event.idEvent);
+        allEvents.push(event);
+      }
+    }
+  }
+
+  // Include eventsnextleague results too
+  for (const event of nextData.events) {
+    if (!seen.has(event.idEvent)) {
+      seen.add(event.idEvent);
+      allEvents.push(event);
+    }
+  }
+
+  // Filter to today and future only
+  const today = new Date().toISOString().slice(0, 10);
+  const futureEvents = allEvents.filter((e) => (e.dateEvent ?? "") >= today);
+
+  return futureEvents.map((e) => normalizeTSDBFixture(e, sport));
+}
+
+// ---------- Route handler ----------
 
 /**
  * GET /api/sports/fixtures?league={leagueId}
  *
- * Strategy:
- * 1. Call eventsnextleague to get the current round number and season
- * 2. Call eventsround for the current round AND the next 2 rounds in parallel
- * 3. Merge, deduplicate, filter to future events only, sort by date
- *
- * This returns 10-30+ fixtures instead of the 1 that eventsnextleague gives
- * on the free tier.
+ * Per-sport routing:
+ * - ESPN leagues (cricket T20s, US sports): ESPN scoreboard API
+ * - GAA leagues: Foireann API
+ * - Everything else: TheSportsDB (round-expansion strategy)
  */
 export async function GET(request: Request) {
   const supabase = await createClient();
@@ -147,98 +396,41 @@ export async function GET(request: Request) {
   if (!leagueId || !VALID_LEAGUE_IDS.has(leagueId)) {
     return NextResponse.json(
       { error: "Invalid or missing league parameter" },
-      { status: 400 }
+      { status: 400 },
     );
   }
 
   const sport = LEAGUE_SPORT_MAP[leagueId] ?? "soccer";
 
   try {
-    // Step 1: Get current round + season from eventsnextleague
-    const nextRes = await fetch(
-      `${TSDB_BASE}/eventsnextleague.php?id=${leagueId}`,
-      FETCH_OPTS
-    );
+    let fixtures: NormalizedFixture[];
 
-    if (!nextRes.ok) {
-      return NextResponse.json(
-        { error: "Failed to fetch fixtures from TheSportsDB" },
-        { status: 502 }
-      );
-    }
-
-    const nextData: TSDBFixturesResponse = await nextRes.json();
-
-    // If no upcoming events at all, return empty
-    if (!nextData.events?.length) {
-      return NextResponse.json({ fixtures: [] });
-    }
-
-    const firstEvent = nextData.events[0];
-    const currentRound = parseInt(firstEvent.intRound ?? "0", 10);
-    const season = firstEvent.strSeason ?? "";
-
-    // If we can't determine the round (e.g. cup competitions), fall back to
-    // just the eventsnextleague result
-    if (!currentRound || !season) {
-      const fixtures = nextData.events.map((e) => normalizeFixture(e, sport));
-      return NextResponse.json({ fixtures });
-    }
-
-    // Step 2: Fetch current round + next 2 rounds in parallel
-    const roundNumbers = [currentRound, currentRound + 1, currentRound + 2];
-
-    const roundResults = await Promise.allSettled(
-      roundNumbers.map(async (r) => {
-        const res = await fetch(
-          `${TSDB_BASE}/eventsround.php?id=${leagueId}&r=${r}&s=${season}`,
-          FETCH_OPTS
-        );
-        if (!res.ok) return [];
-        const data: TSDBFixturesResponse = await res.json();
-        return data.events ?? [];
-      })
-    );
-
-    // Step 3: Merge all events, deduplicate by event ID
-    const seen = new Set<string>();
-    const allEvents: TSDBFixture[] = [];
-
-    for (const result of roundResults) {
-      if (result.status !== "fulfilled") continue;
-      for (const event of result.value) {
-        if (!seen.has(event.idEvent)) {
-          seen.add(event.idEvent);
-          allEvents.push(event);
-        }
+    if (FOIREANN_LEAGUE_MAP[leagueId]) {
+      // GAA → Foireann API
+      fixtures = await fetchFoireannFixtures(FOIREANN_LEAGUE_MAP[leagueId]);
+    } else if (ESPN_LEAGUE_MAP[leagueId]) {
+      // ESPN-routed leagues (cricket, US sports)
+      fixtures = await fetchESPNFixtures(ESPN_LEAGUE_MAP[leagueId], sport);
+      // If ESPN returns nothing, fall back to TheSportsDB
+      if (fixtures.length === 0) {
+        fixtures = await fetchTSDBFixtures(leagueId, sport);
       }
+    } else {
+      // Default: TheSportsDB
+      fixtures = await fetchTSDBFixtures(leagueId, sport);
     }
-
-    // Also include anything from eventsnextleague that might not be in a round
-    for (const event of nextData.events) {
-      if (!seen.has(event.idEvent)) {
-        seen.add(event.idEvent);
-        allEvents.push(event);
-      }
-    }
-
-    // Filter to today and future only
-    const today = new Date().toISOString().slice(0, 10);
-    const futureEvents = allEvents.filter((e) => (e.dateEvent ?? "") >= today);
-
-    const fixtures = futureEvents.map((e) => normalizeFixture(e, sport));
 
     // Sort by start_time ascending
     fixtures.sort(
       (a, b) =>
-        new Date(a.start_time).getTime() - new Date(b.start_time).getTime()
+        new Date(a.start_time).getTime() - new Date(b.start_time).getTime(),
     );
 
     return NextResponse.json({ fixtures });
   } catch {
     return NextResponse.json(
       { error: "Internal server error" },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }

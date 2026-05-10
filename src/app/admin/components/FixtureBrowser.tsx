@@ -56,7 +56,14 @@ const LEAGUE_GROUPS: LeagueGroup[] = [
       { id: "4501", label: "Copa Libertadores", sport: "soccer" },
     ],
   },
-  // GAA removed — TheSportsDB has no GAA data; use Foireann API search instead
+  {
+    label: "GAA",
+    leagues: [
+      { id: "gaa-football", label: "GAA Football", sport: "gaa" },
+      { id: "gaa-hurling", label: "GAA Hurling", sport: "gaa" },
+      { id: "gaa-camogie", label: "Camogie", sport: "gaa" },
+    ],
+  },
   {
     label: "US Sports",
     leagues: [
@@ -143,10 +150,10 @@ const LEAGUE_MAP = new Map<string, LeagueOption>(
 
 const DEFAULT_FAVOURITE_IDS = [
   "4328", // Premier League - soccer
+  "gaa-hurling", // GAA Hurling - gaa
   "4370", // Formula 1 - motorsport
-  "4391", // NFL - nfl
   "4446", // URC - rugby
-  "4464", // ATP - tennis
+  "4460", // IPL - cricket
   "4643", // League of Ireland Premier - soccer
 ];
 const LS_KEY = "ps-favourite-leagues";
