@@ -5,14 +5,15 @@ interface CommunityDonutProps {
   size?: number;
 }
 
+// Warm palette — derived from core brand colors (ink, amber, green, red)
 const PALETTE = [
-  '#3b82f6',
-  '#f59e0b',
-  '#0aa86d',
-  '#e23d4f',
-  '#8b5cf6',
-  '#06b6d4',
-  '#ec4899',
+  '#191512',  // ink
+  '#f59e0b',  // amber
+  '#0aa86d',  // green (right)
+  '#e23d4f',  // red (wrong)
+  '#8b8275',  // warm grey
+  '#d97706',  // amber-deep
+  '#5e554a',  // text-sec
 ];
 
 export function CommunityDonut({ community, size = 56 }: CommunityDonutProps) {

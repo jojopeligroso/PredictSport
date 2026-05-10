@@ -31,6 +31,25 @@ import { psDefaultSheetCopy } from "@/lib/whatsapp";
 import { ResultCard } from "./ResultCard";
 import { parseWinnerOptions } from "@/lib/parse-options";
 
+const MISSED_PICK_LINES = [
+  "Gone. Didn\u2019t fancy it?",
+  "Too slow.",
+  "That ship has sailed.",
+  "Deadline waits for nobody.",
+  "Missed the boat on this one.",
+  "No pick, no points.",
+  "Clock ran out.",
+  "Sat this one out, whether you meant to or not.",
+];
+
+function getMissedPickLine(eventId: string): string {
+  let hash = 0;
+  for (let i = 0; i < eventId.length; i++) {
+    hash = (hash * 31 + eventId.charCodeAt(i)) | 0;
+  }
+  return MISSED_PICK_LINES[Math.abs(hash) % MISSED_PICK_LINES.length]!;
+}
+
 interface EventWithPredictions extends Event {
   predictions: Prediction[];
   event_prediction_types: EventPredictionType[];
@@ -884,7 +903,7 @@ function InlinePickSection({
       )}
       {isLocked && !existingPrediction && (
         <p className="mt-1.5 text-xs italic text-ps-text-ter">
-          You didn&apos;t call this one
+          {getMissedPickLine(eventId)}
         </p>
       )}
     </div>

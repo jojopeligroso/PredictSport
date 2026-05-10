@@ -24,7 +24,7 @@ export default async function Home() {
             sports<span className="text-ps-amber">predict.</span>
           </h1>
           <p className="mt-3 font-serif text-lg italic text-ps-text-sec md:text-xl">
-            Call it before the lads do.
+            Call it, then rub it in Gerry Ramos' face.
           </p>
         </div>
 
@@ -46,7 +46,7 @@ export default async function Home() {
           <Step
             number="1"
             title="Join a group"
-            description="Your mate sends a link. You're in. No downloads, no sign-up forms — just Google and go."
+            description="Your mate sends a link. You're in. No downloads, no sign-up forms — just Google log in and go."
           />
           <Step
             number="2"
@@ -67,8 +67,7 @@ export default async function Home() {
           <p className="text-sm font-medium leading-relaxed text-ps-text">
             For friend groups, not sportsbooks.{" "}
             <span className="text-ps-text-sec">
-              No money changes hands. No odds. No algorithms. Just bragging
-              rights, banter, and the cold satisfaction of being right.
+              Just the cold, crisp satisfaction of being right.
             </span>
           </p>
         </div>

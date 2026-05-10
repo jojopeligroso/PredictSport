@@ -23,11 +23,11 @@ const instrumentSerif = Instrument_Serif({
 });
 
 export const metadata: Metadata = {
-  title: "sportspredict. — Call it before the lads do.",
+  title: "sportspredict. — Call it, then rub it in Gerry Ramos' face.",
   description: "Social sports prediction platform for friend groups",
   openGraph: {
     title: "sportspredict.",
-    description: "Call it before the lads do.",
+    description: "Call it, then rub it in Gerry Ramos' face.",
     type: "website",
     url: "https://predictsport-rust.vercel.app",
     siteName: "sportspredict.",

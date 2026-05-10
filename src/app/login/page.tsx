@@ -43,7 +43,7 @@ export default async function LoginPage({
               sports<span className="text-ps-amber">predict.</span>
             </p>
             <p className="font-serif text-[11.5px] italic leading-tight text-ps-text-sec">
-              Call it before the lads do.
+              Call it, then rub it in Gerry Ramos' face.
             </p>
           </div>
         </div>

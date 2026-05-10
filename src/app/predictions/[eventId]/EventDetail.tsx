@@ -376,11 +376,11 @@ export function EventDetail({
 
   return (
     <div className="min-h-screen bg-ps-bg">
-      {/* ── 1. Sport-gradient hero ─────────────────────────────────────── */}
+      {/* ── 1. Hero ─────────────────────────────────────────────────────── */}
       <div
         style={{
-          background: `linear-gradient(135deg, ${sportCfg.from}, ${sportCfg.to})`,
-          color: "#fff",
+          background: "var(--ps-text)",
+          color: "var(--ps-bg)",
           padding: "16px 16px 22px",
         }}
       >
@@ -392,13 +392,13 @@ export function EventDetail({
             style={{
               width: 32,
               height: 32,
-              background: "rgba(255,255,255,0.18)",
+              background: "rgba(239,233,222,0.15)",
             }}
           >
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none">
               <path
                 d="M15 18l-6-6 6-6"
-                stroke="#fff"
+                stroke="currentColor"
                 strokeWidth="2.4"
                 strokeLinecap="round"
                 strokeLinejoin="round"

@@ -43,7 +43,7 @@ export default async function JoinPage({
           </div>
 
           <p className="mb-4 text-sm leading-snug text-ps-text">
-            You&apos;ve been invited to call it with the group. Sign in to join.
+            You&apos;ve been invited to put your money where your mouth is. Without the money. Sign in to join.
           </p>
 
           <LoginButton
