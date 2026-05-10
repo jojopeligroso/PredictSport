@@ -1,6 +1,6 @@
 export { SportPill } from "./SportPill";
 export { FormBadge } from "./FormBadge";
-export { Avatar } from "./Avatar";
+export { Avatar, avatarColor, AVATAR_PALETTE } from "./Avatar";
 export { AccuracyRing } from "./AccuracyRing";
 export { MovementBadge } from "./MovementBadge";
 export { CommunityDonut } from "./CommunityDonut";

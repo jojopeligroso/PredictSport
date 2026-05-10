@@ -46,7 +46,7 @@ export async function NavBar() {
 
   return (
     <nav className="relative bg-ps-bg">
-      <div className="mx-auto flex h-12 max-w-[600px] items-center justify-between px-4 sm:px-6">
+      <div className="mx-auto flex h-12 max-w-[480px] items-center justify-between px-4 sm:px-6">
         {/* Logo: 28px square + wordmark */}
         <Link href="/" className="flex items-center gap-2">
           <div

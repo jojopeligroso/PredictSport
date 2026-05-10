@@ -492,7 +492,7 @@ export function PredictionForm({
           <button
             type="submit"
             disabled={isSubmitting || isLocked}
-            className="rounded-md bg-gradient-to-r from-[#f59e0b] to-[#d97706] px-4 py-2 text-sm font-extrabold text-[#1a1208] transition-opacity hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed"
+            className="rounded-xl bg-ps-text px-4 py-2 text-sm font-semibold text-ps-bg transition-opacity hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {isSubmitting
               ? "Saving..."
@@ -522,7 +522,7 @@ export function PredictionForm({
       )}
       {isLocked && !existingPrediction && (
         <p className="text-xs text-ps-text-ter italic">
-          No prediction submitted
+          You didn&apos;t call this one
         </p>
       )}
     </form>

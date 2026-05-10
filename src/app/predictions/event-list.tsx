@@ -411,7 +411,7 @@ export function EventList({
         {/* Progress row */}
         <div
           className="mt-3 flex items-center gap-3 font-medium text-ps-text-sec"
-          style={{ fontSize: 11.5 }}
+          style={{ fontSize: 12 }}
         >
           <span>
             <strong className="font-bold text-ps-text">
@@ -493,7 +493,7 @@ export function EventList({
           </div>
 
           {/* ── Event Cards ────────────────────────────────────────────────── */}
-          <div className="space-y-2.5 px-4 pb-4 pt-3">
+          <div className="space-y-3 px-4 pb-4 pt-3">
             {filteredEvents.length === 0 && (
               <div className="rounded-xl border border-ps-border bg-ps-surface p-8 text-center text-ps-text-sec">
                 No events match the selected filter.
@@ -501,7 +501,7 @@ export function EventList({
             )}
 
             {Object.entries(groupedEvents).map(([groupLabel, groupEvents]) => (
-              <div key={groupLabel} className="space-y-2.5">
+              <div key={groupLabel} className="space-y-3">
                 {Object.keys(groupedEvents).length > 1 && (
                   <SectionHeader label={`${groupLabel} (${groupEvents.length})`} />
                 )}
@@ -650,7 +650,7 @@ function EventCard({
       {/* Sport colour bar */}
       <SportBar sport={sportKey} height={3} />
 
-      <div className="p-3">
+      <div className="p-3.5">
         {/* Row 1: SportPill + CountdownChip + WA share */}
         <div className="flex items-center justify-between gap-2">
           <SportPill sport={sportKey} size="sm" />
@@ -675,7 +675,7 @@ function EventCard({
           <div className="min-w-0 flex-1">
             <h4
               className="font-extrabold leading-snug text-ps-text"
-              style={{ fontSize: 16 }}
+              style={{ fontSize: 17 }}
             >
               <Link href={`/predictions/${event.id}`} className="hover:underline">
                 {event.event_name}
@@ -683,7 +683,7 @@ function EventCard({
             </h4>
             <p
               className="mt-0.5 text-ps-text-sec"
-              style={{ fontSize: 12 }}
+              style={{ fontSize: 12.5, letterSpacing: "0.01em" }}
             >
               {formatSubtitle(event)}
             </p>
@@ -895,7 +895,7 @@ function InlinePickSection({
       )}
       {isLocked && !existingPrediction && (
         <p className="mt-1.5 text-xs italic text-ps-text-ter">
-          No prediction submitted
+          You didn&apos;t call this one
         </p>
       )}
     </div>

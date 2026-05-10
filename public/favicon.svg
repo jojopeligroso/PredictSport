@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48" fill="none">
+  <!-- Oracle Dot favicon — ink circle, amber inner dot, cream highlight -->
+  <!-- Matches OracleDot component proportions exactly -->
+  <circle cx="24" cy="24" r="23" fill="#191512"/>
+  <circle cx="22" cy="27" r="9" fill="#f59e0b"/>
+  <circle cx="28" cy="21" r="3" fill="#efe9de"/>
+</svg>

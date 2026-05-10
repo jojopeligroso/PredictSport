@@ -50,7 +50,7 @@ export default async function LeaderboardPage({ searchParams }: PageProps) {
           THE TABLE
         </h1>
         <div className="mt-8 rounded-2xl border border-ps-border bg-ps-surface p-12 text-center text-ps-text-sec">
-          No competitions joined yet
+          No competitions yet — join one to start calling it
         </div>
       </div>
     );
@@ -70,7 +70,7 @@ export default async function LeaderboardPage({ searchParams }: PageProps) {
           THE TABLE
         </h1>
         <div className="mt-8 rounded-2xl border border-ps-border bg-ps-surface p-12 text-center text-ps-text-sec">
-          No competitions joined yet
+          No competitions yet — join one to start calling it
         </div>
       </div>
     );
@@ -415,8 +415,8 @@ export default async function LeaderboardPage({ searchParams }: PageProps) {
       {/* Page header */}
       <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
         <div>
-          <p className="text-[11px] font-bold uppercase tracking-widest text-ps-text-sec">
-            PredictSport
+          <p className="text-[11px] font-extrabold lowercase tracking-tight text-ps-text">
+            sports<span className="text-ps-amber">predict.</span>
           </p>
           <h1 className="mt-0.5 font-display text-[32px] leading-none tracking-wider text-ps-text">
             THE TABLE

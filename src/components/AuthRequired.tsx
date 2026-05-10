@@ -33,13 +33,13 @@ export async function AuthRequired({ children }: AuthRequiredProps) {
             Sign in required
           </h2>
           <p className="mt-2 text-sm text-ps-text-sec">
-            You need to be logged in to access this page.
+            You need to be signed in to access this page.
           </p>
           <Link
             href="/login"
-            className="mt-6 inline-block rounded-full bg-gradient-to-r from-[#f59e0b] to-[#d97706] px-6 py-2 text-sm font-extrabold text-[#1a1208] transition-opacity hover:opacity-90"
+            className="mt-6 inline-block rounded-xl bg-ps-text px-6 py-2.5 text-sm font-extrabold text-ps-bg transition-all duration-150 hover:opacity-90 active:scale-[0.97] motion-reduce:transition-none"
           >
-            Log in
+            Sign in to call it
           </Link>
         </div>
       </div>

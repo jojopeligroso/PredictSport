@@ -127,10 +127,10 @@ export function PushNotificationPrompt() {
               id="push-prompt-title"
               className="text-sm font-semibold text-ps-text"
             >
-              Get notified when rounds lock and results drop?
+              Get pinged when locks are near
             </h2>
             <p className="mt-1 text-xs text-ps-text-sec">
-              We&apos;ll ping you before picks close so you never miss a round.
+              We&apos;ll nudge you before picks close so you never miss a round.
             </p>
           </div>
 
@@ -147,7 +147,7 @@ export function PushNotificationPrompt() {
                 "disabled:opacity-60 disabled:cursor-not-allowed",
               ].join(" ")}
             >
-              {state === "requesting" ? "Enabling\u2026" : "Enable notifications"}
+              {state === "requesting" ? "Enabling\u2026" : "Yes, ping me"}
             </button>
 
             <button

@@ -25,7 +25,7 @@ export const SPORT_CONFIG: Record<
   },
   f1: {
     name: 'Formula 1',
-    emoji: '🏁',
+    emoji: '🏎️',
     from: '#dc2626',
     to: '#ea580c',
     pillBg: 'rgba(220,38,38,0.12)',
@@ -35,7 +35,7 @@ export const SPORT_CONFIG: Record<
   },
   gaa: {
     name: 'GAA',
-    emoji: '🇮🇪',
+    emoji: '🏑',
     from: '#059669',
     to: '#047857',
     pillBg: 'rgba(5,150,105,0.12)',

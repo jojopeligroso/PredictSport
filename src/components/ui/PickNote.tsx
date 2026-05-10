@@ -76,7 +76,7 @@ export function PickNote({
       : 'Only you ever see it.';
 
   return (
-    <div className="rounded-lg border border-dashed border-ps-border-strong px-3 py-2.5">
+    <div className="rounded-lg border border-dashed border-ps-border-strong px-3 py-2.5 transition-colors focus-within:border-ps-amber/60 focus-within:ring-2 focus-within:ring-ps-amber/20">
       <div className="flex items-center justify-between mb-2 gap-2">
         <span className="text-ps-text-sec font-medium" style={{ fontSize: 11 }}>
           Add a note{' '}
@@ -114,7 +114,7 @@ export function PickNote({
         onChange={handleTextChange}
         placeholder="e.g. Backing the stats here…"
         rows={2}
-        className="w-full bg-transparent resize-none text-ps-text placeholder:text-ps-text-ter outline-none leading-snug"
+        className="w-full bg-transparent resize-none text-ps-text placeholder:text-ps-text-ter outline-none leading-snug focus:ring-0 transition-colors"
         style={{ fontSize: 12 }}
         aria-label="Pick note"
       />

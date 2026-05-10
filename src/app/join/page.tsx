@@ -25,7 +25,7 @@ export default async function JoinPage({
   if (!user) {
     return (
       <div className="flex flex-1 flex-col items-center justify-center px-4 py-16">
-        <div className="w-full max-w-sm rounded-[22px] bg-ps-bg px-5 pb-7 pt-5 shadow-[0_-10px_40px_rgba(0,0,0,0.18)]">
+        <div className="w-full max-w-sm rounded-[22px] bg-ps-bg px-5 pb-7 pt-5 shadow-[0_-10px_40px_rgba(40,30,20,0.15)]">
           <div className="mx-auto mb-4 h-1 w-9 rounded-full bg-ps-border" />
 
           {/* Logo row */}
@@ -39,17 +39,17 @@ export default async function JoinPage({
               </span>
             </div>
             <div>
-              <p className="text-base font-bold leading-tight text-ps-text">
-                PredictSport
+              <p className="text-base font-extrabold lowercase leading-tight tracking-tight text-ps-text">
+                sports<span className="text-ps-amber">predict.</span>
               </p>
-              <p className="text-[11.5px] leading-tight text-ps-text-sec">
+              <p className="font-serif text-[11.5px] italic leading-tight text-ps-text-sec">
                 Sign in to join
               </p>
             </div>
           </div>
 
           <p className="mb-4 text-sm leading-snug text-ps-text">
-            You&apos;ve been invited to a competition. Sign in to join.
+            You&apos;ve been invited to call it with the group. Sign in to join.
           </p>
 
           <LoginButton
@@ -71,7 +71,7 @@ export default async function JoinPage({
   if (!invite) {
     return (
       <div className="flex flex-1 flex-col items-center justify-center px-4 py-16">
-        <div className="w-full max-w-sm rounded-[22px] bg-ps-bg px-5 pb-7 pt-5 shadow-[0_-10px_40px_rgba(0,0,0,0.18)]">
+        <div className="w-full max-w-sm rounded-[22px] bg-ps-bg px-5 pb-7 pt-5 shadow-[0_-10px_40px_rgba(40,30,20,0.15)]">
           <div className="mx-auto mb-4 h-1 w-9 rounded-full bg-ps-border" />
           <div className="rounded-xl border border-ps-red bg-ps-red-soft p-4 text-sm text-ps-red">
             This invite link is invalid or has been revoked.
@@ -85,7 +85,7 @@ export default async function JoinPage({
   if (invite.expires_at && new Date(invite.expires_at) < new Date()) {
     return (
       <div className="flex flex-1 flex-col items-center justify-center px-4 py-16">
-        <div className="w-full max-w-sm rounded-[22px] bg-ps-bg px-5 pb-7 pt-5 shadow-[0_-10px_40px_rgba(0,0,0,0.18)]">
+        <div className="w-full max-w-sm rounded-[22px] bg-ps-bg px-5 pb-7 pt-5 shadow-[0_-10px_40px_rgba(40,30,20,0.15)]">
           <div className="mx-auto mb-4 h-1 w-9 rounded-full bg-ps-border" />
           <div className="rounded-xl border border-ps-red bg-ps-red-soft p-4 text-sm text-ps-red">
             This invite link has expired.
@@ -99,7 +99,7 @@ export default async function JoinPage({
   if (invite.max_uses !== null && invite.use_count >= invite.max_uses) {
     return (
       <div className="flex flex-1 flex-col items-center justify-center px-4 py-16">
-        <div className="w-full max-w-sm rounded-[22px] bg-ps-bg px-5 pb-7 pt-5 shadow-[0_-10px_40px_rgba(0,0,0,0.18)]">
+        <div className="w-full max-w-sm rounded-[22px] bg-ps-bg px-5 pb-7 pt-5 shadow-[0_-10px_40px_rgba(40,30,20,0.15)]">
           <div className="mx-auto mb-4 h-1 w-9 rounded-full bg-ps-border" />
           <div className="rounded-xl border border-ps-red bg-ps-red-soft p-4 text-sm text-ps-red">
             This invite link has reached its maximum uses.

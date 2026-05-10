@@ -63,7 +63,7 @@ export function UserMenu({ displayName, avatarUrl }: UserMenuProps) {
       </button>
 
       {isOpen && (
-        <div className="absolute right-0 z-50 mt-1 w-48 rounded-lg border border-ps-border bg-ps-surface py-1 shadow-lg">
+        <div className="absolute right-0 z-50 mt-1 w-48 rounded-lg border border-ps-border bg-ps-surface py-1 shadow-[0_4px_16px_rgba(25,21,18,0.12)]">
           <div className="border-b border-ps-border px-4 py-2">
             <p className="truncate text-sm font-medium text-ps-text">
               {displayName}

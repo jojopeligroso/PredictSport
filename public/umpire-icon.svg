@@ -1,0 +1,29 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 84 84" fill="none">
+  <!-- Cream background rect for app icon context -->
+  <rect width="84" height="84" rx="18" fill="#efe9de"/>
+  <!-- Umpire figure, scaled and centered in 84x84 -->
+  <!-- Original viewBox 0 0 72 90, scaled ~0.85x and offset to center -->
+  <g transform="translate(6, -2) scale(1, 0.9)">
+    <!-- Coat (bell shape) -->
+    <path d="M24 42 Q14 50 12 62 L10 88 L62 88 L60 62 Q58 50 48 42" stroke="#191512" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+    <!-- Neck / collar -->
+    <rect x="29" y="34" width="14" height="9" rx="1" stroke="#191512" stroke-width="3" fill="none"/>
+    <!-- Hat brim -->
+    <rect x="23" y="28" width="26" height="5" rx="1" stroke="#191512" stroke-width="3" fill="none"/>
+    <!-- Hat dome -->
+    <path d="M28 28 Q28 14 36 14 Q44 14 44 28" stroke="#191512" stroke-width="3" stroke-linecap="round" fill="none"/>
+    <!-- Arm -->
+    <path d="M46 42 Q52 36 54 28" stroke="#191512" stroke-width="3" stroke-linecap="round" fill="none"/>
+    <!-- Pole -->
+    <line x1="54" y1="28" x2="62" y2="8" stroke="#191512" stroke-width="2.5" stroke-linecap="round"/>
+    <!-- Hand circle -->
+    <circle cx="54" cy="28" r="3.5" fill="#191512"/>
+    <!-- Green flag -->
+    <path d="M62 8 Q68 6 72 9 Q70 13 72 17 Q68 15 62 18 Z" fill="#0aa86d" stroke="#0aa86d" stroke-width="1" stroke-linejoin="round"/>
+    <!-- Buttons -->
+    <circle cx="36" cy="54" r="2" fill="#191512"/>
+    <circle cx="36" cy="63" r="2" fill="#191512"/>
+    <circle cx="36" cy="72" r="2" fill="#191512"/>
+    <circle cx="36" cy="81" r="2" fill="#191512"/>
+  </g>
+</svg>

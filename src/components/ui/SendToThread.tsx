@@ -303,6 +303,8 @@ export function SendToThread({
             width: 30,
             height: 30,
             background: sent ? WA_GREEN : WA_GREEN_SOFT_DARK,
+            transform: sent ? 'scale(1.12)' : 'scale(1)',
+            transition: 'transform 200ms ease-out, background 200ms ease-out',
             userSelect: 'none',
             WebkitUserSelect: 'none',
           }}

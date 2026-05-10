@@ -520,7 +520,7 @@ function TableRow({
   const dimmed = !entry.qualified;
 
   return (
-    <div className={dimmed ? "opacity-50" : undefined}>
+    <div className={dimmed ? "opacity-60" : undefined}>
       <button
         onClick={onExpand}
         aria-expanded={isExpanded}
@@ -688,19 +688,19 @@ export function LeaderboardTable({ entries }: { entries: LeaderboardEntry[] }) {
         <div
           className="mx-0 mt-[6px] mb-3 flex items-center gap-[10px] rounded-xl px-3 py-[10px]"
           style={{
-            background: "rgba(245,158,11,0.14)",
-            border: "1px dashed var(--ps-amber)",
+            background: "var(--ps-amber-soft)",
+            border: "1.5px solid var(--ps-amber)",
           }}
         >
           <span className="text-[18px] leading-none" aria-hidden="true">🔥</span>
           <div className="min-w-0 flex-1">
             <p
               className="font-extrabold uppercase text-ps-amber-deep"
-              style={{ fontSize: 9.5, letterSpacing: 1.2 }}
+              style={{ fontSize: 10.5, letterSpacing: 1.2 }}
             >
               {rivalry.headline}
             </p>
-            <p className="mt-0.5 text-ps-text" style={{ fontSize: 12, lineHeight: 1.35 }}>
+            <p className="mt-0.5 text-ps-text" style={{ fontSize: 13, lineHeight: 1.35 }}>
               {rivalry.body}
             </p>
           </div>
@@ -744,7 +744,7 @@ export function LeaderboardTable({ entries }: { entries: LeaderboardEntry[] }) {
         <div className="mt-[14px]">
           <SectionHeader label="Not yet qualified" accent="var(--ps-text-ter)" />
           <p className="mt-1 mb-3 text-[11px] text-ps-text-ter">
-            Requires at least 1/3 of all scored rounds to qualify.
+            Play more rounds to qualify for the table.
           </p>
           <div className="overflow-hidden rounded-2xl border border-ps-border bg-ps-surface">
             {unqualifiedEntries.map((entry, idx) => (

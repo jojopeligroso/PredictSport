@@ -27,12 +27,15 @@ export function PickButton({
       disabled={disabled}
       aria-pressed={selected}
       className={[
-        'relative w-full text-left rounded-lg border px-3 py-2.5 transition-colors',
-        'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ps-amber',
+        'relative w-full text-left rounded-lg border px-3 py-2.5 transition-all duration-150',
+        'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ps-amber/50 focus-visible:ring-offset-1 focus-visible:ring-offset-ps-surface',
+        'motion-reduce:transition-none',
         selected
           ? 'bg-ps-amber-soft border-ps-amber'
           : 'bg-ps-surface border-ps-border',
-        disabled ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer',
+        disabled
+          ? 'opacity-50 cursor-not-allowed'
+          : 'cursor-pointer active:scale-[0.97]',
       ]
         .filter(Boolean)
         .join(' ')}

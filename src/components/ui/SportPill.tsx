@@ -15,7 +15,7 @@ export function SportPill({ sport, size = 'md' }: SportPillProps) {
 
   return (
     <span
-      className={`inline-flex items-center ${gapClass} ${paddingClass} ${textClass} font-bold uppercase tracking-wide rounded-full`}
+      className={`inline-flex items-center ${gapClass} ${paddingClass} ${textClass} font-bold uppercase tracking-wide rounded-full transition-colors duration-150`}
       style={{ background: cfg.pillBg, color: cfg.pillFgVar }}
     >
       <span aria-hidden="true">{cfg.emoji}</span>

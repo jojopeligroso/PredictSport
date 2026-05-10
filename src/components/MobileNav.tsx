@@ -24,7 +24,7 @@ export function MobileNav({ isLoggedIn, isAdmin, displayName, avatarUrl }: Mobil
       {/* Hamburger button */}
       <button
         onClick={() => setIsOpen(!isOpen)}
-        className="rounded-md p-2 text-ps-text-sec transition-colors hover:bg-ps-chip"
+        className="flex min-h-[44px] min-w-[44px] items-center justify-center rounded-md p-2 text-ps-text-sec transition-colors duration-150 hover:bg-ps-chip"
         aria-label={isOpen ? "Close menu" : "Open menu"}
         aria-expanded={isOpen}
       >
@@ -63,7 +63,7 @@ export function MobileNav({ isLoggedIn, isAdmin, displayName, avatarUrl }: Mobil
 
       {/* Mobile menu panel */}
       {isOpen && (
-        <div className="absolute left-0 right-0 top-12 z-50 border-b border-ps-border bg-ps-surface">
+        <div className="absolute left-0 right-0 top-12 z-50 animate-in fade-in slide-in-from-top-1 border-b border-ps-border bg-ps-surface duration-150 ease-out">
           <div className="space-y-1 px-4 py-3">
             {publicNavLinks.map((link) => (
               <Link

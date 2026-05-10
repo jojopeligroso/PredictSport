@@ -42,7 +42,7 @@ export function JoinCard({ token, competitionName, memberCount }: JoinCardProps)
   }
 
   return (
-    <div className="w-full max-w-sm rounded-[22px] bg-ps-bg px-5 pb-7 pt-5 shadow-[0_-10px_40px_rgba(0,0,0,0.18)]">
+    <div className="w-full max-w-sm rounded-[22px] bg-ps-bg px-5 pb-7 pt-5 shadow-[0_-10px_40px_rgba(40,30,20,0.15)]">
       {/* Drag handle */}
       <div className="mx-auto mb-4 h-1 w-9 rounded-full bg-ps-border" />
 
@@ -57,8 +57,8 @@ export function JoinCard({ token, competitionName, memberCount }: JoinCardProps)
           </span>
         </div>
         <div>
-          <p className="text-base font-bold leading-tight text-ps-text">
-            PredictSport
+          <p className="text-base font-extrabold lowercase leading-tight tracking-tight text-ps-text">
+            sports<span className="text-ps-amber">predict.</span>
           </p>
           <p className="text-[11.5px] leading-tight text-ps-text-sec">
             {memberCount} {memberCount === 1 ? "member" : "members"}
@@ -67,13 +67,13 @@ export function JoinCard({ token, competitionName, memberCount }: JoinCardProps)
       </div>
 
       {/* Competition name */}
-      <p className="mb-1 text-lg font-bold text-ps-text">{competitionName}</p>
+      <p className="mb-1 font-display text-2xl font-extrabold leading-tight text-ps-text">
+        {competitionName}
+      </p>
 
       {/* Confirmation copy */}
-      <p className="mb-5 text-sm leading-relaxed text-ps-text">
-        You are about to join{" "}
-        <span className="font-bold">{competitionName}</span>. Please confirm
-        that you would like to join.
+      <p className="mb-5 text-sm leading-relaxed text-ps-text-sec">
+        You&apos;re in — ready to start calling it with the group?
       </p>
 
       {/* Error */}
@@ -88,7 +88,7 @@ export function JoinCard({ token, competitionName, memberCount }: JoinCardProps)
         <button
           onClick={handleJoin}
           disabled={isJoining}
-          className="flex flex-1 items-center justify-center rounded-xl bg-gradient-to-r from-[#f59e0b] to-[#d97706] px-4 py-3.5 text-sm font-semibold text-ps-text transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50"
+          className="flex flex-1 items-center justify-center rounded-xl bg-ps-text px-4 py-3.5 text-sm font-semibold text-ps-bg transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50"
           style={{ minHeight: "44px" }}
         >
           {isJoining ? "Joining..." : "Yes, join"}

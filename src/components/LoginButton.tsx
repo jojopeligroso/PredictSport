@@ -71,7 +71,7 @@ export function LoginButton({ redirectTo }: LoginButtonProps) {
       <button
         onClick={handleGoogleLogin}
         disabled={isLoading}
-        className="flex w-full items-center justify-center gap-2.5 rounded-xl bg-ps-text px-4 py-3.5 text-sm font-semibold text-ps-bg transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50"
+        className="flex w-full items-center justify-center gap-2.5 rounded-xl bg-ps-text px-4 py-3.5 text-sm font-semibold text-ps-bg transition-all duration-150 hover:opacity-90 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50 motion-reduce:transition-none"
         style={{ minHeight: "44px" }}
       >
         {/* Google G mark — white version */}
@@ -117,13 +117,13 @@ export function LoginButton({ redirectTo }: LoginButtonProps) {
             if (e.key === "Enter") handleMagicLink();
           }}
           placeholder="Email address"
-          className="w-full rounded-xl border border-ps-border bg-ps-surface p-3 text-sm text-ps-text placeholder:text-ps-text-ter focus:border-ps-text-sec focus:outline-none"
+          className="w-full rounded-xl border border-ps-border bg-ps-surface p-3 text-sm text-ps-text placeholder:text-ps-text-ter transition-colors focus:border-ps-amber focus:outline-none focus:ring-2 focus:ring-ps-amber/50"
           disabled={isSendingMagicLink}
         />
         <button
           onClick={handleMagicLink}
           disabled={isSendingMagicLink}
-          className="flex w-full items-center justify-center rounded-xl border border-ps-border bg-transparent px-4 py-3 text-sm font-medium text-ps-text transition-colors hover:bg-ps-surface disabled:cursor-not-allowed disabled:opacity-50"
+          className="flex w-full items-center justify-center rounded-xl border border-ps-border bg-transparent px-4 py-3 text-sm font-medium text-ps-text transition-all duration-150 hover:bg-ps-surface active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50 motion-reduce:transition-none"
           style={{ minHeight: "44px" }}
         >
           {isSendingMagicLink ? "Sending..." : "Send magic link"}

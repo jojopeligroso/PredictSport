@@ -96,7 +96,7 @@ export default async function AdminPage() {
     <div className="mx-auto max-w-4xl p-6 sm:p-8">
       <div className="mb-6 flex flex-wrap items-start justify-between gap-3">
         <div>
-          <h1 className="font-light text-2xl uppercase tracking-[0.06em] text-ps-text">
+          <h1 className="font-display font-extrabold text-2xl uppercase tracking-tight text-ps-text">
             Match Day Desk
           </h1>
           <p className="mt-1 text-sm text-ps-text-sec">

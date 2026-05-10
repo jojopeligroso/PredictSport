@@ -137,7 +137,7 @@ export default function TelegramPage() {
 
   return (
     <div className="flex flex-1 flex-col items-center justify-center px-4 py-16">
-      <div className="w-full max-w-sm rounded-[22px] bg-ps-bg px-5 pb-7 pt-5 shadow-[0_-10px_40px_rgba(0,0,0,0.18)]">
+      <div className="w-full max-w-sm rounded-[22px] bg-ps-bg px-5 pb-7 pt-5 shadow-[0_-10px_40px_rgba(40,30,20,0.15)]">
         {/* Drag handle */}
         <div className="mx-auto mb-4 h-1 w-9 rounded-full bg-ps-border" />
 
@@ -152,11 +152,11 @@ export default function TelegramPage() {
             </span>
           </div>
           <div>
-            <p className="text-base font-bold leading-tight text-ps-text">
-              PredictSport
+            <p className="text-base font-extrabold lowercase leading-tight tracking-tight text-ps-text">
+              sports<span className="text-ps-amber">predict.</span>
             </p>
-            <p className="text-[11.5px] leading-tight text-ps-text-sec">
-              Predict. Compete. Have the craic.
+            <p className="font-serif text-[11.5px] italic leading-tight text-ps-text-sec">
+              Call it before the lads do.
             </p>
           </div>
         </div>

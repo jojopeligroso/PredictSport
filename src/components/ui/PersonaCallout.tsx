@@ -21,7 +21,7 @@ export function PersonaCallout({
         >
           {calloutLabel}
         </p>
-        <p className="italic text-ps-text" style={{ fontSize: 12 }}>
+        <p className="font-serif text-ps-text italic" style={{ fontSize: 12 }}>
           {fact}
         </p>
       </div>
@@ -39,7 +39,7 @@ export function PersonaCallout({
       >
         {calloutLabel}
       </p>
-      <p className="italic text-ps-text" style={{ fontSize: 12 }}>
+      <p className="font-serif text-ps-text italic" style={{ fontSize: 12 }}>
         {fact}
       </p>
     </div>

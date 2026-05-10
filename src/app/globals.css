@@ -80,8 +80,9 @@
 @theme inline {
   /* Fonts */
   --font-sans: var(--font-inter), system-ui, -apple-system, sans-serif;
-  --font-display: var(--font-bebas), var(--font-inter), sans-serif;
+  --font-display: var(--font-inter), system-ui, -apple-system, sans-serif;
   --font-serif: var(--font-serif), Georgia, serif;
+  --font-mono: var(--font-jetbrains), ui-monospace, 'Cascadia Code', 'Source Code Pro', monospace;
 
   /* PS Colors — mapped to Tailwind utilities */
   --color-ps-bg: var(--ps-bg);
@@ -106,6 +107,11 @@
   --color-ps-blue: var(--ps-blue);
   --color-ps-violet: var(--ps-violet);
 }
+
+/* ── Display font utility — always Inter 800 ────────────────────────────── */
+/* font-display class: pairs font-family with weight 800 for headlines      */
+/* Note: Tailwind's font-display utility sets font-family only.             */
+/* Pair with font-extrabold (font-weight: 800) in markup for correct weight. */
 
 /* ── Base styles ────────────────────────────────────────────────────────── */
 
