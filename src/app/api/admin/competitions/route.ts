@@ -118,6 +118,61 @@ export async function POST(request: Request) {
   return NextResponse.json({ competition }, { status: 201 });
 }
 
+/**
+ * DELETE /api/admin/competitions
+ * Delete a competition and all related data (cascades).
+ */
+export async function DELETE(request: Request) {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (!user) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
+  let body: { competition_id: string };
+  try {
+    body = await request.json();
+  } catch {
+    return NextResponse.json({ error: "Invalid JSON body" }, { status: 400 });
+  }
+
+  if (!body.competition_id) {
+    return NextResponse.json(
+      { error: "competition_id is required" },
+      { status: 400 }
+    );
+  }
+
+  const member = await verifyCompetitionAdmin(
+    supabase,
+    user.id,
+    body.competition_id
+  );
+  if (!member) {
+    return NextResponse.json(
+      { error: "You are not an admin of this competition" },
+      { status: 403 }
+    );
+  }
+
+  const { error: deleteError } = await supabase
+    .from("competitions")
+    .delete()
+    .eq("id", body.competition_id);
+
+  if (deleteError) {
+    return NextResponse.json(
+      { error: "Failed to delete competition", details: deleteError.message },
+      { status: 500 }
+    );
+  }
+
+  return NextResponse.json({ deleted: body.competition_id });
+}
+
 const VALID_STATUSES: CompetitionStatus[] = ["draft", "active", "completed", "archived"];
 const ALLOWED_TRANSITIONS: Record<CompetitionStatus, CompetitionStatus[]> = {
   draft: ["active"],
