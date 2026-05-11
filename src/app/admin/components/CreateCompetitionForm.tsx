@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback } from "react";
+import { useState, useCallback, useMemo } from "react";
 import { useRouter } from "next/navigation";
 
 // ── Sports ────────────────────────────────────────────────────────────────────
@@ -333,6 +333,34 @@ export function CreateCompetitionForm({ alwaysOpen = false }: CreateCompetitionF
   const [fixtureCount, setFixtureCount] = useState(0);
 
   const includesGaa = selectedSports.includes("gaa");
+
+  // GAA callout quote — picked once on mount, stable for the component's lifetime.
+  // Buckets: 20% "Hon the lads", 5% romantic, 5% Kilkenny fact, 1% "Up the Faythe!",
+  // 69% uniform random pick from the pool of 16 quotes (~4.3% each).
+  const gaaQuote = useMemo(() => {
+    const pool = [
+      "Ye can put out the cigarettes now lads. This is championship!",
+      "Well Joe Brolly, what do you think of that?",
+      "You'd know his father was from Tyrone.",
+      "You can't win a derby with a donkey.",
+      "Not bad for donkeys!",
+      "I don't want to let the people of Waterford down. The people of Waterford are my life, ya know? I love me county.",
+      "And we love John Mullane.",
+      "We're going to do it.",
+      "Ger Loughnane was fair, he treated us all the same during training — like dogs.",
+      "Whenever a team loses, there's always a row at half time but when they win, it's an inspirational speech.",
+      "We've won one All-Ireland in a row.",
+      "I'm not giving away any secrets like that to Tipperary. If I had my way, I wouldn't even tell them the time of the throw-in.",
+      "I used to think it was great being a wee nippy corner forward, but it's better now being a big, fat one.",
+      "We're taking this match awful seriously. We're training three times a week now, and some of the boys are off the drink since Tuesday!",
+    ];
+    const r = Math.random();
+    if (r < 0.20) return "Hon the lads.";
+    if (r < 0.25) return "How can you not be romantic about Wexford GAA?";
+    if (r < 0.30) return "Did you know... Kilkenny are the most successful county in the history of Hurling.";
+    if (r < 0.31) return "Up the Faythe!";
+    return pool[Math.floor(Math.random() * pool.length)];
+  }, []);
 
   function toggleSport(id: string) {
     setSelectedSports((prev) =>
@@ -679,12 +707,11 @@ export function CreateCompetitionForm({ alwaysOpen = false }: CreateCompetitionF
           })}
         </div>
 
+
         {includesGaa && (
           <div className="mt-4 flex items-center gap-3 rounded-r-xl border-l-[3px] border-ps-green bg-ps-green-soft/60 px-3 py-2.5">
             <span className="text-base leading-none">🇮🇪</span>
-            <span className="text-xs text-ps-text leading-snug">
-              <strong>GAA is on.</strong> The umpire mark will show up on your competition now and then.
-            </span>
+            <span className="text-xs text-ps-text leading-snug">{gaaQuote}</span>
           </div>
         )}
 
