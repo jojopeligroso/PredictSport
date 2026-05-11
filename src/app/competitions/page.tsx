@@ -1,7 +1,19 @@
 import { redirect } from "next/navigation";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
-import { StatusBadge } from "@/app/admin/components/CompetitionStatusBadge";
+import { BrandMark } from "@/components/BrandMark";
+
+function formatLockTime(iso: string): string {
+  const d = new Date(iso);
+  if (isNaN(d.getTime())) return "";
+  return d.toLocaleString("en-IE", {
+    weekday: "short",
+    day: "numeric",
+    month: "short",
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+}
 
 export default async function CompetitionsPage() {
   const supabase = await createClient();
@@ -13,7 +25,7 @@ export default async function CompetitionsPage() {
     redirect("/login");
   }
 
-  // Fetch all competitions where user is a member (any role)
+  // Memberships + competition base data
   const { data: memberships } = await supabase
     .from("competition_members")
     .select(
@@ -41,129 +53,205 @@ export default async function CompetitionsPage() {
         new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
     );
 
-  // Count events and members per competition
   const competitionIds = competitions.map((c) => c.id);
 
-  const { data: eventCounts } =
+  // Additional data for richer cards
+  const [memberCountsResult, roundDataResult, eventDetailsResult] =
     competitionIds.length > 0
-      ? await supabase
-          .from("events")
-          .select("competition_id")
-          .in("competition_id", competitionIds)
-      : { data: [] };
+      ? await Promise.all([
+          supabase
+            .from("competition_members")
+            .select("competition_id")
+            .in("competition_id", competitionIds),
+          supabase
+            .from("rounds")
+            .select("competition_id, id, round_number, status")
+            .in("competition_id", competitionIds)
+            .order("round_number", { ascending: false }),
+          supabase
+            .from("events")
+            .select("competition_id, sport, lock_time, status")
+            .in("competition_id", competitionIds),
+        ])
+      : [{ data: [] }, { data: [] }, { data: [] }];
 
-  const { data: memberCounts } =
-    competitionIds.length > 0
-      ? await supabase
-          .from("competition_members")
-          .select("competition_id")
-          .in("competition_id", competitionIds)
-      : { data: [] };
-
-  const eventCountMap = new Map<string, number>();
-  for (const e of eventCounts ?? []) {
-    eventCountMap.set(
-      e.competition_id,
-      (eventCountMap.get(e.competition_id) ?? 0) + 1
-    );
-  }
-
+  // Member counts
   const memberCountMap = new Map<string, number>();
-  for (const m of memberCounts ?? []) {
+  for (const m of memberCountsResult.data ?? []) {
     memberCountMap.set(
       m.competition_id,
       (memberCountMap.get(m.competition_id) ?? 0) + 1
     );
   }
 
+  // Round counts and latest round number
+  const roundCountMap = new Map<string, number>();
+  const latestRoundMap = new Map<string, number>();
+  for (const r of roundDataResult.data ?? []) {
+    const cid = r.competition_id;
+    roundCountMap.set(cid, (roundCountMap.get(cid) ?? 0) + 1);
+    // rounds are ordered DESC so first occurrence is highest round_number
+    if (!latestRoundMap.has(cid)) {
+      latestRoundMap.set(cid, r.round_number as number);
+    }
+  }
+
+  // Next lock time and sports per competition
+  const nextLockMap = new Map<string, string | null>();
+  const sportsMap = new Map<string, Set<string>>();
+  const now = new Date();
+
+  for (const e of eventDetailsResult.data ?? []) {
+    const cid = e.competition_id;
+
+    // Sports
+    if (!sportsMap.has(cid)) sportsMap.set(cid, new Set());
+    if (e.sport) sportsMap.get(cid)!.add(e.sport as string);
+
+    // Next lock — earliest upcoming lock_time
+    if (e.status === "upcoming" && e.lock_time) {
+      const lockDate = new Date(e.lock_time as string);
+      if (lockDate > now) {
+        const current = nextLockMap.get(cid);
+        if (!current || lockDate < new Date(current)) {
+          nextLockMap.set(cid, e.lock_time as string);
+        }
+      }
+    }
+  }
+
   return (
     <div className="mx-auto max-w-[480px] md:max-w-2xl lg:max-w-3xl px-4 py-6">
       {/* Header */}
-      <div className="mb-6 flex items-start justify-between">
+      <div className="mb-6 flex items-center justify-between">
         <div>
-          <h1 className="font-display font-extrabold text-xl uppercase tracking-tight text-ps-text">
+          <p className="text-[10px] font-extrabold tracking-widest uppercase text-ps-text-ter">
+            Your Competitions
+          </p>
+          <h1 className="font-display font-extrabold text-2xl uppercase tracking-tight text-ps-text leading-none mt-0.5">
             Competitions
           </h1>
-          <p className="mt-1 text-sm text-ps-text-sec">
-            Your predictions, all in one place.
-          </p>
         </div>
         <Link
           href="/competitions/new"
-          className="shrink-0 rounded-xl bg-gradient-to-r from-[#f59e0b] to-[#d97706] px-4 py-2.5 text-sm font-semibold text-ps-text"
+          className="inline-flex shrink-0 items-center gap-1.5 rounded-xl bg-gradient-to-r from-[#f59e0b] to-[#d97706] px-3.5 py-2 text-xs font-extrabold text-[#1a1208] transition-opacity hover:opacity-90"
         >
-          Create Competition
+          <svg width="11" height="11" viewBox="0 0 24 24" fill="none">
+            <path d="M12 5v14M5 12h14" stroke="#1a1208" strokeWidth="2.6" strokeLinecap="round" />
+          </svg>
+          New
         </Link>
       </div>
 
       {/* Competition list */}
       {competitions.length === 0 ? (
         <div className="rounded-2xl border border-dashed border-ps-border p-12 text-center">
-          <h2 className="text-lg font-medium text-ps-text-sec">
-            Nothing here yet
-          </h2>
+          <h2 className="text-base font-semibold text-ps-text-sec">Nothing here yet</h2>
           <p className="mt-2 text-sm text-ps-text-ter">
             Start one yourself, or ask a friend to send you an invite link.
           </p>
           <Link
             href="/competitions/new"
-            className="mt-4 inline-block rounded-xl bg-gradient-to-r from-[#f59e0b] to-[#d97706] px-4 py-2.5 text-sm font-semibold text-ps-text"
+            className="mt-4 inline-block rounded-xl bg-gradient-to-r from-[#f59e0b] to-[#d97706] px-4 py-2.5 text-sm font-extrabold text-[#1a1208]"
           >
             Start a Competition
           </Link>
         </div>
       ) : (
-        <div className="space-y-3 md:grid md:grid-cols-2 md:gap-4 md:space-y-0">
+        <div className="flex flex-col gap-3 md:grid md:grid-cols-2 md:gap-4">
           {competitions.map((comp) => {
-            const eventCount = eventCountMap.get(comp.id) ?? 0;
             const memberCount = memberCountMap.get(comp.id) ?? 0;
+            const roundCount = roundCountMap.get(comp.id) ?? 0;
+            const latestRound = latestRoundMap.get(comp.id) ?? 0;
+            const nextLock = nextLockMap.get(comp.id) ?? null;
+            const sports = sportsMap.get(comp.id) ?? new Set<string>();
+            const hasGaa = sports.has("gaa");
+            const isDraft = comp.status === "draft";
+            const isActive = comp.status === "active";
 
             return (
               <Link
                 key={comp.id}
                 href={`/competitions/${comp.id}`}
-                className="block rounded-2xl border border-ps-border bg-ps-surface p-4 transition-all duration-150 active:scale-[0.98]"
+                className="block rounded-2xl border border-ps-border bg-ps-surface p-4 transition-all duration-150 hover:border-ps-border-strong active:scale-[0.98] shadow-[0_1px_2px_rgba(40,30,20,0.04)]"
               >
-                <div className="flex items-start justify-between">
-                  <div className="min-w-0 flex-1">
-                    <div className="flex items-center gap-2">
-                      <h2 className="text-base font-semibold text-ps-text truncate">
-                        {comp.name}
-                      </h2>
-                      <StatusBadge status={comp.status} type="competition" />
+                {/* Top row: brand mark + status + member count */}
+                <div className="flex items-center justify-between mb-2.5">
+                  <div className="flex items-center gap-2">
+                    <BrandMark
+                      sport={hasGaa ? "gaa" : undefined}
+                      className="w-5 h-5"
+                    />
+                    <span
+                      className={`inline-flex items-center gap-1.5 rounded-full px-2 py-0.5 text-[9.5px] font-extrabold tracking-wide uppercase ${
+                        isActive
+                          ? "bg-ps-green-soft text-ps-green"
+                          : isDraft
+                          ? "bg-ps-chip text-ps-text-ter"
+                          : comp.status === "completed"
+                          ? "bg-ps-amber-soft text-ps-amber-deep"
+                          : "bg-ps-chip text-ps-text-ter"
+                      }`}
+                    >
+                      {isActive && (
+                        <span className="h-1.5 w-1.5 rounded-full bg-ps-green" />
+                      )}
+                      {comp.status}
+                    </span>
+                  </div>
+                  <span className="text-xs font-semibold text-ps-text-sec">
+                    {memberCount} {memberCount === 1 ? "member" : "members"}
+                  </span>
+                </div>
+
+                {/* Competition name */}
+                <div className="text-base font-extrabold text-ps-text leading-snug">
+                  {comp.name}
+                </div>
+
+                {/* Body: active vs draft vs other */}
+                {isActive && roundCount > 0 ? (
+                  <div className="mt-3">
+                    <div className="flex items-center gap-2 text-[11.5px] font-semibold text-ps-text-sec">
+                      <span>Round {latestRound}</span>
+                      {nextLock && (
+                        <>
+                          <span className="text-ps-text-ter">·</span>
+                          <span>
+                            Next round locks{" "}
+                            <span className="font-extrabold text-ps-amber-deep">
+                              {formatLockTime(nextLock)}
+                            </span>
+                          </span>
+                        </>
+                      )}
                     </div>
-                    {comp.description && (
-                      <p className="mt-1 text-sm text-ps-text-ter line-clamp-1">
-                        {comp.description}
-                      </p>
-                    )}
-                    <div className="mt-2 flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-ps-text-ter">
-                      <span>
-                        {eventCount} match{eventCount !== 1 ? "es" : ""}
-                      </span>
-                      <span>
-                        {memberCount} player{memberCount !== 1 ? "s" : ""}
-                      </span>
-                      <span>
-                        {comp.role === "admin" ? "Admin" : comp.role === "co_admin" ? "Co-Admin" : "Player"}
-                      </span>
-                      <span>{comp.visibility === "private" ? "Invite only" : "Open"}</span>
+                    {/* Progress bar */}
+                    <div className="mt-2 h-1 rounded-full bg-ps-chip overflow-hidden">
+                      <div
+                        className="h-full rounded-full bg-gradient-to-r from-[#f59e0b] to-[#d97706]"
+                        style={{ width: `${Math.min(100, (latestRound / Math.max(roundCount, 1)) * 100)}%` }}
+                      />
+                    </div>
+                    <div className="mt-1.5 flex justify-between text-[10.5px] font-semibold text-ps-text-ter">
+                      <span>{roundCount} round{roundCount !== 1 ? "s" : ""} total</span>
+                      <span>Round {latestRound} of {roundCount}</span>
                     </div>
                   </div>
-                  <svg
-                    className="h-5 w-5 shrink-0 text-ps-text-ter"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                    strokeWidth={1.5}
-                    stroke="currentColor"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      d="M8.25 4.5l7.5 7.5-7.5 7.5"
-                    />
-                  </svg>
-                </div>
+                ) : isDraft ? (
+                  <div className="mt-3 flex items-center gap-3 rounded-xl border border-dashed border-ps-amber bg-ps-amber-soft/60 px-3 py-2.5">
+                    <span className="text-xs font-bold text-ps-amber-deep leading-snug flex-1">
+                      No rounds yet. Add the first round to send it live.
+                    </span>
+                    <span className="shrink-0 rounded-lg bg-[#f59e0b] px-2.5 py-1 text-[10px] font-extrabold text-[#1a1208]">
+                      Add round
+                    </span>
+                  </div>
+                ) : (
+                  <div className="mt-2 text-[11.5px] font-semibold text-ps-text-ter">
+                    {roundCount} {roundCount === 1 ? "round" : "rounds"} played
+                  </div>
+                )}
               </Link>
             );
           })}
