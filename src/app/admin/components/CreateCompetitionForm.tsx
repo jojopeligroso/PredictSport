@@ -117,6 +117,17 @@ const LEAGUE_SHORTCUTS: Record<string, { id: string; label: string }[]> = {
   nba: [{ id: "4387", label: "NBA" }],
 };
 
+// ── Manual prediction types ────────────────────────────────────────────────────
+
+const MANUAL_PRED_TYPES: { id: string; label: string }[] = [
+  { id: "winner", label: "Who wins" },
+  { id: "yes_no", label: "Yes or No" },
+  { id: "head_to_head", label: "Head to head" },
+  { id: "margin", label: "Winning margin" },
+  { id: "over_under", label: "Over or under" },
+  { id: "progression", label: "Goes through?" },
+];
+
 // ── Types ─────────────────────────────────────────────────────────────────────
 
 interface SearchResult {
@@ -124,6 +135,9 @@ interface SearchResult {
   event_name: string;
   sport: string;
   start_time: string;
+  lock_time?: string;                     // per-event override (manual events)
+  manual_pred_types?: string[];          // per-event prediction types (manual)
+  manual_options?: string[];             // config.options for winner/h2h
   competition_name?: string;
   participants?: string[];
   venue?: string;
@@ -149,6 +163,18 @@ function subtractMinutes(iso: string, minutes: number): string {
   if (isNaN(d.getTime())) return iso;
   d.setMinutes(d.getMinutes() - minutes);
   return d.toISOString();
+}
+
+/** Convert a Date to the value format expected by datetime-local inputs */
+function toDateTimeLocal(d: Date): string {
+  const pad = (n: number) => String(n).padStart(2, "0");
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+}
+
+/** Parse a datetime-local string to ISO (treating as local time) */
+function dateTimeLocalToISO(s: string): string {
+  if (!s) return "";
+  return new Date(s).toISOString();
 }
 
 function presetToConfigs(presetId: string, customPoints: Record<string, number>) {
@@ -293,6 +319,15 @@ export function CreateCompetitionForm({ alwaysOpen = false }: CreateCompetitionF
   const [selectedFixtures, setSelectedFixtures] = useState<SearchResult[]>([]);
   const [roundSaving, setRoundSaving] = useState(false);
 
+  // Manual event form
+  const [showManualForm, setShowManualForm] = useState(false);
+  const [manualName, setManualName] = useState("");
+  const [manualSport, setManualSport] = useState(selectedSports[0] ?? "soccer");
+  const [manualStartTime, setManualStartTime] = useState("");
+  const [manualLockTime, setManualLockTime] = useState("");
+  const [manualPredTypes, setManualPredTypes] = useState<string[]>(["winner"]);
+  const [manualOptionsText, setManualOptionsText] = useState("");
+
   // Step 5
   const [roundCreated, setRoundCreated] = useState(false);
   const [fixtureCount, setFixtureCount] = useState(0);
@@ -394,23 +429,71 @@ export function CreateCompetitionForm({ alwaysOpen = false }: CreateCompetitionF
     }
   }, []);
 
+  // Add a manually-entered event to selectedFixtures
+  function addManualEvent() {
+    if (!manualName.trim() || !manualStartTime || !manualSport) return;
+
+    const startISO = dateTimeLocalToISO(manualStartTime);
+    const lockISO = manualLockTime
+      ? dateTimeLocalToISO(manualLockTime)
+      : subtractMinutes(startISO, 30);
+
+    // Parse options text: split by "/" or "," trimming whitespace
+    const options = manualOptionsText
+      .split(/[/,]/)
+      .map((s) => s.trim())
+      .filter(Boolean);
+
+    const event: SearchResult = {
+      event_name: manualName.trim(),
+      sport: manualSport,
+      start_time: startISO,
+      lock_time: lockISO,
+      manual_pred_types: manualPredTypes,
+      manual_options: options.length >= 2 ? options : undefined,
+    };
+
+    setSelectedFixtures((prev) => [...prev, event]);
+
+    // Reset form
+    setManualName("");
+    setManualStartTime("");
+    setManualLockTime("");
+    setManualOptionsText("");
+    setManualPredTypes(["winner"]);
+    setShowManualForm(false);
+  }
+
   // Create round (Step 4)
   async function createRound(compId: string, asDraft: boolean) {
     if (!asDraft && selectedFixtures.length === 0) return;
     setRoundSaving(true);
     setError(null);
 
-    const predictionTypeConfigs = presetToConfigs(selectedPreset, customPoints);
+    const defaultPredTypeConfigs = presetToConfigs(selectedPreset, customPoints);
 
     try {
-      const events = selectedFixtures.map((f) => ({
-        event_name: f.event_name,
-        sport: f.sport,
-        start_time: f.start_time,
-        lock_time: subtractMinutes(f.start_time, 30),
-        external_event_id: f.external_event_id ?? undefined,
-        prediction_type_configs: predictionTypeConfigs,
-      }));
+      const events = selectedFixtures.map((f) => {
+        // Manual events carry their own prediction types + options
+        const predConfigs = f.manual_pred_types
+          ? f.manual_pred_types.map((pt) => ({
+              prediction_type: pt,
+              ...(f.manual_options &&
+                (pt === "winner" || pt === "head_to_head")
+                ? { config: { options: f.manual_options } }
+                : {}),
+            }))
+          : defaultPredTypeConfigs;
+
+        return {
+          event_name: f.event_name,
+          sport: f.sport,
+          start_time: f.start_time,
+          lock_time: f.lock_time ?? subtractMinutes(f.start_time, 30),
+          external_event_id: f.external_event_id ?? undefined,
+          prediction_type_configs: predConfigs,
+        };
+      });
 
       const res = await fetch("/api/admin/rounds", {
         method: "POST",
@@ -922,6 +1005,178 @@ export function CreateCompetitionForm({ alwaysOpen = false }: CreateCompetitionF
             })}
           </div>
         )}
+
+        {/* Manual event entry */}
+        <div className="mb-4">
+          {!showManualForm ? (
+            <button
+              type="button"
+              onClick={() => {
+                setShowManualForm(true);
+                setManualSport(searchSport);
+              }}
+              className="flex items-center gap-1.5 text-xs font-semibold text-ps-text-sec hover:text-ps-text transition-colors"
+            >
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none">
+                <path d="M12 5v14M5 12h14" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round" />
+              </svg>
+              Add manually
+            </button>
+          ) : (
+            <div className="rounded-xl border border-ps-border bg-ps-surface p-4 space-y-4">
+              <div className="flex items-center justify-between mb-1">
+                <span className="text-[10px] font-extrabold tracking-widest uppercase text-ps-text-sec">
+                  Add manually
+                </span>
+                <button
+                  type="button"
+                  onClick={() => setShowManualForm(false)}
+                  className="text-ps-text-ter hover:text-ps-text transition-colors"
+                >
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none">
+                    <path d="M18 6L6 18M6 6l12 12" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" />
+                  </svg>
+                </button>
+              </div>
+
+              {/* Event name */}
+              <div>
+                <label className="block text-xs font-bold text-ps-text-sec mb-1">Event name</label>
+                <input
+                  type="text"
+                  maxLength={150}
+                  autoComplete="off"
+                  placeholder="e.g. Wexford v Kilkenny"
+                  value={manualName}
+                  onChange={(e) => setManualName(e.target.value)}
+                  className="block w-full rounded-xl border border-ps-border bg-ps-bg px-3.5 py-2.5 text-sm text-ps-text focus:border-ps-amber focus:outline-none"
+                />
+              </div>
+
+              {/* Sport */}
+              <div>
+                <label className="block text-xs font-bold text-ps-text-sec mb-2">Sport</label>
+                <div className="flex flex-wrap gap-1.5">
+                  {SPORTS.map((s) => (
+                    <button
+                      key={s.id}
+                      type="button"
+                      onClick={() => setManualSport(s.id)}
+                      className={`inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-xs font-semibold transition-colors ${
+                        manualSport === s.id
+                          ? "bg-ps-amber text-[#1a1208]"
+                          : "bg-ps-chip text-ps-text-sec hover:text-ps-text"
+                      }`}
+                    >
+                      <span>{s.emoji}</span>
+                      <span>{s.name}</span>
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Start time */}
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-xs font-bold text-ps-text-sec mb-1">Start time</label>
+                  <input
+                    type="datetime-local"
+                    value={manualStartTime}
+                    onChange={(e) => {
+                      setManualStartTime(e.target.value);
+                      // Auto-set lock to 30min before if not already set
+                      if (e.target.value && !manualLockTime) {
+                        const lockD = new Date(e.target.value);
+                        lockD.setMinutes(lockD.getMinutes() - 30);
+                        setManualLockTime(toDateTimeLocal(lockD));
+                      }
+                    }}
+                    className="block w-full rounded-xl border border-ps-border bg-ps-bg px-3 py-2.5 text-sm text-ps-text focus:border-ps-amber focus:outline-none"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-bold text-ps-text-sec mb-1">
+                    Lock time
+                    <span className="ml-1 font-normal text-ps-text-ter">(predictions close)</span>
+                  </label>
+                  <input
+                    type="datetime-local"
+                    value={manualLockTime}
+                    onChange={(e) => setManualLockTime(e.target.value)}
+                    className="block w-full rounded-xl border border-ps-border bg-ps-bg px-3 py-2.5 text-sm text-ps-text focus:border-ps-amber focus:outline-none"
+                  />
+                </div>
+              </div>
+
+              {/* Prediction types */}
+              <div>
+                <label className="block text-xs font-bold text-ps-text-sec mb-2">
+                  What can people predict?
+                </label>
+                <div className="grid grid-cols-2 gap-1.5">
+                  {MANUAL_PRED_TYPES.map((pt) => {
+                    const on = manualPredTypes.includes(pt.id);
+                    return (
+                      <label
+                        key={pt.id}
+                        className={`flex items-center gap-2 rounded-lg border px-3 py-2 cursor-pointer transition-colors ${
+                          on
+                            ? "border-ps-amber bg-ps-amber-soft"
+                            : "border-ps-border hover:border-ps-border-strong"
+                        }`}
+                      >
+                        <input
+                          type="checkbox"
+                          checked={on}
+                          onChange={() =>
+                            setManualPredTypes((prev) =>
+                              on ? prev.filter((t) => t !== pt.id) : [...prev, pt.id]
+                            )
+                          }
+                          className="accent-[#f59e0b]"
+                        />
+                        <span className="text-xs font-semibold text-ps-text">{pt.label}</span>
+                      </label>
+                    );
+                  })}
+                </div>
+              </div>
+
+              {/* Options for winner / head_to_head */}
+              {(manualPredTypes.includes("winner") || manualPredTypes.includes("head_to_head")) && (
+                <div>
+                  <label className="block text-xs font-bold text-ps-text-sec mb-1">
+                    Participants
+                    <span className="ml-1 font-normal text-ps-text-ter">(shows pick buttons, optional)</span>
+                  </label>
+                  <input
+                    type="text"
+                    placeholder="e.g. Wexford / Kilkenny"
+                    value={manualOptionsText}
+                    onChange={(e) => setManualOptionsText(e.target.value)}
+                    className="block w-full rounded-xl border border-ps-border bg-ps-bg px-3.5 py-2.5 text-sm text-ps-text focus:border-ps-amber focus:outline-none"
+                  />
+                  <p className="mt-1 text-[11px] text-ps-text-ter">
+                    Separate names with / or comma. Leaves a free-text field if blank.
+                  </p>
+                </div>
+              )}
+
+              <button
+                type="button"
+                disabled={!manualName.trim() || !manualStartTime || manualPredTypes.length === 0}
+                onClick={addManualEvent}
+                className={`w-full py-2.5 rounded-xl text-sm font-extrabold transition-opacity ${
+                  !manualName.trim() || !manualStartTime || manualPredTypes.length === 0
+                    ? "bg-ps-chip text-ps-text-ter cursor-default"
+                    : "bg-ps-ink text-ps-bg hover:opacity-80"
+                }`}
+              >
+                Add to round
+              </button>
+            </div>
+          )}
+        </div>
 
         {/* Selected fixtures summary */}
         {selectedFixtures.length > 0 && (
