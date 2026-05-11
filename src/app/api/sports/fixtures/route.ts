@@ -77,16 +77,42 @@ const VALID_LEAGUE_IDS = new Set(Object.keys(LEAGUE_SPORT_MAP));
 // returns better fixture data than TheSportsDB.
 
 const ESPN_LEAGUE_MAP: Record<string, string> = {
-  // Cricket — ESPN has live/current data, TheSportsDB is weak
-  "4460": "cricket/8048",   // IPL
-  "4461": "cricket/8044",   // Big Bash League
-  "4463": "cricket/8172",   // English T20 Blast
-  "5177": "cricket/12210",  // The Hundred
+  // Soccer — England (espn slug → confirmed working)
+  "4328": "soccer/eng.1",          // Premier League
+  "4329": "soccer/eng.2",          // Championship
+  "4350": "soccer/eng.league_cup", // Carabao Cup
+  // Soccer — Europe
+  "4480": "soccer/uefa.champions", // Champions League
+  "4481": "soccer/uefa.europa",    // Europa League
+  "4335": "soccer/esp.1",          // La Liga
+  "4331": "soccer/ger.1",          // Bundesliga
+  "4332": "soccer/ita.1",          // Serie A
+  "4334": "soccer/fra.1",          // Ligue 1
+  "4337": "soccer/ned.1",          // Eredivisie
+  "4338": "soccer/bel.1",          // Pro League (Belgium)
+  "4336": "soccer/gre.1",          // Super League (Greece)
+  // Soccer — Ireland / Scotland
+  "4643": "soccer/irl.1",          // League of Ireland Premier
+  "4330": "soccer/sco.1",          // Scottish Premiership
+  // Soccer — International
+  "4429": "soccer/fifa.world",             // FIFA World Cup
+  "4501": "soccer/conmebol.libertadores",  // Copa Libertadores
+  // Rugby union — ESPN numeric league IDs (confirmed via live API tests)
+  // NRL (4416) and Super League (4415) are rugby league — NOT on ESPN
+  // ERCC (4550) ID not found on ESPN — falls through to TheSportsDB
+  "4446": "rugby/270557",  // United Rugby Championship
+  // Tennis
+  "4464": "tennis/atp",   // ATP Tour
+  "4517": "tennis/wta",   // WTA Tour
+  // Golf
+  "4758": "golf/eur",     // DP World Tour (European Tour)
   // US Sports — ESPN is authoritative
   "4387": "basketball/nba",
   "4424": "baseball/mlb",
   "4380": "hockey/nhl",
   "4391": "football/nfl",
+  // Cricket — ESPN scoreboard API returns 404 for all cricket paths (dropped coverage).
+  // Cricket leagues fall through to TheSportsDB.
 };
 
 // ---------- Foireann routing ----------
@@ -148,8 +174,15 @@ async function fetchESPNFixtures(
   sport: Sport,
 ): Promise<NormalizedFixture[]> {
   try {
+    // ESPN scoreboard defaults to the current day only — pass a 30-day window
+    // so upcoming fixtures always appear regardless of today's schedule.
+    const today = new Date();
+    const end = new Date(today.getTime() + 30 * 86_400_000);
+    const fmt = (d: Date) => d.toISOString().slice(0, 10).replace(/-/g, "");
+    const dates = `${fmt(today)}-${fmt(end)}`;
+
     const res = await fetch(
-      `${ESPN_BASE}/${espnPath}/scoreboard`,
+      `${ESPN_BASE}/${espnPath}/scoreboard?dates=${dates}`,
       ESPN_FETCH_OPTS,
     );
     if (!res.ok) return [];
