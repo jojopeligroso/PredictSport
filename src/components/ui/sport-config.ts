@@ -55,7 +55,7 @@ export const SPORT_CONFIG: Record<
     ...PILL_STYLE,
   },
   nba: {
-    name: 'NBA',
+    name: 'Basketball',
     emoji: '\ud83c\udfc0',
     ...BAR_STYLE,
     ...PILL_STYLE,
@@ -103,19 +103,19 @@ export const SPORT_CONFIG: Record<
     ...PILL_STYLE,
   },
   mlb: {
-    name: 'MLB',
+    name: 'Baseball',
     emoji: '\u26be',
     ...BAR_STYLE,
     ...PILL_STYLE,
   },
   nfl: {
-    name: 'NFL',
+    name: 'American Football',
     emoji: '\ud83c\udfc8',
     ...BAR_STYLE,
     ...PILL_STYLE,
   },
   nhl: {
-    name: 'NHL',
+    name: 'Ice Hockey',
     emoji: '\ud83c\udfd2',
     ...BAR_STYLE,
     ...PILL_STYLE,

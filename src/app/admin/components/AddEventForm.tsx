@@ -25,10 +25,10 @@ const SPORTS: { value: Sport; label: string }[] = [
   { value: "gaa", label: "GAA" },
   { value: "horse_racing", label: "Horse Racing" },
   { value: "snooker", label: "Snooker" },
-  { value: "mlb", label: "MLB" },
-  { value: "nfl", label: "NFL" },
-  { value: "nba", label: "NBA" },
-  { value: "nhl", label: "NHL" },
+  { value: "mlb", label: "Baseball" },
+  { value: "nfl", label: "American Football" },
+  { value: "nba", label: "Basketball" },
+  { value: "nhl", label: "Ice Hockey" },
 ];
 
 const PREDICTION_TYPES: { value: PredictionType; label: string; description: string }[] = [
