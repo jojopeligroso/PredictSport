@@ -488,7 +488,8 @@ invite_tokens                — tokenised invite links
 
 Tracked in `todos.md` as a prioritised punch list. Keep both files in sync.
 
-### Open
+### Done
 
+1–12. All P0/P1/P2 items from the original punch list are complete. See `todos.md` for details.
 13. ~~**Alternative auth for in-app browsers**~~ — ✓ Done. UA detection in `LoginButton.tsx` hides Google button and auto-focuses email input when running inside Telegram, Messenger, Instagram, or similar in-app webviews.
 14. ~~**Privacy policy & terms of service**~~ — ✓ Done. `/privacy` and `/terms` pages live, footer links site-wide, login page consent text, OAuth consent screen published.
