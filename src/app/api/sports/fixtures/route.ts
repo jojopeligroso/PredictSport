@@ -111,6 +111,9 @@ const ESPN_LEAGUE_MAP: Record<string, string> = {
   "4424": "baseball/mlb",
   "4380": "hockey/nhl",
   "4391": "football/nfl",
+  // Motorsport
+  "4370": "racing/f1",        // Formula 1 (confirmed working)
+  // MotoGP (4407) — ESPN racing/motogp returns 404; falls through to TheSportsDB.
   // Cricket — ESPN scoreboard API returns 404 for all cricket paths (dropped coverage).
   // Cricket leagues fall through to TheSportsDB.
 };
