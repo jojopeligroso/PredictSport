@@ -105,6 +105,12 @@ export class ESPNProvider extends BaseProvider {
     if (options?.date) {
       // ESPN uses YYYYMMDD format
       params.dates = options.date.replace(/-/g, "");
+    } else {
+      // Default: today → +14 days so fixture browser finds upcoming events on off-days
+      const today = new Date();
+      const end = new Date(today.getTime() + 14 * 86_400_000);
+      const fmt = (d: Date) => d.toISOString().slice(0, 10).replace(/-/g, "");
+      params.dates = `${fmt(today)}-${fmt(end)}`;
     }
 
     const data = await this.apiFetch<ESPNScoreboardResponse>(
@@ -113,10 +119,20 @@ export class ESPNProvider extends BaseProvider {
     );
     if (!data?.events?.length) return [];
 
-    const queryLower = query.toLowerCase();
-    const filtered = data.events.filter((e) =>
-      e.name.toLowerCase().includes(queryLower)
-    );
+    // Match query against event name OR team/athlete names.
+    // If query is a competition name (e.g. "URC") that won't appear in event names,
+    // fall back to returning all events — sport/league path is already the filter.
+    const queryLower = query.toLowerCase().trim();
+    const nameMatches = queryLower
+      ? data.events.filter((e) => {
+          const name = e.name.toLowerCase();
+          const teams = (e.competitions[0]?.competitors ?? [])
+            .map((c) => (c.team?.displayName ?? c.athlete?.displayName ?? "").toLowerCase())
+            .join(" ");
+          return name.includes(queryLower) || teams.includes(queryLower);
+        })
+      : data.events;
+    const filtered = nameMatches.length > 0 ? nameMatches : data.events;
 
     const limit = options?.limit ?? 10;
     return filtered.slice(0, limit).map((e) => {
