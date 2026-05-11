@@ -1,0 +1,133 @@
+# PredictSport Fixture File — TEMPLATE
+#
+# TWO MODES — use either or both in the same file:
+#
+#   POOL MODE (sporting_events key):
+#     Adds real-world sporting events to the fixture pool — a library that competition
+#     creators can browse and pick from. No prediction competition needed.
+#     These appear in the fixture browser alongside API-sourced events.
+#     Use this when you want to pre-populate events for future competitions.
+#
+#   COMPETITION MODE (competition + rounds keys):
+#     Creates a full PredictSport prediction competition with rounds, events,
+#     and prediction types. Events are tied to a specific prediction competition.
+#     Use this when the competition is already defined and you're setting it up.
+#
+# USAGE:
+#   npx tsx scripts/ingest-fixtures.ts fixtures/your-file.yaml
+#   Idempotent — safe to re-run. Events matched by external_event_id (auto-computed from name+date).
+#
+# SPORTS (valid values for the sport field):
+#   gaa, soccer, rugby, tennis, golf, horse_racing, cricket,
+#   formula_1, snooker, athletics, nfl, nba, nhl, mlb
+#
+# PREDICTION TYPES (competition mode only):
+#   winner         — predict the outright winner (config.options drives the button UI)
+#   yes_no         — binary choice (config.options: ["Yes","No"] or custom labels)
+#   head_to_head   — one of two participants wins (config.options, config.allow_draw)
+#   margin         — predict winning margin range
+#   over_under     — predict over/under a line
+#   top_n          — predict who finishes in top N
+#   final_standings — predict full finishing order
+#   handicap       — predict winner after handicap adjustment
+#   progression    — predict how far a team/player progresses
+
+# =============================================================================
+# POOL MODE — adds events to the sporting_events library
+# =============================================================================
+# These events will appear in the fixture browser for competition creators to pick from.
+# They are NOT part of any prediction competition yet.
+# competition_name here is the REAL-WORLD sporting competition (e.g. "Leinster SHC 2026")
+# NOT a PredictSport prediction competition.
+
+sporting_events:
+
+  # A specific match in the Leinster Senior Hurling Championship
+  - event_name: "Wexford v Kilkenny"
+    sport: gaa
+    start_time: "2026-06-07T14:00:00Z"
+    participants: ["Wexford", "Kilkenny"]
+    competition_name: "Leinster SHC 2026"   # optional — the real sporting competition
+
+  # An open-field tournament — no participants needed (or list top contenders)
+  - event_name: "US Masters 2026"
+    sport: golf
+    start_time: "2026-04-09T12:00:00Z"
+    participants: ["Scottie Scheffler", "Rory McIlroy", "Jon Rahm"]
+    competition_name: "US Masters 2026"
+
+  # A one-off event (niche or non-mainstream)
+  - event_name: "Irish 25s Championship Final 2026"
+    sport: gaa                            # closest available sport type
+    start_time: "2026-11-15T14:00:00Z"
+    participants: []                      # participants optional
+    competition_name: "Irish 25s Championship 2026"
+
+
+# =============================================================================
+# COMPETITION MODE — creates a full prediction competition
+# =============================================================================
+# Uncomment and fill in if you want to create a prediction competition directly.
+# The competition key is the idempotency key — running again updates it in place.
+
+# competition:
+#   name: "Wexford FC Quiz — Summer 2026"   # Required. Must be unique.
+#   description: "Predict the outcomes below. 10 points per correct answer."
+#   type: fixed          # fixed (closed entry list) | open (anyone can join)
+#   visibility: private  # private (invite only) | public
+#   status: draft        # draft (hidden from participants) | active
+#   allow_prediction_updates: false
+#   lock_default_minutes: 30   # Default: lock 30min before start_time
+#   scoring_rules:
+#     preset: classic_quiz
+#     points:
+#       winner: 10
+#       yes_no: 10
+#       head_to_head: 5
+#
+# rounds:
+#   - round_number: 1
+#     name: "Round 1"
+#     events:
+#
+#       # Head-to-head match — config.options REQUIRED for button UI
+#       - event_name: "Wexford v Kilkenny — Leinster SHC"
+#         sport: gaa
+#         start_time: "2026-06-07T14:00:00Z"
+#         lock_time: "2026-06-07T13:30:00Z"        # Explicit lock; omit to use lock_default_minutes
+#         result_check_after: "2026-06-07T16:30:00Z"  # Omit to use sport timing (gaa: 2h)
+#         prediction_types:
+#           - type: head_to_head
+#             points: 10
+#             config:
+#               options: ["Wexford", "Kilkenny"]
+#               allow_draw: false
+#
+#       # Outright winner — list the options (config.options) or omit for free-text
+#       - event_name: "All-Ireland Senior Hurling Final 2026"
+#         sport: gaa
+#         start_time: "2026-07-19T15:30:00Z"
+#         prediction_types:
+#           - type: winner
+#             points: 10
+#             config:
+#               options: ["Cork", "Kilkenny", "Limerick", "Wexford"]
+#
+#       # Multi-day event — override result_check_after to after the final round
+#       - event_name: "US Masters 2026"
+#         sport: golf
+#         start_time: "2026-04-09T12:00:00Z"
+#         result_check_after: "2026-04-12T22:00:00Z"
+#         prediction_types:
+#           - type: winner
+#             points: 10
+#
+#       # Yes/No question
+#       - event_name: "Will Republic of Ireland qualify for 2026 World Cup?"
+#         sport: soccer
+#         start_time: "2026-07-19T20:00:00Z"
+#         prediction_types:
+#           - type: yes_no
+#             points: 10
+#             config:
+#               options: ["Yes", "No"]

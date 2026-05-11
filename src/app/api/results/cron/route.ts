@@ -1,0 +1,117 @@
+import { NextResponse } from "next/server";
+import { createClient } from "@supabase/supabase-js";
+import {
+  autoResolveEvent,
+  type AutoResultEvent,
+  type AutoResultStatus,
+} from "@/lib/sports/auto-result";
+
+/**
+ * GET /api/results/cron
+ *
+ * Called hourly by Vercel Cron. Polls for locked events that need
+ * auto-result resolution and scores predictions when a final result
+ * is found from the sports provider chain.
+ *
+ * SECURITY: Protected by CRON_SECRET -- Vercel sets the Authorization
+ * header automatically for cron invocations.
+ */
+
+function getServiceClient() {
+  const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const key = process.env.SUPABASE_SERVICE_ROLE_KEY;
+  if (!url || !key) throw new Error("Supabase service config missing");
+  return createClient(url, key);
+}
+
+const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
+
+export async function GET(request: Request) {
+  // Verify cron secret -- Vercel sends this automatically for cron jobs
+  const authHeader = request.headers.get("authorization");
+  const cronSecret = process.env.CRON_SECRET;
+
+  if (cronSecret && authHeader !== `Bearer ${cronSecret}`) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
+  const supabase = getServiceClient();
+  const now = new Date();
+
+  // Query: locked events from the last 7 days that haven't been result-confirmed
+  const sevenDaysAgo = new Date(now.getTime() - 7 * 24 * 3600000);
+
+  const { data: events, error } = await supabase
+    .from("events")
+    .select(
+      "id, event_name, sport, start_time, external_event_id, result_data, competition_id"
+    )
+    .eq("status", "locked")
+    .eq("result_confirmed", false)
+    .gte("start_time", sevenDaysAgo.toISOString());
+
+  if (error) {
+    console.error("Results cron: failed to fetch events:", error.message);
+    return NextResponse.json({ error: "DB query failed" }, { status: 500 });
+  }
+
+  // Filter in JS for conditions that can't be expressed in the Supabase query
+  const candidates = (events ?? []).filter((e) => {
+    const rd = e.result_data as Record<string, unknown> | null;
+
+    // Skip events with no result_data (admin-UI-created events without auto-result setup)
+    if (!rd) return false;
+
+    // Skip if already terminal
+    const autoStatus = rd.auto_result_status as string | undefined;
+    if (autoStatus === "window_expired" || autoStatus === "confirmed") {
+      return false;
+    }
+
+    // Skip if too early (quick check before calling autoResolveEvent)
+    const checkAfter = rd.auto_result_check_after as string | undefined;
+    if (checkAfter && now.toISOString() < checkAfter) {
+      return false;
+    }
+
+    return true;
+  });
+
+  // Process sequentially with 200ms sleep between events to avoid rate limits
+  const counts: Record<AutoResultStatus, number> = {
+    confirmed: 0,
+    no_result: 0,
+    window_expired: 0,
+    skipped: 0,
+    error: 0,
+  };
+
+  for (let i = 0; i < candidates.length; i++) {
+    const event = candidates[i] as AutoResultEvent;
+    const outcome = await autoResolveEvent(supabase, event, now);
+
+    counts[outcome.status]++;
+
+    const detail = outcome.message ? ` (${outcome.message})` : "";
+    const provider = outcome.provider ? ` [${outcome.provider}]` : "";
+    console.log(
+      `[results-cron] ${outcome.status}: "${outcome.event_name}"${provider}${detail}`
+    );
+
+    // Sleep between events to respect provider rate limits
+    if (i < candidates.length - 1) {
+      await sleep(200);
+    }
+  }
+
+  return NextResponse.json({
+    ok: true,
+    checked_at: now.toISOString(),
+    events_checked: candidates.length,
+    confirmed: counts.confirmed,
+    no_result: counts.no_result,
+    window_expired: counts.window_expired,
+    skipped: counts.skipped,
+    errors: counts.error,
+  });
+}

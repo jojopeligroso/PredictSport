@@ -1,0 +1,6 @@
+# Actual fixture files contain competition setup data.
+# Keep TEMPLATE.yaml in source control; exclude actual fixture files by default.
+# To commit a specific fixture file, add a negation line here, e.g.:
+#   !wexford-fc-quiz-2026.yaml
+*.yaml
+!TEMPLATE.yaml
