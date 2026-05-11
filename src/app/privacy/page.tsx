@@ -2,7 +2,7 @@ import Link from "next/link";
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {
-  title: "Privacy Policy — PredictSport",
+  title: "Privacy Policy — sportspredict.",
 };
 
 export default function PrivacyPage() {

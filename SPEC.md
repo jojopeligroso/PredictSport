@@ -491,4 +491,4 @@ Tracked in `todos.md` as a prioritised punch list. Keep both files in sync.
 ### Open
 
 13. **Alternative auth for in-app browsers** — magic link or similar for Telegram/Messenger webviews where Google OAuth is blocked
-14. **Privacy policy & terms of service** — Pages complete (`/privacy`, `/terms`), footer links site-wide, login page consent text. **Manual step remaining:** publish OAuth consent screen in Google Cloud Console (see below).
+14. ~~**Privacy policy & terms of service**~~ — ✓ Done. `/privacy` and `/terms` pages live, footer links site-wide, login page consent text, OAuth consent screen published.
