@@ -181,9 +181,22 @@ const ALLOWED_TRANSITIONS: Record<CompetitionStatus, CompetitionStatus[]> = {
   archived: [],
 };
 
+interface PatchBody {
+  competition_id: string;
+  status?: CompetitionStatus;
+  name?: string;
+  description?: string | null;
+  visibility?: CompetitionVisibility;
+  type?: CompetitionType;
+  allow_nominations?: boolean;
+  lock_default_minutes?: number;
+}
+
 /**
  * PATCH /api/admin/competitions
- * Update competition status (draft -> active -> completed).
+ * Two modes:
+ * 1. Status transition — body contains `status`
+ * 2. Field update — body does NOT contain `status`
  */
 export async function PATCH(request: Request) {
   const supabase = await createClient();
@@ -195,23 +208,16 @@ export async function PATCH(request: Request) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  let body: { competition_id: string; status: CompetitionStatus };
+  let body: PatchBody;
   try {
     body = await request.json();
   } catch {
     return NextResponse.json({ error: "Invalid JSON body" }, { status: 400 });
   }
 
-  if (!body.competition_id || !body.status) {
+  if (!body.competition_id) {
     return NextResponse.json(
-      { error: "competition_id and status are required" },
-      { status: 400 }
-    );
-  }
-
-  if (!VALID_STATUSES.includes(body.status)) {
-    return NextResponse.json(
-      { error: "Invalid status" },
+      { error: "competition_id is required" },
       { status: 400 }
     );
   }
@@ -228,7 +234,59 @@ export async function PATCH(request: Request) {
     );
   }
 
-  // Fetch current competition to validate transition
+  // ── Mode 1: Status transition ──
+  if (Object.prototype.hasOwnProperty.call(body, "status")) {
+    if (!body.status || !VALID_STATUSES.includes(body.status)) {
+      return NextResponse.json(
+        { error: "Invalid status" },
+        { status: 400 }
+      );
+    }
+
+    // Fetch current competition to validate transition
+    const { data: competition } = await supabase
+      .from("competitions")
+      .select("status")
+      .eq("id", body.competition_id)
+      .single();
+
+    if (!competition) {
+      return NextResponse.json(
+        { error: "Competition not found" },
+        { status: 404 }
+      );
+    }
+
+    const allowed = ALLOWED_TRANSITIONS[competition.status as CompetitionStatus] ?? [];
+    if (!allowed.includes(body.status)) {
+      return NextResponse.json(
+        {
+          error: `Cannot transition from '${competition.status}' to '${body.status}'`,
+        },
+        { status: 400 }
+      );
+    }
+
+    const { data: updated, error: updateError } = await supabase
+      .from("competitions")
+      .update({ status: body.status })
+      .eq("id", body.competition_id)
+      .select()
+      .single();
+
+    if (updateError) {
+      return NextResponse.json(
+        { error: "Failed to update status", details: updateError.message },
+        { status: 500 }
+      );
+    }
+
+    return NextResponse.json({ competition: updated });
+  }
+
+  // ── Mode 2: Field update ──
+
+  // Fetch current competition to check status for type updates
   const { data: competition } = await supabase
     .from("competitions")
     .select("status")
@@ -242,26 +300,75 @@ export async function PATCH(request: Request) {
     );
   }
 
-  const allowed = ALLOWED_TRANSITIONS[competition.status as CompetitionStatus] ?? [];
-  if (!allowed.includes(body.status)) {
+  const updates: Record<string, unknown> = {};
+
+  if (Object.prototype.hasOwnProperty.call(body, "name")) {
+    if (typeof body.name !== "string" || !body.name.trim()) {
+      return NextResponse.json(
+        { error: "Name must be a non-empty string" },
+        { status: 400 }
+      );
+    }
+    updates.name = body.name.trim();
+  }
+
+  if (Object.prototype.hasOwnProperty.call(body, "description")) {
+    updates.description = typeof body.description === "string"
+      ? body.description.trim() || null
+      : null;
+  }
+
+  if (Object.prototype.hasOwnProperty.call(body, "visibility")) {
+    if (!body.visibility || !VALID_VISIBILITY.includes(body.visibility)) {
+      return NextResponse.json(
+        { error: "Invalid visibility setting" },
+        { status: 400 }
+      );
+    }
+    updates.visibility = body.visibility;
+  }
+
+  if (Object.prototype.hasOwnProperty.call(body, "type")) {
+    if (!body.type || !VALID_TYPES.includes(body.type)) {
+      return NextResponse.json(
+        { error: "Invalid competition type" },
+        { status: 400 }
+      );
+    }
+    if (competition.status !== "draft") {
+      return NextResponse.json(
+        { error: "Competition type can only be changed while in draft status" },
+        { status: 400 }
+      );
+    }
+    updates.type = body.type;
+  }
+
+  if (Object.prototype.hasOwnProperty.call(body, "allow_nominations")) {
+    updates.allow_nominations = Boolean(body.allow_nominations);
+  }
+
+  if (Object.prototype.hasOwnProperty.call(body, "lock_default_minutes")) {
+    updates.lock_default_minutes = Number(body.lock_default_minutes);
+  }
+
+  if (Object.keys(updates).length === 0) {
     return NextResponse.json(
-      {
-        error: `Cannot transition from '${competition.status}' to '${body.status}'`,
-      },
+      { error: "No valid fields to update" },
       { status: 400 }
     );
   }
 
   const { data: updated, error: updateError } = await supabase
     .from("competitions")
-    .update({ status: body.status })
+    .update(updates)
     .eq("id", body.competition_id)
     .select()
     .single();
 
   if (updateError) {
     return NextResponse.json(
-      { error: "Failed to update status", details: updateError.message },
+      { error: "Failed to update competition", details: updateError.message },
       { status: 500 }
     );
   }
