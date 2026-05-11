@@ -173,48 +173,52 @@ async function fetchESPNFixtures(
   espnPath: string,
   sport: Sport,
 ): Promise<NormalizedFixture[]> {
-  try {
-    // ESPN scoreboard defaults to the current day only — pass a 30-day window
-    // so upcoming fixtures always appear regardless of today's schedule.
-    const today = new Date();
-    const end = new Date(today.getTime() + 30 * 86_400_000);
-    const fmt = (d: Date) => d.toISOString().slice(0, 10).replace(/-/g, "");
-    const dates = `${fmt(today)}-${fmt(end)}`;
+  // ESPN scoreboard defaults to the current day only — pass a 30-day window
+  // so upcoming fixtures always appear regardless of today's schedule.
+  const today = new Date();
+  const end = new Date(today.getTime() + 30 * 86_400_000);
+  const fmt = (d: Date) => d.toISOString().slice(0, 10).replace(/-/g, "");
+  const dates = `${fmt(today)}-${fmt(end)}`;
+  const url = `${ESPN_BASE}/${espnPath}/scoreboard?dates=${dates}`;
 
-    const res = await fetch(
-      `${ESPN_BASE}/${espnPath}/scoreboard?dates=${dates}`,
-      ESPN_FETCH_OPTS,
-    );
-    if (!res.ok) return [];
+  try {
+    const res = await fetch(url, ESPN_FETCH_OPTS);
+    if (!res.ok) {
+      console.error(`[fixtures] ESPN ${espnPath} → HTTP ${res.status} ${res.statusText} (url: ${url})`);
+      return [];
+    }
 
     const data: ESPNScoreboardResponse = await res.json();
-    if (!data?.events?.length) return [];
+    const total = data?.events?.length ?? 0;
+    const upcoming = data?.events?.filter((e) => !e.status.type.completed) ?? [];
+    console.log(`[fixtures] ESPN ${espnPath}: ${upcoming.length} upcoming / ${total} total events`);
+
+    if (!total) return [];
 
     const leagueName = data.leagues?.[0]?.name ?? espnPath;
     const season = data.leagues?.[0]?.season?.year?.toString() ?? null;
 
-    return data.events
-      .filter((e) => !e.status.type.completed)
-      .map((e) => {
-        const competitors = e.competitions[0]?.competitors ?? [];
-        const home = competitors.find((c) => c.homeAway === "home");
-        const away = competitors.find((c) => c.homeAway === "away");
-        const homeName = home?.team?.displayName ?? home?.athlete?.displayName ?? "";
-        const awayName = away?.team?.displayName ?? away?.athlete?.displayName ?? "";
-        const participants = [homeName, awayName].filter(Boolean);
+    return upcoming.map((e) => {
+      const competitors = e.competitions[0]?.competitors ?? [];
+      const home = competitors.find((c) => c.homeAway === "home");
+      const away = competitors.find((c) => c.homeAway === "away");
+      const homeName = home?.team?.displayName ?? home?.athlete?.displayName ?? "";
+      const awayName = away?.team?.displayName ?? away?.athlete?.displayName ?? "";
+      const participants = [homeName, awayName].filter(Boolean);
 
-        return {
-          external_event_id: e.id,
-          event_name: e.name,
-          sport,
-          competition_name: leagueName,
-          start_time: e.date,
-          participants,
-          round: null,
-          season,
-        };
-      });
-  } catch {
+      return {
+        external_event_id: e.id,
+        event_name: e.name,
+        sport,
+        competition_name: leagueName,
+        start_time: e.date,
+        participants,
+        round: null,
+        season,
+      };
+    });
+  } catch (err) {
+    console.error(`[fixtures] ESPN fetch threw for ${url}:`, err);
     return [];
   }
 }
@@ -238,7 +242,10 @@ async function fetchFoireannFixtures(
   config: { activity?: string },
 ): Promise<NormalizedFixture[]> {
   const apiKey = process.env.FOIREANN_API_KEY;
-  if (!apiKey) return [];
+  if (!apiKey) {
+    console.error("[fixtures] FOIREANN_API_KEY not set — GAA fixtures unavailable");
+    return [];
+  }
 
   try {
     const today = new Date().toISOString().split("T")[0];
@@ -266,10 +273,14 @@ async function fetchFoireannFixtures(
         next: { revalidate: 300 } as NextFetchRequestConfig,
       },
     );
-    if (!res.ok) return [];
+    if (!res.ok) {
+      console.error(`[fixtures] Foireann → HTTP ${res.status} ${res.statusText}`);
+      return [];
+    }
 
     const data = await res.json();
     const fixtures: FoireannFixtureItem[] = data?.content ?? [];
+    console.log(`[fixtures] Foireann (${config.activity ?? "all"}): ${fixtures.length} fixtures`);
 
     return fixtures
       .filter((f) => !f.isResult && !f.postponed && !f.abandoned)
@@ -285,7 +296,8 @@ async function fetchFoireannFixtures(
         round: f.round ?? null,
         season: f.competition.season ?? null,
       }));
-  } catch {
+  } catch (err) {
+    console.error("[fixtures] Foireann fetch threw:", err);
     return [];
   }
 }
@@ -347,10 +359,16 @@ async function fetchTSDBFixtures(
     `${TSDB_BASE}/eventsnextleague.php?id=${leagueId}`,
     TSDB_FETCH_OPTS,
   );
-  if (!nextRes.ok) return [];
+  if (!nextRes.ok) {
+    console.error(`[fixtures] TheSportsDB eventsnextleague ${leagueId} → HTTP ${nextRes.status}`);
+    return [];
+  }
 
   const nextData: TSDBFixturesResponse = await nextRes.json();
-  if (!nextData.events?.length) return [];
+  if (!nextData.events?.length) {
+    console.log(`[fixtures] TheSportsDB league ${leagueId}: 0 upcoming events`);
+    return [];
+  }
 
   const firstEvent = nextData.events[0];
   const currentRound = parseInt(firstEvent.intRound ?? "0", 10);
@@ -440,16 +458,20 @@ export async function GET(request: Request) {
 
     if (FOIREANN_LEAGUE_MAP[leagueId]) {
       // GAA → Foireann API
+      console.log(`[fixtures] route: league=${leagueId} → Foireann`);
       fixtures = await fetchFoireannFixtures(FOIREANN_LEAGUE_MAP[leagueId]);
     } else if (ESPN_LEAGUE_MAP[leagueId]) {
-      // ESPN-routed leagues (cricket, US sports)
+      // ESPN-routed leagues
+      console.log(`[fixtures] route: league=${leagueId} → ESPN (${ESPN_LEAGUE_MAP[leagueId]})`);
       fixtures = await fetchESPNFixtures(ESPN_LEAGUE_MAP[leagueId], sport);
       // If ESPN returns nothing, fall back to TheSportsDB
       if (fixtures.length === 0) {
+        console.log(`[fixtures] route: ESPN returned 0 for league=${leagueId}, falling back to TheSportsDB`);
         fixtures = await fetchTSDBFixtures(leagueId, sport);
       }
     } else {
       // Default: TheSportsDB
+      console.log(`[fixtures] route: league=${leagueId} → TheSportsDB (no ESPN mapping)`);
       fixtures = await fetchTSDBFixtures(leagueId, sport);
     }
 
@@ -459,8 +481,10 @@ export async function GET(request: Request) {
         new Date(a.start_time).getTime() - new Date(b.start_time).getTime(),
     );
 
+    console.log(`[fixtures] route: league=${leagueId} returning ${fixtures.length} fixtures`);
     return NextResponse.json({ fixtures });
-  } catch {
+  } catch (err) {
+    console.error(`[fixtures] route: unhandled error for league=${leagueId}:`, err);
     return NextResponse.json(
       { error: "Internal server error" },
       { status: 500 },
