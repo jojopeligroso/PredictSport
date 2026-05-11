@@ -103,8 +103,13 @@ export class ESPNProvider extends BaseProvider {
 
     const params: Record<string, string> = {};
     if (options?.date) {
-      // ESPN uses YYYYMMDD format
-      params.dates = options.date.replace(/-/g, "");
+      // ESPN scoreboard is single-day by default — extend to a 14-day window
+      // starting from dateFrom so off-day searches still find upcoming fixtures.
+      // search-events.ts and the client-side filter trim to the user's dateTo.
+      const start = options.date.replace(/-/g, "");
+      const rangeEnd = new Date(new Date(options.date).getTime() + 14 * 86_400_000);
+      const end = rangeEnd.toISOString().slice(0, 10).replace(/-/g, "");
+      params.dates = `${start}-${end}`;
     } else {
       // Default: today → +14 days so fixture browser finds upcoming events on off-days
       const today = new Date();
