@@ -488,25 +488,7 @@ invite_tokens                — tokenised invite links
 
 Tracked in `todos.md` as a prioritised punch list. Keep both files in sync.
 
-### P0 — Blocking launch
+### Open
 
-1. ~~**Google OAuth broken on deploy**~~ — ✓ Fixed
-2. ~~**No user profile editing page**~~ — ✓ Built
-3. ~~**Competition activation UI**~~ — ✓ Built
-4. ~~**Competition completion/archive flow**~~ — ✓ Built
-
-### P1 — Core functionality gaps
-
-5. ~~**H2H draw support**~~ — ✓ Built
-6. ~~**Over/under push**~~ — ✓ Fixed
-7. ~~**UI vocabulary**~~ — ✓ Renamed
-8. ~~**WhatsApp integration**~~ — Replaced with web push notifications (PWA). Built.
-
-### P2 — Polish
-
-9. ~~**Scoring template redesign**~~ — ✓ Built
-10. ~~**Logo redesign**~~ — ✓ Built. GAA umpire mark (outlined figure raising green flag) replaces PS placeholder. Inline SVG component (`UmpireLogo`) used across all pages. PWA icons and favicon regenerated.
-11. ~~**Persona callout configuration**~~ — ✓ Built
-12. ~~**OAuth consent screen branding**~~ — Won't fix; Google sign-in shows Supabase domain because redirect URI is on Supabase. Requires Supabase custom domain (Pro plan) to change.
 13. **Alternative auth for in-app browsers** — magic link or similar for Telegram/Messenger webviews where Google OAuth is blocked
-14. **Privacy policy & terms of service** — In progress. `/privacy` and `/terms` pages created, footer added site-wide, login page links both docs, OAuth console URLs set. Remaining: publish consent screen.
+14. **Privacy policy & terms of service** — Pages complete (`/privacy`, `/terms`), footer links site-wide, login page consent text. **Manual step remaining:** publish OAuth consent screen in Google Cloud Console (see below).
