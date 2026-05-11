@@ -42,6 +42,8 @@ const sportProviders: Record<Sport, SportsProvider[]> = {
   rugby: [providers.fixturePool, providers.espn, providers.theSportsDB],
   tennis: [providers.fixturePool, providers.espn, providers.theSportsDB],
   gaa: [providers.fixturePool, providers.foireann, providers.manual],
+  gaelic_football: [providers.fixturePool, providers.foireann, providers.manual],
+  hurling: [providers.fixturePool, providers.foireann, providers.manual],
   horse_racing: [providers.fixturePool, providers.theRacingAPI],
   cricket: [providers.fixturePool, providers.espn, providers.theSportsDB, providers.manual],
   athletics: [providers.fixturePool, providers.manual],

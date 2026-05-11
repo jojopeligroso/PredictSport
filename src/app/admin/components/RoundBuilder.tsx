@@ -66,7 +66,9 @@ const SPORT_EMOJIS: Record<string, string> = {
   football: "⚽",
   formula_1: "🏎",
   f1: "🏎",
-  gaa: "🟢",
+  gaa: "🇮🇪",
+  gaelic_football: "🏐",
+  hurling: "🏑",
   golf: "⛳",
   rugby: "🏉",
   tennis: "🎾",
@@ -81,21 +83,23 @@ const SPORT_EMOJIS: Record<string, string> = {
   hockey: "🏒",
 };
 
+// Alphabetical, with GAA group at the end for optgroup rendering
 const SPORT_OPTIONS = [
-  { value: "soccer", label: "Soccer" },
-  { value: "formula_1", label: "Formula 1" },
-  { value: "gaa", label: "GAA" },
-  { value: "golf", label: "Golf" },
-  { value: "rugby", label: "Rugby" },
-  { value: "tennis", label: "Tennis" },
-  { value: "horse_racing", label: "Horse Racing" },
-  { value: "snooker", label: "Snooker" },
-  { value: "mlb", label: "MLB" },
-  { value: "nfl", label: "NFL" },
-  { value: "nba", label: "NBA" },
-  { value: "nhl", label: "NHL" },
-  { value: "cricket", label: "Cricket" },
-  { value: "athletics", label: "Athletics" },
+  { value: "athletics",       label: "Athletics" },
+  { value: "cricket",         label: "Cricket" },
+  { value: "formula_1",       label: "Formula 1" },
+  { value: "gaelic_football", label: "Gaelic Football" },
+  { value: "golf",            label: "Golf" },
+  { value: "horse_racing",    label: "Horse Racing" },
+  { value: "hurling",         label: "Hurling" },
+  { value: "mlb",             label: "MLB" },
+  { value: "nba",             label: "NBA" },
+  { value: "nfl",             label: "NFL" },
+  { value: "nhl",             label: "NHL" },
+  { value: "rugby",           label: "Rugby" },
+  { value: "snooker",         label: "Snooker" },
+  { value: "soccer",          label: "Soccer" },
+  { value: "tennis",          label: "Tennis" },
 ];
 
 const LEAGUE_OPTIONS: Record<string, { id: string; label: string }[]> = {
@@ -379,7 +383,7 @@ function Step1FindFixtures({
   onCancel,
 }: Step1Props) {
   const [query, setQuery] = useState("");
-  const [sport, setSport] = useState("soccer");
+  const [sport, setSport] = useState("");
   const [league, setLeague] = useState("");
   const [dateFrom, setDateFrom] = useState("");
   const [dateTo, setDateTo] = useState("");
@@ -401,6 +405,7 @@ function Step1FindFixtures({
 
   const doSearch = useCallback(
     async (opts?: { leagueId?: string }) => {
+      if (!sport) return;
       searchRef.current?.abort();
       const ctrl = new AbortController();
       searchRef.current = ctrl;
@@ -521,15 +526,21 @@ function Step1FindFixtures({
             className="shrink-0 rounded-xl border border-ps-border bg-ps-bg px-2 py-2 text-sm text-ps-text focus:border-ps-amber focus:outline-none"
             aria-label="Sport"
           >
+            <option value="">Choose a sport</option>
             {SPORT_OPTIONS.map((s) => (
               <option key={s.value} value={s.value}>
                 {s.label}
               </option>
             ))}
+            <optgroup label="🇮🇪 GAA">
+              <option value="gaa">GAA (General)</option>
+              <option value="gaelic_football">Gaelic Football</option>
+              <option value="hurling">Hurling</option>
+            </optgroup>
           </select>
           <button
             type="submit"
-            disabled={!query.trim() || loading}
+            disabled={!query.trim() || !sport || loading}
             className="shrink-0 rounded-xl bg-gradient-to-r from-[#f59e0b] to-[#d97706] px-3 py-2 text-sm font-medium text-[#1a1208] transition-opacity hover:opacity-90 disabled:opacity-40"
           >
             {loading ? <SpinnerIcon className="h-4 w-4 animate-spin" /> : "Search"}

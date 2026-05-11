@@ -5,17 +5,21 @@ import { useRouter } from "next/navigation";
 
 // ── Sports ────────────────────────────────────────────────────────────────────
 
+// Sports in alphabetical order. Gaelic Football and Hurling appear here as
+// standalone options AND again nested under the GAA group in the search dropdown.
 const SPORTS = [
-  { id: "soccer", name: "Soccer", emoji: "⚽" },
-  { id: "gaa", name: "GAA", emoji: "🇮🇪" },
-  { id: "formula_1", name: "Formula 1", emoji: "🏁" },
-  { id: "rugby", name: "Rugby", emoji: "🏉" },
-  { id: "golf", name: "Golf", emoji: "⛳" },
-  { id: "nba", name: "NBA", emoji: "🏀" },
-  { id: "horse_racing", name: "Horse Racing", emoji: "🐎" },
-  { id: "tennis", name: "Tennis", emoji: "🎾" },
-  { id: "cricket", name: "Cricket", emoji: "🏏" },
-  { id: "athletics", name: "Athletics", emoji: "🏃" },
+  { id: "athletics",       name: "Athletics",       emoji: "🏃" },
+  { id: "cricket",         name: "Cricket",         emoji: "🏏" },
+  { id: "formula_1",       name: "Formula 1",       emoji: "🏁" },
+  { id: "gaa",             name: "GAA",             emoji: "🇮🇪" },
+  { id: "gaelic_football", name: "Gaelic Football", emoji: "🏐" },
+  { id: "golf",            name: "Golf",            emoji: "⛳" },
+  { id: "horse_racing",    name: "Horse Racing",    emoji: "🐎" },
+  { id: "hurling",         name: "Hurling",         emoji: "🏑" },
+  { id: "nba",             name: "NBA",             emoji: "🏀" },
+  { id: "rugby",           name: "Rugby",           emoji: "🏉" },
+  { id: "soccer",          name: "Soccer",          emoji: "⚽" },
+  { id: "tennis",          name: "Tennis",          emoji: "🎾" },
 ];
 
 // ── Scoring presets ────────────────────────────────────────────────────────────
@@ -109,6 +113,8 @@ const LEAGUE_SHORTCUTS: Record<string, { id: string; label: string }[]> = {
     { id: "gaa-football", label: "GAA Football" },
     { id: "gaa-hurling", label: "GAA Hurling" },
   ],
+  gaelic_football: [{ id: "gaa-football", label: "GAA Football" }],
+  hurling: [{ id: "gaa-hurling", label: "GAA Hurling" }],
   rugby: [
     { id: "4446", label: "URC" },
     { id: "4550", label: "Champions Cup" },
@@ -312,7 +318,7 @@ export function CreateCompetitionForm({ alwaysOpen = false }: CreateCompetitionF
 
   // Step 4: round builder
   const [roundName, setRoundName] = useState("Round 1");
-  const [searchSport, setSearchSport] = useState(selectedSports[0] ?? "soccer");
+  const [searchSport, setSearchSport] = useState("");
   const [searchQuery, setSearchQuery] = useState("");
   const [searching, setSearching] = useState(false);
   const [searchResults, setSearchResults] = useState<SearchResult[]>([]);
@@ -322,7 +328,7 @@ export function CreateCompetitionForm({ alwaysOpen = false }: CreateCompetitionF
   // Manual event form
   const [showManualForm, setShowManualForm] = useState(false);
   const [manualName, setManualName] = useState("");
-  const [manualSport, setManualSport] = useState(selectedSports[0] ?? "soccer");
+  const [manualSport, setManualSport] = useState("");
   const [manualStartTime, setManualStartTime] = useState("");
   const [manualLockTime, setManualLockTime] = useState("");
   const [manualPredTypes, setManualPredTypes] = useState<string[]>(["winner"]);
@@ -332,7 +338,7 @@ export function CreateCompetitionForm({ alwaysOpen = false }: CreateCompetitionF
   const [roundCreated, setRoundCreated] = useState(false);
   const [fixtureCount, setFixtureCount] = useState(0);
 
-  const includesGaa = selectedSports.includes("gaa");
+  const includesGaa = selectedSports.some((s) => s === "gaa" || s === "gaelic_football" || s === "hurling");
 
   // GAA callout quote — picked once on mount, stable for the component's lifetime.
   // Buckets: 20% "Hon the lads", 5% romantic, 5% Kilkenny fact, 1% "Up the Faythe!",
@@ -423,7 +429,6 @@ export function CreateCompetitionForm({ alwaysOpen = false }: CreateCompetitionF
 
       setCompetitionId(data.competition.id);
       setInviteCode(data.competition.invite_code ?? null);
-      setSearchSport(selectedSports[0] ?? "soccer");
       return data.competition.id;
     } catch {
       setError("Couldn't connect. Check your internet and try again.");
@@ -915,30 +920,55 @@ export function CreateCompetitionForm({ alwaysOpen = false }: CreateCompetitionF
             Search for matches
           </label>
 
-          {/* Sport filter */}
-          <div className="flex flex-wrap gap-1.5 mb-3">
-            {selectedSports.map((s) => {
-              const sport = SPORTS.find((sp) => sp.id === s);
-              const isActive = searchSport === s;
-              return (
-                <button
-                  key={s}
-                  type="button"
-                  onClick={() => {
-                    setSearchSport(s);
-                    setSearchResults([]);
-                  }}
-                  className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-bold transition-colors ${
-                    isActive
-                      ? "bg-ps-amber text-[#1a1208]"
-                      : "bg-ps-chip text-ps-text-sec hover:text-ps-text"
-                  }`}
-                >
-                  <span>{sport?.emoji}</span>
-                  <span>{sport?.name}</span>
-                </button>
-              );
-            })}
+          {/* Sport dropdown + search bar */}
+          <div className="flex gap-2 mb-3">
+            <select
+              value={searchSport}
+              onChange={(e) => {
+                setSearchSport(e.target.value);
+                setSearchResults([]);
+              }}
+              className="rounded-xl border border-ps-border bg-ps-surface px-3 py-2.5 text-sm text-ps-text focus:border-ps-amber focus:outline-none shrink-0"
+            >
+              <option value="">Choose a sport</option>
+              <option value="athletics">🏃 Athletics</option>
+              <option value="cricket">🏏 Cricket</option>
+              <option value="formula_1">🏁 Formula 1</option>
+              <option value="gaelic_football">🏐 Gaelic Football</option>
+              <option value="golf">⛳ Golf</option>
+              <option value="horse_racing">🐎 Horse Racing</option>
+              <option value="hurling">🏑 Hurling</option>
+              <option value="nba">🏀 NBA</option>
+              <option value="rugby">🏉 Rugby</option>
+              <option value="soccer">⚽ Soccer</option>
+              <option value="tennis">🎾 Tennis</option>
+              <optgroup label="🇮🇪 GAA">
+                <option value="gaa">🇮🇪 GAA (General)</option>
+                <option value="gaelic_football">🏐 Gaelic Football</option>
+                <option value="hurling">🏑 Hurling</option>
+              </optgroup>
+            </select>
+            <input
+              type="text"
+              placeholder="Search for a Team, Competition or Sport"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") {
+                  e.preventDefault();
+                  if (searchSport) searchFixtures(searchSport, searchQuery);
+                }
+              }}
+              className="flex-1 min-w-0 rounded-xl border border-ps-border bg-ps-surface px-3.5 py-2.5 text-sm text-ps-text placeholder:text-ps-text-ter focus:border-ps-amber focus:outline-none"
+            />
+            <button
+              type="button"
+              onClick={() => searchFixtures(searchSport, searchQuery)}
+              disabled={searching || !searchSport}
+              className="rounded-xl bg-ps-chip px-4 py-2.5 text-sm font-semibold text-ps-text-sec hover:text-ps-text transition-colors disabled:opacity-50"
+            >
+              {searching ? "..." : "Go"}
+            </button>
           </div>
 
           {/* League shortcuts */}
@@ -956,31 +986,6 @@ export function CreateCompetitionForm({ alwaysOpen = false }: CreateCompetitionF
               ))}
             </div>
           )}
-
-          {/* Search input */}
-          <div className="flex gap-2">
-            <input
-              type="text"
-              placeholder="Search by team or event name..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              onKeyDown={(e) => {
-                if (e.key === "Enter") {
-                  e.preventDefault();
-                  searchFixtures(searchSport, searchQuery);
-                }
-              }}
-              className="flex-1 rounded-xl border border-ps-border bg-ps-surface px-3.5 py-2.5 text-sm text-ps-text placeholder:text-ps-text-ter focus:border-ps-amber focus:outline-none"
-            />
-            <button
-              type="button"
-              onClick={() => searchFixtures(searchSport, searchQuery)}
-              disabled={searching}
-              className="rounded-xl bg-ps-chip px-4 py-2.5 text-sm font-semibold text-ps-text-sec hover:text-ps-text transition-colors disabled:opacity-50"
-            >
-              {searching ? "..." : "Search"}
-            </button>
-          </div>
         </div>
 
         {/* Search results */}
@@ -1191,10 +1196,10 @@ export function CreateCompetitionForm({ alwaysOpen = false }: CreateCompetitionF
 
               <button
                 type="button"
-                disabled={!manualName.trim() || !manualStartTime || manualPredTypes.length === 0}
+                disabled={!manualName.trim() || !manualStartTime || !manualSport || manualPredTypes.length === 0}
                 onClick={addManualEvent}
                 className={`w-full py-2.5 rounded-xl text-sm font-extrabold transition-opacity ${
-                  !manualName.trim() || !manualStartTime || manualPredTypes.length === 0
+                  !manualName.trim() || !manualStartTime || !manualSport || manualPredTypes.length === 0
                     ? "bg-ps-chip text-ps-text-ter cursor-default"
                     : "bg-ps-ink text-ps-bg hover:opacity-80"
                 }`}
