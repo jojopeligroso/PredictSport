@@ -40,7 +40,8 @@ const SPORT_PATHS: Partial<Record<Sport, string>> = {
   nba: "basketball/nba",
   mlb: "baseball/mlb",
   soccer: "soccer/eng.1",
-  rugby: "rugby/270557", // URC; others available via league param
+  rugby: "rugby/270557", // URC (Rugby Union); Six Nations=180659, World Cup=164205
+  rugby_league: "rugby-league/3", // NRL / Super League
   golf: "golf/pga",
   tennis: "tennis/atp",
   cricket: "cricket/8048", // IPL default; others via league param
@@ -61,6 +62,7 @@ export class ESPNProvider extends BaseProvider {
     "mlb",
     "soccer",
     "rugby",
+    "rugby_league",
     "golf",
     "tennis",
     "cricket",

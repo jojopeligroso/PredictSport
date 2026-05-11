@@ -4,6 +4,7 @@ export type Sport =
   | "soccer"
   | "golf"
   | "rugby"
+  | "rugby_league"
   | "tennis"
   | "gaa"
   | "gaelic_football"
