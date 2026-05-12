@@ -857,8 +857,8 @@ function Step3Review({
           start_time: fc.fixture.startTime,
           lock_time: lockTime,
           external_event_id: fc.fixture.externalId || undefined,
-          prediction_types: fc.predictionTypes.map((p) => ({
-            type: p.type,
+          prediction_type_configs: fc.predictionTypes.map((p) => ({
+            prediction_type: p.type,
             points: p.points,
             ...(p.partial_points !== undefined
               ? { partial_points: p.partial_points }
