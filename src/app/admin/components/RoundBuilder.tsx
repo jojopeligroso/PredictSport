@@ -46,7 +46,8 @@ type PredictionTypeName =
   | "head_to_head"
   | "top_n"
   | "handicap"
-  | "progression";
+  | "progression"
+  | "final_standings";
 
 interface PredictionTypeConfig {
   type: PredictionTypeName;
@@ -95,6 +96,7 @@ const ALL_PREDICTION_TYPES: PredictionTypeName[] = [
   "top_n",
   "handicap",
   "progression",
+  "final_standings",
 ];
 
 const PREDICTION_TYPE_LABELS: Record<PredictionTypeName, string> = {
@@ -106,6 +108,7 @@ const PREDICTION_TYPE_LABELS: Record<PredictionTypeName, string> = {
   top_n: "Top N",
   handicap: "Handicap",
   progression: "Progression",
+  final_standings: "Final Standings",
 };
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
@@ -146,6 +149,7 @@ function getDefaultPoints(
     top_n: 0,
     handicap: 0,
     progression: 0,
+    final_standings: 0,
   };
   for (const key of ALL_PREDICTION_TYPES) {
     const val = pts[key];
@@ -169,6 +173,7 @@ function getDefaultPartialPoints(
     top_n: undefined,
     handicap: undefined,
     progression: undefined,
+    final_standings: undefined,
   };
   for (const key of ALL_PREDICTION_TYPES) {
     const val = pp[key];
@@ -470,6 +475,13 @@ function Step2Configure({
   const defaultPoints = getDefaultPoints(scoringRules);
   const defaultPartial = getDefaultPartialPoints(scoringRules);
 
+  // Determine valid prediction types based on fixture structure
+  const validTypes = useMemo(() => {
+    if (fixtureConfigs.length === 0) return ALL_PREDICTION_TYPES;
+    // Use first fixture as reference for detecting event type
+    return getValidPredictionTypes(fixtureConfigs[0].fixture);
+  }, [fixtureConfigs]);
+
   // Global "apply to all" state — mirrors what's in fixtureConfigs[0] for non-custom fixtures
   const [globalTypes, setGlobalTypes] = useState<
     Record<PredictionTypeName, boolean>
@@ -481,8 +493,10 @@ function Step2Configure({
         {} as Record<PredictionTypeName, boolean>
       );
     }
+    // Only enable valid types by default
+    const allowedTypes = getValidPredictionTypes(first.fixture);
     const enabled = new Set(first.predictionTypes.map((p) => p.type));
-    return ALL_PREDICTION_TYPES.reduce(
+    return allowedTypes.reduce(
       (acc, t) => ({ ...acc, [t]: enabled.has(t) }),
       {} as Record<PredictionTypeName, boolean>
     );
@@ -503,7 +517,7 @@ function Step2Configure({
   ) {
     const newConfigs = fixtureConfigs.map((fc) => {
       if (fc.useCustom) return fc;
-      const predictionTypes: PredictionTypeConfig[] = ALL_PREDICTION_TYPES.filter(
+      const predictionTypes: PredictionTypeConfig[] = validTypes.filter(
         (t) => types[t]
       ).map((t) => ({
         type: t,
@@ -594,7 +608,7 @@ function Step2Configure({
     onConfigChange(newConfigs);
   }
 
-  const activeGlobalTypes = ALL_PREDICTION_TYPES.filter((t) => globalTypes[t]);
+  const activeGlobalTypes = validTypes.filter((t) => globalTypes[t]);
 
   return (
     <div className="space-y-4">
@@ -604,7 +618,7 @@ function Step2Configure({
           Apply to all fixtures
         </h3>
         <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
-          {ALL_PREDICTION_TYPES.map((t) => {
+          {validTypes.map((t) => {
             const enabled = globalTypes[t];
             const pts =
               globalPointsOverride[t] ??
@@ -744,7 +758,7 @@ function Step2Configure({
                     )}
                   </div>
                   <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
-                    {ALL_PREDICTION_TYPES.map((t) => {
+                    {getValidPredictionTypes(fc.fixture).map((t) => {
                       const enabled = enabledTypes.has(t);
                       const pts = fc.predictionTypes.find(
                         (p) => p.type === t
