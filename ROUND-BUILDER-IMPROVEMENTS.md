@@ -413,6 +413,11 @@ M src/app/admin/components/RoundBuilder.tsx
 7. **If proceeding to Phase 2:** Create feature branch, implement cards, test thoroughly
 
 **Estimated timeline:**
-- Phase 1: 30-45 mins (1 focused session)
+- Phase 1: 60-90 mins (30-45 impl + 30-45 verify)
 - Phase 2: 4-5 hours (2-3 sessions, includes testing)
-- Total: ~6 hours for both phases
+- Total: ~6-7 hours for Phases 1-2
+
+**Related improvements (see `MANUAL-EVENTS-AND-API-GAPS.md`):**
+- Phase 3: Manual Event Management (3-4 hours, independent)
+- Phase 4: Sports API Coverage Analysis (2-3 hours, independent)
+- **Grand total: ~15-18 hours across all 4 phases**

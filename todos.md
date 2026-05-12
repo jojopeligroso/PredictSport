@@ -76,3 +76,48 @@ See `ROUND-BUILDER-IMPROVEMENTS.md` for detailed task breakdown.
 - [ ] 2.10 — Mobile optimization (stacked cards, vertical buttons)
 - [ ] 2.11 — Update fixture summary display with card icons
 - [ ] 2.12 — Write tests for new UI flow
+
+---
+
+## Manual Events & API Coverage (2026-05-12)
+
+See `MANUAL-EVENTS-AND-API-GAPS.md` for detailed task breakdown.
+
+### Phase 3: Manual Event Management (3-4 hours) — **INDEPENDENT, can run parallel to Phase 1/2**
+
+**Admin Workflow Improvements**
+- [ ] 3.1 — Audit existing manual event creation flow (AddEventForm.tsx)
+- [ ] 3.2 — Design ManualEventWizard component (5-step guided creation)
+- [ ] 3.3 — Add team name validation & autocomplete suggestions
+- [ ] 3.4 — Create manual event templates (GAA, soccer, snooker, etc.)
+- [ ] 3.5 — Build bulk manual event creator (CSV upload or multi-row form)
+- [ ] 3.6 — Improve manual result entry UX (pre-populate, validation, preview)
+- [ ] 3.7 — Add result undo/edit capability (10-min window)
+- [ ] 3.8 — Add "Events Missing Results" admin alert dashboard
+- [ ] 3.9 — Auto-fetch reminder for manual events (cron notification)
+- [ ] 3.10 — Add "Duplicate Event" cloning feature
+- [ ] 3.11 — Validation before round/competition activation (pre-flight checks)
+- [ ] 3.12 — Documentation & inline help (tooltips, admin guide)
+
+### Phase 4: Sports API Coverage Analysis (2-3 hours) — **INDEPENDENT, run Phase 4.1-4.8 first**
+
+**Research & Integration (prioritized by audit)**
+- [ ] 4.1 — Audit current provider success rates (script + report)
+- [ ] 4.2 — Identify high-priority gaps (frequency × manual_rate)
+- [ ] 4.3 — Research Cricket API alternatives (Cricbuzz, CricAPI, etc.)
+- [ ] 4.4 — Research GAA API improvements (ClubZap, GAA.ie scraping)
+- [ ] 4.5 — Evaluate Rugby League sources (NRL, Super League APIs)
+- [ ] 4.6 — Research Athletics APIs (World Athletics, Tilastopaja)
+- [ ] 4.7 — Evaluate Snooker coverage improvements (Snooker.org, CueTracker)
+- [ ] 4.8 — Cost-benefit analysis for paid APIs (ROI calculation)
+- [ ] 4.9 — Create provider integration guide (docs for contributors)
+- [ ] 4.10 — Implement top-priority provider (TBD based on 4.8 ROI)
+- [ ] 4.11 — Add provider health monitoring dashboard
+- [ ] 4.12 — Document unsupported sports & workarounds
+
+**Recommended sequencing:**
+1. Complete Phase 1 ✅
+2. Run Phase 4.1-4.8 (audit & research, async)
+3. Implement Phase 3 (immediate admin UX win)
+4. Decide on Phase 2 (based on Phase 1 feedback)
+5. Implement Phase 4.9-4.12 (data-driven, after audit)

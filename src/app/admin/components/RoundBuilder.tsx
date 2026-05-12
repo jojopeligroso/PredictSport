@@ -189,6 +189,30 @@ function buildDefaultPredictionTypes(
   }));
 }
 
+/**
+ * Determines which prediction types are valid for a given fixture
+ * based on its structure (2-team vs multi-competitor).
+ */
+function getValidPredictionTypes(fixture: SearchResult): PredictionTypeName[] {
+  const isTwoTeam = !!(fixture.homeTeam && fixture.awayTeam);
+
+  if (isTwoTeam) {
+    // Head-to-head sports (rugby, soccer, GAA, NFL, NBA, etc.)
+    return ["head_to_head", "margin", "over_under", "handicap", "yes_no"];
+  } else {
+    // Multi-competitor sports (F1, golf, tournaments)
+    return ["winner", "top_n", "final_standings", "progression", "yes_no"];
+  }
+}
+
+/**
+ * Determines if a sport allows draws in head-to-head matches.
+ */
+function allowsDraws(sport: string): boolean {
+  const drawSports = ["soccer", "rugby", "gaa", "hockey", "nhl"];
+  return drawSports.includes(sport.toLowerCase());
+}
+
 // ── Icons ─────────────────────────────────────────────────────────────────────
 
 function CheckIcon({ className }: { className?: string }) {
