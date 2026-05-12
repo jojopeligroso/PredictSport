@@ -3,6 +3,8 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import type { Sport } from "@/lib/sports/types";
 import type { NormalizedFixture } from "@/app/api/sports/fixtures/route";
+import { SportPill } from "@/components/ui";
+import { toSportKey } from "@/components/ui/sport-config";
 
 // Re-export for use in AddEventForm
 export type { NormalizedFixture };
@@ -328,16 +330,15 @@ function FixtureRow({
             {fixture.round && (
               <span className="shrink-0 text-ps-text-ter">R{fixture.round}</span>
             )}
+            <SportPill sport={toSportKey(fixture.sport)} size="sm" />
             {leagueLabel && (
-              <span className="truncate rounded-full bg-ps-chip px-1.5 py-px text-[10px] text-ps-text-ter">
+              <span className="truncate rounded-full bg-ps-chip px-1.5 py-px text-xs text-ps-text-ter">
                 {leagueLabel}
               </span>
             )}
           </div>
         </div>
-        <span className="shrink-0 rounded-lg bg-ps-amber-soft px-2 py-1 text-xs font-medium text-ps-amber-deep opacity-0 transition-opacity group-hover:opacity-100">
-          Select
-        </span>
+        <ChevronRightIcon className="h-3.5 w-3.5 text-ps-text-ter group-hover:text-ps-amber transition-colors shrink-0" />
       </div>
     </button>
   );
@@ -378,6 +379,16 @@ function ChevronDownIcon({ className }: { className?: string }) {
       aria-hidden="true"
     >
       <path d="M4 6l4 4 4-4" />
+    </svg>
+  );
+}
+
+function ChevronRightIcon({ className }: { className?: string }) {
+  return (
+    <svg className={className ?? "h-3.5 w-3.5"} viewBox="0 0 16 16"
+      fill="none" stroke="currentColor" strokeWidth="2"
+      strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <path d="M6 4l4 4-4 4" />
     </svg>
   );
 }
@@ -538,6 +549,190 @@ function AddFavouriteDropdown({
   );
 }
 
+// ---- Sport Picker Popover ---------------------------------------------------
+
+function SportPickerPopover({
+  currentSport,
+  onSelect,
+  onClose,
+  triggerRef,
+}: {
+  currentSport: Sport;
+  onSelect: (s: Sport) => void;
+  onClose: () => void;
+  triggerRef: React.RefObject<HTMLButtonElement | null>;
+}) {
+  const panelRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    function handleClick(e: MouseEvent) {
+      const target = e.target as Node;
+      if (
+        panelRef.current && !panelRef.current.contains(target) &&
+        triggerRef.current && !triggerRef.current.contains(target)
+      ) {
+        onClose();
+      }
+    }
+    document.addEventListener("mousedown", handleClick);
+    return () => document.removeEventListener("mousedown", handleClick);
+  }, [onClose, triggerRef]);
+
+  useEffect(() => {
+    function handleKey(e: KeyboardEvent) {
+      if (e.key === "Escape") onClose();
+    }
+    document.addEventListener("keydown", handleKey);
+    return () => document.removeEventListener("keydown", handleKey);
+  }, [onClose]);
+
+  return (
+    <div
+      ref={panelRef}
+      role="dialog"
+      aria-modal="true"
+      aria-label="Select sport"
+      className="absolute bottom-full left-0 z-[60] mb-1 w-64 rounded-xl border border-ps-border bg-ps-surface shadow-lg"
+    >
+      <p className="px-3 pt-2 pb-1 text-[10px] font-bold uppercase tracking-wider text-ps-text-ter">
+        Search sport
+      </p>
+      <div className="grid grid-cols-2 gap-0.5 p-2">
+        {SEARCH_SPORTS.map((s) => (
+          <button
+            key={s.value}
+            type="button"
+            onClick={() => {
+              onSelect(s.value);
+              onClose();
+            }}
+            className={`rounded-lg px-3 py-1.5 text-left text-sm transition-colors ${
+              currentSport === s.value
+                ? "bg-ps-chip font-medium text-ps-text"
+                : "text-ps-text-sec hover:bg-ps-chip hover:text-ps-text"
+            }`}
+          >
+            {s.label}
+          </button>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+// ---- Autocomplete Dropdown --------------------------------------------------
+
+function AutocompleteDropdown({
+  suggestions,
+  searchSport,
+  sportPickerOpen,
+  sportPickerRef,
+  apiLoading,
+  onSelect,
+  onApiSearch,
+  onSportChange,
+  onSportPickerToggle,
+  onSportPickerClose,
+}: {
+  suggestions: Array<{ fixture: NormalizedFixture; leagueId: string }>;
+  searchSport: Sport;
+  sportPickerOpen: boolean;
+  sportPickerRef: React.RefObject<HTMLButtonElement | null>;
+  apiLoading: boolean;
+  onSelect: (f: NormalizedFixture) => void;
+  onApiSearch: () => void;
+  onSportChange: (s: Sport) => void;
+  onSportPickerToggle: () => void;
+  onSportPickerClose: () => void;
+}) {
+  const sportLabel = SEARCH_SPORTS.find((s) => s.value === searchSport)?.label ?? searchSport;
+  const MAX_SUGGESTIONS = 6;
+  const shown = suggestions.slice(0, MAX_SUGGESTIONS);
+  const hasMore = suggestions.length > MAX_SUGGESTIONS;
+
+  return (
+    <div
+      role="listbox"
+      aria-label="Fixture suggestions"
+      className="absolute left-0 right-0 top-full z-50 mt-1 overflow-hidden rounded-xl border border-ps-border bg-ps-surface shadow-lg"
+    >
+      {/* Suggestion rows */}
+      {shown.length > 0 && (
+        <div className="max-h-52 overflow-y-auto">
+          {shown.map(({ fixture, leagueId }) => {
+            const [home, away] = fixture.participants;
+            const hasTeams = home && away;
+            const leagueLabel = LEAGUE_MAP.get(leagueId)?.label ?? null;
+            return (
+              <button
+                key={`${leagueId}-${fixture.external_event_id}`}
+                type="button"
+                role="option"
+                aria-selected="false"
+                onClick={() => onSelect(fixture)}
+                className="flex w-full flex-col px-3 py-2 text-left transition-colors hover:bg-ps-chip"
+              >
+                <span className="text-sm font-medium text-ps-text">
+                  {hasTeams ? `${home} vs ${away}` : fixture.event_name}
+                </span>
+                <span className="mt-0.5 text-xs text-ps-text-ter">
+                  {formatFixtureTime(fixture.start_time)}
+                  {leagueLabel && <> &middot; {leagueLabel}</>}
+                </span>
+              </button>
+            );
+          })}
+          {hasMore && (
+            <p className="px-3 py-1.5 text-xs text-ps-text-ter">
+              +{suggestions.length - MAX_SUGGESTIONS} more in calendar below
+            </p>
+          )}
+        </div>
+      )}
+
+      {/* No local matches message */}
+      {shown.length === 0 && (
+        <p className="px-3 py-2 text-xs text-ps-text-ter">
+          No matches in loaded leagues.
+        </p>
+      )}
+
+      {/* API search footer */}
+      <div className="relative border-t border-ps-border px-2 py-2">
+        <div className="flex items-center gap-1">
+          <button
+            type="button"
+            onClick={onApiSearch}
+            disabled={apiLoading}
+            className="flex-1 rounded-lg bg-gradient-to-r from-[#f59e0b] to-[#d97706] px-3 py-1.5 text-left text-xs font-medium text-[#1a1208] transition-opacity hover:opacity-90 disabled:opacity-40"
+          >
+            {apiLoading ? "Searching..." : `Search ${sportLabel} API →`}
+          </button>
+          <button
+            ref={sportPickerRef}
+            type="button"
+            onClick={onSportPickerToggle}
+            aria-expanded={sportPickerOpen}
+            aria-haspopup="dialog"
+            className="shrink-0 rounded-lg border border-ps-border px-2 py-1.5 text-xs text-ps-text-sec transition-colors hover:border-ps-border-strong hover:text-ps-text"
+            aria-label="Change sport"
+          >
+            <ChevronDownIcon className={`h-3.5 w-3.5 transition-transform ${sportPickerOpen ? "rotate-180" : ""}`} />
+          </button>
+        </div>
+        {sportPickerOpen && (
+          <SportPickerPopover
+            currentSport={searchSport}
+            onSelect={onSportChange}
+            onClose={onSportPickerClose}
+            triggerRef={sportPickerRef}
+          />
+        )}
+      </div>
+    </div>
+  );
+}
+
 // ---- Main component ---------------------------------------------------------
 
 export function FixtureBrowser({ onSelect }: FixtureBrowserProps) {
@@ -574,10 +769,31 @@ export function FixtureBrowser({ onSelect }: FixtureBrowserProps) {
   const [apiLoading, setApiLoading] = useState(false);
   const [showApiResults, setShowApiResults] = useState(false);
 
+  // Autocomplete state
+  const [autocompleteOpen, setAutocompleteOpen] = useState(false);
+  const [sportPickerOpen, setSportPickerOpen] = useState(false);
+  const autocompleteContainerRef = useRef<HTMLDivElement>(null);
+  const sportPickerRef = useRef<HTMLButtonElement>(null);
+
   // Persist favourites on change
   useEffect(() => {
     saveFavourites(favouriteIds);
   }, [favouriteIds]);
+
+  // Close autocomplete on outside click
+  useEffect(() => {
+    function handleClick(e: MouseEvent) {
+      if (
+        autocompleteContainerRef.current &&
+        !autocompleteContainerRef.current.contains(e.target as Node)
+      ) {
+        setAutocompleteOpen(false);
+        setSportPickerOpen(false);
+      }
+    }
+    document.addEventListener("mousedown", handleClick);
+    return () => document.removeEventListener("mousedown", handleClick);
+  }, []);
 
   const fetchLeague = useCallback(
     async (leagueId: string): Promise<NormalizedFixture[]> => {
@@ -640,6 +856,25 @@ export function FixtureBrowser({ onSelect }: FixtureBrowserProps) {
     });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [activeLeagueIds.join(",")]);
+
+  // Autocomplete suggestions: filter loaded fixtures by current query
+  const autocompleteSuggestions = (() => {
+    if (!searchQuery.trim() || showApiResults) return [];
+    const q = searchQuery.trim().toLowerCase();
+    const keyed: Array<{ fixture: NormalizedFixture; leagueId: string }> = [];
+    activeLeagueIds.forEach((leagueId) => {
+      const fixtures = allFixtures[leagueId] ?? [];
+      fixtures.forEach((f) => {
+        if (
+          f.event_name.toLowerCase().includes(q) ||
+          f.participants.some((p) => p.toLowerCase().includes(q))
+        ) {
+          keyed.push({ fixture: f, leagueId });
+        }
+      });
+    });
+    return keyed;
+  })();
 
   // Build calendar view: group KeyedFixtures by date
   const calendarGroups = (() => {
@@ -773,15 +1008,12 @@ export function FixtureBrowser({ onSelect }: FixtureBrowserProps) {
 
   const handleSearchKeyDown = useCallback(
     (e: React.KeyboardEvent) => {
-      if (e.key === "Enter") {
-        e.preventDefault();
-        handleApiSearch();
-      }
       if (e.key === "Escape") {
         clearSearch();
+        setAutocompleteOpen(false);
       }
     },
-    [handleApiSearch, clearSearch]
+    [clearSearch]
   );
 
   // ---- Drag and drop (HTML5) ------------------------------------------------
@@ -831,6 +1063,7 @@ export function FixtureBrowser({ onSelect }: FixtureBrowserProps) {
       setSearchQuery("");
       setShowApiResults(false);
       setApiResults([]);
+      setAutocompleteOpen(false);
       setEditMode(true);
     }
   }
@@ -842,12 +1075,14 @@ export function FixtureBrowser({ onSelect }: FixtureBrowserProps) {
     setSearchQuery("");
     setShowApiResults(false);
     setApiResults([]);
+    setAutocompleteOpen(false);
   }
 
   function clearDropdownOverride() {
     setDropdownLeagueId(null);
     setDropdownOpen(false);
     setSearchQuery("");
+    setAutocompleteOpen(false);
   }
 
   const selectedLeagueLabel = dropdownLeagueId
@@ -857,8 +1092,8 @@ export function FixtureBrowser({ onSelect }: FixtureBrowserProps) {
   return (
     <div className="space-y-2">
       {/* ---- Search bar ---------------------------------------------------- */}
-      <div className="flex gap-2">
-        <div className="relative flex-1">
+      <div ref={autocompleteContainerRef} className="relative">
+        <div className="relative">
           <input
             ref={searchInputRef}
             type="text"
@@ -868,20 +1103,22 @@ export function FixtureBrowser({ onSelect }: FixtureBrowserProps) {
               if (!e.target.value.trim()) {
                 setShowApiResults(false);
                 setApiResults([]);
+                setAutocompleteOpen(false);
+              } else {
+                setAutocompleteOpen(true);
               }
+            }}
+            onFocus={() => {
+              if (searchQuery.trim()) setAutocompleteOpen(true);
             }}
             onKeyDown={handleSearchKeyDown}
             placeholder="Search teams or events..."
-            className="w-full rounded-xl border border-ps-border bg-ps-bg pl-9 pr-8 py-2 text-sm text-ps-text placeholder:text-ps-text-ter focus:border-ps-amber focus:outline-none focus:ring-1 focus:ring-ps-amber"
+            className="w-full rounded-xl border border-ps-border bg-ps-bg py-2 pl-9 pr-8 text-sm text-ps-text placeholder:text-ps-text-ter focus:border-ps-amber focus:outline-none focus:ring-1 focus:ring-ps-amber"
           />
           <svg
             className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-ps-text-ter"
-            viewBox="0 0 16 16"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="2"
-            strokeLinecap="round"
-            aria-hidden="true"
+            viewBox="0 0 16 16" fill="none" stroke="currentColor"
+            strokeWidth="2" strokeLinecap="round" aria-hidden="true"
           >
             <circle cx="7" cy="7" r="4.5" />
             <path d="M10.5 10.5L14 14" />
@@ -897,26 +1134,29 @@ export function FixtureBrowser({ onSelect }: FixtureBrowserProps) {
             </button>
           )}
         </div>
-        <select
-          value={searchSport}
-          onChange={(e) => setSearchSport(e.target.value as Sport)}
-          className="shrink-0 rounded-xl border border-ps-border bg-ps-bg px-2 py-2 text-sm text-ps-text focus:border-ps-amber focus:outline-none focus:ring-1 focus:ring-ps-amber"
-          aria-label="Sport for API search"
-        >
-          {SEARCH_SPORTS.map((s) => (
-            <option key={s.value} value={s.value}>
-              {s.label}
-            </option>
-          ))}
-        </select>
-        <button
-          type="button"
-          onClick={handleApiSearch}
-          disabled={!searchQuery.trim() || apiLoading}
-          className="shrink-0 rounded-xl bg-gradient-to-r from-[#f59e0b] to-[#d97706] px-3 py-2 text-sm font-medium text-[#1a1208] transition-opacity hover:opacity-90 disabled:opacity-40"
-        >
-          {apiLoading ? "..." : "Search"}
-        </button>
+
+        {/* Autocomplete dropdown */}
+        {autocompleteOpen && searchQuery.trim() && !showApiResults && (
+          <AutocompleteDropdown
+            suggestions={autocompleteSuggestions}
+            searchSport={searchSport}
+            sportPickerOpen={sportPickerOpen}
+            sportPickerRef={sportPickerRef}
+            apiLoading={apiLoading}
+            onSelect={(fixture) => {
+              onSelect(fixture);
+              setAutocompleteOpen(false);
+              setSearchQuery("");
+            }}
+            onApiSearch={() => {
+              setAutocompleteOpen(false);
+              handleApiSearch();
+            }}
+            onSportChange={(s) => setSearchSport(s)}
+            onSportPickerToggle={() => setSportPickerOpen((o) => !o)}
+            onSportPickerClose={() => setSportPickerOpen(false)}
+          />
+        )}
       </div>
 
       {/* ---- Date filter --------------------------------------------------- */}
@@ -970,30 +1210,33 @@ export function FixtureBrowser({ onSelect }: FixtureBrowserProps) {
         )}
       </div>
 
-      {/* ---- API search results banner ------------------------------------- */}
+      {/* ---- API search mode bar ------------------------------------------ */}
       {showApiResults && (
-        <div className="flex items-center justify-between rounded-lg bg-ps-chip px-3 py-2 text-xs text-ps-text-sec">
-          <span>
-            {apiLoading ? (
-              "Searching..."
-            ) : (
-              <>
-                Found{" "}
-                <strong className="text-ps-text">{apiResults.length}</strong>{" "}
-                result{apiResults.length !== 1 ? "s" : ""} for &ldquo;
-                {searchQuery}&rdquo; in{" "}
-                <strong className="text-ps-text">
-                  {SEARCH_SPORTS.find((s) => s.value === searchSport)?.label}
-                </strong>
-              </>
-            )}
+        <div className="flex items-center justify-between rounded-xl border border-ps-border bg-ps-chip px-3 py-2 text-sm">
+          <button
+            type="button"
+            onClick={clearSearch}
+            className="flex items-center gap-1 text-ps-text-sec hover:text-ps-text"
+          >
+            <svg className="h-3.5 w-3.5" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+              <path d="M10 4l-4 4 4 4" />
+            </svg>
+            Back
+          </button>
+          <span className="text-ps-text-ter text-xs">
+            <strong className="text-ps-text">&ldquo;{searchQuery}&rdquo;</strong>
+            {" "}in{" "}
+            <strong className="text-ps-text">
+              {SEARCH_SPORTS.find((s) => s.value === searchSport)?.label}
+            </strong>
           </span>
           <button
             type="button"
             onClick={clearSearch}
-            className="text-ps-amber-deep underline hover:no-underline"
+            className="rounded p-0.5 text-ps-text-ter hover:text-ps-text"
+            aria-label="Clear search"
           >
-            Back to fixtures
+            <XIcon className="h-3.5 w-3.5" />
           </button>
         </div>
       )}
@@ -1098,16 +1341,27 @@ export function FixtureBrowser({ onSelect }: FixtureBrowserProps) {
             );
           }
 
-          // Normal mode: pills are indicators, not interactive filters
+          // Normal mode: interactive league filter buttons
           return (
-            <span
+            <button
               key={id}
-              className={`shrink-0 rounded-full border border-ps-amber bg-ps-amber-soft px-3 py-1 text-xs font-medium text-ps-amber-deep transition-opacity ${
-                dropdownLeagueId ? "opacity-50" : ""
+              type="button"
+              onClick={() =>
+                dropdownLeagueId === id
+                  ? clearDropdownOverride()
+                  : handleDropdownSelect(id)
+              }
+              aria-pressed={dropdownLeagueId === id}
+              className={`shrink-0 rounded-full border px-3 py-1 text-xs font-medium transition-all ${
+                dropdownLeagueId === id
+                  ? "border-ps-amber bg-ps-amber-soft text-ps-amber-deep"
+                  : dropdownLeagueId
+                  ? "border-ps-border bg-ps-chip text-ps-text-ter opacity-40 hover:opacity-60"
+                  : "border-ps-border bg-ps-chip text-ps-text-sec hover:border-ps-border-strong hover:text-ps-text"
               }`}
             >
               {league.label}
-            </span>
+            </button>
           );
         })}
 
@@ -1139,22 +1393,6 @@ export function FixtureBrowser({ onSelect }: FixtureBrowserProps) {
           </div>
         )}
       </div>
-
-      {/* ---- Dropdown override banner --------------------------------------- */}
-      {dropdownLeagueId && !showApiResults && (
-        <div className="flex items-center justify-between rounded-lg bg-ps-chip px-3 py-2 text-xs text-ps-text-sec">
-          <span>
-            Showing: <strong className="text-ps-text">{selectedLeagueLabel}</strong>
-          </span>
-          <button
-            type="button"
-            onClick={clearDropdownOverride}
-            className="text-ps-amber-deep underline hover:no-underline"
-          >
-            Return to favourites
-          </button>
-        </div>
-      )}
 
       {/* ---- Calendar view -------------------------------------------------- */}
       <div
@@ -1230,7 +1468,12 @@ export function FixtureBrowser({ onSelect }: FixtureBrowserProps) {
         {/* Empty state */}
         {!isAnyLoading && !apiLoading && (showApiResults || activeLeagueIds.length > 0) && !hasAnyFixtures && (
           <div className="rounded-xl border border-dashed border-ps-border py-8 text-center text-sm text-ps-text-ter">
-            {searchQuery.trim() && !showApiResults ? (
+            {showApiResults ? (
+              <>
+                <p>No results for &ldquo;{searchQuery}&rdquo; in {SEARCH_SPORTS.find((s) => s.value === searchSport)?.label}.</p>
+                <p className="mt-1">Try a different sport or browse leagues below.</p>
+              </>
+            ) : searchQuery.trim() ? (
               <div>
                 <p>No matches in loaded fixtures.</p>
                 <button
