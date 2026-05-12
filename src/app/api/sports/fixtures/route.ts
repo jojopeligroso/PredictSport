@@ -238,19 +238,12 @@ async function fetchESPNFixtures(
 
 // ---------- ESPN cricket fixture fetching ----------
 
-interface ESPNCalendarEntry {
-  value?: string; // ISO date string
-}
-
-interface ESPNCricketScoreboardResponse extends ESPNScoreboardResponse {
-  calendar?: ESPNCalendarEntry[];
-}
-
 /**
- * Cricket scoreboards 404 with a date range. Instead:
- * 1. Fetch the base scoreboard to get the season calendar (all match dates)
- * 2. Filter calendar to upcoming dates within 30 days
- * 3. Fetch each date individually and merge
+ * Cricket scoreboards 404 with a date-range parameter (YYYYMMDD-YYYYMMDD).
+ * ESPN has no forward-looking calendar endpoint for cricket, so we probe each
+ * day in the next 14-day window individually in parallel.
+ * All requests carry Next.js revalidate:300 cache, so cold load costs ≤14 ESPN
+ * calls; subsequent loads within 5 minutes cost 0.
  */
 async function fetchESPNCricketFixtures(
   espnLeagueId: string,
@@ -258,56 +251,43 @@ async function fetchESPNCricketFixtures(
 ): Promise<NormalizedFixture[]> {
   const base = `${ESPN_BASE}/cricket/${espnLeagueId}/scoreboard`;
 
-  // Step 1: get calendar
-  let calData: ESPNCricketScoreboardResponse;
-  try {
-    const calRes = await fetch(base, ESPN_FETCH_OPTS);
-    if (!calRes.ok) {
-      console.error(`[fixtures] ESPN cricket ${espnLeagueId} calendar → HTTP ${calRes.status}`);
-      return [];
-    }
-    calData = await calRes.json();
-  } catch (err) {
-    console.error(`[fixtures] ESPN cricket ${espnLeagueId} calendar fetch threw:`, err);
-    return [];
-  }
-
-  const leagueName = calData.leagues?.[0]?.name ?? `Cricket ${espnLeagueId}`;
-  const season = calData.leagues?.[0]?.season?.year?.toString() ?? null;
-
-  // Step 2: filter calendar to upcoming dates within 30-day window
+  // Build list of dates to probe: today through today+14 days
   const today = new Date();
-  const cutoff = new Date(today.getTime() + 30 * 86_400_000);
-  const todayStr = today.toISOString().slice(0, 10);
-
-  const futureDates = (calData.calendar ?? [])
-    .map((c) => c.value?.slice(0, 10) ?? "")
-    .filter((d) => d >= todayStr && new Date(d) <= cutoff);
-
-  if (!futureDates.length) {
-    console.log(`[fixtures] ESPN cricket ${espnLeagueId} (${leagueName}): 0 upcoming match days in calendar`);
-    return [];
+  const dates: string[] = [];
+  for (let i = 0; i <= 14; i++) {
+    const d = new Date(today.getTime() + i * 86_400_000);
+    dates.push(d.toISOString().slice(0, 10).replace(/-/g, ""));
   }
 
-  console.log(`[fixtures] ESPN cricket ${espnLeagueId} (${leagueName}): fetching ${futureDates.length} match day(s)`);
-
-  // Step 3: fetch each date individually
+  // Fetch all dates in parallel
   const results = await Promise.allSettled(
-    futureDates.map(async (d) => {
-      const fmt = d.replace(/-/g, "");
+    dates.map(async (fmt) => {
       const res = await fetch(`${base}?dates=${fmt}`, ESPN_FETCH_OPTS);
       if (!res.ok) return [] as ESPNEvent[];
       const data: ESPNScoreboardResponse = await res.json();
-      return data.events ?? [];
+      // Capture league metadata from first successful response
+      return { events: data.events ?? [], leagues: data.leagues };
     }),
   );
 
-  // Step 4: merge + deduplicate
+  // Extract league name + season from first result that has leagues data
+  let leagueName = `Cricket ${espnLeagueId}`;
+  let season: string | null = null;
+  for (const r of results) {
+    if (r.status === "fulfilled" && !Array.isArray(r.value) && r.value.leagues?.[0]) {
+      leagueName = r.value.leagues[0].name ?? leagueName;
+      season = r.value.leagues[0].season?.year?.toString() ?? null;
+      break;
+    }
+  }
+
+  // Merge + deduplicate events
   const seen = new Set<string>();
   const allEvents: ESPNEvent[] = [];
   for (const r of results) {
     if (r.status !== "fulfilled") continue;
-    for (const e of r.value) {
+    const events = Array.isArray(r.value) ? r.value : r.value.events;
+    for (const e of events) {
       if (!seen.has(e.id)) {
         seen.add(e.id);
         allEvents.push(e);
@@ -316,7 +296,7 @@ async function fetchESPNCricketFixtures(
   }
 
   const upcoming = allEvents.filter((e) => !e.status.type.completed);
-  console.log(`[fixtures] ESPN cricket ${espnLeagueId}: ${upcoming.length} upcoming / ${allEvents.length} total`);
+  console.log(`[fixtures] ESPN cricket ${espnLeagueId} (${leagueName}): ${upcoming.length} upcoming / ${allEvents.length} total across 14-day window`);
 
   return upcoming.map((e) => {
     const competitors = e.competitions[0]?.competitors ?? [];
