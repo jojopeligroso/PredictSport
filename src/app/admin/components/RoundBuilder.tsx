@@ -218,6 +218,15 @@ function allowsDraws(sport: string): boolean {
   return drawSports.includes(sport.toLowerCase());
 }
 
+/**
+ * Returns the primary/default prediction type for a fixture.
+ * This is the type that should be selected by default when creating a round.
+ */
+function getPrimaryPredictionType(fixture: SearchResult): PredictionTypeName {
+  const isTwoTeam = !!(fixture.homeTeam && fixture.awayTeam);
+  return isTwoTeam ? "head_to_head" : "winner";
+}
+
 // ── Icons ─────────────────────────────────────────────────────────────────────
 
 function CheckIcon({ className }: { className?: string }) {
@@ -493,11 +502,11 @@ function Step2Configure({
         {} as Record<PredictionTypeName, boolean>
       );
     }
-    // Only enable valid types by default
+    // Only enable the primary prediction type by default (head_to_head for 2-team, winner for multi-competitor)
+    const primaryType = getPrimaryPredictionType(first.fixture);
     const allowedTypes = getValidPredictionTypes(first.fixture);
-    const enabled = new Set(first.predictionTypes.map((p) => p.type));
     return allowedTypes.reduce(
-      (acc, t) => ({ ...acc, [t]: enabled.has(t) }),
+      (acc, t) => ({ ...acc, [t]: t === primaryType }),
       {} as Record<PredictionTypeName, boolean>
     );
   });
