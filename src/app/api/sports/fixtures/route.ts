@@ -114,8 +114,18 @@ const ESPN_LEAGUE_MAP: Record<string, string> = {
   // Motorsport
   "4370": "racing/f1",        // Formula 1 (confirmed working)
   // MotoGP (4407) — ESPN racing/motogp returns 404; falls through to TheSportsDB.
-  // Cricket — ESPN scoreboard API returns 404 for all cricket paths (dropped coverage).
-  // Cricket leagues fall through to TheSportsDB.
+};
+
+// ---------- ESPN cricket routing ----------
+// Cricket requires a different fetch strategy: the date-range format (YYYYMMDD-YYYYMMDD)
+// returns 404. Instead we fetch the calendar first, then query each upcoming match date
+// individually. Maps TheSportsDB league IDs → ESPN cricket numeric league IDs.
+const ESPN_CRICKET_MAP: Record<string, string> = {
+  "4460": "8048",  // IPL
+  "4461": "8044",  // Big Bash League
+  "4463": "8053",  // T20 Blast (England)
+  "5532": "8041",  // SA20 → SuperSport Series (closest match; update if better ID found)
+  // The Hundred (5177), CPL (5176), PSL (5067) — ESPN IDs not yet confirmed; fall through to TheSportsDB
 };
 
 // ---------- Foireann routing ----------
@@ -224,6 +234,108 @@ async function fetchESPNFixtures(
     console.error(`[fixtures] ESPN fetch threw for ${url}:`, err);
     return [];
   }
+}
+
+// ---------- ESPN cricket fixture fetching ----------
+
+interface ESPNCalendarEntry {
+  value?: string; // ISO date string
+}
+
+interface ESPNCricketScoreboardResponse extends ESPNScoreboardResponse {
+  calendar?: ESPNCalendarEntry[];
+}
+
+/**
+ * Cricket scoreboards 404 with a date range. Instead:
+ * 1. Fetch the base scoreboard to get the season calendar (all match dates)
+ * 2. Filter calendar to upcoming dates within 30 days
+ * 3. Fetch each date individually and merge
+ */
+async function fetchESPNCricketFixtures(
+  espnLeagueId: string,
+  sport: Sport,
+): Promise<NormalizedFixture[]> {
+  const base = `${ESPN_BASE}/cricket/${espnLeagueId}/scoreboard`;
+
+  // Step 1: get calendar
+  let calData: ESPNCricketScoreboardResponse;
+  try {
+    const calRes = await fetch(base, ESPN_FETCH_OPTS);
+    if (!calRes.ok) {
+      console.error(`[fixtures] ESPN cricket ${espnLeagueId} calendar → HTTP ${calRes.status}`);
+      return [];
+    }
+    calData = await calRes.json();
+  } catch (err) {
+    console.error(`[fixtures] ESPN cricket ${espnLeagueId} calendar fetch threw:`, err);
+    return [];
+  }
+
+  const leagueName = calData.leagues?.[0]?.name ?? `Cricket ${espnLeagueId}`;
+  const season = calData.leagues?.[0]?.season?.year?.toString() ?? null;
+
+  // Step 2: filter calendar to upcoming dates within 30-day window
+  const today = new Date();
+  const cutoff = new Date(today.getTime() + 30 * 86_400_000);
+  const todayStr = today.toISOString().slice(0, 10);
+
+  const futureDates = (calData.calendar ?? [])
+    .map((c) => c.value?.slice(0, 10) ?? "")
+    .filter((d) => d >= todayStr && new Date(d) <= cutoff);
+
+  if (!futureDates.length) {
+    console.log(`[fixtures] ESPN cricket ${espnLeagueId} (${leagueName}): 0 upcoming match days in calendar`);
+    return [];
+  }
+
+  console.log(`[fixtures] ESPN cricket ${espnLeagueId} (${leagueName}): fetching ${futureDates.length} match day(s)`);
+
+  // Step 3: fetch each date individually
+  const results = await Promise.allSettled(
+    futureDates.map(async (d) => {
+      const fmt = d.replace(/-/g, "");
+      const res = await fetch(`${base}?dates=${fmt}`, ESPN_FETCH_OPTS);
+      if (!res.ok) return [] as ESPNEvent[];
+      const data: ESPNScoreboardResponse = await res.json();
+      return data.events ?? [];
+    }),
+  );
+
+  // Step 4: merge + deduplicate
+  const seen = new Set<string>();
+  const allEvents: ESPNEvent[] = [];
+  for (const r of results) {
+    if (r.status !== "fulfilled") continue;
+    for (const e of r.value) {
+      if (!seen.has(e.id)) {
+        seen.add(e.id);
+        allEvents.push(e);
+      }
+    }
+  }
+
+  const upcoming = allEvents.filter((e) => !e.status.type.completed);
+  console.log(`[fixtures] ESPN cricket ${espnLeagueId}: ${upcoming.length} upcoming / ${allEvents.length} total`);
+
+  return upcoming.map((e) => {
+    const competitors = e.competitions[0]?.competitors ?? [];
+    const home = competitors.find((c) => c.homeAway === "home");
+    const away = competitors.find((c) => c.homeAway === "away");
+    const homeName = home?.team?.displayName ?? home?.athlete?.displayName ?? "";
+    const awayName = away?.team?.displayName ?? away?.athlete?.displayName ?? "";
+
+    return {
+      external_event_id: e.id,
+      event_name: e.name,
+      sport,
+      competition_name: leagueName,
+      start_time: e.date,
+      participants: [homeName, awayName].filter(Boolean),
+      round: null,
+      season,
+    };
+  });
 }
 
 // ---------- Foireann fixture fetching ----------
@@ -463,6 +575,14 @@ export async function GET(request: Request) {
       // GAA → Foireann API
       console.log(`[fixtures] route: league=${leagueId} → Foireann`);
       fixtures = await fetchFoireannFixtures(FOIREANN_LEAGUE_MAP[leagueId]);
+    } else if (ESPN_CRICKET_MAP[leagueId]) {
+      // Cricket → ESPN calendar whitelist strategy (date-range format 404s for cricket)
+      console.log(`[fixtures] route: league=${leagueId} → ESPN cricket (${ESPN_CRICKET_MAP[leagueId]})`);
+      fixtures = await fetchESPNCricketFixtures(ESPN_CRICKET_MAP[leagueId], sport);
+      if (fixtures.length === 0) {
+        console.log(`[fixtures] route: ESPN cricket returned 0 for league=${leagueId}, falling back to TheSportsDB`);
+        fixtures = await fetchTSDBFixtures(leagueId, sport);
+      }
     } else if (ESPN_LEAGUE_MAP[leagueId]) {
       // ESPN-routed leagues
       console.log(`[fixtures] route: league=${leagueId} → ESPN (${ESPN_LEAGUE_MAP[leagueId]})`);
