@@ -97,11 +97,129 @@
   ```
 - Use in head_to_head config auto-population (future enhancement)
 
+### Review, Assessment & Verification Tasks
+
+**1.7** Code review of smart filtering logic
+- Review `getValidPredictionTypes()` implementation
+- Verify TypeScript types are correct
+- Check edge cases:
+  - What if `homeTeam` is set but `awayTeam` is null?
+  - What if both are empty strings?
+  - What if fixture has 3+ participants (future expansion)?
+- Verify function location doesn't break existing code flow
+- Check for any console warnings/errors in browser
+
+**1.8** Verify prediction type mappings are correct
+- Cross-reference with `SPEC.md` §6:
+  - **2-team types:** head_to_head ✓, margin ✓, over_under ✓, handicap ✓, yes_no ✓
+  - **Multi-competitor types:** winner ✓, top_n ✓, final_standings ✓, progression ✓, yes_no ✓
+- Confirm `yes_no` appears in both (generic type, applies to all)
+- Verify no prediction type is accidentally excluded
+- Check SPEC.md for any type applicability notes we missed
+
+**1.9** Test with real URC fixtures
+- Navigate to admin panel
+- Click "Create Round"
+- Select URC rugby fixtures (Cardiff vs Stormers, etc.)
+- **Verify in Step 2:**
+  - Only 5 checkboxes visible (not 8)
+  - Types shown: Head to Head, Margin, Over/Under, Handicap, Yes/No
+  - Types hidden: Winner, Top N, Progression
+  - Default checkboxes match competition scoring rules
+- Try selecting "Head to Head" and assigning 5 points
+- Continue to Step 3, verify payload looks correct
+
+**1.10** Test with F1 fixtures (multi-competitor)
+- In same round builder, clear rugby fixtures
+- Search for F1 races (if available in fixture browser)
+- **Verify in Step 2:**
+  - Only 5 checkboxes visible
+  - Types shown: Winner, Top N, Final Standings, Progression, Yes/No
+  - Types hidden: Head to Head, Margin, Over/Under, Handicap
+- Continue to Step 3, verify payload
+
+**1.11** Test mixed fixture scenario
+- Select 2 URC rugby matches + 1 F1 race (if possible)
+- **Expected behavior:**
+  - Falls back to showing ALL_PREDICTION_TYPES (all 9)
+  - Reason: Mixed event types, can't smart-filter
+  - Verify this is intentional in code (task 1.2 logic)
+- Alternative: Show intersection or union? (Design decision)
+- Document actual behavior observed
+
+**1.12** Test per-fixture override customization
+- In Step 2, expand one fixture
+- **Verify:**
+  - Same filtered types appear (not all 9)
+  - Can toggle types on/off
+  - Can customize points
+  - "Reset to global" button works
+  - Custom fixture shows correct badge
+- Test with both rugby and F1 fixtures
+
+**1.13** Regression testing
+- Test existing round creation flow still works:
+  - Create round with just Winner type (F1 race)
+  - Create round with just Head to Head (rugby match)
+  - Create round with multiple types enabled
+  - Verify all rounds save successfully to database
+  - Check API response has correct `event_prediction_types` rows
+
+**1.14** Browser console & network inspection
+- Open browser DevTools
+- Monitor Console tab for errors/warnings during:
+  - Fixture selection (Step 1)
+  - Type configuration (Step 2)
+  - Round creation (Step 3)
+- Monitor Network tab:
+  - Verify POST to `/api/admin/rounds` has correct payload
+  - Check `prediction_type_configs` array structure
+  - Confirm no 400/500 errors
+  - Verify response includes created round + events
+
+**1.15** Accessibility check
+- Keyboard navigation:
+  - Tab through prediction type checkboxes
+  - All focusable?
+  - Visible focus indicators?
+- Screen reader test (basic):
+  - Checkboxes have labels?
+  - ARIA attributes correct?
+  - No unlabeled controls?
+
+**1.16** Performance check
+- With 10+ fixtures selected:
+  - Step 2 renders quickly? (<1s)
+  - No lag when toggling types?
+  - `useMemo` optimizations working?
+  - React DevTools Profiler: any unnecessary re-renders?
+
+**1.17** Documentation review
+- Re-read `ROUND-BUILDER-IMPROVEMENTS.md` Phase 1
+- Confirm all tasks completed
+- Update any outdated assumptions
+- Note any edge cases discovered during testing
+- Document any deviations from plan
+
+**1.18** Final checklist before Phase 2
+- [ ] All 6 implementation tasks (1.1-1.6) complete
+- [ ] All 12 verification tasks (1.7-1.18) complete
+- [ ] No console errors
+- [ ] No TypeScript errors (`npm run build` succeeds)
+- [ ] URC rugby fixtures show 5 types
+- [ ] F1 fixtures show 5 types (different set)
+- [ ] API payload correct, round creates successfully
+- [ ] Git committed with descriptive message
+- [ ] Ready to proceed to Phase 2 (or iterate on Phase 1 findings)
+
 ### Success Criteria
 - ✅ Rugby fixtures show 5 types (not 8)
 - ✅ F1 races show 5 types (different 5)
 - ✅ No regression in mixed fixture scenarios
 - ✅ Existing functionality unchanged
+- ✅ All verification tasks pass
+- ✅ No console errors or TypeScript warnings
+- ✅ Round creation works end-to-end with real fixtures
 
 ### Files Modified
 - `src/app/admin/components/RoundBuilder.tsx` (lines 190-805)
