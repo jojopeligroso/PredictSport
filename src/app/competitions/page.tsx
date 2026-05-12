@@ -143,6 +143,39 @@ export default async function CompetitionsPage() {
         </Link>
       </div>
 
+      {/* Personal predictions entry */}
+      <Link
+        href="/competitions/personal"
+        className="mb-4 flex items-center justify-between rounded-2xl border border-ps-border bg-ps-surface px-4 py-3.5 shadow-[0_1px_2px_rgba(40,30,20,0.04)] transition-all hover:border-ps-border-strong active:scale-[0.98]"
+      >
+        <div>
+          <p className="text-[10px] font-extrabold tracking-widest uppercase text-ps-text-ter">
+            Personal
+          </p>
+          <p className="text-sm font-extrabold text-ps-text leading-snug">
+            My Personal Predictions
+          </p>
+          <p className="mt-0.5 text-[11.5px] font-semibold text-ps-text-sec">
+            Pick outcomes on any fixture — no competition needed
+          </p>
+        </div>
+        <svg
+          width="14"
+          height="14"
+          viewBox="0 0 16 16"
+          fill="none"
+          className="shrink-0 text-ps-text-ter"
+        >
+          <path
+            d="M6 4l4 4-4 4"
+            stroke="currentColor"
+            strokeWidth="2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          />
+        </svg>
+      </Link>
+
       {/* Competition list */}
       {competitions.length === 0 ? (
         <div className="rounded-2xl border border-dashed border-ps-border p-12 text-center">
