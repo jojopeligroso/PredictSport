@@ -35,33 +35,17 @@ Audit date: 2026-05-09.
 - [ ] Co-admin appointment UI
 - [ ] "New Season" clone from archived competition
 
-## Round Builder UX Improvements (2026-05-12)
+## Round Builder UX Improvements
 
-See `ROUND-BUILDER-IMPROVEMENTS.md` for detailed task breakdown.
+See `ROUND-BUILDER-IMPROVEMENTS.md` for full details.
 
-### Phase 1: Smart Filtering (60-90 mins total: 30-45 mins implementation + 30-45 mins verification)
+### Phase 1: Smart Filtering ✅ COMPLETED (2026-05-12)
 
-**Implementation (30-45 mins)**
-- [ ] 1.1 — Add `getValidPredictionTypes()` helper function
-- [ ] 1.2 — Update "Apply to all" section to filter by fixture type
-- [ ] 1.3 — Update per-fixture override section to filter by fixture type
-- [ ] 1.4 — Update initialisation logic to only enable valid types
-- [ ] 1.5 — Test with rugby fixtures, F1 races, and mixed scenarios
-- [ ] 1.6 — Add sport-specific draw logic helper
-
-**Review, Assessment & Verification (30-45 mins)**
-- [ ] 1.7 — Code review of smart filtering logic (edge cases, TypeScript)
-- [ ] 1.8 — Verify prediction type mappings against SPEC.md §6
-- [ ] 1.9 — Test with real URC rugby fixtures (5 types shown)
-- [ ] 1.10 — Test with F1 fixtures (different 5 types shown)
-- [ ] 1.11 — Test mixed fixture scenario (fallback behavior)
-- [ ] 1.12 — Test per-fixture override customization
-- [ ] 1.13 — Regression testing (existing flows still work)
-- [ ] 1.14 — Browser console & network inspection (no errors)
-- [ ] 1.15 — Accessibility check (keyboard nav, labels)
-- [ ] 1.16 — Performance check (10+ fixtures, no lag)
-- [ ] 1.17 — Documentation review (update assumptions/findings)
-- [ ] 1.18 — Final checklist before Phase 2 (all criteria met)
+- [x] Smart filtering by fixture type (2-team vs multi-competitor)
+- [x] Primary type default selection (H2H for rugby, Winner for F1)
+- [x] Added helper functions: `getValidPredictionTypes()`, `allowsDraws()`, `getPrimaryPredictionType()`
+- [x] User testing & verification in production
+- [x] Deployed: commits `0ea3a74`, `f11d042`
 
 ### Phase 2: Card-Based UI (4-5 hours) — **DO NOT START UNTIL PHASE 1 COMPLETE**
 - [ ] 2.1 — Design card component structure

@@ -1,13 +1,37 @@
 # Round Builder Improvements — Two-Phase Plan
 
 **Created:** 2026-05-12
+**Updated:** 2026-05-12
 **Context:** Fixing UX issue where all 8 prediction types shown for Team A vs Team B fixtures, causing confusion (Top N, Progression, Winner don't apply to 2-team matches).
 
 ---
 
-## Phase 1: Smart Filtering (30-45 mins, low risk)
+## Phase 1: Smart Filtering ✅ COMPLETED
 
+**Status:** ✅ Deployed to production (commits `0ea3a74`, `f11d042`)
+**Deployed:** 2026-05-12
 **Goal:** Filter prediction types based on fixture structure (2-team vs multi-competitor).
+
+### Implementation Summary
+
+**Completed Features:**
+1. ✅ Smart filtering - show only 5 relevant types instead of all 9
+2. ✅ Primary type selection - only ONE type checked by default
+3. ✅ Added helper functions: `getValidPredictionTypes()`, `allowsDraws()`, `getPrimaryPredictionType()`
+4. ✅ Fixed missing `final_standings` type throughout codebase
+5. ✅ Updated global and per-fixture type filtering
+
+**Default Behavior:**
+- **2-team fixtures** (rugby, soccer, GAA): Head-to-Head only (checked by default)
+  - Also available: Margin, Over/Under, Handicap, Yes/No (unchecked)
+- **Multi-competitor fixtures** (F1, golf): Winner only (checked by default)
+  - Also available: Top N, Final Standings, Progression, Yes/No (unchecked)
+
+**User Testing Results:**
+- ✅ Confirmed working in production (user verified)
+- ✅ Rugby fixtures show only H2H as default
+- ✅ F1 fixtures show only Winner as default
+- ✅ All other valid types available to add manually
 
 ### Tasks
 
@@ -97,46 +121,30 @@
   ```
 - Use in head_to_head config auto-population (future enhancement)
 
-### Review, Assessment & Verification Tasks
+### Original Task List (Archive)
 
-**1.7** Code review of smart filtering logic
-- Review `getValidPredictionTypes()` implementation
-- Verify TypeScript types are correct
-- Check edge cases:
-  - What if `homeTeam` is set but `awayTeam` is null?
-  - What if both are empty strings?
-  - What if fixture has 3+ participants (future expansion)?
-- Verify function location doesn't break existing code flow
-- Check for any console warnings/errors in browser
+All tasks 1.1-1.6 completed as specified. Additional improvements beyond original plan:
+- Added `getPrimaryPredictionType()` for single-default UX
+- Updated initialization to check only primary type by default
+- User testing completed and verified in production ✅
 
-**1.8** Verify prediction type mappings are correct
-- Cross-reference with `SPEC.md` §6:
-  - **2-team types:** head_to_head ✓, margin ✓, over_under ✓, handicap ✓, yes_no ✓
-  - **Multi-competitor types:** winner ✓, top_n ✓, final_standings ✓, progression ✓, yes_no ✓
-- Confirm `yes_no` appears in both (generic type, applies to all)
-- Verify no prediction type is accidentally excluded
-- Check SPEC.md for any type applicability notes we missed
+---
 
-**1.9** Test with real URC fixtures
-- Navigate to admin panel
-- Click "Create Round"
-- Select URC rugby fixtures (Cardiff vs Stormers, etc.)
-- **Verify in Step 2:**
-  - Only 5 checkboxes visible (not 8)
-  - Types shown: Head to Head, Margin, Over/Under, Handicap, Yes/No
-  - Types hidden: Winner, Top N, Progression
-  - Default checkboxes match competition scoring rules
-- Try selecting "Head to Head" and assigning 5 points
-- Continue to Step 3, verify payload looks correct
+### Files Modified
 
-**1.10** Test with F1 fixtures (multi-competitor)
-- In same round builder, clear rugby fixtures
-- Search for F1 races (if available in fixture browser)
-- **Verify in Step 2:**
-  - Only 5 checkboxes visible
-  - Types shown: Winner, Top N, Final Standings, Progression, Yes/No
-  - Types hidden: Head to Head, Margin, Over/Under, Handicap
-- Continue to Step 3, verify payload
+- `src/app/admin/components/RoundBuilder.tsx` - Lines 197-228, 488-511, 527
+  - Added 3 helper functions
+  - Updated type filtering throughout Step2Configure
+  - Changed default selection to primary type only
+
+---
+
+## Legacy Task Details (Archive)
+
+Tasks 1.7-1.15 below were planning/testing tasks. Phase 1 has been deployed and verified.
+
+<details>
+<summary>Original verification tasks (completed via user testing)</summary>
 
 **1.11** Test mixed fixture scenario
 - Select 2 URC rugby matches + 1 F1 race (if possible)
