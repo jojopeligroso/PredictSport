@@ -239,11 +239,92 @@ Tasks 1.7-1.15 below were planning/testing tasks. Phase 1 has been deployed and 
 
 ---
 
-## Phase 2: Card-Based UI (4-5 hours, higher complexity)
+## Phase 2: Card-Based UI ✅ INTEGRATED (Testing Required)
+
+**Status:** ✅ Integrated on feature branch `feature/round-builder-phase-2`
+**Commits:** `76dccdf`, `edeb164`, `01eb89b` (ROLLBACK POINT 1)
+**Testing:** Requires user testing before merge to master
+**Rollback:** Change `RoundBuilder.tsx` line 490: `useState(true)` → `useState(false)`
 
 **Goal:** Replace checkbox grid with progressive disclosure cards that guide users through predictions.
 
-### Tasks
+### Implementation Summary
+
+**Completed:**
+1. ✅ Created comprehensive card component system (`PredictionCards.tsx` - 1,052 lines)
+2. ✅ Built all 4 card types: PrimaryOutcome, ScoringPredictions, TopNPredictions, YesNo
+3. ✅ Implemented state transformation (cardsToConfigs/configsToCards)
+4. ✅ Integrated into RoundBuilder per-fixture customization
+5. ✅ Added feature flag toggle for easy A/B testing
+6. ✅ Created test page at `/admin/test-cards`
+
+**Features:**
+- Progressive disclosure (advanced cards collapsed by default)
+- Auto-populate team names in H2H config (e.g., "Leinster" vs "Munster")
+- Sport-specific draw handling (soccer, rugby, GAA show DRAW button)
+- Mobile-responsive with ps-* design tokens
+- Both card UI and legacy checkbox grid coexist (feature flag)
+
+**Files:**
+- `src/app/admin/components/PredictionCards.tsx` (new, 1,052 lines)
+- `src/app/admin/components/RoundBuilder.tsx` (modified, lines 16-20, 490, 629-652, 776-870)
+- `src/app/admin/test-cards/page.tsx` (new, test harness)
+
+### Testing Instructions
+
+**Test Page (Standalone):**
+1. Navigate to `/admin/test-cards`
+2. Try rugby fixture (see HOME/DRAW/AWAY buttons)
+3. Try F1 fixture (see Winner card)
+4. Expand advanced cards
+5. Check API output matches expected format
+
+**Round Builder Integration:**
+1. Create new round with fixtures
+2. In Step 2, expand a fixture
+3. See yellow "Phase 2: Card UI (Testing)" banner with toggle
+4. With "Cards ON": See card-based UI
+5. With "Cards OFF": See legacy checkbox grid
+6. Test both UIs produce identical API output
+
+**Rugby Fixture Test:**
+- Should show: PrimaryOutcomeCard with HOME/DRAW/AWAY buttons
+- Expand "Advanced Scoring": Margin, Over/Under, Handicap options
+- Expand "Yes/No": Custom question input
+- Team names should be pre-filled (e.g., "Leinster", "Munster")
+
+**F1 Fixture Test:**
+- Should show: PrimaryOutcomeCard with "Winner prediction" message
+- Expand "Advanced Tournament": Top N, Final Standings, Progression
+- Expand "Yes/No": Custom question input
+- No draw option (multi-competitor event)
+
+### Rollback Instructions
+
+**Option 1: Feature Flag (Instant)**
+```typescript
+// src/app/admin/components/RoundBuilder.tsx:490
+const [useCardUI, setUseCardUI] = useState(false); // Change true → false
+```
+
+**Option 2: Git Revert**
+```bash
+git revert 01eb89b  # Reverts integration commit
+git revert edeb164  # Reverts test page
+git revert 76dccdf  # Reverts card components
+```
+
+**Option 3: Branch Deletion**
+```bash
+git checkout master
+git branch -D feature/round-builder-phase-2
+```
+
+### Original Task List (Archive)
+
+Tasks 2.1-2.12 below were completed during implementation.
+
+**2.1** Design card component structure
 
 **2.1** Design card component structure
 - File: Create `src/app/admin/components/PredictionCards.tsx`
