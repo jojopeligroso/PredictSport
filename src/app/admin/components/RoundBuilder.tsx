@@ -13,7 +13,9 @@
  *   />
  */
 
-import { useState, useCallback, useRef, useEffect } from "react";
+import { useState, useMemo } from "react";
+import { FixtureBrowser } from "./FixtureBrowser";
+import type { NormalizedFixture } from "./FixtureBrowser";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -83,58 +85,6 @@ const SPORT_EMOJIS: Record<string, string> = {
   hockey: "🏒",
 };
 
-// Alphabetical, with GAA group at the end for optgroup rendering
-const SPORT_OPTIONS = [
-  { value: "athletics",       label: "Athletics" },
-  { value: "cricket",         label: "Cricket" },
-  { value: "formula_1",       label: "Formula 1" },
-  { value: "gaelic_football", label: "Gaelic Football" },
-  { value: "golf",            label: "Golf" },
-  { value: "horse_racing",    label: "Horse Racing" },
-  { value: "hurling",         label: "Hurling" },
-  { value: "mlb",             label: "MLB" },
-  { value: "nba",             label: "NBA" },
-  { value: "nfl",             label: "NFL" },
-  { value: "nhl",             label: "NHL" },
-  { value: "rugby",           label: "Rugby" },
-  { value: "snooker",         label: "Snooker" },
-  { value: "soccer",          label: "Soccer" },
-  { value: "tennis",          label: "Tennis" },
-];
-
-const LEAGUE_OPTIONS: Record<string, { id: string; label: string }[]> = {
-  soccer: [
-    { id: "4328", label: "Premier League" },
-    { id: "4480", label: "Champions League" },
-    { id: "4335", label: "La Liga" },
-    { id: "4331", label: "Bundesliga" },
-    { id: "4332", label: "Serie A" },
-    { id: "4334", label: "Ligue 1" },
-    { id: "4643", label: "League of Ireland" },
-    { id: "4330", label: "Scottish Premiership" },
-  ],
-  formula_1: [{ id: "4370", label: "Formula 1" }],
-  gaa: [
-    { id: "gaa-football", label: "GAA Football" },
-    { id: "gaa-hurling", label: "GAA Hurling" },
-  ],
-  golf: [{ id: "4758", label: "European Tour" }],
-  rugby: [
-    { id: "4446", label: "United Rugby Championship" },
-    { id: "4550", label: "Champions Cup" },
-    { id: "4415", label: "Super League" },
-  ],
-  tennis: [
-    { id: "4464", label: "ATP Tour" },
-    { id: "4517", label: "WTA Tour" },
-  ],
-  snooker: [{ id: "4555", label: "World Snooker" }],
-  mlb: [{ id: "4424", label: "MLB" }],
-  nfl: [{ id: "4391", label: "NFL" }],
-  nba: [{ id: "4387", label: "NBA" }],
-  nhl: [{ id: "4380", label: "NHL" }],
-  horse_racing: [],
-};
 
 const ALL_PREDICTION_TYPES: PredictionTypeName[] = [
   "winner",
@@ -300,22 +250,16 @@ function ChevronDownIcon({ className }: { className?: string }) {
   );
 }
 
-function SearchIcon() {
+function XIcon({ className }: { className?: string }) {
   return (
-    <svg
-      className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-ps-text-ter"
-      viewBox="0 0 16 16"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2"
-      strokeLinecap="round"
-      aria-hidden="true"
-    >
-      <circle cx="7" cy="7" r="4.5" />
-      <path d="M10.5 10.5L14 14" />
+    <svg className={className ?? "h-3.5 w-3.5"} viewBox="0 0 16 16"
+      fill="none" stroke="currentColor" strokeWidth="2"
+      strokeLinecap="round" aria-hidden="true">
+      <path d="M3 3l10 10M13 3L3 13" />
     </svg>
   );
 }
+
 
 // ── Step Indicator ────────────────────────────────────────────────────────────
 
@@ -382,342 +326,78 @@ function Step1FindFixtures({
   onNext,
   onCancel,
 }: Step1Props) {
-  const [query, setQuery] = useState("");
-  const [sport, setSport] = useState("");
-  const [league, setLeague] = useState("");
-  const [dateFrom, setDateFrom] = useState("");
-  const [dateTo, setDateTo] = useState("");
-  const [results, setResults] = useState<SearchResult[]>([]);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [searched, setSearched] = useState(false);
-
-  const searchRef = useRef<AbortController | null>(null);
-
-  const leagues = LEAGUE_OPTIONS[sport] ?? [];
-
-  // Reset league when sport changes
-  useEffect(() => {
-    setLeague("");
-  }, [sport]);
-
-  const selectedIds = new Set(selected.map((f) => f.externalId));
-
-  const doSearch = useCallback(
-    async (opts?: { leagueId?: string }) => {
-      if (!sport) return;
-      searchRef.current?.abort();
-      const ctrl = new AbortController();
-      searchRef.current = ctrl;
-
-      setLoading(true);
-      setError(null);
-      setSearched(true);
-
-      try {
-        const params = new URLSearchParams({ sport, limit: "25" });
-        if (opts?.leagueId) {
-          params.set("league", opts.leagueId);
-        } else if (query.trim()) {
-          params.set("q", query.trim());
-        }
-        if (dateFrom) params.set("dateFrom", dateFrom);
-        if (dateTo) params.set("dateTo", dateTo);
-
-        const res = await fetch(`/api/sports/search?${params}`, {
-          signal: ctrl.signal,
-        });
-        const data = await res.json();
-        if (!res.ok) throw new Error(data.error ?? "Search failed");
-
-        // Normalise API response — the search API returns events in NormalizedFixture shape
-        const raw: Array<Record<string, unknown>> = data.events ?? [];
-        const mapped: SearchResult[] = raw.map((e) => ({
-          externalId:
-            (e.external_event_id as string) ?? (e.externalId as string) ?? "",
-          name:
-            (e.event_name as string) ??
-            (e.name as string) ??
-            "Unknown event",
-          sport: (e.sport as string) ?? sport,
-          league:
-            (e.competition_name as string) ??
-            (e.league as string) ??
-            undefined,
-          startTime:
-            (e.start_time as string) ?? (e.startTime as string) ?? "",
-          venue: (e.venue as string) ?? undefined,
-          homeTeam:
-            (e.participants as string[] | undefined)?.[0] ??
-            (e.homeTeam as string) ??
-            undefined,
-          awayTeam:
-            (e.participants as string[] | undefined)?.[1] ??
-            (e.awayTeam as string) ??
-            undefined,
-        }));
-        setResults(mapped);
-      } catch (err) {
-        if ((err as Error).name === "AbortError") return;
-        setError(err instanceof Error ? err.message : "Search failed");
-        setResults([]);
-      } finally {
-        setLoading(false);
-      }
-    },
-    [sport, query, dateFrom, dateTo]
+  const selectedIdSet = useMemo(
+    () => new Set(selected.map((f) => f.externalId)),
+    [selected]
   );
 
-  function handleLeagueChange(leagueId: string) {
-    setLeague(leagueId);
-    if (leagueId) {
-      doSearch({ leagueId });
-    }
-  }
-
-  function handleSearchSubmit(e: React.FormEvent) {
-    e.preventDefault();
-    doSearch();
-  }
-
-  function toggleFixture(fixture: SearchResult) {
-    if (selectedIds.has(fixture.externalId)) {
-      onSelectionChange(
-        selected.filter((f) => f.externalId !== fixture.externalId)
-      );
+  function handleFixtureSelect(fixture: NormalizedFixture) {
+    const sr: SearchResult = {
+      externalId: fixture.external_event_id,
+      name: fixture.event_name,
+      sport: fixture.sport,
+      league: fixture.competition_name ?? undefined,
+      startTime: fixture.start_time,
+      homeTeam: fixture.participants?.[0] ?? undefined,
+      awayTeam: fixture.participants?.[1] ?? undefined,
+    };
+    if (selectedIdSet.has(sr.externalId)) {
+      onSelectionChange(selected.filter((f) => f.externalId !== sr.externalId));
     } else {
-      onSelectionChange([...selected, fixture]);
+      onSelectionChange([...selected, sr]);
     }
   }
-
-  function toggleSelectAll() {
-    if (results.every((r) => selectedIds.has(r.externalId))) {
-      // Deselect all current results
-      const resultIds = new Set(results.map((r) => r.externalId));
-      onSelectionChange(selected.filter((f) => !resultIds.has(f.externalId)));
-    } else {
-      // Add all results not yet selected
-      const toAdd = results.filter((r) => !selectedIds.has(r.externalId));
-      onSelectionChange([...selected, ...toAdd]);
-    }
-  }
-
-  const allResultsSelected =
-    results.length > 0 && results.every((r) => selectedIds.has(r.externalId));
 
   return (
     <div className="space-y-4">
-      {/* Search form */}
-      <form onSubmit={handleSearchSubmit} className="space-y-3">
-        <div className="flex gap-2">
-          <div className="relative flex-1">
-            <SearchIcon />
-            <input
-              type="text"
-              value={query}
-              onChange={(e) => setQuery(e.target.value)}
-              placeholder="Search teams or events..."
-              className="w-full rounded-xl border border-ps-border bg-ps-bg py-2 pl-9 pr-3 text-sm text-ps-text placeholder:text-ps-text-ter focus:border-ps-amber focus:outline-none focus:ring-1 focus:ring-ps-amber"
-            />
-          </div>
-          <select
-            value={sport}
-            onChange={(e) => setSport(e.target.value)}
-            className="shrink-0 rounded-xl border border-ps-border bg-ps-bg px-2 py-2 text-sm text-ps-text focus:border-ps-amber focus:outline-none"
-            aria-label="Sport"
-          >
-            <option value="">Choose a sport</option>
-            {SPORT_OPTIONS.map((s) => (
-              <option key={s.value} value={s.value}>
-                {s.label}
-              </option>
-            ))}
-            <optgroup label="🇮🇪 GAA">
-              <option value="gaa">GAA (General)</option>
-              <option value="gaelic_football">Gaelic Football</option>
-              <option value="hurling">Hurling</option>
-            </optgroup>
-          </select>
-          <button
-            type="submit"
-            disabled={!query.trim() || !sport || loading}
-            className="shrink-0 rounded-xl bg-gradient-to-r from-[#f59e0b] to-[#d97706] px-3 py-2 text-sm font-medium text-[#1a1208] transition-opacity hover:opacity-90 disabled:opacity-40"
-          >
-            {loading ? <SpinnerIcon className="h-4 w-4 animate-spin" /> : "Search"}
-          </button>
-        </div>
+      <FixtureBrowser onSelect={handleFixtureSelect} selectedIds={selectedIdSet} />
 
-        {/* League browser + date filters */}
-        <div className="flex flex-wrap gap-2">
-          {leagues.length > 0 && (
-            <select
-              value={league}
-              onChange={(e) => handleLeagueChange(e.target.value)}
-              className="rounded-xl border border-ps-border bg-ps-bg px-3 py-2 text-sm text-ps-text focus:border-ps-amber focus:outline-none"
-              aria-label="Browse by league"
-            >
-              <option value="">Browse league...</option>
-              {leagues.map((l) => (
-                <option key={l.id} value={l.id}>
-                  {l.label}
-                </option>
-              ))}
-            </select>
-          )}
-          <input
-            type="date"
-            value={dateFrom}
-            onChange={(e) => setDateFrom(e.target.value)}
-            className="rounded-xl border border-ps-border bg-ps-bg px-3 py-2 text-sm text-ps-text focus:border-ps-amber focus:outline-none"
-            aria-label="From date"
-          />
-          <input
-            type="date"
-            value={dateTo}
-            onChange={(e) => setDateTo(e.target.value)}
-            className="rounded-xl border border-ps-border bg-ps-bg px-3 py-2 text-sm text-ps-text focus:border-ps-amber focus:outline-none"
-            aria-label="To date"
-          />
-        </div>
-      </form>
-
-      {/* Error */}
-      {error && (
-        <div
-          role="alert"
-          className="rounded-xl bg-ps-red-soft px-4 py-3 text-sm text-ps-red"
-        >
-          {error}
-        </div>
-      )}
-
-      {/* Results */}
-      {(results.length > 0 || loading) && (
-        <div className="rounded-2xl border border-ps-border bg-ps-surface">
-          {/* Header row */}
+      {/* Selected fixtures tray */}
+      {selected.length > 0 && (
+        <div className="rounded-2xl border border-ps-amber bg-ps-amber-soft">
           <div className="flex items-center justify-between border-b border-ps-border px-4 py-2.5">
-            <label className="flex cursor-pointer items-center gap-2 text-sm font-medium text-ps-text">
-              <input
-                type="checkbox"
-                checked={allResultsSelected}
-                onChange={toggleSelectAll}
-                className="h-4 w-4 rounded border-ps-border accent-ps-amber"
-                aria-label="Select all fixtures"
-              />
-              Select all
-            </label>
-            {selected.length > 0 && (
-              <span className="rounded-full bg-ps-amber-soft px-3 py-1 text-xs font-bold text-ps-amber-deep">
-                {selected.length} selected
-              </span>
-            )}
+            <span className="text-xs font-semibold uppercase tracking-wider text-ps-amber-deep">
+              Selected fixtures
+            </span>
+            <span className="rounded-full bg-ps-amber px-3 py-1 text-xs font-bold text-white">
+              {selected.length}
+            </span>
           </div>
-
-          {/* Results list */}
-          <div className="max-h-72 overflow-y-auto ps-scroll">
-            {loading && results.length === 0 ? (
-              <div className="flex items-center gap-2 px-4 py-6 text-sm text-ps-text-ter">
-                <SpinnerIcon className="h-4 w-4 animate-spin" />
-                Searching...
+          <div className="max-h-40 overflow-y-auto">
+            {selected.map((fixture) => (
+              <div
+                key={fixture.externalId}
+                className="flex items-center gap-3 border-b border-ps-border px-4 py-2.5 last:border-b-0"
+              >
+                <div className="min-w-0 flex-1">
+                  <div className="truncate text-sm font-medium text-ps-text">
+                    {fixture.homeTeam && fixture.awayTeam
+                      ? `${fixture.homeTeam} vs ${fixture.awayTeam}`
+                      : fixture.name}
+                  </div>
+                  <div className="mt-0.5 text-xs text-ps-text-ter">
+                    {formatDateTime(fixture.startTime)}
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  onClick={() =>
+                    onSelectionChange(
+                      selected.filter((f) => f.externalId !== fixture.externalId)
+                    )
+                  }
+                  className="shrink-0 rounded p-0.5 text-ps-text-ter hover:text-ps-text"
+                  aria-label={`Remove ${fixture.name}`}
+                >
+                  <XIcon className="h-3.5 w-3.5" />
+                </button>
               </div>
-            ) : (
-              results.map((fixture) => {
-                const isSelected = selectedIds.has(fixture.externalId);
-                return (
-                  <label
-                    key={fixture.externalId}
-                    className={`flex cursor-pointer items-start gap-3 border-b border-ps-border px-4 py-3 last:border-b-0 transition-colors hover:bg-ps-chip ${
-                      isSelected ? "bg-ps-amber-soft" : ""
-                    }`}
-                  >
-                    <input
-                      type="checkbox"
-                      checked={isSelected}
-                      onChange={() => toggleFixture(fixture)}
-                      className="mt-0.5 h-4 w-4 shrink-0 rounded border-ps-border accent-ps-amber"
-                    />
-                    <div className="min-w-0 flex-1">
-                      <div className="flex items-center gap-1.5">
-                        <span aria-hidden="true">
-                          {sportEmoji(fixture.sport)}
-                        </span>
-                        <span className="truncate text-sm font-medium text-ps-text">
-                          {fixture.homeTeam && fixture.awayTeam
-                            ? `${fixture.homeTeam} vs ${fixture.awayTeam}`
-                            : fixture.name}
-                        </span>
-                      </div>
-                      <div className="mt-0.5 flex flex-wrap items-center gap-2 text-xs text-ps-text-ter">
-                        <span>{formatDateTime(fixture.startTime)}</span>
-                        {fixture.league && (
-                          <span className="rounded-full bg-ps-chip px-1.5 py-px text-[10px]">
-                            {fixture.league}
-                          </span>
-                        )}
-                      </div>
-                    </div>
-                  </label>
-                );
-              })
-            )}
+            ))}
           </div>
         </div>
       )}
 
-      {/* Empty state */}
-      {searched && !loading && results.length === 0 && !error && (
-        <div className="rounded-xl border border-dashed border-ps-border py-8 text-center text-sm text-ps-text-ter">
-          No fixtures found. Try a different search or league.
-        </div>
-      )}
-
-      {/* Selected fixtures from previous searches (not in current results) */}
-      {selected.length > 0 &&
-        selected.some((f) => !results.find((r) => r.externalId === f.externalId)) && (
-          <div className="rounded-2xl border border-ps-border bg-ps-surface">
-            <div className="border-b border-ps-border px-4 py-2.5">
-              <span className="text-xs font-semibold uppercase tracking-wider text-ps-text-ter">
-                Previously selected
-              </span>
-            </div>
-            <div className="max-h-40 overflow-y-auto ps-scroll">
-              {selected
-                .filter(
-                  (f) => !results.find((r) => r.externalId === f.externalId)
-                )
-                .map((fixture) => (
-                  <label
-                    key={fixture.externalId}
-                    className="flex cursor-pointer items-start gap-3 border-b border-ps-border bg-ps-amber-soft px-4 py-3 last:border-b-0"
-                  >
-                    <input
-                      type="checkbox"
-                      checked
-                      onChange={() => toggleFixture(fixture)}
-                      className="mt-0.5 h-4 w-4 shrink-0 rounded border-ps-border accent-ps-amber"
-                    />
-                    <div className="min-w-0 flex-1">
-                      <div className="flex items-center gap-1.5">
-                        <span aria-hidden="true">
-                          {sportEmoji(fixture.sport)}
-                        </span>
-                        <span className="truncate text-sm font-medium text-ps-text">
-                          {fixture.homeTeam && fixture.awayTeam
-                            ? `${fixture.homeTeam} vs ${fixture.awayTeam}`
-                            : fixture.name}
-                        </span>
-                      </div>
-                      <p className="mt-0.5 text-xs text-ps-text-ter">
-                        {formatDateTime(fixture.startTime)}
-                      </p>
-                    </div>
-                  </label>
-                ))}
-            </div>
-          </div>
-        )}
-
-      {/* Selection count + actions */}
+      {/* Actions */}
       <div className="flex items-center justify-between pt-1">
         <button
           type="button"
@@ -729,8 +409,7 @@ function Step1FindFixtures({
         <div className="flex items-center gap-3">
           {selected.length > 0 && (
             <span className="text-sm font-semibold text-ps-amber-deep">
-              {selected.length} fixture{selected.length !== 1 ? "s" : ""}{" "}
-              selected
+              {selected.length} fixture{selected.length !== 1 ? "s" : ""} selected
             </span>
           )}
           <button

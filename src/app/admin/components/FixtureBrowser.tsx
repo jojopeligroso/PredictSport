@@ -202,6 +202,8 @@ function saveFavourites(ids: string[]) {
 
 interface FixtureBrowserProps {
   onSelect: (fixture: NormalizedFixture) => void;
+  /** When provided, fixture rows show a checkmark/deselect state for these IDs */
+  selectedIds?: Set<string>;
 }
 
 // Keyed fixture: fixture + which league it came from
@@ -297,10 +299,12 @@ function FixtureRow({
   fixture,
   leagueId,
   onSelect,
+  isSelected,
 }: {
   fixture: NormalizedFixture;
   leagueId: string;
   onSelect: (f: NormalizedFixture) => void;
+  isSelected?: boolean;
 }) {
   const [home, away] = fixture.participants;
   const hasTeams = home && away;
@@ -310,7 +314,11 @@ function FixtureRow({
     <button
       type="button"
       onClick={() => onSelect(fixture)}
-      className="group w-full rounded-xl border border-ps-border bg-ps-surface p-3 text-left transition-colors hover:border-ps-border-strong hover:bg-ps-chip"
+      className={`group w-full rounded-xl border p-3 text-left transition-colors ${
+        isSelected
+          ? "border-ps-amber bg-ps-amber-soft hover:bg-ps-amber-soft"
+          : "border-ps-border bg-ps-surface hover:border-ps-border-strong hover:bg-ps-chip"
+      }`}
     >
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0 flex-1">
@@ -338,7 +346,11 @@ function FixtureRow({
             )}
           </div>
         </div>
-        <ChevronRightIcon className="h-3.5 w-3.5 text-ps-text-ter group-hover:text-ps-amber transition-colors shrink-0" />
+        {isSelected ? (
+          <CheckIcon className="h-3.5 w-3.5 shrink-0 text-ps-amber" />
+        ) : (
+          <ChevronRightIcon className="h-3.5 w-3.5 text-ps-text-ter group-hover:text-ps-amber transition-colors shrink-0" />
+        )}
       </div>
     </button>
   );
@@ -389,6 +401,16 @@ function ChevronRightIcon({ className }: { className?: string }) {
       fill="none" stroke="currentColor" strokeWidth="2"
       strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
       <path d="M6 4l4 4-4 4" />
+    </svg>
+  );
+}
+
+function CheckIcon({ className }: { className?: string }) {
+  return (
+    <svg className={className ?? "h-3.5 w-3.5"} viewBox="0 0 16 16"
+      fill="none" stroke="currentColor" strokeWidth="2.5"
+      strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <path d="M2.5 8l4 4 7-7" />
     </svg>
   );
 }
@@ -735,7 +757,7 @@ function AutocompleteDropdown({
 
 // ---- Main component ---------------------------------------------------------
 
-export function FixtureBrowser({ onSelect }: FixtureBrowserProps) {
+export function FixtureBrowser({ onSelect, selectedIds }: FixtureBrowserProps) {
   const [favouriteIds, setFavouriteIds] = useState<string[]>(() =>
     loadFavourites()
   );
@@ -1508,6 +1530,7 @@ export function FixtureBrowser({ onSelect }: FixtureBrowserProps) {
                       fixture={fixture}
                       leagueId={leagueId}
                       onSelect={onSelect}
+                      isSelected={selectedIds?.has(fixture.external_event_id)}
                     />
                   ))}
                 </div>
