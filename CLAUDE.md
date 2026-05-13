@@ -2,7 +2,7 @@
 
 ## Project Overview
 
-Social sports prediction platform. Admin builds competitions with rounds of mixed-sport events. Participants predict outcomes, earn points, compete on leaderboards. Built for bragging rights. Digitises a paper prediction sheet used by Wexford FC supporters.
+Social sports prediction platform. Admin builds competitions with rounds of mixed-sport events. Participants predict outcomes, earn points, compete on leaderboards. Built for bragging rights.
 
 ## Commands
 
