@@ -268,6 +268,16 @@ export function PersonalFixtureBrowser() {
       .sort((a, b) => new Date(b.start_time).getTime() - new Date(a.start_time).getTime());
   }, [allPredictions]);
 
+  // Upcoming picks for fixtures NOT in the currently loaded league list
+  // — ensures picks from other leagues are always visible regardless of which league is browsed
+  const upcomingPicksOtherLeagues = useMemo(() => {
+    const now = new Date();
+    const currentIds = new Set(fixtures.map((f) => f.external_event_id));
+    return allPredictions
+      .filter((p) => new Date(p.start_time) > now && !currentIds.has(p.external_event_id))
+      .sort((a, b) => new Date(a.start_time).getTime() - new Date(b.start_time).getTime());
+  }, [allPredictions, fixtures]);
+
   function selectSport(label: string) {
     setSelectedSport(label);
     const first = leaguesForCategory(label)[0];
@@ -599,6 +609,53 @@ export function PersonalFixtureBrowser() {
           </div>
         ))}
       </div>
+
+      {/* Upcoming picks from other leagues — always visible regardless of selected league */}
+      {upcomingPicksOtherLeagues.length > 0 && (
+        <div className="mt-8">
+          <p className="mb-3 text-[11px] font-extrabold tracking-widest uppercase text-ps-text-ter">
+            Your picks — other leagues
+          </p>
+          <div className="flex flex-col gap-2">
+            {upcomingPicksOtherLeagues.map((pick) => {
+              const participants = Array.isArray(pick.participants) ? pick.participants : [];
+              const [home, away] = participants;
+              const hasTeams = Boolean(home && away);
+              const pickLabel = resolvePickLabel(pick.prediction_value, participants);
+
+              return (
+                <div
+                  key={pick.external_event_id}
+                  className="flex items-center justify-between gap-3 rounded-xl border border-ps-amber/30 bg-ps-surface px-4 py-3"
+                >
+                  <div className="min-w-0 flex-1">
+                    <p className="truncate text-xs font-bold text-ps-text">
+                      {hasTeams ? `${home} vs ${away}` : pick.event_name}
+                    </p>
+                    <div className="mt-0.5 flex items-center gap-1.5">
+                      <span className="font-mono text-[10px] text-ps-text-ter">
+                        {formatTime(pick.start_time)}
+                      </span>
+                      <SportPill sport={toSportKey(pick.sport as Sport)} size="sm" />
+                      {pick.competition_name && (
+                        <span className="max-w-[120px] truncate rounded-full bg-ps-chip px-1.5 py-px text-[10px] font-semibold text-ps-text-ter">
+                          {pick.competition_name}
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                  <div className="shrink-0 text-right">
+                    <p className="text-[10px] font-semibold uppercase tracking-wide text-ps-text-ter">
+                      Your pick
+                    </p>
+                    <p className="text-xs font-extrabold text-ps-text">{pickLabel}</p>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
 
       {/* Past picks — rendered from stored DB data, always visible across sessions */}
       {pastPicks.length > 0 && (
