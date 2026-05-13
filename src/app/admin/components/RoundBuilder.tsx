@@ -1167,10 +1167,22 @@ export function RoundBuilder({
 
     const configs: FixtureConfig[] = selectedFixtures.map((f) => {
       const primaryType = getPrimaryPredictionType(f);
+
+      // Build config for head_to_head type (needs team options)
+      const config: Record<string, unknown> | undefined =
+        primaryType === 'head_to_head'
+          ? {
+              options: [f.homeTeam || 'Home', f.awayTeam || 'Away'],
+              allow_draw: allowsDraws(f.sport),
+              draw_points: defaultPoints[primaryType] > 0 ? defaultPoints[primaryType] : 10,
+            }
+          : undefined;
+
       const predictionTypes: PredictionTypeConfig[] = [{
         type: primaryType,
         points: defaultPoints[primaryType] > 0 ? defaultPoints[primaryType] : 10,
         partial_points: defaultPartial[primaryType],
+        config,
       }];
 
       return {
