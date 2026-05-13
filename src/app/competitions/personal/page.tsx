@@ -13,6 +13,15 @@ export default async function PersonalPredictionsPage() {
     redirect("/login");
   }
 
+  // Fetch user's result hints preference
+  const { data: userProfile } = await supabase
+    .from("users")
+    .select("notification_prefs")
+    .eq("id", user.id)
+    .single();
+
+  const showResultHints = userProfile?.notification_prefs?.result_hints !== false;
+
   return (
     <div className="mx-auto max-w-[480px] px-4 py-6">
       {/* Header */}
@@ -37,7 +46,7 @@ export default async function PersonalPredictionsPage() {
         </p>
       </div>
 
-      <PersonalFixtureBrowser />
+      <PersonalFixtureBrowser showResultHints={showResultHints} />
     </div>
   );
 }

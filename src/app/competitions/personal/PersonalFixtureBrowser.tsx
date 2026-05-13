@@ -232,11 +232,13 @@ interface PersonalPredictionRow {
   competition_name: string | null;
   participants: string[];
   start_time: string;
+  result_value: string | null;
+  is_correct: boolean | null;
 }
 
 // ── Main component ────────────────────────────────────────────────────────────
 
-export function PersonalFixtureBrowser() {
+export function PersonalFixtureBrowser({ showResultHints = true }: { showResultHints?: boolean }) {
   const [selectedSport, setSelectedSport] = useState("Soccer");
   const [selectedLeagueId, setSelectedLeagueId] = useState("4328");
   const [fixtures, setFixtures] = useState<NormalizedFixture[]>([]);
@@ -333,6 +335,8 @@ export function PersonalFixtureBrowser() {
           competition_name: fixture.competition_name ?? null,
           participants: fixture.participants,
           start_time: fixture.start_time,
+          result_value: null,
+          is_correct: null,
         },
       ];
     });
@@ -673,7 +677,13 @@ export function PersonalFixtureBrowser() {
               return (
                 <div
                   key={pick.external_event_id}
-                  className="flex items-center justify-between gap-3 rounded-xl border border-ps-border bg-ps-surface px-4 py-3"
+                  className={`flex items-center justify-between gap-3 rounded-xl border px-4 py-3 bg-ps-surface ${
+                    showResultHints && pick.is_correct !== null
+                      ? pick.is_correct
+                        ? "border-ps-green"
+                        : "border-ps-red"
+                      : "border-ps-border"
+                  }`}
                 >
                   <div className="min-w-0 flex-1">
                     <p className="truncate text-xs font-bold text-ps-text">
@@ -691,6 +701,20 @@ export function PersonalFixtureBrowser() {
                       Your pick
                     </p>
                     <p className="text-xs font-extrabold text-ps-text">{pickLabel}</p>
+                    {pick.result_value !== null && pick.is_correct !== null && showResultHints && (
+                      <span
+                        className={`mt-0.5 block text-[10px] font-extrabold uppercase tracking-wide ${
+                          pick.is_correct ? "text-ps-green" : "text-ps-red"
+                        }`}
+                      >
+                        {pick.is_correct ? "Correct" : "Wrong"}
+                      </span>
+                    )}
+                    {pick.result_value !== null && (
+                      <span className="mt-0.5 block text-[10px] font-semibold text-ps-text-ter">
+                        Result: {pick.result_value}
+                      </span>
+                    )}
                   </div>
                 </div>
               );

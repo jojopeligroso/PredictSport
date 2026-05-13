@@ -1,5 +1,29 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
+import { fetchResult } from "@/lib/sports/fetch-result";
+import type { Sport } from "@/lib/sports/types";
+
+function determineIsCorrect(predictionValue: string, winner: string | null, participants: string[]): boolean {
+  if (predictionValue === "draw") return winner === null;
+  if (predictionValue === "home") {
+    const home = participants[0] ?? "";
+    return winner !== null && (
+      winner.toLowerCase() === home.toLowerCase() ||
+      winner.toLowerCase().includes(home.toLowerCase()) ||
+      home.toLowerCase().includes(winner.toLowerCase())
+    );
+  }
+  if (predictionValue === "away") {
+    const away = participants[1] ?? "";
+    return winner !== null && (
+      winner.toLowerCase() === away.toLowerCase() ||
+      winner.toLowerCase().includes(away.toLowerCase()) ||
+      away.toLowerCase().includes(winner.toLowerCase())
+    );
+  }
+  // Direct name match (race sports)
+  return winner !== null && winner.toLowerCase() === predictionValue.toLowerCase();
+}
 
 export async function GET() {
   const supabase = await createClient();
@@ -19,6 +43,34 @@ export async function GET() {
 
   if (error) {
     return NextResponse.json({ error: error.message }, { status: 500 });
+  }
+
+  // Auto-fetch results for past picks that have no result yet
+  const needsResult = (data ?? []).filter(
+    (p) => p.result_value === null && new Date(p.start_time) <= new Date()
+  );
+
+  if (needsResult.length > 0) {
+    const toFetch = needsResult.slice(0, 10);
+    const results = await Promise.allSettled(
+      toFetch.map(async (pick) => {
+        const result = await fetchResult(pick.sport as Sport, pick.external_event_id);
+        if (!result?.is_final) return; // skip non-final / no result
+
+        const participants: string[] = Array.isArray(pick.participants) ? pick.participants as string[] : [];
+        const isCorrect = determineIsCorrect(pick.prediction_value, result.winner, participants);
+
+        await supabase
+          .from("personal_predictions")
+          .update({ result_value: result.winner ?? "draw", is_correct: isCorrect })
+          .eq("id", pick.id);
+
+        // Mutate in-memory so the response reflects updated state
+        pick.result_value = result.winner ?? "draw";
+        pick.is_correct = isCorrect;
+      })
+    );
+    void results; // allSettled — we don't care about individual failures
   }
 
   return NextResponse.json({ predictions: data });

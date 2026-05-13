@@ -794,20 +794,26 @@ function EventCard({
   const allScored = hasPredictions && predictions.every((p) => p.is_correct !== null);
   const hasAnyCorrectOrPartial = predictions.some((p) => p.is_correct === true || p.is_partial);
 
-  const cardBorderColor =
+  const resultAccentColor =
     showResultHints && isResulted && hasPredictions && allScored
       ? hasAnyCorrectOrPartial
         ? "var(--ps-green)"
         : "var(--ps-red)"
-      : undefined;
+      : null;
 
   return (
     <div
       className="overflow-hidden rounded-[14px] border border-ps-border bg-ps-surface"
-      style={cardBorderColor ? { borderColor: cardBorderColor } : undefined}
+      style={resultAccentColor ? { borderColor: resultAccentColor, borderWidth: '2px' } : undefined}
     >
       {/* Sport colour bar */}
       <SportBar sport={sportKey} height={3} />
+      {resultAccentColor && (
+        <div
+          aria-hidden="true"
+          style={{ height: 3, background: resultAccentColor }}
+        />
+      )}
 
       <div className="p-3.5">
         {/* Row 1: SportPill + CountdownChip + WA share */}

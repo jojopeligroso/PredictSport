@@ -5,7 +5,7 @@ import Link from "next/link";
 import { LogoutButton } from "./LogoutButton";
 
 const publicNavLinks = [
-  { href: "/predictions", label: "Predictions" },
+  { href: "/competitions/personal", label: "Predictions" },
   { href: "/leaderboard", label: "Table" },
   { href: "/competitions", label: "Competitions" },
 ] as const;

@@ -5,7 +5,7 @@ import { MobileNav } from "./MobileNav";
 import { BrandMark } from "./BrandMark";
 
 const publicNavLinks = [
-  { href: "/predictions", label: "Predictions" },
+  { href: "/competitions/personal", label: "Predictions" },
   { href: "/leaderboard", label: "Table" },
   { href: "/competitions", label: "Competitions" },
 ] as const;
