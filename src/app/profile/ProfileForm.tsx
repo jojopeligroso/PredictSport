@@ -7,6 +7,7 @@ interface NotificationPrefs {
   prediction_reminders: boolean;
   result_notifications: boolean;
   leaderboard_updates: boolean;
+  result_hints: boolean;
 }
 
 function parseNotificationPrefs(
@@ -25,6 +26,10 @@ function parseNotificationPrefs(
       typeof raw?.leaderboard_updates === "boolean"
         ? raw.leaderboard_updates
         : false,
+    result_hints:
+      typeof raw?.result_hints === "boolean"
+        ? raw.result_hints
+        : true,
   };
 }
 
@@ -48,7 +53,9 @@ function statesEqual(a: FormState, b: FormState): boolean {
     a.notification_prefs.result_notifications ===
       b.notification_prefs.result_notifications &&
     a.notification_prefs.leaderboard_updates ===
-      b.notification_prefs.leaderboard_updates
+      b.notification_prefs.leaderboard_updates &&
+    a.notification_prefs.result_hints ===
+      b.notification_prefs.result_hints
   );
 }
 
@@ -251,6 +258,22 @@ export function ProfileForm({ user }: { user: User }) {
             onChange={(v) => setNotifPref("leaderboard_updates", v)}
             label="Leaderboard updates"
             description="Weekly leaderboard summary"
+          />
+        </div>
+      </section>
+
+      {/* Predictions */}
+      <section className="rounded-xl border border-ps-border bg-ps-surface p-6">
+        <h2 className="mb-1 text-xs font-semibold uppercase tracking-widest text-ps-text-sec">
+          Predictions
+        </h2>
+        <div className="divide-y divide-ps-border">
+          <Toggle
+            id="result_hints"
+            checked={form.notification_prefs.result_hints}
+            onChange={(v) => setNotifPref("result_hints", v)}
+            label="Result colour hints"
+            description="Green or red accent on cards when a result is confirmed"
           />
         </div>
       </section>

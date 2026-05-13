@@ -62,20 +62,23 @@ function formatPickValue(data: Record<string, unknown>): string {
 interface ResultCardProps {
   event: Event;
   prediction: Prediction;
+  showResultHints?: boolean;
 }
 
-export function ResultCard({ event, prediction }: ResultCardProps) {
+export function ResultCard({ event, prediction, showResultHints = true }: ResultCardProps) {
   const sportKey = toSportKey(event.sport);
   const state = getResultState(prediction);
   const verdict = getVerdict(state, event.event_name);
   const resultDisplay = formatResultDisplay(event.result_data);
   const pickDisplay = formatPickValue(prediction.prediction_data);
 
-  const stateColors = {
-    correct: { fg: "var(--ps-green)", bg: "var(--ps-green-soft)", label: "CORRECT", icon: "✓" },
-    wrong: { fg: "var(--ps-red)", bg: "var(--ps-red-soft)", label: "WRONG", icon: "✕" },
-    partial: { fg: "var(--ps-amber-deep)", bg: "var(--ps-amber-soft)", label: "PARTIAL", icon: "●" },
-  }[state];
+  const stateColors = showResultHints
+    ? {
+        correct: { fg: "var(--ps-green)", bg: "var(--ps-green-soft)", label: "CORRECT", icon: "✓" },
+        wrong: { fg: "var(--ps-red)", bg: "var(--ps-red-soft)", label: "WRONG", icon: "✕" },
+        partial: { fg: "var(--ps-amber-deep)", bg: "var(--ps-amber-soft)", label: "PARTIAL", icon: "●" },
+      }[state]
+    : { fg: "var(--ps-text-sec)", bg: "rgba(40,30,20,0.06)", label: state.toUpperCase(), icon: "●" };
 
   return (
     <Link href={`/predictions/${event.id}`}>

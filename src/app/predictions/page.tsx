@@ -29,6 +29,16 @@ export default async function PredictionsPage({
     redirect("/login");
   }
 
+  // Fetch user preferences
+  const { data: userProfile } = await supabase
+    .from("users")
+    .select("notification_prefs")
+    .eq("id", user.id)
+    .single();
+
+  const notifPrefs = userProfile?.notification_prefs;
+  const showResultHints = notifPrefs?.["result_hints"] !== false;
+
   // Fetch user's competitions via competition_members
   const { data: memberships, error: membershipsError } = await supabase
     .from("competition_members")
@@ -198,6 +208,7 @@ export default async function PredictionsPage({
         competitionName={selectedCompetition.name}
         rounds={typedRounds}
         selectedRoundId={selectedRoundId}
+        showResultHints={showResultHints}
       />
 
       <div className="mx-auto max-w-[480px] px-4 pb-8">

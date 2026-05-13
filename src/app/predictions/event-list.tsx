@@ -70,6 +70,7 @@ interface EventListProps {
   roundName?: string;
   rounds?: RoundSummary[];
   selectedRoundId?: string;
+  showResultHints?: boolean;
 }
 
 type FilterChip = "all" | "open" | "locked" | SportKey;
@@ -129,6 +130,14 @@ function formatResult(resultData: Record<string, unknown>): string {
   const entries = Object.entries(resultData);
   if (entries.length === 0) return "Result recorded";
   return entries.map(([k, v]) => `${k}: ${v}`).join(", ");
+}
+
+function formatPickValue(data: Record<string, unknown>): string {
+  if (data?.value !== undefined) return String(data.value);
+  if (data?.selection !== undefined) return String(data.selection);
+  if (data?.winner) return String(data.winner);
+  if (data?.answer) return String(data.answer);
+  return "—";
 }
 
 /** Format a lock time as "Sat 16:30" */
@@ -216,6 +225,7 @@ export function EventList({
   roundName,
   rounds = [],
   selectedRoundId: initialRoundId,
+  showResultHints = true,
 }: EventListProps) {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -667,6 +677,7 @@ export function EventList({
                       pointsSummary={pointsSummary}
                       communityData={communityData}
                       onSubmit={handleSubmitPrediction}
+                      showResultHints={showResultHints}
                     />
                   );
                 })}
@@ -731,6 +742,7 @@ export function EventList({
                     key={event.id}
                     event={event}
                     prediction={prediction}
+                    showResultHints={showResultHints}
                   />
                 );
               })
@@ -758,6 +770,7 @@ interface EventCardProps {
     predictionType: PredictionType;
     predictionData: Record<string, unknown>;
   }) => Promise<void>;
+  showResultHints?: boolean;
 }
 
 function EventCard({
@@ -770,9 +783,29 @@ function EventCard({
   pointsSummary,
   communityData,
   onSubmit,
+  showResultHints = true,
 }: EventCardProps) {
+  const [showPickDetail, setShowPickDetail] = useState(false);
+
+  const predictions = event.predictions ?? [];
+  const hasPredictions = predictions.length > 0;
+  const isResulted = event.status === "resulted";
+  const isCramped = predictionTypeConfigs.length > 1;
+  const allScored = hasPredictions && predictions.every((p) => p.is_correct !== null);
+  const hasAnyCorrectOrPartial = predictions.some((p) => p.is_correct === true || p.is_partial);
+
+  const cardBorderColor =
+    showResultHints && isResulted && hasPredictions && allScored
+      ? hasAnyCorrectOrPartial
+        ? "var(--ps-green)"
+        : "var(--ps-red)"
+      : undefined;
+
   return (
-    <div className="overflow-hidden rounded-[14px] border border-ps-border bg-ps-surface">
+    <div
+      className="overflow-hidden rounded-[14px] border border-ps-border bg-ps-surface"
+      style={cardBorderColor ? { borderColor: cardBorderColor } : undefined}
+    >
       {/* Sport colour bar */}
       <SportBar sport={sportKey} height={3} />
 
@@ -840,15 +873,95 @@ function EventCard({
           </div>
         )}
 
-        {/* Result display */}
-        {event.status === "resulted" && event.result_data && (
-          <div className="mt-2 rounded-lg bg-ps-chip px-3 py-2 text-sm">
-            <span className="text-xs font-medium uppercase text-ps-text-ter">
-              Result:{" "}
-            </span>
-            <span className="font-medium text-ps-text">
-              {formatResult(event.result_data)}
-            </span>
+        {/* Result display + pick comparison */}
+        {isResulted && event.result_data && (
+          <div className="mt-2 space-y-1.5">
+            <div className="rounded-lg bg-ps-chip px-3 py-2 text-sm">
+              <span className="text-xs font-medium uppercase text-ps-text-ter">
+                Result:{" "}
+              </span>
+              <span className="font-medium text-ps-text">
+                {formatResult(event.result_data)}
+              </span>
+            </div>
+
+            {hasPredictions && !isCramped && predictions[0] && (
+              <div className="flex items-center gap-1.5 rounded-lg bg-ps-chip px-3 py-1.5 text-xs">
+                <span className="text-ps-text-sec">You:</span>
+                <span className="font-semibold text-ps-text">
+                  {formatPickValue(predictions[0].prediction_data)}
+                </span>
+                {showResultHints && predictions[0].is_correct !== null && (
+                  <span
+                    className="font-bold"
+                    style={{
+                      color:
+                        predictions[0].is_correct || predictions[0].is_partial
+                          ? "var(--ps-green)"
+                          : "var(--ps-red)",
+                    }}
+                  >
+                    {predictions[0].is_correct || predictions[0].is_partial ? "✓" : "✗"}
+                  </span>
+                )}
+              </div>
+            )}
+
+            {hasPredictions && isCramped && (
+              <div>
+                <button
+                  onClick={() => setShowPickDetail((d) => !d)}
+                  className="flex items-center gap-1 py-0.5 text-xs font-semibold text-ps-text-sec transition-colors hover:text-ps-text"
+                >
+                  <span>{showPickDetail ? "Hide picks" : "Your picks"}</span>
+                  <svg
+                    width="10"
+                    height="10"
+                    viewBox="0 0 10 10"
+                    fill="none"
+                    aria-hidden="true"
+                    className={`transition-transform ${showPickDetail ? "rotate-180" : ""}`}
+                  >
+                    <path
+                      d="M2 3.5L5 6.5L8 3.5"
+                      stroke="currentColor"
+                      strokeWidth="1.5"
+                      strokeLinecap="round"
+                    />
+                  </svg>
+                </button>
+                {showPickDetail && (
+                  <div className="mt-1 space-y-1 rounded-lg bg-ps-chip px-3 py-2">
+                    {predictions.map((p) => (
+                      <div
+                        key={p.id}
+                        className="flex items-center justify-between text-xs"
+                      >
+                        <span className="capitalize text-ps-text-ter">
+                          {p.prediction_type.replace(/_/g, " ")}
+                        </span>
+                        <span className="flex items-center gap-1 font-medium text-ps-text">
+                          {formatPickValue(p.prediction_data)}
+                          {showResultHints && p.is_correct !== null && (
+                            <span
+                              className="font-bold"
+                              style={{
+                                color:
+                                  p.is_correct || p.is_partial
+                                    ? "var(--ps-green)"
+                                    : "var(--ps-red)",
+                              }}
+                            >
+                              {p.is_correct || p.is_partial ? "✓" : "✗"}
+                            </span>
+                          )}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
           </div>
         )}
 
