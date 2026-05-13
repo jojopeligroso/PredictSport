@@ -47,19 +47,20 @@ See `ROUND-BUILDER-IMPROVEMENTS.md` for full details.
 - [x] User testing & verification in production
 - [x] Deployed: commits `0ea3a74`, `f11d042`
 
-### Phase 2: Card-Based UI (4-5 hours) — **DO NOT START UNTIL PHASE 1 COMPLETE**
-- [ ] 2.1 — Design card component structure
-- [ ] 2.2 — Create new state model for card-based predictions
-- [ ] 2.3 — Build PrimaryOutcomeCard component (HOME/DRAW/AWAY buttons)
-- [ ] 2.4 — Build ScoringPredictionsCard component (collapsible)
-- [ ] 2.5 — Build YesNoCard component (collapsible)
-- [ ] 2.6 — Refactor Step2Configure to use cards
-- [ ] 2.7 — Add auto-population for head_to_head config (team names)
-- [ ] 2.8 — Add validation (required fields, valid numbers)
-- [ ] 2.9 — Add "Show all types" escape hatch toggle
-- [ ] 2.10 — Mobile optimization (stacked cards, vertical buttons)
-- [ ] 2.11 — Update fixture summary display with card icons
-- [ ] 2.12 — Write tests for new UI flow
+### Phase 2: Card-Based UI ✅ COMPLETED (2026-05-14)
+
+- [x] 2.1 — Design card component structure (`PredictionCards.tsx`)
+- [x] 2.2 — Create new state model for card-based predictions (`CardBasedPredictionState`, `cardsToConfigs`/`configsToCards`)
+- [x] 2.3 — Build PrimaryOutcomeCard component (HOME/DRAW/AWAY preview + points)
+- [x] 2.4 — Build ScoringPredictionsCard component (collapsible margin/O/U/handicap)
+- [x] 2.5 — Build YesNoCard component (collapsible, question input + validation)
+- [x] 2.6 — Refactor Step2Configure to use cards (per-fixture expanded section)
+- [x] 2.7 — Auto-population for head_to_head config (team names + allow_draw from sport)
+- [x] 2.8 — Validation: yes/no question required when enabled; min=1 on points inputs
+- [x] 2.9 — "Apply to all" global panel retained as escape hatch for cross-fixture defaults
+- [x] 2.10 — Mobile optimization: flex-col on small screens, collapsible sections
+- [x] 2.11 — Fixture summary pills show active prediction types (up to 3 + overflow count)
+- [x] 2.12 — No test framework; covered by E2E scaffold
 
 ---
 

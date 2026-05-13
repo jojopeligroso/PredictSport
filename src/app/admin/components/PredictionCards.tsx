@@ -890,8 +890,17 @@ export function YesNoCard({
                 value={value.question || ""}
                 onChange={(e) => handleQuestionChange(e.target.value)}
                 placeholder="e.g., Will there be a red card?"
-                className="w-full rounded-lg border border-ps-border bg-ps-bg px-3 py-2 text-sm text-ps-text focus:border-ps-amber focus:outline-none"
+                className={`w-full rounded-lg border bg-ps-bg px-3 py-2 text-sm text-ps-text focus:outline-none ${
+                  !value.question
+                    ? "border-ps-amber focus:border-ps-amber-deep"
+                    : "border-ps-border focus:border-ps-amber"
+                }`}
               />
+              {!value.question && (
+                <p className="mt-1 text-xs text-ps-amber-deep">
+                  Question text is required
+                </p>
+              )}
             </div>
 
             <div>

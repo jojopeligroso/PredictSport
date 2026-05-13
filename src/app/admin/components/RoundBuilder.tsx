@@ -486,9 +486,6 @@ function Step2Configure({
   const defaultPoints = getDefaultPoints(scoringRules);
   const defaultPartial = getDefaultPartialPoints(scoringRules);
 
-  // Feature flag for card-based UI (Phase 2)
-  const [useCardUI, setUseCardUI] = useState(true);
-
   // Determine valid prediction types based on fixture structure
   const validTypes = useMemo(() => {
     if (fixtureConfigs.length === 0) return ALL_PREDICTION_TYPES;
@@ -564,47 +561,6 @@ function Step2Configure({
     });
   }
 
-  function handleFixtureTypeToggle(
-    fixtureIdx: number,
-    t: PredictionTypeName
-  ) {
-    const fc = fixtureConfigs[fixtureIdx];
-    const existing = new Set(fc.predictionTypes.map((p) => p.type));
-    let newTypes: PredictionTypeConfig[];
-    if (existing.has(t)) {
-      newTypes = fc.predictionTypes.filter((p) => p.type !== t);
-    } else {
-      newTypes = [
-        ...fc.predictionTypes,
-        {
-          type: t,
-          points:
-            globalPointsOverride[t] ?? defaultPoints[t] > 0
-              ? globalPointsOverride[t] ?? defaultPoints[t]
-              : 10,
-          partial_points: defaultPartial[t],
-        },
-      ];
-    }
-    const newConfigs = [...fixtureConfigs];
-    newConfigs[fixtureIdx] = { ...fc, predictionTypes: newTypes, useCustom: true };
-    onConfigChange(newConfigs);
-  }
-
-  function handleFixturePointsChange(
-    fixtureIdx: number,
-    t: PredictionTypeName,
-    val: number
-  ) {
-    const fc = fixtureConfigs[fixtureIdx];
-    const newTypes = fc.predictionTypes.map((p) =>
-      p.type === t ? { ...p, points: val } : p
-    );
-    const newConfigs = [...fixtureConfigs];
-    newConfigs[fixtureIdx] = { ...fc, predictionTypes: newTypes, useCustom: true };
-    onConfigChange(newConfigs);
-  }
-
   function resetFixtureToGlobal(fixtureIdx: number) {
     const newConfigs = [...fixtureConfigs];
     const predictionTypes: PredictionTypeConfig[] = ALL_PREDICTION_TYPES.filter(
@@ -626,31 +582,6 @@ function Step2Configure({
 
   return (
     <div className="space-y-4">
-      {/* UI Toggle (dev/testing) */}
-      <div className="rounded-lg border border-ps-amber bg-ps-amber-soft p-3">
-        <div className="flex items-center justify-between">
-          <div>
-            <p className="text-xs font-semibold text-ps-amber-deep">
-              Phase 2: Card UI (Testing)
-            </p>
-            <p className="text-xs text-ps-text-sec">
-              Toggle between card and checkbox UI for per-fixture customization
-            </p>
-          </div>
-          <button
-            type="button"
-            onClick={() => setUseCardUI(!useCardUI)}
-            className={`rounded-lg px-3 py-1.5 text-xs font-semibold transition-colors ${
-              useCardUI
-                ? "bg-ps-amber text-[#1a1208]"
-                : "border border-ps-border bg-ps-bg text-ps-text"
-            }`}
-          >
-            {useCardUI ? "Cards ON" : "Cards OFF"}
-          </button>
-        </div>
-      </div>
-
       {/* Apply to all panel */}
       <div className="rounded-2xl border border-ps-border bg-ps-surface p-4">
         <h3 className="mb-3 text-sm font-semibold text-ps-text">
@@ -722,7 +653,6 @@ function Step2Configure({
         </h3>
         {fixtureConfigs.map((fc, idx) => {
           const isExpanded = expandedFixtures.has(fc.fixture.externalId);
-          const enabledTypes = new Set(fc.predictionTypes.map((p) => p.type));
           return (
             <div
               key={fc.fixture.externalId}
@@ -797,102 +727,43 @@ function Step2Configure({
                     )}
                   </div>
 
-                  {/* Card-based UI (Phase 2) */}
-                  {useCardUI ? (
-                    <CardBasedConfig
-                      fixture={{
-                        homeTeam: fc.fixture.homeTeam,
-                        awayTeam: fc.fixture.awayTeam,
-                        sport: fc.fixture.sport,
-                        name: fc.fixture.name,
-                      }}
-                      initialConfigs={fc.predictionTypes as CardPredictionTypeConfig[]}
-                      defaultPoints={{
-                        head_to_head: defaultPoints.head_to_head,
-                        winner: defaultPoints.winner,
-                        margin: defaultPoints.margin,
-                        over_under: defaultPoints.over_under,
-                        handicap: defaultPoints.handicap,
-                        top_n: defaultPoints.top_n,
-                        final_standings: defaultPoints.final_standings,
-                        progression: defaultPoints.progression,
-                        yes_no: defaultPoints.yes_no,
-                      }}
-                      onChange={(configs) => {
-                        const newConfigs = [...fixtureConfigs];
-                        newConfigs[idx] = {
-                          ...newConfigs[idx],
-                          predictionTypes: configs.map((c) => ({
-                            type: c.type as PredictionTypeName,
-                            points: c.points,
-                            partial_points: c.partial_points,
-                            config: c.config,
-                          })),
-                          useCustom: true,
-                        };
-                        onConfigChange(newConfigs);
-                      }}
-                    />
-                  ) : (
-                    /* Checkbox grid UI (legacy/fallback) */
-                    <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
-                      {getValidPredictionTypes(fc.fixture).map((t) => {
-                        const enabled = enabledTypes.has(t);
-                        const pts = fc.predictionTypes.find(
-                          (p) => p.type === t
-                        )?.points;
-                        return (
-                          <div
-                            key={t}
-                            className={`rounded-xl border p-2.5 transition-colors ${
-                              enabled
-                                ? "border-ps-amber bg-ps-amber-soft"
-                                : "border-ps-border bg-ps-bg"
-                            }`}
-                          >
-                            <label className="flex cursor-pointer items-center gap-2">
-                              <input
-                                type="checkbox"
-                                checked={enabled}
-                                onChange={() => handleFixtureTypeToggle(idx, t)}
-                                className="h-3.5 w-3.5 rounded accent-ps-amber"
-                              />
-                              <span
-                                className={`text-xs font-medium ${
-                                  enabled
-                                    ? "text-ps-amber-deep"
-                                    : "text-ps-text-sec"
-                                }`}
-                              >
-                                {PREDICTION_TYPE_LABELS[t]}
-                              </span>
-                            </label>
-                            {enabled && pts !== undefined && (
-                              <div className="mt-1.5 flex items-center gap-1">
-                                <input
-                                  type="number"
-                                  min={0}
-                                  value={pts}
-                                  onChange={(e) =>
-                                    handleFixturePointsChange(
-                                      idx,
-                                      t,
-                                      Number(e.target.value)
-                                    )
-                                  }
-                                  className="w-full rounded-lg border border-ps-border bg-ps-surface px-2 py-1 text-xs text-ps-text focus:border-ps-amber focus:outline-none"
-                                  aria-label={`Points for ${PREDICTION_TYPE_LABELS[t]}`}
-                                />
-                                <span className="shrink-0 text-[10px] text-ps-text-ter">
-                                  pts
-                                </span>
-                              </div>
-                            )}
-                          </div>
-                        );
-                      })}
-                    </div>
-                  )}
+                  <CardBasedConfig
+                    // Key changes when global settings update a non-custom fixture,
+                    // forcing a remount so the card reflects the latest defaults.
+                    key={!fc.useCustom ? JSON.stringify(fc.predictionTypes) : fc.fixture.externalId}
+                    fixture={{
+                      homeTeam: fc.fixture.homeTeam,
+                      awayTeam: fc.fixture.awayTeam,
+                      sport: fc.fixture.sport,
+                      name: fc.fixture.name,
+                    }}
+                    initialConfigs={fc.predictionTypes as CardPredictionTypeConfig[]}
+                    defaultPoints={{
+                      head_to_head: defaultPoints.head_to_head,
+                      winner: defaultPoints.winner,
+                      margin: defaultPoints.margin,
+                      over_under: defaultPoints.over_under,
+                      handicap: defaultPoints.handicap,
+                      top_n: defaultPoints.top_n,
+                      final_standings: defaultPoints.final_standings,
+                      progression: defaultPoints.progression,
+                      yes_no: defaultPoints.yes_no,
+                    }}
+                    onChange={(configs) => {
+                      const newConfigs = [...fixtureConfigs];
+                      newConfigs[idx] = {
+                        ...newConfigs[idx],
+                        predictionTypes: configs.map((c) => ({
+                          type: c.type as PredictionTypeName,
+                          points: c.points,
+                          partial_points: c.partial_points,
+                          config: c.config,
+                        })),
+                        useCustom: true,
+                      };
+                      onConfigChange(newConfigs);
+                    }}
+                  />
                 </div>
               )}
             </div>
