@@ -1,6 +1,6 @@
 // Usage:
 // <PersonaCallout calloutLabel="The Analyst" fact="Backs stats over gut every time." />
-// <PersonaCallout calloutLabel="The Gambler" fact="Always on the outsider." variant="ticket" />
+// <PersonaCallout calloutLabel="The Optimist" fact="Always backs the underdog." variant="ticket" />
 interface PersonaCalloutProps {
   calloutLabel: string;
   fact: string;

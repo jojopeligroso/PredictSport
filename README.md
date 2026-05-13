@@ -2,7 +2,7 @@
 
 Social sports prediction quiz for friend groups. Submit predictions for real sporting events throughout the year, earn points for correct answers, compete on a leaderboard.
 
-No betting. No wagering. Just bragging rights.
+Built for bragging rights.
 
 ## How It Works
 

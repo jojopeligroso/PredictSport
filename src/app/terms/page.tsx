@@ -19,7 +19,7 @@ export default function TermsPage() {
 
         <section>
           <h2 className="mb-2 text-base font-semibold text-ps-text">2. Description of Service</h2>
-          <p>PredictSport is a social sports prediction platform where friends compete by predicting sports outcomes. It is a game of skill for entertainment purposes only. <strong>No money is wagered, won, or lost. PredictSport is not gambling.</strong></p>
+          <p>PredictSport is a social sports prediction platform where friends compete by predicting sports outcomes. It is a game of skill for entertainment purposes only.</p>
         </section>
 
         <section>

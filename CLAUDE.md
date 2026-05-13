@@ -2,7 +2,7 @@
 
 ## Project Overview
 
-Social sports prediction platform. Admin builds competitions with rounds of mixed-sport events. Participants predict outcomes, earn points, compete on leaderboards. No betting. Digitises a paper prediction sheet used by Wexford FC supporters.
+Social sports prediction platform. Admin builds competitions with rounds of mixed-sport events. Participants predict outcomes, earn points, compete on leaderboards. Built for bragging rights. Digitises a paper prediction sheet used by Wexford FC supporters.
 
 ## Commands
 
@@ -115,7 +115,7 @@ See `design/README.md` for full brand brief and asset references.
 
 **Brand marks:** Three rotating marks via `<BrandMark>` component (daily-stable weighted random): Oracle Dot (60%), GAA Umpire (30% / always for GAA), Bubble Call (10%). All use `currentColor` for auto dark mode inversion.
 
-**Personality:** "Confident, cheeky, craftsman-warm. Never gambly." — pub chalkboard, not sportsbook.
+**Personality:** "Confident, cheeky, craftsman-warm." — pub chalkboard vibe. Culturally inferred, never explicit.
 
 **Layout container:** `layout.tsx` does NOT wrap children in a container. Each page provides its own `max-w-[480px]` wrapper. Landing page is full-width hero. NavBar/Footer use `max-w-3xl`.
 

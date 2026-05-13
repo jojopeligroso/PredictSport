@@ -346,39 +346,39 @@ export function PrimaryOutcomeCard({
       collapsible={false}
     >
       <div className="space-y-4">
-        {/* Team/Winner display */}
+        {/* Team/Winner display - PREVIEW ONLY */}
         {isTwoTeam ? (
           <div className="space-y-2">
             <p className="text-xs font-medium text-ps-text-sec">
+              Prediction options (preview)
+            </p>
+            <p className="text-[10px] uppercase tracking-wider text-ps-text-ter">
               {fixture.homeTeam} vs {fixture.awayTeam}
             </p>
             <div className="flex flex-col gap-2 sm:flex-row">
-              <button
-                type="button"
-                className="flex-1 rounded-xl border-2 border-ps-border bg-ps-bg px-4 py-3 text-sm font-semibold text-ps-text transition-all hover:border-ps-amber hover:bg-ps-amber-soft"
-              >
+              <div className="flex-1 rounded-xl border border-ps-border bg-ps-chip px-4 py-2.5 text-center text-sm font-medium text-ps-text-sec opacity-60">
                 {fixture.homeTeam || "Home"}
-              </button>
+              </div>
               {showDraw && (
-                <button
-                  type="button"
-                  className="flex-1 rounded-xl border-2 border-ps-border bg-ps-bg px-4 py-3 text-sm font-semibold text-ps-text transition-all hover:border-ps-amber hover:bg-ps-amber-soft"
-                >
+                <div className="flex-1 rounded-xl border border-ps-border bg-ps-chip px-4 py-2.5 text-center text-sm font-medium text-ps-text-sec opacity-60">
                   Draw
-                </button>
+                </div>
               )}
-              <button
-                type="button"
-                className="flex-1 rounded-xl border-2 border-ps-border bg-ps-bg px-4 py-3 text-sm font-semibold text-ps-text transition-all hover:border-ps-amber hover:bg-ps-amber-soft"
-              >
+              <div className="flex-1 rounded-xl border border-ps-border bg-ps-chip px-4 py-2.5 text-center text-sm font-medium text-ps-text-sec opacity-60">
                 {fixture.awayTeam || "Away"}
-              </button>
+              </div>
             </div>
+            <p className="text-[10px] text-ps-text-ter">
+              ↑ Preview of options participants will see
+            </p>
           </div>
         ) : (
           <div className="space-y-2">
             <p className="text-xs font-medium text-ps-text-sec">
-              Participants will predict who wins: {fixture.name}
+              Prediction options (preview)
+            </p>
+            <p className="text-xs text-ps-text-ter">
+              Participants will select their predicted winner from the field
             </p>
           </div>
         )}
@@ -401,8 +401,8 @@ export function PrimaryOutcomeCard({
         {/* Info text */}
         <p className="text-xs text-ps-text-ter">
           {isTwoTeam
-            ? "Participants choose HOME, DRAW (if allowed), or AWAY"
-            : "Participants select their predicted winner from the field"}
+            ? `${showDraw ? "Three-way" : "Two-way"} match result prediction. ${showDraw ? "Draw option available for " + fixture.sport + "." : ""}`
+            : "Winner prediction for multi-competitor event"}
         </p>
       </div>
     </CardContainer>

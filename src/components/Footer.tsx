@@ -8,7 +8,7 @@ export function Footer() {
           sports<span className="text-ps-amber">predict.</span>
         </p>
         <p className="mt-1.5 font-serif text-[11px] italic text-ps-text-ter">
-          Built for bragging rights, not betting slips.
+          Built for bragging rights.
         </p>
         <div className="mt-2 flex items-center justify-center gap-3 text-[10px] text-ps-text-ter">
           <Link

@@ -1,10 +1,9 @@
 // Usage:
-// <PickButton label="Man City" sub="Home" odds="4/6" selected={false} onClick={() => {}} />
-// <PickButton label="Draw" odds="9/4" selected communityPct={34} onClick={() => {}} />
+// <PickButton label="Man City" sub="Home" selected={false} onClick={() => {}} />
+// <PickButton label="Draw" selected communityPct={34} onClick={() => {}} />
 interface PickButtonProps {
   label: string;
   sub?: string;
-  odds?: string;
   selected: boolean;
   disabled?: boolean;
   communityPct?: number;
@@ -14,7 +13,6 @@ interface PickButtonProps {
 export function PickButton({
   label,
   sub,
-  odds,
   selected,
   disabled = false,
   communityPct,
@@ -63,15 +61,6 @@ export function PickButton({
           style={{ fontSize: 9.5 }}
         >
           {sub}
-        </span>
-      )}
-
-      {odds && (
-        <span
-          className="block text-ps-text-sec mt-1"
-          style={{ fontSize: 11 }}
-        >
-          {odds}
         </span>
       )}
     </button>

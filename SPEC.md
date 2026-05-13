@@ -5,13 +5,13 @@
 
 ## 1. Product Overview
 
-Social sports prediction platform. Admin builds competitions with rounds of mixed-sport events. Participants predict outcomes, earn points, compete on leaderboards. No betting — bragging rights only.
+Social sports prediction platform. Admin builds competitions with rounds of mixed-sport events. Participants predict outcomes, earn points, compete on leaderboards. Built for bragging rights.
 
 **Origin:** Digitises a paper PDF prediction quiz used by Wexford FC supporters. MVP targets multiple independent friend groups.
 
 **Stack:** Next.js (App Router) + TypeScript strict + Tailwind CSS + Supabase (PostgreSQL + Auth). Deployed on Vercel (free) + Supabase (free tier). No ORM.
 
-**Design direction:** Light, mobile-first hybrid (Design 8: Arena/Terrace/Stadium blend). Tone is social, competitive, fun. No defensive language ("no betting, no wagering..."). Preferred tone: "The fight for bragging rights starts here."
+**Design direction:** Light, mobile-first hybrid (Design 8: Arena/Terrace/Stadium blend). Tone is social, competitive, fun. Culturally inferred, never explicit. Preferred tone: "The fight for bragging rights starts here."
 
 ---
 

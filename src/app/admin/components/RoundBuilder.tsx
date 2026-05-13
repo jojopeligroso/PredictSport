@@ -1161,13 +1161,25 @@ export function RoundBuilder({
   const [fixtureConfigs, setFixtureConfigs] = useState<FixtureConfig[]>([]);
 
   function handleFixturesNext() {
-    // Build fixture configs from selected fixtures, applying scoring defaults
-    const defaults = buildDefaultPredictionTypes(scoringRules);
-    const configs: FixtureConfig[] = selectedFixtures.map((f) => ({
-      fixture: f,
-      predictionTypes: defaults,
-      useCustom: false,
-    }));
+    // Build fixture configs from selected fixtures, only enabling primary prediction type by default
+    const defaultPoints = getDefaultPoints(scoringRules);
+    const defaultPartial = getDefaultPartialPoints(scoringRules);
+
+    const configs: FixtureConfig[] = selectedFixtures.map((f) => {
+      const primaryType = getPrimaryPredictionType(f);
+      const predictionTypes: PredictionTypeConfig[] = [{
+        type: primaryType,
+        points: defaultPoints[primaryType] > 0 ? defaultPoints[primaryType] : 10,
+        partial_points: defaultPartial[primaryType],
+      }];
+
+      return {
+        fixture: f,
+        predictionTypes,
+        useCustom: false,
+      };
+    });
+
     setFixtureConfigs(configs);
     setStep(1);
   }
