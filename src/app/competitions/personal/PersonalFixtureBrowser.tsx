@@ -244,10 +244,19 @@ function FixtureSkeleton() {
 function PickRow({
   pick,
   showResultHints,
+  isExpanded,
+  onToggle,
+  onSave,
+  isSaving,
 }: {
   pick: PersonalPredictionRow;
   showResultHints: boolean;
+  isExpanded: boolean;
+  onToggle: () => void;
+  onSave: (fixture: NormalizedFixture, value: string) => void;
+  isSaving: boolean;
 }) {
+  const [raceInput, setRaceInput] = useState(pick.prediction_value);
   const participants = Array.isArray(pick.participants) ? pick.participants : [];
   const [home, away] = participants;
   const hasTeams = Boolean(home && away);
@@ -255,9 +264,24 @@ function PickRow({
   const isPast = new Date(pick.start_time) <= new Date();
   const hasResult = pick.result_value !== null && pick.is_correct !== null;
 
+  const pseudoFixture: NormalizedFixture = {
+    external_event_id: pick.external_event_id,
+    event_name: pick.event_name,
+    sport: pick.sport as Sport,
+    competition_name: pick.competition_name ?? "",
+    participants: pick.participants,
+    start_time: pick.start_time,
+    round: null,
+    season: null,
+    provider_league: pick.provider_league,
+  };
+
+  const options = getPredictionOptions(pseudoFixture);
+  const isRace = RACE_SPORTS.has(pick.sport);
+
   return (
     <div
-      className={`flex items-center gap-3 rounded-xl border px-4 py-3 bg-ps-surface transition-colors ${
+      className={`rounded-xl border bg-ps-surface transition-colors ${
         isPast && showResultHints && hasResult
           ? pick.is_correct
             ? "border-ps-green/40"
@@ -267,43 +291,111 @@ function PickRow({
             : "border-ps-amber/35"
       }`}
     >
-      {/* Left: event info */}
-      <div className="min-w-0 flex-1">
-        <p className="truncate text-xs font-bold text-ps-text">
-          {hasTeams ? `${home} vs ${away}` : pick.event_name}
-        </p>
-        <div className="mt-0.5 flex flex-wrap items-center gap-1.5">
-          <span className="font-mono text-[10px] text-ps-text-ter">
-            {formatTime(pick.start_time)}
-          </span>
-          <SportPill sport={toSportKey(pick.sport as Sport)} size="sm" />
-          {pick.competition_name && (
-            <span className="max-w-[100px] truncate rounded-full bg-ps-chip px-1.5 py-px text-[10px] font-semibold text-ps-text-ter">
-              {pick.competition_name}
+      {/* Header row — always visible, tappable */}
+      <button
+        type="button"
+        onClick={onToggle}
+        className="flex w-full items-center gap-3 px-4 py-3 text-left"
+      >
+        {/* Left: event info */}
+        <div className="min-w-0 flex-1">
+          <p className="truncate text-xs font-bold text-ps-text">
+            {hasTeams ? `${home} vs ${away}` : pick.event_name}
+          </p>
+          <div className="mt-0.5 flex flex-wrap items-center gap-1.5">
+            <span className="font-mono text-[10px] text-ps-text-ter">
+              {formatTime(pick.start_time)}
             </span>
+            <SportPill sport={toSportKey(pick.sport as Sport)} size="sm" />
+            {pick.competition_name && (
+              <span className="max-w-[100px] truncate rounded-full bg-ps-chip px-1.5 py-px text-[10px] font-semibold text-ps-text-ter">
+                {pick.competition_name}
+              </span>
+            )}
+          </div>
+        </div>
+
+        {/* Right: pick + result + chevron */}
+        <div className="shrink-0 flex items-center gap-2">
+          <div className="text-right">
+            <p className="text-xs font-extrabold text-ps-text">{pickLabel}</p>
+            {isPast && showResultHints && hasResult ? (
+              <span
+                className={`mt-0.5 inline-block rounded-full px-2 py-0.5 text-[10px] font-extrabold uppercase tracking-wide ${
+                  pick.is_correct
+                    ? "bg-ps-green-soft text-ps-green"
+                    : "bg-ps-red/10 text-ps-red"
+                }`}
+              >
+                {pick.is_correct ? "Correct" : "Wrong"}
+              </span>
+            ) : isPast && pick.result_value !== null ? (
+              <p className="mt-0.5 text-[10px] font-semibold text-ps-text-ter">
+                Result: {pick.result_value}
+              </p>
+            ) : null}
+          </div>
+          {!isPast && (
+            <svg
+              width="14"
+              height="14"
+              viewBox="0 0 16 16"
+              fill="none"
+              className={`shrink-0 text-ps-text-ter transition-transform duration-200 ${isExpanded ? "rotate-180" : ""}`}
+            >
+              <path d="M4 6l4 4 4-4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+            </svg>
           )}
         </div>
-      </div>
+      </button>
 
-      {/* Right: pick + result */}
-      <div className="shrink-0 text-right">
-        <p className="text-xs font-extrabold text-ps-text">{pickLabel}</p>
-        {isPast && showResultHints && hasResult ? (
-          <span
-            className={`mt-0.5 inline-block rounded-full px-2 py-0.5 text-[10px] font-extrabold uppercase tracking-wide ${
-              pick.is_correct
-                ? "bg-ps-green-soft text-ps-green"
-                : "bg-ps-red/10 text-ps-red"
-            }`}
-          >
-            {pick.is_correct ? "Correct" : "Wrong"}
-          </span>
-        ) : isPast && pick.result_value !== null ? (
-          <p className="mt-0.5 text-[10px] font-semibold text-ps-text-ter">
-            Result: {pick.result_value}
+      {/* Expanded: change pick area */}
+      {isExpanded && !isPast && (
+        <div className="border-t border-ps-border/50 px-4 pb-4 pt-3">
+          <p className="mb-2 text-[10px] font-extrabold tracking-widest uppercase text-ps-text-ter">
+            Change pick
           </p>
-        ) : null}
-      </div>
+          {options !== null ? (
+            <div
+              className={`grid gap-2 ${
+                options.length === 3
+                  ? "grid-cols-3"
+                  : options.length === 2
+                  ? "grid-cols-2"
+                  : "grid-cols-2 sm:grid-cols-3"
+              }`}
+            >
+              {options.map((opt) => (
+                <PickButton
+                  key={opt.value}
+                  label={opt.label}
+                  sub={opt.sub}
+                  selected={pick.prediction_value === opt.value}
+                  disabled={isSaving}
+                  onClick={() => onSave(pseudoFixture, opt.value)}
+                />
+              ))}
+            </div>
+          ) : isRace ? (
+            <div className="flex gap-2">
+              <input
+                type="text"
+                value={raceInput}
+                onChange={(e) => setRaceInput(e.target.value)}
+                className="flex-1 rounded-lg border border-ps-border bg-ps-surface px-3 py-2 text-sm text-ps-text placeholder:text-ps-text-ter focus:border-ps-amber focus:outline-none focus:ring-2 focus:ring-ps-amber/40"
+              />
+              <button
+                type="button"
+                onClick={() => onSave(pseudoFixture, raceInput)}
+                disabled={isSaving || !raceInput.trim()}
+                className="rounded-lg bg-gradient-to-r from-[#f59e0b] to-[#d97706] px-3 py-2 text-xs font-extrabold text-[#1a1208] disabled:opacity-40"
+              >
+                Save
+              </button>
+            </div>
+          ) : null}
+        </div>
+      )}
     </div>
   );
 }
@@ -313,10 +405,15 @@ function PickRow({
 function MyPicksTab({
   allPredictions,
   showResultHints,
+  saving,
+  onSave,
 }: {
   allPredictions: PersonalPredictionRow[];
   showResultHints: boolean;
+  saving: Record<string, boolean>;
+  onSave: (fixture: NormalizedFixture, value: string) => void;
 }) {
+  const [expandedId, setExpandedId] = useState<string | null>(null);
   const now = new Date();
 
   const upcomingPicks = useMemo(
@@ -336,6 +433,10 @@ function MyPicksTab({
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [allPredictions]
   );
+
+  function toggleExpanded(id: string) {
+    setExpandedId((prev) => (prev === id ? null : id));
+  }
 
   if (allPredictions.length === 0) {
     return (
@@ -357,7 +458,15 @@ function MyPicksTab({
           </p>
           <div className="flex flex-col gap-2">
             {upcomingPicks.map((pick) => (
-              <PickRow key={pick.external_event_id} pick={pick} showResultHints={showResultHints} />
+              <PickRow
+                key={pick.external_event_id}
+                pick={pick}
+                showResultHints={showResultHints}
+                isExpanded={expandedId === pick.external_event_id}
+                onToggle={() => toggleExpanded(pick.external_event_id)}
+                onSave={onSave}
+                isSaving={saving[pick.external_event_id] ?? false}
+              />
             ))}
           </div>
         </div>
@@ -370,7 +479,15 @@ function MyPicksTab({
           </p>
           <div className="flex flex-col gap-2">
             {pastPicks.map((pick) => (
-              <PickRow key={pick.external_event_id} pick={pick} showResultHints={showResultHints} />
+              <PickRow
+                key={pick.external_event_id}
+                pick={pick}
+                showResultHints={showResultHints}
+                isExpanded={false}
+                onToggle={() => {}}
+                onSave={onSave}
+                isSaving={false}
+              />
             ))}
           </div>
         </div>
@@ -654,7 +771,12 @@ export function PersonalFixtureBrowser({
 
       {/* My Picks tab */}
       {activeTab === "my-picks" && (
-        <MyPicksTab allPredictions={allPredictions} showResultHints={showResultHints} />
+        <MyPicksTab
+          allPredictions={allPredictions}
+          showResultHints={showResultHints}
+          saving={saving}
+          onSave={savePrediction}
+        />
       )}
 
       {/* Results tab */}
