@@ -38,6 +38,7 @@ interface SearchResult {
   venue?: string;
   homeTeam?: string;
   awayTeam?: string;
+  providerLeague?: string;
 }
 
 type PredictionTypeName =
@@ -380,6 +381,7 @@ function Step1FindFixtures({
       startTime: fixture.start_time,
       homeTeam: fixture.participants?.[0] ?? undefined,
       awayTeam: fixture.participants?.[1] ?? undefined,
+      providerLeague: fixture.provider_league ?? undefined,
     };
     if (selectedIdSet.has(sr.externalId)) {
       onSelectionChange(selected.filter((f) => f.externalId !== sr.externalId));
@@ -845,6 +847,7 @@ function Step3Review({
           start_time: fc.fixture.startTime,
           lock_time: lockTime,
           external_event_id: fc.fixture.externalId || undefined,
+          provider_league: fc.fixture.providerLeague || undefined,
           prediction_type_configs: fc.predictionTypes.map((p) => ({
             prediction_type: p.type,
             points: p.points,

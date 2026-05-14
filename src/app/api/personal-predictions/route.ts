@@ -63,7 +63,7 @@ export async function GET() {
 
         await supabase
           .from("personal_predictions")
-          .update({ result_value: result.winner ?? "draw", is_correct: isCorrect })
+          .update({ result_value: result.winner ?? "draw", is_correct: isCorrect, result_provider: result.provider })
           .eq("id", pick.id);
 
         // Mutate in-memory so the response reflects updated state

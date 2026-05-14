@@ -19,6 +19,7 @@ interface CreateEventBody {
   lock_time: string;
   prediction_type_configs: PredictionTypeInput[];
   external_event_id?: string;
+  provider_league?: string;
   nominated_by?: string;
 }
 
@@ -33,6 +34,7 @@ interface UpdateEventBody {
   status?: EventStatus;
   result_data?: Record<string, unknown> | null;
   external_event_id?: string | null;
+  provider_league?: string | null;
 }
 
 const VALID_SPORTS = [
@@ -190,6 +192,7 @@ export async function POST(request: Request) {
       start_time: body.start_time,
       lock_time: body.lock_time,
       external_event_id: body.external_event_id || null,
+      provider_league: body.provider_league || null,
       nominated_by: body.nominated_by || null,
       status: "upcoming",
     })
@@ -292,6 +295,8 @@ export async function PATCH(request: Request) {
   if (body.result_data !== undefined) updates.result_data = body.result_data;
   if (body.external_event_id !== undefined)
     updates.external_event_id = body.external_event_id;
+  if (body.provider_league !== undefined)
+    updates.provider_league = body.provider_league;
 
   if (Object.keys(updates).length === 0 && !body.prediction_type_configs) {
     return NextResponse.json(

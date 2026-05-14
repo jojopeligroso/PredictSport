@@ -95,6 +95,7 @@ export interface Event {
   status: EventStatus;
   nominated_by: string | null;
   external_event_id: string | null;
+  provider_league: string | null;
   created_at: string;
 }
 

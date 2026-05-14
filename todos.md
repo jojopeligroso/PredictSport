@@ -118,10 +118,10 @@ See `SPORTS-ARCHITECTURE.md` for detailed spec (TBD).
 **Background:** Current model has one ESPN path per `Sport` type (e.g. `cricket/8048` = IPL only). MLB/NFL/NBA/NHL are leagues, not sports. An event picked from one league (e.g. Big Bash League) will fail to fetch results because the provider uses the wrong path.
 
 **Phase 5.1 — Data model changes**
-- [ ] 5.1a — Add `provider_league` column to `personal_predictions` (stored at pick time)
-- [ ] 5.1b — Add `provider_league` column to `events` table (stored when event is created)
-- [ ] 5.1c — Add `result_provider` column to `personal_predictions` (which API returned the result)
-- [ ] 5.1d — Migration + RLS policy updates
+- [x] 5.1a — Add `provider_league` column to `personal_predictions` (stored at pick time)
+- [x] 5.1b — Add `provider_league` column to `events` table (stored when event is created)
+- [x] 5.1c — Add `result_provider` column to `personal_predictions` (which API returned the result)
+- [x] 5.1d — Migration + RLS policy updates
 
 **Phase 5.2 — Sport type renames**
 - [ ] 5.2a — Rename `mlb` → `baseball`, `nfl` → `american_football`, `nba` → `basketball`, `nhl` → `ice_hockey` in `Sport` type
@@ -130,10 +130,10 @@ See `SPORTS-ARCHITECTURE.md` for detailed spec (TBD).
 - [ ] 5.2d — Update UI labels, fixture browser sport selector
 
 **Phase 5.3 — Provider routing by league**
-- [ ] 5.3a — Pass `providerLeague` (e.g. `"cricket/8048"`) through `fetchResult()` signature
-- [ ] 5.3b — Update `ESPNProvider.getResult()` to accept and use stored league path
-- [ ] 5.3c — Store `result_provider` when result is saved in personal_predictions + events
-- [ ] 5.3d — Remove MLBStats from MLB provider chain (ESPN IDs ≠ MLB gamePk)
+- [x] 5.3a — Pass `providerLeague` (e.g. `"cricket/8048"`) through `fetchResult()` signature
+- [x] 5.3b — Update `ESPNProvider.getResult()` to accept and use stored league path
+- [x] 5.3c — Store `result_provider` when result is saved in personal_predictions + events
+- [x] 5.3d — Remove MLBStats from MLB provider chain (ESPN IDs ≠ MLB gamePk)
 
 ### Phase 6: Data Quality & Reliability
 

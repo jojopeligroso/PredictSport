@@ -16,6 +16,7 @@ interface EventInput {
   start_time: string;
   lock_time: string;
   external_event_id?: string;
+  provider_league?: string;
   prediction_type_configs: PredictionTypeInput[];
 }
 
@@ -272,6 +273,7 @@ export async function POST(request: Request) {
     start_time: evt.start_time,
     lock_time: evt.lock_time,
     external_event_id: evt.external_event_id ?? null,
+    provider_league: evt.provider_league ?? null,
     status: "upcoming",
   }));
 

@@ -44,7 +44,7 @@ export async function GET(request: Request) {
   const { data: events, error } = await supabase
     .from("events")
     .select(
-      "id, event_name, sport, start_time, external_event_id, result_data, competition_id"
+      "id, event_name, sport, start_time, external_event_id, provider_league, result_data, competition_id"
     )
     .eq("status", "locked")
     .eq("result_confirmed", false)

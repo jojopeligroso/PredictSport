@@ -16,6 +16,7 @@ export interface AutoResultEvent {
   sport: string;
   start_time: string;
   external_event_id: string | null;
+  provider_league: string | null;
   result_data: Record<string, unknown> | null;
   competition_id: string;
 }
@@ -189,7 +190,8 @@ export async function autoResolveEvent(
     // 6. Fetch result from provider chain
     const result = await fetchResult(
       event.sport as Sport,
-      resolvedExternalId!
+      resolvedExternalId!,
+      event.provider_league ?? undefined
     );
 
     if (!result) {
