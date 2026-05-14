@@ -238,9 +238,16 @@ interface PersonalPredictionRow {
 
 // ── Main component ────────────────────────────────────────────────────────────
 
-export function PersonalFixtureBrowser({ showResultHints = true }: { showResultHints?: boolean }) {
-  const [selectedSport, setSelectedSport] = useState("Soccer");
-  const [selectedLeagueId, setSelectedLeagueId] = useState("4328");
+export function PersonalFixtureBrowser({
+  showResultHints = true,
+  defaultSport = "Soccer",
+}: {
+  showResultHints?: boolean;
+  defaultSport?: string;
+}) {
+  const initialLeague = leaguesForCategory(defaultSport)[0] ?? leaguesForCategory("Soccer")[0];
+  const [selectedSport, setSelectedSport] = useState(defaultSport);
+  const [selectedLeagueId, setSelectedLeagueId] = useState(initialLeague.id);
   const [fixtures, setFixtures] = useState<NormalizedFixture[]>([]);
   // Full rows from DB — source of truth for past picks and the pick map
   const [allPredictions, setAllPredictions] = useState<PersonalPredictionRow[]>([]);

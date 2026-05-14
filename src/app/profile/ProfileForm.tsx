@@ -3,11 +3,18 @@
 import { useState } from "react";
 import type { User } from "@/types/database";
 
+const SPORT_OPTIONS = [
+  "Soccer", "GAA", "Rugby", "US Sports", "Motorsport", "Tennis", "Cricket", "Other",
+] as const;
+
+type SportOption = typeof SPORT_OPTIONS[number];
+
 interface NotificationPrefs {
   prediction_reminders: boolean;
   result_notifications: boolean;
   leaderboard_updates: boolean;
   result_hints: boolean;
+  default_sport: SportOption;
 }
 
 function parseNotificationPrefs(
@@ -30,6 +37,10 @@ function parseNotificationPrefs(
       typeof raw?.result_hints === "boolean"
         ? raw.result_hints
         : true,
+    default_sport:
+      SPORT_OPTIONS.includes(raw?.default_sport as SportOption)
+        ? (raw!.default_sport as SportOption)
+        : "Soccer",
   };
 }
 
@@ -55,7 +66,9 @@ function statesEqual(a: FormState, b: FormState): boolean {
     a.notification_prefs.leaderboard_updates ===
       b.notification_prefs.leaderboard_updates &&
     a.notification_prefs.result_hints ===
-      b.notification_prefs.result_hints
+      b.notification_prefs.result_hints &&
+    a.notification_prefs.default_sport ===
+      b.notification_prefs.default_sport
   );
 }
 
@@ -275,6 +288,44 @@ export function ProfileForm({ user }: { user: User }) {
             label="Result colour hints"
             description="Green or red accent on cards when a result is confirmed"
           />
+        </div>
+      </section>
+
+      {/* Personal Predictions */}
+      <section className="rounded-xl border border-ps-border bg-ps-surface p-6">
+        <h2 className="mb-1 text-xs font-semibold uppercase tracking-widest text-ps-text-sec">
+          Personal Predictions
+        </h2>
+        <div className="py-3">
+          <p className="text-sm font-medium text-ps-text">Default sport</p>
+          <p className="mt-0.5 text-xs text-ps-text-ter">
+            Opens to this sport when you visit My Personal Predictions
+          </p>
+          <div className="mt-3 flex flex-wrap gap-2">
+            {SPORT_OPTIONS.map((sport) => {
+              const active = form.notification_prefs.default_sport === sport;
+              return (
+                <button
+                  key={sport}
+                  type="button"
+                  onClick={() => {
+                    setForm((prev) => ({
+                      ...prev,
+                      notification_prefs: { ...prev.notification_prefs, default_sport: sport },
+                    }));
+                    setFeedback(null);
+                  }}
+                  className={`rounded-lg px-3 py-1.5 text-xs font-semibold transition-colors ${
+                    active
+                      ? "bg-ps-amber-deep text-[#1a1208]"
+                      : "bg-ps-chip text-ps-text-sec hover:bg-ps-border"
+                  }`}
+                >
+                  {sport}
+                </button>
+              );
+            })}
+          </div>
         </div>
       </section>
 

@@ -21,6 +21,7 @@ export default async function PersonalPredictionsPage() {
     .single();
 
   const showResultHints = userProfile?.notification_prefs?.result_hints !== false;
+  const defaultSport = (userProfile?.notification_prefs?.default_sport as string | undefined) ?? "Soccer";
 
   return (
     <div className="mx-auto max-w-[480px] px-4 py-6">
@@ -46,7 +47,7 @@ export default async function PersonalPredictionsPage() {
         </p>
       </div>
 
-      <PersonalFixtureBrowser showResultHints={showResultHints} />
+      <PersonalFixtureBrowser showResultHints={showResultHints} defaultSport={defaultSport} />
     </div>
   );
 }
