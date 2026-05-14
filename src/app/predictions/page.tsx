@@ -1,4 +1,5 @@
 import { redirect } from "next/navigation";
+import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import { EventList } from "./event-list";
 import { CompetitionSelector } from "./competition-selector";
@@ -211,8 +212,20 @@ export default async function PredictionsPage({
         showResultHints={showResultHints}
       />
 
-      <div className="mx-auto max-w-[480px] px-4 pb-8">
+      <div className="mx-auto max-w-[480px] px-4 pb-8 space-y-3">
         <JoinCompetitionCard />
+        <Link
+          href="/competitions/personal"
+          className="flex items-center justify-between rounded-xl border border-ps-border bg-ps-surface px-4 py-3.5 transition-all duration-150 active:scale-[0.98]"
+        >
+          <div>
+            <p className="text-sm font-semibold text-ps-text">My Personal Predictions</p>
+            <p className="mt-0.5 text-xs text-ps-text-ter">Pick any fixture, no competition required</p>
+          </div>
+          <svg width="16" height="16" viewBox="0 0 16 16" fill="none" className="shrink-0 text-ps-text-ter">
+            <path d="M6 4l4 4-4 4" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+          </svg>
+        </Link>
       </div>
     </div>
   );
