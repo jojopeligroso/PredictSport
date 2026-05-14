@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef, useMemo } from "react";
 import { createClient } from "@/lib/supabase/client";
+import { OrDivider } from "@/components/OrDivider";
 
 // User-agent substrings that indicate an in-app browser where Google OAuth
 // is typically blocked (Telegram, Messenger, Instagram, Line, WhatsApp, etc.)
@@ -142,11 +143,7 @@ export function LoginButton({ redirectTo }: LoginButtonProps) {
           </button>
 
           {/* Divider */}
-          <div className="flex items-center gap-3">
-            <div className="h-px flex-1 bg-ps-border" />
-            <span className="text-xs text-ps-text-ter">or</span>
-            <div className="h-px flex-1 bg-ps-border" />
-          </div>
+          <OrDivider />
         </>
       )}
 

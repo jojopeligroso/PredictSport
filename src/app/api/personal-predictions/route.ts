@@ -46,8 +46,9 @@ export async function GET() {
   }
 
   // Auto-fetch results for past picks that have no result yet
+  const now = new Date();
   const needsResult = (data ?? []).filter(
-    (p) => p.result_value === null && new Date(p.start_time) <= new Date()
+    (p) => p.result_value === null && new Date(p.start_time) <= now
   );
 
   if (needsResult.length > 0) {

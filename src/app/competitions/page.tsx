@@ -3,6 +3,7 @@ import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import { BrandMark } from "@/components/BrandMark";
 import JoinCompetitionCard from "@/components/JoinCompetitionCard";
+import { OrDivider } from "@/components/OrDivider";
 
 function formatLockTime(iso: string): string {
   const d = new Date(iso);
@@ -192,11 +193,7 @@ export default async function CompetitionsPage() {
               Start a Competition
             </Link>
           </div>
-          <div className="flex items-center gap-3">
-            <div className="h-px flex-1 bg-ps-border" />
-            <span className="text-xs font-semibold text-ps-text-ter">or</span>
-            <div className="h-px flex-1 bg-ps-border" />
-          </div>
+          <OrDivider />
           <JoinCompetitionCard />
         </div>
       ) : (
