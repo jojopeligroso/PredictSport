@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import { BrandMark } from "@/components/BrandMark";
+import JoinCompetitionCard from "@/components/JoinCompetitionCard";
 
 export const dynamic = "force-dynamic";
 
@@ -164,19 +165,27 @@ async function Dashboard({ userId }: { userId: string }) {
       </div>
 
       {comps.length === 0 ? (
-        <div className="rounded-2xl border border-dashed border-ps-border bg-ps-surface p-8 text-center">
-          <p className="text-sm font-medium text-ps-text-sec">
-            No active competitions yet.
-          </p>
-          <p className="mt-2 text-xs text-ps-text-ter">
-            Create your own competition or ask a mate for an invite link.
-          </p>
-          <Link
-            href="/competitions/new"
-            className="mt-4 inline-block rounded-xl bg-gradient-to-r from-[#f59e0b] to-[#d97706] px-4 py-2.5 text-sm font-semibold text-ps-text"
-          >
-            Create Competition
-          </Link>
+        <div className="space-y-3">
+          <div className="rounded-2xl border border-dashed border-ps-border bg-ps-surface p-6 text-center">
+            <p className="text-sm font-medium text-ps-text-sec">
+              No active competitions yet.
+            </p>
+            <p className="mt-2 text-xs text-ps-text-ter">
+              Start your own, or join one with an invite link below.
+            </p>
+            <Link
+              href="/competitions/new"
+              className="mt-4 inline-block rounded-xl bg-gradient-to-r from-[#f59e0b] to-[#d97706] px-4 py-2.5 text-sm font-semibold text-ps-text"
+            >
+              Create Competition
+            </Link>
+          </div>
+          <div className="flex items-center gap-3">
+            <div className="h-px flex-1 bg-ps-border" />
+            <span className="text-xs font-semibold text-ps-text-ter">or</span>
+            <div className="h-px flex-1 bg-ps-border" />
+          </div>
+          <JoinCompetitionCard />
         </div>
       ) : (
         <div className="space-y-4">
