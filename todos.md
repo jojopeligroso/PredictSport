@@ -138,6 +138,6 @@ See `SPORTS-ARCHITECTURE.md` for detailed spec (TBD).
 ### Phase 6: Data Quality & Reliability
 
 - [ ] 6.1 — **Reset stale MLB picks** — null out `result_value`/`is_correct` for two rows with wrong "Baltimore Orioles" result (IDs: `fac7a82d`, `7c3d1209`); re-fetch will use fixed ESPN summary endpoint
-- [ ] 6.2 — **Resolve null cricket results** — RCB v KKR (id `0e435b0e`, ESPN id `1529300`) and Punjab Kings v Mumbai Indians (id `66750591`, ESPN id `1529301`) — test if fixed summary endpoint now fetches; if not, enter manually
-- [ ] 6.3 — **Add result-fetch cron job** — schedule nightly re-fetch for personal_predictions where `result_value IS NULL` and `start_time < now() - interval '3 hours'`
+- [x] 6.2 — **Resolve null cricket results** — RCB v KKR (id `0e435b0e`, ESPN id `1529300`) and Punjab Kings v Mumbai Indians (id `66750591`, ESPN id `1529301`) — fixed via ESPN `state=post` bug fix (2026-05-15)
+- [x] 6.3 — **Add result-fetch cron job** — `/api/personal-predictions/cron`, runs 3am UTC daily, also fixed ESPN `is_final` bug so results actually resolve (2026-05-15)
 - [ ] 6.4 — **Provider success rate audit** — run Phase 4.1 script; confirm ESPN summary fix improved MLB/cricket rates
