@@ -106,3 +106,38 @@ See `MANUAL-EVENTS-AND-API-GAPS.md` for detailed task breakdown.
 3. Implement Phase 3 (immediate admin UX win)
 4. Decide on Phase 2 (based on Phase 1 feedback)
 5. Implement Phase 4.9-4.12 (data-driven, after audit)
+
+---
+
+## Sports Data Architecture Overhaul (2026-05-14)
+
+See `SPORTS-ARCHITECTURE.md` for detailed spec (TBD).
+
+### Phase 5: Sport/League Decoupling — **BLOCKING for multi-league sports accuracy**
+
+**Background:** Current model has one ESPN path per `Sport` type (e.g. `cricket/8048` = IPL only). MLB/NFL/NBA/NHL are leagues, not sports. An event picked from one league (e.g. Big Bash League) will fail to fetch results because the provider uses the wrong path.
+
+**Phase 5.1 — Data model changes**
+- [ ] 5.1a — Add `provider_league` column to `personal_predictions` (stored at pick time)
+- [ ] 5.1b — Add `provider_league` column to `events` table (stored when event is created)
+- [ ] 5.1c — Add `result_provider` column to `personal_predictions` (which API returned the result)
+- [ ] 5.1d — Migration + RLS policy updates
+
+**Phase 5.2 — Sport type renames**
+- [ ] 5.2a — Rename `mlb` → `baseball`, `nfl` → `american_football`, `nba` → `basketball`, `nhl` → `ice_hockey` in `Sport` type
+- [ ] 5.2b — Update `SPORT_PATHS`, `registry.ts`, all provider `supportedSports` arrays
+- [ ] 5.2c — Update DB `sport` column values in all existing rows (migration)
+- [ ] 5.2d — Update UI labels, fixture browser sport selector
+
+**Phase 5.3 — Provider routing by league**
+- [ ] 5.3a — Pass `providerLeague` (e.g. `"cricket/8048"`) through `fetchResult()` signature
+- [ ] 5.3b — Update `ESPNProvider.getResult()` to accept and use stored league path
+- [ ] 5.3c — Store `result_provider` when result is saved in personal_predictions + events
+- [ ] 5.3d — Remove MLBStats from MLB provider chain (ESPN IDs ≠ MLB gamePk)
+
+### Phase 6: Data Quality & Reliability
+
+- [ ] 6.1 — **Reset stale MLB picks** — null out `result_value`/`is_correct` for two rows with wrong "Baltimore Orioles" result (IDs: `fac7a82d`, `7c3d1209`); re-fetch will use fixed ESPN summary endpoint
+- [ ] 6.2 — **Resolve null cricket results** — RCB v KKR (id `0e435b0e`, ESPN id `1529300`) and Punjab Kings v Mumbai Indians (id `66750591`, ESPN id `1529301`) — test if fixed summary endpoint now fetches; if not, enter manually
+- [ ] 6.3 — **Add result-fetch cron job** — schedule nightly re-fetch for personal_predictions where `result_value IS NULL` and `start_time < now() - interval '3 hours'`
+- [ ] 6.4 — **Provider success rate audit** — run Phase 4.1 script; confirm ESPN summary fix improved MLB/cricket rates
