@@ -18,6 +18,7 @@ import { FixtureBrowser } from "./FixtureBrowser";
 import type { NormalizedFixture } from "./FixtureBrowser";
 import { CardBasedConfig } from "./PredictionCards";
 import type { PredictionTypeConfig as CardPredictionTypeConfig } from "./PredictionCards";
+import { getRaceEntrants } from "@/lib/race-entrants";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -1042,7 +1043,8 @@ export function RoundBuilder({
     const configs: FixtureConfig[] = selectedFixtures.map((f) => {
       const primaryType = getPrimaryPredictionType(f);
 
-      // Build config for head_to_head type (needs team options)
+      // Build config based on prediction type
+      const entrants = primaryType === 'winner' ? getRaceEntrants(f.sport) : [];
       const config: Record<string, unknown> | undefined =
         primaryType === 'head_to_head'
           ? {
@@ -1050,6 +1052,8 @@ export function RoundBuilder({
               allow_draw: allowsDraws(f.sport),
               draw_points: defaultPoints[primaryType] > 0 ? defaultPoints[primaryType] : 10,
             }
+          : entrants.length > 0
+          ? { options: entrants }
           : undefined;
 
       const predictionTypes: PredictionTypeConfig[] = [{

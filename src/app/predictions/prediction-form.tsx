@@ -14,9 +14,13 @@ interface ComboboxInputProps {
 }
 
 function ComboboxInput({ options, value, onChange, disabled = false, placeholder }: ComboboxInputProps) {
+  // "Other" mode: value exists but isn't in the known options list
+  const [isOtherMode, setIsOtherMode] = useState(() => !!value && !options.includes(value));
+  const [otherValue, setOtherValue] = useState(() => (value && !options.includes(value) ? value : ""));
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState("");
   const inputRef = useRef<HTMLInputElement>(null);
+  const otherRef = useRef<HTMLInputElement>(null);
   const [listboxId] = useState(() => `combobox-list-${Math.random().toString(36).slice(2)}`);
 
   const filtered = query
@@ -44,6 +48,47 @@ function ComboboxInput({ options, value, onChange, disabled = false, placeholder
     inputRef.current?.blur();
   }
 
+  function handleSelectOther() {
+    setIsOtherMode(true);
+    setOpen(false);
+    setQuery("");
+    setTimeout(() => otherRef.current?.focus(), 0);
+  }
+
+  function handleBackToList() {
+    setIsOtherMode(false);
+    setOtherValue("");
+    onChange("");
+  }
+
+  if (isOtherMode) {
+    return (
+      <div className="space-y-1.5">
+        <input
+          ref={otherRef}
+          type="text"
+          value={otherValue}
+          onChange={(e) => {
+            setOtherValue(e.target.value);
+            onChange(e.target.value);
+          }}
+          disabled={disabled}
+          placeholder="Enter name..."
+          className={inputClasses}
+        />
+        {!disabled && (
+          <button
+            type="button"
+            onClick={handleBackToList}
+            className="text-xs text-ps-text-ter hover:text-ps-text underline"
+          >
+            ← Back to list
+          </button>
+        )}
+      </div>
+    );
+  }
+
   return (
     <div className="relative">
       <input
@@ -62,12 +107,15 @@ function ComboboxInput({ options, value, onChange, disabled = false, placeholder
         onBlur={handleBlur}
         className={inputClasses}
       />
-      {open && filtered.length > 0 && (
+      {open && (
         <ul
           id={listboxId}
           role="listbox"
           className="absolute z-10 mt-1 w-full max-h-48 overflow-auto rounded-lg border border-ps-border bg-ps-surface shadow-lg"
         >
+          {filtered.length === 0 && (
+            <li className="px-3 py-2 text-sm text-ps-text-ter italic">No matches</li>
+          )}
           {filtered.map((opt) => (
             <li
               key={opt}
@@ -86,6 +134,17 @@ function ComboboxInput({ options, value, onChange, disabled = false, placeholder
               {opt}
             </li>
           ))}
+          <li
+            role="option"
+            aria-selected={false}
+            onMouseDown={(e) => {
+              e.preventDefault();
+              handleSelectOther();
+            }}
+            className="cursor-pointer border-t border-ps-border px-3 py-2 text-sm text-ps-text-ter hover:bg-ps-chip"
+          >
+            Other...
+          </li>
         </ul>
       )}
     </div>

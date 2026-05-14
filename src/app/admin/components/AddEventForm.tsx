@@ -6,6 +6,7 @@ import type { Sport } from "@/lib/sports/types";
 import { FixtureBrowser } from "./FixtureBrowser";
 import type { NormalizedFixture } from "./FixtureBrowser";
 import { parseWinnerOptions } from "@/lib/parse-options";
+import { getRaceEntrants } from "@/lib/race-entrants";
 
 interface AddEventFormProps {
   competitionId: string;
@@ -381,7 +382,21 @@ export function AddEventForm({
                 <select
                   id="event-sport"
                   value={sport}
-                  onChange={(e) => setSport(e.target.value as Sport)}
+                  onChange={(e) => {
+                    const newSport = e.target.value as Sport;
+                    setSport(newSport);
+                    const entrants = getRaceEntrants(newSport);
+                    if (entrants.length > 0) {
+                      setSelectedTypes((prev) =>
+                        prev.map((t) =>
+                          t.prediction_type === "winner" &&
+                          !(t.config?.options as string[] | undefined)?.length
+                            ? { ...t, config: { ...t.config, options: entrants } }
+                            : t
+                        )
+                      );
+                    }
+                  }}
                   className="mt-1 block w-full rounded-xl border border-ps-border bg-ps-bg px-3 py-2 text-sm text-ps-text shadow-sm focus:border-ps-amber focus:outline-none focus:ring-1 focus:ring-ps-amber"
                 >
                   {SPORTS.map((s) => (
