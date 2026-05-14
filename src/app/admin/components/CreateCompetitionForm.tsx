@@ -321,7 +321,13 @@ export function CreateCompetitionForm({ alwaysOpen = false }: CreateCompetitionF
   const [searchSport, setSearchSport] = useState("");
   const [searchQuery, setSearchQuery] = useState("");
   const [searching, setSearching] = useState(false);
-  const [searchResults, setSearchResults] = useState<SearchResult[]>([]);
+  // League toggle state: each shortcut pill is a toggle; results accumulate across active leagues
+  const [activeLeagueIds, setActiveLeagueIds] = useState<string[]>([]);
+  const [leagueCache, setLeagueCache] = useState<Record<string, SearchResult[]>>({});
+  const [loadingLeagueIds, setLoadingLeagueIds] = useState<Set<string>>(new Set());
+  // Text search results (separate from league results)
+  const [apiResults, setApiResults] = useState<SearchResult[]>([]);
+  const [apiMode, setApiMode] = useState(false);
   const [selectedFixtures, setSelectedFixtures] = useState<SearchResult[]>([]);
   const [roundSaving, setRoundSaving] = useState(false);
 
@@ -367,6 +373,16 @@ export function CreateCompetitionForm({ alwaysOpen = false }: CreateCompetitionF
     if (r < 0.31) return "Up the Faythe!";
     return pool[Math.floor(Math.random() * pool.length)];
   }, []);
+
+  // Combined results: either active-league fixtures or text-search results
+  const displayedResults = useMemo(() => {
+    const results = apiMode
+      ? apiResults
+      : activeLeagueIds.flatMap((id) => leagueCache[id] ?? []);
+    return [...results].sort(
+      (a, b) => new Date(a.start_time).getTime() - new Date(b.start_time).getTime()
+    );
+  }, [apiMode, apiResults, activeLeagueIds, leagueCache]);
 
   function toggleSport(id: string) {
     setSelectedSports((prev) =>
@@ -438,29 +454,58 @@ export function CreateCompetitionForm({ alwaysOpen = false }: CreateCompetitionF
     }
   }
 
-  // Search fixtures
-  const searchFixtures = useCallback(async (sport: string, query: string, league?: string) => {
+  // Text search (Go button / Enter key)
+  const searchFixtures = useCallback(async (sport: string, query: string) => {
+    if (!query.trim() || !sport) return;
+    setActiveLeagueIds([]);
+    setApiMode(true);
     setSearching(true);
-    setSearchResults([]);
+    setApiResults([]);
     try {
-      let url: string;
-      if (league) {
-        url = `/api/sports/search?sport=${encodeURIComponent(sport)}&league=${encodeURIComponent(league)}`;
-      } else if (query.trim()) {
-        url = `/api/sports/search?sport=${encodeURIComponent(sport)}&q=${encodeURIComponent(query.trim())}`;
-      } else {
-        setSearching(false);
-        return;
-      }
-      const res = await fetch(url);
+      const res = await fetch(
+        `/api/sports/search?sport=${encodeURIComponent(sport)}&q=${encodeURIComponent(query.trim())}`
+      );
       const data = await res.json();
-      setSearchResults(Array.isArray(data.events) ? data.events : []);
+      setApiResults(Array.isArray(data.events) ? data.events : []);
     } catch {
-      setSearchResults([]);
+      setApiResults([]);
     } finally {
       setSearching(false);
     }
   }, []);
+
+  // League shortcut toggle: activates/deactivates a league pill and fetches via the
+  // fixtures endpoint (ESPN 30-day window / TSDB round-expansion), not the bare search endpoint
+  const toggleLeague = useCallback(async (leagueId: string) => {
+    setApiMode(false);
+    setApiResults([]);
+
+    const isActive = activeLeagueIds.includes(leagueId);
+    if (isActive) {
+      setActiveLeagueIds((prev) => prev.filter((id) => id !== leagueId));
+      return;
+    }
+
+    setActiveLeagueIds((prev) => [...prev, leagueId]);
+
+    if (leagueCache[leagueId]) return; // already cached
+
+    setLoadingLeagueIds((prev) => new Set([...prev, leagueId]));
+    try {
+      const res = await fetch(`/api/sports/fixtures?league=${encodeURIComponent(leagueId)}`);
+      const data = await res.json();
+      const fixtures: SearchResult[] = Array.isArray(data.fixtures) ? data.fixtures : [];
+      setLeagueCache((prev) => ({ ...prev, [leagueId]: fixtures }));
+    } catch {
+      setLeagueCache((prev) => ({ ...prev, [leagueId]: [] }));
+    } finally {
+      setLoadingLeagueIds((prev) => {
+        const next = new Set(prev);
+        next.delete(leagueId);
+        return next;
+      });
+    }
+  }, [activeLeagueIds, leagueCache]);
 
   // Add a manually-entered event to selectedFixtures
   function addManualEvent() {
@@ -926,7 +971,10 @@ export function CreateCompetitionForm({ alwaysOpen = false }: CreateCompetitionF
               value={searchSport}
               onChange={(e) => {
                 setSearchSport(e.target.value);
-                setSearchResults([]);
+                setActiveLeagueIds([]);
+                setLeagueCache({});
+                setApiResults([]);
+                setApiMode(false);
               }}
               className="rounded-xl border border-ps-border bg-ps-surface px-3 py-2.5 text-sm text-ps-text focus:border-ps-amber focus:outline-none shrink-0"
             >
@@ -956,7 +1004,7 @@ export function CreateCompetitionForm({ alwaysOpen = false }: CreateCompetitionF
               onKeyDown={(e) => {
                 if (e.key === "Enter") {
                   e.preventDefault();
-                  if (searchSport) searchFixtures(searchSport, searchQuery);
+                  searchFixtures(searchSport, searchQuery);
                 }
               }}
               className="flex-1 min-w-0 rounded-xl border border-ps-border bg-ps-surface px-3.5 py-2.5 text-sm text-ps-text placeholder:text-ps-text-ter focus:border-ps-amber focus:outline-none"
@@ -964,37 +1012,51 @@ export function CreateCompetitionForm({ alwaysOpen = false }: CreateCompetitionF
             <button
               type="button"
               onClick={() => searchFixtures(searchSport, searchQuery)}
-              disabled={searching || !searchSport}
+              disabled={searching || !searchSport || !searchQuery.trim()}
               className="rounded-xl bg-ps-chip px-4 py-2.5 text-sm font-semibold text-ps-text-sec hover:text-ps-text transition-colors disabled:opacity-50"
             >
               {searching ? "..." : "Go"}
             </button>
           </div>
 
-          {/* League shortcuts */}
+          {/* League shortcuts — toggleable pills; multiple can be active simultaneously */}
           {leagues.length > 0 && (
             <div className="flex flex-wrap gap-1.5 mb-3">
-              {leagues.map((l) => (
-                <button
-                  key={l.id}
-                  type="button"
-                  onClick={() => searchFixtures(searchSport, "", l.id)}
-                  className="rounded-lg border border-ps-border bg-ps-surface px-2.5 py-1 text-xs font-semibold text-ps-text-sec hover:border-ps-border-strong hover:text-ps-text transition-colors"
-                >
-                  {l.label}
-                </button>
-              ))}
+              {leagues.map((l) => {
+                const isActive = activeLeagueIds.includes(l.id);
+                const isLoadingLeague = loadingLeagueIds.has(l.id);
+                return (
+                  <button
+                    key={l.id}
+                    type="button"
+                    onClick={() => toggleLeague(l.id)}
+                    disabled={isLoadingLeague}
+                    className={`rounded-lg border px-2.5 py-1 text-xs font-semibold transition-colors disabled:opacity-60 ${
+                      isActive
+                        ? "border-ps-amber bg-ps-amber-soft text-ps-text"
+                        : "border-ps-border bg-ps-surface text-ps-text-sec hover:border-ps-border-strong hover:text-ps-text"
+                    }`}
+                  >
+                    {isLoadingLeague ? "..." : l.label}
+                  </button>
+                );
+              })}
             </div>
           )}
         </div>
 
+        {/* Loading state when fetching league fixtures */}
+        {loadingLeagueIds.size > 0 && displayedResults.length === 0 && (
+          <div className="mb-3 text-xs text-ps-text-sec">Loading fixtures...</div>
+        )}
+
         {/* Search results */}
-        {searchResults.length > 0 && (
+        {displayedResults.length > 0 && (
           <div className="mb-4 flex flex-col gap-2">
             <div className="text-[10px] font-extrabold tracking-widest uppercase text-ps-text-ter mb-1">
-              Results ({searchResults.length})
+              Results ({displayedResults.length})
             </div>
-            {searchResults.map((f) => {
+            {displayedResults.map((f) => {
               const on = isFixtureSelected(f);
               const sport = SPORTS.find((s) => s.id === f.sport);
               return (
