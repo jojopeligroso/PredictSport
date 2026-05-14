@@ -342,7 +342,7 @@ function MyPicksTab({
       <div className="rounded-2xl border border-dashed border-ps-border py-14 text-center">
         <p className="text-sm font-bold text-ps-text-sec">No picks yet</p>
         <p className="mt-1 text-xs text-ps-text-ter">
-          Head to Pick to make your first prediction.
+          Head to Fixtures to make your first prediction.
         </p>
       </div>
     );
@@ -379,6 +379,107 @@ function MyPicksTab({
   );
 }
 
+// ── Results tab content ───────────────────────────────────────────────────────
+
+function ResultsTab({ allPredictions }: { allPredictions: PersonalPredictionRow[] }) {
+  const settled = useMemo(
+    () =>
+      allPredictions
+        .filter((p) => p.result_value !== null && p.is_correct !== null)
+        .sort((a, b) => new Date(b.start_time).getTime() - new Date(a.start_time).getTime()),
+    [allPredictions]
+  );
+
+  const correct = settled.filter((p) => p.is_correct).length;
+
+  if (settled.length === 0) {
+    return (
+      <div className="rounded-2xl border border-dashed border-ps-border py-14 text-center">
+        <p className="text-sm font-bold text-ps-text-sec">No results yet</p>
+        <p className="mt-1 text-xs text-ps-text-ter">
+          Results appear here once fixtures are confirmed.
+        </p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="flex flex-col gap-4">
+      {/* Summary bar */}
+      <div className="flex items-center gap-3 rounded-xl border border-ps-border bg-ps-surface px-4 py-3">
+        <div className="flex-1">
+          <p className="text-[10px] font-extrabold tracking-widest uppercase text-ps-text-ter">
+            Record
+          </p>
+          <p className="mt-0.5 text-sm font-extrabold text-ps-text">
+            {correct} / {settled.length} correct
+          </p>
+        </div>
+        <div className="text-right">
+          <p className="text-[10px] font-extrabold tracking-widest uppercase text-ps-text-ter">
+            Hit rate
+          </p>
+          <p className="mt-0.5 text-sm font-extrabold text-ps-text">
+            {Math.round((correct / settled.length) * 100)}%
+          </p>
+        </div>
+      </div>
+
+      {/* Results list */}
+      <div className="flex flex-col gap-2">
+        {settled.map((pick) => {
+          const participants = Array.isArray(pick.participants) ? pick.participants : [];
+          const [home, away] = participants;
+          const hasTeams = Boolean(home && away);
+          const pickLabel = resolvePickLabel(pick.prediction_value, participants);
+          const resultLabel = resolvePickLabel(pick.result_value!, participants);
+
+          return (
+            <div
+              key={pick.external_event_id}
+              className={`flex items-center gap-3 rounded-xl border px-4 py-3 bg-ps-surface ${
+                pick.is_correct ? "border-ps-green/40" : "border-ps-border"
+              }`}
+            >
+              {/* Outcome indicator */}
+              <div
+                className={`shrink-0 h-7 w-7 rounded-full flex items-center justify-center text-[10px] font-extrabold ${
+                  pick.is_correct
+                    ? "bg-ps-green-soft text-ps-green"
+                    : "bg-ps-red/10 text-ps-red"
+                }`}
+              >
+                {pick.is_correct ? "W" : "L"}
+              </div>
+
+              {/* Event info */}
+              <div className="min-w-0 flex-1">
+                <p className="truncate text-xs font-bold text-ps-text">
+                  {hasTeams ? `${home} vs ${away}` : pick.event_name}
+                </p>
+                <div className="mt-0.5 flex flex-wrap items-center gap-1.5">
+                  <span className="font-mono text-[10px] text-ps-text-ter">
+                    {formatTime(pick.start_time)}
+                  </span>
+                  <SportPill sport={toSportKey(pick.sport as Sport)} size="sm" />
+                </div>
+              </div>
+
+              {/* Pick vs Result */}
+              <div className="shrink-0 text-right">
+                <p className="text-xs font-extrabold text-ps-text">{pickLabel}</p>
+                <p className="mt-0.5 text-[10px] font-semibold text-ps-text-ter">
+                  Result: {resultLabel}
+                </p>
+              </div>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
 // ── Main component ────────────────────────────────────────────────────────────
 
 export function PersonalFixtureBrowser({
@@ -389,7 +490,7 @@ export function PersonalFixtureBrowser({
   defaultSport?: string;
 }) {
   const initialLeague = leaguesForCategory(defaultSport)[0] ?? leaguesForCategory("Soccer")[0];
-  const [activeTab, setActiveTab] = useState<"pick" | "my-picks">("pick");
+  const [activeTab, setActiveTab] = useState<"fixtures" | "my-picks" | "results">("fixtures");
   const [selectedSport, setSelectedSport] = useState(defaultSport);
   const [selectedLeagueId, setSelectedLeagueId] = useState(initialLeague.id);
   const [fixtures, setFixtures] = useState<NormalizedFixture[]>([]);
@@ -526,15 +627,21 @@ export function PersonalFixtureBrowser({
       {/* Tab bar */}
       <div className="mb-5 flex gap-1 border-b border-ps-border">
         <TabButton
-          label="Pick"
-          active={activeTab === "pick"}
-          onClick={() => setActiveTab("pick")}
+          label="Fixtures"
+          active={activeTab === "fixtures"}
+          onClick={() => setActiveTab("fixtures")}
         />
         <TabButton
           label="My Picks"
           active={activeTab === "my-picks"}
           count={allPredictions.length}
           onClick={() => setActiveTab("my-picks")}
+        />
+        <TabButton
+          label="Results"
+          active={activeTab === "results"}
+          count={allPredictions.filter((p) => p.result_value !== null && p.is_correct !== null).length}
+          onClick={() => setActiveTab("results")}
         />
       </div>
 
@@ -550,8 +657,13 @@ export function PersonalFixtureBrowser({
         <MyPicksTab allPredictions={allPredictions} showResultHints={showResultHints} />
       )}
 
-      {/* Pick tab */}
-      {activeTab === "pick" && (
+      {/* Results tab */}
+      {activeTab === "results" && (
+        <ResultsTab allPredictions={allPredictions} />
+      )}
+
+      {/* Fixtures tab */}
+      {activeTab === "fixtures" && (
         <div>
           {/* Sport category pills */}
           <div className="mb-3 flex flex-wrap gap-1.5">
