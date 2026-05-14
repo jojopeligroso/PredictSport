@@ -183,6 +183,7 @@ interface PersonalPredictionRow {
   start_time: string;
   result_value: string | null;
   is_correct: boolean | null;
+  provider_league: string | null;
 }
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
@@ -466,6 +467,7 @@ export function PersonalFixtureBrowser({
           start_time: fixture.start_time,
           result_value: null,
           is_correct: null,
+          provider_league: fixture.provider_league,
         },
       ];
     });
@@ -482,6 +484,7 @@ export function PersonalFixtureBrowser({
           participants: fixture.participants,
           start_time: fixture.start_time,
           prediction_value: value,
+          provider_league: fixture.provider_league,
         }),
       });
       if (!res.ok) {

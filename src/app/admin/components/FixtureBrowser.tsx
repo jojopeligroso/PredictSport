@@ -1002,6 +1002,7 @@ export function FixtureBrowser({ onSelect, selectedIds }: FixtureBrowserProps) {
         participants: (e.participants as string[]) ?? [],
         round: (e.round as string) ?? null,
         season: (e.season as string) ?? null,
+        provider_league: (e.provider_league as string) ?? null,
       }));
       setApiResults(events);
     } catch {

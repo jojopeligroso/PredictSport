@@ -90,7 +90,11 @@ export interface SportsProvider {
 
   getResult(
     sport: Sport,
-    externalEventId: string
+    externalEventId: string,
+    /** Provider-specific league path (e.g. "cricket/8044"). When supplied,
+     *  providers that support multi-league routing (ESPN) use it instead of
+     *  their default path for the sport. Other providers ignore it. */
+    providerLeague?: string
   ): Promise<NormalizedResult | null>;
 
   searchEvents(

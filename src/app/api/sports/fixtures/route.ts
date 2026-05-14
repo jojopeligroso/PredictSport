@@ -187,6 +187,10 @@ export interface NormalizedFixture {
   participants: string[];
   round: string | null;
   season: string | null;
+  /** ESPN league path used to fetch this fixture (e.g. "cricket/8044").
+   *  Stored on the pick at creation time so result-fetching uses the right path.
+   *  null for fixtures sourced from TheSportsDB or Foireann. */
+  provider_league: string | null;
 }
 
 // ---------- ESPN fixture fetching ----------
@@ -224,6 +228,7 @@ interface ESPNScoreboardResponse {
 async function fetchESPNFixtures(
   espnPath: string,
   sport: Sport,
+  providerLeague: string,
 ): Promise<NormalizedFixture[]> {
   // ESPN scoreboard defaults to the current day only — pass a 30-day window
   // so upcoming fixtures always appear regardless of today's schedule.
@@ -267,6 +272,7 @@ async function fetchESPNFixtures(
         participants,
         round: null,
         season,
+        provider_league: providerLeague,
       };
     });
   } catch (err) {
@@ -353,6 +359,7 @@ async function fetchESPNCricketFixtures(
       participants: [homeName, awayName].filter(Boolean),
       round: null,
       season,
+      provider_league: `cricket/${espnLeagueId}`,
     };
   });
 }
@@ -429,6 +436,7 @@ async function fetchFoireannFixtures(
         participants: [f.homeTeam.name, f.awayTeam.name],
         round: f.round ?? null,
         season: f.competition.season ?? null,
+        provider_league: null,
       }));
   } catch (err) {
     console.error("[fixtures] Foireann fetch threw:", err);
@@ -476,6 +484,7 @@ function normalizeTSDBFixture(e: TSDBFixture, sport: Sport): NormalizedFixture {
     participants: [e.strHomeTeam, e.strAwayTeam].filter(Boolean),
     round: e.intRound ?? null,
     season: e.strSeason ?? null,
+    provider_league: null,
   };
 }
 
@@ -604,9 +613,10 @@ export async function GET(request: Request) {
       }
     } else if (ESPN_LEAGUE_MAP[leagueId]) {
       // ESPN-routed leagues
-      console.log(`[fixtures] route: league=${leagueId} → ESPN (${ESPN_LEAGUE_MAP[leagueId]})`);
-      fixtures = await fetchESPNFixtures(ESPN_LEAGUE_MAP[leagueId], sport);
-      // If ESPN returns nothing, fall back to TheSportsDB
+      const espnPath = ESPN_LEAGUE_MAP[leagueId];
+      console.log(`[fixtures] route: league=${leagueId} → ESPN (${espnPath})`);
+      fixtures = await fetchESPNFixtures(espnPath, sport, espnPath);
+      // If ESPN returns nothing, fall back to TheSportsDB (provider_league will be null)
       if (fixtures.length === 0) {
         console.log(`[fixtures] route: ESPN returned 0 for league=${leagueId}, falling back to TheSportsDB`);
         fixtures = await fetchTSDBFixtures(leagueId, sport);

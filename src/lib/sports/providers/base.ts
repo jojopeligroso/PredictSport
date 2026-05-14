@@ -80,7 +80,8 @@ export abstract class BaseProvider implements SportsProvider {
 
   abstract getResult(
     sport: Sport,
-    externalEventId: string
+    externalEventId: string,
+    providerLeague?: string
   ): Promise<NormalizedResult | null>;
 
   abstract searchEvents(

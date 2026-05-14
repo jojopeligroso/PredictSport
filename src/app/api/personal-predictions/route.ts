@@ -55,7 +55,7 @@ export async function GET() {
     const toFetch = needsResult.slice(0, 10);
     const results = await Promise.allSettled(
       toFetch.map(async (pick) => {
-        const result = await fetchResult(pick.sport as Sport, pick.external_event_id);
+        const result = await fetchResult(pick.sport as Sport, pick.external_event_id, pick.provider_league ?? undefined);
         if (!result?.is_final) return; // skip non-final / no result
 
         const participants: string[] = Array.isArray(pick.participants) ? pick.participants as string[] : [];
@@ -95,6 +95,7 @@ export async function POST(request: NextRequest) {
     participants?: string[];
     start_time?: string;
     prediction_value?: string;
+    provider_league?: string;
   };
 
   try {
@@ -111,6 +112,7 @@ export async function POST(request: NextRequest) {
     participants,
     start_time,
     prediction_value,
+    provider_league,
   } = body;
 
   if (!external_event_id || !event_name || !sport || !start_time || !prediction_value) {
@@ -140,6 +142,7 @@ export async function POST(request: NextRequest) {
         participants: participants ?? [],
         start_time,
         prediction_value,
+        provider_league: provider_league ?? null,
         updated_at: new Date().toISOString(),
       },
       { onConflict: "user_id,external_event_id" }

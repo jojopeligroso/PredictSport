@@ -110,9 +110,12 @@ export class ESPNProvider extends BaseProvider {
 
   async getResult(
     sport: Sport,
-    externalEventId: string
+    externalEventId: string,
+    providerLeague?: string
   ): Promise<NormalizedResult | null> {
-    const sportPath = SPORT_PATHS[sport];
+    // providerLeague (e.g. "cricket/8044") takes precedence over the
+    // per-sport default so events from non-default leagues are routed correctly.
+    const sportPath = providerLeague ?? SPORT_PATHS[sport];
     if (!sportPath) return null;
 
     // Use the summary endpoint — fetches a specific event by ID.
