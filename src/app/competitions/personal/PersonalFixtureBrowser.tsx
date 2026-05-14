@@ -3,6 +3,8 @@
 import { useState, useEffect, useCallback, useMemo } from "react";
 import { PickButton } from "@/components/ui/PickButton";
 import { SportPill } from "@/components/ui";
+import { ComboboxInput } from "@/components/ui/ComboboxInput";
+import { getRaceEntrants } from "@/lib/race-entrants";
 import { toSportKey } from "@/components/ui/sport-config";
 import type { NormalizedFixture } from "@/app/api/sports/fixtures/route";
 import type { Sport } from "@/lib/sports/types";
@@ -950,17 +952,17 @@ export function PersonalFixtureBrowser({
                           </div>
                         ) : isRace ? (
                           <div className="flex gap-2">
-                            <input
-                              type="text"
+                            <ComboboxInput
+                              options={getRaceEntrants(fixture.sport)}
                               value={raceInputs[fixture.external_event_id] ?? currentPick ?? ""}
-                              onChange={(e) =>
+                              onChange={(val) =>
                                 setRaceInputs((r) => ({
                                   ...r,
-                                  [fixture.external_event_id]: e.target.value,
+                                  [fixture.external_event_id]: val,
                                 }))
                               }
                               placeholder="Predicted winner…"
-                              className="flex-1 rounded-lg border border-ps-border bg-ps-surface px-3 py-2 text-sm text-ps-text placeholder:text-ps-text-ter focus:border-ps-amber focus:outline-none focus:ring-2 focus:ring-ps-amber/40"
+                              className="flex-1"
                             />
                             <button
                               type="button"
