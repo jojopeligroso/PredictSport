@@ -26,7 +26,7 @@ export default async function PersonalPredictionsPage() {
   return (
     <div className="mx-auto max-w-[480px] px-4 py-6">
       {/* Header */}
-      <div className="mb-6">
+      <div className="mb-4">
         <Link
           href="/competitions"
           className="mb-3 inline-flex items-center gap-1 text-[11px] font-semibold text-ps-text-ter hover:text-ps-text transition-colors"
@@ -42,9 +42,6 @@ export default async function PersonalPredictionsPage() {
         <h1 className="font-display font-extrabold text-2xl uppercase tracking-tight text-ps-text leading-none mt-0.5">
           My Personal Predictions
         </h1>
-        <p className="mt-2 text-sm text-ps-text-sec">
-          Pick outcomes on any fixture. No competition required.
-        </p>
       </div>
 
       <PersonalFixtureBrowser showResultHints={showResultHints} defaultSport={defaultSport} />

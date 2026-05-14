@@ -164,11 +164,28 @@ function dateKey(iso: string): string {
   return d.toISOString().slice(0, 10);
 }
 
+// ── Types ─────────────────────────────────────────────────────────────────────
+
 interface PredictionOption {
   value: string;
   label: string;
   sub?: string;
 }
+
+interface PersonalPredictionRow {
+  id: string;
+  external_event_id: string;
+  prediction_value: string;
+  event_name: string;
+  sport: string;
+  competition_name: string | null;
+  participants: string[];
+  start_time: string;
+  result_value: string | null;
+  is_correct: boolean | null;
+}
+
+// ── Helpers ───────────────────────────────────────────────────────────────────
 
 function getPredictionOptions(fixture: NormalizedFixture): PredictionOption[] | null {
   const [home, away] = fixture.participants;
@@ -221,19 +238,144 @@ function FixtureSkeleton() {
   );
 }
 
-// ── Types ─────────────────────────────────────────────────────────────────────
+// ── Pick row (My Picks tab) ───────────────────────────────────────────────────
 
-interface PersonalPredictionRow {
-  id: string;
-  external_event_id: string;
-  prediction_value: string;
-  event_name: string;
-  sport: string;
-  competition_name: string | null;
-  participants: string[];
-  start_time: string;
-  result_value: string | null;
-  is_correct: boolean | null;
+function PickRow({
+  pick,
+  showResultHints,
+}: {
+  pick: PersonalPredictionRow;
+  showResultHints: boolean;
+}) {
+  const participants = Array.isArray(pick.participants) ? pick.participants : [];
+  const [home, away] = participants;
+  const hasTeams = Boolean(home && away);
+  const pickLabel = resolvePickLabel(pick.prediction_value, participants);
+  const isPast = new Date(pick.start_time) <= new Date();
+  const hasResult = pick.result_value !== null && pick.is_correct !== null;
+
+  return (
+    <div
+      className={`flex items-center gap-3 rounded-xl border px-4 py-3 bg-ps-surface transition-colors ${
+        isPast && showResultHints && hasResult
+          ? pick.is_correct
+            ? "border-ps-green/40"
+            : "border-ps-border"
+          : isPast
+            ? "border-ps-border"
+            : "border-ps-amber/35"
+      }`}
+    >
+      {/* Left: event info */}
+      <div className="min-w-0 flex-1">
+        <p className="truncate text-xs font-bold text-ps-text">
+          {hasTeams ? `${home} vs ${away}` : pick.event_name}
+        </p>
+        <div className="mt-0.5 flex flex-wrap items-center gap-1.5">
+          <span className="font-mono text-[10px] text-ps-text-ter">
+            {formatTime(pick.start_time)}
+          </span>
+          <SportPill sport={toSportKey(pick.sport as Sport)} size="sm" />
+          {pick.competition_name && (
+            <span className="max-w-[100px] truncate rounded-full bg-ps-chip px-1.5 py-px text-[10px] font-semibold text-ps-text-ter">
+              {pick.competition_name}
+            </span>
+          )}
+        </div>
+      </div>
+
+      {/* Right: pick + result */}
+      <div className="shrink-0 text-right">
+        <p className="text-xs font-extrabold text-ps-text">{pickLabel}</p>
+        {isPast && showResultHints && hasResult ? (
+          <span
+            className={`mt-0.5 inline-block rounded-full px-2 py-0.5 text-[10px] font-extrabold uppercase tracking-wide ${
+              pick.is_correct
+                ? "bg-ps-green-soft text-ps-green"
+                : "bg-ps-red/10 text-ps-red"
+            }`}
+          >
+            {pick.is_correct ? "Correct" : "Wrong"}
+          </span>
+        ) : isPast && pick.result_value !== null ? (
+          <p className="mt-0.5 text-[10px] font-semibold text-ps-text-ter">
+            Result: {pick.result_value}
+          </p>
+        ) : null}
+      </div>
+    </div>
+  );
+}
+
+// ── My Picks tab content ──────────────────────────────────────────────────────
+
+function MyPicksTab({
+  allPredictions,
+  showResultHints,
+}: {
+  allPredictions: PersonalPredictionRow[];
+  showResultHints: boolean;
+}) {
+  const now = new Date();
+
+  const upcomingPicks = useMemo(
+    () =>
+      allPredictions
+        .filter((p) => new Date(p.start_time) > now)
+        .sort((a, b) => new Date(a.start_time).getTime() - new Date(b.start_time).getTime()),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [allPredictions]
+  );
+
+  const pastPicks = useMemo(
+    () =>
+      allPredictions
+        .filter((p) => new Date(p.start_time) <= now)
+        .sort((a, b) => new Date(b.start_time).getTime() - new Date(a.start_time).getTime()),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [allPredictions]
+  );
+
+  if (allPredictions.length === 0) {
+    return (
+      <div className="rounded-2xl border border-dashed border-ps-border py-14 text-center">
+        <p className="text-sm font-bold text-ps-text-sec">No picks yet</p>
+        <p className="mt-1 text-xs text-ps-text-ter">
+          Head to Pick to make your first prediction.
+        </p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="flex flex-col gap-8">
+      {upcomingPicks.length > 0 && (
+        <div>
+          <p className="mb-3 text-[11px] font-extrabold tracking-widest uppercase text-ps-text-ter">
+            Coming up
+          </p>
+          <div className="flex flex-col gap-2">
+            {upcomingPicks.map((pick) => (
+              <PickRow key={pick.external_event_id} pick={pick} showResultHints={showResultHints} />
+            ))}
+          </div>
+        </div>
+      )}
+
+      {pastPicks.length > 0 && (
+        <div>
+          <p className="mb-3 text-[11px] font-extrabold tracking-widest uppercase text-ps-text-ter">
+            Past picks
+          </p>
+          <div className="flex flex-col gap-2">
+            {pastPicks.map((pick) => (
+              <PickRow key={pick.external_event_id} pick={pick} showResultHints={showResultHints} />
+            ))}
+          </div>
+        </div>
+      )}
+    </div>
+  );
 }
 
 // ── Main component ────────────────────────────────────────────────────────────
@@ -246,10 +388,10 @@ export function PersonalFixtureBrowser({
   defaultSport?: string;
 }) {
   const initialLeague = leaguesForCategory(defaultSport)[0] ?? leaguesForCategory("Soccer")[0];
+  const [activeTab, setActiveTab] = useState<"pick" | "my-picks">("pick");
   const [selectedSport, setSelectedSport] = useState(defaultSport);
   const [selectedLeagueId, setSelectedLeagueId] = useState(initialLeague.id);
   const [fixtures, setFixtures] = useState<NormalizedFixture[]>([]);
-  // Full rows from DB — source of truth for past picks and the pick map
   const [allPredictions, setAllPredictions] = useState<PersonalPredictionRow[]>([]);
   const [saving, setSaving] = useState<Record<string, boolean>>({});
   const [loading, setLoading] = useState(false);
@@ -260,7 +402,6 @@ export function PersonalFixtureBrowser({
 
   const currentLeagues = useMemo(() => leaguesForCategory(selectedSport), [selectedSport]);
 
-  // Pick map: external_event_id → prediction_value (for quick lookup in fixture list)
   const predictionMap = useMemo(() => {
     const map: Record<string, string> = {};
     for (const p of allPredictions) {
@@ -268,24 +409,6 @@ export function PersonalFixtureBrowser({
     }
     return map;
   }, [allPredictions]);
-
-  // Past picks: predictions whose fixture has already started, sorted newest first
-  const pastPicks = useMemo(() => {
-    const now = new Date();
-    return allPredictions
-      .filter((p) => new Date(p.start_time) <= now)
-      .sort((a, b) => new Date(b.start_time).getTime() - new Date(a.start_time).getTime());
-  }, [allPredictions]);
-
-  // Upcoming picks for fixtures NOT in the currently loaded league list
-  // — ensures picks from other leagues are always visible regardless of which league is browsed
-  const upcomingPicksOtherLeagues = useMemo(() => {
-    const now = new Date();
-    const currentIds = new Set(fixtures.map((f) => f.external_event_id));
-    return allPredictions
-      .filter((p) => new Date(p.start_time) > now && !currentIds.has(p.external_event_id))
-      .sort((a, b) => new Date(a.start_time).getTime() - new Date(b.start_time).getTime());
-  }, [allPredictions, fixtures]);
 
   function selectSport(label: string) {
     setSelectedSport(label);
@@ -327,7 +450,6 @@ export function PersonalFixtureBrowser({
     setSaveError(null);
     setSaving((s) => ({ ...s, [fixture.external_event_id]: true }));
 
-    // Optimistic update — add/replace in allPredictions
     const prevRows = allPredictions;
     setAllPredictions((prev) => {
       const without = prev.filter((p) => p.external_event_id !== fixture.external_event_id);
@@ -365,9 +487,8 @@ export function PersonalFixtureBrowser({
       if (!res.ok) {
         const err = await res.json() as { error?: string };
         setSaveError(err.error ?? "Failed to save");
-        setAllPredictions(prevRows); // revert
+        setAllPredictions(prevRows);
       } else {
-        // Update the id from the real saved row
         const saved = (await res.json()) as { prediction?: PersonalPredictionRow };
         if (saved.prediction) {
           setAllPredictions((prev) => {
@@ -399,336 +520,294 @@ export function PersonalFixtureBrowser({
 
   return (
     <div>
-      {/* Sport category pills */}
-      <div className="mb-3 flex flex-wrap gap-1.5">
-        {SPORT_CATEGORIES.map((cat) => (
-          <button
-            key={cat.label}
-            type="button"
-            onClick={() => selectSport(cat.label)}
-            className={
-              selectedSport === cat.label
-                ? "rounded-full bg-ps-amber px-3 py-1 text-xs font-extrabold text-[#1a1208]"
-                : "rounded-full bg-ps-chip px-3 py-1 text-xs font-semibold text-ps-text-sec transition-colors hover:text-ps-text"
-            }
-          >
-            {cat.label}
-          </button>
-        ))}
+      {/* Tab bar */}
+      <div className="mb-5 flex gap-1 border-b border-ps-border">
+        <TabButton
+          label="Pick"
+          active={activeTab === "pick"}
+          onClick={() => setActiveTab("pick")}
+        />
+        <TabButton
+          label="My Picks"
+          active={activeTab === "my-picks"}
+          count={allPredictions.length}
+          onClick={() => setActiveTab("my-picks")}
+        />
       </div>
 
-      {/* League pills */}
-      <div className="mb-5 flex flex-wrap gap-2">
-        {currentLeagues.map((league) => (
-          <button
-            key={league.id}
-            type="button"
-            onClick={() => setSelectedLeagueId(league.id)}
-            className={
-              selectedLeagueId === league.id
-                ? "rounded-lg border border-ps-amber bg-ps-amber/10 px-3 py-1.5 text-xs font-extrabold text-ps-text"
-                : "rounded-lg border border-ps-border bg-ps-surface px-3 py-1.5 text-xs font-semibold text-ps-text-sec transition-colors hover:border-ps-text-ter hover:text-ps-text"
-            }
-          >
-            {league.label}
-          </button>
-        ))}
-      </div>
-
-      {/* GET error (predictions failed to load) */}
+      {/* Errors (always visible) */}
       {getError && (
         <div className="mb-4 rounded-xl border border-ps-red/30 bg-ps-red/10 px-4 py-3 text-sm font-semibold text-ps-red">
           {getError}
         </div>
       )}
 
-      {/* Save error */}
-      {saveError && (
-        <div className="mb-4 rounded-xl border border-ps-red/30 bg-ps-red/10 px-4 py-3 text-sm font-semibold text-ps-red">
-          {saveError}
-        </div>
+      {/* My Picks tab */}
+      {activeTab === "my-picks" && (
+        <MyPicksTab allPredictions={allPredictions} showResultHints={showResultHints} />
       )}
 
-      {/* Loading skeleton */}
-      {loading && (
-        <div className="flex flex-col gap-3">
-          <FixtureSkeleton />
-          <FixtureSkeleton />
-          <FixtureSkeleton />
-        </div>
-      )}
+      {/* Pick tab */}
+      {activeTab === "pick" && (
+        <div>
+          {/* Sport category pills */}
+          <div className="mb-3 flex flex-wrap gap-1.5">
+            {SPORT_CATEGORIES.map((cat) => (
+              <button
+                key={cat.label}
+                type="button"
+                onClick={() => selectSport(cat.label)}
+                className={
+                  selectedSport === cat.label
+                    ? "rounded-full bg-ps-amber px-3 py-1 text-xs font-extrabold text-[#1a1208]"
+                    : "rounded-full bg-ps-chip px-3 py-1 text-xs font-semibold text-ps-text-sec transition-colors hover:text-ps-text"
+                }
+              >
+                {cat.label}
+              </button>
+            ))}
+          </div>
 
-      {/* Load error */}
-      {!loading && loadError && (
-        <div className="py-8 text-center text-sm font-semibold text-ps-text-ter">
-          {loadError}
-        </div>
-      )}
+          {/* League pills */}
+          <div className="mb-5 flex flex-wrap gap-2">
+            {currentLeagues.map((league) => (
+              <button
+                key={league.id}
+                type="button"
+                onClick={() => setSelectedLeagueId(league.id)}
+                className={
+                  selectedLeagueId === league.id
+                    ? "rounded-lg border border-ps-amber bg-ps-amber/10 px-3 py-1.5 text-xs font-extrabold text-ps-text"
+                    : "rounded-lg border border-ps-border bg-ps-surface px-3 py-1.5 text-xs font-semibold text-ps-text-sec transition-colors hover:border-ps-text-ter hover:text-ps-text"
+                }
+              >
+                {league.label}
+              </button>
+            ))}
+          </div>
 
-      {/* Empty state */}
-      {!loading && !loadError && fixtures.length === 0 && (
-        <div className="rounded-2xl border border-dashed border-ps-border py-12 text-center">
-          <p className="text-sm font-semibold text-ps-text-sec">No upcoming fixtures</p>
-          <p className="mt-1 text-xs text-ps-text-ter">Try a different league</p>
-        </div>
-      )}
+          {/* Save error */}
+          {saveError && (
+            <div className="mb-4 rounded-xl border border-ps-red/30 bg-ps-red/10 px-4 py-3 text-sm font-semibold text-ps-red">
+              {saveError}
+            </div>
+          )}
 
-      {/* Upcoming fixture list grouped by date */}
-      <div className="flex flex-col gap-6">
-        {grouped.map(([dateStr, dayFixtures]) => (
-          <div key={dateStr}>
-            <p className="mb-3 text-[11px] font-extrabold tracking-widest uppercase text-ps-text-ter">
-              {formatDateHeading(dayFixtures[0]!.start_time)}
-            </p>
+          {/* Loading skeleton */}
+          {loading && (
             <div className="flex flex-col gap-3">
-              {dayFixtures.map((fixture) => {
-                const options = getPredictionOptions(fixture);
-                const currentPick = predictionMap[fixture.external_event_id];
-                const isSaving = saving[fixture.external_event_id] ?? false;
-                const isRace = RACE_SPORTS.has(fixture.sport);
-                const isLocked = new Date(fixture.start_time) <= now;
-                const [home, away] = fixture.participants;
-                const hasTeams = Boolean(home && away);
+              <FixtureSkeleton />
+              <FixtureSkeleton />
+              <FixtureSkeleton />
+            </div>
+          )}
 
-                const pickLabel = resolvePickLabel(currentPick ?? "", fixture.participants);
+          {/* Load error */}
+          {!loading && loadError && (
+            <div className="py-8 text-center text-sm font-semibold text-ps-text-ter">
+              {loadError}
+            </div>
+          )}
 
-                return (
-                  <div
-                    key={fixture.external_event_id}
-                    className={`rounded-2xl border bg-ps-surface p-4 shadow-[0_1px_2px_rgba(40,30,20,0.04)] transition-colors ${
-                      currentPick ? "border-ps-amber/40" : "border-ps-border"
-                    }`}
-                  >
-                    {/* Header row */}
-                    <div className="mb-3 flex items-start justify-between gap-3">
-                      <div className="min-w-0 flex-1">
-                        {hasTeams ? (
-                          <p className="text-sm font-bold leading-snug text-ps-text">
-                            {home}{" "}
-                            <span className="text-xs font-normal text-ps-text-ter">vs</span>{" "}
-                            {away}
-                          </p>
+          {/* Empty state */}
+          {!loading && !loadError && fixtures.length === 0 && (
+            <div className="rounded-2xl border border-dashed border-ps-border py-12 text-center">
+              <p className="text-sm font-semibold text-ps-text-sec">No upcoming fixtures</p>
+              <p className="mt-1 text-xs text-ps-text-ter">Try a different league</p>
+            </div>
+          )}
+
+          {/* Fixture list grouped by date */}
+          <div className="flex flex-col gap-6">
+            {grouped.map(([dateStr, dayFixtures]) => (
+              <div key={dateStr}>
+                <p className="mb-3 text-[11px] font-extrabold tracking-widest uppercase text-ps-text-ter">
+                  {formatDateHeading(dayFixtures[0]!.start_time)}
+                </p>
+                <div className="flex flex-col gap-3">
+                  {dayFixtures.map((fixture) => {
+                    const options = getPredictionOptions(fixture);
+                    const currentPick = predictionMap[fixture.external_event_id];
+                    const isSaving = saving[fixture.external_event_id] ?? false;
+                    const isRace = RACE_SPORTS.has(fixture.sport);
+                    const isLocked = new Date(fixture.start_time) <= now;
+                    const [home, away] = fixture.participants;
+                    const hasTeams = Boolean(home && away);
+                    const pickLabel = resolvePickLabel(currentPick ?? "", fixture.participants);
+
+                    return (
+                      <div
+                        key={fixture.external_event_id}
+                        className={`rounded-2xl border bg-ps-surface p-4 shadow-[0_1px_2px_rgba(40,30,20,0.04)] transition-colors ${
+                          currentPick ? "border-ps-amber/40" : "border-ps-border"
+                        }`}
+                      >
+                        {/* Header row */}
+                        <div className="mb-3 flex items-start justify-between gap-3">
+                          <div className="min-w-0 flex-1">
+                            {hasTeams ? (
+                              <p className="text-sm font-bold leading-snug text-ps-text">
+                                {home}{" "}
+                                <span className="text-xs font-normal text-ps-text-ter">vs</span>{" "}
+                                {away}
+                              </p>
+                            ) : (
+                              <p className="text-sm font-bold leading-snug text-ps-text">
+                                {fixture.event_name}
+                              </p>
+                            )}
+                            <div className="mt-1.5 flex flex-wrap items-center gap-1.5">
+                              <span className="font-mono text-[11px] text-ps-text-ter">
+                                {formatTime(fixture.start_time)}
+                              </span>
+                              <SportPill sport={toSportKey(fixture.sport)} size="sm" />
+                              {fixture.competition_name && (
+                                <span className="max-w-[140px] truncate rounded-full bg-ps-chip px-1.5 py-px text-[10px] font-semibold text-ps-text-ter">
+                                  {fixture.competition_name}
+                                </span>
+                              )}
+                              {currentPick && (
+                                <span className="rounded-full bg-ps-green-soft px-2 py-0.5 text-[10px] font-extrabold uppercase tracking-wide text-ps-green">
+                                  Picked
+                                </span>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* Prediction area */}
+                        {isLocked ? (
+                          currentPick ? (
+                            <div className="flex items-center gap-1.5">
+                              <LockIcon />
+                              <span className="text-[11px] font-semibold text-ps-text-sec">
+                                Your pick:{" "}
+                                <span className="font-extrabold text-ps-text">{pickLabel}</span>
+                              </span>
+                            </div>
+                          ) : (
+                            <p className="text-[11px] font-semibold text-ps-text-ter">
+                              Fixture started — no pick made
+                            </p>
+                          )
+                        ) : options !== null ? (
+                          <div
+                            className={`grid gap-2 ${
+                              options.length === 3
+                                ? "grid-cols-3"
+                                : options.length === 2
+                                ? "grid-cols-2"
+                                : "grid-cols-2 sm:grid-cols-3"
+                            }`}
+                          >
+                            {options.map((opt) => (
+                              <PickButton
+                                key={opt.value}
+                                label={opt.label}
+                                sub={opt.sub}
+                                selected={currentPick === opt.value}
+                                disabled={isSaving}
+                                onClick={() => savePrediction(fixture, opt.value)}
+                              />
+                            ))}
+                          </div>
+                        ) : isRace ? (
+                          <div className="flex gap-2">
+                            <input
+                              type="text"
+                              value={raceInputs[fixture.external_event_id] ?? currentPick ?? ""}
+                              onChange={(e) =>
+                                setRaceInputs((r) => ({
+                                  ...r,
+                                  [fixture.external_event_id]: e.target.value,
+                                }))
+                              }
+                              placeholder="Predicted winner…"
+                              className="flex-1 rounded-lg border border-ps-border bg-ps-surface px-3 py-2 text-sm text-ps-text placeholder:text-ps-text-ter focus:border-ps-amber focus:outline-none focus:ring-2 focus:ring-ps-amber/40"
+                            />
+                            <button
+                              type="button"
+                              onClick={() =>
+                                savePrediction(
+                                  fixture,
+                                  raceInputs[fixture.external_event_id] ?? ""
+                                )
+                              }
+                              disabled={
+                                isSaving ||
+                                !(raceInputs[fixture.external_event_id] ?? "").trim()
+                              }
+                              className="rounded-lg bg-gradient-to-r from-[#f59e0b] to-[#d97706] px-3 py-2 text-xs font-extrabold text-[#1a1208] disabled:opacity-40"
+                            >
+                              Pick
+                            </button>
+                          </div>
                         ) : (
-                          <p className="text-sm font-bold leading-snug text-ps-text">
-                            {fixture.event_name}
+                          <p className="text-[11px] font-semibold text-ps-text-ter">
+                            Fixture data not available for predictions
                           </p>
                         )}
-                        <div className="mt-1 flex flex-wrap items-center gap-1.5">
-                          <span className="font-mono text-[11px] text-ps-text-ter">
-                            {formatTime(fixture.start_time)}
-                          </span>
-                          <SportPill sport={toSportKey(fixture.sport)} size="sm" />
-                          {fixture.competition_name && (
-                            <span className="max-w-[140px] truncate rounded-full bg-ps-chip px-1.5 py-px text-[10px] font-semibold text-ps-text-ter">
-                              {fixture.competition_name}
-                            </span>
-                          )}
-                        </div>
                       </div>
-                      {currentPick && (
-                        <span className="shrink-0 rounded-full bg-ps-green-soft px-2 py-0.5 text-[10px] font-extrabold uppercase tracking-wide text-ps-green">
-                          Picked
-                        </span>
-                      )}
-                    </div>
-
-                    {/* Prediction area */}
-                    {isLocked ? (
-                      currentPick ? (
-                        <div className="flex items-center gap-1.5">
-                          <svg
-                            width="11"
-                            height="11"
-                            viewBox="0 0 16 16"
-                            fill="none"
-                            className="shrink-0 text-ps-text-ter"
-                          >
-                            <rect x="3" y="7" width="10" height="8" rx="1.5" stroke="currentColor" strokeWidth="1.5" />
-                            <path d="M5 7V5a3 3 0 016 0v2" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
-                          </svg>
-                          <span className="text-[11px] font-semibold text-ps-text-sec">
-                            Your pick:{" "}
-                            <span className="font-extrabold text-ps-text">{pickLabel}</span>
-                          </span>
-                        </div>
-                      ) : (
-                        <p className="text-[11px] font-semibold text-ps-text-ter">
-                          Fixture started — no pick made
-                        </p>
-                      )
-                    ) : options !== null ? (
-                      <div
-                        className={`grid gap-2 ${
-                          options.length === 3
-                            ? "grid-cols-3"
-                            : options.length === 2
-                            ? "grid-cols-2"
-                            : "grid-cols-2 sm:grid-cols-3"
-                        }`}
-                      >
-                        {options.map((opt) => (
-                          <PickButton
-                            key={opt.value}
-                            label={opt.label}
-                            sub={opt.sub}
-                            selected={currentPick === opt.value}
-                            disabled={isSaving}
-                            onClick={() => savePrediction(fixture, opt.value)}
-                          />
-                        ))}
-                      </div>
-                    ) : isRace ? (
-                      <div className="flex gap-2">
-                        <input
-                          type="text"
-                          value={raceInputs[fixture.external_event_id] ?? currentPick ?? ""}
-                          onChange={(e) =>
-                            setRaceInputs((r) => ({
-                              ...r,
-                              [fixture.external_event_id]: e.target.value,
-                            }))
-                          }
-                          placeholder="Predicted winner…"
-                          className="flex-1 rounded-lg border border-ps-border bg-ps-surface px-3 py-2 text-sm text-ps-text placeholder:text-ps-text-ter focus:border-ps-amber focus:outline-none focus:ring-2 focus:ring-ps-amber/40"
-                        />
-                        <button
-                          type="button"
-                          onClick={() =>
-                            savePrediction(
-                              fixture,
-                              raceInputs[fixture.external_event_id] ?? ""
-                            )
-                          }
-                          disabled={
-                            isSaving ||
-                            !(raceInputs[fixture.external_event_id] ?? "").trim()
-                          }
-                          className="rounded-lg bg-gradient-to-r from-[#f59e0b] to-[#d97706] px-3 py-2 text-xs font-extrabold text-[#1a1208] disabled:opacity-40"
-                        >
-                          Pick
-                        </button>
-                      </div>
-                    ) : (
-                      <p className="text-[11px] font-semibold text-ps-text-ter">
-                        Fixture data not available for predictions
-                      </p>
-                    )}
-                  </div>
-                );
-              })}
-            </div>
-          </div>
-        ))}
-      </div>
-
-      {/* Upcoming picks from other leagues — always visible regardless of selected league */}
-      {upcomingPicksOtherLeagues.length > 0 && (
-        <div className="mt-8">
-          <p className="mb-3 text-[11px] font-extrabold tracking-widest uppercase text-ps-text-ter">
-            Your picks — other leagues
-          </p>
-          <div className="flex flex-col gap-2">
-            {upcomingPicksOtherLeagues.map((pick) => {
-              const participants = Array.isArray(pick.participants) ? pick.participants : [];
-              const [home, away] = participants;
-              const hasTeams = Boolean(home && away);
-              const pickLabel = resolvePickLabel(pick.prediction_value, participants);
-
-              return (
-                <div
-                  key={pick.external_event_id}
-                  className="flex items-center justify-between gap-3 rounded-xl border border-ps-amber/30 bg-ps-surface px-4 py-3"
-                >
-                  <div className="min-w-0 flex-1">
-                    <p className="truncate text-xs font-bold text-ps-text">
-                      {hasTeams ? `${home} vs ${away}` : pick.event_name}
-                    </p>
-                    <div className="mt-0.5 flex items-center gap-1.5">
-                      <span className="font-mono text-[10px] text-ps-text-ter">
-                        {formatTime(pick.start_time)}
-                      </span>
-                      <SportPill sport={toSportKey(pick.sport as Sport)} size="sm" />
-                      {pick.competition_name && (
-                        <span className="max-w-[120px] truncate rounded-full bg-ps-chip px-1.5 py-px text-[10px] font-semibold text-ps-text-ter">
-                          {pick.competition_name}
-                        </span>
-                      )}
-                    </div>
-                  </div>
-                  <div className="shrink-0 text-right">
-                    <p className="text-[10px] font-semibold uppercase tracking-wide text-ps-text-ter">
-                      Your pick
-                    </p>
-                    <p className="text-xs font-extrabold text-ps-text">{pickLabel}</p>
-                  </div>
+                    );
+                  })}
                 </div>
-              );
-            })}
-          </div>
-        </div>
-      )}
-
-      {/* Past picks — rendered from stored DB data, always visible across sessions */}
-      {pastPicks.length > 0 && (
-        <div className="mt-8">
-          <p className="mb-3 text-[11px] font-extrabold tracking-widest uppercase text-ps-text-ter">
-            Past Picks
-          </p>
-          <div className="flex flex-col gap-2">
-            {pastPicks.map((pick) => {
-              const participants = Array.isArray(pick.participants) ? pick.participants : [];
-              const [home, away] = participants;
-              const hasTeams = Boolean(home && away);
-              const pickLabel = resolvePickLabel(pick.prediction_value, participants);
-
-              return (
-                <div
-                  key={pick.external_event_id}
-                  className={`flex items-center justify-between gap-3 rounded-xl border px-4 py-3 bg-ps-surface ${
-                    showResultHints && pick.is_correct !== null
-                      ? pick.is_correct
-                        ? "border-ps-green"
-                        : "border-ps-red"
-                      : "border-ps-border"
-                  }`}
-                >
-                  <div className="min-w-0 flex-1">
-                    <p className="truncate text-xs font-bold text-ps-text">
-                      {hasTeams ? `${home} vs ${away}` : pick.event_name}
-                    </p>
-                    <div className="mt-0.5 flex items-center gap-1.5">
-                      <span className="font-mono text-[10px] text-ps-text-ter">
-                        {formatTime(pick.start_time)}
-                      </span>
-                      <SportPill sport={toSportKey(pick.sport as Sport)} size="sm" />
-                    </div>
-                  </div>
-                  <div className="shrink-0 text-right">
-                    <p className="text-[10px] font-semibold uppercase tracking-wide text-ps-text-ter">
-                      Your pick
-                    </p>
-                    <p className="text-xs font-extrabold text-ps-text">{pickLabel}</p>
-                    {pick.result_value !== null && pick.is_correct !== null && showResultHints && (
-                      <span
-                        className={`mt-0.5 block text-[10px] font-extrabold uppercase tracking-wide ${
-                          pick.is_correct ? "text-ps-green" : "text-ps-red"
-                        }`}
-                      >
-                        {pick.is_correct ? "Correct" : "Wrong"}
-                      </span>
-                    )}
-                    {pick.result_value !== null && (
-                      <span className="mt-0.5 block text-[10px] font-semibold text-ps-text-ter">
-                        Result: {pick.result_value}
-                      </span>
-                    )}
-                  </div>
-                </div>
-              );
-            })}
+              </div>
+            ))}
           </div>
         </div>
       )}
     </div>
+  );
+}
+
+// ── Small shared components ───────────────────────────────────────────────────
+
+function TabButton({
+  label,
+  active,
+  count,
+  onClick,
+}: {
+  label: string;
+  active: boolean;
+  count?: number;
+  onClick: () => void;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className={`-mb-px flex items-center gap-1.5 pb-2.5 pr-5 text-sm font-extrabold tracking-tight transition-colors ${
+        active
+          ? "border-b-2 border-ps-amber text-ps-text"
+          : "text-ps-text-ter hover:text-ps-text-sec"
+      }`}
+    >
+      {label}
+      {count !== undefined && count > 0 && (
+        <span
+          className={`rounded-full px-1.5 py-0.5 text-[10px] font-extrabold ${
+            active ? "bg-ps-amber text-[#1a1208]" : "bg-ps-chip text-ps-text-ter"
+          }`}
+        >
+          {count}
+        </span>
+      )}
+    </button>
+  );
+}
+
+function LockIcon() {
+  return (
+    <svg
+      width="11"
+      height="11"
+      viewBox="0 0 16 16"
+      fill="none"
+      className="shrink-0 text-ps-text-ter"
+    >
+      <rect x="3" y="7" width="10" height="8" rx="1.5" stroke="currentColor" strokeWidth="1.5" />
+      <path d="M5 7V5a3 3 0 016 0v2" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+    </svg>
   );
 }
