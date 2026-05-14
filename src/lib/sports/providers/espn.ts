@@ -30,6 +30,21 @@ interface ESPNScoreboardResponse {
   events: ESPNEvent[];
 }
 
+interface ESPNSummaryCompetition {
+  id: string;
+  date?: string;
+  status: { type: { completed: boolean; description: string } };
+  competitors: ESPNCompetitor[];
+}
+
+interface ESPNSummaryResponse {
+  header?: {
+    id?: string;
+    name?: string;
+    competitions?: ESPNSummaryCompetition[];
+  };
+}
+
 /** Sports where ESPN uses individual competitors / leaderboard format */
 const POSITION_SPORTS: Sport[] = ["golf", "tennis"];
 
@@ -46,6 +61,21 @@ const SPORT_PATHS: Partial<Record<Sport, string>> = {
   tennis: "tennis/atp",
   cricket: "cricket/8048", // IPL default; others via league param
   snooker: "general/snooker", // limited coverage
+};
+
+/** Human-readable display names for ESPN league paths — used as competition_name fallback */
+const SPORT_PATH_DISPLAY: Partial<Record<string, string>> = {
+  "football/nfl":      "NFL",
+  "hockey/nhl":        "NHL",
+  "basketball/nba":    "NBA",
+  "baseball/mlb":      "MLB",
+  "soccer/eng.1":      "Premier League",
+  "rugby/270557":      "United Rugby Championship",
+  "rugby-league/3":    "Super League / NRL",
+  "golf/pga":          "PGA Tour",
+  "tennis/atp":        "ATP Tour",
+  "cricket/8048":      "IPL",
+  "general/snooker":   "World Snooker",
 };
 
 /**
@@ -85,13 +115,26 @@ export class ESPNProvider extends BaseProvider {
     const sportPath = SPORT_PATHS[sport];
     if (!sportPath) return null;
 
-    const data = await this.apiFetch<ESPNScoreboardResponse>(
-      `${sportPath}/scoreboard`,
+    // Use the summary endpoint — fetches a specific event by ID.
+    // The scoreboard endpoint does not support event-ID filtering and returns
+    // the full day's games; taking events[0] would yield the wrong result.
+    const data = await this.apiFetch<ESPNSummaryResponse>(
+      `${sportPath}/summary`,
       { event: externalEventId }
     );
-    if (!data?.events?.length) return null;
 
-    const event = data.events[0];
+    const competition = data?.header?.competitions?.[0];
+    if (!competition) return null;
+
+    // Construct a minimal ESPNEvent-compatible shape to reuse normalizeEvent()
+    const event: ESPNEvent = {
+      id: externalEventId,
+      name: data.header?.name ?? externalEventId,
+      date: competition.date ?? new Date().toISOString(),
+      status: competition.status,
+      competitions: [{ competitors: competition.competitors ?? [] }],
+    };
+
     return this.normalizeEvent(sport, event);
   }
 
@@ -152,7 +195,7 @@ export class ESPNProvider extends BaseProvider {
         event_name: e.name,
         sport,
         start_time: e.date,
-        competition_name: sportPath.split("/")[1]?.toUpperCase() ?? sport,
+        competition_name: SPORT_PATH_DISPLAY[sportPath] ?? sport,
         participants: competitors,
         provider: this.name,
       };

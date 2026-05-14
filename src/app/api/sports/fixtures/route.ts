@@ -128,6 +128,45 @@ const ESPN_CRICKET_MAP: Record<string, string> = {
   // The Hundred (5177), CPL (5176), PSL (5067) — ESPN IDs not yet confirmed; fall through to TheSportsDB
 };
 
+// ---------- Human-readable display names ----------
+// Fallback league names used when ESPN's API response doesn't include leagues[0].name.
+// Ensures competition_name is always a friendly string — never a raw API path or numeric ID.
+
+const ESPN_PATH_DISPLAY: Record<string, string> = {
+  "soccer/eng.1":                   "Premier League",
+  "soccer/eng.2":                   "Championship",
+  "soccer/eng.league_cup":          "League Cup",
+  "soccer/uefa.champions":          "Champions League",
+  "soccer/uefa.europa":             "Europa League",
+  "soccer/esp.1":                   "La Liga",
+  "soccer/ger.1":                   "Bundesliga",
+  "soccer/ita.1":                   "Serie A",
+  "soccer/fra.1":                   "Ligue 1",
+  "soccer/ned.1":                   "Eredivisie",
+  "soccer/bel.1":                   "Pro League",
+  "soccer/gre.1":                   "Super League",
+  "soccer/irl.1":                   "League of Ireland",
+  "soccer/sco.1":                   "Scottish Premiership",
+  "soccer/fifa.world":              "FIFA World Cup",
+  "soccer/conmebol.libertadores":   "Copa Libertadores",
+  "rugby/270557":                   "United Rugby Championship",
+  "tennis/atp":                     "ATP Tour",
+  "tennis/wta":                     "WTA Tour",
+  "golf/eur":                       "DP World Tour",
+  "basketball/nba":                 "NBA",
+  "baseball/mlb":                   "MLB",
+  "hockey/nhl":                     "NHL",
+  "football/nfl":                   "NFL",
+  "racing/f1":                      "Formula 1",
+};
+
+const ESPN_CRICKET_DISPLAY: Record<string, string> = {
+  "8048": "IPL",
+  "8044": "Big Bash League",
+  "8053": "T20 Blast",
+  "8041": "SA20",
+};
+
 // ---------- Foireann routing ----------
 // Maps GAA league IDs to Foireann API activity filters.
 
@@ -208,7 +247,7 @@ async function fetchESPNFixtures(
 
     if (!total) return [];
 
-    const leagueName = data.leagues?.[0]?.name ?? espnPath;
+    const leagueName = data.leagues?.[0]?.name ?? ESPN_PATH_DISPLAY[espnPath] ?? espnPath;
     const season = data.leagues?.[0]?.season?.year?.toString() ?? null;
 
     return upcoming.map((e) => {
@@ -271,7 +310,7 @@ async function fetchESPNCricketFixtures(
   );
 
   // Extract league name + season from first result that has leagues data
-  let leagueName = `Cricket ${espnLeagueId}`;
+  let leagueName = ESPN_CRICKET_DISPLAY[espnLeagueId] ?? `Cricket ${espnLeagueId}`;
   let season: string | null = null;
   for (const r of results) {
     if (r.status === "fulfilled" && !Array.isArray(r.value) && r.value.leagues?.[0]) {
