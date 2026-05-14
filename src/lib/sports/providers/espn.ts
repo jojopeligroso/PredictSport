@@ -15,12 +15,19 @@ interface ESPNCompetitor {
   order?: number;
 }
 
+interface ESPNStatusType {
+  completed?: boolean;
+  description: string;
+  state?: string; // "pre" | "in" | "post" — present on summary endpoint
+  detail?: string;
+}
+
 interface ESPNEvent {
   id: string;
   name: string;
   date: string;
   shortName?: string;
-  status: { type: { completed: boolean; description: string } };
+  status: { type: ESPNStatusType };
   competitions: Array<{
     competitors: ESPNCompetitor[];
   }>;
@@ -33,7 +40,7 @@ interface ESPNScoreboardResponse {
 interface ESPNSummaryCompetition {
   id: string;
   date?: string;
-  status: { type: { completed: boolean; description: string } };
+  status: { type: ESPNStatusType };
   competitors: ESPNCompetitor[];
 }
 
@@ -240,7 +247,7 @@ export class ESPNProvider extends BaseProvider {
       sport,
       external_event_id: event.id,
       event_name: event.name,
-      is_final: event.status.type.completed,
+      is_final: event.status.type.completed === true || event.status.type.state === "post",
       positions: null,
       score: {
         home_team: homeName,
@@ -284,7 +291,7 @@ export class ESPNProvider extends BaseProvider {
       sport,
       external_event_id: event.id,
       event_name: event.name,
-      is_final: event.status.type.completed,
+      is_final: event.status.type.completed === true || event.status.type.state === "post",
       positions,
       score: null,
       winner,
