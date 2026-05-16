@@ -55,6 +55,13 @@ interface ESPNSummaryResponse {
 /** Sports where ESPN uses individual competitors / leaderboard format */
 const POSITION_SPORTS: Sport[] = ["golf", "tennis"];
 
+/**
+ * Sports where ESPN's scoreboard endpoint rejects date-range params (YYYYMMDD-YYYYMMDD)
+ * and returns 404. These sports must use single-date or no-date queries instead.
+ * Confirmed broken: cricket. All others (NFL, NBA, soccer etc.) accept ranges fine.
+ */
+const DATE_RANGE_BROKEN_SPORTS: Sport[] = ["cricket"];
+
 /** Maps our Sport to ESPN's URL path segment(s). First entry is the default league. */
 const SPORT_PATHS: Partial<Record<Sport, string>> = {
   nfl: "football/nfl",
@@ -157,42 +164,79 @@ export class ESPNProvider extends BaseProvider {
     if (!sportPath) return [];
 
     const params: Record<string, string> = {};
-    if (options?.date) {
-      // ESPN scoreboard is single-day by default — extend to a 14-day window
-      // starting from dateFrom so off-day searches still find upcoming fixtures.
-      // search-events.ts and the client-side filter trim to the user's dateTo.
-      const start = options.date.replace(/-/g, "");
-      const rangeEnd = new Date(new Date(options.date).getTime() + 14 * 86_400_000);
-      const end = rangeEnd.toISOString().slice(0, 10).replace(/-/g, "");
-      params.dates = `${start}-${end}`;
+    const rangeOk = !DATE_RANGE_BROKEN_SPORTS.includes(sport);
+
+    let events: ESPNEvent[];
+
+    if (!rangeOk) {
+      // Cricket: date ranges return 404. Strategy: two parallel calls —
+      //   1. No date param → ESPN returns the next ~3-5 upcoming fixtures per league
+      //   2. The requested date (if any) → that specific day's fixtures
+      // Merge and deduplicate by event ID to get the broadest coverage possible.
+      // This is bounded: 2 calls per search, not 14. The seeder + FixturePool handles
+      // pre-population for multi-week browsing; this is the live fallback.
+      const noDateFetch = this.apiFetch<ESPNScoreboardResponse>(
+        `${sportPath}/scoreboard`,
+        {} // no date = ESPN returns next upcoming
+      );
+      const specificDateFetch = options?.date
+        ? this.apiFetch<ESPNScoreboardResponse>(
+            `${sportPath}/scoreboard`,
+            { dates: options.date.replace(/-/g, "") }
+          )
+        : Promise.resolve(null);
+
+      const [noDateData, specificData] = await Promise.all([noDateFetch, specificDateFetch]);
+      const seen = new Set<string>();
+      events = [];
+      for (const e of [
+        ...(noDateData?.events ?? []),
+        ...(specificData?.events ?? []),
+      ]) {
+        if (!seen.has(e.id)) {
+          seen.add(e.id);
+          events.push(e);
+        }
+      }
     } else {
-      // Default: today → +14 days so fixture browser finds upcoming events on off-days
-      const today = new Date();
-      const end = new Date(today.getTime() + 14 * 86_400_000);
-      const fmt = (d: Date) => d.toISOString().slice(0, 10).replace(/-/g, "");
-      params.dates = `${fmt(today)}-${fmt(end)}`;
+      if (options?.date) {
+        // ESPN scoreboard is single-day by default — extend to a 14-day window
+        // starting from dateFrom so off-day searches still find upcoming fixtures.
+        // search-events.ts and the client-side filter trim to the user's dateTo.
+        const start = options.date.replace(/-/g, "");
+        const rangeEnd = new Date(new Date(options.date).getTime() + 14 * 86_400_000);
+        const end = rangeEnd.toISOString().slice(0, 10).replace(/-/g, "");
+        params.dates = `${start}-${end}`;
+      } else {
+        // Default: today → +14 days so fixture browser finds upcoming events on off-days
+        const today = new Date();
+        const end = new Date(today.getTime() + 14 * 86_400_000);
+        const fmt = (d: Date) => d.toISOString().slice(0, 10).replace(/-/g, "");
+        params.dates = `${fmt(today)}-${fmt(end)}`;
+      }
+      const data = await this.apiFetch<ESPNScoreboardResponse>(
+        `${sportPath}/scoreboard`,
+        params
+      );
+      events = data?.events ?? [];
     }
 
-    const data = await this.apiFetch<ESPNScoreboardResponse>(
-      `${sportPath}/scoreboard`,
-      params
-    );
-    if (!data?.events?.length) return [];
+    if (!events.length) return [];
 
     // Match query against event name OR team/athlete names.
     // If query is a competition name (e.g. "URC") that won't appear in event names,
     // fall back to returning all events — sport/league path is already the filter.
     const queryLower = query.toLowerCase().trim();
     const nameMatches = queryLower
-      ? data.events.filter((e) => {
+      ? events.filter((e) => {
           const name = e.name.toLowerCase();
           const teams = (e.competitions[0]?.competitors ?? [])
             .map((c) => (c.team?.displayName ?? c.athlete?.displayName ?? "").toLowerCase())
             .join(" ");
           return name.includes(queryLower) || teams.includes(queryLower);
         })
-      : data.events;
-    const filtered = nameMatches.length > 0 ? nameMatches : data.events;
+      : events;
+    const filtered = nameMatches.length > 0 ? nameMatches : events;
 
     const limit = options?.limit ?? 10;
     return filtered.slice(0, limit).map((e) => {
