@@ -23,7 +23,7 @@ export function scorePrediction(
 
   switch (predictionType) {
     case "winner":
-      return scoreWinner(predictionData, resultData, fullPoints);
+      return scoreWinner(predictionData, resultData, fullPoints, ept.config);
 
     case "yes_no":
       return scoreYesNo(predictionData, resultData, fullPoints, ept.config);
@@ -103,10 +103,12 @@ export function scorePredictionLegacy(
 function scoreWinner(
   prediction: Record<string, unknown>,
   result: Record<string, unknown>,
-  fullPoints: number
+  fullPoints: number,
+  config: Record<string, unknown> | null
 ): ScoringResult {
   // Accept both { winner: "X" } and { value: "X" } shapes
   const predicted = normalizeStr(prediction.winner ?? prediction.value);
+  const allowDraw = config?.allow_draw === true;
 
   let actual: string;
   if (result.winner) {
@@ -124,6 +126,24 @@ function scoreWinner(
     }
   } else {
     return { is_correct: null, is_partial: false, points_awarded: 0 };
+  }
+
+  // Draw result handling
+  if (actual === "draw") {
+    if (!allowDraw) {
+      // Draws not enabled on this event — void the prediction
+      return { is_correct: null, is_partial: false, points_awarded: 0 };
+    }
+    if (predicted === "draw") {
+      return { is_correct: true, is_partial: false, points_awarded: fullPoints };
+    }
+    // Draw enabled but user picked a side
+    return { is_correct: false, is_partial: false, points_awarded: 0 };
+  }
+
+  // User picked draw but result was not a draw
+  if (predicted === "draw") {
+    return { is_correct: false, is_partial: false, points_awarded: 0 };
   }
 
   const correct = predicted === actual;

@@ -471,6 +471,14 @@ export function AddEventForm({
                 </div>
               </div>
 
+              {/* Winner config (allow_draw toggle) */}
+              {isTypeSelected("winner") && (
+                <WinnerConfig
+                  config={selectedTypes.find((t) => t.prediction_type === "winner")!}
+                  onChange={(cfg) => updateTypeConfig("winner", cfg)}
+                />
+              )}
+
               {/* Yes/No options config (inline, always shown when yes_no is selected) */}
               {isTypeSelected("yes_no") && (
                 <YesNoConfig
@@ -634,6 +642,46 @@ export function AddEventForm({
 // -----------------------------------------------------------------------
 // Config sub-components
 // -----------------------------------------------------------------------
+
+function WinnerConfig({
+  config,
+  onChange,
+}: {
+  config: PredictionTypeConfig;
+  onChange: (updates: Partial<PredictionTypeConfig>) => void;
+}) {
+  const allowDraw = (config.config?.allow_draw as boolean) ?? false;
+  const options = (config.config?.options as string[] | undefined) ?? [];
+
+  return (
+    <div className="rounded-xl border border-ps-border p-3">
+      <label className="block text-xs font-medium text-ps-text-ter mb-2">
+        Winner Options
+      </label>
+
+      {options.length > 0 && (
+        <p className="text-xs text-ps-text-ter mb-2">
+          Options: {options.join(", ")}
+        </p>
+      )}
+
+      <label className="flex items-center gap-2 cursor-pointer select-none">
+        <input
+          type="checkbox"
+          checked={allowDraw}
+          onChange={(e) =>
+            onChange({ config: { ...config.config, allow_draw: e.target.checked } })
+          }
+          className="h-4 w-4 rounded border-ps-border accent-ps-amber"
+        />
+        <span className="text-sm text-ps-text-sec">Allow Draw as a pick option</span>
+      </label>
+      <p className="mt-1 text-xs text-ps-text-ter">
+        Enable for soccer, GAA, rugby, and other sports where draws are a valid result.
+      </p>
+    </div>
+  );
+}
 
 function YesNoConfig({
   config,

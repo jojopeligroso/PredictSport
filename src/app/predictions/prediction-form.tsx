@@ -205,8 +205,9 @@ export function PredictionForm({
   function renderInput() {
     switch (config.type) {
       case "winner": {
-        const winnerOpts = config.options;
-        if (winnerOpts && winnerOpts.length > 0) {
+        const baseOpts = config.options ?? [];
+        const winnerOpts = config.allow_draw ? [...baseOpts, "Draw"] : baseOpts;
+        if (winnerOpts.length > 0) {
           if (winnerOpts.length > COMBOBOX_THRESHOLD) {
             return (
               <ComboboxInput
