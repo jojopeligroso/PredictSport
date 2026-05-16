@@ -169,28 +169,42 @@ export class ESPNProvider extends BaseProvider {
     let events: ESPNEvent[];
 
     if (!rangeOk) {
-      // Cricket: date ranges return 404. Strategy: two parallel calls —
-      //   1. No date param → ESPN returns the next ~3-5 upcoming fixtures per league
-      //   2. The requested date (if any) → that specific day's fixtures
-      // Merge and deduplicate by event ID to get the broadest coverage possible.
-      // This is bounded: 2 calls per search, not 14. The seeder + FixturePool handles
-      // pre-population for multi-week browsing; this is the live fallback.
+      // Cricket: date ranges return 404. Strategy: three parallel calls —
+      //   1. No date param → ESPN returns the next ~3-5 upcoming (state=pre) fixtures
+      //   2. Today's date → today's fixtures (catches state=in matches that started today)
+      //   3. The requested date (if different from today) → user-specified day
+      // This handles multi-day Tests: a match that started 3 days ago will be
+      // state=in and won't appear in call 1 (upcoming only). Call 2 returns it
+      // because ESPN scoreboard with today's date includes in-progress events.
+      const fmt = (d: Date) => d.toISOString().slice(0, 10).replace(/-/g, "");
+      const todayStr = fmt(new Date());
+
       const noDateFetch = this.apiFetch<ESPNScoreboardResponse>(
         `${sportPath}/scoreboard`,
-        {} // no date = ESPN returns next upcoming
+        {}
       );
-      const specificDateFetch = options?.date
-        ? this.apiFetch<ESPNScoreboardResponse>(
-            `${sportPath}/scoreboard`,
-            { dates: options.date.replace(/-/g, "") }
-          )
-        : Promise.resolve(null);
+      const todayFetch = this.apiFetch<ESPNScoreboardResponse>(
+        `${sportPath}/scoreboard`,
+        { dates: todayStr }
+      );
+      const specificDateFetch =
+        options?.date && options.date.replace(/-/g, "") !== todayStr
+          ? this.apiFetch<ESPNScoreboardResponse>(
+              `${sportPath}/scoreboard`,
+              { dates: options.date.replace(/-/g, "") }
+            )
+          : Promise.resolve(null);
 
-      const [noDateData, specificData] = await Promise.all([noDateFetch, specificDateFetch]);
+      const [noDateData, todayData, specificData] = await Promise.all([
+        noDateFetch,
+        todayFetch,
+        specificDateFetch,
+      ]);
       const seen = new Set<string>();
       events = [];
       for (const e of [
         ...(noDateData?.events ?? []),
+        ...(todayData?.events ?? []),
         ...(specificData?.events ?? []),
       ]) {
         if (!seen.has(e.id)) {
