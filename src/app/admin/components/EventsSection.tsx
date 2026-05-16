@@ -3,9 +3,11 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { StatusBadge } from "./CompetitionStatusBadge";
-import { AddEventForm } from "./AddEventForm";
 import { ResultPanel } from "./ResultPanel";
 import { RoundBuilder } from "./RoundBuilder";
+import { EventsAwaitingResults } from "./EventsAwaitingResults";
+import { ManualEventWizard } from "./ManualEventWizard";
+import { BulkEventCreator } from "./BulkEventCreator";
 import type { Competition, Event, EventPredictionType, Round } from "@/types/database";
 
 interface EventWithPredictionTypes extends Event {
@@ -234,7 +236,8 @@ function RoundSection({
   onRoundStatusChange,
   onDeleteRound,
 }: RoundSectionProps) {
-  const [showAddEventForm, setShowAddEventForm] = useState(false);
+  const [showWizard, setShowWizard] = useState(false);
+  const [showBulkCreator, setShowBulkCreator] = useState(false);
   const router = useRouter();
 
   const isUngrouped = round === null;
@@ -340,23 +343,42 @@ function RoundSection({
           {/* Add event within round */}
           {!isUngrouped && (
             <div className="mt-3">
-              {showAddEventForm ? (
-                <AddEventForm
+              {showWizard ? (
+                <ManualEventWizard
                   competitionId={competition.id}
                   lockDefaultMinutes={competition.lock_default_minutes}
                   onSuccess={() => {
-                    setShowAddEventForm(false);
+                    setShowWizard(false);
                     router.refresh();
                   }}
-                  onCancel={() => setShowAddEventForm(false)}
+                  onCancel={() => setShowWizard(false)}
+                />
+              ) : showBulkCreator ? (
+                <BulkEventCreator
+                  competitionId={competition.id}
+                  roundId={round?.id}
+                  lockDefaultMinutes={competition.lock_default_minutes}
+                  onSuccess={() => {
+                    setShowBulkCreator(false);
+                    router.refresh();
+                  }}
+                  onCancel={() => setShowBulkCreator(false)}
                 />
               ) : (
-                <button
-                  onClick={() => setShowAddEventForm(true)}
-                  className="rounded-xl border border-dashed border-ps-border px-3 py-1.5 text-xs font-medium text-ps-text-sec transition-colors hover:border-ps-border-strong hover:text-ps-text"
-                >
-                  + Event
-                </button>
+                <div className="flex gap-2">
+                  <button
+                    onClick={() => setShowWizard(true)}
+                    className="rounded-xl border border-dashed border-ps-border px-3 py-1.5 text-xs font-medium text-ps-text-sec transition-colors hover:border-ps-border-strong hover:text-ps-text"
+                  >
+                    + Event
+                  </button>
+                  <button
+                    onClick={() => setShowBulkCreator(true)}
+                    className="rounded-xl border border-dashed border-ps-border px-3 py-1.5 text-xs font-medium text-ps-text-sec transition-colors hover:border-ps-border-strong hover:text-ps-text"
+                  >
+                    Bulk Add
+                  </button>
+                </div>
               )}
             </div>
           )}
@@ -554,6 +576,23 @@ export function EventsSection({ competition, events, rounds }: EventsSectionProp
           New Round
         </button>
       </div>
+
+      {/* Events awaiting results */}
+      <EventsAwaitingResults
+        events={events ?? []}
+        onSelectEvent={(eventId) => {
+          const owningRound = sortedRounds.find((r) =>
+            (eventsByRound.get(r.id) ?? []).some((e) => e.id === eventId)
+          );
+          const roundKey = owningRound ? owningRound.id : "ungrouped";
+          setExpandedRounds((prev) => {
+            const next = new Set(prev);
+            next.add(roundKey);
+            return next;
+          });
+          setExpandedEventId(eventId);
+        }}
+      />
 
       {/* Round Builder wizard */}
       {showRoundBuilder && (

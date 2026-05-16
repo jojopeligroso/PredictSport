@@ -5,6 +5,7 @@ import {
   type AutoResultEvent,
   type AutoResultStatus,
 } from "@/lib/sports/auto-result";
+import { sendPushToUser } from "@/lib/push/send";
 
 /**
  * GET /api/results/cron
@@ -104,6 +105,55 @@ export async function GET(request: Request) {
     }
   }
 
+  // ── Notify competition admins about manual events missing results ─────────
+  const twoHoursAgo = new Date(now.getTime() - 2 * 3600000);
+  const sevenDaysAgoAlert = new Date(now.getTime() - 7 * 24 * 3600000);
+  const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? "https://predictsport-rust.vercel.app";
+
+  let manualAlertsSent = 0;
+
+  const { data: manualEvents } = await supabase
+    .from("events")
+    .select("id, event_name, competition_id, start_time")
+    .eq("status", "locked")
+    .eq("result_confirmed", false)
+    .is("external_event_id", null)
+    .lt("start_time", twoHoursAgo.toISOString())
+    .gt("start_time", sevenDaysAgoAlert.toISOString());
+
+  for (const evt of manualEvents ?? []) {
+    const startTime = new Date(evt.start_time);
+    const hoursAgo = Math.round((now.getTime() - startTime.getTime()) / (1000 * 60 * 60));
+
+    // Fetch competition admins
+    const { data: adminMembers } = await supabase
+      .from("competition_members")
+      .select("user_id")
+      .eq("competition_id", evt.competition_id)
+      .in("role", ["admin", "co_admin"]);
+
+    for (const adminMember of adminMembers ?? []) {
+      try {
+        await sendPushToUser(
+          adminMember.user_id,
+          {
+            title: "Result needed",
+            body: `${evt.event_name} ended ${hoursAgo}h ago — enter the result`,
+            url: `${appUrl}/competitions/${evt.competition_id}`,
+            tag: `result-needed-${evt.id}`,
+          },
+          "result_notifications"
+        );
+        manualAlertsSent++;
+      } catch (err) {
+        console.error(
+          `[results-cron] Failed to push alert for event "${evt.event_name}" to user ${adminMember.user_id}:`,
+          err instanceof Error ? err.message : err
+        );
+      }
+    }
+  }
+
   return NextResponse.json({
     ok: true,
     checked_at: now.toISOString(),
@@ -113,5 +163,6 @@ export async function GET(request: Request) {
     window_expired: counts.window_expired,
     skipped: counts.skipped,
     errors: counts.error,
+    manual_alerts_sent: manualAlertsSent,
   });
 }

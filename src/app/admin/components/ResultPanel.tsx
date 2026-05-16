@@ -9,21 +9,29 @@ interface ResultPanelProps {
   onConfirmed: () => void;
 }
 
+function parseTeamsFromEventName(name: string) {
+  const match = name.match(/^(.+?)\s+v\.?s?\.?\s+(.+)$/i);
+  return match ? { home: match[1].trim(), away: match[2].trim() } : { home: "", away: "" };
+}
+
 /**
  * Shows the result for an event and allows:
  * - Confirming a provisional (API-fetched) result
- * - Entering a manual result
+ * - Entering a manual result (pre-populated from event name)
+ * - Undoing a confirmed result (resets all prediction scores)
  */
 export function ResultPanel({ event, onConfirmed }: ResultPanelProps) {
   const [isConfirming, setIsConfirming] = useState(false);
+  const [isUnconfirming, setIsUnconfirming] = useState(false);
   const [showManualEntry, setShowManualEntry] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
 
-  // Manual result entry state
+  // Manual result entry state — pre-populated from event name
+  const parsedTeams = parseTeamsFromEventName(event.event_name);
   const [manualWinner, setManualWinner] = useState("");
-  const [manualHomeTeam, setManualHomeTeam] = useState("");
-  const [manualAwayTeam, setManualAwayTeam] = useState("");
+  const [manualHomeTeam, setManualHomeTeam] = useState(parsedTeams.home);
+  const [manualAwayTeam, setManualAwayTeam] = useState(parsedTeams.away);
   const [manualHomeScore, setManualHomeScore] = useState("");
   const [manualAwayScore, setManualAwayScore] = useState("");
 
@@ -66,6 +74,28 @@ export function ResultPanel({ event, onConfirmed }: ResultPanelProps) {
       setError("Network error. Please try again.");
     } finally {
       setIsConfirming(false);
+    }
+  };
+
+  const handleUnconfirm = async () => {
+    if (!confirm("Undo result? This will reset all prediction scores for this event.")) return;
+    setIsUnconfirming(true);
+    try {
+      const res = await fetch("/api/admin/unconfirm-result", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ event_id: event.id }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        alert(data.error || "Failed to undo result");
+        return;
+      }
+      onConfirmed();
+    } catch {
+      alert("Network error");
+    } finally {
+      setIsUnconfirming(false);
     }
   };
 
@@ -113,9 +143,16 @@ export function ResultPanel({ event, onConfirmed }: ResultPanelProps) {
   if (event.result_confirmed) {
     return (
       <div>
-        <h5 className="text-sm font-medium text-ps-green mb-2">
-          Result Confirmed
-        </h5>
+        <div className="flex items-center justify-between mb-2">
+          <h5 className="text-sm font-medium text-ps-green">Result Confirmed</h5>
+          <button
+            onClick={handleUnconfirm}
+            disabled={isUnconfirming}
+            className="rounded-xl border border-ps-border-strong px-2.5 py-1 text-xs font-medium text-ps-text-sec transition-colors hover:border-ps-red hover:text-ps-red disabled:opacity-50"
+          >
+            {isUnconfirming ? "Undoing..." : "Undo Result"}
+          </button>
+        </div>
         {hasResult && (
           <pre className="rounded-xl bg-ps-bg p-3 text-xs text-ps-text overflow-x-auto">
             {JSON.stringify(resultData, null, 2)}
@@ -124,6 +161,22 @@ export function ResultPanel({ event, onConfirmed }: ResultPanelProps) {
       </div>
     );
   }
+
+  // Score preview
+  const homeScoreNum = parseInt(manualHomeScore);
+  const awayScoreNum = parseInt(manualAwayScore);
+  const showPreview =
+    manualHomeTeam &&
+    manualAwayTeam &&
+    (manualHomeScore !== "" || manualAwayScore !== "");
+  const previewWinner =
+    !isNaN(homeScoreNum) && !isNaN(awayScoreNum)
+      ? homeScoreNum > awayScoreNum
+        ? manualHomeTeam
+        : awayScoreNum > homeScoreNum
+          ? manualAwayTeam
+          : "Draw"
+      : null;
 
   return (
     <div>
@@ -291,6 +344,16 @@ export function ResultPanel({ event, onConfirmed }: ResultPanelProps) {
                 />
               </div>
             </div>
+
+            {/* Score preview */}
+            {showPreview && previewWinner && (
+              <div className="mt-3 rounded-xl bg-ps-bg px-3 py-2 text-xs text-ps-text-sec">
+                <span className="font-bold text-ps-text">
+                  {manualHomeTeam} {manualHomeScore || 0} &mdash; {manualAwayScore || 0} {manualAwayTeam}
+                </span>
+                {" "}&rarr; <span className="font-semibold text-ps-amber-deep">{previewWinner}</span>
+              </div>
+            )}
 
             <button
               type="submit"

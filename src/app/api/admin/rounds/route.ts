@@ -388,6 +388,71 @@ export async function PATCH(request: Request) {
         { status: 400 }
       );
     }
+
+    // Pre-flight validation when opening a round
+    if (body.status === "open") {
+      const validationErrors: string[] = [];
+
+      // Fetch all events for this round
+      const { data: roundEvents } = await supabase
+        .from("events")
+        .select("id, event_name, start_time, lock_time")
+        .eq("round_id", body.round_id);
+
+      for (const evt of roundEvents ?? []) {
+        // Fetch prediction types for this event
+        const { data: epts } = await supabase
+          .from("event_prediction_types")
+          .select("prediction_type, config")
+          .eq("event_id", evt.id);
+
+        // Must have at least one prediction type
+        if (!epts || epts.length === 0) {
+          validationErrors.push(`Event '${evt.event_name}' has no prediction types`);
+          continue;
+        }
+
+        // lock_time must be before start_time
+        if (evt.start_time && evt.lock_time) {
+          const startMs = new Date(evt.start_time).getTime();
+          const lockMs = new Date(evt.lock_time).getTime();
+          if (startMs <= lockMs) {
+            validationErrors.push(
+              `Event '${evt.event_name}' lock time must be before start time`
+            );
+          }
+        }
+
+        // Per-type config validation
+        for (const ept of epts) {
+          const config = ept.config as Record<string, unknown> | null;
+          const options = config?.options as unknown[] | undefined;
+
+          if (ept.prediction_type === "head_to_head") {
+            if (!options || options.length < 2) {
+              validationErrors.push(
+                `Event '${evt.event_name}' head_to_head needs team names in config`
+              );
+            }
+          }
+
+          if (ept.prediction_type === "yes_no") {
+            if (!options || options.length < 2) {
+              validationErrors.push(
+                `Event '${evt.event_name}' yes_no needs option labels`
+              );
+            }
+          }
+        }
+      }
+
+      if (validationErrors.length > 0) {
+        return NextResponse.json(
+          { error: "Round has configuration errors", validation_errors: validationErrors },
+          { status: 400 }
+        );
+      }
+    }
   }
 
   const updates: Record<string, unknown> = {};

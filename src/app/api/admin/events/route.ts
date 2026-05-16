@@ -23,6 +23,12 @@ interface CreateEventBody {
   nominated_by?: string;
 }
 
+interface CloneEventBody {
+  action: "clone";
+  source_event_id: string;
+  competition_id: string;
+}
+
 interface UpdateEventBody {
   event_id: string;
   competition_id: string;
@@ -99,12 +105,115 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  let body: CreateEventBody;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  let rawBody: any;
   try {
-    body = await request.json();
+    rawBody = await request.json();
   } catch {
     return NextResponse.json({ error: "Invalid JSON body" }, { status: 400 });
   }
+
+  // ── Clone action ──────────────────────────────────────────────────────────
+  if (rawBody?.action === "clone") {
+    const cloneBody = rawBody as CloneEventBody;
+
+    if (!cloneBody.source_event_id || !cloneBody.competition_id) {
+      return NextResponse.json(
+        { error: "source_event_id and competition_id are required for clone" },
+        { status: 400 }
+      );
+    }
+
+    // Fetch source event
+    const { data: sourceEvent, error: sourceError } = await supabase
+      .from("events")
+      .select("*")
+      .eq("id", cloneBody.source_event_id)
+      .single();
+
+    if (sourceError || !sourceEvent) {
+      return NextResponse.json({ error: "Source event not found" }, { status: 404 });
+    }
+
+    // Verify admin on the source event's competition
+    const cloneMember = await verifyCompetitionAdmin(
+      supabase,
+      user.id,
+      sourceEvent.competition_id
+    );
+    if (!cloneMember) {
+      return NextResponse.json(
+        { error: "You are not an admin of this competition" },
+        { status: 403 }
+      );
+    }
+
+    // Fetch source event_prediction_types
+    const { data: sourceEpts } = await supabase
+      .from("event_prediction_types")
+      .select("*")
+      .eq("event_id", cloneBody.source_event_id);
+
+    // Insert cloned event
+    const { data: newEvent, error: insertError } = await supabase
+      .from("events")
+      .insert({
+        competition_id: sourceEvent.competition_id,
+        round_id: sourceEvent.round_id ?? null,
+        event_name: `${sourceEvent.event_name} (copy)`,
+        sport: sourceEvent.sport,
+        start_time: sourceEvent.start_time,
+        lock_time: sourceEvent.lock_time,
+        external_event_id: null,
+        provider_league: sourceEvent.provider_league ?? null,
+        nominated_by: sourceEvent.nominated_by ?? null,
+        status: "upcoming",
+        result_data: null,
+        result_confirmed: false,
+        result_confirmed_by: null,
+      })
+      .select()
+      .single();
+
+    if (insertError || !newEvent) {
+      return NextResponse.json(
+        { error: "Failed to clone event", details: insertError?.message },
+        { status: 500 }
+      );
+    }
+
+    // Duplicate event_prediction_types
+    if (sourceEpts && sourceEpts.length > 0) {
+      const clonedEpts = sourceEpts.map((ept) => ({
+        event_id: newEvent.id,
+        prediction_type: ept.prediction_type,
+        points: ept.points,
+        partial_points: ept.partial_points,
+        config: ept.config ?? null,
+      }));
+
+      const { error: eptCloneError } = await supabase
+        .from("event_prediction_types")
+        .insert(clonedEpts);
+
+      if (eptCloneError) {
+        // Rollback: delete the new event
+        await supabase.from("events").delete().eq("id", newEvent.id);
+        return NextResponse.json(
+          { error: "Failed to clone prediction types", details: eptCloneError.message },
+          { status: 500 }
+        );
+      }
+    }
+
+    return NextResponse.json(
+      { event: newEvent, message: "Event cloned" },
+      { status: 201 }
+    );
+  }
+
+  // ── Normal create path ────────────────────────────────────────────────────
+  const body = rawBody as CreateEventBody;
 
   if (!body.competition_id) {
     return NextResponse.json(
