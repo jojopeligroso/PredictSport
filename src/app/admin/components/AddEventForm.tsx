@@ -7,6 +7,7 @@ import { FixtureBrowser } from "./FixtureBrowser";
 import type { NormalizedFixture } from "./FixtureBrowser";
 import { parseWinnerOptions } from "@/lib/parse-options";
 import { getRaceEntrants } from "@/lib/race-entrants";
+import { supportsExactScore } from "@/lib/score-format";
 
 interface AddEventFormProps {
   competitionId: string;
@@ -471,11 +472,25 @@ export function AddEventForm({
                 </div>
               </div>
 
-              {/* Winner config (allow_draw toggle) */}
+              {/* Winner config (allow_draw toggle + exact score) */}
               {isTypeSelected("winner") && (
                 <WinnerConfig
                   config={selectedTypes.find((t) => t.prediction_type === "winner")!}
                   onChange={(cfg) => updateTypeConfig("winner", cfg)}
+                  sport={sport}
+                  exactScoreEnabled={isTypeSelected("exact_score")}
+                  onToggleExactScore={(enabled) => {
+                    if (enabled) {
+                      setSelectedTypes((prev) => [
+                        ...prev,
+                        { prediction_type: "exact_score", config: null },
+                      ]);
+                    } else {
+                      setSelectedTypes((prev) =>
+                        prev.filter((t) => t.prediction_type !== "exact_score")
+                      );
+                    }
+                  }}
                 />
               )}
 
@@ -646,12 +661,19 @@ export function AddEventForm({
 function WinnerConfig({
   config,
   onChange,
+  sport,
+  exactScoreEnabled,
+  onToggleExactScore,
 }: {
   config: PredictionTypeConfig;
   onChange: (updates: Partial<PredictionTypeConfig>) => void;
+  sport: string;
+  exactScoreEnabled: boolean;
+  onToggleExactScore: (enabled: boolean) => void;
 }) {
   const allowDraw = (config.config?.allow_draw as boolean) ?? false;
   const options = (config.config?.options as string[] | undefined) ?? [];
+  const canHaveExactScore = supportsExactScore(sport);
 
   return (
     <div className="rounded-xl border border-ps-border p-3">
@@ -679,6 +701,23 @@ function WinnerConfig({
       <p className="mt-1 text-xs text-ps-text-ter">
         Enable for soccer, GAA, rugby, and other sports where draws are a valid result.
       </p>
+
+      {canHaveExactScore && (
+        <div className="mt-3 pt-3 border-t border-ps-border">
+          <label className="flex items-center gap-2 cursor-pointer select-none">
+            <input
+              type="checkbox"
+              checked={exactScoreEnabled}
+              onChange={(e) => onToggleExactScore(e.target.checked)}
+              className="h-4 w-4 rounded border-ps-border accent-ps-amber"
+            />
+            <span className="text-sm text-ps-text-sec">Exact score bonus</span>
+          </label>
+          <p className="mt-1 text-xs text-ps-text-ter">
+            Participants can predict the exact final score for bonus points. Scored independently from the winner pick.
+          </p>
+        </div>
+      )}
     </div>
   );
 }

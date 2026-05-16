@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import type { Event } from "@/types/database";
+import { getScoreFormat, gaaAggregate } from "@/lib/score-format";
 
 interface ResultPanelProps {
   event: Event;
@@ -34,6 +35,13 @@ export function ResultPanel({ event, onConfirmed }: ResultPanelProps) {
   const [manualAwayTeam, setManualAwayTeam] = useState(parsedTeams.away);
   const [manualHomeScore, setManualHomeScore] = useState("");
   const [manualAwayScore, setManualAwayScore] = useState("");
+
+  // GAA-specific score fields
+  const scoreFormat = getScoreFormat(event.sport);
+  const [gaaHomeGoals, setGaaHomeGoals] = useState("");
+  const [gaaHomePoints, setGaaHomePoints] = useState("");
+  const [gaaAwayGoals, setGaaAwayGoals] = useState("");
+  const [gaaAwayPoints, setGaaAwayPoints] = useState("");
 
   const resultData = event.result_data as Record<string, unknown> | null;
   const hasResult = resultData && Object.keys(resultData).length > 0;
@@ -111,8 +119,41 @@ export function ResultPanel({ event, onConfirmed }: ResultPanelProps) {
       is_final: true,
     };
 
-    // Determine result shape based on what the admin entered
-    if (manualHomeTeam && manualAwayTeam) {
+    // GAA: goals & points entry
+    if (scoreFormat === "gaa" && manualHomeTeam && manualAwayTeam) {
+      const hg = parseInt(gaaHomeGoals) || 0;
+      const hp = parseInt(gaaHomePoints) || 0;
+      const ag = parseInt(gaaAwayGoals) || 0;
+      const ap = parseInt(gaaAwayPoints) || 0;
+      const homeTotal = gaaAggregate(hg, hp);
+      const awayTotal = gaaAggregate(ag, ap);
+
+      manualResult.score = {
+        home_team: manualHomeTeam.trim(),
+        away_team: manualAwayTeam.trim(),
+        home_score: homeTotal,
+        away_score: awayTotal,
+        home: { goals: hg, points: hp },
+        away: { goals: ag, points: ap },
+        periods: null,
+      };
+      manualResult.winner =
+        homeTotal > awayTotal
+          ? manualHomeTeam.trim()
+          : awayTotal > homeTotal
+            ? manualAwayTeam.trim()
+            : "draw";
+      manualResult.margin = Math.abs(homeTotal - awayTotal);
+      manualResult.stats = {
+        home_goals: hg,
+        home_points: hp,
+        away_goals: ag,
+        away_points: ap,
+        total_goals: hg + ag,
+        total_points: homeTotal + awayTotal,
+      };
+    } else if (manualHomeTeam && manualAwayTeam) {
+      // Standard team sport
       const homeScore = parseInt(manualHomeScore) || 0;
       const awayScore = parseInt(manualAwayScore) || 0;
       manualResult.score = {
@@ -319,34 +360,109 @@ export function ResultPanel({ event, onConfirmed }: ResultPanelProps) {
                   className="mt-1 block w-full rounded-xl border border-ps-border bg-ps-bg px-2 py-1 text-sm text-ps-text"
                 />
               </div>
-              <div>
-                <label className="block text-xs font-medium text-ps-text-sec">
-                  Home Score
-                </label>
-                <input
-                  type="number"
-                  min={0}
-                  value={manualHomeScore}
-                  onChange={(e) => setManualHomeScore(e.target.value)}
-                  className="mt-1 block w-full rounded-xl border border-ps-border bg-ps-bg px-2 py-1 text-sm text-ps-text"
-                />
-              </div>
-              <div>
-                <label className="block text-xs font-medium text-ps-text-sec">
-                  Away Score
-                </label>
-                <input
-                  type="number"
-                  min={0}
-                  value={manualAwayScore}
-                  onChange={(e) => setManualAwayScore(e.target.value)}
-                  className="mt-1 block w-full rounded-xl border border-ps-border bg-ps-bg px-2 py-1 text-sm text-ps-text"
-                />
-              </div>
+
+              {scoreFormat === "gaa" ? (
+                <>
+                  <div className="col-span-2 grid grid-cols-4 gap-2">
+                    <div>
+                      <label className="block text-xs font-medium text-ps-text-sec">
+                        Home G
+                      </label>
+                      <input
+                        type="number"
+                        min={0}
+                        value={gaaHomeGoals}
+                        onChange={(e) => setGaaHomeGoals(e.target.value)}
+                        className="mt-1 block w-full rounded-xl border border-ps-border bg-ps-bg px-2 py-1 text-sm text-ps-text"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-medium text-ps-text-sec">
+                        Home P
+                      </label>
+                      <input
+                        type="number"
+                        min={0}
+                        value={gaaHomePoints}
+                        onChange={(e) => setGaaHomePoints(e.target.value)}
+                        className="mt-1 block w-full rounded-xl border border-ps-border bg-ps-bg px-2 py-1 text-sm text-ps-text"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-medium text-ps-text-sec">
+                        Away G
+                      </label>
+                      <input
+                        type="number"
+                        min={0}
+                        value={gaaAwayGoals}
+                        onChange={(e) => setGaaAwayGoals(e.target.value)}
+                        className="mt-1 block w-full rounded-xl border border-ps-border bg-ps-bg px-2 py-1 text-sm text-ps-text"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-medium text-ps-text-sec">
+                        Away P
+                      </label>
+                      <input
+                        type="number"
+                        min={0}
+                        value={gaaAwayPoints}
+                        onChange={(e) => setGaaAwayPoints(e.target.value)}
+                        className="mt-1 block w-full rounded-xl border border-ps-border bg-ps-bg px-2 py-1 text-sm text-ps-text"
+                      />
+                    </div>
+                  </div>
+                </>
+              ) : (
+                <>
+                  <div>
+                    <label className="block text-xs font-medium text-ps-text-sec">
+                      Home Score
+                    </label>
+                    <input
+                      type="number"
+                      min={0}
+                      value={manualHomeScore}
+                      onChange={(e) => setManualHomeScore(e.target.value)}
+                      className="mt-1 block w-full rounded-xl border border-ps-border bg-ps-bg px-2 py-1 text-sm text-ps-text"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-medium text-ps-text-sec">
+                      Away Score
+                    </label>
+                    <input
+                      type="number"
+                      min={0}
+                      value={manualAwayScore}
+                      onChange={(e) => setManualAwayScore(e.target.value)}
+                      className="mt-1 block w-full rounded-xl border border-ps-border bg-ps-bg px-2 py-1 text-sm text-ps-text"
+                    />
+                  </div>
+                </>
+              )}
             </div>
 
             {/* Score preview */}
-            {showPreview && previewWinner && (
+            {scoreFormat === "gaa" && manualHomeTeam && manualAwayTeam && (gaaHomeGoals || gaaHomePoints || gaaAwayGoals || gaaAwayPoints) && (() => {
+              const hg = parseInt(gaaHomeGoals) || 0;
+              const hp = parseInt(gaaHomePoints) || 0;
+              const ag = parseInt(gaaAwayGoals) || 0;
+              const ap = parseInt(gaaAwayPoints) || 0;
+              const ht = gaaAggregate(hg, hp);
+              const at = gaaAggregate(ag, ap);
+              const winner = ht > at ? manualHomeTeam : at > ht ? manualAwayTeam : "Draw";
+              return (
+                <div className="mt-3 rounded-xl bg-ps-bg px-3 py-2 text-xs text-ps-text-sec">
+                  <span className="font-bold font-mono text-ps-text">
+                    {manualHomeTeam} {hg}-{hp} ({ht}) &mdash; {ag}-{ap} ({at}) {manualAwayTeam}
+                  </span>
+                  {" "}&rarr; <span className="font-semibold text-ps-amber-deep">{winner}</span>
+                </div>
+              );
+            })()}
+            {scoreFormat !== "gaa" && showPreview && previewWinner && (
               <div className="mt-3 rounded-xl bg-ps-bg px-3 py-2 text-xs text-ps-text-sec">
                 <span className="font-bold text-ps-text">
                   {manualHomeTeam} {manualHomeScore || 0} &mdash; {manualAwayScore || 0} {manualAwayTeam}

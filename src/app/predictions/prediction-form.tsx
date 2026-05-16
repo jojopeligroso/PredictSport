@@ -45,6 +45,7 @@ function getLabel(config: PredictionTypeConfig): string {
     over_under: `Over/Under ${config.threshold ?? ""}`,
     handicap: `Handicap ${config.handicap ?? ""}`,
     progression: "How Far Will They Go?",
+    exact_score: "Exact Score",
   };
   return labels[config.type];
 }

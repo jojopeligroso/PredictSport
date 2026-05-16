@@ -14,6 +14,7 @@ import type {
 } from "@/types/database";
 import { Countdown } from "./countdown";
 import { PredictionForm } from "./prediction-form";
+import { ExactScoreSection } from "@/components/ExactScoreSection";
 import {
   SportBar,
   SportPill,
@@ -975,6 +976,9 @@ function EventCard({
         {predictionTypeConfigs.length > 0 && (
           <div className="mt-3 space-y-3 border-t border-ps-border pt-3">
             {(event.event_prediction_types ?? []).map((ept) => {
+              // Skip exact_score — rendered as sub-section of winner
+              if (ept.prediction_type === "exact_score") return null;
+
               const cfg = predictionTypeConfigs.find(
                 (c) => c.type === ept.prediction_type
               );
@@ -987,17 +991,47 @@ function EventCard({
 
               const pickOptions = getPickOptions(ept, event.event_name, event.sport);
 
+              // Check if this winner type has an exact_score companion
+              const exactScoreEpt =
+                ept.prediction_type === "winner"
+                  ? (event.event_prediction_types ?? []).find(
+                      (e) => e.prediction_type === "exact_score"
+                    )
+                  : null;
+
+              const exactScorePrediction = exactScoreEpt
+                ? ((event.predictions ?? []).find(
+                    (p) => p.prediction_type === "exact_score"
+                  ) ?? null)
+                : null;
+
               if (pickOptions) {
                 return (
-                  <InlinePickSection
-                    key={`${event.id}-${ept.prediction_type}`}
-                    eventId={event.id}
-                    ept={ept}
-                    options={pickOptions}
-                    existingPrediction={existingPrediction}
-                    isLocked={isLocked}
-                    onSubmit={onSubmit}
-                  />
+                  <div key={`${event.id}-${ept.prediction_type}`}>
+                    <InlinePickSection
+                      eventId={event.id}
+                      ept={ept}
+                      options={pickOptions}
+                      existingPrediction={existingPrediction}
+                      isLocked={isLocked}
+                      onSubmit={onSubmit}
+                    />
+                    {exactScoreEpt && (
+                      <ExactScoreSection
+                        eventId={event.id}
+                        sport={event.sport}
+                        homeTeam={pickOptions[0]?.label ?? "Home"}
+                        awayTeam={pickOptions[1]?.label ?? "Away"}
+                        ept={exactScoreEpt}
+                        winnerOptions={pickOptions.map((o) => o.label)}
+                        currentWinnerPick={getPickValue(existingPrediction)}
+                        existingScorePrediction={exactScorePrediction}
+                        isLocked={isLocked}
+                        onSubmitScore={onSubmit}
+                        onUpdateWinner={onSubmit}
+                      />
+                    )}
+                  </div>
                 );
               }
 

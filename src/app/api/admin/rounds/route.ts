@@ -59,7 +59,7 @@ const ALLOWED_ROUND_TRANSITIONS: Record<RoundStatus, RoundStatus[]> = {
 
 const DEFAULT_POINTS: Record<PredictionType, number> = {
   winner: 10, top_n: 5, final_standings: 10, head_to_head: 5, margin: 10,
-  over_under: 5, handicap: 5, yes_no: 10, progression: 10,
+  over_under: 5, handicap: 5, yes_no: 10, progression: 10, exact_score: 15,
 };
 
 const DEFAULT_PARTIAL_POINTS: Record<string, number> = {

@@ -49,6 +49,9 @@ export function scorePrediction(
     case "progression":
       return scoreProgression(predictionData, resultData, fullPoints, partialPoints, ept.config);
 
+    case "exact_score":
+      return scoreExactScore(predictionData, resultData, fullPoints);
+
     default:
       return { is_correct: null, is_partial: false, points_awarded: 0 };
   }
@@ -69,7 +72,7 @@ interface LegacyScoringRules {
 
 const DEFAULT_POINTS: Record<PredictionType, number> = {
   winner: 10, top_n: 5, final_standings: 10, head_to_head: 5, margin: 10,
-  over_under: 5, handicap: 5, yes_no: 10, progression: 10,
+  over_under: 5, handicap: 5, yes_no: 10, progression: 10, exact_score: 15,
 };
 
 const DEFAULT_PARTIAL_POINTS: Record<string, number> = {
@@ -561,6 +564,80 @@ function scoreProgression(
   }
 
   return { is_correct: false, is_partial: false, points_awarded: 0 };
+}
+
+function scoreExactScore(
+  prediction: Record<string, unknown>,
+  result: Record<string, unknown>,
+  fullPoints: number
+): ScoringResult {
+  const predHome = prediction.home;
+  const predAway = prediction.away;
+
+  if (predHome === undefined || predAway === undefined) {
+    return { is_correct: null, is_partial: false, points_awarded: 0 };
+  }
+
+  // GAA: prediction = { home: { goals, points }, away: { goals, points } }
+  // Result has stats with home_goals, home_points, away_goals, away_points
+  if (typeof predHome === "object" && predHome !== null) {
+    const ph = predHome as Record<string, unknown>;
+    const pa = predAway as Record<string, unknown>;
+    const stats = result.stats as Record<string, number> | undefined;
+
+    let rHomeGoals: number, rHomePoints: number, rAwayGoals: number, rAwayPoints: number;
+
+    if (stats && stats.home_goals !== undefined) {
+      // Foireann / provider-sourced GAA result
+      rHomeGoals = stats.home_goals;
+      rHomePoints = stats.home_points;
+      rAwayGoals = stats.away_goals;
+      rAwayPoints = stats.away_points;
+    } else if (result.score && typeof (result.score as Record<string, unknown>).home === "object") {
+      // Manual entry with GAA shape in score.home/score.away
+      const scoreObj = result.score as Record<string, unknown>;
+      const rh = scoreObj.home as Record<string, number>;
+      const ra = scoreObj.away as Record<string, number>;
+      rHomeGoals = rh.goals;
+      rHomePoints = rh.points;
+      rAwayGoals = ra.goals;
+      rAwayPoints = ra.points;
+    } else {
+      return { is_correct: null, is_partial: false, points_awarded: 0 };
+    }
+
+    const correct =
+      Number(ph.goals) === rHomeGoals &&
+      Number(ph.points) === rHomePoints &&
+      Number(pa.goals) === rAwayGoals &&
+      Number(pa.points) === rAwayPoints;
+
+    return {
+      is_correct: correct,
+      is_partial: false,
+      points_awarded: correct ? fullPoints : 0,
+    };
+  }
+
+  // Standard sports: prediction = { home: number, away: number }
+  // Result has score = { home_score, away_score, ... }
+  const score = result.score as Record<string, unknown> | undefined;
+  if (!score) {
+    return { is_correct: null, is_partial: false, points_awarded: 0 };
+  }
+
+  const resultHomeScore = Number(score.home_score ?? score.home ?? 0);
+  const resultAwayScore = Number(score.away_score ?? score.away ?? 0);
+
+  const correct =
+    Number(predHome) === resultHomeScore &&
+    Number(predAway) === resultAwayScore;
+
+  return {
+    is_correct: correct,
+    is_partial: false,
+    points_awarded: correct ? fullPoints : 0,
+  };
 }
 
 function normalizeStr(val: unknown): string {

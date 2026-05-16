@@ -20,6 +20,7 @@ const VALID_PREDICTION_TYPES = [
   "handicap",
   "yes_no",
   "progression",
+  "exact_score",
 ] as const;
 
 export async function POST(request: NextRequest) {
@@ -159,6 +160,28 @@ export async function POST(request: NextRequest) {
       { error: "Prediction updates are not allowed for this competition" },
       { status: 403 }
     );
+  }
+
+  // Handle clear/delete request (e.g., removing exact_score prediction)
+  if (prediction_data._clear === true && existing) {
+    const { error: deleteError } = await supabase
+      .from("predictions")
+      .delete()
+      .eq("id", existing.id);
+
+    if (deleteError) {
+      return NextResponse.json(
+        { error: "Failed to delete prediction" },
+        { status: 500 }
+      );
+    }
+
+    return NextResponse.json({ deleted: true });
+  }
+
+  // If clearing a non-existent prediction, just return success
+  if (prediction_data._clear === true) {
+    return NextResponse.json({ deleted: true });
   }
 
   if (existing) {

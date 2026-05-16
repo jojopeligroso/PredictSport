@@ -19,7 +19,8 @@ export type PredictionType =
   | "over_under"
   | "handicap"
   | "yes_no"
-  | "progression";
+  | "progression"
+  | "exact_score";
 
 export interface User {
   id: string;
