@@ -157,7 +157,7 @@ When seeding a round, set every event's `lock_time` to the `start_time` of the e
 
 ## 6. Prediction Types
 
-9 types. The admin selects which type(s) apply per event via `event_prediction_types` rows.
+10 types. The admin selects which type(s) apply per event via `event_prediction_types` rows.
 
 **Key insight:** Prediction types are *mechanics*, not questions. Any question maps to a mechanic:
 - "Who wins the US Masters?" → `winner`
@@ -177,6 +177,18 @@ When seeding a round, set every event's `lock_time` to the `start_time` of the e
 | `over_under` | Over or under a line | "Over 2.5 goals?" | `{ selection: "over", threshold: 2.5 }` |
 | `handicap` | Covers the spread or not | "Leinster -12.5?" | `{ selection: "covers", line: -12.5, team: "Leinster" }` |
 | `progression` | How far does X go in a tournament | "How far will Ireland go?" | `{ stage: "Quarter-Finals" }` |
+| `exact_score` | Predict the exact final score in sport-specific format | "What's the final score?" | `{ home: 2, away: 1 }` or `{ home: { goals: 2, points: 11 }, away: { goals: 1, points: 15 } }` (GAA) |
+
+### Winner Draw Support
+
+The `winner` type supports "Draw" as a valid prediction option for applicable sports.
+
+- **Config:** `allow_draw: boolean` on the `winner` EPT row. Default: `false`.
+- **Applicable sports:** Soccer, GAA, rugby (regular season), and any team sport where a draw is a valid result.
+- **UI:** When `allow_draw: true`, the prediction card shows three options: Home / Draw / Away (or labels from `config.options`).
+- **Scoring:** A draw result with `allow_draw: true` → only users who picked "Draw" earn points. Users who picked a side earn 0.
+- **Draw result, `allow_draw: false`:** Prediction voided — `is_correct: null`, 0 points.
+- **Required for exact_score:** When an exact score implies equal scores, winner derivation sets the winner pick to "Draw". This requires `allow_draw: true` on the same event.
 
 ### `yes_no` vs `winner` Overlap
 
@@ -214,7 +226,7 @@ event_prediction_types
 
 | Type | Config Fields |
 |------|--------------|
-| `winner` | `{ options?: string[] }` — if omitted, free-text input |
+| `winner` | `{ options?: string[], allow_draw?: boolean }` — if omitted, free-text input; `allow_draw` enables Draw as a third option |
 | `yes_no` | `{ options?: string[] }` — defaults to `["Yes", "No"]` |
 | `head_to_head` | `{ options: string[], allow_draw?: boolean, draw_points?: number }` |
 | `top_n` | `{ n: number, options?: string[], points_ladder?: [{position, points}] }` |
@@ -223,6 +235,36 @@ event_prediction_types
 | `over_under` | `{ line: number }` |
 | `handicap` | `{ line: number, team: string }` |
 | `progression` | `{ stages: string[] }` — ordered list of tournament stages |
+| `exact_score` | (none — score format is auto-derived from `events.sport`) |
+
+### Exact Score Prediction
+
+`exact_score` is the 10th prediction type. It always pairs with `winner` and cannot be added to an event that does not also have `winner` configured.
+
+**Prerequisite:** `winner` draw support (see above) must be in place before `exact_score` is implemented, as score derivation relies on it.
+
+**Admin setup:** When configuring a `winner` EPT row, the admin can toggle on exact score as a bonus. This creates a second `event_prediction_types` row (`prediction_type: 'exact_score'`) with its own `points` value. The two are always configured together in the admin UI.
+
+**Player UX:** The prediction card is two-sided:
+
+1. Front — winner pick (Home / Draw / Away, or option list)
+2. Back (flip) — exact score input in sport-specific format
+
+The flip is an invitation, not a gate. Submitting a winner pick without a score is valid — the participant earns winner points only and forfeits the exact score bonus.
+
+**Winner derivation:** Submitting an exact score automatically updates the winner prediction to match the implied result. An inline notification confirms the change (e.g., "Your winner pick has been updated to Draw"). If the score implies a draw, the winner is set to "Draw" — requires `allow_draw: true` on the event. See ADR 0001 for rationale (confirmation prompt was considered and may serve better in high-stakes contexts).
+
+**Score formats** — auto-derived from `events.sport`:
+
+| Category | Format | Example prediction_data |
+|----------|--------|------------------------|
+| Standard team sports (soccer, rugby, NFL, NBA, NHL, MLB) | `{ home: number, away: number }` | `{ home: 2, away: 1 }` |
+| GAA | `{ home: { goals: number, points: number }, away: { goals: number, points: number } }` | `{ home: { goals: 2, points: 11 }, away: { goals: 1, points: 15 } }` |
+| Position-based (F1, horse racing, golf, tennis) | Not applicable — `exact_score` may not be added to these events | — |
+
+**Result source:** Scores are sourced from the provider chain via `NormalizedResult`. Foireann returns GAA goals and points separately in `NormalizedResult.stats` (`home_goals`, `home_points`, `away_goals`, `away_points`). For manual events, the admin enters the canonical score at the result confirmation step.
+
+**Scoring:** All-or-nothing. No partial credit. `winner` and `exact_score` score independently — a user who predicts the correct winner but wrong score earns winner points only.
 
 ---
 
@@ -236,7 +278,7 @@ Points come from `event_prediction_types` rows, NOT from competition-level `scor
 
 | Type | Full Points | Partial Points | Zero |
 |------|------------|----------------|------|
-| `winner` | Exact match | — | Wrong |
+| `winner` | Exact match (including "Draw" if `allow_draw` enabled) | — | Wrong (draw result with `allow_draw: false` = voided) |
 | `yes_no` | Exact match (against options or answer) | — | Wrong |
 | `head_to_head` | Correct winner picked | — | Wrong (or null if both DNF) |
 | `top_n` | Picked person finishes in top N (position 1 = full, others = configurable via ladder) | In top N but not position-matched | Not in top N |
@@ -245,6 +287,7 @@ Points come from `event_prediction_types` rows, NOT from competition-level `scor
 | `over_under` | Correct side of the line | — | Wrong side |
 | `handicap` | Selected team covers the spread | — | Doesn't cover |
 | `progression` | Exact stage match | Off by one stage (if partial configured) | More than one stage off |
+| `exact_score` | Score exactly matches result in sport-specific format | — | Any deviation |
 
 ### Over/Under Push
 

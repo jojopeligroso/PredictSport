@@ -45,7 +45,7 @@ Competition → CompetitionMembers
 - **Competition.min_rounds_required** — minimum rounds to participate (null = all).
 - **Competition.allow_prediction_updates** — can participants change predictions before lock?
 - `events.prediction_types` JSONB column has been dropped. All prediction type data is in `event_prediction_types` rows.
-- **9 prediction types:** winner, yes_no, head_to_head, top_n, final_standings, margin, over_under, handicap, progression. See SPEC.md §6 for full reference.
+- **10 prediction types:** winner, yes_no, head_to_head, top_n, final_standings, margin, over_under, handicap, progression, exact_score. See SPEC.md §6 for full reference. `exact_score` always pairs with `winner`; score format is auto-derived from `events.sport`.
 - **H2H draws** are sport-dependent. `config.allow_draw` enables draw option; `config.draw_points` sets points for correct draw prediction. Both-DNF = void (null). See SPEC.md §6.
 - **Pick reveal** (`pick_reveal_at`): defaults to `lock_time` but admin can delay for dramatic tension. RLS enforces visibility.
 
