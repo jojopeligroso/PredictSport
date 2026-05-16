@@ -626,6 +626,7 @@ export function PersonalFixtureBrowser({
   const [saveError, setSaveError] = useState<string | null>(null);
   const [raceInputs, setRaceInputs] = useState<Record<string, string>>({});
 
+  const [showAllLeagues, setShowAllLeagues] = useState(false);
   const currentLeagues = useMemo(() => leaguesForCategory(selectedSport), [selectedSport]);
 
   const predictionMap = useMemo(() => {
@@ -638,6 +639,7 @@ export function PersonalFixtureBrowser({
 
   function selectSport(label: string) {
     setSelectedSport(label);
+    setShowAllLeagues(false);
     const first = leaguesForCategory(label)[0];
     if (first) setSelectedLeagueId(first.id);
   }
@@ -813,22 +815,45 @@ export function PersonalFixtureBrowser({
           </div>
 
           {/* League pills */}
-          <div className="mb-5 flex flex-wrap gap-2">
-            {currentLeagues.map((league) => (
-              <button
-                key={league.id}
-                type="button"
-                onClick={() => setSelectedLeagueId(league.id)}
-                className={
-                  selectedLeagueId === league.id
-                    ? "rounded-lg border border-ps-amber bg-ps-amber/10 px-3 py-1.5 text-xs font-extrabold text-ps-text"
-                    : "rounded-lg border border-ps-border bg-ps-surface px-3 py-1.5 text-xs font-semibold text-ps-text-sec transition-colors hover:border-ps-text-ter hover:text-ps-text"
-                }
-              >
-                {league.label}
-              </button>
-            ))}
-          </div>
+          {(() => {
+            const LIMIT = 6;
+            const hasMore = currentLeagues.length > LIMIT;
+            const hiddenCount = currentLeagues.length - LIMIT;
+            const visibleLeagues = showAllLeagues
+              ? currentLeagues
+              : [
+                  ...currentLeagues.slice(0, LIMIT),
+                  // always surface the selected league if it's beyond the fold
+                  ...currentLeagues.slice(LIMIT).filter((l) => l.id === selectedLeagueId),
+                ];
+            return (
+              <div className="mb-5 flex flex-wrap gap-2">
+                {visibleLeagues.map((league) => (
+                  <button
+                    key={league.id}
+                    type="button"
+                    onClick={() => setSelectedLeagueId(league.id)}
+                    className={
+                      selectedLeagueId === league.id
+                        ? "rounded-lg border border-ps-amber bg-ps-amber/10 px-3 py-1.5 text-xs font-extrabold text-ps-text"
+                        : "rounded-lg border border-ps-border bg-ps-surface px-3 py-1.5 text-xs font-semibold text-ps-text-sec transition-colors hover:border-ps-text-ter hover:text-ps-text"
+                    }
+                  >
+                    {league.label}
+                  </button>
+                ))}
+                {hasMore && (
+                  <button
+                    type="button"
+                    onClick={() => setShowAllLeagues((v) => !v)}
+                    className="rounded-lg border border-ps-border bg-ps-surface px-3 py-1.5 text-xs font-semibold text-ps-text-ter transition-colors hover:border-ps-text-ter hover:text-ps-text-sec"
+                  >
+                    {showAllLeagues ? "Less" : `+${hiddenCount} more`}
+                  </button>
+                )}
+              </div>
+            );
+          })()}
 
           {/* Save error */}
           {saveError && (
