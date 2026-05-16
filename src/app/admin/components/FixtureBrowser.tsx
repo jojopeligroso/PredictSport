@@ -141,6 +141,9 @@ const LEAGUE_GROUPS: LeagueGroup[] = [
     leagues: [
       { id: "4458", label: "County Championship Div 1", sport: "cricket" },
       { id: "4459", label: "County Championship Div 2", sport: "cricket" },
+      { id: "cricket-ranji", label: "Ranji Trophy", sport: "cricket" },
+      { id: "cricket-sheffield-shield", label: "Sheffield Shield", sport: "cricket" },
+      { id: "cricket-vitality-blast", label: "Vitality Blast", sport: "cricket" },
     ],
   },
 ];

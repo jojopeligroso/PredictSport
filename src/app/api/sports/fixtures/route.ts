@@ -58,6 +58,9 @@ const LEAGUE_SPORT_MAP: Record<string, Sport> = {
   // Cricket — Domestic
   "4458": "cricket", // County Championship Div 1
   "4459": "cricket", // County Championship Div 2
+  "cricket-ranji": "cricket",           // Ranji Trophy
+  "cricket-sheffield-shield": "cricket", // Sheffield Shield
+  "cricket-vitality-blast": "cricket",  // Vitality T20 Blast (England)
   // Rugby
   "4415": "rugby",  // Super League
   "4416": "rugby",  // NRL
@@ -126,6 +129,13 @@ const ESPN_CRICKET_MAP: Record<string, string> = {
   "4463": "8053",  // T20 Blast (England)
   "5532": "8041",  // SA20 → SuperSport Series (closest match; update if better ID found)
   // The Hundred (5177), CPL (5176), PSL (5067) — ESPN IDs not yet confirmed; fall through to TheSportsDB
+  // County Championship — TheSportsDB IDs 4458/4459 → ESPN numeric IDs
+  "4458": "8052",  // County Championship Div 1
+  "4459": "8204",  // County Championship Div 2
+  // Domestic long-form — custom IDs (no TheSportsDB equivalent)
+  "cricket-ranji": "8050",           // Ranji Trophy
+  "cricket-sheffield-shield": "8043", // Sheffield Shield
+  "cricket-vitality-blast": "8053",  // Vitality T20 Blast (same ESPN ID as T20 Blast)
 };
 
 // ---------- Human-readable display names ----------
@@ -165,6 +175,10 @@ const ESPN_CRICKET_DISPLAY: Record<string, string> = {
   "8044": "Big Bash League",
   "8053": "T20 Blast",
   "8041": "SA20",
+  "8052": "County Championship Div 1",
+  "8204": "County Championship Div 2",
+  "8050": "Ranji Trophy",
+  "8043": "Sheffield Shield",
 };
 
 // ---------- Foireann routing ----------
