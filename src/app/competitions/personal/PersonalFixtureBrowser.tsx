@@ -106,6 +106,11 @@ const LEAGUE_GROUPS: LeagueGroup[] = [
       { id: "4844", label: "Test Matches", sport: "cricket" },
       { id: "4979", label: "T20 Internationals", sport: "cricket" },
       { id: "4463", label: "T20 Blast", sport: "cricket" },
+      { id: "4458", label: "County Championship Div 1", sport: "cricket" },
+      { id: "4459", label: "County Championship Div 2", sport: "cricket" },
+      { id: "cricket-ranji", label: "Ranji Trophy", sport: "cricket" },
+      { id: "cricket-sheffield-shield", label: "Sheffield Shield", sport: "cricket" },
+      { id: "cricket-vitality-blast", label: "Vitality Blast", sport: "cricket" },
     ],
   },
   {
