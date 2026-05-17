@@ -7,6 +7,15 @@ import { SportPill } from "@/components/ui";
 import { ComboboxInput } from "@/components/ui/ComboboxInput";
 import { getRaceEntrants } from "@/lib/race-entrants";
 import { toSportKey } from "@/components/ui/sport-config";
+import {
+  ExactScoreInput,
+  emptyScore,
+  isScoreComplete,
+  scoreToData,
+  dataToScore,
+  type ScoreValue,
+} from "@/components/ExactScoreInput";
+import { supportsExactScore, deriveWinnerFromScore } from "@/lib/score-format";
 import type { NormalizedFixture } from "@/app/api/sports/fixtures/route";
 import type { Sport } from "@/lib/sports/types";
 
@@ -192,6 +201,8 @@ interface PersonalPredictionRow {
   result_value: string | null;
   is_correct: boolean | null;
   provider_league: string | null;
+  score_prediction: Record<string, unknown> | null;
+  score_correct: boolean | null;
 }
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
@@ -220,6 +231,20 @@ function getPredictionOptions(fixture: NormalizedFixture): PredictionOption[] | 
     { value: "home", label: home },
     { value: "away", label: away },
   ];
+}
+
+function formatScoreDisplay(data: Record<string, unknown>, sport: string): string {
+  if (sport === "gaa" || sport === "gaelic_football" || sport === "hurling") {
+    const home = data.home as Record<string, number> | undefined;
+    const away = data.away as Record<string, number> | undefined;
+    if (home && away) {
+      return `${home.goals}-${home.points} v ${away.goals}-${away.points}`;
+    }
+  }
+  if (data.home !== undefined && data.away !== undefined) {
+    return `${data.home} - ${data.away}`;
+  }
+  return JSON.stringify(data);
 }
 
 function resolvePickLabel(value: string, participants: string[]): string {
@@ -327,6 +352,16 @@ function PickRow({
         <div className="shrink-0 flex items-center gap-2">
           <div className="text-right">
             <p className="text-xs font-extrabold text-ps-text">{pickLabel}</p>
+            {pick.score_prediction && (
+              <p className="mt-0.5 font-mono text-[10px] text-ps-text-sec">
+                {formatScoreDisplay(pick.score_prediction, pick.sport)}
+                {pick.score_correct !== null && (
+                  <span className={`ml-1 font-bold ${pick.score_correct ? "text-ps-green" : "text-ps-red"}`}>
+                    {pick.score_correct ? "\u2713" : "\u2717"}
+                  </span>
+                )}
+              </p>
+            )}
             {isPast && showResultHints && hasResult ? (
               <span
                 className={`mt-0.5 inline-block rounded-full px-2 py-0.5 text-[10px] font-extrabold uppercase tracking-wide ${
@@ -404,6 +439,129 @@ function PickRow({
           ) : null}
         </div>
       )}
+    </div>
+  );
+}
+
+// ── Inline score input for personal predictions ─────────────────────────────
+
+function PersonalScoreInput({
+  fixture,
+  existingScore,
+  currentPick,
+  isSaving,
+  onSaveWithScore,
+}: {
+  fixture: NormalizedFixture;
+  existingScore: Record<string, unknown> | null;
+  currentPick: string | undefined;
+  isSaving: boolean;
+  onSaveWithScore: (fixture: NormalizedFixture, value: string, score: Record<string, unknown> | null) => void;
+}) {
+  const [isExpanded, setIsExpanded] = useState(existingScore !== null);
+  const [score, setScore] = useState<ScoreValue>(() =>
+    dataToScore(existingScore, fixture.sport)
+  );
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const [home, away] = fixture.participants;
+  if (!home || !away) return null;
+
+  const winnerOptions = [home, away];
+  const handleSave = async () => {
+    if (!isScoreComplete(score, fixture.sport)) return;
+    const scoreData = scoreToData(score, fixture.sport);
+    if (!scoreData) return;
+
+    setIsSubmitting(true);
+    // Derive winner from score
+    const implied = deriveWinnerFromScore(scoreData, fixture.sport, winnerOptions);
+    // Map implied winner to prediction_value format
+    let predValue = currentPick ?? "home";
+    if (implied) {
+      if (implied === home) predValue = "home";
+      else if (implied === away) predValue = "away";
+      else if (implied === "Draw") predValue = "draw";
+      else predValue = implied;
+    }
+
+    onSaveWithScore(fixture, predValue, scoreData);
+    setIsSubmitting(false);
+  };
+
+  const handleClear = () => {
+    setScore(emptyScore(fixture.sport));
+    setIsExpanded(false);
+    // Save with score cleared but keep existing winner pick
+    if (currentPick) {
+      onSaveWithScore(fixture, currentPick, null);
+    }
+  };
+
+  if (!isExpanded) {
+    return (
+      <button
+        type="button"
+        onClick={() => setIsExpanded(true)}
+        className="mt-2 flex items-center gap-1.5 text-xs font-semibold text-ps-amber-deep transition-colors hover:text-ps-amber"
+      >
+        <svg width="12" height="12" viewBox="0 0 12 12" fill="none" aria-hidden="true">
+          <path d="M6 2v8M2 6h8" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+        </svg>
+        Predict exact score
+      </button>
+    );
+  }
+
+  return (
+    <div className="mt-3 rounded-xl border border-ps-border bg-ps-chip/50 p-3">
+      <div className="flex items-center justify-between mb-2">
+        <span className="text-[11px] font-bold uppercase tracking-wide text-ps-text-sec">
+          Exact Score
+        </span>
+      </div>
+
+      <ExactScoreInput
+        sport={fixture.sport}
+        homeTeam={home}
+        awayTeam={away}
+        value={score}
+        onChange={setScore}
+        disabled={isSaving || isSubmitting}
+      />
+
+      <div className="mt-3 flex items-center gap-2">
+        <button
+          type="button"
+          onClick={handleSave}
+          disabled={isSaving || isSubmitting || !isScoreComplete(score, fixture.sport)}
+          className="rounded-lg bg-ps-text px-3 py-1.5 text-xs font-semibold text-ps-bg transition-opacity hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed"
+        >
+          {isSubmitting ? "Saving..." : existingScore ? "Update" : "Save"}
+        </button>
+        {existingScore ? (
+          <button
+            type="button"
+            onClick={handleClear}
+            disabled={isSaving || isSubmitting}
+            className="rounded-lg border border-ps-border px-3 py-1.5 text-xs font-medium text-ps-text-sec transition-colors hover:border-ps-red hover:text-ps-red disabled:opacity-50"
+          >
+            Clear
+          </button>
+        ) : (
+          <button
+            type="button"
+            onClick={() => {
+              setScore(emptyScore(fixture.sport));
+              setIsExpanded(false);
+            }}
+            disabled={isSaving || isSubmitting}
+            className="text-xs font-medium text-ps-text-ter hover:text-ps-text-sec"
+          >
+            Cancel
+          </button>
+        )}
+      </div>
     </div>
   );
 }
@@ -593,6 +751,16 @@ function ResultsTab({ allPredictions }: { allPredictions: PersonalPredictionRow[
               {/* Pick vs Result */}
               <div className="shrink-0 text-right">
                 <p className="text-xs font-extrabold text-ps-text">{pickLabel}</p>
+                {pick.score_prediction && (
+                  <p className="mt-0.5 font-mono text-[10px] text-ps-text-sec">
+                    {formatScoreDisplay(pick.score_prediction, pick.sport)}
+                    {pick.score_correct !== null && (
+                      <span className={`ml-1 font-bold ${pick.score_correct ? "text-ps-green" : "text-ps-red"}`}>
+                        {pick.score_correct ? "\u2713" : "\u2717"}
+                      </span>
+                    )}
+                  </p>
+                )}
                 <p className="mt-0.5 text-[10px] font-semibold text-ps-text-ter">
                   Result: {resultLabel}
                 </p>
@@ -654,6 +822,16 @@ export function PersonalFixtureBrowser({
     return map;
   }, [allPredictions]);
 
+  const scoreMap = useMemo(() => {
+    const map: Record<string, Record<string, unknown> | null> = {};
+    for (const p of allPredictions) {
+      if (p.score_prediction) {
+        map[p.external_event_id] = p.score_prediction;
+      }
+    }
+    return map;
+  }, [allPredictions]);
+
   function selectSport(label: string) {
     setSelectedSport(label);
     setShowAllLeagues(false);
@@ -711,6 +889,7 @@ export function PersonalFixtureBrowser({
 
     const prevRows = allPredictions;
     setAllPredictions((prev) => {
+      const existing = prev.find((p) => p.external_event_id === fixture.external_event_id);
       const without = prev.filter((p) => p.external_event_id !== fixture.external_event_id);
       return [
         ...without,
@@ -726,6 +905,8 @@ export function PersonalFixtureBrowser({
           result_value: null,
           is_correct: null,
           provider_league: fixture.provider_league,
+          score_prediction: existing?.score_prediction ?? null,
+          score_correct: null,
         },
       ];
     });
@@ -743,6 +924,75 @@ export function PersonalFixtureBrowser({
           start_time: fixture.start_time,
           prediction_value: value,
           provider_league: fixture.provider_league,
+        }),
+      });
+      if (!res.ok) {
+        const err = await res.json() as { error?: string };
+        setSaveError(err.error ?? "Failed to save");
+        setAllPredictions(prevRows);
+      } else {
+        const saved = (await res.json()) as { prediction?: PersonalPredictionRow };
+        if (saved.prediction) {
+          setAllPredictions((prev) => {
+            const without = prev.filter((p) => p.external_event_id !== fixture.external_event_id);
+            return [...without, saved.prediction!];
+          });
+        }
+      }
+    } catch {
+      setSaveError("Failed to save prediction");
+      setAllPredictions(prevRows);
+    } finally {
+      setSaving((s) => ({ ...s, [fixture.external_event_id]: false }));
+    }
+  }, [allPredictions]);
+
+  const savePredictionWithScore = useCallback(async (
+    fixture: NormalizedFixture,
+    value: string,
+    scorePrediction: Record<string, unknown> | null
+  ) => {
+    if (!value.trim()) return;
+    setSaveError(null);
+    setSaving((s) => ({ ...s, [fixture.external_event_id]: true }));
+
+    const prevRows = allPredictions;
+    setAllPredictions((prev) => {
+      const without = prev.filter((p) => p.external_event_id !== fixture.external_event_id);
+      return [
+        ...without,
+        {
+          id: "",
+          external_event_id: fixture.external_event_id,
+          prediction_value: value,
+          event_name: fixture.event_name,
+          sport: fixture.sport,
+          competition_name: fixture.competition_name ?? null,
+          participants: fixture.participants,
+          start_time: fixture.start_time,
+          result_value: null,
+          is_correct: null,
+          provider_league: fixture.provider_league,
+          score_prediction: scorePrediction,
+          score_correct: null,
+        },
+      ];
+    });
+
+    try {
+      const res = await fetch("/api/personal-predictions", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          external_event_id: fixture.external_event_id,
+          event_name: fixture.event_name,
+          sport: fixture.sport,
+          competition_name: fixture.competition_name,
+          participants: fixture.participants,
+          start_time: fixture.start_time,
+          prediction_value: value,
+          provider_league: fixture.provider_league,
+          score_prediction: scorePrediction,
         }),
       });
       if (!res.ok) {
@@ -1046,6 +1296,29 @@ export function PersonalFixtureBrowser({
                           <p className="text-[11px] font-semibold text-ps-text-ter">
                             Fixture data not available for predictions
                           </p>
+                        )}
+
+                        {/* Exact score input — shown for team sports that support it */}
+                        {!isLocked && !isRace && hasTeams && supportsExactScore(fixture.sport) && (
+                          <PersonalScoreInput
+                            fixture={fixture}
+                            existingScore={scoreMap[fixture.external_event_id] ?? null}
+                            currentPick={currentPick}
+                            isSaving={isSaving}
+                            onSaveWithScore={savePredictionWithScore}
+                          />
+                        )}
+
+                        {/* Show existing score when locked */}
+                        {isLocked && scoreMap[fixture.external_event_id] && (
+                          <div className="mt-2 rounded-lg bg-ps-chip px-3 py-2">
+                            <span className="text-[11px] font-medium uppercase text-ps-text-ter">
+                              Exact Score:{" "}
+                            </span>
+                            <span className="font-mono text-sm font-medium text-ps-text">
+                              {formatScoreDisplay(scoreMap[fixture.external_event_id]!, fixture.sport)}
+                            </span>
+                          </div>
                         )}
                       </div>
                     );

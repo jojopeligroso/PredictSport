@@ -25,6 +25,33 @@ function determineIsCorrect(predictionValue: string, winner: string | null, part
   return winner !== null && winner.toLowerCase() === predictionValue.toLowerCase();
 }
 
+function determineScoreCorrect(
+  scorePrediction: Record<string, unknown>,
+  resultScore: { home: number; away: number } | null,
+  sport: string
+): boolean | null {
+  if (!resultScore || !scorePrediction) return null;
+
+  // For GAA, the provider result only has aggregate scores (home_score/away_score),
+  // not the goals-points breakdown, so we compare aggregates
+  const isGAA = sport === "gaa" || sport === "gaelic_football" || sport === "hurling";
+
+  if (isGAA) {
+    const predHome = scorePrediction.home as Record<string, number> | undefined;
+    const predAway = scorePrediction.away as Record<string, number> | undefined;
+    if (!predHome || !predAway) return null;
+    const predHomeTotal = (predHome.goals ?? 0) * 3 + (predHome.points ?? 0);
+    const predAwayTotal = (predAway.goals ?? 0) * 3 + (predAway.points ?? 0);
+    return predHomeTotal === resultScore.home && predAwayTotal === resultScore.away;
+  }
+
+  // Standard score — compare predicted home/away with result home/away
+  return (
+    Number(scorePrediction.home) === resultScore.home &&
+    Number(scorePrediction.away) === resultScore.away
+  );
+}
+
 export async function GET() {
   const supabase = await createClient();
   const {
@@ -61,9 +88,26 @@ export async function GET() {
         const participants: string[] = Array.isArray(pick.participants) ? pick.participants as string[] : [];
         const isCorrect = determineIsCorrect(pick.prediction_value, result.winner, participants);
 
+        const updateData: Record<string, unknown> = {
+          result_value: result.winner ?? "draw",
+          is_correct: isCorrect,
+          result_provider: result.provider,
+        };
+
+        // Check score correctness if user made a score prediction
+        if (pick.score_prediction) {
+          const scoreCorrect = determineScoreCorrect(
+            pick.score_prediction as Record<string, unknown>,
+            result.score ? { home: result.score.home_score, away: result.score.away_score } : null,
+            pick.sport as string
+          );
+          updateData.score_correct = scoreCorrect;
+          pick.score_correct = scoreCorrect;
+        }
+
         await supabase
           .from("personal_predictions")
-          .update({ result_value: result.winner ?? "draw", is_correct: isCorrect, result_provider: result.provider })
+          .update(updateData)
           .eq("id", pick.id);
 
         // Mutate in-memory so the response reflects updated state
@@ -96,6 +140,7 @@ export async function POST(request: NextRequest) {
     start_time?: string;
     prediction_value?: string;
     provider_league?: string;
+    score_prediction?: Record<string, unknown> | null;
   };
 
   try {
@@ -113,6 +158,7 @@ export async function POST(request: NextRequest) {
     start_time,
     prediction_value,
     provider_league,
+    score_prediction,
   } = body;
 
   if (!external_event_id || !event_name || !sport || !start_time || !prediction_value) {
@@ -143,6 +189,7 @@ export async function POST(request: NextRequest) {
         start_time,
         prediction_value,
         provider_league: provider_league ?? null,
+        score_prediction: score_prediction ?? null,
         updated_at: new Date().toISOString(),
       },
       { onConflict: "user_id,external_event_id" }
