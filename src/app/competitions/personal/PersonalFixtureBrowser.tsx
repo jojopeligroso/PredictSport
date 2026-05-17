@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback, useMemo } from "react";
+import { useRouter, useSearchParams, usePathname } from "next/navigation";
 import { PickButton } from "@/components/ui/PickButton";
 import { SportPill } from "@/components/ui";
 import { ComboboxInput } from "@/components/ui/ComboboxInput";
@@ -613,10 +614,26 @@ export function PersonalFixtureBrowser({
   showResultHints?: boolean;
   defaultSport?: string;
 }) {
-  const initialLeague = leaguesForCategory(defaultSport)[0] ?? leaguesForCategory("Soccer")[0];
+  const router = useRouter();
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
+
+  // Restore sport/league from URL, falling back to user's default
+  const urlSport = searchParams.get("sport");
+  const urlLeague = searchParams.get("league");
+  const resolvedSport =
+    urlSport && SPORT_CATEGORIES.some((c) => c.label === urlSport)
+      ? urlSport
+      : defaultSport;
+  const resolvedLeagues = leaguesForCategory(resolvedSport);
+  const resolvedLeagueId =
+    urlLeague && resolvedLeagues.some((l) => l.id === urlLeague)
+      ? urlLeague
+      : (resolvedLeagues[0]?.id ?? leaguesForCategory("Soccer")[0]!.id);
+
   const [activeTab, setActiveTab] = useState<"fixtures" | "my-picks" | "results">("fixtures");
-  const [selectedSport, setSelectedSport] = useState(defaultSport);
-  const [selectedLeagueId, setSelectedLeagueId] = useState(initialLeague.id);
+  const [selectedSport, setSelectedSport] = useState(resolvedSport);
+  const [selectedLeagueId, setSelectedLeagueId] = useState(resolvedLeagueId);
   const [fixtures, setFixtures] = useState<NormalizedFixture[]>([]);
   const [allPredictions, setAllPredictions] = useState<PersonalPredictionRow[]>([]);
   const [saving, setSaving] = useState<Record<string, boolean>>({});
@@ -641,7 +658,21 @@ export function PersonalFixtureBrowser({
     setSelectedSport(label);
     setShowAllLeagues(false);
     const first = leaguesForCategory(label)[0];
-    if (first) setSelectedLeagueId(first.id);
+    if (first) {
+      setSelectedLeagueId(first.id);
+      router.replace(
+        `${pathname}?sport=${encodeURIComponent(label)}&league=${encodeURIComponent(first.id)}`,
+        { scroll: false }
+      );
+    }
+  }
+
+  function selectLeague(id: string) {
+    setSelectedLeagueId(id);
+    router.replace(
+      `${pathname}?sport=${encodeURIComponent(selectedSport)}&league=${encodeURIComponent(id)}`,
+      { scroll: false }
+    );
   }
 
   // Load all personal predictions from DB on mount
@@ -832,7 +863,7 @@ export function PersonalFixtureBrowser({
                   <button
                     key={league.id}
                     type="button"
-                    onClick={() => setSelectedLeagueId(league.id)}
+                    onClick={() => selectLeague(league.id)}
                     className={
                       selectedLeagueId === league.id
                         ? "rounded-lg border border-ps-amber bg-ps-amber/10 px-3 py-1.5 text-xs font-extrabold text-ps-text"

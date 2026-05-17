@@ -1,4 +1,5 @@
 import { redirect } from "next/navigation";
+import { Suspense } from "react";
 import { createClient } from "@/lib/supabase/server";
 import Link from "next/link";
 import { PersonalFixtureBrowser } from "./PersonalFixtureBrowser";
@@ -44,7 +45,9 @@ export default async function PersonalPredictionsPage() {
         </h1>
       </div>
 
-      <PersonalFixtureBrowser showResultHints={showResultHints} defaultSport={defaultSport} />
+      <Suspense fallback={null}>
+        <PersonalFixtureBrowser showResultHints={showResultHints} defaultSport={defaultSport} />
+      </Suspense>
     </div>
   );
 }
