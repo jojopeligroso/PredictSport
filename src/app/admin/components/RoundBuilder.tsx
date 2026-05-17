@@ -524,6 +524,15 @@ function Step2Configure({
     new Set()
   );
 
+  const [showMoreGlobalTypes, setShowMoreGlobalTypes] = useState(false);
+
+  // Split valid types into default (primary) and advanced
+  const primaryType = fixtureConfigs[0]
+    ? getPrimaryPredictionType(fixtureConfigs[0].fixture)
+    : "winner";
+  const defaultGlobalTypes = validTypes.filter((t) => t === primaryType);
+  const advancedGlobalTypes = validTypes.filter((t) => t !== primaryType);
+
   // Apply global changes to all non-custom fixtures
   function applyGlobalToAll(
     types: Record<PredictionTypeName, boolean>,
@@ -590,8 +599,9 @@ function Step2Configure({
         <h3 className="mb-3 text-sm font-semibold text-ps-text">
           Apply to all fixtures
         </h3>
+        {/* Default prediction type(s) — always visible */}
         <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
-          {validTypes.map((t) => {
+          {defaultGlobalTypes.map((t) => {
             const enabled = globalTypes[t];
             const pts =
               globalPointsOverride[t] ??
@@ -642,6 +652,72 @@ function Step2Configure({
             );
           })}
         </div>
+        {/* Advanced prediction types — behind toggle */}
+        {advancedGlobalTypes.length > 0 && (
+          <>
+            <button
+              type="button"
+              onClick={() => setShowMoreGlobalTypes(!showMoreGlobalTypes)}
+              className="mt-3 text-xs text-ps-text-ter underline hover:text-ps-text"
+            >
+              {showMoreGlobalTypes ? "Hide other prediction types" : "More prediction options"}
+            </button>
+            {showMoreGlobalTypes && (
+              <div className="mt-2 grid grid-cols-2 gap-2 sm:grid-cols-4">
+                {advancedGlobalTypes.map((t) => {
+                  const enabled = globalTypes[t];
+                  const pts =
+                    globalPointsOverride[t] ??
+                    (defaultPoints[t] > 0 ? defaultPoints[t] : undefined);
+                  return (
+                    <div
+                      key={t}
+                      className={`rounded-xl border p-2.5 transition-colors ${
+                        enabled
+                          ? "border-ps-amber bg-ps-amber-soft"
+                          : "border-ps-border bg-ps-bg"
+                      }`}
+                    >
+                      <label className="flex cursor-pointer items-center gap-2">
+                        <input
+                          type="checkbox"
+                          checked={enabled}
+                          onChange={() => handleGlobalTypeToggle(t)}
+                          className="h-3.5 w-3.5 rounded accent-ps-amber"
+                        />
+                        <span
+                          className={`text-xs font-medium ${
+                            enabled ? "text-ps-amber-deep" : "text-ps-text-sec"
+                          }`}
+                        >
+                          {PREDICTION_TYPE_LABELS[t]}
+                        </span>
+                      </label>
+                      {enabled && (
+                        <div className="mt-1.5 flex items-center gap-1">
+                          <input
+                            type="number"
+                            min={0}
+                            value={pts ?? ""}
+                            onChange={(e) =>
+                              handleGlobalPointsChange(t, Number(e.target.value))
+                            }
+                            placeholder="pts"
+                            className="w-full rounded-lg border border-ps-border bg-ps-surface px-2 py-1 text-xs text-ps-text focus:border-ps-amber focus:outline-none"
+                            aria-label={`Points for ${PREDICTION_TYPE_LABELS[t]}`}
+                          />
+                          <span className="shrink-0 text-[10px] text-ps-text-ter">
+                            pts
+                          </span>
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </>
+        )}
         {activeGlobalTypes.length === 0 && (
           <p className="mt-2 text-xs text-ps-red">
             Select at least one prediction type.

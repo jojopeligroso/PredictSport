@@ -339,6 +339,7 @@ export function CreateCompetitionForm({ alwaysOpen = false }: CreateCompetitionF
   const [manualLockTime, setManualLockTime] = useState("");
   const [manualPredTypes, setManualPredTypes] = useState<string[]>(["winner"]);
   const [manualOptionsText, setManualOptionsText] = useState("");
+  const [showMoreManualTypes, setShowMoreManualTypes] = useState(false);
 
   // Step 5
   const [roundCreated, setRoundCreated] = useState(false);
@@ -1202,13 +1203,14 @@ export function CreateCompetitionForm({ alwaysOpen = false }: CreateCompetitionF
                 </div>
               </div>
 
-              {/* Prediction types */}
+              {/* Prediction types — winner is default, others behind toggle */}
               <div>
                 <label className="block text-xs font-bold text-ps-text-sec mb-2">
                   What can people predict?
                 </label>
+                {/* Default: winner (always visible) */}
                 <div className="grid grid-cols-2 gap-1.5">
-                  {MANUAL_PRED_TYPES.map((pt) => {
+                  {MANUAL_PRED_TYPES.filter((pt) => pt.id === "winner").map((pt) => {
                     const on = manualPredTypes.includes(pt.id);
                     return (
                       <label
@@ -1234,6 +1236,43 @@ export function CreateCompetitionForm({ alwaysOpen = false }: CreateCompetitionF
                     );
                   })}
                 </div>
+                {/* More prediction options toggle */}
+                <button
+                  type="button"
+                  onClick={() => setShowMoreManualTypes(!showMoreManualTypes)}
+                  className="mt-2 text-xs text-ps-text-ter underline hover:text-ps-text"
+                >
+                  {showMoreManualTypes ? "Hide other prediction types" : "More prediction options"}
+                </button>
+                {showMoreManualTypes && (
+                  <div className="mt-2 grid grid-cols-2 gap-1.5">
+                    {MANUAL_PRED_TYPES.filter((pt) => pt.id !== "winner").map((pt) => {
+                      const on = manualPredTypes.includes(pt.id);
+                      return (
+                        <label
+                          key={pt.id}
+                          className={`flex items-center gap-2 rounded-lg border px-3 py-2 cursor-pointer transition-colors ${
+                            on
+                              ? "border-ps-amber bg-ps-amber-soft"
+                              : "border-ps-border hover:border-ps-border-strong"
+                          }`}
+                        >
+                          <input
+                            type="checkbox"
+                            checked={on}
+                            onChange={() =>
+                              setManualPredTypes((prev) =>
+                                on ? prev.filter((t) => t !== pt.id) : [...prev, pt.id]
+                              )
+                            }
+                            className="accent-[#f59e0b]"
+                          />
+                          <span className="text-xs font-semibold text-ps-text">{pt.label}</span>
+                        </label>
+                      );
+                    })}
+                  </div>
+                )}
               </div>
 
               {/* Options for winner / head_to_head */}

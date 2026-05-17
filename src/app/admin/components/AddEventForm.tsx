@@ -105,8 +105,10 @@ export function AddEventForm({
   // Prediction type configs
   const [selectedTypes, setSelectedTypes] = useState<PredictionTypeConfig[]>([
     { prediction_type: "winner", config: null },
+    { prediction_type: "exact_score", config: null },
   ]);
   const [showAdvanced, setShowAdvanced] = useState(false);
+  const [showMoreTypes, setShowMoreTypes] = useState(false);
 
   // -----------------------------------------------------------------------
   // Helpers
@@ -397,6 +399,17 @@ export function AddEventForm({
                         )
                       );
                     }
+                    // Auto-toggle exact_score based on sport
+                    if (supportsExactScore(newSport)) {
+                      setSelectedTypes((prev) => {
+                        if (prev.some((t) => t.prediction_type === "exact_score")) return prev;
+                        return [...prev, { prediction_type: "exact_score", config: null }];
+                      });
+                    } else {
+                      setSelectedTypes((prev) =>
+                        prev.filter((t) => t.prediction_type !== "exact_score")
+                      );
+                    }
                   }}
                   className="mt-1 block w-full rounded-xl border border-ps-border bg-ps-bg px-3 py-2 text-sm text-ps-text shadow-sm focus:border-ps-amber focus:outline-none focus:ring-1 focus:ring-ps-amber"
                 >
@@ -448,13 +461,13 @@ export function AddEventForm({
                 </div>
               </div>
 
-              {/* Prediction types */}
+              {/* Prediction types — winner is the default, others behind "More" */}
               <div>
                 <label className="block text-sm font-medium text-ps-text-sec mb-2">
                   Prediction Types *
                 </label>
                 <div className="flex flex-wrap gap-2">
-                  {PREDICTION_TYPES.map((pt) => (
+                  {PREDICTION_TYPES.filter((pt) => pt.value === "winner").map((pt) => (
                     <button
                       key={pt.value}
                       type="button"
@@ -470,6 +483,32 @@ export function AddEventForm({
                     </button>
                   ))}
                 </div>
+                <button
+                  type="button"
+                  onClick={() => setShowMoreTypes(!showMoreTypes)}
+                  className="mt-2 text-xs text-ps-text-ter underline hover:text-ps-text"
+                >
+                  {showMoreTypes ? "Hide other prediction types" : "More prediction options"}
+                </button>
+                {showMoreTypes && (
+                  <div className="mt-2 flex flex-wrap gap-2">
+                    {PREDICTION_TYPES.filter((pt) => pt.value !== "winner").map((pt) => (
+                      <button
+                        key={pt.value}
+                        type="button"
+                        onClick={() => togglePredictionType(pt.value)}
+                        title={pt.description}
+                        className={`rounded-full px-3 py-1 text-xs font-medium transition-colors ${
+                          isTypeSelected(pt.value)
+                            ? "bg-gradient-to-r from-[#f59e0b] to-[#d97706] text-[#1a1208]"
+                            : "border border-ps-border text-ps-text-sec hover:bg-ps-chip"
+                        }`}
+                      >
+                        {pt.label}
+                      </button>
+                    ))}
+                  </div>
+                )}
               </div>
 
               {/* Winner config (allow_draw toggle + exact score) */}
