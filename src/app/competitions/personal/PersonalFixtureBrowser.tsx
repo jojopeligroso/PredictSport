@@ -353,7 +353,7 @@ function PickRow({
           <div className="text-right">
             <p className="text-xs font-extrabold text-ps-text">{pickLabel}</p>
             {pick.score_prediction && (
-              <p className="mt-0.5 font-mono text-[10px] text-ps-text-sec">
+              <p className="mt-0.5 font-mono text-[10px] text-ps-amber-deep">
                 {formatScoreDisplay(pick.score_prediction, pick.sport)}
                 {pick.score_correct !== null && (
                   <span className={`ml-1 font-bold ${pick.score_correct ? "text-ps-green" : "text-ps-red"}`}>
@@ -514,9 +514,9 @@ function PersonalScoreInput({
   }
 
   return (
-    <div className="mt-3 rounded-xl border border-ps-border bg-ps-chip/50 p-3">
+    <div className="mt-3 rounded-xl border border-ps-amber/25 bg-ps-amber-soft p-3">
       <div className="flex items-center justify-between mb-2">
-        <span className="text-[11px] font-bold uppercase tracking-wide text-ps-text-sec">
+        <span className="text-[11px] font-bold uppercase tracking-wide text-ps-amber-deep">
           Exact Score
         </span>
       </div>
@@ -606,7 +606,7 @@ function MyPicksTab({
 
   if (allPredictions.length === 0) {
     return (
-      <div className="rounded-2xl border border-dashed border-ps-border py-14 text-center">
+      <div className="rounded-2xl border border-dashed border-ps-amber/30 bg-ps-amber-soft/50 py-14 text-center">
         <p className="text-sm font-bold text-ps-text-sec">No picks yet</p>
         <p className="mt-1 text-xs text-ps-text-ter">
           Head to Fixtures to make your first prediction.
@@ -677,7 +677,7 @@ function ResultsTab({ allPredictions }: { allPredictions: PersonalPredictionRow[
 
   if (settled.length === 0) {
     return (
-      <div className="rounded-2xl border border-dashed border-ps-border py-14 text-center">
+      <div className="rounded-2xl border border-dashed border-ps-amber/30 bg-ps-amber-soft/50 py-14 text-center">
         <p className="text-sm font-bold text-ps-text-sec">No results yet</p>
         <p className="mt-1 text-xs text-ps-text-ter">
           Results appear here once fixtures are confirmed.
@@ -689,22 +689,31 @@ function ResultsTab({ allPredictions }: { allPredictions: PersonalPredictionRow[
   return (
     <div className="flex flex-col gap-4">
       {/* Summary bar */}
-      <div className="flex items-center gap-3 rounded-xl border border-ps-border bg-ps-surface px-4 py-3">
-        <div className="flex-1">
-          <p className="text-[10px] font-extrabold tracking-widest uppercase text-ps-text-ter">
-            Record
-          </p>
-          <p className="mt-0.5 text-sm font-extrabold text-ps-text">
-            {correct} / {settled.length} correct
-          </p>
+      <div className="flex flex-col rounded-xl border border-ps-border bg-ps-surface px-4 py-3">
+        <div className="flex items-center gap-3">
+          <div className="flex-1">
+            <p className="text-[10px] font-extrabold tracking-widest uppercase text-ps-text-ter">
+              Record
+            </p>
+            <p className="mt-0.5 text-sm font-extrabold text-ps-text">
+              {correct} / {settled.length} correct
+            </p>
+          </div>
+          <div className="text-right">
+            <p className="text-[10px] font-extrabold tracking-widest uppercase text-ps-text-ter">
+              Hit rate
+            </p>
+            <p className="mt-0.5 text-sm font-extrabold text-ps-text">
+              {Math.round((correct / settled.length) * 100)}%
+            </p>
+          </div>
         </div>
-        <div className="text-right">
-          <p className="text-[10px] font-extrabold tracking-widest uppercase text-ps-text-ter">
-            Hit rate
-          </p>
-          <p className="mt-0.5 text-sm font-extrabold text-ps-text">
-            {Math.round((correct / settled.length) * 100)}%
-          </p>
+        {/* Hit rate bar */}
+        <div className="mt-3 h-1.5 w-full rounded-full bg-ps-chip overflow-hidden">
+          <div
+            className="h-full rounded-full bg-ps-green transition-all"
+            style={{ width: `${Math.round((correct / settled.length) * 100)}%` }}
+          />
         </div>
       </div>
 
@@ -752,7 +761,7 @@ function ResultsTab({ allPredictions }: { allPredictions: PersonalPredictionRow[
               <div className="shrink-0 text-right">
                 <p className="text-xs font-extrabold text-ps-text">{pickLabel}</p>
                 {pick.score_prediction && (
-                  <p className="mt-0.5 font-mono text-[10px] text-ps-text-sec">
+                  <p className="mt-0.5 font-mono text-[10px] text-ps-amber-deep">
                     {formatScoreDisplay(pick.score_prediction, pick.sport)}
                     {pick.score_correct !== null && (
                       <span className={`ml-1 font-bold ${pick.score_correct ? "text-ps-green" : "text-ps-red"}`}>
@@ -786,22 +795,36 @@ export function PersonalFixtureBrowser({
   const pathname = usePathname();
   const searchParams = useSearchParams();
 
-  // Restore sport/league from URL, falling back to user's default
+  // Restore sport/league: URL params → sessionStorage → user default
   const urlSport = searchParams.get("sport");
   const urlLeague = searchParams.get("league");
-  const resolvedSport =
-    urlSport && SPORT_CATEGORIES.some((c) => c.label === urlSport)
-      ? urlSport
-      : defaultSport;
-  const resolvedLeagues = leaguesForCategory(resolvedSport);
-  const resolvedLeagueId =
-    urlLeague && resolvedLeagues.some((l) => l.id === urlLeague)
-      ? urlLeague
-      : (resolvedLeagues[0]?.id ?? leaguesForCategory("Soccer")[0]!.id);
 
   const [activeTab, setActiveTab] = useState<"fixtures" | "my-picks" | "results">("fixtures");
-  const [selectedSport, setSelectedSport] = useState(resolvedSport);
-  const [selectedLeagueId, setSelectedLeagueId] = useState(resolvedLeagueId);
+  const [selectedSport, setSelectedSport] = useState<string>(() => {
+    if (urlSport && SPORT_CATEGORIES.some((c) => c.label === urlSport)) return urlSport;
+    if (typeof window !== "undefined") {
+      const stored = sessionStorage.getItem("ps-selected-sport");
+      if (stored && SPORT_CATEGORIES.some((c) => c.label === stored)) return stored;
+    }
+    return defaultSport;
+  });
+  const [selectedLeagueId, setSelectedLeagueId] = useState<string>(() => {
+    const sport = (() => {
+      if (urlSport && SPORT_CATEGORIES.some((c) => c.label === urlSport)) return urlSport;
+      if (typeof window !== "undefined") {
+        const stored = sessionStorage.getItem("ps-selected-sport");
+        if (stored && SPORT_CATEGORIES.some((c) => c.label === stored)) return stored;
+      }
+      return defaultSport;
+    })();
+    const leagues = leaguesForCategory(sport);
+    if (urlLeague && leagues.some((l) => l.id === urlLeague)) return urlLeague;
+    if (typeof window !== "undefined") {
+      const stored = sessionStorage.getItem("ps-selected-league");
+      if (stored && leagues.some((l) => l.id === stored)) return stored;
+    }
+    return leagues[0]?.id ?? leaguesForCategory("Soccer")[0]!.id;
+  });
   const [fixtures, setFixtures] = useState<NormalizedFixture[]>([]);
   const [allPredictions, setAllPredictions] = useState<PersonalPredictionRow[]>([]);
   const [saving, setSaving] = useState<Record<string, boolean>>({});
@@ -835,9 +858,11 @@ export function PersonalFixtureBrowser({
   function selectSport(label: string) {
     setSelectedSport(label);
     setShowAllLeagues(false);
+    sessionStorage.setItem("ps-selected-sport", label);
     const first = leaguesForCategory(label)[0];
     if (first) {
       setSelectedLeagueId(first.id);
+      sessionStorage.setItem("ps-selected-league", first.id);
       router.replace(
         `${pathname}?sport=${encodeURIComponent(label)}&league=${encodeURIComponent(first.id)}`,
         { scroll: false }
@@ -847,6 +872,7 @@ export function PersonalFixtureBrowser({
 
   function selectLeague(id: string) {
     setSelectedLeagueId(id);
+    sessionStorage.setItem("ps-selected-league", id);
     router.replace(
       `${pathname}?sport=${encodeURIComponent(selectedSport)}&league=${encodeURIComponent(id)}`,
       { scroll: false }
@@ -1161,7 +1187,7 @@ export function PersonalFixtureBrowser({
 
           {/* Empty state */}
           {!loading && !loadError && fixtures.length === 0 && (
-            <div className="rounded-2xl border border-dashed border-ps-border py-12 text-center">
+            <div className="rounded-2xl border border-dashed border-ps-amber/30 bg-ps-amber-soft/50 py-12 text-center">
               <p className="text-sm font-semibold text-ps-text-sec">No upcoming fixtures</p>
               <p className="mt-1 text-xs text-ps-text-ter">Try a different league</p>
             </div>
@@ -1311,8 +1337,8 @@ export function PersonalFixtureBrowser({
 
                         {/* Show existing score when locked */}
                         {isLocked && scoreMap[fixture.external_event_id] && (
-                          <div className="mt-2 rounded-lg bg-ps-chip px-3 py-2">
-                            <span className="text-[11px] font-medium uppercase text-ps-text-ter">
+                          <div className="mt-2 rounded-lg bg-ps-amber-soft border border-ps-amber/20 px-3 py-2">
+                            <span className="text-[11px] font-medium uppercase text-ps-amber-deep">
                               Exact Score:{" "}
                             </span>
                             <span className="font-mono text-sm font-medium text-ps-text">
