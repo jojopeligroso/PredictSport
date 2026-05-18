@@ -28,7 +28,7 @@ export default async function LeaderboardPage({ searchParams }: PageProps) {
   // Fetch competitions the user belongs to
   const { data: memberships } = await supabase
     .from("competition_members")
-    .select("competition_id, competitions(id, name, status)")
+    .select("competition_id, competitions(id, name, status, type)")
     .eq("user_id", user.id);
 
   const competitions = (memberships ?? [])
@@ -37,10 +37,11 @@ export default async function LeaderboardPage({ searchParams }: PageProps) {
         id: string;
         name: string;
         status: string;
+        type: string;
       } | null;
-      return comp ? { id: comp.id, name: comp.name, status: comp.status } : null;
+      return comp ? { id: comp.id, name: comp.name, status: comp.status, type: comp.type } : null;
     })
-    .filter((c): c is NonNullable<typeof c> => c !== null);
+    .filter((c): c is NonNullable<typeof c> => c !== null && c.type !== "personal");
 
   if (competitions.length === 0) {
     return (

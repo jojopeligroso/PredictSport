@@ -49,7 +49,7 @@ export default async function CompetitionsPage() {
       }),
       role: m.role,
     }))
-    .filter((c) => c.id)
+    .filter((c) => c.id && c.type !== "personal")
     .sort(
       (a, b) =>
         new Date(b.created_at).getTime() - new Date(a.created_at).getTime()

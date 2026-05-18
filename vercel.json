@@ -9,10 +9,6 @@
       "schedule": "0 9 * * *"
     },
     {
-      "path": "/api/personal-predictions/cron",
-      "schedule": "0 3 * * *"
-    },
-    {
       "path": "/api/cricket-seed/cron",
       "schedule": "0 6 * * *"
     }

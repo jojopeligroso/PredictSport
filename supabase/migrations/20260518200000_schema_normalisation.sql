@@ -1,7 +1,7 @@
 -- Schema Normalisation: BCNF audit fixes
 -- Issue 1: predictions lacks FK to event_prediction_types
 --           Replace text (event_id, prediction_type) pair with event_prediction_type_id FK.
---           predictions has 0 rows so no backfill needed.
+--           predictions has 0 rows at this point (A2 port migration runs after this).
 -- Issue 2: events.competition_id transitive dependency via round_id
 --           Keep column as useful denorm; add trigger to enforce consistency.
 -- Issue 3: events.prediction_types JSONB — already dropped in 20250505200000. No action.

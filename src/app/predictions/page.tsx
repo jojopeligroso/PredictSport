@@ -59,13 +59,13 @@ export default async function PredictionsPage({
     );
   }
 
-  // Extract competitions from the joined query
+  // Extract competitions from the joined query (exclude personal)
   const competitions: Competition[] = (memberships ?? [])
     .map((m) => {
       const comp = m.competitions as unknown as Competition | null;
       return comp;
     })
-    .filter((c): c is Competition => c !== null);
+    .filter((c): c is Competition => c !== null && c.type !== "personal");
 
   // No competitions
   if (competitions.length === 0) {
