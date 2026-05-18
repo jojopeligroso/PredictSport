@@ -37,10 +37,10 @@ Design complete. See `docs/DESIGN-PERSONAL-PREDICTIONS-UNIFICATION.md`. Implemen
 
 ### Phase A — Migration (foundation, do first)
 
-- [ ] **A1 — Personal competition bootstrap migration** — SQL migration: for each existing `users` row, insert one `competitions` row (`type='personal'`, `status='active'`, `scoring_rules='{}'`, `name='Personal'`) and one `competition_members` row (`role='admin'`). Add `type` check constraint to include `'personal'`. Add unique constraint: one personal competition per user.
-- [ ] **A2 — Port legacy rows migration** — SQL migration: for each `personal_predictions` row, upsert an `events` row (keyed by `external_event_id` + `competition_id`), insert `event_prediction_types` rows (`winner` always; `exact_score` if `score_prediction` was set, `points=0`), insert `predictions` rows from `prediction_value` + `score_prediction`. Preserve `result_confirmed` where result was known.
-- [ ] **A3 — Drop legacy table migration** — Drop `personal_predictions` table and all associated cron jobs / API routes that write to it. Remove dead code.
-- [ ] **A4 — Add `favourite_team` to users** — SQL migration: add `favourite_team jsonb` column to `users` (stores `{sport, team_name, provider_id}`). Nullable — opt-in only.
+- [x] **A1 — Personal competition bootstrap migration** — SQL migration: for each existing `users` row, insert one `competitions` row (`type='personal'`, `status='active'`, `scoring_rules='{}'`, `name='Personal'`) and one `competition_members` row (`role='admin'`). Add `type` check constraint to include `'personal'`. Add unique constraint: one personal competition per user.
+- [x] **A2 — Port legacy rows migration** — SQL migration: for each `personal_predictions` row, upsert an `events` row (keyed by `external_event_id` + `competition_id`), insert `event_prediction_types` rows (`winner` always; `exact_score` if `score_prediction` was set, `points=0`), insert `predictions` rows from `prediction_value` + `score_prediction`. Preserve `result_confirmed` where result was known.
+- [x] **A3 — Drop legacy table migration** — Drop `personal_predictions` table and all associated cron jobs / API routes that write to it. Remove dead code.
+- [x] **A4 — Add `favourite_team` to users** — SQL migration: add `favourite_team jsonb` column to `users` (stores `{sport, team_name, provider_id}`). Nullable — opt-in only.
 
 ### Phase B — Backend / API
 

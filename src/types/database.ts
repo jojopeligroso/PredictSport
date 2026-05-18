@@ -31,6 +31,7 @@ export interface User {
   notification_prefs: Record<string, unknown> | null;
   telegram_id: number | null;
   telegram_username: string | null;
+  favourite_team: { sport: string; team_name: string; provider_id: string | null } | null;
   created_at: string;
 }
 
