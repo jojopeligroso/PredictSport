@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback, useMemo } from "react";
+import { useState, useEffect, useCallback, useMemo, useRef } from "react";
 import { useRouter, useSearchParams, usePathname } from "next/navigation";
 import { PickButton } from "@/components/ui/PickButton";
 import { SportPill } from "@/components/ui";
@@ -181,6 +181,16 @@ function dateKey(iso: string): string {
   return d.toISOString().slice(0, 10);
 }
 
+function getLeagueLabel(providerLeague: string | null): string | null {
+  if (!providerLeague) return null;
+  for (const group of LEAGUE_GROUPS) {
+    for (const league of group.leagues) {
+      if (league.id === providerLeague) return league.label;
+    }
+  }
+  return null;
+}
+
 // ── Types ─────────────────────────────────────────────────────────────────────
 
 interface PredictionOption {
@@ -189,20 +199,28 @@ interface PredictionOption {
   sub?: string;
 }
 
-interface PersonalPredictionRow {
-  id: string;
+interface PersonalPick {
+  event_id: string;
   external_event_id: string;
-  prediction_value: string;
   event_name: string;
   sport: string;
-  competition_name: string | null;
-  participants: string[];
   start_time: string;
-  result_value: string | null;
-  is_correct: boolean | null;
+  status: string;
   provider_league: string | null;
-  score_prediction: Record<string, unknown> | null;
-  score_correct: boolean | null;
+  result_data: Record<string, unknown> | null;
+  participants: string[];
+  predictions: Record<string, {
+    id: string;
+    data: Record<string, unknown>;
+    is_correct: boolean | null;
+    ept_id: string;
+  }>;
+  prediction_types: Array<{ id: string; prediction_type: string }>;
+}
+
+interface EventInfo {
+  event_id: string;
+  prediction_types: Array<{ id: string; prediction_type: string }>;
 }
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
@@ -221,15 +239,15 @@ function getPredictionOptions(fixture: NormalizedFixture): PredictionOption[] | 
 
   if (DRAW_SPORTS.has(fixture.sport)) {
     return [
-      { value: "home", label: home, sub: "Home" },
-      { value: "draw", label: "Draw" },
-      { value: "away", label: away, sub: "Away" },
+      { value: home, label: home, sub: "Home" },
+      { value: "Draw", label: "Draw" },
+      { value: away, label: away, sub: "Away" },
     ];
   }
 
   return [
-    { value: "home", label: home },
-    { value: "away", label: away },
+    { value: home, label: home, sub: "Home" },
+    { value: away, label: away, sub: "Away" },
   ];
 }
 
@@ -245,13 +263,6 @@ function formatScoreDisplay(data: Record<string, unknown>, sport: string): strin
     return `${data.home} - ${data.away}`;
   }
   return JSON.stringify(data);
-}
-
-function resolvePickLabel(value: string, participants: string[]): string {
-  if (value === "home") return participants[0] ?? value;
-  if (value === "away") return participants[1] ?? value;
-  if (value === "draw") return "Draw";
-  return value;
 }
 
 // ── Skeleton ──────────────────────────────────────────────────────────────────
@@ -282,26 +293,32 @@ function PickRow({
   onSave,
   isSaving,
 }: {
-  pick: PersonalPredictionRow;
+  pick: PersonalPick;
   showResultHints: boolean;
   isExpanded: boolean;
   onToggle: () => void;
   onSave: (fixture: NormalizedFixture, value: string) => void;
   isSaving: boolean;
 }) {
-  const [raceInput, setRaceInput] = useState(pick.prediction_value);
-  const participants = Array.isArray(pick.participants) ? pick.participants : [];
+  const winnerPick = (pick.predictions.winner?.data.value as string) ?? "";
+  const scorePrediction = pick.predictions.exact_score?.data ?? null;
+  const resultValue = (pick.result_data?.winner as string) ?? null;
+  const isCorrect = pick.predictions.winner?.is_correct ?? null;
+  const scoreCorrect = pick.predictions.exact_score?.is_correct ?? null;
+
+  const [raceInput, setRaceInput] = useState(winnerPick);
+  const participants = pick.participants;
   const [home, away] = participants;
   const hasTeams = Boolean(home && away);
-  const pickLabel = resolvePickLabel(pick.prediction_value, participants);
   const isPast = new Date(pick.start_time) <= new Date();
-  const hasResult = pick.result_value !== null && pick.is_correct !== null;
+  const hasResult = resultValue !== null && isCorrect !== null;
+  const leagueLabel = getLeagueLabel(pick.provider_league);
 
   const pseudoFixture: NormalizedFixture = {
     external_event_id: pick.external_event_id,
     event_name: pick.event_name,
     sport: pick.sport as Sport,
-    competition_name: pick.competition_name ?? "",
+    competition_name: leagueLabel ?? "",
     participants: pick.participants,
     start_time: pick.start_time,
     round: null,
@@ -316,7 +333,7 @@ function PickRow({
     <div
       className={`rounded-xl border bg-ps-surface transition-colors ${
         isPast && showResultHints && hasResult
-          ? pick.is_correct
+          ? isCorrect
             ? "border-ps-green/40"
             : "border-ps-border"
           : isPast
@@ -340,9 +357,9 @@ function PickRow({
               {formatTime(pick.start_time)}
             </span>
             <SportPill sport={toSportKey(pick.sport as Sport)} size="sm" />
-            {pick.competition_name && (
+            {leagueLabel && (
               <span className="max-w-[100px] truncate rounded-full bg-ps-chip px-1.5 py-px text-[10px] font-semibold text-ps-text-ter">
-                {pick.competition_name}
+                {leagueLabel}
               </span>
             )}
           </div>
@@ -351,13 +368,13 @@ function PickRow({
         {/* Right: pick + result + chevron */}
         <div className="shrink-0 flex items-center gap-2">
           <div className="text-right">
-            <p className="text-xs font-extrabold text-ps-text">{pickLabel}</p>
-            {pick.score_prediction && (
+            <p className="text-xs font-extrabold text-ps-text">{winnerPick}</p>
+            {scorePrediction && (
               <p className="mt-0.5 font-mono text-[10px] text-ps-amber-deep">
-                {formatScoreDisplay(pick.score_prediction, pick.sport)}
-                {pick.score_correct !== null && (
-                  <span className={`ml-1 font-bold ${pick.score_correct ? "text-ps-green" : "text-ps-red"}`}>
-                    {pick.score_correct ? "\u2713" : "\u2717"}
+                {formatScoreDisplay(scorePrediction, pick.sport)}
+                {scoreCorrect !== null && (
+                  <span className={`ml-1 font-bold ${scoreCorrect ? "text-ps-green" : "text-ps-red"}`}>
+                    {scoreCorrect ? "\u2713" : "\u2717"}
                   </span>
                 )}
               </p>
@@ -365,16 +382,16 @@ function PickRow({
             {isPast && showResultHints && hasResult ? (
               <span
                 className={`mt-0.5 inline-block rounded-full px-2 py-0.5 text-[10px] font-extrabold uppercase tracking-wide ${
-                  pick.is_correct
+                  isCorrect
                     ? "bg-ps-green-soft text-ps-green"
                     : "bg-ps-red/10 text-ps-red"
                 }`}
               >
-                {pick.is_correct ? "Correct" : "Wrong"}
+                {isCorrect ? "Correct" : "Wrong"}
               </span>
-            ) : isPast && pick.result_value !== null ? (
+            ) : isPast && resultValue !== null ? (
               <p className="mt-0.5 text-[10px] font-semibold text-ps-text-ter">
-                Result: {pick.result_value}
+                Result: {resultValue}
               </p>
             ) : null}
           </div>
@@ -413,7 +430,7 @@ function PickRow({
                   key={opt.value}
                   label={opt.label}
                   sub={opt.sub}
-                  selected={pick.prediction_value === opt.value}
+                  selected={winnerPick === opt.value}
                   disabled={isSaving}
                   onClick={() => onSave(pseudoFixture, opt.value)}
                 />
@@ -474,17 +491,8 @@ function PersonalScoreInput({
     if (!scoreData) return;
 
     setIsSubmitting(true);
-    // Derive winner from score
     const implied = deriveWinnerFromScore(scoreData, fixture.sport, winnerOptions);
-    // Map implied winner to prediction_value format
-    let predValue = currentPick ?? "home";
-    if (implied) {
-      if (implied === home) predValue = "home";
-      else if (implied === away) predValue = "away";
-      else if (implied === "Draw") predValue = "draw";
-      else predValue = implied;
-    }
-
+    const predValue = implied ?? currentPick ?? home;
     onSaveWithScore(fixture, predValue, scoreData);
     setIsSubmitting(false);
   };
@@ -492,7 +500,6 @@ function PersonalScoreInput({
   const handleClear = () => {
     setScore(emptyScore(fixture.sport));
     setIsExpanded(false);
-    // Save with score cleared but keep existing winner pick
     if (currentPick) {
       onSaveWithScore(fixture, currentPick, null);
     }
@@ -569,12 +576,12 @@ function PersonalScoreInput({
 // ── My Picks tab content ──────────────────────────────────────────────────────
 
 function MyPicksTab({
-  allPredictions,
+  picks,
   showResultHints,
   saving,
   onSave,
 }: {
-  allPredictions: PersonalPredictionRow[];
+  picks: PersonalPick[];
   showResultHints: boolean;
   saving: Record<string, boolean>;
   onSave: (fixture: NormalizedFixture, value: string) => void;
@@ -584,27 +591,27 @@ function MyPicksTab({
 
   const upcomingPicks = useMemo(
     () =>
-      allPredictions
+      picks
         .filter((p) => new Date(p.start_time) > now)
         .sort((a, b) => new Date(a.start_time).getTime() - new Date(b.start_time).getTime()),
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [allPredictions]
+    [picks]
   );
 
   const pastPicks = useMemo(
     () =>
-      allPredictions
+      picks
         .filter((p) => new Date(p.start_time) <= now)
         .sort((a, b) => new Date(b.start_time).getTime() - new Date(a.start_time).getTime()),
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [allPredictions]
+    [picks]
   );
 
   function toggleExpanded(id: string) {
     setExpandedId((prev) => (prev === id ? null : id));
   }
 
-  if (allPredictions.length === 0) {
+  if (picks.length === 0) {
     return (
       <div className="rounded-2xl border border-dashed border-ps-amber/30 bg-ps-amber-soft/50 py-14 text-center">
         <p className="text-sm font-bold text-ps-text-sec">No picks yet</p>
@@ -664,16 +671,16 @@ function MyPicksTab({
 
 // ── Results tab content ───────────────────────────────────────────────────────
 
-function ResultsTab({ allPredictions }: { allPredictions: PersonalPredictionRow[] }) {
+function ResultsTab({ picks }: { picks: PersonalPick[] }) {
   const settled = useMemo(
     () =>
-      allPredictions
-        .filter((p) => p.result_value !== null && p.is_correct !== null)
+      picks
+        .filter((p) => p.predictions.winner?.is_correct !== undefined && p.predictions.winner?.is_correct !== null)
         .sort((a, b) => new Date(b.start_time).getTime() - new Date(a.start_time).getTime()),
-    [allPredictions]
+    [picks]
   );
 
-  const correct = settled.filter((p) => p.is_correct).length;
+  const correct = settled.filter((p) => p.predictions.winner?.is_correct === true).length;
 
   if (settled.length === 0) {
     return (
@@ -720,28 +727,31 @@ function ResultsTab({ allPredictions }: { allPredictions: PersonalPredictionRow[
       {/* Results list */}
       <div className="flex flex-col gap-2">
         {settled.map((pick) => {
-          const participants = Array.isArray(pick.participants) ? pick.participants : [];
+          const participants = pick.participants;
           const [home, away] = participants;
           const hasTeams = Boolean(home && away);
-          const pickLabel = resolvePickLabel(pick.prediction_value, participants);
-          const resultLabel = resolvePickLabel(pick.result_value!, participants);
+          const pickLabel = (pick.predictions.winner?.data.value as string) ?? "Unknown";
+          const resultLabel = (pick.result_data?.winner as string) ?? "Unknown";
+          const isCorrect = pick.predictions.winner?.is_correct === true;
+          const scorePrediction = pick.predictions.exact_score?.data ?? null;
+          const scoreCorrect = pick.predictions.exact_score?.is_correct ?? null;
 
           return (
             <div
               key={pick.external_event_id}
               className={`flex items-center gap-3 rounded-xl border px-4 py-3 bg-ps-surface ${
-                pick.is_correct ? "border-ps-green/40" : "border-ps-border"
+                isCorrect ? "border-ps-green/40" : "border-ps-border"
               }`}
             >
               {/* Outcome indicator */}
               <div
                 className={`shrink-0 h-7 w-7 rounded-full flex items-center justify-center text-[10px] font-extrabold ${
-                  pick.is_correct
+                  isCorrect
                     ? "bg-ps-green-soft text-ps-green"
                     : "bg-ps-red/10 text-ps-red"
                 }`}
               >
-                {pick.is_correct ? "W" : "L"}
+                {isCorrect ? "W" : "L"}
               </div>
 
               {/* Event info */}
@@ -760,12 +770,12 @@ function ResultsTab({ allPredictions }: { allPredictions: PersonalPredictionRow[
               {/* Pick vs Result */}
               <div className="shrink-0 text-right">
                 <p className="text-xs font-extrabold text-ps-text">{pickLabel}</p>
-                {pick.score_prediction && (
+                {scorePrediction && (
                   <p className="mt-0.5 font-mono text-[10px] text-ps-amber-deep">
-                    {formatScoreDisplay(pick.score_prediction, pick.sport)}
-                    {pick.score_correct !== null && (
-                      <span className={`ml-1 font-bold ${pick.score_correct ? "text-ps-green" : "text-ps-red"}`}>
-                        {pick.score_correct ? "\u2713" : "\u2717"}
+                    {formatScoreDisplay(scorePrediction, pick.sport)}
+                    {scoreCorrect !== null && (
+                      <span className={`ml-1 font-bold ${scoreCorrect ? "text-ps-green" : "text-ps-red"}`}>
+                        {scoreCorrect ? "\u2713" : "\u2717"}
                       </span>
                     )}
                   </p>
@@ -795,7 +805,7 @@ export function PersonalFixtureBrowser({
   const pathname = usePathname();
   const searchParams = useSearchParams();
 
-  // Restore sport/league: URL params → sessionStorage → user default
+  // Restore sport/league: URL params -> sessionStorage -> user default
   const urlSport = searchParams.get("sport");
   const urlLeague = searchParams.get("league");
 
@@ -826,7 +836,7 @@ export function PersonalFixtureBrowser({
     return leagues[0]?.id ?? leaguesForCategory("Soccer")[0]!.id;
   });
   const [fixtures, setFixtures] = useState<NormalizedFixture[]>([]);
-  const [allPredictions, setAllPredictions] = useState<PersonalPredictionRow[]>([]);
+  const [picks, setPicks] = useState<PersonalPick[]>([]);
   const [saving, setSaving] = useState<Record<string, boolean>>({});
   const [loading, setLoading] = useState(false);
   const [loadError, setLoadError] = useState<string | null>(null);
@@ -837,23 +847,17 @@ export function PersonalFixtureBrowser({
   const [showAllLeagues, setShowAllLeagues] = useState(false);
   const currentLeagues = useMemo(() => leaguesForCategory(selectedSport), [selectedSport]);
 
-  const predictionMap = useMemo(() => {
-    const map: Record<string, string> = {};
-    for (const p of allPredictions) {
-      map[p.external_event_id] = p.prediction_value;
-    }
-    return map;
-  }, [allPredictions]);
+  // Event cache: maps external_event_id -> { event_id, prediction_types }
+  // Populated from list endpoint and B2 calls. Avoids redundant B2 requests.
+  const eventCacheRef = useRef<Record<string, EventInfo>>({});
 
-  const scoreMap = useMemo(() => {
-    const map: Record<string, Record<string, unknown> | null> = {};
-    for (const p of allPredictions) {
-      if (p.score_prediction) {
-        map[p.external_event_id] = p.score_prediction;
-      }
+  const pickMap = useMemo(() => {
+    const map: Record<string, PersonalPick> = {};
+    for (const p of picks) {
+      map[p.external_event_id] = p;
     }
     return map;
-  }, [allPredictions]);
+  }, [picks]);
 
   function selectSport(label: string) {
     setSelectedSport(label);
@@ -879,22 +883,68 @@ export function PersonalFixtureBrowser({
     );
   }
 
-  // Load all personal predictions from DB on mount
+  // Ensure event exists in personal competition (B2), with caching
+  const ensureEvent = useCallback(async (fixture: NormalizedFixture): Promise<EventInfo> => {
+    const cached = eventCacheRef.current[fixture.external_event_id];
+    if (cached) return cached;
+
+    const res = await fetch("/api/personal-predictions/event", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        external_event_id: fixture.external_event_id,
+        event_name: fixture.event_name,
+        sport: fixture.sport,
+        start_time: fixture.start_time,
+        participants: fixture.participants,
+        provider_league: fixture.provider_league,
+      }),
+    });
+
+    if (!res.ok) {
+      const err = (await res.json()) as { error?: string };
+      throw new Error(err.error ?? "Failed to create event");
+    }
+
+    const data = (await res.json()) as {
+      event_id: string;
+      prediction_types: Array<{ id: string; prediction_type: string }>;
+    };
+    const info: EventInfo = {
+      event_id: data.event_id,
+      prediction_types: data.prediction_types.map((pt) => ({
+        id: pt.id,
+        prediction_type: pt.prediction_type,
+      })),
+    };
+    eventCacheRef.current[fixture.external_event_id] = info;
+    return info;
+  }, []);
+
+  // Load all personal predictions from unified model on mount
   useEffect(() => {
-    fetch("/api/personal-predictions")
+    fetch("/api/personal-predictions/list")
       .then(async (r) => {
-        const d = await r.json() as { predictions?: PersonalPredictionRow[]; error?: string };
+        const d = (await r.json()) as { events?: PersonalPick[]; error?: string };
         if (!r.ok || d.error) {
           setGetError(d.error ?? "Failed to load your predictions");
           return;
         }
-        setAllPredictions(d.predictions ?? []);
+        const loadedPicks = d.events ?? [];
+        setPicks(loadedPicks);
+        for (const pick of loadedPicks) {
+          eventCacheRef.current[pick.external_event_id] = {
+            event_id: pick.event_id,
+            prediction_types: pick.prediction_types,
+          };
+        }
       })
       .catch(() => setGetError("Failed to load your predictions — check your connection"));
   }, []);
 
   // Load upcoming fixtures when league changes
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- sync reset before async fetch
     setLoading(true);
     setLoadError(null);
     setFixtures([]);
@@ -913,65 +963,62 @@ export function PersonalFixtureBrowser({
     setSaveError(null);
     setSaving((s) => ({ ...s, [fixture.external_event_id]: true }));
 
-    const prevRows = allPredictions;
-    setAllPredictions((prev) => {
-      const existing = prev.find((p) => p.external_event_id === fixture.external_event_id);
+    const prevPicks = picks;
+    const existing = pickMap[fixture.external_event_id];
+
+    // Optimistic update
+    setPicks((prev) => {
       const without = prev.filter((p) => p.external_event_id !== fixture.external_event_id);
       return [
         ...without,
         {
-          id: "",
+          event_id: existing?.event_id ?? "",
           external_event_id: fixture.external_event_id,
-          prediction_value: value,
           event_name: fixture.event_name,
           sport: fixture.sport,
-          competition_name: fixture.competition_name ?? null,
-          participants: fixture.participants,
           start_time: fixture.start_time,
-          result_value: null,
-          is_correct: null,
-          provider_league: fixture.provider_league,
-          score_prediction: existing?.score_prediction ?? null,
-          score_correct: null,
+          status: "upcoming",
+          provider_league: fixture.provider_league ?? null,
+          result_data: null,
+          participants: fixture.participants.filter((p) => p !== "Draw"),
+          predictions: {
+            ...(existing?.predictions.exact_score ? { exact_score: existing.predictions.exact_score } : {}),
+            winner: {
+              id: existing?.predictions.winner?.id ?? "",
+              data: { value },
+              is_correct: null,
+              ept_id: existing?.predictions.winner?.ept_id ?? "",
+            },
+          },
+          prediction_types: existing?.prediction_types ?? [],
         },
       ];
     });
 
     try {
-      const res = await fetch("/api/personal-predictions", {
+      const eventInfo = await ensureEvent(fixture);
+      const res = await fetch("/api/personal-predictions/predict", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          external_event_id: fixture.external_event_id,
-          event_name: fixture.event_name,
-          sport: fixture.sport,
-          competition_name: fixture.competition_name,
-          participants: fixture.participants,
-          start_time: fixture.start_time,
-          prediction_value: value,
-          provider_league: fixture.provider_league,
+          event_id: eventInfo.event_id,
+          prediction_type: "winner",
+          prediction_data: { value },
         }),
       });
+
       if (!res.ok) {
-        const err = await res.json() as { error?: string };
+        const err = (await res.json()) as { error?: string };
         setSaveError(err.error ?? "Failed to save");
-        setAllPredictions(prevRows);
-      } else {
-        const saved = (await res.json()) as { prediction?: PersonalPredictionRow };
-        if (saved.prediction) {
-          setAllPredictions((prev) => {
-            const without = prev.filter((p) => p.external_event_id !== fixture.external_event_id);
-            return [...without, saved.prediction!];
-          });
-        }
+        setPicks(prevPicks);
       }
     } catch {
       setSaveError("Failed to save prediction");
-      setAllPredictions(prevRows);
+      setPicks(prevPicks);
     } finally {
       setSaving((s) => ({ ...s, [fixture.external_event_id]: false }));
     }
-  }, [allPredictions]);
+  }, [picks, pickMap, ensureEvent]);
 
   const savePredictionWithScore = useCallback(async (
     fixture: NormalizedFixture,
@@ -982,65 +1029,102 @@ export function PersonalFixtureBrowser({
     setSaveError(null);
     setSaving((s) => ({ ...s, [fixture.external_event_id]: true }));
 
-    const prevRows = allPredictions;
-    setAllPredictions((prev) => {
+    const prevPicks = picks;
+    const existing = pickMap[fixture.external_event_id];
+
+    // Optimistic update
+    setPicks((prev) => {
       const without = prev.filter((p) => p.external_event_id !== fixture.external_event_id);
       return [
         ...without,
         {
-          id: "",
+          event_id: existing?.event_id ?? "",
           external_event_id: fixture.external_event_id,
-          prediction_value: value,
           event_name: fixture.event_name,
           sport: fixture.sport,
-          competition_name: fixture.competition_name ?? null,
-          participants: fixture.participants,
           start_time: fixture.start_time,
-          result_value: null,
-          is_correct: null,
-          provider_league: fixture.provider_league,
-          score_prediction: scorePrediction,
-          score_correct: null,
+          status: "upcoming",
+          provider_league: fixture.provider_league ?? null,
+          result_data: null,
+          participants: fixture.participants.filter((p) => p !== "Draw"),
+          predictions: {
+            winner: {
+              id: existing?.predictions.winner?.id ?? "",
+              data: { value },
+              is_correct: null,
+              ept_id: existing?.predictions.winner?.ept_id ?? "",
+            },
+            ...(scorePrediction ? {
+              exact_score: {
+                id: existing?.predictions.exact_score?.id ?? "",
+                data: scorePrediction,
+                is_correct: null,
+                ept_id: existing?.predictions.exact_score?.ept_id ?? "",
+              },
+            } : {}),
+          },
+          prediction_types: existing?.prediction_types ?? [],
         },
       ];
     });
 
     try {
-      const res = await fetch("/api/personal-predictions", {
+      const eventInfo = await ensureEvent(fixture);
+
+      // Save winner prediction
+      const winnerRes = await fetch("/api/personal-predictions/predict", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          external_event_id: fixture.external_event_id,
-          event_name: fixture.event_name,
-          sport: fixture.sport,
-          competition_name: fixture.competition_name,
-          participants: fixture.participants,
-          start_time: fixture.start_time,
-          prediction_value: value,
-          provider_league: fixture.provider_league,
-          score_prediction: scorePrediction,
+          event_id: eventInfo.event_id,
+          prediction_type: "winner",
+          prediction_data: { value },
         }),
       });
-      if (!res.ok) {
-        const err = await res.json() as { error?: string };
+
+      if (!winnerRes.ok) {
+        const err = (await winnerRes.json()) as { error?: string };
         setSaveError(err.error ?? "Failed to save");
-        setAllPredictions(prevRows);
-      } else {
-        const saved = (await res.json()) as { prediction?: PersonalPredictionRow };
-        if (saved.prediction) {
-          setAllPredictions((prev) => {
-            const without = prev.filter((p) => p.external_event_id !== fixture.external_event_id);
-            return [...without, saved.prediction!];
-          });
+        setPicks(prevPicks);
+        return;
+      }
+
+      // Save or clear exact score
+      if (scorePrediction) {
+        const scoreRes = await fetch("/api/personal-predictions/predict", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            event_id: eventInfo.event_id,
+            prediction_type: "exact_score",
+            prediction_data: scorePrediction,
+          }),
+        });
+
+        if (!scoreRes.ok) {
+          const err = (await scoreRes.json()) as { error?: string };
+          setSaveError(err.error ?? "Failed to save score");
+          setPicks(prevPicks);
         }
+      } else {
+        // Clear exact score prediction
+        await fetch("/api/personal-predictions/predict", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            event_id: eventInfo.event_id,
+            prediction_type: "exact_score",
+            prediction_data: { _clear: true },
+          }),
+        });
       }
     } catch {
       setSaveError("Failed to save prediction");
-      setAllPredictions(prevRows);
+      setPicks(prevPicks);
     } finally {
       setSaving((s) => ({ ...s, [fixture.external_event_id]: false }));
     }
-  }, [allPredictions]);
+  }, [picks, pickMap, ensureEvent]);
 
   // Group upcoming fixtures by date
   const grouped = useMemo(() => {
@@ -1067,13 +1151,13 @@ export function PersonalFixtureBrowser({
         <TabButton
           label="My Picks"
           active={activeTab === "my-picks"}
-          count={allPredictions.length}
+          count={picks.length}
           onClick={() => setActiveTab("my-picks")}
         />
         <TabButton
           label="Results"
           active={activeTab === "results"}
-          count={allPredictions.filter((p) => p.result_value !== null && p.is_correct !== null).length}
+          count={picks.filter((p) => p.predictions.winner?.is_correct !== undefined && p.predictions.winner?.is_correct !== null).length}
           onClick={() => setActiveTab("results")}
         />
       </div>
@@ -1088,7 +1172,7 @@ export function PersonalFixtureBrowser({
       {/* My Picks tab */}
       {activeTab === "my-picks" && (
         <MyPicksTab
-          allPredictions={allPredictions}
+          picks={picks}
           showResultHints={showResultHints}
           saving={saving}
           onSave={savePrediction}
@@ -1097,7 +1181,7 @@ export function PersonalFixtureBrowser({
 
       {/* Results tab */}
       {activeTab === "results" && (
-        <ResultsTab allPredictions={allPredictions} />
+        <ResultsTab picks={picks} />
       )}
 
       {/* Fixtures tab */}
@@ -1203,19 +1287,20 @@ export function PersonalFixtureBrowser({
                 <div className="flex flex-col gap-3">
                   {dayFixtures.map((fixture) => {
                     const options = getPredictionOptions(fixture);
-                    const currentPick = predictionMap[fixture.external_event_id];
+                    const pick = pickMap[fixture.external_event_id];
+                    const currentPickValue = (pick?.predictions.winner?.data.value as string) ?? undefined;
+                    const existingScore = pick?.predictions.exact_score?.data ?? null;
                     const isSaving = saving[fixture.external_event_id] ?? false;
                     const isRace = RACE_SPORTS.has(fixture.sport);
                     const isLocked = new Date(fixture.start_time) <= now;
                     const [home, away] = fixture.participants;
                     const hasTeams = Boolean(home && away);
-                    const pickLabel = resolvePickLabel(currentPick ?? "", fixture.participants);
 
                     return (
                       <div
                         key={fixture.external_event_id}
                         className={`rounded-2xl border bg-ps-surface p-4 shadow-[0_1px_2px_rgba(40,30,20,0.04)] transition-colors ${
-                          currentPick ? "border-ps-amber/40" : "border-ps-border"
+                          currentPickValue ? "border-ps-amber/40" : "border-ps-border"
                         }`}
                       >
                         {/* Header row */}
@@ -1242,7 +1327,7 @@ export function PersonalFixtureBrowser({
                                   {fixture.competition_name}
                                 </span>
                               )}
-                              {currentPick && (
+                              {currentPickValue && (
                                 <span className="rounded-full bg-ps-green-soft px-2 py-0.5 text-[10px] font-extrabold uppercase tracking-wide text-ps-green">
                                   Picked
                                 </span>
@@ -1253,12 +1338,12 @@ export function PersonalFixtureBrowser({
 
                         {/* Prediction area */}
                         {isLocked ? (
-                          currentPick ? (
+                          currentPickValue ? (
                             <div className="flex items-center gap-1.5">
                               <LockIcon />
                               <span className="text-[11px] font-semibold text-ps-text-sec">
                                 Your pick:{" "}
-                                <span className="font-extrabold text-ps-text">{pickLabel}</span>
+                                <span className="font-extrabold text-ps-text">{currentPickValue}</span>
                               </span>
                             </div>
                           ) : (
@@ -1281,7 +1366,7 @@ export function PersonalFixtureBrowser({
                                 key={opt.value}
                                 label={opt.label}
                                 sub={opt.sub}
-                                selected={currentPick === opt.value}
+                                selected={currentPickValue === opt.value}
                                 disabled={isSaving}
                                 onClick={() => savePrediction(fixture, opt.value)}
                               />
@@ -1291,14 +1376,14 @@ export function PersonalFixtureBrowser({
                           <div className="flex gap-2">
                             <ComboboxInput
                               options={getRaceEntrants(fixture.sport)}
-                              value={raceInputs[fixture.external_event_id] ?? currentPick ?? ""}
+                              value={raceInputs[fixture.external_event_id] ?? currentPickValue ?? ""}
                               onChange={(val) =>
                                 setRaceInputs((r) => ({
                                   ...r,
                                   [fixture.external_event_id]: val,
                                 }))
                               }
-                              placeholder="Predicted winner…"
+                              placeholder="Predicted winner\u2026"
                               className="flex-1"
                             />
                             <button
@@ -1328,21 +1413,21 @@ export function PersonalFixtureBrowser({
                         {!isLocked && !isRace && hasTeams && supportsExactScore(fixture.sport) && (
                           <PersonalScoreInput
                             fixture={fixture}
-                            existingScore={scoreMap[fixture.external_event_id] ?? null}
-                            currentPick={currentPick}
+                            existingScore={existingScore}
+                            currentPick={currentPickValue}
                             isSaving={isSaving}
                             onSaveWithScore={savePredictionWithScore}
                           />
                         )}
 
                         {/* Show existing score when locked */}
-                        {isLocked && scoreMap[fixture.external_event_id] && (
+                        {isLocked && existingScore && (
                           <div className="mt-2 rounded-lg bg-ps-amber-soft border border-ps-amber/20 px-3 py-2">
                             <span className="text-[11px] font-medium uppercase text-ps-amber-deep">
                               Exact Score:{" "}
                             </span>
                             <span className="font-mono text-sm font-medium text-ps-text">
-                              {formatScoreDisplay(scoreMap[fixture.external_event_id]!, fixture.sport)}
+                              {formatScoreDisplay(existingScore, fixture.sport)}
                             </span>
                           </div>
                         )}

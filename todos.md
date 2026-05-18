@@ -49,11 +49,11 @@ Design complete. See `docs/DESIGN-PERSONAL-PREDICTIONS-UNIFICATION.md`. Implemen
 - [x] **B3 — Personal prediction submit API** — `POST /api/personal-predictions/predict` — upserts a `predictions` row. No lock time enforcement (personal predictions can be changed freely before event starts).
 - [x] **B4 — Outright creation API** — `POST /api/personal-predictions/outrights` — creates a `final_standings` prediction for a league/tournament (stored as an event with `is_outright=true` flag or separate `outright_predictions` table — decide at implementation). Handles change budget (max 3 total, timestamped history).
 - [x] **B5 — Inferred suggestions API** — `GET /api/personal-predictions/outright-suggestions` — returns leagues where user has 3+ fixture picks but no outright, filtered to those not dismissed or dismissed but now at 10+ picks.
-- [ ] **B6 — Dashboard stats API** — `GET /api/personal-predictions/stats` — returns: lifetime hit rate + streak, by-sport breakdown, by-league breakdown, by-year breakdown, recent 5 picks with results. Aggregates from `predictions` join `events` on personal competition.
+- [x] **B6 — Dashboard stats API** — `GET /api/personal-predictions/stats` — returns: lifetime hit rate + streak, by-sport breakdown, by-league breakdown, by-year breakdown, recent 5 picks with results. Aggregates from `predictions` join `events` on personal competition.
 
 ### Phase C — Fixtures Tab (replace legacy browser)
 
-- [ ] **C1 — New PersonalFixtureBrowser component** — Replace legacy 1,412-LOC `PersonalFixtureBrowser.tsx` with unified-model version. Fixture tap → calls B2 + B3 atomically. Same provider/league browsing UX, but writes to competition model.
+- [x] **C1 — New PersonalFixtureBrowser component** — Replace legacy 1,412-LOC `PersonalFixtureBrowser.tsx` with unified-model version. Fixture tap → calls B2 + B3 atomically. Same provider/league browsing UX, but writes to competition model.
 - [ ] **C2 — Sport-aware prediction type defaults** — Util `getPersonalDefaults(sport, format)`: team sports → `winner` + `exact_score` as primary, 2-3 extra pills; race sports → `winner` only. Wire into B2.
 - [ ] **C3 — Familiar terminology pills** — Map internal types to pill labels: `exact_score` → "Correct Score", `margin` → "Winning Margin", `over_under` → "Over/Under", `handicap` → "Spread", `head_to_head` → "H2H", `yes_no` → "Prop Bet", `top_n` → "Top 3", `progression` → "To Qualify", `final_standings` → "Outright Winner". Apply across personal predictions UI.
 - [ ] **C4 — Contextual outright card in Fixtures tab** — When browsing a specific league, show a contextual card at top: "Who wins [League]?" if no outright exists. Tapping creates the outright via B4.
