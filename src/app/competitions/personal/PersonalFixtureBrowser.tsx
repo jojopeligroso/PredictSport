@@ -193,6 +193,14 @@ function getLeagueLabel(providerLeague: string | null): string | null {
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
+interface OutrightPick {
+  league_id: string;
+  league_name: string;
+  sport: string;
+  pick: string | null;
+  change_history: Array<{ pick: string; changed_at: string }>;
+}
+
 interface PredictionOption {
   value: string;
   label: string;
@@ -669,6 +677,188 @@ function MyPicksTab({
   );
 }
 
+// ── Outrights tab content ─────────────────────────────────────────────────────
+
+interface OutrightEntry {
+  event_id: string;
+  league_id: string | null;
+  league_name: string;
+  sport: string;
+  pick: string | null;
+  change_history: { pick: string; changed_at: string }[];
+  is_correct: boolean | null;
+  status: string;
+  result_data: Record<string, unknown> | null;
+}
+
+type OutrightStatus = "open" | "pending" | "resolved";
+
+function classifyOutright(o: OutrightEntry): OutrightStatus {
+  if (o.is_correct === true || o.is_correct === false) return "resolved";
+  if (o.result_data && o.is_correct === null) return "pending";
+  return "open";
+}
+
+const STATUS_LABEL: Record<OutrightStatus, string> = {
+  open: "Open",
+  pending: "Pending Resolution",
+  resolved: "Resolved",
+};
+
+function OutrightsTab() {
+  const [outrights, setOutrights] = useState<OutrightEntry[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    async function load() {
+      setLoading(true);
+      setError(null);
+      try {
+        const res = await fetch("/api/personal-predictions/outrights");
+        if (!res.ok) throw new Error(`Failed to load outrights (${res.status})`);
+        const data = await res.json();
+        if (!cancelled) setOutrights(data.outrights ?? []);
+      } catch (err) {
+        if (!cancelled) setError((err as Error).message);
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    }
+    load();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  if (loading) {
+    return (
+      <div className="py-14 text-center">
+        <div className="mx-auto h-5 w-5 animate-spin rounded-full border-2 border-ps-amber border-t-transparent" />
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="rounded-xl border border-ps-red/30 bg-ps-red/10 px-4 py-3 text-sm font-semibold text-ps-red">
+        {error}
+      </div>
+    );
+  }
+
+  if (outrights.length === 0) {
+    return (
+      <div className="rounded-2xl border border-dashed border-ps-amber/30 bg-ps-amber-soft/50 py-14 text-center">
+        <p className="text-sm font-bold text-ps-text-sec">No outrights yet</p>
+        <p className="mt-1 text-xs text-ps-text-ter">
+          Browse fixtures and pick who wins a league or tournament.
+        </p>
+      </div>
+    );
+  }
+
+  // Group by status
+  const grouped = new Map<OutrightStatus, OutrightEntry[]>();
+  for (const o of outrights) {
+    const s = classifyOutright(o);
+    if (!grouped.has(s)) grouped.set(s, []);
+    grouped.get(s)!.push(o);
+  }
+
+  const ORDER: OutrightStatus[] = ["open", "pending", "resolved"];
+
+  return (
+    <div className="flex flex-col gap-5">
+      {ORDER.filter((s) => grouped.has(s)).map((status) => (
+        <div key={status}>
+          <p className="mb-2 text-[10px] font-extrabold tracking-widest uppercase text-ps-text-ter">
+            {STATUS_LABEL[status]}
+          </p>
+          <div className="flex flex-col gap-2">
+            {grouped.get(status)!.map((o) => (
+              <OutrightCard key={o.event_id} outright={o} status={status} />
+            ))}
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+function OutrightCard({
+  outright,
+  status,
+}: {
+  outright: OutrightEntry;
+  status: OutrightStatus;
+}) {
+  const borderClass =
+    status === "resolved"
+      ? outright.is_correct
+        ? "border-ps-green/40"
+        : "border-ps-border"
+      : status === "pending"
+        ? "border-ps-amber/40"
+        : "border-ps-border";
+
+  const changesUsed = Math.max(0, outright.change_history.length - 1);
+  const resultWinner = outright.result_data?.winner as string | undefined;
+
+  return (
+    <div className={`rounded-xl border bg-ps-surface px-4 py-3 ${borderClass}`}>
+      <div className="flex items-start gap-3">
+        {/* Status indicator */}
+        {status === "resolved" && (
+          <div
+            className={`mt-0.5 shrink-0 h-7 w-7 rounded-full flex items-center justify-center text-[10px] font-extrabold ${
+              outright.is_correct
+                ? "bg-ps-green-soft text-ps-green"
+                : "bg-ps-red/10 text-ps-red"
+            }`}
+          >
+            {outright.is_correct ? "W" : "L"}
+          </div>
+        )}
+        {status === "pending" && (
+          <div className="mt-0.5 shrink-0 h-7 w-7 rounded-full flex items-center justify-center bg-ps-amber/15 text-[10px] font-extrabold text-ps-amber">
+            ?
+          </div>
+        )}
+        {status === "open" && (
+          <div className="mt-0.5 shrink-0 h-7 w-7 rounded-full flex items-center justify-center bg-ps-chip text-[10px] font-extrabold text-ps-text-ter">
+            &bull;
+          </div>
+        )}
+
+        {/* Content */}
+        <div className="min-w-0 flex-1">
+          <p className="text-xs font-bold text-ps-text">{outright.league_name}</p>
+          <div className="mt-0.5 flex items-center gap-1.5">
+            <SportPill sport={toSportKey(outright.sport as Sport)} size="sm" />
+            {changesUsed > 0 && (
+              <span className="font-mono text-[10px] text-ps-text-ter">
+                {changesUsed} change{changesUsed !== 1 ? "s" : ""}
+              </span>
+            )}
+          </div>
+        </div>
+
+        {/* Pick / result */}
+        <div className="shrink-0 text-right">
+          <p className="text-xs font-extrabold text-ps-text">{outright.pick ?? "No pick"}</p>
+          {resultWinner && (
+            <p className="mt-0.5 text-[10px] font-semibold text-ps-text-ter">
+              Winner: {resultWinner}
+            </p>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // ── Results tab content ───────────────────────────────────────────────────────
 
 function ResultsTab({ picks }: { picks: PersonalPick[] }) {
@@ -792,6 +982,152 @@ function ResultsTab({ picks }: { picks: PersonalPick[] }) {
   );
 }
 
+// ── Outright card (contextual, Fixtures tab) ─────────────────────────────────
+
+function ContextualOutrightCard({
+  leagueId,
+  leagueName,
+  sport,
+  existingOutright,
+  onSave,
+}: {
+  leagueId: string;
+  leagueName: string;
+  sport: string;
+  existingOutright: OutrightPick | undefined;
+  onSave: (leagueId: string, leagueName: string, sport: string, pick: string) => Promise<void>;
+}) {
+  const [isExpanded, setIsExpanded] = useState(false);
+  const [pickInput, setPickInput] = useState("");
+  const [isSaving, setIsSaving] = useState(false);
+  const [isEditing, setIsEditing] = useState(false);
+
+  // Reset expansion when league changes
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- intentional reset on prop change
+    setIsExpanded(false);
+    setPickInput("");
+    setIsEditing(false);
+  }, [leagueId]);
+
+  const handleSubmit = async () => {
+    if (!pickInput.trim() || isSaving) return;
+    setIsSaving(true);
+    try {
+      await onSave(leagueId, leagueName, sport, pickInput.trim());
+      setIsExpanded(false);
+      setIsEditing(false);
+      setPickInput("");
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  // Already has an outright pick
+  if (existingOutright?.pick && !isEditing) {
+    return (
+      <div className="mb-4 rounded-2xl border border-ps-amber/30 bg-ps-amber-soft p-4">
+        <div className="flex items-center justify-between">
+          <div className="min-w-0 flex-1">
+            <p className="text-[10px] font-extrabold tracking-widest uppercase text-ps-amber-deep">
+              Outright Winner
+            </p>
+            <p className="mt-1 text-sm font-extrabold text-ps-text">
+              {existingOutright.pick}
+            </p>
+            <p className="mt-0.5 text-[11px] text-ps-text-ter">
+              Your pick for {leagueName}
+            </p>
+          </div>
+          <button
+            type="button"
+            onClick={() => {
+              setIsEditing(true);
+              setPickInput(existingOutright.pick ?? "");
+            }}
+            className="shrink-0 rounded-lg border border-ps-border px-3 py-1.5 text-xs font-semibold text-ps-text-sec transition-colors hover:border-ps-amber hover:text-ps-text"
+          >
+            Change
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  // Editing existing or creating new
+  if (isExpanded || isEditing) {
+    return (
+      <div className="mb-4 rounded-2xl border border-ps-amber/30 bg-ps-amber-soft p-4">
+        <p className="text-sm font-extrabold text-ps-text">
+          Who wins {leagueName}?
+        </p>
+        <p className="mt-1 text-[11px] text-ps-text-ter">
+          Make your outright prediction for the season
+        </p>
+        <div className="mt-3 flex gap-2">
+          <input
+            type="text"
+            value={pickInput}
+            onChange={(e) => setPickInput(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === "Enter") handleSubmit();
+            }}
+            placeholder="Team or player name..."
+            className="flex-1 rounded-lg border border-ps-border bg-ps-surface px-3 py-2 text-sm text-ps-text placeholder:text-ps-text-ter focus:border-ps-amber focus:outline-none focus:ring-2 focus:ring-ps-amber/40"
+            autoFocus
+          />
+          <button
+            type="button"
+            onClick={handleSubmit}
+            disabled={isSaving || !pickInput.trim()}
+            className="rounded-lg bg-gradient-to-r from-[#f59e0b] to-[#d97706] px-4 py-2 text-xs font-extrabold text-[#1a1208] disabled:opacity-40"
+          >
+            {isSaving ? "Saving..." : "Lock it in"}
+          </button>
+        </div>
+        {isEditing && (
+          <button
+            type="button"
+            onClick={() => {
+              setIsEditing(false);
+              setPickInput("");
+            }}
+            className="mt-2 text-xs font-medium text-ps-text-ter hover:text-ps-text-sec"
+          >
+            Cancel
+          </button>
+        )}
+      </div>
+    );
+  }
+
+  // Prompt card — tap to expand
+  return (
+    <button
+      type="button"
+      onClick={() => setIsExpanded(true)}
+      className="mb-4 flex w-full items-center gap-3 rounded-2xl border border-dashed border-ps-amber/40 bg-ps-amber-soft/50 p-4 text-left transition-colors hover:border-ps-amber/60 hover:bg-ps-amber-soft"
+    >
+      <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-ps-amber/20 text-ps-amber-deep">
+        <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+          <path d="M8 2v12M2 8h12" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+        </svg>
+      </div>
+      <div className="min-w-0 flex-1">
+        <p className="text-sm font-extrabold text-ps-text">
+          Who wins {leagueName}?
+        </p>
+        <p className="mt-0.5 text-[11px] text-ps-text-ter">
+          Tap to make your outright prediction
+        </p>
+      </div>
+      <svg width="14" height="14" viewBox="0 0 16 16" fill="none" className="shrink-0 text-ps-text-ter">
+        <path d="M6 4l4 4-4 4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+      </svg>
+    </button>
+  );
+}
+
 // ── Main component ────────────────────────────────────────────────────────────
 
 export function PersonalFixtureBrowser({
@@ -809,7 +1145,7 @@ export function PersonalFixtureBrowser({
   const urlSport = searchParams.get("sport");
   const urlLeague = searchParams.get("league");
 
-  const [activeTab, setActiveTab] = useState<"fixtures" | "my-picks" | "results">("fixtures");
+  const [activeTab, setActiveTab] = useState<"fixtures" | "my-picks" | "outrights" | "results">("fixtures");
   const [selectedSport, setSelectedSport] = useState<string>(() => {
     if (urlSport && SPORT_CATEGORIES.some((c) => c.label === urlSport)) return urlSport;
     if (typeof window !== "undefined") {
@@ -844,6 +1180,7 @@ export function PersonalFixtureBrowser({
   const [saveError, setSaveError] = useState<string | null>(null);
   const [raceInputs, setRaceInputs] = useState<Record<string, string>>({});
 
+  const [outrights, setOutrights] = useState<Map<string, OutrightPick>>(new Map());
   const [showAllLeagues, setShowAllLeagues] = useState(false);
   const currentLeagues = useMemo(() => leaguesForCategory(selectedSport), [selectedSport]);
 
@@ -940,6 +1277,84 @@ export function PersonalFixtureBrowser({
         }
       })
       .catch(() => setGetError("Failed to load your predictions — check your connection"));
+  }, []);
+
+  // Load existing outrights on mount
+  useEffect(() => {
+    fetch("/api/personal-predictions/outrights")
+      .then(async (r) => {
+        const d = (await r.json()) as {
+          outrights?: Array<{
+            league_id: string;
+            league_name: string;
+            sport: string;
+            pick: string | null;
+            change_history: Array<{ pick: string; changed_at: string }>;
+          }>;
+        };
+        const map = new Map<string, OutrightPick>();
+        for (const o of d.outrights ?? []) {
+          if (o.league_id) map.set(o.league_id, o);
+        }
+        setOutrights(map);
+      })
+      .catch(() => {
+        // Non-critical — card just won't show existing picks
+      });
+  }, []);
+
+  // Derive current league metadata
+  const currentLeagueInfo = useMemo(() => {
+    for (const group of LEAGUE_GROUPS) {
+      for (const league of group.leagues) {
+        if (league.id === selectedLeagueId) {
+          return { label: league.label, sport: league.sport };
+        }
+      }
+    }
+    return null;
+  }, [selectedLeagueId]);
+
+  // Save outright prediction
+  const saveOutright = useCallback(async (
+    leagueId: string,
+    leagueName: string,
+    sport: string,
+    pick: string,
+  ) => {
+    const res = await fetch("/api/personal-predictions/outrights", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        league_id: leagueId,
+        league_name: leagueName,
+        sport,
+        pick,
+        tournament_started: false,
+      }),
+    });
+
+    if (!res.ok) {
+      const err = (await res.json()) as { error?: string };
+      throw new Error(err.error ?? "Failed to save outright");
+    }
+
+    // Update local state
+    setOutrights((prev) => {
+      const next = new Map(prev);
+      const existing = next.get(leagueId);
+      next.set(leagueId, {
+        league_id: leagueId,
+        league_name: leagueName,
+        sport,
+        pick,
+        change_history: [
+          ...(existing?.change_history ?? []),
+          { pick, changed_at: new Date().toISOString() },
+        ],
+      });
+      return next;
+    });
   }, []);
 
   // Load upcoming fixtures when league changes
@@ -1155,6 +1570,11 @@ export function PersonalFixtureBrowser({
           onClick={() => setActiveTab("my-picks")}
         />
         <TabButton
+          label="Outrights"
+          active={activeTab === "outrights"}
+          onClick={() => setActiveTab("outrights")}
+        />
+        <TabButton
           label="Results"
           active={activeTab === "results"}
           count={picks.filter((p) => p.predictions.winner?.is_correct !== undefined && p.predictions.winner?.is_correct !== null).length}
@@ -1179,10 +1599,11 @@ export function PersonalFixtureBrowser({
         />
       )}
 
+      {/* Outrights tab */}
+      {activeTab === "outrights" && <OutrightsTab />}
+
       {/* Results tab */}
-      {activeTab === "results" && (
-        <ResultsTab picks={picks} />
-      )}
+      {activeTab === "results" && <ResultsTab picks={picks} />}
 
       {/* Fixtures tab */}
       {activeTab === "fixtures" && (
@@ -1245,6 +1666,17 @@ export function PersonalFixtureBrowser({
               </div>
             );
           })()}
+
+          {/* Contextual outright card */}
+          {currentLeagueInfo && (
+            <ContextualOutrightCard
+              leagueId={selectedLeagueId}
+              leagueName={currentLeagueInfo.label}
+              sport={currentLeagueInfo.sport}
+              existingOutright={outrights.get(selectedLeagueId)}
+              onSave={saveOutright}
+            />
+          )}
 
           {/* Save error */}
           {saveError && (
