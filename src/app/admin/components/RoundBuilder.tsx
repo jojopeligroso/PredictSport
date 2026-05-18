@@ -18,6 +18,7 @@ import { FixtureBrowser } from "./FixtureBrowser";
 import type { NormalizedFixture } from "./FixtureBrowser";
 import { CardBasedConfig } from "./PredictionCards";
 import type { PredictionTypeConfig as CardPredictionTypeConfig } from "./PredictionCards";
+import { getPillLabel, SELECTABLE_TYPES } from "@/lib/prediction-labels";
 import { getRaceEntrants } from "@/lib/race-entrants";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
@@ -91,29 +92,7 @@ const SPORT_EMOJIS: Record<string, string> = {
 };
 
 
-const ALL_PREDICTION_TYPES: PredictionTypeName[] = [
-  "winner",
-  "yes_no",
-  "margin",
-  "over_under",
-  "head_to_head",
-  "top_n",
-  "handicap",
-  "progression",
-  "final_standings",
-];
-
-const PREDICTION_TYPE_LABELS: Record<PredictionTypeName, string> = {
-  winner: "Winner",
-  yes_no: "Yes / No",
-  margin: "Margin",
-  over_under: "Over / Under",
-  head_to_head: "Head to Head",
-  top_n: "Top N",
-  handicap: "Handicap",
-  progression: "Progression",
-  final_standings: "Final Standings",
-};
+const ALL_PREDICTION_TYPES: PredictionTypeName[] = SELECTABLE_TYPES as PredictionTypeName[];
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -627,7 +606,7 @@ function Step2Configure({
                       enabled ? "text-ps-amber-deep" : "text-ps-text-sec"
                     }`}
                   >
-                    {PREDICTION_TYPE_LABELS[t]}
+                    {getPillLabel(t)}
                   </span>
                 </label>
                 {enabled && (
@@ -641,7 +620,7 @@ function Step2Configure({
                       }
                       placeholder="pts"
                       className="w-full rounded-lg border border-ps-border bg-ps-surface px-2 py-1 text-xs text-ps-text focus:border-ps-amber focus:outline-none"
-                      aria-label={`Points for ${PREDICTION_TYPE_LABELS[t]}`}
+                      aria-label={`Points for ${getPillLabel(t)}`}
                     />
                     <span className="shrink-0 text-[10px] text-ps-text-ter">
                       pts
@@ -690,7 +669,7 @@ function Step2Configure({
                             enabled ? "text-ps-amber-deep" : "text-ps-text-sec"
                           }`}
                         >
-                          {PREDICTION_TYPE_LABELS[t]}
+                          {getPillLabel(t)}
                         </span>
                       </label>
                       {enabled && (
@@ -704,7 +683,7 @@ function Step2Configure({
                             }
                             placeholder="pts"
                             className="w-full rounded-lg border border-ps-border bg-ps-surface px-2 py-1 text-xs text-ps-text focus:border-ps-amber focus:outline-none"
-                            aria-label={`Points for ${PREDICTION_TYPE_LABELS[t]}`}
+                            aria-label={`Points for ${getPillLabel(t)}`}
                           />
                           <span className="shrink-0 text-[10px] text-ps-text-ter">
                             pts
@@ -771,7 +750,7 @@ function Step2Configure({
                         key={p.type}
                         className="rounded-full bg-ps-amber-soft px-1.5 py-px text-[10px] text-ps-amber-deep"
                       >
-                        {PREDICTION_TYPE_LABELS[p.type]}
+                        {getPillLabel(p.type)}
                       </span>
                     ))}
                     {fc.predictionTypes.length > 3 && (
@@ -1009,7 +988,7 @@ function Step3Review({
                   key={t}
                   className="rounded-full bg-ps-amber-soft px-2 py-px text-xs text-ps-amber-deep"
                 >
-                  {PREDICTION_TYPE_LABELS[t as PredictionTypeName] ?? t}
+                  {getPillLabel(t as PredictionTypeName) ?? t}
                 </span>
               ))}
             </dd>
@@ -1054,7 +1033,7 @@ function Step3Review({
                       key={p.type}
                       className="rounded-full bg-ps-chip px-1.5 py-px text-[10px] text-ps-text-ter"
                     >
-                      {PREDICTION_TYPE_LABELS[p.type]} {p.points}pts
+                      {getPillLabel(p.type)} {p.points}pts
                     </span>
                   ))}
                 </div>

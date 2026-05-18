@@ -3,6 +3,7 @@
 import { useState } from "react";
 import type { PredictionType, Prediction } from "@/types/database";
 import { ComboboxInput } from "@/components/ui/ComboboxInput";
+import { getFormLabel } from "@/lib/prediction-labels";
 
 const COMBOBOX_THRESHOLD = 5;
 
@@ -34,20 +35,15 @@ interface PredictionFormProps {
 }
 
 function getLabel(config: PredictionTypeConfig): string {
-  if (config.label) return config.label;
-  const labels: Record<PredictionType, string> = {
-    winner: "Pick the Winner",
-    yes_no: "Yes or No",
-    top_n: `Top ${config.n ?? "N"} Finishers`,
-    final_standings: `Predict the Top ${config.positions ?? config.n ?? "N"}`,
-    head_to_head: "Head to Head",
-    margin: "Margin of Victory",
-    over_under: `Over/Under ${config.threshold ?? ""}`,
-    handicap: `Handicap ${config.handicap ?? ""}`,
-    progression: "How Far Will They Go?",
-    exact_score: "Exact Score",
+  // Build a config-shaped object the utility understands
+  const cfgObj: Record<string, unknown> = {
+    ...(config.label ? { display_label: config.label } : {}),
+    ...(config.n != null ? { n: config.n } : {}),
+    ...(config.positions != null ? { positions: config.positions } : {}),
+    ...(config.threshold != null ? { line: config.threshold } : {}),
+    ...(config.handicap != null ? { line: config.handicap } : {}),
   };
-  return labels[config.type];
+  return getFormLabel(config.type, cfgObj);
 }
 
 export function PredictionForm({

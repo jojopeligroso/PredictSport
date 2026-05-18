@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import type { PredictionType } from "@/types/database";
 import type { Sport } from "@/lib/sports/types";
 import { FixtureBrowser } from "./FixtureBrowser";
@@ -8,6 +8,11 @@ import type { NormalizedFixture } from "./FixtureBrowser";
 import { parseWinnerOptions } from "@/lib/parse-options";
 import { getRaceEntrants } from "@/lib/race-entrants";
 import { supportsExactScore } from "@/lib/score-format";
+import {
+  getPillLabel,
+  getDescription,
+  SELECTABLE_TYPES,
+} from "@/lib/prediction-labels";
 
 interface AddEventFormProps {
   competitionId: string;
@@ -33,17 +38,14 @@ const SPORTS: { value: Sport; label: string }[] = [
   { value: "nhl", label: "Ice Hockey" },
 ];
 
-const PREDICTION_TYPES: { value: PredictionType; label: string; description: string }[] = [
-  { value: "winner", label: "Winner", description: "Pick the outright winner" },
-  { value: "yes_no", label: "Yes / No", description: "Binary outcome (Yes/No, Ireland/UK, etc.)" },
-  { value: "top_n", label: "Top Finishers", description: "Pick someone to finish in the top positions" },
-  { value: "final_standings", label: "Final Standings", description: "Rank multiple competitors in predicted finishing order" },
-  { value: "head_to_head", label: "Head to Head", description: "Pick which of two finishes higher" },
-  { value: "margin", label: "Margin of Victory", description: "Predict winning margin range" },
-  { value: "over_under", label: "Over / Under", description: "Predict above or below a line" },
-  { value: "handicap", label: "Beat the Handicap", description: "Predict whether a team covers the spread" },
-  { value: "progression", label: "How Far Will They Go?", description: "Predict tournament progression stage" },
-];
+/** Build the type list dynamically from the centralised labels utility */
+function buildPredictionTypes(sport?: string) {
+  return SELECTABLE_TYPES.map((value) => ({
+    value,
+    label: getPillLabel(value, null, sport),
+    description: getDescription(value),
+  }));
+}
 
 interface PredictionTypeConfig {
   prediction_type: PredictionType;
@@ -101,6 +103,9 @@ export function AddEventForm({
   const [lockTime, setLockTime] = useState("");
   const [externalEventId, setExternalEventId] = useState<string | null>(null);
   const [linkedFixtureName, setLinkedFixtureName] = useState<string | null>(null);
+
+  // Prediction types (sport-aware labels)
+  const predictionTypes = useMemo(() => buildPredictionTypes(sport), [sport]);
 
   // Prediction type configs
   const [selectedTypes, setSelectedTypes] = useState<PredictionTypeConfig[]>([
@@ -467,7 +472,7 @@ export function AddEventForm({
                   Prediction Types *
                 </label>
                 <div className="flex flex-wrap gap-2">
-                  {PREDICTION_TYPES.filter((pt) => pt.value === "winner").map((pt) => (
+                  {predictionTypes.filter((pt) => pt.value === "winner").map((pt) => (
                     <button
                       key={pt.value}
                       type="button"
@@ -492,7 +497,7 @@ export function AddEventForm({
                 </button>
                 {showMoreTypes && (
                   <div className="mt-2 flex flex-wrap gap-2">
-                    {PREDICTION_TYPES.filter((pt) => pt.value !== "winner").map((pt) => (
+                    {predictionTypes.filter((pt) => pt.value !== "winner").map((pt) => (
                       <button
                         key={pt.value}
                         type="button"
@@ -546,6 +551,7 @@ export function AddEventForm({
                 <TopNConfig
                   config={selectedTypes.find((t) => t.prediction_type === "top_n")!}
                   onChange={(cfg) => updateTypeConfig("top_n", cfg)}
+                  sport={sport}
                 />
               )}
 
@@ -600,9 +606,7 @@ export function AddEventForm({
                       </p>
                       <div className="space-y-3">
                         {selectedTypes.map((ptc) => {
-                          const label = PREDICTION_TYPES.find(
-                            (p) => p.value === ptc.prediction_type
-                          )?.label ?? ptc.prediction_type;
+                          const label = getPillLabel(ptc.prediction_type, ptc.config, sport);
 
                           return (
                             <div
@@ -689,6 +693,45 @@ export function AddEventForm({
           </form>
         )}
       </div>
+    </div>
+  );
+}
+
+// -----------------------------------------------------------------------
+// Shared: custom label input for adjustable prediction types
+// -----------------------------------------------------------------------
+
+function CustomLabelInput({
+  config,
+  onChange,
+  sport,
+  predictionType,
+}: {
+  config: PredictionTypeConfig;
+  onChange: (updates: Partial<PredictionTypeConfig>) => void;
+  sport?: string;
+  predictionType: PredictionType;
+}) {
+  const currentLabel = (config.config?.display_label as string) ?? "";
+  const defaultLabel = getPillLabel(predictionType, null, sport);
+
+  return (
+    <div className="flex items-center gap-2 mb-3">
+      <label className="text-xs text-ps-text-ter whitespace-nowrap">Label:</label>
+      <input
+        type="text"
+        value={currentLabel}
+        placeholder={defaultLabel}
+        onChange={(e) =>
+          onChange({
+            config: {
+              ...config.config,
+              display_label: e.target.value || undefined,
+            },
+          })
+        }
+        className="flex-1 rounded-xl border border-ps-border bg-ps-bg px-2 py-1 text-sm text-ps-text"
+      />
     </div>
   );
 }
@@ -787,6 +830,9 @@ function YesNoConfig({
       <label className="block text-xs font-medium text-ps-text-ter mb-2">
         Yes/No Options
       </label>
+
+      <CustomLabelInput config={config} onChange={onChange} predictionType="yes_no" />
+
       <div className="flex flex-wrap gap-2 mb-2">
         {presets.map((preset) => (
           <button
@@ -828,9 +874,11 @@ function YesNoConfig({
 function TopNConfig({
   config,
   onChange,
+  sport,
 }: {
   config: PredictionTypeConfig;
   onChange: (updates: Partial<PredictionTypeConfig>) => void;
+  sport?: string;
 }) {
   const n = (config.config?.n as number) ?? 5;
   const ladder = (config.config?.points_ladder as Array<{ position: number; points: number }>) ?? [];
@@ -921,6 +969,8 @@ function TopNConfig({
       <label className="block text-xs font-medium text-ps-text-ter mb-2">
         Top Finishers — points per finishing position
       </label>
+
+      <CustomLabelInput config={config} onChange={onChange} sport={sport} predictionType="top_n" />
 
       <div className="flex flex-wrap gap-2 mb-3">
         {presets.map((preset) => (
@@ -1036,6 +1086,9 @@ function ProgressionConfig({
       <label className="block text-xs font-medium text-ps-text-ter mb-2">
         Progression Stages (earliest to best)
       </label>
+
+      <CustomLabelInput config={config} onChange={onChange} predictionType="progression" />
+
       <div className="flex flex-wrap gap-2 mb-2">
         {presets.map((preset) => (
           <button
@@ -1113,6 +1166,8 @@ function FinalStandingsConfig({
       <label className="block text-xs font-medium text-ps-text-ter mb-2">
         Final Standings — rank competitors in order
       </label>
+
+      <CustomLabelInput config={config} onChange={onChange} predictionType="final_standings" />
 
       <div className="flex flex-wrap gap-2 mb-3">
         {presets.map((preset) => (
@@ -1228,6 +1283,8 @@ function OverUnderConfig({
         Over / Under Line
       </label>
 
+      <CustomLabelInput config={config} onChange={onChange} predictionType="over_under" />
+
       <div className="flex flex-wrap gap-2 mb-3">
         {presets.map((preset) => (
           <button
@@ -1337,6 +1394,8 @@ function HandicapConfig({
       <label className="block text-xs font-medium text-ps-text-ter mb-2">
         Handicap / Spread
       </label>
+
+      <CustomLabelInput config={config} onChange={onChange} predictionType="handicap" />
 
       <div className="flex flex-wrap gap-2 mb-3">
         {presets.map((preset) => (

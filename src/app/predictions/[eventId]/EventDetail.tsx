@@ -25,6 +25,7 @@ import type {
   NoteVisibility,
 } from "@/types/database";
 import { parseWinnerOptions } from "@/lib/parse-options";
+import { getPillLabel } from "@/lib/prediction-labels";
 
 // ── Types ────────────────────────────────────────────────────────────────────
 
@@ -516,26 +517,7 @@ export function EventDetail({
           const currentPick =
             activePicks[ept.prediction_type] ?? getPickValue(existingPred);
 
-          const typeLabel =
-            ept.prediction_type === "winner"
-              ? "Winner"
-              : ept.prediction_type === "over_under"
-              ? "Over/Under"
-              : ept.prediction_type === "head_to_head"
-              ? "Head to Head"
-              : ept.prediction_type === "yes_no"
-              ? "Yes/No"
-              : ept.prediction_type === "top_n"
-              ? "Top N"
-              : ept.prediction_type === "progression"
-              ? "How Far?"
-              : ept.prediction_type === "handicap"
-              ? "Handicap"
-              : ept.prediction_type === "margin"
-              ? "Winning Margin"
-              : ept.prediction_type === "final_standings"
-              ? "Final Standings"
-              : ept.prediction_type;
+          const typeLabel = getPillLabel(ept.prediction_type, ept.config);
 
           // ── Margin: two-step picker ──
           if (ept.prediction_type === "margin") {

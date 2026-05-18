@@ -92,6 +92,7 @@ function eptToConfig(ept: EventPredictionType): {
   const cfg = ept.config ?? {};
   return {
     type: ept.prediction_type,
+    label: cfg.display_label as string | undefined,
     options: cfg.options as string[] | undefined,
     line: cfg.line as number | undefined,
     threshold: cfg.line as number | undefined,
