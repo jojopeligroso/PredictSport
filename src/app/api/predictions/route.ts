@@ -145,13 +145,30 @@ export async function POST(request: NextRequest) {
     );
   }
 
+  // Resolve the event_prediction_type_id — enforces that this prediction type is
+  // actually configured for the event (referential integrity via FK).
+  const { data: ept, error: eptError } = await supabase
+    .from("event_prediction_types")
+    .select("id")
+    .eq("event_id", event_id)
+    .eq("prediction_type", prediction_type)
+    .maybeSingle();
+
+  if (eptError || !ept) {
+    return NextResponse.json(
+      { error: `Prediction type "${prediction_type}" is not configured for this event` },
+      { status: 400 }
+    );
+  }
+
+  const event_prediction_type_id = ept.id;
+
   // Check for existing prediction (upsert)
   const { data: existing } = await supabase
     .from("predictions")
     .select("id")
-    .eq("event_id", event_id)
+    .eq("event_prediction_type_id", event_prediction_type_id)
     .eq("user_id", user.id)
-    .eq("prediction_type", prediction_type)
     .maybeSingle();
 
   // Block updates when competition disallows prediction changes
@@ -212,6 +229,7 @@ export async function POST(request: NextRequest) {
   const { data: created, error: insertError } = await supabase
     .from("predictions")
     .insert({
+      event_prediction_type_id,
       event_id,
       user_id: user.id,
       prediction_type,

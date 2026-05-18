@@ -1,5 +1,5 @@
 export type UserRole = "admin" | "co_admin" | "participant";
-export type CompetitionType = "fixed" | "open";
+export type CompetitionType = "fixed" | "open" | "personal";
 export type CompetitionVisibility = "public" | "private";
 export type CompetitionStatus = "draft" | "active" | "completed" | "archived";
 export type RoundStatus = "draft" | "open" | "locked" | "scored";
@@ -96,12 +96,14 @@ export interface Event {
   status: EventStatus;
   nominated_by: string | null;
   external_event_id: string | null;
+  sporting_event_id: string | null;
   provider_league: string | null;
   created_at: string;
 }
 
 export interface Prediction {
   id: string;
+  event_prediction_type_id: string;
   event_id: string;
   user_id: string;
   prediction_type: PredictionType;

@@ -29,6 +29,55 @@ Audit date: 2026-05-09.
 
 ## Post-Launch
 
+- [x] **Schema Normalisation Audit & Code Review** — Full BCNF analysis and realignment. Key issues: (1) `predictions` lacks FK to `event_prediction_types` — should use `event_prediction_type_id` not text `(event_id, prediction_type)`; (2) `events.competition_id` transitively determined by `events.round_id`; (3) `events.prediction_types` JSONB dead weight — confirm dropped; (4) fixture metadata duplicated on `events` — no `sporting_event_id` FK to `sporting_events` pool. Full BCNF review of all tables, write migration(s), realign all code to new FKs.
+
+## Personal Predictions Unification
+
+Design complete. See `docs/DESIGN-PERSONAL-PREDICTIONS-UNIFICATION.md`. Implement in order below.
+
+### Phase A — Migration (foundation, do first)
+
+- [ ] **A1 — Personal competition bootstrap migration** — SQL migration: for each existing `users` row, insert one `competitions` row (`type='personal'`, `status='active'`, `scoring_rules='{}'`, `name='Personal'`) and one `competition_members` row (`role='admin'`). Add `type` check constraint to include `'personal'`. Add unique constraint: one personal competition per user.
+- [ ] **A2 — Port legacy rows migration** — SQL migration: for each `personal_predictions` row, upsert an `events` row (keyed by `external_event_id` + `competition_id`), insert `event_prediction_types` rows (`winner` always; `exact_score` if `score_prediction` was set, `points=0`), insert `predictions` rows from `prediction_value` + `score_prediction`. Preserve `result_confirmed` where result was known.
+- [ ] **A3 — Drop legacy table migration** — Drop `personal_predictions` table and all associated cron jobs / API routes that write to it. Remove dead code.
+- [ ] **A4 — Add `favourite_team` to users** — SQL migration: add `favourite_team jsonb` column to `users` (stores `{sport, team_name, provider_id}`). Nullable — opt-in only.
+
+### Phase B — Backend / API
+
+- [ ] **B1 — Personal competition resolver** — Server util `getOrCreatePersonalCompetition(userId)` — looks up the user's personal competition, creates it if missing (handles new signups post-migration). Used by all personal prediction API routes.
+- [ ] **B2 — Personal event creation API** — `POST /api/personal-predictions/event` — atomically creates `events` + `event_prediction_types` rows for a fixture in the user's personal competition. Idempotent on `external_event_id`. Returns event + prediction types.
+- [ ] **B3 — Personal prediction submit API** — `POST /api/personal-predictions/predict` — upserts a `predictions` row. No lock time enforcement (personal predictions can be changed freely before event starts).
+- [ ] **B4 — Outright creation API** — `POST /api/personal-predictions/outrights` — creates a `final_standings` prediction for a league/tournament (stored as an event with `is_outright=true` flag or separate `outright_predictions` table — decide at implementation). Handles change budget (max 3 total, timestamped history).
+- [ ] **B5 — Inferred suggestions API** — `GET /api/personal-predictions/outright-suggestions` — returns leagues where user has 3+ fixture picks but no outright, filtered to those not dismissed or dismissed but now at 10+ picks.
+- [ ] **B6 — Dashboard stats API** — `GET /api/personal-predictions/stats` — returns: lifetime hit rate + streak, by-sport breakdown, by-league breakdown, by-year breakdown, recent 5 picks with results. Aggregates from `predictions` join `events` on personal competition.
+
+### Phase C — Fixtures Tab (replace legacy browser)
+
+- [ ] **C1 — New PersonalFixtureBrowser component** — Replace legacy 1,412-LOC `PersonalFixtureBrowser.tsx` with unified-model version. Fixture tap → calls B2 + B3 atomically. Same provider/league browsing UX, but writes to competition model.
+- [ ] **C2 — Sport-aware prediction type defaults** — Util `getPersonalDefaults(sport, format)`: team sports → `winner` + `exact_score` as primary, 2-3 extra pills; race sports → `winner` only. Wire into B2.
+- [ ] **C3 — Familiar terminology pills** — Map internal types to pill labels: `exact_score` → "Correct Score", `margin` → "Winning Margin", `over_under` → "Over/Under", `handicap` → "Spread", `head_to_head` → "H2H", `yes_no` → "Prop Bet", `top_n` → "Top 3", `progression` → "To Qualify", `final_standings` → "Outright Winner". Apply across personal predictions UI.
+- [ ] **C4 — Contextual outright card in Fixtures tab** — When browsing a specific league, show a contextual card at top: "Who wins [League]?" if no outright exists. Tapping creates the outright via B4.
+
+### Phase D — Outrights Tab
+
+- [ ] **D1 — Outrights tab scaffold** — New tab in personal predictions nav. Lists all user's active outright picks with status (open, resolved, pending resolution).
+- [ ] **D2 — Inferred suggestions section** — Secondary section in Outrights tab. Calls B5. Shows dismissable suggestion cards ("You've picked 4 Premier League games — who wins the title?"). Dismissal stored per user per league.
+- [ ] **D3 — Outright change rules UX** — Before tournament start: freely editable. After start: show change budget (e.g. "2 changes remaining"), timestamped history inline. UX discourages flipping (confirm dialog).
+
+### Phase E — Dashboard Tab
+
+- [ ] **E1 — Dashboard tab scaffold + stats fetch** — New tab. Calls B6. Renders fixed widget order: Recent Picks → Summary Strip → By Year → By Sport → By League.
+- [ ] **E2 — Recent Picks widget** — Last 5 picks in super-compact single-card view (one line per pick: team badge, result icon, sport tag). Expandable dropdown to show all. Correct/wrong/pending colour coding.
+- [ ] **E3 — Summary Strip widget** — Lifetime stats row: total picks, % correct, current streak, best streak.
+- [ ] **E4 — By Year/Season widget** — Year selector (2024 / 2025 / 2026). Shows hit rate for selected year. Auto-defaults to current year.
+- [ ] **E5 — By Sport widget** — Hit rate per sport as a simple ranked list (Football 64%, GAA 71%, ...). Tap sport to drill into By League.
+- [ ] **E6 — By League widget** — Drill-down view within a sport. Hit rate per league/competition. Triggered by tapping a sport in E5.
+- [ ] **E7 — My Favourite Team widget** — Opt-in. If `users.favourite_team` is set: show recent pick history for that team + next upcoming fixture. If not set: show a small "Set a favourite team" prompt card.
+- [ ] **E8 — Customise button (placeholder)** — "Customise" button in dashboard header. For now shows a toast: "Widget reordering coming soon." Lays the groundwork (widget order stored in `users.notification_prefs` or new `dashboard_prefs` column).
+
+### Phase F — Onboarding
+
+- [ ] **F1 — Favourite team prompt at signup** — After first successful login (detect via `created_at` within last 60s or a `onboarding_complete` flag), show a one-time modal: "Got a favourite team? We'll track your picks for them." Sport selector + team name input. Saves to `users.favourite_team`. Skippable.
 - [ ] Event nominations by participants (submission UI)
 - [ ] Public competition browsing/discovery page
 - [ ] Tiebreaker submission UI
@@ -141,3 +190,23 @@ See `SPORTS-ARCHITECTURE.md` for detailed spec (TBD).
 - [x] 6.2 — **Resolve null cricket results** — RCB v KKR (id `0e435b0e`, ESPN id `1529300`) and Punjab Kings v Mumbai Indians (id `66750591`, ESPN id `1529301`) — fixed via ESPN `state=post` bug fix (2026-05-15)
 - [x] 6.3 — **Add result-fetch cron job** — `/api/personal-predictions/cron`, runs 3am UTC daily, also fixed ESPN `is_final` bug so results actually resolve (2026-05-15)
 - [x] 6.4 — **Provider success rate audit** — confirmed via cron re-fetch: MLB and cricket now resolving correctly after ESPN `is_final` fix (2026-05-15)
+
+### Phase 7: Cricket Fixture Cards Fix
+
+**Problem:** Cricket event fixture cards show no Home/Draw/Away buttons. `config.options` is empty/missing on `winner` prediction type — prediction form falls back to free-text.
+
+**Investigation checklist:**
+
+- [ ] 7.1 — Check `AddEventForm.tsx`: does fixture → event creation correctly wire `fixture.participants` into `config.options` for the `winner` prediction type? Check `parseWinnerOptions` is called with participants, not just the event name string.
+- [ ] 7.2 — Query existing cricket events to confirm `config.options` is empty:
+  ```sql
+  SELECT e.event_name, ept.prediction_type, ept.config
+  FROM events e JOIN event_prediction_types ept ON ept.event_id = e.id
+  WHERE e.sport = 'cricket' ORDER BY e.created_at DESC LIMIT 20;
+  ```
+- [ ] 7.3 — Confirm `allow_draw: false` for cricket (no draw in cricket). `parseWinnerOptions` in `src/lib/parse-options.ts` already handles this — verify it's being called correctly.
+- [ ] 7.4 — Confirm `exact_score` is excluded for cricket. Check `supportsExactScore()` (likely `src/lib/sports/scoring.ts`).
+- [ ] 7.5 — Fix: ensure admin event creation populates `config: { options: ["Team A", "Team B"] }` from `fixture.participants`.
+- [ ] 7.6 — Backfill any existing broken cricket events with correct `config.options`.
+
+**Expected result:** Cricket winner prediction renders two pill buttons (Team A / Team B), no Draw, no exact score.
