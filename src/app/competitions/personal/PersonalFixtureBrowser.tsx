@@ -1304,7 +1304,7 @@ export function PersonalFixtureBrowser({
   }, []);
 
   // Derive current league metadata
-  const currentLeagueInfo = useMemo(() => {
+  const currentLeagueInfo = (() => {
     for (const group of LEAGUE_GROUPS) {
       for (const league of group.leagues) {
         if (league.id === selectedLeagueId) {
@@ -1313,7 +1313,7 @@ export function PersonalFixtureBrowser({
       }
     }
     return null;
-  }, [selectedLeagueId]);
+  })();
 
   // Save outright prediction
   const saveOutright = useCallback(async (
