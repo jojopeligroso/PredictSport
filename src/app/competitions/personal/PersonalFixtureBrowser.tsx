@@ -201,6 +201,8 @@ interface OutrightPick {
   change_history: Array<{ pick: string; changed_at: string }>;
 }
 
+const MAX_OUTRIGHT_CHANGES = 2; // Must match API route constant
+
 interface PredictionOption {
   value: string;
   label: string;
@@ -794,6 +796,8 @@ function OutrightCard({
   outright: OutrightEntry;
   status: OutrightStatus;
 }) {
+  const [showHistory, setShowHistory] = useState(false);
+
   const borderClass =
     status === "resolved"
       ? outright.is_correct
@@ -804,6 +808,7 @@ function OutrightCard({
         : "border-ps-border";
 
   const changesUsed = Math.max(0, outright.change_history.length - 1);
+  const changesRemaining = Math.max(0, MAX_OUTRIGHT_CHANGES - changesUsed);
   const resultWinner = outright.result_data?.winner as string | undefined;
 
   return (
@@ -837,9 +842,17 @@ function OutrightCard({
           <p className="text-xs font-bold text-ps-text">{outright.league_name}</p>
           <div className="mt-0.5 flex items-center gap-1.5">
             <SportPill sport={toSportKey(outright.sport as Sport)} size="sm" />
-            {changesUsed > 0 && (
-              <span className="font-mono text-[10px] text-ps-text-ter">
-                {changesUsed} change{changesUsed !== 1 ? "s" : ""}
+            {status === "open" && changesUsed > 0 && (
+              <span className={`font-mono text-[10px] font-semibold ${
+                changesRemaining === 0
+                  ? "text-ps-red"
+                  : changesRemaining === 1
+                    ? "text-ps-amber-deep"
+                    : "text-ps-text-ter"
+              }`}>
+                {changesRemaining === 0
+                  ? "No changes left"
+                  : `${changesRemaining}/${MAX_OUTRIGHT_CHANGES} left`}
               </span>
             )}
           </div>
@@ -855,6 +868,42 @@ function OutrightCard({
           )}
         </div>
       </div>
+
+      {/* Expandable change history */}
+      {outright.change_history.length > 1 && (
+        <div className="mt-2 border-t border-ps-border/50 pt-2">
+          <button
+            type="button"
+            onClick={() => setShowHistory((v) => !v)}
+            className="flex items-center gap-1 text-[10px] font-semibold text-ps-text-ter hover:text-ps-text-sec"
+          >
+            <svg
+              width="10"
+              height="10"
+              viewBox="0 0 16 16"
+              fill="none"
+              className={`transition-transform ${showHistory ? "rotate-90" : ""}`}
+              aria-hidden="true"
+            >
+              <path d="M6 4l4 4-4 4" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+            </svg>
+            {changesUsed} change{changesUsed !== 1 ? "s" : ""} made
+          </button>
+          {showHistory && (
+            <div className="mt-1.5 flex flex-col gap-1">
+              {outright.change_history.map((h, i) => (
+                <div key={h.changed_at} className="flex items-center gap-2 text-[10px]">
+                  <span className="font-mono text-ps-text-ter">{formatChangeDate(h.changed_at)}</span>
+                  <span className={`font-semibold ${i === outright.change_history.length - 1 ? "text-ps-text" : "text-ps-text-ter line-through"}`}>
+                    {h.pick}
+                  </span>
+                  {i === 0 && <span className="text-ps-text-ter">(initial)</span>}
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
     </div>
   );
 }
@@ -984,23 +1033,43 @@ function ResultsTab({ picks }: { picks: PersonalPick[] }) {
 
 // ── Outright card (contextual, Fixtures tab) ─────────────────────────────────
 
+function formatChangeDate(iso: string): string {
+  const d = new Date(iso);
+  const day = d.getDate();
+  const mon = d.toLocaleString("en-IE", { month: "short" });
+  const hr = d.getHours().toString().padStart(2, "0");
+  const min = d.getMinutes().toString().padStart(2, "0");
+  return `${day} ${mon}, ${hr}:${min}`;
+}
+
 function ContextualOutrightCard({
   leagueId,
   leagueName,
   sport,
   existingOutright,
+  tournamentStarted,
   onSave,
 }: {
   leagueId: string;
   leagueName: string;
   sport: string;
   existingOutright: OutrightPick | undefined;
-  onSave: (leagueId: string, leagueName: string, sport: string, pick: string) => Promise<void>;
+  tournamentStarted: boolean;
+  onSave: (leagueId: string, leagueName: string, sport: string, pick: string, tournamentStarted: boolean) => Promise<unknown>;
 }) {
   const [isExpanded, setIsExpanded] = useState(false);
   const [pickInput, setPickInput] = useState("");
   const [isSaving, setIsSaving] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
+  const [showHistory, setShowHistory] = useState(false);
+  const [showConfirm, setShowConfirm] = useState(false);
+
+  const history = existingOutright?.change_history ?? [];
+  const changesUsed = Math.max(0, history.length - 1);
+  const changesRemaining = tournamentStarted
+    ? Math.max(0, MAX_OUTRIGHT_CHANGES - changesUsed)
+    : MAX_OUTRIGHT_CHANGES;
+  const budgetExhausted = tournamentStarted && changesRemaining <= 0;
 
   // Reset expansion when league changes
   useEffect(() => {
@@ -1008,26 +1077,84 @@ function ContextualOutrightCard({
     setIsExpanded(false);
     setPickInput("");
     setIsEditing(false);
+    setShowHistory(false);
+    setShowConfirm(false);
   }, [leagueId]);
 
-  const handleSubmit = async () => {
+  const doSubmit = async () => {
     if (!pickInput.trim() || isSaving) return;
     setIsSaving(true);
     try {
-      await onSave(leagueId, leagueName, sport, pickInput.trim());
+      await onSave(leagueId, leagueName, sport, pickInput.trim(), tournamentStarted);
       setIsExpanded(false);
       setIsEditing(false);
+      setShowConfirm(false);
       setPickInput("");
     } finally {
       setIsSaving(false);
     }
   };
 
+  const handleSubmit = () => {
+    // If tournament started and changing an existing pick, show confirm dialog
+    if (tournamentStarted && existingOutright?.pick && pickInput.trim() !== existingOutright.pick) {
+      setShowConfirm(true);
+      return;
+    }
+    doSubmit();
+  };
+
+  const handleChangeClick = () => {
+    if (budgetExhausted) return;
+    setIsEditing(true);
+    setPickInput(existingOutright?.pick ?? "");
+  };
+
+  // Confirm dialog overlay
+  if (showConfirm) {
+    return (
+      <div className="mb-4 rounded-2xl border border-ps-amber/30 bg-ps-amber-soft p-4">
+        <p className="text-sm font-extrabold text-ps-text">
+          Change your pick?
+        </p>
+        <p className="mt-1.5 text-xs text-ps-text-sec leading-relaxed">
+          You&apos;re switching from <span className="font-bold text-ps-text">{existingOutright?.pick}</span> to{" "}
+          <span className="font-bold text-ps-text">{pickInput.trim()}</span>.
+          {changesRemaining <= 1 && (
+            <span className="font-bold text-ps-red"> This is your last change.</span>
+          )}
+          {changesRemaining > 1 && (
+            <span> You&apos;ll have {changesRemaining - 1} change{changesRemaining - 1 !== 1 ? "s" : ""} left.</span>
+          )}
+        </p>
+        <div className="mt-3 flex gap-2">
+          <button
+            type="button"
+            onClick={() => {
+              setShowConfirm(false);
+            }}
+            className="flex-1 rounded-lg border border-ps-border px-3 py-2 text-xs font-semibold text-ps-text-sec"
+          >
+            Keep {existingOutright?.pick}
+          </button>
+          <button
+            type="button"
+            onClick={doSubmit}
+            disabled={isSaving}
+            className="flex-1 rounded-lg bg-ps-amber px-3 py-2 text-xs font-extrabold text-[#1a1208] disabled:opacity-40"
+          >
+            {isSaving ? "Saving..." : "Confirm change"}
+          </button>
+        </div>
+      </div>
+    );
+  }
+
   // Already has an outright pick
   if (existingOutright?.pick && !isEditing) {
     return (
       <div className="mb-4 rounded-2xl border border-ps-amber/30 bg-ps-amber-soft p-4">
-        <div className="flex items-center justify-between">
+        <div className="flex items-start justify-between">
           <div className="min-w-0 flex-1">
             <p className="text-[10px] font-extrabold tracking-widest uppercase text-ps-amber-deep">
               Outright Winner
@@ -1038,18 +1165,69 @@ function ContextualOutrightCard({
             <p className="mt-0.5 text-[11px] text-ps-text-ter">
               Your pick for {leagueName}
             </p>
+            {/* Change budget badge */}
+            {tournamentStarted && (
+              <p className={`mt-1.5 font-mono text-[10px] font-semibold ${
+                changesRemaining === 0
+                  ? "text-ps-red"
+                  : changesRemaining === 1
+                    ? "text-ps-amber-deep"
+                    : "text-ps-text-ter"
+              }`}>
+                {changesRemaining === 0
+                  ? "No changes remaining"
+                  : `${changesRemaining} change${changesRemaining !== 1 ? "s" : ""} remaining`}
+              </p>
+            )}
           </div>
           <button
             type="button"
-            onClick={() => {
-              setIsEditing(true);
-              setPickInput(existingOutright.pick ?? "");
-            }}
-            className="shrink-0 rounded-lg border border-ps-border px-3 py-1.5 text-xs font-semibold text-ps-text-sec transition-colors hover:border-ps-amber hover:text-ps-text"
+            onClick={handleChangeClick}
+            disabled={budgetExhausted}
+            className={`shrink-0 rounded-lg border px-3 py-1.5 text-xs font-semibold transition-colors ${
+              budgetExhausted
+                ? "border-ps-border/50 text-ps-text-ter/50 cursor-not-allowed"
+                : "border-ps-border text-ps-text-sec hover:border-ps-amber hover:text-ps-text"
+            }`}
           >
             Change
           </button>
         </div>
+        {/* Timestamped change history */}
+        {history.length > 1 && (
+          <div className="mt-2 border-t border-ps-amber/20 pt-2">
+            <button
+              type="button"
+              onClick={() => setShowHistory((v) => !v)}
+              className="flex items-center gap-1 text-[10px] font-semibold text-ps-text-ter hover:text-ps-text-sec"
+            >
+              <svg
+                width="10"
+                height="10"
+                viewBox="0 0 16 16"
+                fill="none"
+                className={`transition-transform ${showHistory ? "rotate-90" : ""}`}
+                aria-hidden="true"
+              >
+                <path d="M6 4l4 4-4 4" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+              </svg>
+              {history.length - 1} change{history.length - 1 !== 1 ? "s" : ""} made
+            </button>
+            {showHistory && (
+              <div className="mt-1.5 flex flex-col gap-1">
+                {history.map((h, i) => (
+                  <div key={h.changed_at} className="flex items-center gap-2 text-[10px]">
+                    <span className="font-mono text-ps-text-ter">{formatChangeDate(h.changed_at)}</span>
+                    <span className={`font-semibold ${i === history.length - 1 ? "text-ps-text" : "text-ps-text-ter line-through"}`}>
+                      {h.pick}
+                    </span>
+                    {i === 0 && <span className="text-ps-text-ter">(initial)</span>}
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
       </div>
     );
   }
@@ -1062,7 +1240,9 @@ function ContextualOutrightCard({
           Who wins {leagueName}?
         </p>
         <p className="mt-1 text-[11px] text-ps-text-ter">
-          Make your outright prediction for the season
+          {isEditing && tournamentStarted
+            ? `Change your outright prediction (${changesRemaining} change${changesRemaining !== 1 ? "s" : ""} remaining)`
+            : "Make your outright prediction for the season"}
         </p>
         <div className="mt-3 flex gap-2">
           <input
@@ -1315,12 +1495,23 @@ export function PersonalFixtureBrowser({
     return null;
   })();
 
+  // Compute whether the selected league's tournament has started.
+  // We check if any loaded fixture has a start_time in the past.
+  // Using a state + effect avoids the impure-render lint rule (Date.now in useMemo).
+  const [tournamentStarted, setTournamentStarted] = useState(false);
+  useEffect(() => {
+    const now = Date.now();
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- derived from fixtures + wall clock
+    setTournamentStarted(fixtures.some((f) => new Date(f.start_time).getTime() < now));
+  }, [fixtures]);
+
   // Save outright prediction
   const saveOutright = useCallback(async (
     leagueId: string,
     leagueName: string,
     sport: string,
     pick: string,
+    tournamentHasStarted: boolean,
   ) => {
     const res = await fetch("/api/personal-predictions/outrights", {
       method: "POST",
@@ -1330,31 +1521,30 @@ export function PersonalFixtureBrowser({
         league_name: leagueName,
         sport,
         pick,
-        tournament_started: false,
+        tournament_started: tournamentHasStarted,
       }),
     });
 
+    const resData = (await res.json()) as { error?: string; changes_remaining?: number };
     if (!res.ok) {
-      const err = (await res.json()) as { error?: string };
-      throw new Error(err.error ?? "Failed to save outright");
+      throw new Error(resData.error ?? "Failed to save outright");
     }
-
-    // Update local state
     setOutrights((prev) => {
       const next = new Map(prev);
       const existing = next.get(leagueId);
+      const newHistory = tournamentHasStarted
+        ? [...(existing?.change_history ?? []), { pick, changed_at: new Date().toISOString() }]
+        : [{ pick, changed_at: new Date().toISOString() }]; // Pre-start: replace
       next.set(leagueId, {
         league_id: leagueId,
         league_name: leagueName,
         sport,
         pick,
-        change_history: [
-          ...(existing?.change_history ?? []),
-          { pick, changed_at: new Date().toISOString() },
-        ],
+        change_history: newHistory,
       });
       return next;
     });
+    return resData;
   }, []);
 
   // Load upcoming fixtures when league changes
@@ -1674,6 +1864,7 @@ export function PersonalFixtureBrowser({
               leagueName={currentLeagueInfo.label}
               sport={currentLeagueInfo.sport}
               existingOutright={outrights.get(selectedLeagueId)}
+              tournamentStarted={tournamentStarted}
               onSave={saveOutright}
             />
           )}
