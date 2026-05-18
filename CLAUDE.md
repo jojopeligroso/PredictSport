@@ -39,6 +39,7 @@ Competition → Rounds → Events → EventPredictionTypes
 Competition → CompetitionMembers
 ```
 
+- **Personal competitions** — Each user has one `type='personal'` competition (auto-created at signup). Same schema as group competitions but `scoring_rules='{}'`, no rounds, events created on-the-fly. See `docs/DESIGN-PERSONAL-PREDICTIONS-UNIFICATION.md`.
 - **Rounds** group events (can mix sports/leagues). `round_number` unique per competition.
 - **EventPredictionTypes** normalised table. Each row = one prediction type for one event, with its own points/partial_points/config.
 - **Competition.scoring_rules** is the default template; `event_prediction_types` is source of truth per event.
@@ -76,6 +77,10 @@ Provider abstraction in `src/lib/sports/`. `BaseProvider` handles fetch, rate li
 - `POST /api/admin/competitions` — Create; `PATCH` for status transitions
 - `POST /api/admin/events` — Create; `PATCH` to update/postpone/cancel; `DELETE` to remove (blocked if predictions exist)
 - `POST /api/admin/confirm-result` — Confirm + auto-score all predictions
+- `POST /api/personal-predictions/event` — Create event in personal competition (idempotent on `external_event_id`)
+- `POST /api/personal-predictions/predict` — Upsert personal prediction (no lock time, freely editable before start)
+- `POST /api/personal-predictions/outrights` — Create/update outright (final_standings) prediction with change budget
+- `GET /api/personal-predictions/outright-suggestions` — Leagues with 3+ picks but no outright; `POST` to dismiss
 
 ### Auth
 
@@ -93,8 +98,9 @@ Provider abstraction in `src/lib/sports/`. `BaseProvider` handles fetch, rate li
 - 9 sports providers + fixture browser
 - MVP pages (auth, predictions, leaderboard, admin)
 - Scoring engine, UI polish, E2E scaffolding
+- Personal predictions unification: Phase A (migrations) + Phase B (APIs B1-B5)
 
-**Known gaps:** All §15 punch list items complete. See `todos.md` and `SPEC.md §15` for history.
+**In progress:** Personal predictions unification Phase B6 (dashboard stats), Phases C-F. See `todos.md`.
 
 ## Environment Variables
 
