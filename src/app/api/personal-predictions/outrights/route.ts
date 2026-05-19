@@ -187,6 +187,7 @@ async function handleCreate(
       prediction_data: {
         value: body.pick.trim(),
         change_history: changeHistory,
+        picked_pre_start: !(body.tournament_started ?? false),
       },
     })
     .select()
@@ -252,6 +253,7 @@ async function handleUpdate(
         prediction_data: {
           value: newPick,
           change_history: [{ pick: newPick, changed_at: now }],
+          picked_pre_start: !tournamentStarted,
         },
       })
       .select()
@@ -408,9 +410,29 @@ export async function GET(request: Request) {
     (predictions ?? []).map((p) => [p.event_id, p]),
   );
 
+  // Determine which leagues have started by checking for fixture events
+  // with start_time in the past (outright events use far-future start_time)
+  const leagues = [...new Set(events.map((e) => e.provider_league).filter(Boolean))] as string[];
+  const startedLeagues = new Set<string>();
+  if (leagues.length > 0) {
+    const now = new Date().toISOString();
+    const { data: fixtureEvents } = await supabase
+      .from("events")
+      .select("provider_league")
+      .eq("competition_id", competitionId)
+      .in("provider_league", leagues)
+      .not("external_event_id", "like", "outright:%")
+      .lt("start_time", now);
+    for (const fe of fixtureEvents ?? []) {
+      if (fe.provider_league) startedLeagues.add(fe.provider_league);
+    }
+  }
+
   const outrights = events.map((e) => {
     const pred = predMap.get(e.id);
     const data = pred?.prediction_data as Record<string, unknown> | undefined;
+    const pickedPreStart = (data?.picked_pre_start as boolean | undefined) ?? true;
+    const leagueStarted = e.provider_league ? startedLeagues.has(e.provider_league) : false;
     return {
       event_id: e.id,
       league_id: e.external_event_id?.replace("outright:", "") ?? null,
@@ -421,6 +443,8 @@ export async function GET(request: Request) {
       is_correct: pred?.is_correct ?? null,
       status: e.status,
       result_data: e.result_data,
+      tournament_started: leagueStarted,
+      picked_pre_start: pickedPreStart,
     };
   });
 

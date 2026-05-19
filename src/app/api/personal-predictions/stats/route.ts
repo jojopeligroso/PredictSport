@@ -224,8 +224,8 @@ export async function GET() {
     };
   }
 
-  // --- Recent 5 picks ---
-  const recent: RecentPick[] = predictions.slice(0, 5).map((p) => ({
+  // --- Recent picks (all, UI handles truncation) ---
+  const recent: RecentPick[] = predictions.map((p) => ({
     prediction_id: p.id,
     event_name: p.events.event_name,
     sport: p.events.sport,

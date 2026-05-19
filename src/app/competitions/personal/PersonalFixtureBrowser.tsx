@@ -691,6 +691,8 @@ interface OutrightEntry {
   is_correct: boolean | null;
   status: string;
   result_data: Record<string, unknown> | null;
+  tournament_started: boolean;
+  picked_pre_start: boolean;
 }
 
 type OutrightStatus = "open" | "pending" | "resolved";
@@ -865,6 +867,20 @@ function OutrightCard({
             <p className="mt-0.5 text-[10px] font-semibold text-ps-text-ter">
               Winner: {resultWinner}
             </p>
+          )}
+          {/* Contextual subtitle: date, "Change your mind?", or nothing */}
+          {!resultWinner && status === "open" && (
+            outright.tournament_started
+              ? (!outright.picked_pre_start || outright.change_history.length > 1) && outright.change_history.length > 0 && (
+                <p className="mt-0.5 font-mono text-[10px] text-ps-text-ter">
+                  {formatChangeDate(outright.change_history[outright.change_history.length - 1].changed_at)}
+                </p>
+              )
+              : (
+                <p className="mt-0.5 text-[10px] font-semibold italic text-ps-amber-deep">
+                  Change your mind?
+                </p>
+              )
           )}
         </div>
       </div>
@@ -1164,9 +1180,17 @@ function ContextualOutrightCard({
             <p className="mt-1 text-sm font-extrabold text-ps-text">
               {existingOutright.pick}
             </p>
-            <p className="mt-0.5 text-[11px] text-ps-text-ter">
-              Your pick for {leagueName}
-            </p>
+            {tournamentStarted ? (
+              history.length > 1 ? (
+                <p className="mt-0.5 font-mono text-[10px] text-ps-text-ter">
+                  Picked {formatChangeDate(history[history.length - 1].changed_at)}
+                </p>
+              ) : null
+            ) : (
+              <p className="mt-0.5 text-[11px] font-semibold italic text-ps-amber-deep">
+                Change your mind?
+              </p>
+            )}
             {/* Change budget badge */}
             {tournamentStarted && (
               <p className={`mt-1.5 font-mono text-[10px] font-semibold ${
@@ -2196,48 +2220,7 @@ function DashboardTab() {
   return (
     <div className="flex flex-col gap-4">
       {/* Recent Picks */}
-      <DashboardSection title="Recent Picks">
-        <div className="flex flex-col gap-1.5">
-          {recent_picks.map((pick) => {
-            const sportKey = toSportKey(pick.sport as Sport);
-            const cfg = SPORT_CONFIG[sportKey];
-            return (
-              <div
-                key={pick.prediction_id}
-                className="flex items-center gap-3 rounded-lg bg-ps-surface px-3 py-2"
-              >
-                {/* Result indicator */}
-                <div
-                  className={`shrink-0 h-6 w-6 rounded-full flex items-center justify-center text-[9px] font-extrabold ${
-                    pick.is_correct === null
-                      ? "bg-ps-chip text-ps-text-ter"
-                      : pick.is_correct
-                        ? "bg-ps-green-soft text-ps-green"
-                        : "bg-ps-red/10 text-ps-red"
-                  }`}
-                >
-                  {pick.is_correct === null ? "?" : pick.is_correct ? "W" : "L"}
-                </div>
-
-                {/* Event */}
-                <div className="min-w-0 flex-1">
-                  <p className="truncate text-xs font-bold text-ps-text">
-                    {pick.event_name}
-                  </p>
-                  <p className="mt-0.5 text-[10px] text-ps-text-ter">
-                    {cfg?.emoji} {cfg?.name ?? pick.sport}
-                  </p>
-                </div>
-
-                {/* Pick value */}
-                <span className="shrink-0 text-xs font-extrabold text-ps-text-sec">
-                  {(pick.prediction_data?.value as string) ?? "—"}
-                </span>
-              </div>
-            );
-          })}
-        </div>
-      </DashboardSection>
+      <RecentPicksWidget picks={recent_picks} />
 
       {/* Summary Strip */}
       <DashboardSection title="Lifetime">
@@ -2312,6 +2295,66 @@ function DashboardTab() {
         </DashboardSection>
       )}
     </div>
+  );
+}
+
+const RECENT_PICKS_PREVIEW = 5;
+
+function RecentPicksWidget({ picks }: { picks: DashboardStats["recent_picks"] }) {
+  const [expanded, setExpanded] = useState(false);
+  const visible = expanded ? picks : picks.slice(0, RECENT_PICKS_PREVIEW);
+  const hasMore = picks.length > RECENT_PICKS_PREVIEW;
+
+  return (
+    <DashboardSection title="Recent Picks">
+      <div className="flex flex-col gap-1">
+        {visible.map((pick) => {
+          const sportKey = toSportKey(pick.sport as Sport);
+          const cfg = SPORT_CONFIG[sportKey];
+          return (
+            <div
+              key={pick.prediction_id}
+              className="flex items-center gap-2 rounded-lg px-2 py-1.5"
+            >
+              {/* Result indicator */}
+              <div
+                className={`shrink-0 h-5 w-5 rounded-full flex items-center justify-center text-[9px] font-extrabold ${
+                  pick.is_correct === null
+                    ? "bg-ps-chip text-ps-text-ter"
+                    : pick.is_correct
+                      ? "bg-ps-green-soft text-ps-green"
+                      : "bg-ps-red/10 text-ps-red"
+                }`}
+              >
+                {pick.is_correct === null ? "?" : pick.is_correct ? "W" : "L"}
+              </div>
+
+              {/* Pick value + event name */}
+              <span className="min-w-0 flex-1 truncate text-xs font-bold text-ps-text">
+                {(pick.prediction_data?.value as string) ?? "—"}
+                <span className="ml-1.5 font-medium text-ps-text-ter">
+                  {pick.event_name}
+                </span>
+              </span>
+
+              {/* Sport tag */}
+              <span className="shrink-0 rounded-full bg-ps-chip px-1.5 py-0.5 text-[9px] font-bold text-ps-text-ter">
+                {cfg?.emoji} {cfg?.name ?? pick.sport}
+              </span>
+            </div>
+          );
+        })}
+      </div>
+      {hasMore && (
+        <button
+          type="button"
+          onClick={() => setExpanded(!expanded)}
+          className="mt-2 w-full text-center text-[11px] font-bold text-ps-amber hover:text-ps-amber/80 transition-colors"
+        >
+          {expanded ? "Show less" : `Show all ${picks.length} picks`}
+        </button>
+      )}
+    </DashboardSection>
   );
 }
 
