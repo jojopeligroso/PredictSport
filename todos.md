@@ -81,7 +81,7 @@ Design complete. See `docs/DESIGN-PERSONAL-PREDICTIONS-UNIFICATION.md`. Implemen
 - [x] Event nominations by participants (submission UI)
 - [x] Public competition browsing/discovery page
 - [x] Tiebreaker submission UI
-- [ ] Co-admin appointment UI
+- [x] Co-admin appointment UI
 - [ ] "New Season" clone from archived competition
 
 ## Round Builder UX Improvements
