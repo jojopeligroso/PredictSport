@@ -5,6 +5,7 @@ interface ProfileUpdateBody {
   display_name?: string;
   avatar_url?: string | null;
   notification_prefs?: Record<string, unknown>;
+  favourite_team?: { sport: string; team_name: string; provider_id: string | null } | null;
 }
 
 export async function PATCH(request: NextRequest) {
@@ -41,6 +42,8 @@ export async function PATCH(request: NextRequest) {
   if (body.avatar_url !== undefined) update.avatar_url = body.avatar_url;
   if (body.notification_prefs !== undefined)
     update.notification_prefs = body.notification_prefs;
+  if (body.favourite_team !== undefined)
+    update.favourite_team = body.favourite_team;
 
   if (Object.keys(update).length === 0) {
     return NextResponse.json(

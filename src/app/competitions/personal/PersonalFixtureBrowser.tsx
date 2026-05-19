@@ -6,7 +6,7 @@ import { PickButton } from "@/components/ui/PickButton";
 import { SportPill } from "@/components/ui";
 import { ComboboxInput } from "@/components/ui/ComboboxInput";
 import { getRaceEntrants } from "@/lib/race-entrants";
-import { toSportKey, SPORT_CONFIG } from "@/components/ui/sport-config";
+import { toSportKey, SPORT_CONFIG, type SportKey } from "@/components/ui/sport-config";
 import {
   ExactScoreInput,
   emptyScore,
@@ -2170,6 +2170,7 @@ function DashboardTab() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [drillSport, setDrillSport] = useState<string | null>(null);
+  const [showOnboarding, setShowOnboarding] = useState(false);
   const leagueSectionRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -2179,7 +2180,12 @@ function DashboardTab() {
         const res = await fetch("/api/personal-predictions/stats");
         if (!res.ok) throw new Error("Failed to load stats");
         const data = await res.json();
-        if (!cancelled) setStats(data);
+        if (!cancelled) {
+          setStats(data);
+          if (!data.favourite_team && !localStorage.getItem("ps_onboarding_fav_team")) {
+            setShowOnboarding(true);
+          }
+        }
       } catch (err) {
         if (!cancelled) setError((err as Error).message);
       } finally {
@@ -2241,6 +2247,20 @@ function DashboardTab() {
 
   return (
     <div className="flex flex-col gap-4">
+      {showOnboarding && (
+        <FavouriteTeamOnboarding
+          onDismiss={() => setShowOnboarding(false)}
+          onSaved={() => {
+            setShowOnboarding(false);
+            // Re-fetch stats to pick up the new favourite_team
+            fetch("/api/personal-predictions/stats")
+              .then((r) => r.json())
+              .then((data) => setStats(data))
+              .catch(() => {});
+          }}
+        />
+      )}
+
       {/* Header with Customise button */}
       <div className="flex items-center justify-end">
         <button
@@ -2393,6 +2413,105 @@ function RecentPicksWidget({ picks }: { picks: DashboardStats["recent_picks"] })
         </button>
       )}
     </DashboardSection>
+  );
+}
+
+function FavouriteTeamOnboarding({ onDismiss, onSaved }: { onDismiss: () => void; onSaved: () => void }) {
+  const sportKeys = Object.keys(SPORT_CONFIG) as SportKey[];
+  const [selectedSport, setSelectedSport] = useState<string>(sportKeys[0]);
+  const [teamName, setTeamName] = useState("");
+  const [saving, setSaving] = useState(false);
+
+  async function handleSave() {
+    const name = teamName.trim();
+    if (!name) return;
+    setSaving(true);
+    try {
+      const res = await fetch("/api/profile", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          favourite_team: { sport: selectedSport, team_name: name, provider_id: null },
+        }),
+      });
+      if (res.ok) {
+        localStorage.setItem("ps_onboarding_fav_team", "done");
+        onSaved();
+      }
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  function handleSkip() {
+    localStorage.setItem("ps_onboarding_fav_team", "done");
+    onDismiss();
+  }
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 px-4">
+      <div className="w-full max-w-sm rounded-2xl border border-ps-border bg-ps-bg p-6 shadow-xl">
+        <p className="text-center font-display text-lg font-extrabold text-ps-text">
+          Got a favourite team?
+        </p>
+        <p className="mt-1.5 text-center text-xs text-ps-text-sec">
+          We&apos;ll track your picks for them.
+        </p>
+
+        <div className="mt-4">
+          <label className="mb-1.5 block text-[10px] font-bold uppercase tracking-widest text-ps-text-ter">
+            Sport
+          </label>
+          <div className="flex flex-wrap gap-1.5">
+            {sportKeys.map((key) => {
+              const cfg = SPORT_CONFIG[key];
+              return (
+                <button
+                  key={key}
+                  onClick={() => setSelectedSport(key)}
+                  className={`rounded-full px-2.5 py-1 text-[11px] font-bold transition-colors ${
+                    key === selectedSport
+                      ? "bg-ps-amber text-ps-ink"
+                      : "bg-ps-ink/5 text-ps-text-sec hover:bg-ps-ink/10"
+                  }`}
+                >
+                  {cfg.emoji} {cfg.name}
+                </button>
+              );
+            })}
+          </div>
+        </div>
+
+        <div className="mt-4">
+          <label className="mb-1.5 block text-[10px] font-bold uppercase tracking-widest text-ps-text-ter">
+            Team name
+          </label>
+          <input
+            type="text"
+            value={teamName}
+            onChange={(e: React.ChangeEvent<HTMLInputElement>) => setTeamName(e.target.value)}
+            placeholder="e.g. Liverpool, Wexford, Red Bull"
+            className="w-full rounded-lg border border-ps-border bg-ps-surface px-3 py-2 text-sm text-ps-text placeholder:text-ps-text-ter focus:border-ps-amber focus:outline-none"
+          />
+        </div>
+
+        <div className="mt-5 flex gap-2">
+          <button
+            onClick={handleSkip}
+            className="flex-1 rounded-xl bg-ps-ink/5 py-2.5 text-xs font-bold text-ps-text-sec transition-colors hover:bg-ps-ink/10"
+          >
+            Skip
+          </button>
+          <button
+            onClick={handleSave}
+            disabled={!teamName.trim() || saving}
+            className="flex-1 rounded-xl bg-ps-amber py-2.5 text-xs font-bold text-ps-ink transition-colors hover:bg-ps-amber/90 disabled:opacity-40"
+          >
+            {saving ? "Saving..." : "Save"}
+          </button>
+        </div>
+      </div>
+    </div>
   );
 }
 
