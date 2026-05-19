@@ -1049,6 +1049,7 @@ function ContextualOutrightCard({
   existingOutright,
   tournamentStarted,
   onSave,
+  teamOptions,
 }: {
   leagueId: string;
   leagueName: string;
@@ -1056,6 +1057,7 @@ function ContextualOutrightCard({
   existingOutright: OutrightPick | undefined;
   tournamentStarted: boolean;
   onSave: (leagueId: string, leagueName: string, sport: string, pick: string, tournamentStarted: boolean) => Promise<unknown>;
+  teamOptions: string[];
 }) {
   const [isExpanded, setIsExpanded] = useState(false);
   const [pickInput, setPickInput] = useState("");
@@ -1245,17 +1247,28 @@ function ContextualOutrightCard({
             : "Make your outright prediction for the season"}
         </p>
         <div className="mt-3 flex gap-2">
-          <input
-            type="text"
-            value={pickInput}
-            onChange={(e) => setPickInput(e.target.value)}
-            onKeyDown={(e) => {
-              if (e.key === "Enter") handleSubmit();
-            }}
-            placeholder="Team or player name..."
-            className="flex-1 rounded-lg border border-ps-border bg-ps-surface px-3 py-2 text-sm text-ps-text placeholder:text-ps-text-ter focus:border-ps-amber focus:outline-none focus:ring-2 focus:ring-ps-amber/40"
-            autoFocus
-          />
+          {teamOptions.length > 0 ? (
+            <ComboboxInput
+              options={teamOptions}
+              value={pickInput}
+              onChange={setPickInput}
+              disabled={isSaving}
+              placeholder="Select team or player..."
+              className="flex-1"
+            />
+          ) : (
+            <input
+              type="text"
+              value={pickInput}
+              onChange={(e) => setPickInput(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") handleSubmit();
+              }}
+              placeholder="Team or player name..."
+              className="flex-1 rounded-lg border border-ps-border bg-ps-surface px-3 py-2 text-sm text-ps-text placeholder:text-ps-text-ter focus:border-ps-amber focus:outline-none focus:ring-2 focus:ring-ps-amber/40"
+              autoFocus
+            />
+          )}
           <button
             type="button"
             onClick={handleSubmit}
@@ -1503,6 +1516,18 @@ export function PersonalFixtureBrowser({
     const now = Date.now();
     // eslint-disable-next-line react-hooks/set-state-in-effect -- derived from fixtures + wall clock
     setTournamentStarted(fixtures.some((f) => new Date(f.start_time).getTime() < now));
+  }, [fixtures]);
+
+  // Derive unique team/participant names for outright autocomplete.
+  // Fixtures are already filtered to the selected league by the fetch call.
+  const outrightTeamOptions = useMemo(() => {
+    const teams = new Set<string>();
+    for (const f of fixtures) {
+      for (const p of f.participants) {
+        if (p && p !== "Draw") teams.add(p);
+      }
+    }
+    return [...teams].sort((a, b) => a.localeCompare(b));
   }, [fixtures]);
 
   // Save outright prediction
@@ -1866,6 +1891,7 @@ export function PersonalFixtureBrowser({
               existingOutright={outrights.get(selectedLeagueId)}
               tournamentStarted={tournamentStarted}
               onSave={saveOutright}
+              teamOptions={outrightTeamOptions}
             />
           )}
 
