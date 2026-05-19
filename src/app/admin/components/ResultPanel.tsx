@@ -25,6 +25,7 @@ export function ResultPanel({ event, onConfirmed }: ResultPanelProps) {
   const [isConfirming, setIsConfirming] = useState(false);
   const [isUnconfirming, setIsUnconfirming] = useState(false);
   const [showManualEntry, setShowManualEntry] = useState(false);
+  const [pendingConfirm, setPendingConfirm] = useState<Record<string, unknown> | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
 
@@ -86,7 +87,7 @@ export function ResultPanel({ event, onConfirmed }: ResultPanelProps) {
   };
 
   const handleUnconfirm = async () => {
-    if (!confirm("Undo result? This will reset all prediction scores for this event.")) return;
+    if (!window.confirm("Undo result? This will reset all prediction scores for this event.")) return;
     setIsUnconfirming(true);
     try {
       const res = await fetch("/api/admin/unconfirm-result", {
@@ -110,6 +111,7 @@ export function ResultPanel({ event, onConfirmed }: ResultPanelProps) {
   const handleManualSubmit = (e: React.FormEvent) => {
     e.preventDefault();
 
+    // Build the result object, then route through the pending-confirm step
     const manualResult: Record<string, unknown> = {
       provider: "manual",
       fetched_at: new Date().toISOString(),
@@ -178,7 +180,7 @@ export function ResultPanel({ event, onConfirmed }: ResultPanelProps) {
       manualResult.winner = manualWinner.trim();
     }
 
-    handleConfirm(manualResult);
+    setPendingConfirm(manualResult);
   };
 
   if (event.result_confirmed) {
@@ -265,7 +267,7 @@ export function ResultPanel({ event, onConfirmed }: ResultPanelProps) {
 
             <div className="mt-2.5 flex gap-2">
               <button
-                onClick={() => handleConfirm()}
+                onClick={() => setPendingConfirm({})}
                 disabled={isConfirming}
                 className="flex-1 rounded-[10px] px-4 py-2.5 text-[12.5px] font-extrabold text-white"
                 style={{ background: "linear-gradient(135deg, var(--ps-green), #059669)" }}
@@ -283,6 +285,35 @@ export function ResultPanel({ event, onConfirmed }: ResultPanelProps) {
           </div>
         );
       })()}
+
+      {/* Confirmation step */}
+      {pendingConfirm && (
+        <div className="mb-4 rounded-xl border border-ps-amber bg-ps-amber-soft px-4 py-3">
+          <p className="text-sm font-semibold text-ps-text mb-1">Confirm result?</p>
+          <p className="text-xs text-ps-text-sec mb-3">
+            This will score all predictions for <span className="font-medium">{event.event_name}</span>. This action can be undone.
+          </p>
+          <div className="flex gap-2">
+            <button
+              onClick={() => {
+                handleConfirm(Object.keys(pendingConfirm).length > 0 ? pendingConfirm : undefined);
+                setPendingConfirm(null);
+              }}
+              disabled={isConfirming}
+              className="rounded-xl bg-ps-green px-4 py-1.5 text-sm font-semibold text-white transition-opacity hover:opacity-90 disabled:opacity-50"
+            >
+              {isConfirming ? "Confirming..." : "Yes, confirm"}
+            </button>
+            <button
+              type="button"
+              onClick={() => setPendingConfirm(null)}
+              className="rounded-xl border border-ps-border px-4 py-1.5 text-sm font-medium text-ps-text transition-colors hover:bg-ps-chip"
+            >
+              Cancel
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* Manual entry */}
       <div>

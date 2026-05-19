@@ -120,13 +120,13 @@ See `MANUAL-EVENTS-AND-API-GAPS.md` for detailed task breakdown.
 ### Phase 3: Manual Event Management (3-4 hours) — **INDEPENDENT, can run parallel to Phase 1/2**
 
 **Admin Workflow Improvements**
-- [ ] 3.1 — Audit existing manual event creation flow (AddEventForm.tsx)
-- [ ] 3.2 — Design ManualEventWizard component (5-step guided creation)
-- [ ] 3.3 — Add team name validation & autocomplete suggestions
-- [ ] 3.4 — Create manual event templates (GAA, soccer, snooker, etc.)
-- [ ] 3.5 — Build bulk manual event creator (CSV upload or multi-row form)
-- [ ] 3.6 — Improve manual result entry UX (pre-populate, validation, preview)
-- [ ] 3.7 — Add result undo/edit capability (10-min window)
+- [x] 3.1 — Audit existing manual event creation flow (AddEventForm.tsx) — AddEventForm replaced by ManualEventWizard; orphaned file deleted
+- [x] 3.2 — Design ManualEventWizard component (5-step guided creation)
+- [x] 3.3 — Add team name validation & autocomplete suggestions
+- [x] 3.4 — Create manual event templates (GAA, soccer, snooker, etc.)
+- [x] 3.5 — Build bulk manual event creator (CSV upload or multi-row form)
+- [x] 3.6 — Improve manual result entry UX (pre-populate, validation, preview) — pre-pop from event name, score preview, edit button, 2-step confirmation
+- [x] 3.7 — Add result undo/edit capability (10-min window) — unlimited undo via unconfirm-result API (window constraint dropped; better UX for small groups)
 - [ ] 3.8 — Add "Events Missing Results" admin alert dashboard
 - [ ] 3.9 — Auto-fetch reminder for manual events (cron notification)
 - [ ] 3.10 — Add "Duplicate Event" cloning feature
