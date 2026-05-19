@@ -68,8 +68,8 @@ Design complete. See `docs/DESIGN-PERSONAL-PREDICTIONS-UNIFICATION.md`. Implemen
 
 - [x] **E1 — Dashboard tab scaffold + stats fetch** — New tab. Calls B6. Renders fixed widget order: Recent Picks → Summary Strip → By Year → By Sport → By League.
 - [x] **E2 — Recent Picks widget** — Last 5 picks in super-compact single-card view (one line per pick: team badge, result icon, sport tag). Expandable dropdown to show all. Correct/wrong/pending colour coding.
-- [ ] **E3 — Summary Strip widget** — Lifetime stats row: total picks, % correct, current streak, best streak.
-- [ ] **E4 — By Year/Season widget** — Year selector (2024 / 2025 / 2026). Shows hit rate for selected year. Auto-defaults to current year.
+- [x] **E3 — Summary Strip widget** — Lifetime stats row: total picks, % correct, current streak, best streak.
+- [x] **E4 — By Year/Season widget** — Year selector (2024 / 2025 / 2026). Shows hit rate for selected year. Auto-defaults to current year.
 - [ ] **E5 — By Sport widget** — Hit rate per sport as a simple ranked list (Football 64%, GAA 71%, ...). Tap sport to drill into By League.
 - [ ] **E6 — By League widget** — Drill-down view within a sport. Hit rate per league/competition. Triggered by tapping a sport in E5.
 - [ ] **E7 — My Favourite Team widget** — Opt-in. If `users.favourite_team` is set: show recent pick history for that team + next upcoming fixture. If not set: show a small "Set a favourite team" prompt card.

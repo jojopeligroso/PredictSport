@@ -2157,6 +2157,8 @@ function DashboardTab() {
   const [stats, setStats] = useState<DashboardStats | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [drillSport, setDrillSport] = useState<string | null>(null);
+  const leagueSectionRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -2213,9 +2215,15 @@ function DashboardTab() {
   const sportEntries = Object.entries(by_sport)
     .sort(([, a], [, b]) => b.total - a.total);
 
-  // Sort leagues by total picks descending
+  // Sort leagues by total picks descending, filter by drilled sport if set
   const leagueEntries = Object.entries(by_league)
+    .filter(([, data]) => drillSport === null || data.sport === drillSport)
     .sort(([, a], [, b]) => b.total - a.total);
+
+  function handleSportDrill(sport: string) {
+    setDrillSport(prev => prev === sport ? null : sport);
+    setTimeout(() => leagueSectionRef.current?.scrollIntoView({ behavior: "smooth", block: "nearest" }), 50);
+  }
 
   return (
     <div className="flex flex-col gap-4">
@@ -2243,19 +2251,7 @@ function DashboardTab() {
 
       {/* By Year */}
       {yearEntries.length > 0 && (
-        <DashboardSection title="By Year">
-          <div className="flex flex-col gap-1.5">
-            {yearEntries.map(([year, data]) => (
-              <BreakdownRow
-                key={year}
-                label={year}
-                total={data.total}
-                correct={data.correct}
-                hitRate={data.hit_rate}
-              />
-            ))}
-          </div>
-        </DashboardSection>
+        <ByYearWidget yearEntries={yearEntries} />
       )}
 
       {/* By Sport */}
@@ -2264,6 +2260,7 @@ function DashboardTab() {
           <div className="flex flex-col gap-1.5">
             {sportEntries.map(([sport, data]) => {
               const cfg = SPORT_CONFIG[toSportKey(sport as Sport)];
+              const active = drillSport === sport;
               return (
                 <BreakdownRow
                   key={sport}
@@ -2271,6 +2268,8 @@ function DashboardTab() {
                   total={data.total}
                   correct={data.correct}
                   hitRate={data.hit_rate}
+                  active={active}
+                  onClick={() => handleSportDrill(sport)}
                 />
               );
             })}
@@ -2280,19 +2279,23 @@ function DashboardTab() {
 
       {/* By League */}
       {leagueEntries.length > 0 && (
-        <DashboardSection title="By League">
-          <div className="flex flex-col gap-1.5">
-            {leagueEntries.map(([league, data]) => (
-              <BreakdownRow
-                key={league}
-                label={league}
-                total={data.total}
-                correct={data.correct}
-                hitRate={data.hit_rate}
-              />
-            ))}
-          </div>
-        </DashboardSection>
+        <div ref={leagueSectionRef}>
+          <DashboardSection
+            title={drillSport ? `By League — ${SPORT_CONFIG[toSportKey(drillSport as Sport)]?.name ?? drillSport}` : "By League"}
+          >
+            <div className="flex flex-col gap-1.5">
+              {leagueEntries.map(([league, data]) => (
+                <BreakdownRow
+                  key={league}
+                  label={league}
+                  total={data.total}
+                  correct={data.correct}
+                  hitRate={data.hit_rate}
+                />
+              ))}
+            </div>
+          </DashboardSection>
+        </div>
       )}
     </div>
   );
@@ -2358,6 +2361,42 @@ function RecentPicksWidget({ picks }: { picks: DashboardStats["recent_picks"] })
   );
 }
 
+function ByYearWidget({ yearEntries }: { yearEntries: [string, { total: number; correct: number; wrong: number; pending: number; hit_rate: number | null }][] }) {
+  const currentYear = String(new Date().getFullYear());
+  const defaultYear = yearEntries.find(([y]) => y === currentYear)?.[0] ?? yearEntries[0]?.[0];
+  const [selectedYear, setSelectedYear] = useState(defaultYear);
+  const selected = yearEntries.find(([y]) => y === selectedYear);
+
+  if (!selected) return null;
+  const [, data] = selected;
+  const pct = data.hit_rate !== null ? Math.round(data.hit_rate * 100) : null;
+
+  return (
+    <DashboardSection title="By Year">
+      <div className="mb-3 flex gap-1.5">
+        {yearEntries.map(([year]) => (
+          <button
+            key={year}
+            onClick={() => setSelectedYear(year)}
+            className={`rounded-full px-3 py-1 text-xs font-bold transition-colors ${
+              year === selectedYear
+                ? "bg-ps-amber text-ps-ink"
+                : "bg-ps-ink/5 text-ps-text-sec hover:bg-ps-ink/10"
+            }`}
+          >
+            {year}
+          </button>
+        ))}
+      </div>
+      <div className="grid grid-cols-3 gap-2 text-center">
+        <StatCell label="Picks" value={String(data.total)} />
+        <StatCell label="Correct" value={String(data.correct)} />
+        <StatCell label="Hit Rate" value={pct !== null ? `${pct}%` : "—"} />
+      </div>
+    </DashboardSection>
+  );
+}
+
 function DashboardSection({ title, children }: { title: string; children: import("react").ReactNode }) {
   return (
     <div className="rounded-xl border border-ps-border bg-ps-surface px-4 py-3">
@@ -2383,25 +2422,47 @@ function BreakdownRow({
   total,
   correct,
   hitRate,
+  onClick,
+  active,
 }: {
   label: string;
   total: number;
   correct: number;
   hitRate: number | null;
+  onClick?: () => void;
+  active?: boolean;
 }) {
   const pct = hitRate !== null ? Math.round(hitRate * 100) : null;
+  const Tag = onClick ? "button" : "div";
   return (
-    <div className="flex items-center gap-3">
-      <span className="min-w-0 flex-1 truncate text-xs font-semibold text-ps-text">
+    <Tag
+      type={onClick ? "button" : undefined}
+      onClick={onClick}
+      className={`flex w-full items-center gap-3 rounded-lg px-1 py-0.5 transition-colors ${onClick ? "cursor-pointer" : ""} ${active ? "bg-ps-amber/10" : onClick ? "hover:bg-ps-chip/50" : ""}`}
+    >
+      <span className={`min-w-0 flex-1 truncate text-xs font-semibold ${active ? "text-ps-amber" : "text-ps-text"}`}>
         {label}
       </span>
       <span className="font-mono text-[10px] text-ps-text-ter">
         {correct}/{total}
       </span>
-      <span className="w-10 text-right font-mono text-xs font-extrabold text-ps-text">
+      <span className={`w-10 text-right font-mono text-xs font-extrabold ${active ? "text-ps-amber" : "text-ps-text"}`}>
         {pct !== null ? `${pct}%` : "—"}
       </span>
-    </div>
+      {onClick && (
+        <svg
+          className={`h-3 w-3 flex-shrink-0 transition-transform ${active ? "rotate-90 text-ps-amber" : "text-ps-text-ter"}`}
+          viewBox="0 0 12 12"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="2"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        >
+          <path d="M4.5 2.5l4 3.5-4 3.5" />
+        </svg>
+      )}
+    </Tag>
   );
 }
 
