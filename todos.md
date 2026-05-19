@@ -67,7 +67,7 @@ Design complete. See `docs/DESIGN-PERSONAL-PREDICTIONS-UNIFICATION.md`. Implemen
 ### Phase E — Dashboard Tab
 
 - [x] **E1 — Dashboard tab scaffold + stats fetch** — New tab. Calls B6. Renders fixed widget order: Recent Picks → Summary Strip → By Year → By Sport → By League.
-- [ ] **E2 — Recent Picks widget** — Last 5 picks in super-compact single-card view (one line per pick: team badge, result icon, sport tag). Expandable dropdown to show all. Correct/wrong/pending colour coding.
+- [x] **E2 — Recent Picks widget** — Last 5 picks in super-compact single-card view (one line per pick: team badge, result icon, sport tag). Expandable dropdown to show all. Correct/wrong/pending colour coding.
 - [ ] **E3 — Summary Strip widget** — Lifetime stats row: total picks, % correct, current streak, best streak.
 - [ ] **E4 — By Year/Season widget** — Year selector (2024 / 2025 / 2026). Shows hit rate for selected year. Auto-defaults to current year.
 - [ ] **E5 — By Sport widget** — Hit rate per sport as a simple ranked list (Football 64%, GAA 71%, ...). Tap sport to drill into By League.
@@ -210,3 +210,13 @@ See `SPORTS-ARCHITECTURE.md` for detailed spec (TBD).
 - [ ] 7.6 — Backfill any existing broken cricket events with correct `config.options`.
 
 **Expected result:** Cricket winner prediction renders two pill buttons (Team A / Team B), no Draw, no exact score.
+
+## All-Competitions Dashboard (Future — Needs Design)
+
+> **Note:** Run `/grill-with-docs` before implementing any of this. Significant design decisions required (card layout, data model, cross-competition aggregation, what's useful vs noisy).
+
+A global dashboard card/view accessible from `/competitions` — giving users a high-level view across all competitions they're in, not just personal predictions.
+
+- [ ] **F1 — Design spike (grill session)** — What does a cross-competition dashboard show? Options: recent activity across all competitions, leaderboard positions at a glance, upcoming lock times, hit rate per competition. Use `/grill-with-docs` to define scope before any implementation.
+- [ ] **F2 — Dashboard card on /competitions** — A summary card on the competitions list page showing user's position and recent activity for each competition they're in. Requires deciding what data to surface.
+- [ ] **F3 — Global stats** — Aggregate hit rate across all scored predictions (personal + group). Separate from personal dashboard stats.
