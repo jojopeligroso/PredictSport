@@ -196,6 +196,35 @@ export default async function PredictionsPage({
     ),
   }));
 
+  // Fetch tiebreakers and user's existing answers for this competition
+  const { data: tiebreakers } = await supabase
+    .from("tiebreakers")
+    .select("id, competition_id, question_text, correct_value")
+    .eq("competition_id", selectedCompetition.id);
+
+  const tiebreakerList = (tiebreakers ?? []) as Array<{
+    id: string;
+    competition_id: string;
+    question_text: string;
+    correct_value: number | null;
+  }>;
+
+  const tbIds = tiebreakerList.map((t) => t.id);
+  let userTbAnswers: Array<{ tiebreaker_id: string; value: number }> = [];
+  if (tbIds.length > 0) {
+    const { data: tbAnswers } = await supabase
+      .from("tiebreaker_answers")
+      .select("tiebreaker_id, value")
+      .eq("user_id", user.id)
+      .in("tiebreaker_id", tbIds);
+    userTbAnswers = (tbAnswers ?? []) as Array<{ tiebreaker_id: string; value: number }>;
+  }
+
+  const tiebreakerData = tiebreakerList.map((tb) => ({
+    ...tb,
+    user_answer: userTbAnswers.find((a) => a.tiebreaker_id === tb.id)?.value ?? null,
+  }));
+
   return (
     <div>
       <CompetitionSelector
@@ -210,6 +239,7 @@ export default async function PredictionsPage({
         rounds={typedRounds}
         selectedRoundId={selectedRoundId}
         showResultHints={showResultHints}
+        tiebreakers={tiebreakerData}
       />
 
       <div className="mx-auto max-w-[480px] px-4 pb-8 space-y-3">

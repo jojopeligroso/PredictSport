@@ -63,6 +63,13 @@ interface RoundSummary {
   status: string;
 }
 
+interface TiebreakerData {
+  id: string;
+  question_text: string;
+  correct_value: number | null;
+  user_answer: number | null;
+}
+
 interface EventListProps {
   events: EventWithPredictions[];
   competitionId: string;
@@ -72,6 +79,7 @@ interface EventListProps {
   rounds?: RoundSummary[];
   selectedRoundId?: string;
   showResultHints?: boolean;
+  tiebreakers?: TiebreakerData[];
 }
 
 type FilterChip = "all" | "open" | "locked" | SportKey;
@@ -228,6 +236,7 @@ export function EventList({
   rounds = [],
   selectedRoundId: initialRoundId,
   showResultHints = true,
+  tiebreakers = [],
 }: EventListProps) {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -687,8 +696,14 @@ export function EventList({
             ))}
           </div>
 
-          {/* ── Tiebreaker placeholder ─────────────────────────────────────── */}
-          {/* Tiebreaker section would be rendered here if round data includes one */}
+          {/* ── Tiebreaker section ─────────────────────────────────────── */}
+          {tiebreakers.length > 0 && (
+            <div className="px-4 pb-3">
+              {tiebreakers.map((tb) => (
+                <TiebreakerInput key={tb.id} tiebreaker={tb} />
+              ))}
+            </div>
+          )}
         </>
       ) : (
         /* ── Results: Result Cards ────────────────────────────────────── */
@@ -1212,4 +1227,70 @@ function formatPickSummary(predictions: Prediction[]): string {
     return "picked";
   });
   return parts.join(" · ");
+}
+
+// ── Tiebreaker Input ────────────────────────────────────────────────────────
+
+function TiebreakerInput({ tiebreaker }: { tiebreaker: TiebreakerData }) {
+  const [value, setValue] = useState<string>(
+    tiebreaker.user_answer !== null ? String(tiebreaker.user_answer) : "",
+  );
+  const [saving, setSaving] = useState(false);
+  const [saved, setSaved] = useState(tiebreaker.user_answer !== null);
+
+  async function handleSubmit() {
+    const num = Number(value);
+    if (isNaN(num)) return;
+    setSaving(true);
+    try {
+      const res = await fetch("/api/tiebreaker-answers", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ tiebreaker_id: tiebreaker.id, value: num }),
+      });
+      if (res.ok) {
+        setSaved(true);
+      }
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  return (
+    <div className="rounded-xl border border-ps-amber/30 bg-ps-amber-soft/30 p-4">
+      <p className="text-[10px] font-extrabold tracking-widest uppercase text-ps-amber-deep">
+        Tiebreaker
+      </p>
+      <p className="mt-1 text-sm font-semibold text-ps-text">
+        {tiebreaker.question_text}
+      </p>
+      <div className="mt-3 flex items-center gap-2">
+        <input
+          type="number"
+          value={value}
+          onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
+            setValue(e.target.value);
+            setSaved(false);
+          }}
+          placeholder="Your answer"
+          className="w-28 rounded-lg border border-ps-border bg-ps-surface px-3 py-2 font-mono text-sm text-ps-text focus:border-ps-amber focus:outline-none"
+        />
+        <button
+          onClick={handleSubmit}
+          disabled={saving || !value || isNaN(Number(value))}
+          className="rounded-xl bg-ps-amber px-4 py-2 text-xs font-bold text-ps-ink transition-colors hover:bg-ps-amber/90 disabled:opacity-40"
+        >
+          {saving ? "Saving..." : saved ? "Saved" : "Submit"}
+        </button>
+      </div>
+      {tiebreaker.correct_value !== null && (
+        <p className="mt-2 text-[10px] font-semibold text-ps-text-ter">
+          Answer: <span className="font-mono font-bold text-ps-text">{tiebreaker.correct_value}</span>
+          {tiebreaker.user_answer !== null && (
+            <> &middot; Off by {Math.abs(tiebreaker.user_answer - tiebreaker.correct_value)}</>
+          )}
+        </p>
+      )}
+    </div>
+  );
 }
