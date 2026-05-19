@@ -2237,8 +2237,28 @@ function DashboardTab() {
     setTimeout(() => leagueSectionRef.current?.scrollIntoView({ behavior: "smooth", block: "nearest" }), 50);
   }
 
+  const [showCustomiseToast, setShowCustomiseToast] = useState(false);
+
   return (
     <div className="flex flex-col gap-4">
+      {/* Header with Customise button */}
+      <div className="flex items-center justify-end">
+        <button
+          onClick={() => {
+            setShowCustomiseToast(true);
+            setTimeout(() => setShowCustomiseToast(false), 2500);
+          }}
+          className="rounded-full bg-ps-ink/5 px-3 py-1 text-[10px] font-bold text-ps-text-sec transition-colors hover:bg-ps-ink/10"
+        >
+          Customise
+        </button>
+      </div>
+      {showCustomiseToast && (
+        <div className="animate-in fade-in rounded-lg bg-ps-ink px-3 py-2 text-center text-xs font-semibold text-ps-cream">
+          Widget reordering coming soon.
+        </div>
+      )}
+
       {/* Recent Picks */}
       <RecentPicksWidget picks={recent_picks} />
 
