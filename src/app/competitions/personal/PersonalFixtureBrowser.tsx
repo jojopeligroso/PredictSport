@@ -2151,6 +2151,18 @@ interface DashboardStats {
     result_data: Record<string, unknown> | null;
     start_time: string;
   }>;
+  favourite_team: { sport: string; team_name: string; provider_id: string | null } | null;
+  favourite_team_picks: Array<{
+    prediction_id: string;
+    event_name: string;
+    sport: string;
+    league: string | null;
+    prediction_type: string;
+    prediction_data: Record<string, unknown>;
+    is_correct: boolean | null;
+    result_data: Record<string, unknown> | null;
+    start_time: string;
+  }>;
 }
 
 function DashboardTab() {
@@ -2193,7 +2205,7 @@ function DashboardTab() {
     );
   }
 
-  const { summary, recent_picks, by_year, by_sport, by_league } = stats;
+  const { summary, recent_picks, by_year, by_sport, by_league, favourite_team, favourite_team_picks } = stats;
 
   // Empty state
   if (summary.total_picks === 0) {
@@ -2297,6 +2309,9 @@ function DashboardTab() {
           </DashboardSection>
         </div>
       )}
+
+      {/* Favourite Team */}
+      <FavouriteTeamWidget team={favourite_team} picks={favourite_team_picks} />
     </div>
   );
 }
@@ -2356,6 +2371,76 @@ function RecentPicksWidget({ picks }: { picks: DashboardStats["recent_picks"] })
         >
           {expanded ? "Show less" : `Show all ${picks.length} picks`}
         </button>
+      )}
+    </DashboardSection>
+  );
+}
+
+function FavouriteTeamWidget({
+  team,
+  picks,
+}: {
+  team: DashboardStats["favourite_team"];
+  picks: DashboardStats["favourite_team_picks"];
+}) {
+  if (!team) {
+    return (
+      <DashboardSection title="Favourite Team">
+        <div className="py-2 text-center">
+          <p className="text-xs font-semibold text-ps-text-sec">No favourite team set</p>
+          <a
+            href="/profile"
+            className="mt-1.5 inline-block rounded-full bg-ps-amber/15 px-3 py-1 text-[10px] font-bold text-ps-amber transition-colors hover:bg-ps-amber/25"
+          >
+            Set a favourite team
+          </a>
+        </div>
+      </DashboardSection>
+    );
+  }
+
+  const resolved = picks.filter((p) => p.is_correct !== null);
+  const correct = resolved.filter((p) => p.is_correct === true).length;
+  const hitRate = resolved.length > 0 ? Math.round((correct / resolved.length) * 100) : null;
+  const sportKey = toSportKey(team.sport as Sport);
+  const cfg = SPORT_CONFIG[sportKey];
+
+  return (
+    <DashboardSection title={`${cfg?.emoji ?? ""} ${team.team_name}`}>
+      {picks.length === 0 ? (
+        <p className="py-2 text-center text-xs text-ps-text-ter">
+          No picks involving {team.team_name} yet.
+        </p>
+      ) : (
+        <>
+          <div className="mb-3 grid grid-cols-3 gap-2 text-center">
+            <StatCell label="Picks" value={String(picks.length)} />
+            <StatCell label="Correct" value={String(correct)} />
+            <StatCell label="Hit Rate" value={hitRate !== null ? `${hitRate}%` : "—"} />
+          </div>
+          <div className="flex flex-col gap-1">
+            {picks.slice(0, 5).map((pick) => (
+              <div
+                key={pick.prediction_id}
+                className="flex items-center gap-2 rounded-lg px-2 py-1"
+              >
+                <span className={`h-1.5 w-1.5 shrink-0 rounded-full ${
+                  pick.is_correct === true
+                    ? "bg-ps-green"
+                    : pick.is_correct === false
+                      ? "bg-ps-red"
+                      : "bg-ps-text-ter/30"
+                }`} />
+                <span className="min-w-0 flex-1 truncate text-xs text-ps-text">
+                  {pick.event_name}
+                </span>
+                <span className="font-mono text-[10px] text-ps-text-ter">
+                  {pick.is_correct === true ? "W" : pick.is_correct === false ? "L" : "—"}
+                </span>
+              </div>
+            ))}
+          </div>
+        </>
       )}
     </DashboardSection>
   );

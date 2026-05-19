@@ -237,6 +237,23 @@ export async function GET() {
     start_time: p.events.start_time,
   }));
 
+  // --- Favourite team ---
+  const { data: userRow } = await supabase
+    .from("users")
+    .select("favourite_team")
+    .eq("id", user.id)
+    .single();
+
+  const favouriteTeam = (userRow?.favourite_team as { sport: string; team_name: string; provider_id: string | null } | null) ?? null;
+
+  let favouriteTeamPicks: RecentPick[] = [];
+  if (favouriteTeam) {
+    const teamLower = favouriteTeam.team_name.toLowerCase();
+    favouriteTeamPicks = recent
+      .filter((p) => p.event_name.toLowerCase().includes(teamLower))
+      .slice(0, 10);
+  }
+
   return NextResponse.json({
     summary: {
       total_picks: totalPicks,
@@ -251,5 +268,7 @@ export async function GET() {
     by_league: byLeagueBreakdown,
     by_year: byYearBreakdown,
     recent_picks: recent,
+    favourite_team: favouriteTeam,
+    favourite_team_picks: favouriteTeamPicks,
   });
 }
