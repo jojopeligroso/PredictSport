@@ -211,6 +211,37 @@ See `SPORTS-ARCHITECTURE.md` for detailed spec (TBD).
 
 **Expected result:** Cricket winner prediction renders two pill buttons (Team A / Team B), no Draw, no exact score.
 
+## Tournament Brackets (Future — Needs Design)
+
+> **Run `/grill-with-docs` before any implementation.** Critical design decisions: (1) predict-as-you-go vs. fill-your-bracket-upfront; (2) how to handle GAA backdoor/qualifier systems vs pure single elimination; (3) automatic winner advancement vs admin-triggered; (4) whether bracket is a `CompetitionType` or a setting on existing competitions.
+>
+> Reference formats: NCAA March Madness (64-team pure single elimination), All Ireland Hurling (provincial rounds → All Ireland series), All Ireland Senior Football (provincial + Super 8 round-robin → knockouts).
+
+### Phase H — Data Model
+
+- [ ] **H1 — Design spike (grill session)** — Run `/grill-with-docs`. Define: bracket prediction mode (match-by-match vs. upfront bracket fill), GAA backdoor handling, winner propagation trigger, bracket type vs competition setting, bye handling. Do not write code until this is complete.
+- [ ] **H2 — Bracket schema migration** — Add to `events`: `bracket_slot integer` (position in bracket tree, 1-indexed per round), `advances_to_event_id uuid references events(id)`, `advances_to_slot text check (in ('home','away'))`. Add `bracket_enabled boolean default false` to `competitions`. Add `bracket_round_label text` to `rounds` (e.g. "Round of 64", "Quarter-Final", "Final"). All nullable/false by default — no change to existing behaviour.
+- [ ] **H3 — Bracket slot ordering util** — `src/lib/bracket.ts`: `buildBracketTree(rounds, events)` — takes flat rounds + events, returns a tree structure `BracketNode[]` suitable for rendering. Handles byes (null participants). Validates that advancement links are consistent.
+
+### Phase I — Admin Bracket Builder
+
+- [ ] **I1 — Bracket template definitions** — `src/lib/bracket-templates.ts`: define standard bracket shapes as slot-count-per-round arrays. Built-in templates: `single_elim_4`, `single_elim_8`, `single_elim_16`, `single_elim_32`, `single_elim_64`, `gaa_all_ireland_hurling` (QF×4 → SF×2 → F), `gaa_all_ireland_football` (QF×4 → SF×2 → F). Templates describe slot count per round and how slot winners advance — not teams.
+- [ ] **I2 — Bracket competition wizard** — New admin flow for creating bracket-style competitions. Selects a template → auto-creates rounds with correct `bracket_round_label` values + placeholder events with `is_bracket_placeholder=true`. Admin fills in known teams; TBA slots remain as placeholders until rounds progress.
+- [ ] **I3 — Winner advancement UI** — After admin confirms a bracket event result, show "Advance winner to next round" action. Pre-fills the winner's name into the correct slot (`advances_to_slot`) of the target event. If target event now has both teams confirmed, it becomes predictionable (clears TBA flag).
+- [ ] **I4 — Bracket event management** — Extend existing admin event editing to show bracket context: which event this advances from, which event it advances to. Block deletion of events that have downstream advancement links.
+
+### Phase J — Participant Bracket View
+
+- [ ] **J1 — Bracket visualisation component** — `src/components/BracketTree.tsx`: renders a competition's bracket as a horizontal tree (rounds as columns, matches as nodes). Each node shows: team A vs team B (or TBA), lock status, user's pick (if any), result. Mobile-friendly — scrolls horizontally. Uses `buildBracketTree()` from H3.
+- [ ] **J2 — Bracket page** — `/competitions/[id]/bracket` route. Shows `BracketTree` for bracket-enabled competitions. Linked from competition nav alongside "The Round" and leaderboard. Non-bracket competitions don't show this tab.
+- [ ] **J3 — Inline prediction in bracket view** — Tapping a node in the bracket tree opens a prediction sheet (same prediction flow as existing). Locked/TBA nodes are non-interactive with clear visual state.
+
+### Phase K — GAA-Specific Templates
+
+- [ ] **K1 — All Ireland Hurling bracket** — Template covering the standard All Ireland series structure: 4 quarter-finals (2 provincial champions + 2 qualifiers), 2 semi-finals, 1 final. Note: provincial championship rounds (Munster, Leinster) are separate and can be modelled as standalone competitions that feed into this one — no need to model the full championship in one bracket.
+- [ ] **K2 — All Ireland Football bracket** — Template for the All Ireland senior football series knockouts. Account for current format (quarter-finals onwards). Provincial stages modelled separately if needed.
+- [ ] **K3 — Backdoor/qualifier pathway (stretch)** — For GAA competitions: support a "loser's path" where a first-round loser can re-enter via qualifiers. Requires `advances_loser_to_event_id` on events. Only implement after H1 design spike confirms this is in scope.
+
 ## TBA/TBC Fixture Eligibility
 
 Fixtures with unknown participants (TBA / TBC team names from providers) should not be predictionable in personal picks or group competition events, except when explicitly part of a bracket where predicting the winner before teams are known is the point.
