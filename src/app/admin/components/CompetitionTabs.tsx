@@ -4,6 +4,7 @@ import { useState } from "react";
 import { EventsSection } from "./EventsSection";
 import { ParticipantsSection } from "./ParticipantsSection";
 import { NominationsSection } from "./NominationsSection";
+import { NominateSection } from "./NominateSection";
 import { SettingsSection } from "./SettingsSection";
 import type { Competition, Event, CompetitionMember, EventNomination, InviteToken, EventPredictionType, Round } from "@/types/database";
 
@@ -22,7 +23,7 @@ interface CompetitionTabsProps {
   userRole?: "admin" | "co_admin" | "participant";
 }
 
-type Tab = "Events" | "Confirm Results" | "Add Event" | "Nominations" | "Members" | "Settings";
+type Tab = "Events" | "Confirm Results" | "Add Event" | "Nominations" | "Nominate" | "Members" | "Settings";
 
 export function CompetitionTabs({
   competition,
@@ -46,16 +47,17 @@ export function CompetitionTabs({
     (e) => e.result_data && !e.result_confirmed && e.status !== "cancelled"
   ).length;
 
-  const allTabs: Array<{ id: Tab; label: string; count?: number; adminOnly?: boolean }> = [
+  const allTabs: Array<{ id: Tab; label: string; count?: number; adminOnly?: boolean; show?: boolean }> = [
     { id: "Events", label: "Events", adminOnly: false },
     { id: "Confirm Results", label: "Confirm Results", count: eventsToConfirm || undefined, adminOnly: true },
     { id: "Add Event", label: "Add Event", adminOnly: true },
     { id: "Nominations", label: "Nominations", count: pendingNominationCount || undefined, adminOnly: true },
+    { id: "Nominate", label: "Nominate", adminOnly: false, show: competition.allow_nominations },
     { id: "Members", label: "Members", adminOnly: false },
     { id: "Settings", label: "Settings", adminOnly: true },
   ];
 
-  const tabs = allTabs.filter((tab) => isAdmin || !tab.adminOnly);
+  const tabs = allTabs.filter((tab) => (isAdmin || !tab.adminOnly) && (tab.show !== false));
 
   return (
     <div>
@@ -111,6 +113,12 @@ export function CompetitionTabs({
           <NominationsSection
             competition={competition}
             nominations={nominations}
+          />
+        )}
+        {activeTab === "Nominate" && (
+          <NominateSection
+            competition={competition}
+            currentUserId={currentUserId}
           />
         )}
         {activeTab === "Settings" && (
