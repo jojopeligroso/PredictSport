@@ -79,7 +79,7 @@ Design complete. See `docs/DESIGN-PERSONAL-PREDICTIONS-UNIFICATION.md`. Implemen
 
 - [x] **F1 — Favourite team prompt at signup** — After first successful login (detect via `created_at` within last 60s or a `onboarding_complete` flag), show a one-time modal: "Got a favourite team? We'll track your picks for them." Sport selector + team name input. Saves to `users.favourite_team`. Skippable.
 - [x] Event nominations by participants (submission UI)
-- [ ] Public competition browsing/discovery page
+- [x] Public competition browsing/discovery page
 - [ ] Tiebreaker submission UI
 - [ ] Co-admin appointment UI
 - [ ] "New Season" clone from archived competition

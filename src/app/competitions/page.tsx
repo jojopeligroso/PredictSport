@@ -55,7 +55,33 @@ export default async function CompetitionsPage() {
         new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
     );
 
+  const myCompetitionIds = new Set(competitions.map((c) => c.id));
   const competitionIds = competitions.map((c) => c.id);
+
+  // Discover: public active competitions the user is NOT a member of
+  const { data: publicComps } = await supabase
+    .from("competitions")
+    .select("id, name, description, status, created_at, invite_code")
+    .eq("visibility", "public")
+    .eq("status", "active")
+    .neq("type", "personal")
+    .order("created_at", { ascending: false })
+    .limit(20);
+
+  const discoverComps = (publicComps ?? []).filter((c) => !myCompetitionIds.has(c.id));
+
+  // Member counts for discover comps
+  const discoverIds = discoverComps.map((c) => c.id);
+  const discoverMemberCounts = new Map<string, number>();
+  if (discoverIds.length > 0) {
+    const { data: dMembers } = await supabase
+      .from("competition_members")
+      .select("competition_id")
+      .in("competition_id", discoverIds);
+    for (const m of dMembers ?? []) {
+      discoverMemberCounts.set(m.competition_id, (discoverMemberCounts.get(m.competition_id) ?? 0) + 1);
+    }
+  }
 
   // Additional data for richer cards
   const [memberCountsResult, roundDataResult, eventDetailsResult] =
@@ -294,6 +320,50 @@ export default async function CompetitionsPage() {
               </Link>
             );
           })}
+        </div>
+      )}
+
+      {/* Discover public competitions */}
+      {discoverComps.length > 0 && (
+        <div className="mt-8">
+          <p className="mb-3 text-[10px] font-extrabold tracking-widest uppercase text-ps-text-ter">
+            Discover
+          </p>
+          <div className="flex flex-col gap-3 md:grid md:grid-cols-2 md:gap-4">
+            {discoverComps.map((comp) => {
+              const memberCount = discoverMemberCounts.get(comp.id) ?? 0;
+              return (
+                <div
+                  key={comp.id}
+                  className="rounded-2xl border border-ps-border bg-ps-surface p-4 shadow-[0_1px_2px_rgba(40,30,20,0.04)]"
+                >
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="inline-flex items-center gap-1.5 rounded-full bg-ps-green-soft px-2 py-0.5 text-[9.5px] font-extrabold tracking-wide uppercase text-ps-green">
+                      <span className="h-1.5 w-1.5 rounded-full bg-ps-green" />
+                      active
+                    </span>
+                    <span className="text-xs font-semibold text-ps-text-sec">
+                      {memberCount} {memberCount === 1 ? "member" : "members"}
+                    </span>
+                  </div>
+                  <p className="text-base font-extrabold text-ps-text leading-snug">
+                    {comp.name}
+                  </p>
+                  {comp.description && (
+                    <p className="mt-1 text-xs text-ps-text-sec line-clamp-2">
+                      {comp.description}
+                    </p>
+                  )}
+                  <Link
+                    href={`/join?code=${comp.invite_code}`}
+                    className="mt-3 inline-block rounded-xl bg-ps-amber px-4 py-2 text-xs font-bold text-ps-ink transition-colors hover:bg-ps-amber/90"
+                  >
+                    Join
+                  </Link>
+                </div>
+              );
+            })}
+          </div>
         </div>
       )}
     </div>
