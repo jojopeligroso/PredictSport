@@ -6,7 +6,7 @@ import { PickButton } from "@/components/ui/PickButton";
 import { SportPill } from "@/components/ui";
 import { ComboboxInput } from "@/components/ui/ComboboxInput";
 import { getRaceEntrants } from "@/lib/race-entrants";
-import { toSportKey } from "@/components/ui/sport-config";
+import { toSportKey, SPORT_CONFIG } from "@/components/ui/sport-config";
 import {
   ExactScoreInput,
   emptyScore,
@@ -1338,7 +1338,7 @@ export function PersonalFixtureBrowser({
   const urlSport = searchParams.get("sport");
   const urlLeague = searchParams.get("league");
 
-  const [activeTab, setActiveTab] = useState<"fixtures" | "my-picks" | "outrights" | "results">("fixtures");
+  const [activeTab, setActiveTab] = useState<"fixtures" | "my-picks" | "outrights" | "results" | "dashboard">("fixtures");
   const [selectedSport, setSelectedSport] = useState<string>(() => {
     if (urlSport && SPORT_CATEGORIES.some((c) => c.label === urlSport)) return urlSport;
     if (typeof window !== "undefined") {
@@ -1795,6 +1795,11 @@ export function PersonalFixtureBrowser({
           count={picks.filter((p) => p.predictions.winner?.is_correct !== undefined && p.predictions.winner?.is_correct !== null).length}
           onClick={() => setActiveTab("results")}
         />
+        <TabButton
+          label="Dashboard"
+          active={activeTab === "dashboard"}
+          onClick={() => setActiveTab("dashboard")}
+        />
       </div>
 
       {/* Errors (always visible) */}
@@ -1819,6 +1824,9 @@ export function PersonalFixtureBrowser({
 
       {/* Results tab */}
       {activeTab === "results" && <ResultsTab picks={picks} />}
+
+      {/* Dashboard tab */}
+      {activeTab === "dashboard" && <DashboardTab />}
 
       {/* Fixtures tab */}
       {activeTab === "fixtures" && (
@@ -2089,6 +2097,267 @@ export function PersonalFixtureBrowser({
           </div>
         </div>
       )}
+    </div>
+  );
+}
+
+// ── Dashboard tab content ─────────────────────────────────────────────────────
+
+interface DashboardStats {
+  summary: {
+    total_picks: number;
+    resolved: number;
+    correct: number;
+    hit_rate: number | null;
+    current_streak: number;
+    current_streak_type: "W" | "L" | null;
+    best_streak: number;
+  };
+  by_sport: Record<string, { total: number; correct: number; wrong: number; pending: number; hit_rate: number | null }>;
+  by_league: Record<string, { sport: string; total: number; correct: number; wrong: number; pending: number; hit_rate: number | null }>;
+  by_year: Record<string, { total: number; correct: number; wrong: number; pending: number; hit_rate: number | null }>;
+  recent_picks: Array<{
+    prediction_id: string;
+    event_name: string;
+    sport: string;
+    league: string | null;
+    prediction_type: string;
+    prediction_data: Record<string, unknown>;
+    is_correct: boolean | null;
+    result_data: Record<string, unknown> | null;
+    start_time: string;
+  }>;
+}
+
+function DashboardTab() {
+  const [stats, setStats] = useState<DashboardStats | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const res = await fetch("/api/personal-predictions/stats");
+        if (!res.ok) throw new Error("Failed to load stats");
+        const data = await res.json();
+        if (!cancelled) setStats(data);
+      } catch (err) {
+        if (!cancelled) setError((err as Error).message);
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    })();
+    return () => { cancelled = true; };
+  }, []);
+
+  if (loading) {
+    return (
+      <div className="flex justify-center py-16">
+        <div className="h-5 w-5 animate-spin rounded-full border-2 border-ps-amber border-t-transparent" />
+      </div>
+    );
+  }
+
+  if (error || !stats) {
+    return (
+      <div className="rounded-2xl border border-dashed border-ps-red/30 bg-ps-red/10 py-14 text-center">
+        <p className="text-sm font-bold text-ps-text-sec">{error ?? "Could not load stats"}</p>
+      </div>
+    );
+  }
+
+  const { summary, recent_picks, by_year, by_sport, by_league } = stats;
+
+  // Empty state
+  if (summary.total_picks === 0) {
+    return (
+      <div className="rounded-2xl border border-dashed border-ps-amber/30 bg-ps-amber-soft/50 py-14 text-center">
+        <p className="text-sm font-bold text-ps-text-sec">No predictions yet</p>
+        <p className="mt-1 text-xs text-ps-text-ter">
+          Make some picks in the Fixtures tab to see your stats here.
+        </p>
+      </div>
+    );
+  }
+
+  // Sort years descending
+  const yearEntries = Object.entries(by_year)
+    .sort(([a], [b]) => Number(b) - Number(a));
+
+  // Sort sports by total picks descending
+  const sportEntries = Object.entries(by_sport)
+    .sort(([, a], [, b]) => b.total - a.total);
+
+  // Sort leagues by total picks descending
+  const leagueEntries = Object.entries(by_league)
+    .sort(([, a], [, b]) => b.total - a.total);
+
+  return (
+    <div className="flex flex-col gap-4">
+      {/* Recent Picks */}
+      <DashboardSection title="Recent Picks">
+        <div className="flex flex-col gap-1.5">
+          {recent_picks.map((pick) => {
+            const sportKey = toSportKey(pick.sport as Sport);
+            const cfg = SPORT_CONFIG[sportKey];
+            return (
+              <div
+                key={pick.prediction_id}
+                className="flex items-center gap-3 rounded-lg bg-ps-surface px-3 py-2"
+              >
+                {/* Result indicator */}
+                <div
+                  className={`shrink-0 h-6 w-6 rounded-full flex items-center justify-center text-[9px] font-extrabold ${
+                    pick.is_correct === null
+                      ? "bg-ps-chip text-ps-text-ter"
+                      : pick.is_correct
+                        ? "bg-ps-green-soft text-ps-green"
+                        : "bg-ps-red/10 text-ps-red"
+                  }`}
+                >
+                  {pick.is_correct === null ? "?" : pick.is_correct ? "W" : "L"}
+                </div>
+
+                {/* Event */}
+                <div className="min-w-0 flex-1">
+                  <p className="truncate text-xs font-bold text-ps-text">
+                    {pick.event_name}
+                  </p>
+                  <p className="mt-0.5 text-[10px] text-ps-text-ter">
+                    {cfg?.emoji} {cfg?.name ?? pick.sport}
+                  </p>
+                </div>
+
+                {/* Pick value */}
+                <span className="shrink-0 text-xs font-extrabold text-ps-text-sec">
+                  {(pick.prediction_data?.value as string) ?? "—"}
+                </span>
+              </div>
+            );
+          })}
+        </div>
+      </DashboardSection>
+
+      {/* Summary Strip */}
+      <DashboardSection title="Lifetime">
+        <div className="grid grid-cols-4 gap-2 text-center">
+          <StatCell label="Picks" value={String(summary.total_picks)} />
+          <StatCell
+            label="Hit Rate"
+            value={summary.hit_rate !== null ? `${Math.round(summary.hit_rate * 100)}%` : "—"}
+          />
+          <StatCell
+            label="Streak"
+            value={summary.current_streak > 0 ? `${summary.current_streak}${summary.current_streak_type}` : "—"}
+          />
+          <StatCell
+            label="Best"
+            value={summary.best_streak > 0 ? `${summary.best_streak}W` : "—"}
+          />
+        </div>
+      </DashboardSection>
+
+      {/* By Year */}
+      {yearEntries.length > 0 && (
+        <DashboardSection title="By Year">
+          <div className="flex flex-col gap-1.5">
+            {yearEntries.map(([year, data]) => (
+              <BreakdownRow
+                key={year}
+                label={year}
+                total={data.total}
+                correct={data.correct}
+                hitRate={data.hit_rate}
+              />
+            ))}
+          </div>
+        </DashboardSection>
+      )}
+
+      {/* By Sport */}
+      {sportEntries.length > 0 && (
+        <DashboardSection title="By Sport">
+          <div className="flex flex-col gap-1.5">
+            {sportEntries.map(([sport, data]) => {
+              const cfg = SPORT_CONFIG[toSportKey(sport as Sport)];
+              return (
+                <BreakdownRow
+                  key={sport}
+                  label={`${cfg?.emoji ?? ""} ${cfg?.name ?? sport}`}
+                  total={data.total}
+                  correct={data.correct}
+                  hitRate={data.hit_rate}
+                />
+              );
+            })}
+          </div>
+        </DashboardSection>
+      )}
+
+      {/* By League */}
+      {leagueEntries.length > 0 && (
+        <DashboardSection title="By League">
+          <div className="flex flex-col gap-1.5">
+            {leagueEntries.map(([league, data]) => (
+              <BreakdownRow
+                key={league}
+                label={league}
+                total={data.total}
+                correct={data.correct}
+                hitRate={data.hit_rate}
+              />
+            ))}
+          </div>
+        </DashboardSection>
+      )}
+    </div>
+  );
+}
+
+function DashboardSection({ title, children }: { title: string; children: import("react").ReactNode }) {
+  return (
+    <div className="rounded-xl border border-ps-border bg-ps-surface px-4 py-3">
+      <p className="mb-2.5 text-[10px] font-extrabold tracking-widest uppercase text-ps-text-ter">
+        {title}
+      </p>
+      {children}
+    </div>
+  );
+}
+
+function StatCell({ label, value }: { label: string; value: string }) {
+  return (
+    <div>
+      <p className="font-mono text-base font-extrabold text-ps-text">{value}</p>
+      <p className="mt-0.5 text-[10px] font-semibold text-ps-text-ter">{label}</p>
+    </div>
+  );
+}
+
+function BreakdownRow({
+  label,
+  total,
+  correct,
+  hitRate,
+}: {
+  label: string;
+  total: number;
+  correct: number;
+  hitRate: number | null;
+}) {
+  const pct = hitRate !== null ? Math.round(hitRate * 100) : null;
+  return (
+    <div className="flex items-center gap-3">
+      <span className="min-w-0 flex-1 truncate text-xs font-semibold text-ps-text">
+        {label}
+      </span>
+      <span className="font-mono text-[10px] text-ps-text-ter">
+        {correct}/{total}
+      </span>
+      <span className="w-10 text-right font-mono text-xs font-extrabold text-ps-text">
+        {pct !== null ? `${pct}%` : "—"}
+      </span>
     </div>
   );
 }
