@@ -143,7 +143,7 @@ See `MANUAL-EVENTS-AND-API-GAPS.md` for detailed task breakdown.
 - [x] 4.5 — Evaluate Rugby League sources (NRL, Super League APIs)
 - [x] 4.6 — Research Athletics APIs (World Athletics, Tilastopaja)
 - [x] 4.7 — Evaluate Snooker coverage improvements (Snooker.org, CueTracker)
-- [ ] 4.8 — Cost-benefit analysis for paid APIs (ROI calculation)
+- [x] 4.8 — Cost-benefit analysis for paid APIs (ROI calculation)
 - [ ] 4.9 — Create provider integration guide (docs for contributors)
 - [ ] 4.10 — Implement top-priority provider (TBD based on 4.8 ROI)
 - [ ] 4.11 — Add provider health monitoring dashboard
