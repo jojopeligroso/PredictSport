@@ -286,6 +286,9 @@ export function SettingsSection({ competition, userRole = "admin" }: SettingsSec
                 <option value="private">Private</option>
                 <option value="public">Public</option>
               </select>
+              <p className="mt-1 text-xs text-ps-text-ter">
+                Private: invite-only. Public: visible to anyone with the link.
+              </p>
             </div>
 
             <div className="flex items-center gap-3">
@@ -303,6 +306,9 @@ export function SettingsSection({ competition, userRole = "admin" }: SettingsSec
                   }`}
                 />
               </button>
+              <span className="text-xs text-ps-text-ter">
+                Let members suggest events for rounds.
+              </span>
             </div>
 
             <div>
@@ -314,6 +320,9 @@ export function SettingsSection({ competition, userRole = "admin" }: SettingsSec
                 min={0}
                 className="rounded-xl border border-ps-border bg-ps-bg px-3 py-2 text-sm text-ps-text w-full focus:outline-none focus:ring-1 focus:ring-ps-amber"
               />
+              <p className="mt-1 text-xs text-ps-text-ter">
+                How long before kick-off predictions lock. Applied to new events; individual events can override.
+              </p>
             </div>
 
             <div className="flex gap-2 pt-2">
@@ -450,10 +459,15 @@ export function SettingsSection({ competition, userRole = "admin" }: SettingsSec
           )}
 
           {competition.status === "draft" && (
-            <p className="mt-3 text-xs text-ps-text-ter">
-              Activating will lock scoring rules and competition type. Make sure
-              everything is configured correctly first.
-            </p>
+            <div className="mt-3 text-xs text-ps-text-ter space-y-1">
+              <p className="font-medium">Before activating, check:</p>
+              <ul className="list-disc pl-4 space-y-0.5">
+                <li>At least one round with events</li>
+                <li>Every event has prediction types configured</li>
+                <li>Scoring rules are final (locked after activation)</li>
+                <li>Members have been invited</li>
+              </ul>
+            </div>
           )}
         </div>
       </section>
