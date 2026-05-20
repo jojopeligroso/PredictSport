@@ -11,6 +11,10 @@
     {
       "path": "/api/cricket-seed/cron",
       "schedule": "0 6 * * *"
+    },
+    {
+      "path": "/api/tournament/cron/lock-windows",
+      "schedule": "*/5 * * * *"
     }
   ]
 }

@@ -536,3 +536,164 @@ Tracked in `todos.md` as a prioritised punch list. Keep both files in sync.
 1–12. All P0/P1/P2 items from the original punch list are complete. See `todos.md` for details.
 13. ~~**Alternative auth for in-app browsers**~~ — ✓ Done. UA detection in `LoginButton.tsx` hides Google button and auto-focuses email input when running inside Telegram, Messenger, Instagram, or similar in-app webviews.
 14. ~~**Privacy policy & terms of service**~~ — ✓ Done. `/privacy` and `/terms` pages live, footer links site-wide, login page consent text, OAuth consent screen published.
+
+---
+
+## 16. Tournament Format (FIFA World Cup 2026)
+
+> Source of truth for tournament-format decisions: `predictsport_world_cup_2026_format_design_brief_final.md` (80 locked decisions). This section summarises requirements. See ADRs 0002-0009 for architectural rationale.
+
+### 16.1 Scope
+
+Phase 1 targets FIFA World Cup 2026 only. The feature adds a tournament-format Prediction Game that runs inside the existing PredictSport application and as a simplified World Cup 2026 Product Shell.
+
+**In scope:** Group Stage, Round of 32, Round of 16, Quarter-finals, Semi-finals, Third-place play-off, Final. Four concurrent Classifications. Generic Bracket Prediction Engine with World Cup adapter. Super Administrator-controlled result pipeline.
+
+**Out of scope (Phase 1):** Goalscorer/player/squad prediction, general tournament-builder UI, All-Ireland/GAA backdoor modelling, user-generated activity feed, comments, reactions, direct messaging, media upload.
+
+### 16.2 Classifications
+
+Each World Cup Prediction Game contains four concurrent Classifications (see ADR 0002):
+
+| Classification | Type | Eliminates? | Scoring Basis |
+|---|---|---|---|
+| Overall | `leaderboard` | No | Cumulative match points |
+| Format Classification | `format_elimination` | Yes | Stage-local match points + elimination |
+| Full Bracket Survivor | `bracket_survivor` | Yes (within bracket) | Progression correctness |
+| Knockout Bracket Survivor | `bracket_survivor` | Yes (within bracket) | Progression correctness |
+
+Classification principles:
+
+- Classifications are first-class backend entities scoped to a Prediction Game.
+- Entrant status is tracked per Classification, not globally.
+- An Entrant can be active in Overall, eliminated in Format, dead in Full Bracket, and active in Knockout Bracket simultaneously.
+- Classification config is an immutable snapshot cloned from template data at creation time. Template updates do not affect running competitions.
+
+**Minimum schema:** `classifications`, `classification_memberships`, `classification_standings_snapshots`, `classification_events`. See ADR 0002 for field-level detail.
+
+### 16.3 Prediction Windows
+
+A Prediction Window is a lockable batch of Fixtures that Entrants predict before a lock time. In Phase 1, a Prediction Window maps to the existing `rounds` table (see ADR 0007).
+
+| Rule | Detail |
+|---|---|
+| Lock trigger | 1 minute before first Fixture (fallback: 5 minutes) |
+| Lock granularity | Prediction Window-level; per-Fixture locking deferred |
+| Concurrent open windows | Multiple future windows may accept Picks simultaneously |
+| Independent locking | Each window locks at its own time |
+
+Group Stage uses 3 Prediction Windows (Group Matchday 1, 2, 3). Each knockout Sporting Stage uses 1 Prediction Window. Final Stage contains the final and, if enabled, the third-place play-off.
+
+### 16.4 Match Scoring Model
+
+Phase 1 uses flat scoring across all Sporting Stages for both Overall and Format Classifications:
+
+| Pick Type | Points |
+|---|---:|
+| Correct match outcome (home/draw/away) | 2 |
+| Exact score bonus | 3 |
+| Correct advancing team (knockout only) | 1 |
+| Max per Group Stage Fixture | 5 |
+| Max per Knockout Fixture | 6 |
+
+No approximate-score points. Bracket Survivor Classifications do not use match scores; they use progression correctness only.
+
+### 16.5 Standing Snapshots
+
+Standing snapshots are immutable denormalised JSON records written at finalisation points (see ADR 0004).
+
+- Snapshots are authoritative. Provisional standings may be displayed but are not authoritative.
+- Correction workflows create new correction snapshots; old snapshots are never mutated.
+- Archive reads snapshots rather than recalculating live standings.
+- Snapshot types: `window`, `stage`, `final`, `correction`.
+- Generation methods: `manual`, `automatic`, `correction`.
+
+### 16.6 Result Finalisation (2-Step)
+
+See ADR 0005 for rationale.
+
+**Step 1 -- Fixture result confirmation.** Super Administrator confirms individual match results are correct.
+
+**Step 2 -- Window/Stage finalisation.** Super Administrator confirms the full result set is complete. Scoring, standings, advancement, snapshots, and eliminations become authoritative.
+
+**Provisional visibility:** Provisional results, Pick correctness, and points may be displayed if clearly labelled. Eliminations are never provisional.
+
+**Fallback auto-finalisation:** If a completed window/stage has not been finalised, the system auto-finalises it 15 minutes before the next dependent window locks, provided all required results are present. Missing results block finalisation and trigger Super Administrator escalation.
+
+**Corrections:** Audited emergency workflow only. Silent edits are not allowed. Every correction stores old/new data, reason, affected items, and snapshot references.
+
+### 16.7 Bracket Engine
+
+A generic Bracket Prediction Engine handles bracket predictions across all bracket-type Classifications. FIFA-specific logic (best-third allocation, 12-group structure, R32 slot mapping) lives in the World Cup 2026 template adapter (see ADR 0003).
+
+Bracket predictions use versioned JSON snapshots stored in `bracket_prediction_submissions`. Until lock, each save creates or updates the Entrant's draft. At lock, the latest valid submission becomes immutable.
+
+Full Bracket Survivor: Entrant ranks all 12 groups, picks 8 best thirds, system generates R32, Entrant picks winners through to champion. Editable until tournament-level lock. Slot-sensitive correctness.
+
+Knockout Bracket Survivor: Opens after Group Stage finalisation. Uses official R32 bracket. Available to all parent-game Entrants regardless of other Classification status.
+
+### 16.8 Format Classification
+
+The Format Classification is a tournament-style survival competition with Prediction Groups.
+
+- Entrants are placed into Prediction Groups (target size 4; 3 or 5 as fallback).
+- Groups are allocated by random draw after registration closes; immutable after first window locks.
+- Top 2 from each group qualify automatically. Best two-thirds of third-place finishers also qualify.
+- Points reset to zero at each Sporting Stage. Eliminations happen after Stage finalisation, not after each window.
+- Eliminated Entrants remain active in Overall Classification.
+
+**Tie-break hierarchy (fixed in Phase 1):** Total points, exact-score hits, correct-outcome hits, earlier aggregate submission timestamp, random fallback.
+
+**Entrant presets:** 12, 24, 48, 64, 96. Preset and curve become immutable once the first Prediction Window locks. UI must show consequence table before launch.
+
+**Finalist-count constraints:** 96 Entrants finishes with 4 Final Window Entrants; 64 with 3; 48 with 2; fewer than 48 with 2 or fewer.
+
+### 16.9 Product Shell
+
+See ADR 0006. The World Cup shell is a branded Product Shell over shared core logic, not a forked rules engine.
+
+Product modes: `predictsport_full` (default), `world_cup_2026_shell`, `world_cup_2026_archive`.
+
+- One shared GitHub repo, two Vercel projects.
+- Product mode controlled by `NEXT_PUBLIC_PRODUCT_MODE` environment variable.
+- Shell hides unrelated routes and redirects unsupported paths.
+- After tournament: archive mode exports static JSON and static Next.js pages, no Supabase dependency.
+
+### 16.10 Entry Rules
+
+- Parent World Cup Prediction Game remains joinable until Prediction Window 1 is finalised.
+- After PW1 finalisation, no new Entrants may join.
+- Entrants joining after PW1 locks receive zero points for missed Fixtures.
+- Scored participation requires authentication (Google OAuth or email magic link).
+
+### 16.11 Roles and Authority
+
+**Super Administrator:** Official template maintenance, result confirmation, result correction, finalisation, elimination triggers, standalone knockout publication, archive export.
+
+**Competition Admin:** Private Prediction Game setup, invite settings, presentation copy, entrant preset selection. Cannot confirm results, finalise stages, correct results, or alter official fixtures.
+
+### 16.12 Deferred Items
+
+The following are explicitly deferred and must not be assumed or implied:
+
+| Item | Status |
+|---|---|
+| Exact Format Classification elimination curves (12/24/48/64/96) | Deferred to dedicated design session (ADR 0008) |
+| Awkward-count behaviour between 2, 3, and 4 Final Window Entrants | Deferred (ADR 0008) |
+| Proportional elimination curve | Phase 2 exploration |
+| Full manual curve editor | Not Phase 1 |
+| Live/projection leaderboards as authoritative | Phase 1 provisional only |
+| Per-Fixture locking | Phase 1 uses window-level locking |
+| Standalone Knockout Prediction surface abstraction model | Pending clarification (ADR 0009) |
+| Escalating points mode | Phase 2 |
+| Best-third rounding for non-standard group counts | Must resolve before awkward-count implementation |
+
+### 16.13 Superseded Decisions
+
+| Earlier position | Updated position |
+|---|---|
+| Three concurrent Classifications | Four: Overall, Format, Full Bracket, Knockout Bracket |
+| Format final always has exactly 2 Entrants | Finalist count is curve-derived (see 16.8) |
+| New Entrants join until final Group Stage window locks | Parent game closes after PW1 finalisation |
+| Knockout-only game as separate duplicated backend | Clarification required; must not duplicate canonical data (ADR 0009) |
+| Admin confirms results | Super Administrator confirms; Competition Admin cannot |

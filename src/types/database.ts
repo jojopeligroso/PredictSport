@@ -49,6 +49,10 @@ export interface Competition {
   allow_prediction_updates: boolean;
   created_by: string;
   invite_code: string;
+  tournament_id: string | null;
+  product_mode: string | null;
+  entry_closes_at: string | null;
+  entry_close_trigger: string | null;
   created_at: string;
 }
 
@@ -70,6 +74,9 @@ export interface Round {
   round_number: number;
   deadline: string | null;
   status: RoundStatus;
+  sporting_stage_id: string | null;
+  prediction_window_number: number | null;
+  auto_lock_offset_minutes: number | null;
   created_at: string;
 }
 

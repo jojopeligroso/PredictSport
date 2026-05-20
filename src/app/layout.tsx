@@ -3,6 +3,7 @@ import { Inter, JetBrains_Mono, Instrument_Serif } from "next/font/google";
 import { NavBar } from "@/components/NavBar";
 import { Footer } from "@/components/Footer";
 import { PushPromptWrapper } from "@/components/PushPromptWrapper";
+import { isWorldCupShell } from "@/lib/product-mode";
 import "./globals.css";
 
 const inter = Inter({
@@ -39,6 +40,8 @@ export default function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  const shellMode = isWorldCupShell();
+
   return (
     <html
       lang="en"
@@ -50,11 +53,11 @@ export default function RootLayout({
         <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
       </head>
       <body className="min-h-full flex flex-col bg-ps-bg text-ps-text">
-        <NavBar />
+        {!shellMode && <NavBar />}
         <main className="flex flex-1 flex-col">
           {children}
         </main>
-        <Footer />
+        {!shellMode && <Footer />}
         <PushPromptWrapper />
       </body>
     </html>
