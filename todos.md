@@ -82,7 +82,7 @@ Design complete. See `docs/DESIGN-PERSONAL-PREDICTIONS-UNIFICATION.md`. Implemen
 - [x] Public competition browsing/discovery page
 - [x] Tiebreaker submission UI
 - [x] Co-admin appointment UI
-- [ ] "New Season" clone from archived competition
+- [x] "New Season" clone from archived competition
 
 ## Round Builder UX Improvements
 

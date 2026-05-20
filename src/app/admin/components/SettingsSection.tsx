@@ -38,6 +38,10 @@ export function SettingsSection({ competition, userRole = "admin" }: SettingsSec
   const [isDeleting, setIsDeleting] = useState(false);
   const [deleteError, setDeleteError] = useState<string | null>(null);
 
+  // Clone state
+  const [isCloning, setIsCloning] = useState(false);
+  const [cloneError, setCloneError] = useState<string | null>(null);
+
   const isDraft = competition.status === "draft";
   const isAdmin = userRole === "admin";
   const allowedTransitions = STATUS_TRANSITIONS[competition.status] ?? [];
@@ -183,6 +187,37 @@ export function SettingsSection({ competition, userRole = "admin" }: SettingsSec
       setIsDeleting(false);
     }
   };
+
+  const handleClone = async () => {
+    if (!confirm("Start a new season? This creates a fresh draft with the same settings and members.")) {
+      return;
+    }
+
+    setIsCloning(true);
+    setCloneError(null);
+
+    try {
+      const res = await fetch("/api/admin/competitions/clone", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ competition_id: competition.id }),
+      });
+
+      if (res.ok) {
+        const data = await res.json();
+        router.push(`/competitions/${data.competition.id}`);
+      } else {
+        const data = await res.json();
+        setCloneError(data.error || "Failed to clone competition");
+      }
+    } catch {
+      setCloneError("Network error");
+    } finally {
+      setIsCloning(false);
+    }
+  };
+
+  const canClone = (competition.status === "completed" || competition.status === "archived") && isAdmin;
 
   return (
     <div className="space-y-8">
@@ -422,6 +457,28 @@ export function SettingsSection({ competition, userRole = "admin" }: SettingsSec
           )}
         </div>
       </section>
+
+      {/* New Season */}
+      {canClone && (
+        <section>
+          <h4 className="text-sm font-medium text-ps-text-sec mb-3">
+            New Season
+          </h4>
+          <div className="rounded-2xl border border-ps-border bg-ps-surface p-4">
+            <p className="text-sm text-ps-text-sec mb-3">
+              Create a fresh draft competition with the same settings, scoring rules, and members.
+            </p>
+            <button
+              onClick={handleClone}
+              disabled={isCloning}
+              className="rounded-xl bg-ps-amber text-[#1a1208] px-4 py-2 text-sm font-bold hover:opacity-90 disabled:opacity-50"
+            >
+              {isCloning ? "Creating..." : "Start New Season"}
+            </button>
+            {cloneError && <p className="mt-2 text-xs text-ps-red">{cloneError}</p>}
+          </div>
+        </section>
+      )}
 
       {/* Scoring Rules */}
       <section>
