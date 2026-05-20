@@ -136,7 +136,7 @@ See `MANUAL-EVENTS-AND-API-GAPS.md` for detailed task breakdown.
 ### Phase 4: Sports API Coverage Analysis (2-3 hours) — **INDEPENDENT, run Phase 4.1-4.8 first**
 
 **Research & Integration (prioritized by audit)**
-- [ ] 4.1 — Audit current provider success rates (script + report)
+- [x] 4.1 — Audit current provider success rates (script + report)
 - [ ] 4.2 — Identify high-priority gaps (frequency × manual_rate)
 - [ ] 4.3 — Research Cricket API alternatives (Cricbuzz, CricAPI, etc.)
 - [ ] 4.4 — Research GAA API improvements (ClubZap, GAA.ie scraping)
