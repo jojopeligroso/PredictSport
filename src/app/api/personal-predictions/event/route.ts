@@ -1,18 +1,8 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { getOrCreatePersonalCompetition } from "@/lib/personal-competition";
-import { supportsExactScore } from "@/lib/score-format";
+import { getPersonalDefaults } from "@/lib/personal-prediction-defaults";
 import type { Sport } from "@/lib/sports/types";
-
-/** Sports where a draw is a valid winner outcome */
-const DRAW_SPORTS = new Set<string>([
-  "soccer", "rugby", "rugby_league", "gaa", "gaelic_football", "hurling", "cricket",
-]);
-
-/** Position-based sports (no home/away teams) */
-const RACE_SPORTS = new Set<string>([
-  "formula_1", "golf", "horse_racing", "athletics",
-]);
 
 interface CreatePersonalEventBody {
   external_event_id: string;
@@ -98,10 +88,7 @@ export async function POST(request: Request) {
   }
 
   // Build event_prediction_types based on sport/participants
-  const sport = body.sport as Sport;
-  const isRace = RACE_SPORTS.has(sport);
-  const isTwoTeam = !isRace && body.participants.length === 2;
-  const predictionTypeRows = buildPredictionTypes(sport, isTwoTeam, body.participants);
+  const predictionTypeRows = getPersonalDefaults(body.sport as Sport, body.participants);
 
   // Insert event (lock_time = start_time for personal predictions — no early lock needed)
   const { data: event, error: eventError } = await supabase
@@ -179,61 +166,4 @@ export async function POST(request: Request) {
     },
     { status: 201 },
   );
-}
-
-/**
- * Build default event_prediction_types for a personal prediction event.
- * Personal predictions use points=0 (no scoring). See design doc §4.
- */
-function buildPredictionTypes(
-  sport: Sport,
-  isTwoTeam: boolean,
-  participants: string[],
-): Array<{
-  prediction_type: string;
-  points: number;
-  partial_points: number;
-  config: Record<string, unknown> | null;
-}> {
-  const types: Array<{
-    prediction_type: string;
-    points: number;
-    partial_points: number;
-    config: Record<string, unknown> | null;
-  }> = [];
-
-  if (isTwoTeam) {
-    // Team sports: winner prediction with home/away options
-    const allowDraw = DRAW_SPORTS.has(sport);
-    const options = allowDraw
-      ? [participants[0], "Draw", participants[1]]
-      : [participants[0], participants[1]];
-
-    types.push({
-      prediction_type: "winner",
-      points: 0,
-      partial_points: 0,
-      config: { options, allow_draw: allowDraw },
-    });
-
-    // Add exact_score if supported
-    if (supportsExactScore(sport)) {
-      types.push({
-        prediction_type: "exact_score",
-        points: 0,
-        partial_points: 0,
-        config: { options: [participants[0], participants[1]] },
-      });
-    }
-  } else {
-    // Race / multi-competitor: winner only
-    types.push({
-      prediction_type: "winner",
-      points: 0,
-      partial_points: 0,
-      config: { options: participants.slice(0, 20) },
-    });
-  }
-
-  return types;
 }
