@@ -139,7 +139,7 @@ See `MANUAL-EVENTS-AND-API-GAPS.md` for detailed task breakdown.
 - [x] 4.1 — Audit current provider success rates (script + report)
 - [x] 4.2 — Identify high-priority gaps (frequency × manual_rate)
 - [x] 4.3 — Research Cricket API alternatives (Cricbuzz, CricAPI, etc.)
-- [ ] 4.4 — Research GAA API improvements (ClubZap, GAA.ie scraping)
+- [x] 4.4 — Research GAA API improvements (ClubZap, GAA.ie scraping)
 - [ ] 4.5 — Evaluate Rugby League sources (NRL, Super League APIs)
 - [ ] 4.6 — Research Athletics APIs (World Athletics, Tilastopaja)
 - [ ] 4.7 — Evaluate Snooker coverage improvements (Snooker.org, CueTracker)
