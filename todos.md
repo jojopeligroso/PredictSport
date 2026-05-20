@@ -129,7 +129,7 @@ See `MANUAL-EVENTS-AND-API-GAPS.md` for detailed task breakdown.
 - [x] 3.7 — Add result undo/edit capability (10-min window) — unlimited undo via unconfirm-result API (window constraint dropped; better UX for small groups)
 - [x] 3.8 — Add "Events Missing Results" admin alert dashboard
 - [x] 3.9 — Auto-fetch reminder for manual events (cron notification)
-- [ ] 3.10 — Add "Duplicate Event" cloning feature
+- [x] 3.10 — Add "Duplicate Event" cloning feature
 - [ ] 3.11 — Validation before round/competition activation (pre-flight checks)
 - [ ] 3.12 — Documentation & inline help (tooltips, admin guide)
 
@@ -210,6 +210,35 @@ See `SPORTS-ARCHITECTURE.md` for detailed spec (TBD).
 - [ ] 7.6 — Backfill any existing broken cricket events with correct `config.options`.
 
 **Expected result:** Cricket winner prediction renders two pill buttons (Team A / Team B), no Draw, no exact score.
+
+## World Cup 2026 — Elimination Curve Implementation
+
+> Source: `predictsport-world-cup-2026-elimination-curve-solution.md` (design), `docs/AUDIT-elimination-curve-solution.md` (audit). SPEC.md §16.8 (locked spec). ADR 0008 (resolved).
+
+### Phase WC-E — Curve Generator & Storage
+
+- [ ] **WC-E1 — Formula-based curve generator** — `src/lib/tournament/format/curve-generator.ts`: Implement `generateEliminationCurve(entrantCount: number)` per the pseudocode in the audit appendix. Accepts 8-96. Returns ordered array of `{ stage, remaining }`. Must pass all 16 test cases from the design doc + 6 edge cases from the audit.
+- [ ] **WC-E2 — Curve storage format migration** — Update `classification.config.elimination_curve` from stage-keyed `Record<string, { target_survivors }>` to ordered array format `{ entrantCount, locked, curve: [{ stage, remaining }], groupAllocation, qualificationRules }`. Migration must be backward-compatible (existing data can be null/empty for non-tournament competitions).
+- [ ] **WC-E3 — Replace `getEliminationCurveForPreset()`** — In `create-world-cup-competition.ts`, replace the hard-coded preset lookup table with a call to the new formula generator. Remove the preset-only constraint.
+- [ ] **WC-E4 — Merge PW8/PW9** — In `create-world-cup-competition.ts`, merge Third-Place Play-Off and Final into a single Prediction Window (PW8). Update `PREDICTION_WINDOWS` array from 9 entries to 8. Update `STAGE_IDS` accordingly.
+
+### Phase WC-F — Group Allocation & Qualification
+
+- [ ] **WC-F1 — Target-aware group allocation** — Rewrite `src/lib/tournament/format/group-allocation.ts` `allocatePredictionGroups()` to implement the deterministic algorithm from the design doc S22.4. Must handle groups of 3, 4, and 5 entrants. Must be target-aware (choose group sizes to reach the survivor target).
+- [ ] **WC-F2 — Group-size-aware best-third ranking** — Update `src/lib/tournament/format/scoring.ts` `computeBestThirdRanking()` to filter by group size: exclude thirds from 3-player groups (never qualify), exclude thirds from 5-player groups (auto-qualify, not in the best-third pool), only include thirds from 4-player groups.
+- [ ] **WC-F3 — Rewrite elimination logic** — Update `src/lib/tournament/format/elimination.ts` `eliminateFromFormat()` to implement the full qualification rules: top 2 auto-qualify, 5-player thirds auto-qualify, 3-player thirds never qualify, best-third from 4-player groups only. Variable best-third pool size.
+- [ ] **WC-F4 — Curve reader update** — Update `getEliminationCurve()` in `elimination.ts` to read the new array-format curve from classification config instead of the old stage-keyed map.
+
+### Phase WC-G — Consequence Table & UI
+
+- [ ] **WC-G1 — Consequence table API** — `GET /api/tournament/consequence-table?competitionId=X` returns the resolved curve, group allocation, qualification rules, and finalist count for display before launch.
+- [ ] **WC-G2 — Consequence table UI** — Pre-launch admin/entrant view showing the full elimination curve, group allocation breakdown, and "this locks when PW1 locks" warning. Copy per design doc S16.1.
+
+### Phase WC-H — 5th Classification (Pre-Tournament Stage Pick)
+
+> Needs dedicated design session. Admin selects a knockout stage, entrants predict outcomes pre-tournament. Locks at PW1. Not path-sensitive.
+
+- [ ] **WC-H1 — Design spike** — Define: what exactly does the entrant predict (team names reaching stage? match winners at stage? podium?), scoring model, UI for admin stage selection, UI for entrant picks. Do not write code until design is confirmed.
 
 ## Tournament Brackets (Future — Needs Design)
 

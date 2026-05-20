@@ -47,6 +47,7 @@ interface EventCardProps {
   updatingStatus: string | null;
   onStatusChange: (eventId: string, newStatus: string) => Promise<void>;
   onDelete: (event: EventWithPredictionTypes) => Promise<void>;
+  onClone: (event: EventWithPredictionTypes) => Promise<void>;
   onFetchResult: (event: Event) => Promise<void>;
   onToggleExpand: (eventId: string) => void;
   onConfirmed: () => void;
@@ -59,6 +60,7 @@ function EventCard({
   updatingStatus,
   onStatusChange,
   onDelete,
+  onClone,
   onFetchResult,
   onToggleExpand,
   onConfirmed,
@@ -172,6 +174,16 @@ function EventCard({
             </button>
           )}
 
+          {/* Duplicate event */}
+          <button
+            onClick={() => onClone(event)}
+            disabled={updatingStatus === event.id}
+            className="rounded-xl border border-ps-border-strong px-2.5 py-1 text-xs font-medium text-ps-text-sec transition-colors hover:bg-ps-chip hover:text-ps-text disabled:opacity-50"
+            title="Duplicate event"
+          >
+            Duplicate
+          </button>
+
           {/* Delete event */}
           {!event.result_confirmed && (
             <button
@@ -212,6 +224,7 @@ interface RoundSectionProps {
   onToggleRound: (roundId: string) => void;
   onStatusChange: (eventId: string, newStatus: string) => Promise<void>;
   onDeleteEvent: (event: EventWithPredictionTypes) => Promise<void>;
+  onCloneEvent: (event: EventWithPredictionTypes) => Promise<void>;
   onFetchResult: (event: Event) => Promise<void>;
   onToggleEvent: (eventId: string) => void;
   onEventConfirmed: () => void;
@@ -230,6 +243,7 @@ function RoundSection({
   onToggleRound,
   onStatusChange,
   onDeleteEvent,
+  onCloneEvent,
   onFetchResult,
   onToggleEvent,
   onEventConfirmed,
@@ -332,6 +346,7 @@ function RoundSection({
                   updatingStatus={updatingStatus}
                   onStatusChange={onStatusChange}
                   onDelete={onDeleteEvent}
+                  onClone={onCloneEvent}
                   onFetchResult={onFetchResult}
                   onToggleExpand={onToggleEvent}
                   onConfirmed={onEventConfirmed}
@@ -454,6 +469,29 @@ export function EventsSection({ competition, events, rounds }: EventsSectionProp
       } else {
         const data = await res.json();
         alert(data.error ?? "Failed to delete event");
+      }
+    } finally {
+      setUpdatingStatus(null);
+    }
+  };
+
+  const handleCloneEvent = async (event: EventWithPredictionTypes) => {
+    setUpdatingStatus(event.id);
+    try {
+      const res = await fetch("/api/admin/events", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          action: "clone",
+          source_event_id: event.id,
+          competition_id: competition.id,
+        }),
+      });
+      if (res.ok) {
+        router.refresh();
+      } else {
+        const data = await res.json();
+        alert(data.error ?? "Failed to duplicate event");
       }
     } finally {
       setUpdatingStatus(null);
@@ -633,6 +671,7 @@ export function EventsSection({ competition, events, rounds }: EventsSectionProp
               onToggleRound={toggleRound}
               onStatusChange={handleStatusChange}
               onDeleteEvent={handleDeleteEvent}
+              onCloneEvent={handleCloneEvent}
               onFetchResult={handleFetchResult}
               onToggleEvent={(id) =>
                 setExpandedEventId(expandedEventId === id ? null : id)
@@ -659,6 +698,7 @@ export function EventsSection({ competition, events, rounds }: EventsSectionProp
               onToggleRound={toggleRound}
               onStatusChange={handleStatusChange}
               onDeleteEvent={handleDeleteEvent}
+              onCloneEvent={handleCloneEvent}
               onFetchResult={handleFetchResult}
               onToggleEvent={(id) =>
                 setExpandedEventId(expandedEventId === id ? null : id)
