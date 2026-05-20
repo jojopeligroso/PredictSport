@@ -267,6 +267,65 @@ export async function PATCH(request: Request) {
       );
     }
 
+    // ── Pre-flight checks for activation ──
+    if (body.status === "active") {
+      const { data: rounds } = await supabase
+        .from("rounds")
+        .select("id, round_number, name")
+        .eq("competition_id", body.competition_id);
+
+      if (!rounds || rounds.length === 0) {
+        return NextResponse.json(
+          { error: "Cannot activate: competition has no rounds" },
+          { status: 400 }
+        );
+      }
+
+      const { data: events } = await supabase
+        .from("events")
+        .select("id, event_name, round_id")
+        .eq("competition_id", body.competition_id);
+
+      if (!events || events.length === 0) {
+        return NextResponse.json(
+          { error: "Cannot activate: competition has no events" },
+          { status: 400 }
+        );
+      }
+
+      // Check every round has at least one event
+      const roundsWithEvents = new Set(events.map((e) => e.round_id).filter(Boolean));
+      const emptyRounds = rounds.filter((r) => !roundsWithEvents.has(r.id));
+      if (emptyRounds.length > 0) {
+        const names = emptyRounds.map(
+          (r) => `Round ${r.round_number}${r.name ? ` (${r.name})` : ""}`
+        );
+        return NextResponse.json(
+          { error: `Cannot activate: ${names.join(", ")} ${emptyRounds.length === 1 ? "has" : "have"} no events` },
+          { status: 400 }
+        );
+      }
+
+      // Check every event has at least one prediction type
+      const eventIds = events.map((e) => e.id);
+      const { data: epts } = await supabase
+        .from("event_prediction_types")
+        .select("event_id")
+        .in("event_id", eventIds);
+
+      const eventsWithTypes = new Set((epts ?? []).map((e) => e.event_id));
+      const missingTypes = events.filter((e) => !eventsWithTypes.has(e.id));
+      if (missingTypes.length > 0) {
+        return NextResponse.json(
+          {
+            error: `Cannot activate: ${missingTypes.length} event${missingTypes.length !== 1 ? "s" : ""} missing prediction types`,
+            details: missingTypes.slice(0, 5).map((e) => e.event_name),
+          },
+          { status: 400 }
+        );
+      }
+    }
+
     const { data: updated, error: updateError } = await supabase
       .from("competitions")
       .update({ status: body.status })

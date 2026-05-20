@@ -528,7 +528,17 @@ export function EventsSection({ competition, events, rounds }: EventsSectionProp
           status: newStatus,
         }),
       });
-      if (res.ok) router.refresh();
+      if (res.ok) {
+        router.refresh();
+      } else {
+        const data = await res.json();
+        const errors = data.validation_errors;
+        if (errors && Array.isArray(errors)) {
+          alert(`Cannot open round:\n\n${errors.join("\n")}`);
+        } else {
+          alert(data.error ?? "Failed to update round");
+        }
+      }
     } finally {
       setUpdatingRound(null);
     }

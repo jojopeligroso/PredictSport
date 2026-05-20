@@ -130,7 +130,7 @@ See `MANUAL-EVENTS-AND-API-GAPS.md` for detailed task breakdown.
 - [x] 3.8 — Add "Events Missing Results" admin alert dashboard
 - [x] 3.9 — Auto-fetch reminder for manual events (cron notification)
 - [x] 3.10 — Add "Duplicate Event" cloning feature
-- [ ] 3.11 — Validation before round/competition activation (pre-flight checks)
+- [x] 3.11 — Validation before round/competition activation (pre-flight checks)
 - [ ] 3.12 — Documentation & inline help (tooltips, admin guide)
 
 ### Phase 4: Sports API Coverage Analysis (2-3 hours) — **INDEPENDENT, run Phase 4.1-4.8 first**
