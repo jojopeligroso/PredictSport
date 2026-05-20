@@ -191,6 +191,17 @@ function getLeagueLabel(providerLeague: string | null): string | null {
   return null;
 }
 
+function getSportCategoryForLeague(leagueId: string): string | null {
+  for (const group of LEAGUE_GROUPS) {
+    if (group.leagues.some((l) => l.id === leagueId)) {
+      for (const cat of SPORT_CATEGORIES) {
+        if (cat.groupLabels.includes(group.label)) return cat.label;
+      }
+    }
+  }
+  return null;
+}
+
 // ── Types ─────────────────────────────────────────────────────────────────────
 
 interface OutrightPick {
@@ -709,10 +720,19 @@ const STATUS_LABEL: Record<OutrightStatus, string> = {
   resolved: "Resolved",
 };
 
-function OutrightsTab() {
+interface OutrightSuggestion {
+  provider_league: string;
+  league_name: string;
+  pick_count: number;
+  sport: string;
+}
+
+function OutrightsTab({ onNavigateToLeague }: { onNavigateToLeague?: (sportCategory: string, leagueId: string) => void }) {
   const [outrights, setOutrights] = useState<OutrightEntry[]>([]);
+  const [suggestions, setSuggestions] = useState<OutrightSuggestion[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [dismissing, setDismissing] = useState<Record<string, boolean>>({});
 
   useEffect(() => {
     let cancelled = false;
@@ -720,10 +740,18 @@ function OutrightsTab() {
       setLoading(true);
       setError(null);
       try {
-        const res = await fetch("/api/personal-predictions/outrights");
-        if (!res.ok) throw new Error(`Failed to load outrights (${res.status})`);
-        const data = await res.json();
-        if (!cancelled) setOutrights(data.outrights ?? []);
+        const [outrightsRes, suggestionsRes] = await Promise.all([
+          fetch("/api/personal-predictions/outrights"),
+          fetch("/api/personal-predictions/outright-suggestions"),
+        ]);
+        if (!outrightsRes.ok) throw new Error(`Failed to load outrights (${outrightsRes.status})`);
+        const outrightsData = await outrightsRes.json();
+        if (!cancelled) setOutrights(outrightsData.outrights ?? []);
+
+        if (suggestionsRes.ok) {
+          const suggestionsData = await suggestionsRes.json();
+          if (!cancelled) setSuggestions(suggestionsData.suggestions ?? []);
+        }
       } catch (err) {
         if (!cancelled) setError((err as Error).message);
       } finally {
@@ -735,6 +763,22 @@ function OutrightsTab() {
       cancelled = true;
     };
   }, []);
+
+  async function dismissSuggestion(providerLeague: string) {
+    setDismissing((prev) => ({ ...prev, [providerLeague]: true }));
+    try {
+      const res = await fetch("/api/personal-predictions/outright-suggestions", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ provider_league: providerLeague, action: "dismiss" }),
+      });
+      if (res.ok) {
+        setSuggestions((prev) => prev.filter((s) => s.provider_league !== providerLeague));
+      }
+    } finally {
+      setDismissing((prev) => ({ ...prev, [providerLeague]: false }));
+    }
+  }
 
   if (loading) {
     return (
@@ -752,18 +796,7 @@ function OutrightsTab() {
     );
   }
 
-  if (outrights.length === 0) {
-    return (
-      <div className="rounded-2xl border border-dashed border-ps-amber/30 bg-ps-amber-soft/50 py-14 text-center">
-        <p className="text-sm font-bold text-ps-text-sec">No outrights yet</p>
-        <p className="mt-1 text-xs text-ps-text-ter">
-          Browse fixtures and pick who wins a league or tournament.
-        </p>
-      </div>
-    );
-  }
-
-  // Group by status
+  // Group outrights by status
   const grouped = new Map<OutrightStatus, OutrightEntry[]>();
   for (const o of outrights) {
     const s = classifyOutright(o);
@@ -772,21 +805,88 @@ function OutrightsTab() {
   }
 
   const ORDER: OutrightStatus[] = ["open", "pending", "resolved"];
+  const hasOutrights = outrights.length > 0;
+
+  // Filter suggestions to known leagues only
+  const validSuggestions = suggestions.filter((s) => getLeagueLabel(s.provider_league));
 
   return (
     <div className="flex flex-col gap-5">
-      {ORDER.filter((s) => grouped.has(s)).map((status) => (
-        <div key={status}>
+      {/* Suggestions */}
+      {validSuggestions.length > 0 && (
+        <div>
           <p className="mb-2 text-[10px] font-extrabold tracking-widest uppercase text-ps-text-ter">
-            {STATUS_LABEL[status]}
+            Suggested outrights
           </p>
           <div className="flex flex-col gap-2">
-            {grouped.get(status)!.map((o) => (
-              <OutrightCard key={o.event_id} outright={o} status={status} />
-            ))}
+            {validSuggestions.map((s) => {
+              const leagueLabel = getLeagueLabel(s.provider_league) ?? s.league_name;
+              const sportCategory = getSportCategoryForLeague(s.provider_league);
+              return (
+                <div
+                  key={s.provider_league}
+                  className="group relative flex items-center gap-3 rounded-xl border border-dashed border-ps-amber/40 bg-ps-amber-soft/30 px-4 py-3 transition-colors hover:border-ps-amber/60 hover:bg-ps-amber-soft/50"
+                >
+                  <button
+                    type="button"
+                    className="flex-1 text-left"
+                    onClick={() => {
+                      if (onNavigateToLeague && sportCategory) {
+                        onNavigateToLeague(sportCategory, s.provider_league);
+                      }
+                    }}
+                    disabled={!onNavigateToLeague || !sportCategory}
+                  >
+                    <p className="text-sm font-bold text-ps-text">
+                      Who wins {leagueLabel}?
+                    </p>
+                    <p className="mt-0.5 text-xs text-ps-text-ter">
+                      You&apos;ve picked {s.pick_count} {leagueLabel} fixtures
+                    </p>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      dismissSuggestion(s.provider_league);
+                    }}
+                    disabled={dismissing[s.provider_league]}
+                    className="shrink-0 rounded-full p-1.5 text-ps-text-ter transition-colors hover:bg-ps-chip hover:text-ps-text"
+                    aria-label={`Dismiss ${leagueLabel} suggestion`}
+                  >
+                    <svg width="14" height="14" viewBox="0 0 16 16" fill="none">
+                      <path d="M4 4l8 8M12 4l-8 8" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+                    </svg>
+                  </button>
+                </div>
+              );
+            })}
           </div>
         </div>
-      ))}
+      )}
+
+      {/* Existing outrights grouped by status */}
+      {hasOutrights ? (
+        ORDER.filter((s) => grouped.has(s)).map((status) => (
+          <div key={status}>
+            <p className="mb-2 text-[10px] font-extrabold tracking-widest uppercase text-ps-text-ter">
+              {STATUS_LABEL[status]}
+            </p>
+            <div className="flex flex-col gap-2">
+              {grouped.get(status)!.map((o) => (
+                <OutrightCard key={o.event_id} outright={o} status={status} />
+              ))}
+            </div>
+          </div>
+        ))
+      ) : (
+        <div className="rounded-2xl border border-dashed border-ps-amber/30 bg-ps-amber-soft/50 py-14 text-center">
+          <p className="text-sm font-bold text-ps-text-sec">No outrights yet</p>
+          <p className="mt-1 text-xs text-ps-text-ter">
+            Browse fixtures and pick who wins a league or tournament.
+          </p>
+        </div>
+      )}
     </div>
   );
 }
@@ -1437,6 +1537,19 @@ export function PersonalFixtureBrowser({
     );
   }
 
+  const navigateToLeague = useCallback((sportCategory: string, leagueId: string) => {
+    setSelectedSport(sportCategory);
+    setSelectedLeagueId(leagueId);
+    setShowAllLeagues(false);
+    setActiveTab("fixtures");
+    sessionStorage.setItem("ps-selected-sport", sportCategory);
+    sessionStorage.setItem("ps-selected-league", leagueId);
+    router.replace(
+      `${pathname}?sport=${encodeURIComponent(sportCategory)}&league=${encodeURIComponent(leagueId)}`,
+      { scroll: false },
+    );
+  }, [pathname, router]);
+
   // Ensure event exists in personal competition (B2), with caching
   const ensureEvent = useCallback(async (fixture: NormalizedFixture): Promise<EventInfo> => {
     const cached = eventCacheRef.current[fixture.external_event_id];
@@ -1844,7 +1957,7 @@ export function PersonalFixtureBrowser({
       )}
 
       {/* Outrights tab */}
-      {activeTab === "outrights" && <OutrightsTab />}
+      {activeTab === "outrights" && <OutrightsTab onNavigateToLeague={navigateToLeague} />}
 
       {/* Results tab */}
       {activeTab === "results" && <ResultsTab picks={picks} />}

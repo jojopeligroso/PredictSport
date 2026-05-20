@@ -56,12 +56,12 @@ Design complete. See `docs/DESIGN-PERSONAL-PREDICTIONS-UNIFICATION.md`. Implemen
 - [x] **C1 — New PersonalFixtureBrowser component** — Replace legacy 1,412-LOC `PersonalFixtureBrowser.tsx` with unified-model version. Fixture tap → calls B2 + B3 atomically. Same provider/league browsing UX, but writes to competition model.
 - [x] **C2 — Sport-aware prediction type defaults** — Util `getPersonalDefaults(sport, format)`: team sports → `winner` + `exact_score` as primary, 2-3 extra pills; race sports → `winner` only. Wire into B2.
 - [x] **C3 — Familiar terminology pills** — Map internal types to pill labels: `exact_score` → "Correct Score", `margin` → "Winning Margin", `over_under` → "Over/Under", `handicap` → "Spread", `head_to_head` → "H2H", `yes_no` → "Prop Bet", `top_n` → "Top 3", `progression` → "To Qualify", `final_standings` → "Outright Winner". Apply across personal predictions UI.
-- [ ] **C4 — Contextual outright card in Fixtures tab** — When browsing a specific league, show a contextual card at top: "Who wins [League]?" if no outright exists. Tapping creates the outright via B4.
+- [x] **C4 — Contextual outright card in Fixtures tab** — When browsing a specific league, show a contextual card at top: "Who wins [League]?" if no outright exists. Tapping creates the outright via B4.
 
 ### Phase D — Outrights Tab
 
 - [x] **D1 — Outrights tab scaffold** — New tab in personal predictions nav. Lists all user's active outright picks with status (open, resolved, pending resolution).
-- [ ] **D2 — Inferred suggestions section** — Secondary section in Outrights tab. Calls B5. Shows dismissable suggestion cards ("You've picked 4 Premier League games — who wins the title?"). Dismissal stored per user per league.
+- [x] **D2 — Inferred suggestions section** — Secondary section in Outrights tab. Calls B5. Shows dismissable suggestion cards ("You've picked 4 Premier League games — who wins the title?"). Dismissal stored per user per league.
 - [x] **D3 — Outright change rules UX** — Before tournament start: freely editable. After start: show change budget (e.g. "2 changes remaining"), timestamped history inline. UX discourages flipping (confirm dialog).
 
 ### Phase E — Dashboard Tab
