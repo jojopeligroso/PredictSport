@@ -1,44 +1,53 @@
-# ADR 0008: Format Classification elimination curves -- deferred
+# ADR 0008: Format Classification elimination curves
 
-**Status:** Accepted
+**Status:** Accepted (resolved)
 **Date:** 2026-05-20
+**Resolved:** 2026-05-20
 
 ## Context
 
-The Format Classification eliminates Entrants at each Sporting Stage boundary. The elimination rate is governed by a curve that maps entrant count to survivor count at each stage. Five entrant presets are approved for Phase 1: 12, 24, 48, 64, 96.
+The Format Classification eliminates Entrants at each Sporting Stage boundary. The elimination rate is governed by a curve that maps entrant count to survivor count at each stage.
 
-Defining exact curves requires resolving:
-
-- How many Entrants survive each stage for each preset.
-- At what preset sizes a 3-finalist vs 4-finalist curve is appropriate.
-- Whether awkward counts near threshold values need special handling.
-- How to balance tournament rhythm, tension, fairness, and engagement.
+The original ADR deferred exact curve definition to a dedicated design session. That session produced `predictsport-world-cup-2026-elimination-curve-solution.md`, which was audited in `docs/AUDIT-elimination-curve-solution.md`.
 
 ## Decision
 
-Exact elimination curves are deliberately deferred to a dedicated design session. Phase 1 accepts fixed milestone curves stored as configurable template data.
+Phase 1 uses a formula-based elimination curve generator that accepts any entrant count from 8 to 96 (not just presets). The curve is generated at PW1 lock and stored as immutable template data.
 
-Locked constraints that bound the eventual curves:
+**Core formula:**
+- Group Stage survivor target: `ceil(N * 2/3)`
+- Later stages: `max(ceil(prev/2), min_for_remaining_steps)`
+- SF elimination always reduces to the finalist band count
+- Finalist bands: 8-55 → 2, 56-79 → 3, 80-96 → 4
 
-| Entrant Count | Final Window Entrants |
-|---:|---:|
-| 96 | 4 |
-| 64 | 3 |
-| 48 | 2 |
-| Fewer than 48 | 2 or fewer |
+**Group qualification rules:**
+- Top 2 from every group qualify automatically.
+- Third from 5-player groups qualifies automatically.
+- Additional best-third qualification from 4-player groups only.
+- Third from 3-player groups never qualifies.
+- Fourth place never qualifies.
 
-No preset may send more than 4 Entrants into the Final Prediction Window. 50% elimination is a useful tension heuristic, not a law. Curves must not be hard-coded as a single formula.
+**Stage mapping:** "Entering Final Prediction Window" = after SF finalisation. PW8 bundles Third-Place Play-Off + Final. 8 Prediction Windows total.
 
-The selected preset and curve become immutable once the first Prediction Window locks. The UI must show the consequence table for the selected preset before launch.
+See SPEC.md §16.8 for the full locked specification.
 
 ## Rationale
 
-- Getting the curve right requires playtesting and stakeholder input that cannot be rushed during the implementation phase.
-- The engine reads curves from `classification.config.elimination_curve`, so implementation can proceed with placeholder curves and swap in final values later.
-- Proportional curves are explicitly Phase 2 exploration.
+- Formula-based generation replaces hard-coded presets, supporting any entrant count 8-96.
+- The 2/3 group stage cut preserves social tension without being brutally aggressive.
+- Generous halving with minimum-steps clamping guarantees at least 1 elimination per stage.
+- Finalist bands prevent awkward 1-person or 5+ person finals.
+- All 16 reference curves and the full 8-96 range were verified computationally.
 
 ## Consequences
 
-- Implementation must build the elimination engine to read curves from config, not hard-code them.
-- Placeholder curves must be clearly marked as draft in seed data.
-- The dedicated curve session must be completed before the first public competition launches.
+- The existing `getEliminationCurveForPreset()` lookup table must be replaced with the formula generator.
+- Group allocation must be target-aware (3/4/5-player groups).
+- Best-third ranking must filter by group size.
+- Elimination logic must handle variable group sizes.
+- Curve storage format should use an ordered array, not a stage-keyed map.
+- Proportional curves remain Phase 2 exploration.
+
+## Supersedes
+
+This ADR supersedes the original "deferred" decision. The placeholder curves in `create-world-cup-competition.ts` are incorrect and must be replaced.

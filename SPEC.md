@@ -547,13 +547,13 @@ Tracked in `todos.md` as a prioritised punch list. Keep both files in sync.
 
 Phase 1 targets FIFA World Cup 2026 only. The feature adds a tournament-format Prediction Game that runs inside the existing PredictSport application and as a simplified World Cup 2026 Product Shell.
 
-**In scope:** Group Stage, Round of 32, Round of 16, Quarter-finals, Semi-finals, Third-place play-off, Final. Four concurrent Classifications. Generic Bracket Prediction Engine with World Cup adapter. Super Administrator-controlled result pipeline.
+**In scope:** Group Stage, Round of 32, Round of 16, Quarter-finals, Semi-finals, Third-place play-off, Final. Five concurrent Classifications (see 16.2). Generic Bracket Prediction Engine with World Cup adapter. Super Administrator-controlled result pipeline.
 
 **Out of scope (Phase 1):** Goalscorer/player/squad prediction, general tournament-builder UI, All-Ireland/GAA backdoor modelling, user-generated activity feed, comments, reactions, direct messaging, media upload.
 
 ### 16.2 Classifications
 
-Each World Cup Prediction Game contains four concurrent Classifications (see ADR 0002):
+Each World Cup Prediction Game contains five concurrent Classifications (see ADR 0002):
 
 | Classification | Type | Eliminates? | Scoring Basis |
 |---|---|---|---|
@@ -561,6 +561,9 @@ Each World Cup Prediction Game contains four concurrent Classifications (see ADR
 | Format Classification | `format_elimination` | Yes | Stage-local match points + elimination |
 | Full Bracket Survivor | `bracket_survivor` | Yes (within bracket) | Progression correctness |
 | Knockout Bracket Survivor | `bracket_survivor` | Yes (within bracket) | Progression correctness |
+| Pre-Tournament Stage Pick | `stage_pick` | No | Correctness at admin-selected knockout stage |
+
+**Pre-Tournament Stage Pick:** Admin selects a knockout stage (e.g., Semi-Finals). Entrants predict outcomes at that stage before the tournament begins. Locks at PW1. Cannot be attempted after PW1 locks. Not path-sensitive — only checks whether the predicted teams/outcomes are correct at the selected stage. Designed as a simpler alternative to the Full Bracket's third-place prediction, which requires impractical bracket-path accuracy.
 
 Classification principles:
 
@@ -582,7 +585,18 @@ A Prediction Window is a lockable batch of Fixtures that Entrants predict before
 | Concurrent open windows | Multiple future windows may accept Picks simultaneously |
 | Independent locking | Each window locks at its own time |
 
-Group Stage uses 3 Prediction Windows (Group Matchday 1, 2, 3). Each knockout Sporting Stage uses 1 Prediction Window. Final Stage contains the final and, if enabled, the third-place play-off.
+Group Stage uses 3 Prediction Windows (Group Matchday 1, 2, 3). Knockout stages R32 through Semi-Finals each use 1 Prediction Window. **PW8 bundles the Third-Place Play-Off and the Final** into a single Prediction Window. Total: **8 Prediction Windows**.
+
+| PW | Sporting Stage(s) | Format Elimination? |
+|---|---|---|
+| PW1 | Group Matchday 1 | No |
+| PW2 | Group Matchday 2 | No |
+| PW3 | Group Matchday 3 | Yes (group stage cut) |
+| PW4 | Round of 32 | Yes |
+| PW5 | Round of 16 | Yes |
+| PW6 | Quarter-Finals | Yes |
+| PW7 | Semi-Finals | Yes (last elimination) |
+| PW8 | Third-Place + Final | No (winner declared) |
 
 ### 16.4 Match Scoring Model
 
@@ -634,19 +648,38 @@ Knockout Bracket Survivor: Opens after Group Stage finalisation. Uses official R
 
 ### 16.8 Format Classification
 
-The Format Classification is a tournament-style survival competition with Prediction Groups.
+The Format Classification is a tournament-style survival competition with Prediction Groups. Full elimination curve design: `predictsport-world-cup-2026-elimination-curve-solution.md`. Audit: `docs/AUDIT-elimination-curve-solution.md`.
 
-- Entrants are placed into Prediction Groups (target size 4; 3 or 5 as fallback).
-- Groups are allocated by random draw after registration closes; immutable after first window locks.
-- Top 2 from each group qualify automatically. Best two-thirds of third-place finishers also qualify.
-- Points reset to zero at each Sporting Stage. Eliminations happen after Stage finalisation, not after each window.
-- Eliminated Entrants remain active in Overall Classification.
+**Elimination curve:** Generated from actual entrant count (8-96) at PW1 lock. Group Stage survivor target = `ceil(N * 2/3)`. Later stages use generous halving `ceil(prev/2)` clamped to a minimum that guarantees at least 1 elimination per stage. SF elimination always reduces to the finalist band count. Curve becomes immutable at PW1 lock.
+
+**Finalist bands (Phase 1):** 8-55 entrants → 2 finalists. 56-79 → 3 finalists. 80-96 → 4 finalists.
+
+**Group allocation:** Target-aware. Groups of 3, 4, or 5. Prefer 4-player groups. Algorithm: start with max 4s, adjust with 3s/5s to reach survivor target. Immutable after PW1 lock. Admin may disallow late joining entirely.
+
+**Group Stage qualification rules:**
+1. Top 2 from every group qualify automatically.
+2. Third place from 5-player groups qualifies automatically.
+3. Additional best-third qualification from 4-player groups only.
+4. Third place from 3-player groups never qualifies.
+5. Fourth place never qualifies.
+
+**Points reset** to zero at each Sporting Stage. Eliminations happen after Stage finalisation, not after each window. Eliminated Entrants remain active in Overall Classification.
+
+**Final Prediction Window (PW8):** Third-Place Play-Off + Final bundled. No elimination. The 2-4 finalists predict both matches. Winner determined by cumulative PW8 stage-local points. Standard tie-break applies.
 
 **Tie-break hierarchy (fixed in Phase 1):** Total points, exact-score hits, correct-outcome hits, earlier aggregate submission timestamp, random fallback.
 
-**Entrant presets:** 12, 24, 48, 64, 96. Preset and curve become immutable once the first Prediction Window locks. UI must show consequence table before launch.
+**Reference curves:**
 
-**Finalist-count constraints:** 96 Entrants finishes with 4 Final Window Entrants; 64 with 3; 48 with 2; fewer than 48 with 2 or fewer.
+| N | Curve |
+|---:|---|
+| 12 | 12 → 8 → 5 → 4 → 3 → 2 → 1 |
+| 24 | 24 → 16 → 8 → 4 → 3 → 2 → 1 |
+| 48 | 48 → 32 → 16 → 8 → 4 → 2 → 1 |
+| 64 | 64 → 43 → 22 → 11 → 6 → 3 → 1 |
+| 96 | 96 → 64 → 32 → 16 → 8 → 4 → 1 |
+
+UI must show resolved consequence table before launch, including group allocation, survivor counts per stage, and finalist count.
 
 ### 16.9 Product Shell
 
@@ -654,16 +687,22 @@ See ADR 0006. The World Cup shell is a branded Product Shell over shared core lo
 
 Product modes: `predictsport_full` (default), `world_cup_2026_shell`, `world_cup_2026_archive`.
 
-- One shared GitHub repo, two Vercel projects.
+- One shared GitHub repo, two Vercel projects, **one shared Supabase database**.
 - Product mode controlled by `NEXT_PUBLIC_PRODUCT_MODE` environment variable.
 - Shell hides unrelated routes and redirects unsupported paths.
 - After tournament: archive mode exports static JSON and static Next.js pages, no Supabase dependency.
 
+**Main app (`predictsport_full`):** World Cup tab (`/wc/*`) appears in main navigation. Time-gated — visible from approximately May 2026 through one month after the Final. Users access WC alongside all other PredictSport features.
+
+**Shell (`world_cup_2026_shell`):** Separate Vercel project. Shows ONLY the World Cup prediction game. No personal predictions, no group competitions. Same Supabase backend — a user joining via the shell appears on the same leaderboard as one joining via the main app. Super Admin actions are performed once and affect both deployments.
+
 ### 16.10 Entry Rules
 
-- Parent World Cup Prediction Game remains joinable until Prediction Window 1 is finalised.
-- After PW1 finalisation, no new Entrants may join.
+- Parent World Cup Prediction Game remains joinable until Prediction Window 1 locks (not finalisation).
+- After PW1 lock, no new Entrants may join.
+- Admin may choose to disallow late joining entirely when configuring the competition.
 - Entrants joining after PW1 locks receive zero points for missed Fixtures.
+- Late joiners before PW1 lock are included in the elimination curve entrant count. After PW1 lock, the curve is immutable and late joiners are slotted into the smallest existing group.
 - Scored participation requires authentication (Google OAuth or email magic link).
 
 ### 16.11 Roles and Authority
@@ -678,22 +717,25 @@ The following are explicitly deferred and must not be assumed or implied:
 
 | Item | Status |
 |---|---|
-| Exact Format Classification elimination curves (12/24/48/64/96) | Deferred to dedicated design session (ADR 0008) |
-| Awkward-count behaviour between 2, 3, and 4 Final Window Entrants | Deferred (ADR 0008) |
+| ~~Exact Format Classification elimination curves~~ | **Resolved** — see §16.8 and ADR 0008 |
+| ~~Awkward-count behaviour between 2, 3, and 4 Final Window Entrants~~ | **Resolved** — finalist bands in §16.8 |
 | Proportional elimination curve | Phase 2 exploration |
 | Full manual curve editor | Not Phase 1 |
+| Pre-Tournament Stage Pick classification — detailed design | Phase 1, pending dedicated session |
 | Live/projection leaderboards as authoritative | Phase 1 provisional only |
 | Per-Fixture locking | Phase 1 uses window-level locking |
 | Standalone Knockout Prediction surface abstraction model | Pending clarification (ADR 0009) |
 | Escalating points mode | Phase 2 |
-| Best-third rounding for non-standard group counts | Must resolve before awkward-count implementation |
+| ~~Best-third rounding for non-standard group counts~~ | **Resolved** — group-size-aware rules in §16.8 |
 
 ### 16.13 Superseded Decisions
 
 | Earlier position | Updated position |
 |---|---|
-| Three concurrent Classifications | Four: Overall, Format, Full Bracket, Knockout Bracket |
-| Format final always has exactly 2 Entrants | Finalist count is curve-derived (see 16.8) |
-| New Entrants join until final Group Stage window locks | Parent game closes after PW1 finalisation |
+| Three concurrent Classifications | Five: Overall, Format, Full Bracket, Knockout Bracket, Pre-Tournament Stage Pick |
+| Format final always has exactly 2 Entrants | Finalist count is band-derived: 2/3/4 (see 16.8) |
+| New Entrants join until final Group Stage window locks | Parent game closes at PW1 lock |
+| 9 Prediction Windows (Third-Place and Final separate) | 8 Prediction Windows (PW8 = Third-Place + Final bundled) |
+| Elimination curves deferred (ADR 0008) | **Resolved** — formula-based generation from any count 8-96 |
 | Knockout-only game as separate duplicated backend | Clarification required; must not duplicate canonical data (ADR 0009) |
 | Admin confirms results | Super Administrator confirms; Competition Admin cannot |
