@@ -83,6 +83,32 @@ export default async function CompetitionsPage() {
     }
   }
 
+  // Events missing results across admin competitions
+  const adminCompIds = competitions
+    .filter((c) => (c.role === "admin" || c.role === "co_admin") && c.status === "active")
+    .map((c) => c.id);
+
+  const { data: missingResultEvents } = adminCompIds.length > 0
+    ? await supabase
+        .from("events")
+        .select("id, event_name, sport, start_time, competition_id")
+        .in("competition_id", adminCompIds)
+        .lt("start_time", new Date().toISOString())
+        .eq("result_confirmed", false)
+        .neq("status", "cancelled")
+        .is("result_data", null)
+        .order("start_time", { ascending: true })
+        .limit(20)
+    : { data: [] };
+
+  // Group missing results by competition
+  const missingByComp = new Map<string, typeof missingResultEvents>();
+  for (const e of missingResultEvents ?? []) {
+    const list = missingByComp.get(e.competition_id) ?? [];
+    list.push(e);
+    missingByComp.set(e.competition_id, list);
+  }
+
   // Additional data for richer cards
   const [memberCountsResult, roundDataResult, eventDetailsResult] =
     competitionIds.length > 0
@@ -203,6 +229,48 @@ export default async function CompetitionsPage() {
           />
         </svg>
       </Link>
+
+      {/* Missing results alert */}
+      {missingByComp.size > 0 && (
+        <div className="mb-4 rounded-2xl border border-ps-amber/40 bg-ps-amber-soft/50 p-4">
+          <p className="text-xs font-extrabold tracking-wide uppercase text-ps-amber-deep mb-2">
+            Results needed
+          </p>
+          <div className="space-y-2">
+            {Array.from(missingByComp.entries()).map(([compId, events]) => {
+              const comp = competitions.find((c) => c.id === compId);
+              if (!comp || !events) return null;
+              const overdueCount = events.length;
+              const oldest = events[0];
+              const hoursAgo = oldest
+                ? Math.floor((Date.now() - new Date(oldest.start_time).getTime()) / 3_600_000)
+                : 0;
+              return (
+                <Link
+                  key={compId}
+                  href={`/competitions/${compId}`}
+                  className="flex items-center justify-between rounded-xl bg-ps-surface px-3 py-2.5 transition-colors hover:bg-ps-chip"
+                >
+                  <div className="min-w-0 flex-1">
+                    <p className="text-sm font-bold text-ps-text truncate">{comp.name}</p>
+                    <p className="text-xs text-ps-text-ter mt-0.5">
+                      {overdueCount} event{overdueCount !== 1 ? "s" : ""} awaiting results
+                      {hoursAgo >= 24 && (
+                        <span className="text-ps-red font-semibold">
+                          {" "}· oldest {Math.floor(hoursAgo / 24)}d overdue
+                        </span>
+                      )}
+                    </p>
+                  </div>
+                  <span className="shrink-0 rounded-full bg-ps-amber px-2.5 py-1 text-[10px] font-extrabold text-[#1a1208]">
+                    {overdueCount}
+                  </span>
+                </Link>
+              );
+            })}
+          </div>
+        </div>
+      )}
 
       {/* Competition list */}
       {competitions.length === 0 ? (
