@@ -19,9 +19,11 @@ interface PredictionWindow {
 export function PredictionWindowSelector({
   windows,
   competitionId: _competitionId,
+  basePath = "/wc/picks",
 }: {
   windows: PredictionWindow[];
   competitionId: string;
+  basePath?: string;
 }) {
   if (windows.length === 0) {
     return (
@@ -43,7 +45,7 @@ export function PredictionWindowSelector({
         return (
           <Link
             key={w.id}
-            href={`/wc/picks/${w.id}`}
+            href={`${basePath}/${w.id}`}
             className="block rounded-xl border border-ps-border bg-ps-surface p-4 transition-all hover:border-ps-text/20 active:scale-[0.99]"
           >
             <div className="flex items-start justify-between">

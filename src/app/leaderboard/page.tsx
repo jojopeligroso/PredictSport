@@ -7,6 +7,8 @@ import {
   type EventPrediction,
   type TiebreakerInfo,
 } from "./LeaderboardTable";
+import { getClassificationsForCompetition } from "@/lib/tournament/classification-engine";
+import { ClassificationTabs } from "@/components/tournament/ClassificationTabs";
 
 interface PageProps {
   searchParams: Promise<{ competition?: string }>;
@@ -78,6 +80,37 @@ export default async function LeaderboardPage({ searchParams }: PageProps) {
   }
 
   const selectedCompetition = competitions.find((c) => c.id === selectedId);
+
+  // Check if this competition has tournament classifications
+  const classifications = await getClassificationsForCompetition(supabase, selectedId);
+
+  if (classifications.length > 0) {
+    return (
+      <div className="mx-auto max-w-2xl p-4 sm:p-6">
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+          <div>
+            <p className="text-[11px] font-extrabold lowercase tracking-tight text-ps-text">
+              sports<span className="text-ps-amber">predict.</span>
+            </p>
+            <h1 className="mt-0.5 font-display text-[32px] leading-none tracking-wider text-ps-text">
+              THE TABLE
+            </h1>
+          </div>
+          <CompetitionSelector
+            competitions={competitions.map((c) => ({ id: c.id, name: c.name }))}
+            selectedId={selectedId}
+          />
+        </div>
+        <div className="mt-4">
+          <ClassificationTabs
+            classifications={classifications}
+            competitionId={selectedId}
+            currentUserId={user.id}
+          />
+        </div>
+      </div>
+    );
+  }
 
   // Fetch all data in parallel
   const [

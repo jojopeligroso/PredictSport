@@ -36,6 +36,22 @@ export async function NavBar() {
   const avatarUrl =
     profile?.avatar_url ?? authUser?.user_metadata?.avatar_url ?? null;
 
+  // Check for an active public tournament competition to feature in nav
+  const { data: tournamentComp } = authUser
+    ? await supabase
+        .from("competitions")
+        .select("id, name")
+        .not("tournament_id", "is", null)
+        .eq("status", "active")
+        .eq("visibility", "public")
+        .limit(1)
+        .maybeSingle()
+    : { data: null };
+
+  const extraNavLinks: { href: string; label: string }[] = tournamentComp
+    ? [{ href: `/competitions/${tournamentComp.id}`, label: tournamentComp.name }]
+    : [];
+
   return (
     <nav className="relative bg-ps-bg">
       <div className="mx-auto flex h-12 w-full max-w-3xl items-center justify-between px-4 sm:px-6">
@@ -54,6 +70,15 @@ export async function NavBar() {
               key={link.href}
               href={link.href}
               className="rounded-md px-3 py-1.5 text-sm font-medium text-ps-text-sec transition-colors hover:bg-ps-chip hover:text-ps-text"
+            >
+              {link.label}
+            </Link>
+          ))}
+          {extraNavLinks.map((link) => (
+            <Link
+              key={link.href}
+              href={link.href}
+              className="rounded-md px-3 py-1.5 text-sm font-bold text-ps-amber transition-colors hover:bg-ps-chip"
             >
               {link.label}
             </Link>
@@ -81,6 +106,7 @@ export async function NavBar() {
             isLoggedIn={!!authUser}
             displayName={displayName}
             avatarUrl={avatarUrl}
+            extraNavLinks={extraNavLinks}
           />
         </div>
       </div>

@@ -11,8 +11,8 @@ export const dynamic = "force-dynamic";
  * GET /api/tournament/cron/lock-windows
  *
  * Called every 5 minutes by Vercel Cron. For each tournament competition
- * (product_mode = 'world_cup_2026_shell', status active or draft), finds
- * open rounds whose earliest event lock_time <= now and sets them to 'locked'.
+ * (tournament_id IS NOT NULL, status active or draft), finds open rounds
+ * whose earliest event lock_time <= now and sets them to 'locked'.
  *
  * SECURITY: Protected by CRON_SECRET -- Vercel sets the Authorization
  * header automatically for cron invocations.
@@ -40,7 +40,7 @@ export async function GET(request: Request) {
   const { data: competitions, error: compError } = await supabase
     .from("competitions")
     .select("id, name")
-    .eq("product_mode", "world_cup_2026_shell")
+    .not("tournament_id", "is", null)
     .in("status", ["active", "draft"]);
 
   if (compError) {

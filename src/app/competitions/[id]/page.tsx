@@ -97,6 +97,63 @@ export default async function CompetitionDetailPage({ params }: PageProps) {
         .order("created_at", { ascending: false })
     : { data: [] };
 
+  // Check for tournament classifications
+  const { data: classifications } = await supabase
+    .from("classifications")
+    .select("id, classification_type, classification_key")
+    .eq("competition_id", id);
+
+  const hasClassifications = (classifications?.length ?? 0) > 0;
+  const hasBracket = classifications?.some(
+    (c: { classification_type: string }) => c.classification_type === "bracket_survivor"
+  ) ?? false;
+
+  // Build finalisation data for tournament competitions
+  let finalisationData: {
+    windows: { id: string; name: string; status: string; totalEvents: number; confirmedEvents: number }[];
+    stages: { id: string; name: string; status: string; totalWindows: number; scoredWindows: number }[];
+  } | undefined;
+
+  if (hasClassifications) {
+    const tournamentRounds = (rounds ?? []).filter(
+      (r: { sporting_stage_id?: string | null }) => r.sporting_stage_id
+    );
+    const windowData = tournamentRounds.map((r) => {
+      const roundEvents = (events ?? []).filter((e) => e.round_id === r.id);
+      return {
+        id: r.id,
+        name: r.name ?? `Round ${r.round_number}`,
+        status: r.status ?? "open",
+        totalEvents: roundEvents.length,
+        confirmedEvents: roundEvents.filter((e) => e.result_confirmed).length,
+      };
+    });
+
+    // Fetch sporting stages if tournament_id exists
+    const { data: stages } = competition.tournament_id
+      ? await supabase
+          .from("sporting_stages")
+          .select("id, name, status")
+          .eq("tournament_id", competition.tournament_id)
+          .order("stage_order", { ascending: true })
+      : { data: [] };
+
+    const stageData = (stages ?? []).map((s: { id: string; name: string; status: string }) => {
+      const stageWindows = tournamentRounds.filter(
+        (r: { sporting_stage_id?: string | null }) => r.sporting_stage_id === s.id
+      );
+      return {
+        id: s.id,
+        name: s.name,
+        status: s.status,
+        totalWindows: stageWindows.length,
+        scoredWindows: stageWindows.filter((r) => r.status === "scored").length,
+      };
+    });
+
+    finalisationData = { windows: windowData, stages: stageData };
+  }
+
   return (
     <div className="mx-auto max-w-[480px] md:max-w-3xl lg:max-w-4xl p-6 sm:p-8">
       {/* Header */}
@@ -148,6 +205,9 @@ export default async function CompetitionDetailPage({ params }: PageProps) {
         inviteTokens={inviteTokens ?? []}
         currentUserId={user.id}
         userRole={userRole}
+        hasClassifications={hasClassifications}
+        hasBracket={hasBracket}
+        finalisationData={finalisationData}
       />
     </div>
   );

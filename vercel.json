@@ -15,6 +15,10 @@
     {
       "path": "/api/tournament/cron/lock-windows",
       "schedule": "*/5 * * * *"
+    },
+    {
+      "path": "/api/tournament/cron/auto-finalise",
+      "schedule": "*/5 * * * *"
     }
   ]
 }

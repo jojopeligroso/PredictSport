@@ -14,9 +14,10 @@ interface MobileNavProps {
   isLoggedIn: boolean;
   displayName: string;
   avatarUrl: string | null;
+  extraNavLinks?: { href: string; label: string }[];
 }
 
-export function MobileNav({ isLoggedIn, displayName, avatarUrl }: MobileNavProps) {
+export function MobileNav({ isLoggedIn, displayName, avatarUrl, extraNavLinks = [] }: MobileNavProps) {
   const [isOpen, setIsOpen] = useState(false);
 
   return (
@@ -71,6 +72,16 @@ export function MobileNav({ isLoggedIn, displayName, avatarUrl }: MobileNavProps
                 href={link.href}
                 onClick={() => setIsOpen(false)}
                 className="block rounded-md px-3 py-2 text-sm font-medium text-ps-text-sec transition-colors hover:bg-ps-chip hover:text-ps-text"
+              >
+                {link.label}
+              </Link>
+            ))}
+            {extraNavLinks.map((link) => (
+              <Link
+                key={link.href}
+                href={link.href}
+                onClick={() => setIsOpen(false)}
+                className="block rounded-md px-3 py-2 text-sm font-bold text-ps-amber transition-colors hover:bg-ps-chip"
               >
                 {link.label}
               </Link>

@@ -5,7 +5,7 @@ import { scorePrediction } from "@/lib/scoring";
 
 /**
  * Step 1: Confirm individual fixture result for tournament competitions.
- * Reuses the existing scoring flow but enforces super admin authority.
+ * Reuses the existing scoring flow. Requires super admin or competition admin/co_admin.
  */
 export async function confirmTournamentResult(
   supabase: SupabaseClient,
@@ -13,16 +13,19 @@ export async function confirmTournamentResult(
   resultData: Record<string, unknown>,
   confirmedBy: string
 ): Promise<{ scored: number; errors: number }> {
-  // Verify super admin
-  const { data: adminUser } = await supabase
-    .from("users")
-    .select("is_super_admin")
-    .eq("id", confirmedBy)
+  // Fetch event's competition_id for admin check
+  const { data: eventRow } = await supabase
+    .from("events")
+    .select("competition_id")
+    .eq("id", eventId)
     .single();
 
-  if (!adminUser?.is_super_admin) {
-    throw new Error("Only super admins can confirm tournament results");
+  if (!eventRow) {
+    throw new Error("Event not found");
   }
+
+  // Verify super admin or competition admin
+  await verifyAdminAccess(supabase, confirmedBy, eventRow.competition_id);
 
   // Atomically confirm (prevent double-scoring)
   const { data: confirmedEvent, error: updateError } = await supabase
@@ -110,20 +113,7 @@ export async function finaliseWindow(
   roundId: string,
   finalisedBy: string | null
 ): Promise<ResultFinalisation> {
-  // Verify super admin (skip for automatic/cron finalisations where finalisedBy is null)
-  if (finalisedBy) {
-    const { data: adminUser } = await supabase
-      .from("users")
-      .select("is_super_admin")
-      .eq("id", finalisedBy)
-      .single();
-
-    if (!adminUser?.is_super_admin) {
-      throw new Error("Only super admins can finalise prediction windows");
-    }
-  }
-
-  // Get the round and its competition
+  // Get the round and its competition (fetch first so we can check admin membership)
   const { data: round, error: roundError } = await supabase
     .from("rounds")
     .select("id, competition_id, sporting_stage_id, status")
@@ -132,6 +122,11 @@ export async function finaliseWindow(
 
   if (roundError || !round) {
     throw new Error("Prediction window not found");
+  }
+
+  // Verify super admin or competition admin (skip for automatic/cron finalisations where finalisedBy is null)
+  if (finalisedBy) {
+    await verifyAdminAccess(supabase, finalisedBy, round.competition_id);
   }
 
   if (round.status === "scored") {
@@ -211,17 +206,6 @@ export async function finaliseStage(
   stageId: string,
   finalisedBy: string
 ): Promise<ResultFinalisation> {
-  // Verify super admin
-  const { data: adminUser } = await supabase
-    .from("users")
-    .select("is_super_admin")
-    .eq("id", finalisedBy)
-    .single();
-
-  if (!adminUser?.is_super_admin) {
-    throw new Error("Only super admins can finalise sporting stages");
-  }
-
   // Get the stage
   const { data: stage, error: stageError } = await supabase
     .from("sporting_stages")
@@ -246,6 +230,9 @@ export async function finaliseStage(
   if (!competitions || competitions.length === 0) {
     throw new Error("No competitions linked to this tournament");
   }
+
+  // Verify super admin or admin of any linked competition
+  await verifyAdminAccessForTournament(supabase, finalisedBy, competitions.map((c) => c.id));
 
   // For each competition, verify all windows for this stage are scored
   for (const comp of competitions) {
@@ -342,6 +329,62 @@ async function activateKnockoutBracket(
       .eq("classification_key", "knockout_bracket")
       .eq("status", "draft");
   }
+}
+
+/**
+ * Verify that the user is a super admin or a competition admin/co_admin.
+ */
+async function verifyAdminAccess(
+  supabase: SupabaseClient,
+  userId: string,
+  competitionId: string
+): Promise<void> {
+  const { data: adminUser } = await supabase
+    .from("users")
+    .select("is_super_admin")
+    .eq("id", userId)
+    .single();
+
+  if (adminUser?.is_super_admin) return;
+
+  const { data: member } = await supabase
+    .from("competition_members")
+    .select("role")
+    .eq("competition_id", competitionId)
+    .eq("user_id", userId)
+    .single();
+
+  if (member?.role === "admin" || member?.role === "co_admin") return;
+
+  throw new Error("Only super admins or competition admins can perform this action");
+}
+
+/**
+ * Verify that the user is a super admin or admin of any of the given competitions.
+ */
+async function verifyAdminAccessForTournament(
+  supabase: SupabaseClient,
+  userId: string,
+  competitionIds: string[]
+): Promise<void> {
+  const { data: adminUser } = await supabase
+    .from("users")
+    .select("is_super_admin")
+    .eq("id", userId)
+    .single();
+
+  if (adminUser?.is_super_admin) return;
+
+  const { data: memberships } = await supabase
+    .from("competition_members")
+    .select("role")
+    .in("competition_id", competitionIds)
+    .eq("user_id", userId)
+    .in("role", ["admin", "co_admin"]);
+
+  if (memberships && memberships.length > 0) return;
+
+  throw new Error("Only super admins or competition admins can perform this action");
 }
 
 /**

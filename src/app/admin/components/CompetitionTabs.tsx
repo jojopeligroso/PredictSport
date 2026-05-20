@@ -7,6 +7,8 @@ import { NominationsSection } from "./NominationsSection";
 import { NominateSection } from "./NominateSection";
 import { SettingsSection } from "./SettingsSection";
 import type { Competition, Event, CompetitionMember, EventNomination, InviteToken, EventPredictionType, Round } from "@/types/database";
+import { PredictionWindowSelector } from "@/components/tournament/PredictionWindowSelector";
+import { FinalisationPanel } from "@/components/tournament/admin/FinalisationPanel";
 
 interface EventWithPredictionTypes extends Event {
   event_prediction_types: EventPredictionType[];
@@ -21,9 +23,15 @@ interface CompetitionTabsProps {
   inviteTokens: InviteToken[];
   currentUserId: string;
   userRole?: "admin" | "co_admin" | "participant";
+  hasClassifications?: boolean;
+  hasBracket?: boolean;
+  finalisationData?: {
+    windows: { id: string; name: string; status: string; totalEvents: number; confirmedEvents: number }[];
+    stages: { id: string; name: string; status: string; totalWindows: number; scoredWindows: number }[];
+  };
 }
 
-type Tab = "Events" | "Confirm Results" | "Add Event" | "Nominations" | "Nominate" | "Members" | "Settings";
+type Tab = "Events" | "Confirm Results" | "Add Event" | "Nominations" | "Nominate" | "Members" | "Settings" | "Prediction Windows" | "Finalise";
 
 export function CompetitionTabs({
   competition,
@@ -34,6 +42,8 @@ export function CompetitionTabs({
   inviteTokens,
   currentUserId,
   userRole = "admin",
+  hasClassifications = false,
+  finalisationData,
 }: CompetitionTabsProps) {
   const isAdmin = userRole === "admin" || userRole === "co_admin";
   const defaultTab: Tab = isAdmin ? "Confirm Results" : "Events";
@@ -53,6 +63,8 @@ export function CompetitionTabs({
     { id: "Add Event", label: "Add Event", adminOnly: true },
     { id: "Nominations", label: "Nominations", count: pendingNominationCount || undefined, adminOnly: true },
     { id: "Nominate", label: "Nominate", adminOnly: false, show: competition.allow_nominations },
+    { id: "Prediction Windows", label: "Windows", adminOnly: false, show: hasClassifications },
+    { id: "Finalise", label: "Finalise", adminOnly: true, show: hasClassifications },
     { id: "Members", label: "Members", adminOnly: false },
     { id: "Settings", label: "Settings", adminOnly: true },
   ];
@@ -120,6 +132,38 @@ export function CompetitionTabs({
             competition={competition}
             currentUserId={currentUserId}
           />
+        )}
+        {activeTab === "Prediction Windows" && (
+          <PredictionWindowSelector
+            windows={rounds
+              .filter((r) => r.sporting_stage_id)
+              .map((r) => ({
+                id: r.id,
+                name: r.name ?? `Round ${r.round_number}`,
+                round_number: r.round_number,
+                status: r.status ?? "open",
+                deadline: null,
+                sporting_stage_id: r.sporting_stage_id ?? null,
+                prediction_window_number: r.prediction_window_number ?? null,
+                eventCount: (events ?? []).filter((e) => e.round_id === r.id).length,
+                earliestLock: null,
+                allResulted: (events ?? []).filter((e) => e.round_id === r.id).every((e) => e.result_confirmed),
+                userPredictionCount: 0,
+              }))}
+            competitionId={competition.id}
+            basePath={`/competitions/${competition.id}/picks`}
+          />
+        )}
+        {activeTab === "Finalise" && finalisationData && (
+          <FinalisationPanel
+            windows={finalisationData.windows}
+            stages={finalisationData.stages}
+          />
+        )}
+        {activeTab === "Finalise" && !finalisationData && (
+          <p className="py-8 text-center text-sm text-ps-text-sec">
+            No finalisation data available.
+          </p>
         )}
         {activeTab === "Settings" && (
           <SettingsSection competition={competition} />

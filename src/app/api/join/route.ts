@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
+import { enrollEntrant } from "@/lib/tournament/classification-engine";
 
 export async function POST(request: NextRequest) {
   const supabase = await createClient();
@@ -74,7 +75,9 @@ export async function POST(request: NextRequest) {
     .single();
 
   if (existing) {
-    // Already a member - fetch competition name and return success
+    // Already a member — ensure classification memberships exist (idempotent backfill)
+    await enrollEntrant(supabase, invite.competition_id, user.id);
+
     const { data: comp } = await supabase
       .from("competitions")
       .select("name")
@@ -116,13 +119,16 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "Failed to join" }, { status: 500 });
   }
 
-  // 8. Increment use_count atomically
+  // 8. Enroll in classifications (idempotent — no-op for non-tournament competitions)
+  await enrollEntrant(supabase, invite.competition_id, user.id);
+
+  // 9. Increment use_count atomically
   await supabase
     .from("invite_tokens")
     .update({ use_count: (invite.use_count ?? 0) + 1 })
     .eq("id", invite.id);
 
-  // 9. Fetch competition name
+  // 10. Fetch competition name
   const { data: competition } = await supabase
     .from("competitions")
     .select("name")

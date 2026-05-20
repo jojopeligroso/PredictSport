@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { createClient } from "@/lib/supabase/server";
+import { createClient } from "@supabase/supabase-js";
 import { finaliseWindow } from "@/lib/tournament/finalisation";
 
 export const dynamic = "force-dynamic";
@@ -9,8 +9,24 @@ export const dynamic = "force-dynamic";
  * Finds completed but unfinalised prediction windows and auto-finalises them
  * if the next dependent window locks within 15 minutes.
  */
-export async function GET() {
-  const supabase = await createClient();
+
+function getServiceClient() {
+  const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const key = process.env.SUPABASE_SERVICE_ROLE_KEY;
+  if (!url || !key) throw new Error("Supabase service config missing");
+  return createClient(url, key);
+}
+
+export async function GET(request: Request) {
+  // Verify cron secret
+  const authHeader = request.headers.get("authorization");
+  const cronSecret = process.env.CRON_SECRET;
+
+  if (cronSecret && authHeader !== `Bearer ${cronSecret}`) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
+  const supabase = getServiceClient();
   const now = new Date();
   const fifteenMinutes = 15 * 60 * 1000;
 
@@ -18,7 +34,7 @@ export async function GET() {
   const { data: competitions } = await supabase
     .from("competitions")
     .select("id")
-    .eq("product_mode", "world_cup_2026_shell")
+    .not("tournament_id", "is", null)
     .in("status", ["active", "draft"]);
 
   const finalised: string[] = [];
