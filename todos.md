@@ -128,7 +128,7 @@ See `MANUAL-EVENTS-AND-API-GAPS.md` for detailed task breakdown.
 - [x] 3.6 — Improve manual result entry UX (pre-populate, validation, preview) — pre-pop from event name, score preview, edit button, 2-step confirmation
 - [x] 3.7 — Add result undo/edit capability (10-min window) — unlimited undo via unconfirm-result API (window constraint dropped; better UX for small groups)
 - [x] 3.8 — Add "Events Missing Results" admin alert dashboard
-- [ ] 3.9 — Auto-fetch reminder for manual events (cron notification)
+- [x] 3.9 — Auto-fetch reminder for manual events (cron notification)
 - [ ] 3.10 — Add "Duplicate Event" cloning feature
 - [ ] 3.11 — Validation before round/competition activation (pre-flight checks)
 - [ ] 3.12 — Documentation & inline help (tooltips, admin guide)
