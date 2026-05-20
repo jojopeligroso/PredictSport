@@ -100,7 +100,7 @@ export default async function CompetitionDetailPage({ params }: PageProps) {
   // Check for tournament classifications
   const { data: classifications } = await supabase
     .from("classifications")
-    .select("id, classification_type, classification_key")
+    .select("id, classification_type, classification_key, name, status")
     .eq("competition_id", id);
 
   const hasClassifications = (classifications?.length ?? 0) > 0;
@@ -207,6 +207,13 @@ export default async function CompetitionDetailPage({ params }: PageProps) {
         userRole={userRole}
         hasClassifications={hasClassifications}
         hasBracket={hasBracket}
+        classifications={(classifications ?? []).map((c) => ({
+          id: c.id,
+          classification_key: c.classification_key,
+          name: c.name ?? c.classification_key,
+          classification_type: c.classification_type,
+          status: c.status ?? "active",
+        }))}
         finalisationData={finalisationData}
       />
     </div>

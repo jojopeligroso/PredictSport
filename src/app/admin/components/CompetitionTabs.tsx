@@ -9,6 +9,7 @@ import { SettingsSection } from "./SettingsSection";
 import type { Competition, Event, CompetitionMember, EventNomination, InviteToken, EventPredictionType, Round } from "@/types/database";
 import { PredictionWindowSelector } from "@/components/tournament/PredictionWindowSelector";
 import { FinalisationPanel } from "@/components/tournament/admin/FinalisationPanel";
+import { ClassificationTabs } from "@/components/tournament/ClassificationTabs";
 
 interface EventWithPredictionTypes extends Event {
   event_prediction_types: EventPredictionType[];
@@ -25,13 +26,14 @@ interface CompetitionTabsProps {
   userRole?: "admin" | "co_admin" | "participant";
   hasClassifications?: boolean;
   hasBracket?: boolean;
+  classifications?: { id: string; classification_key: string; name: string; classification_type: string; status: string }[];
   finalisationData?: {
     windows: { id: string; name: string; status: string; totalEvents: number; confirmedEvents: number }[];
     stages: { id: string; name: string; status: string; totalWindows: number; scoredWindows: number }[];
   };
 }
 
-type Tab = "Events" | "Confirm Results" | "Add Event" | "Nominations" | "Nominate" | "Members" | "Settings" | "Prediction Windows" | "Finalise";
+type Tab = "Events" | "Confirm Results" | "Add Event" | "Nominations" | "Nominate" | "Members" | "Settings" | "Prediction Windows" | "Standings" | "Finalise";
 
 export function CompetitionTabs({
   competition,
@@ -43,6 +45,7 @@ export function CompetitionTabs({
   currentUserId,
   userRole = "admin",
   hasClassifications = false,
+  classifications = [],
   finalisationData,
 }: CompetitionTabsProps) {
   const isAdmin = userRole === "admin" || userRole === "co_admin";
@@ -64,6 +67,7 @@ export function CompetitionTabs({
     { id: "Nominations", label: "Nominations", count: pendingNominationCount || undefined, adminOnly: true },
     { id: "Nominate", label: "Nominate", adminOnly: false, show: competition.allow_nominations },
     { id: "Prediction Windows", label: "Windows", adminOnly: false, show: hasClassifications },
+    { id: "Standings", label: "Standings", adminOnly: false, show: hasClassifications },
     { id: "Finalise", label: "Finalise", adminOnly: true, show: hasClassifications },
     { id: "Members", label: "Members", adminOnly: false },
     { id: "Settings", label: "Settings", adminOnly: true },
@@ -152,6 +156,13 @@ export function CompetitionTabs({
               }))}
             competitionId={competition.id}
             basePath={`/competitions/${competition.id}/picks`}
+          />
+        )}
+        {activeTab === "Standings" && classifications.length > 0 && (
+          <ClassificationTabs
+            classifications={classifications}
+            competitionId={competition.id}
+            currentUserId={currentUserId}
           />
         )}
         {activeTab === "Finalise" && finalisationData && (
