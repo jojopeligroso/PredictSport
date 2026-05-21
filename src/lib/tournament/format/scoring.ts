@@ -125,6 +125,8 @@ export async function computeFormatGroupStandings(
 
 // ============================================================
 // Rank all third-place finishers across groups for a stage
+// Only includes thirds from 4-player groups (best-third pool).
+// 3-player thirds never qualify; 5-player thirds auto-qualify.
 // ============================================================
 
 export async function computeBestThirdRanking(
@@ -132,10 +134,10 @@ export async function computeBestThirdRanking(
   classificationId: string,
   stageId: string
 ): Promise<ThirdPlaceRow[]> {
-  // Fetch all groups in this classification
+  // Fetch all groups with their target_size for filtering
   const { data: groups, error: groupsError } = await supabase
     .from("format_prediction_groups")
-    .select("id, group_name, group_number")
+    .select("id, group_name, group_number, target_size")
     .eq("classification_id", classificationId)
     .order("group_number", { ascending: true });
 
@@ -144,7 +146,11 @@ export async function computeBestThirdRanking(
 
   const thirdPlaceRows: ThirdPlaceRow[] = [];
 
-  for (const group of groups as { id: string; group_name: string; group_number: number }[]) {
+  // Only 4-player groups contribute to the best-third pool
+  const eligibleGroups = (groups as { id: string; group_name: string; group_number: number; target_size: number }[])
+    .filter((g) => g.target_size === 4);
+
+  for (const group of eligibleGroups) {
     const groupStandings = await computeFormatGroupStandings(supabase, group.id, stageId);
 
     // Third place = rank 3 (index 2 after sorting)
