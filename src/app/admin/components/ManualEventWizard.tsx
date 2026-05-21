@@ -57,10 +57,10 @@ const SPORTS_LIST = [
   { value: "formula_1", label: "Formula 1" },
   { value: "horse_racing", label: "Horse Racing" },
   { value: "athletics", label: "Athletics" },
-  { value: "nfl", label: "Am. Football" },
-  { value: "nba", label: "Basketball" },
-  { value: "nhl", label: "Ice Hockey" },
-  { value: "mlb", label: "Baseball" },
+  { value: "american_football", label: "Am. Football" },
+  { value: "basketball", label: "Basketball" },
+  { value: "ice_hockey", label: "Ice Hockey" },
+  { value: "baseball", label: "Baseball" },
 ];
 
 const TYPE_DESCRIPTIONS: Record<string, string> = {
@@ -194,7 +194,7 @@ const FALLBACK_TEMPLATES: EventTemplate[] = [
   },
   {
     id: "nfl-match",
-    sport: "nfl",
+    sport: "american_football",
     name: "NFL Game",
     description: "American football game. Handicap and margin popular.",
     participantCount: 2,
@@ -203,7 +203,7 @@ const FALLBACK_TEMPLATES: EventTemplate[] = [
   },
   {
     id: "nba-match",
-    sport: "nba",
+    sport: "basketball",
     name: "NBA Game",
     description: "Basketball game. No draw.",
     participantCount: 2,
@@ -212,7 +212,7 @@ const FALLBACK_TEMPLATES: EventTemplate[] = [
   },
   {
     id: "nhl-match",
-    sport: "nhl",
+    sport: "ice_hockey",
     name: "NHL Game",
     description: "Ice hockey game. Possible OT/shootout winner.",
     participantCount: 2,
@@ -221,7 +221,7 @@ const FALLBACK_TEMPLATES: EventTemplate[] = [
   },
   {
     id: "mlb-match",
-    sport: "mlb",
+    sport: "baseball",
     name: "MLB Game",
     description: "Baseball game. Run line (handicap) popular.",
     participantCount: 2,

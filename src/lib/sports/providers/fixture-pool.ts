@@ -24,10 +24,10 @@ export class FixturePoolProvider implements SportsProvider {
     "snooker",
     "cricket",
     "athletics",
-    "mlb",
-    "nfl",
-    "nba",
-    "nhl",
+    "baseball",
+    "american_football",
+    "basketball",
+    "ice_hockey",
   ];
 
   private getClient() {

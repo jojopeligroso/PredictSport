@@ -40,10 +40,10 @@ const SPORTS: { value: string; label: string }[] = [
   { value: "formula_1", label: "Formula 1" },
   { value: "horse_racing", label: "Horse Racing" },
   { value: "athletics", label: "Athletics" },
-  { value: "nfl", label: "Am. Football" },
-  { value: "nba", label: "Basketball" },
-  { value: "nhl", label: "Ice Hockey" },
-  { value: "mlb", label: "Baseball" },
+  { value: "american_football", label: "Am. Football" },
+  { value: "basketball", label: "Basketball" },
+  { value: "ice_hockey", label: "Ice Hockey" },
+  { value: "baseball", label: "Baseball" },
 ];
 
 const EXAMPLE_CSV = `event_name,sport,start_date,start_time

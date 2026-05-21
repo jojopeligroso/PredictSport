@@ -28,10 +28,10 @@ interface BDLResponse<T> {
 export class BallDontLieProvider extends BaseProvider {
   readonly name = "balldontlie";
   readonly supportedSports = [
-    "nba",
-    "nfl",
-    "mlb",
-    "nhl",
+    "basketball",
+    "american_football",
+    "baseball",
+    "ice_hockey",
     "soccer",
   ] as const satisfies readonly Sport[];
 
@@ -59,7 +59,7 @@ export class BallDontLieProvider extends BaseProvider {
     if (!this.config.apiKey) return null;
 
     // Currently only NBA endpoint is well-documented on the free tier
-    if (sport !== "nba") return null;
+    if (sport !== "basketball") return null;
 
     const game = await this.apiFetch<{ data: BDLGame }>(
       `games/${externalEventId}`
@@ -75,7 +75,7 @@ export class BallDontLieProvider extends BaseProvider {
     options?: { date?: string; limit?: number }
   ): Promise<SearchableEvent[]> {
     if (!this.config.apiKey) return [];
-    if (sport !== "nba") return [];
+    if (sport !== "basketball") return [];
 
     const params: Record<string, string> = {};
     if (options?.date) {

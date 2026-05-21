@@ -123,7 +123,7 @@ export const EVENT_TEMPLATES: EventTemplate[] = [
   },
   {
     id: "nfl_game",
-    sport: "nfl",
+    sport: "american_football",
     name: "NFL Game",
     description: "American football game — no draws",
     participantCount: 2,
@@ -133,7 +133,7 @@ export const EVENT_TEMPLATES: EventTemplate[] = [
   },
   {
     id: "nba_game",
-    sport: "nba",
+    sport: "basketball",
     name: "NBA Game",
     description: "Basketball game",
     participantCount: 2,
@@ -143,7 +143,7 @@ export const EVENT_TEMPLATES: EventTemplate[] = [
   },
   {
     id: "nhl_game",
-    sport: "nhl",
+    sport: "ice_hockey",
     name: "NHL Game",
     description: "Ice hockey game",
     participantCount: 2,
@@ -153,7 +153,7 @@ export const EVENT_TEMPLATES: EventTemplate[] = [
   },
   {
     id: "mlb_game",
-    sport: "mlb",
+    sport: "baseball",
     name: "MLB Game",
     description: "Baseball game",
     participantCount: 2,

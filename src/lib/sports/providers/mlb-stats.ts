@@ -54,7 +54,7 @@ interface MLBLiveFeed {
  */
 export class MLBStatsProvider extends BaseProvider {
   readonly name = "mlb-stats";
-  readonly supportedSports = ["mlb"] as const satisfies readonly Sport[];
+  readonly supportedSports = ["baseball"] as const satisfies readonly Sport[];
 
   protected readonly config: ProviderConfig = {
     baseUrl: "https://statsapi.mlb.com/api/v1/",
@@ -96,7 +96,7 @@ export class MLBStatsProvider extends BaseProvider {
     return {
       provider: this.name,
       fetched_at: new Date().toISOString(),
-      sport: "mlb",
+      sport: "baseball",
       external_event_id: externalEventId,
       event_name: `${awayName} @ ${homeName}`,
       is_final: isFinal,
@@ -142,7 +142,7 @@ export class MLBStatsProvider extends BaseProvider {
     return filtered.slice(0, limit).map((g) => ({
       external_event_id: String(g.gamePk),
       event_name: `${g.teams.away.team.name} @ ${g.teams.home.team.name}`,
-      sport: "mlb" as const,
+      sport: "baseball" as const,
       start_time: g.gameDate,
       competition_name: "MLB",
       participants: [g.teams.home.team.name, g.teams.away.team.name],

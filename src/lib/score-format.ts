@@ -4,7 +4,7 @@ export type ScoreFormat = "standard" | "gaa" | null;
 
 /** Sports that support exact_score predictions */
 const STANDARD_SCORE_SPORTS: Sport[] = [
-  "soccer", "rugby", "rugby_league", "nfl", "nba", "nhl", "mlb",
+  "soccer", "rugby", "rugby_league", "american_football", "basketball", "ice_hockey", "baseball",
   "snooker", "cricket",
 ];
 

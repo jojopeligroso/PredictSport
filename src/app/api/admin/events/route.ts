@@ -45,7 +45,7 @@ interface UpdateEventBody {
 
 const VALID_SPORTS = [
   "formula_1", "soccer", "golf", "rugby", "tennis",
-  "gaa", "horse_racing", "snooker", "cricket", "athletics", "mlb", "nfl", "nba", "nhl",
+  "gaa", "horse_racing", "snooker", "cricket", "athletics", "baseball", "american_football", "basketball", "ice_hockey",
 ];
 
 const VALID_PREDICTION_TYPES: PredictionType[] = [

@@ -16,7 +16,7 @@ const SPORTS = [
   { id: "golf",            name: "Golf",            emoji: "⛳" },
   { id: "horse_racing",    name: "Horse Racing",    emoji: "🐎" },
   { id: "hurling",         name: "Hurling",         emoji: "🏑" },
-  { id: "nba",             name: "NBA",             emoji: "🏀" },
+  { id: "basketball",      name: "Basketball",      emoji: "🏀" },
   { id: "rugby",           name: "Rugby",           emoji: "🏉" },
   { id: "soccer",          name: "Soccer",          emoji: "⚽" },
   { id: "tennis",          name: "Tennis",          emoji: "🎾" },
@@ -987,7 +987,7 @@ export function CreateCompetitionForm({ alwaysOpen = false }: CreateCompetitionF
               <option value="golf">⛳ Golf</option>
               <option value="horse_racing">🐎 Horse Racing</option>
               <option value="hurling">🏑 Hurling</option>
-              <option value="nba">🏀 NBA</option>
+              <option value="basketball">🏀 Basketball</option>
               <option value="rugby">🏉 Rugby</option>
               <option value="soccer">⚽ Soccer</option>
               <option value="tennis">🎾 Tennis</option>

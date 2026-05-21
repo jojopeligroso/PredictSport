@@ -13,10 +13,10 @@ export type Sport =
   | "snooker"
   | "cricket"
   | "athletics"
-  | "mlb"
-  | "nfl"
-  | "nba"
-  | "nhl";
+  | "baseball"
+  | "american_football"
+  | "basketball"
+  | "ice_hockey";
 
 /** Ordered finishing position (for winner/top_n predictions) */
 export interface ResultPosition {

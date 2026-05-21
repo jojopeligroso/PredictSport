@@ -72,7 +72,7 @@ interface Fixture {
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
 function allowsDraws(sport: string): boolean {
-  const drawSports = ["soccer", "rugby", "gaa", "hockey", "nhl"];
+  const drawSports = ["soccer", "rugby", "gaa", "hockey", "ice_hockey"];
   return drawSports.includes(sport.toLowerCase());
 }
 

@@ -30,10 +30,10 @@ const LEAGUE_SPORT_MAP: Record<string, Sport> = {
   "gaa-hurling": "gaa",
   "gaa-camogie": "gaa",
   // US Sports
-  "4387": "nba",    // NBA
-  "4424": "mlb",    // MLB
-  "4380": "nhl",    // NHL
-  "4391": "nfl",    // NFL
+  "4387": "basketball",    // NBA
+  "4424": "baseball",     // MLB
+  "4380": "ice_hockey",   // NHL
+  "4391": "american_football", // NFL
   // Motorsport
   "4370": "formula_1", // Formula 1
   "4407": "formula_1", // MotoGP

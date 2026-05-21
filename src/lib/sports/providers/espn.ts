@@ -64,10 +64,10 @@ const DATE_RANGE_BROKEN_SPORTS: Sport[] = ["cricket"];
 
 /** Maps our Sport to ESPN's URL path segment(s). First entry is the default league. */
 const SPORT_PATHS: Partial<Record<Sport, string>> = {
-  nfl: "football/nfl",
-  nhl: "hockey/nhl",
-  nba: "basketball/nba",
-  mlb: "baseball/mlb",
+  american_football: "football/nfl",
+  ice_hockey: "hockey/nhl",
+  basketball: "basketball/nba",
+  baseball: "baseball/mlb",
   soccer: "soccer/eng.1",
   rugby: "rugby/270557", // URC (Rugby Union); Six Nations=180659, World Cup=164205
   rugby_league: "rugby-league/3", // NRL / Super League
@@ -100,10 +100,10 @@ const SPORT_PATH_DISPLAY: Partial<Record<string, string>> = {
 export class ESPNProvider extends BaseProvider {
   readonly name = "espn";
   readonly supportedSports = [
-    "nfl",
-    "nhl",
-    "nba",
-    "mlb",
+    "american_football",
+    "ice_hockey",
+    "basketball",
+    "baseball",
     "soccer",
     "rugby",
     "rugby_league",

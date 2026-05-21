@@ -197,7 +197,7 @@ function getValidPredictionTypes(fixture: SearchResult): PredictionTypeName[] {
  * Determines if a sport allows draws in head-to-head matches.
  */
 function allowsDraws(sport: string): boolean {
-  const drawSports = ["soccer", "rugby", "gaa", "hockey", "nhl"];
+  const drawSports = ["soccer", "rugby", "gaa", "hockey", "ice_hockey"];
   return drawSports.includes(sport.toLowerCase());
 }
 

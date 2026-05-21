@@ -81,10 +81,10 @@ const LEAGUE_GROUPS: LeagueGroup[] = [
   {
     label: "US Sports",
     leagues: [
-      { id: "4387", label: "NBA", sport: "nba" },
-      { id: "4424", label: "MLB", sport: "mlb" },
-      { id: "4380", label: "NHL", sport: "nhl" },
-      { id: "4391", label: "NFL", sport: "nfl" },
+      { id: "4387", label: "NBA", sport: "basketball" },
+      { id: "4424", label: "MLB", sport: "baseball" },
+      { id: "4380", label: "NHL", sport: "ice_hockey" },
+      { id: "4391", label: "NFL", sport: "american_football" },
     ],
   },
   {

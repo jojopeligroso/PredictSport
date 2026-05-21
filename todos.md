@@ -173,10 +173,10 @@ See `SPORTS-ARCHITECTURE.md` for detailed spec (TBD).
 - [x] 5.1d — Migration + RLS policy updates
 
 **Phase 5.2 — Sport type renames**
-- [ ] 5.2a — Rename `mlb` → `baseball`, `nfl` → `american_football`, `nba` → `basketball`, `nhl` → `ice_hockey` in `Sport` type
-- [ ] 5.2b — Update `SPORT_PATHS`, `registry.ts`, all provider `supportedSports` arrays
-- [ ] 5.2c — Update DB `sport` column values in all existing rows (migration)
-- [ ] 5.2d — Update UI labels, fixture browser sport selector
+- [x] 5.2a — Rename `mlb` → `baseball`, `nfl` → `american_football`, `nba` → `basketball`, `nhl` → `ice_hockey` in `Sport` type
+- [x] 5.2b — Update `SPORT_PATHS`, `registry.ts`, all provider `supportedSports` arrays
+- [x] 5.2c — Update DB `sport` column values in all existing rows (migration)
+- [x] 5.2d — Update UI labels, fixture browser sport selector
 
 **Phase 5.3 — Provider routing by league**
 - [x] 5.3a — Pass `providerLeague` (e.g. `"cricket/8048"`) through `fetchResult()` signature
