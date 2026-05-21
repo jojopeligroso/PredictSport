@@ -145,7 +145,7 @@ See `MANUAL-EVENTS-AND-API-GAPS.md` for detailed task breakdown.
 - [x] 4.7 — Evaluate Snooker coverage improvements (Snooker.org, CueTracker)
 - [x] 4.8 — Cost-benefit analysis for paid APIs (ROI calculation)
 - [x] 4.9 — Create provider integration guide (docs for contributors)
-- [ ] 4.10 — Implement top-priority provider (TBD based on 4.8 ROI)
+- [x] 4.10 — Implement top-priority provider (TBD based on 4.8 ROI)
 - [ ] 4.11 — Add provider health monitoring dashboard
 - [ ] 4.12 — Document unsupported sports & workarounds
 

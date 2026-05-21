@@ -41,8 +41,10 @@ export class TheSportsDBProvider extends BaseProvider {
     "soccer",
     "golf",
     "rugby",
+    "rugby_league",
     "tennis",
     "cricket",
+    "athletics",
   ] as const satisfies readonly Sport[];
 
   protected readonly config: ProviderConfig = {
