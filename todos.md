@@ -213,7 +213,7 @@ See `SPORTS-ARCHITECTURE.md` for detailed spec (TBD).
 ### Phase WC-E — Curve Generator & Storage
 
 - [x] **WC-E1 — Formula-based curve generator** — Implemented. Passes all 22 test cases (16 design + 6 audit edge). All 89 curves (8-96) are strictly decreasing. Boundary validation for <8 and >96.
-- [ ] **WC-E2 — Curve storage format migration** — Update `classification.config.elimination_curve` from stage-keyed `Record<string, { target_survivors }>` to ordered array format `{ entrantCount, locked, curve: [{ stage, remaining }], groupAllocation, qualificationRules }`. Migration must be backward-compatible (existing data can be null/empty for non-tournament competitions).
+- [x] **WC-E2 — Curve storage format migration** — No SQL migration needed. No existing data in old format. Writer (WC-E3) and reader (WC-F4) both use the new `{ entrantCount, locked, curve: CurveStep[] }` format. Non-tournament classifications have null config which is already handled.
 - [x] **WC-E3 — Replace `getEliminationCurveForPreset()`** — Replaced with `generateEliminationCurve()`. Changed `entrantPreset` (5 fixed values) to `entrantCount` (any 8-96). New curve format: `{ entrantCount, locked, curve: CurveStep[] }`.
 - [x] **WC-E4 — Merge PW8/PW9** — Merged Third-Place Play-Off and Final into PW8 "Finals". PREDICTION_WINDOWS reduced from 9 to 8 entries. Removed THIRD from STAGE_IDS. Seed migration stages unchanged (still separate sporting events).
 
