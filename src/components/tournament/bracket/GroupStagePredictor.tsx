@@ -29,7 +29,7 @@ import {
   detectTiebreakersNeeded,
 } from '@/lib/tournament/bracket/engine'
 import GroupMatchCard from './GroupMatchCard'
-import GroupStandingsTable from './GroupStandingsTable'
+import LiveGroupStandings from './LiveGroupStandings'
 
 interface GroupStagePredictorProps {
   template: TournamentTemplate
@@ -245,7 +245,12 @@ export default function GroupStagePredictor({
           <h3 className="mb-3 font-semibold text-ps-ink">
             Predicted Standings (Group {selectedGroup})
           </h3>
-          <GroupStandingsTable standings={currentStandings} />
+          <LiveGroupStandings
+            standings={currentStandings}
+            tiebreakers={template.tiebreakers}
+            highlightTies={true}
+            highlightPositions={[1, 2]}
+          />
 
           {/* Tiebreaker warning */}
           {currentStandings.some((team, index) => {

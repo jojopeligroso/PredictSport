@@ -51,6 +51,9 @@ export interface TeamWithStats {
   goalsFor?: number        // Deprecated, use gs
   goalsAgainst?: number    // Deprecated, use gc
   played?: number          // matches played
+  // Rugby-specific fields
+  triesScored?: number     // For rugby
+  bonusPoints?: number     // For rugby
 }
 
 export interface MatchPrediction {

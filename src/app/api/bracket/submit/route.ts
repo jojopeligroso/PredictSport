@@ -3,6 +3,7 @@ import { createClient } from '@/lib/supabase/server'
 import { BracketData } from '@/lib/tournament/bracket/types'
 import { getTemplate } from '@/lib/tournament/bracket/templates'
 import { validateBracketCompleteness } from '@/lib/tournament/bracket/engine'
+import { isV2Format, ensureLegacyFormat } from '@/lib/tournament/bracket/adapters/format-converter'
 
 /**
  * POST /api/bracket/submit
@@ -34,7 +35,7 @@ export async function POST(request: NextRequest) {
 
     // Parse body
     const body = await request.json()
-    const { competition_id, bracket_data } = body as {
+    let { competition_id, bracket_data } = body as {
       competition_id: string
       bracket_data: BracketData
     }
@@ -44,6 +45,18 @@ export async function POST(request: NextRequest) {
         { error: 'Missing required fields' },
         { status: 400 }
       )
+    }
+
+    // Convert V2 format to legacy if needed (for validation and storage)
+    if (bracket_data.groups && isV2Format(Object.values(bracket_data.groups))) {
+      console.log('[API] Detected V2 format in bracket submission, converting to legacy')
+      const legacyGroups = ensureLegacyFormat(Object.values(bracket_data.groups))
+      bracket_data = {
+        ...bracket_data,
+        groups: Object.fromEntries(
+          legacyGroups.map((g, i) => [g.group_id, g])
+        ),
+      }
     }
 
     // Check if user is a member

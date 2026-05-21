@@ -59,6 +59,10 @@ export function calculateGroupStandings(
       triesScored: 0, // For rugby
       bonusPoints: 0, // For rugby
       position: 0, // Will be assigned after sorting
+      // Required fields (short form)
+      gd: 0,
+      gs: 0,
+      gc: 0,
     })
   })
 
