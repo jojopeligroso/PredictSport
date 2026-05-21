@@ -65,4 +65,7 @@ venv/
 
 # Task queue (per-session, not shared)
 .queue/
+.queue-state.json
+.queue-session
+.queue.lock
 supabase/.temp/
