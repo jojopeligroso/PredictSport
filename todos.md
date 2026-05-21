@@ -202,7 +202,7 @@ See `SPORTS-ARCHITECTURE.md` for detailed spec (TBD).
 - [x] 7.3 — Confirmed: `allowsDraws("cricket")` returns false (RoundBuilder:199), `config.allow_draw` set false at creation, prediction form only shows Draw if truthy. `parseWinnerOptions` drawSports also excludes cricket. No fix needed.
 - [x] 7.4 — Fixed: `supportsExactScore("cricket")` was returning true. Added cricket to `NO_EXACT_SCORE_SPORTS` in `score-format.ts`. Cricket scores are too variable (multi-format, innings) for exact_score predictions.
 - [ ] 7.5 — Fix: ensure admin event creation populates `config: { options: ["Team A", "Team B"] }` from `fixture.participants`.
-- [ ] 7.6 — Backfill any existing broken cricket events with correct `config.options`.
+- [x] 7.6 — Backfilled: all 8 cricket events already had correct config.options. Also fixed 3 non-cricket events (rugby, soccer, F1) with missing options and deleted a duplicate GAA event. Only GAA hurling final remains null (finalists TBD).
 
 **Expected result:** Cricket winner prediction renders two pill buttons (Team A / Team B), no Draw, no exact score.
 
