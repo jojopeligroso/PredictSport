@@ -559,11 +559,11 @@ Each World Cup Prediction Game contains five concurrent Classifications (see ADR
 |---|---|---|---|
 | Overall | `leaderboard` | No | Cumulative match points |
 | Format Classification | `format_elimination` | Yes | Stage-local match points + elimination |
-| Full Bracket Survivor | `bracket_survivor` | Yes (within bracket) | Progression correctness |
+| Full Bracket Survivor | `bracket_survivor` | Yes (within bracket) | Progression correctness (slot-sensitive) |
 | Knockout Bracket Survivor | `bracket_survivor` | Yes (within bracket) | Progression correctness |
-| Pre-Tournament Stage Pick | `stage_pick` | No | Correctness at admin-selected knockout stage |
+| R32 Classification | `stage_pick` | No | Team accuracy at R32 stage |
 
-**Pre-Tournament Stage Pick:** Admin selects a knockout stage (e.g., Semi-Finals). Entrants predict outcomes at that stage before the tournament begins. Locks at PW1. Cannot be attempted after PW1 locks. Not path-sensitive — only checks whether the predicted teams/outcomes are correct at the selected stage. Designed as a simpler alternative to the Full Bracket's third-place prediction, which requires impractical bracket-path accuracy.
+**R32 Classification:** Automatic byproduct of Full Bracket group stage predictions. Scores how many of the 32 teams that qualified to the knockouts were correctly predicted (1 point per correct team, max 32). Not path-sensitive — only checks whether each team made the R32, regardless of position or bracket slot. No separate prediction flow required. Entry is automatic for anyone who completes Full Bracket. Designed as an achievable engagement metric when Full Bracket's slot-sensitive path predictions become chaotic due to best-third allocation complexity.
 
 Classification principles:
 

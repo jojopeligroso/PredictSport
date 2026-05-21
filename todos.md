@@ -229,11 +229,67 @@ See `SPORTS-ARCHITECTURE.md` for detailed spec (TBD).
 - [x] **WC-G1 — Consequence table API** — `GET /api/tournament/consequence-table?competitionId=X` returns the resolved curve, group allocation, qualification rules, and finalist count for display before launch.
 - [x] **WC-G2 — Consequence table UI** — Pre-launch admin/entrant view showing the full elimination curve, group allocation breakdown, and "this locks when PW1 locks" warning. Copy per design doc S16.1.
 
-### Phase WC-H — 5th Classification (Pre-Tournament Stage Pick)
+### Phase WC-H — Full Bracket & R32 Classification
 
-> Needs dedicated design session. Admin selects a knockout stage, entrants predict outcomes pre-tournament. Locks at PW1. Not path-sensitive.
+> Design complete: `docs/DESIGN-WC-H1-FULL-BRACKET.md`. Full Bracket is a pre-tournament wizard where entrants predict all group matches and knockouts. R32 Classification is an automatic byproduct (no separate flow) that scores how many of the 32 knockout teams were correctly predicted.
 
-- [ ] **WC-H1 — Design spike** — Define: what exactly does the entrant predict (team names reaching stage? match winners at stage? podium?), scoring model, UI for admin stage selection, UI for entrant picks. Do not write code until design is confirmed.
+**WC-H1: Core Components**
+- [x] **Design spike** — Full design complete (2026-05-21). R32 Classification is automatic, not a separate flow.
+- [ ] **H1.1 — Tiebreaker utilities** — Implement FIFA tiebreaker logic (steps 1-5: points, H2H GD, H2H GS, overall GD, overall GS). Phase 1: random fallback for ties beyond step 5. Phase 2: add fair play (6) and FIFA ranking (7).
+- [ ] **H1.2 — Best-third ranking** — `rankBestThirds(allThirds)` applies steps 1-5 + random to rank 12 third-place teams, returns top 8.
+- [ ] **H1.3 — Best-third slot allocation** — `allocateBestThirdsToSlots(bestThirds)` applies FIFA R32 slot rules based on group origins.
+- [ ] **H1.4 — R32 bracket generation** — `generateR32Bracket(winners, runnersUp, thirds)` creates full R32 matchup structure.
+
+**WC-H2: Group Stage UI**
+- [ ] **H2.1 — GroupMatchPredictor component** — Single-group UI: 4 teams, 6 matches, H/D/A buttons. Real-time standings calculation.
+- [ ] **H2.2 — LiveGroupStandings component** — Shows live table as user predicts, highlights ties.
+- [ ] **H2.3 — ScoreCollector component** — Smart score input triggered by ties. Only asks for scores of relevant matches (W/L between tied teams).
+- [ ] **H2.4 — Tiebreaker messaging** — Clear UI for random fallback: "FIFA would use fair play, we've randomly placed Team A ahead. Tip: predict different scores to avoid ties."
+
+**WC-H3: Bracket Wizard Shell**
+- [ ] **H3.1 — BracketWizard component** — Multi-step wizard with checkpoint system (12 group checkpoints + 5 knockout stage checkpoints).
+- [ ] **H3.2 — Save/resume state** — "Continue later" button, persists bracket_data as draft, resumes from last checkpoint.
+- [ ] **H3.3 — Progress indicator** — Shows Groups A-L → R32 → R16 → QF → SF → Final with completion status.
+
+**WC-H4: Knockout Stage UI**
+- [ ] **H4.1 — KnockoutStagePredictor component** — Shows all matches for a stage (16 for R32, 8 for R16, etc.), winner picker per match.
+- [ ] **H4.2 — Bracket context hints** — (?) icons explaining slot allocation ("Argentina here because they're Group C runner-up").
+- [ ] **H4.3 — Auto-population** — Winners from previous stage pre-fill into next stage matches.
+
+**WC-H5: Review & Submission**
+- [ ] **H5.1 — BracketReview component** — Visual bracket tree, champion path highlighted, R32 team list displayed.
+- [ ] **H5.2 — Edit navigation** — Jump back to any stage to modify predictions before submission.
+- [ ] **H5.3 — Submit & lock** — Confirmation screen, writes to `bracket_prediction_submissions`, sets `locked=true`.
+
+**WC-H6: R32 Classification (Automatic)**
+- [ ] **H6.1 — R32 team extraction** — `extractR32Teams(bracketData)` pulls 32 teams from group predictions (12 winners + 12 runners-up + 8 thirds).
+- [ ] **H6.2 — R32 scoring logic** — After real Group Stage finalizes, compare predicted vs actual R32 teams, score 1 point per match.
+- [ ] **H6.3 — R32 leaderboard** — Standings display: "Alice 31/32 (96.9%)". Ranked by score, ties broken by submission timestamp.
+- [ ] **H6.4 — Dashboard widget** — "You correctly predicted 29 of the final 32 teams!"
+
+**WC-H7: FAQ Page**
+- [ ] **H7.1 — /wc/rules page** — Create FAQ page with collapsible sections: Classifications, Tiebreakers, Best-Third Rules, Slot Allocation, Scoring, Bracket Editing.
+- [ ] **H7.2 — FAQ content** — Write copy for all sections (see design doc §4).
+- [ ] **H7.3 — Searchable/linkable** — Accordion UI, anchor links for deep linking to specific rules.
+
+**WC-H8: Onboarding Integration**
+- [ ] **H8.1 — Add Full Bracket step to onboarding** — After Classifications Overview, show "Want to fill out your bracket now?" with [Start] / [Skip] options.
+- [ ] **H8.2 — Skip flow** — If user skips, exclude from Full Bracket and R32 classifications, proceed to Format enrollment.
+- [ ] **H8.3 — Champion pick (UI warmer)** — Add "Who takes home all the biscuits?" step early in onboarding. Copy: "Just because you love them doesn't mean that's what your head wants to pick."
+- [ ] **H8.4 — Privacy settings** — Add leaderboard visibility choice: public / anonymous (Player #N) / private-only.
+
+**WC-H9: Data Model & API**
+- [ ] **H9.1 — Bracket submission schema** — Already exists: `bracket_prediction_submissions` table with `bracket_data` JSONB. Verify structure matches design doc.
+- [ ] **H9.2 — R32 classification config** — Add R32 classification to tournament seed migration with `type='stage_pick'`, `config.source='bracket_group_stage'`.
+- [ ] **H9.3 — Save draft API** — `POST /api/tournament/bracket/submit` with `draft=true` for checkpoint saves.
+- [ ] **H9.4 — Lock bracket API** — `POST /api/tournament/bracket/lock` finalizes submission, sets `locked=true`.
+
+**Phase 2 Enhancements:**
+- [ ] **H-P2.1 — Fair play tiebreaker** — Add fair play score tracking (requires card data from providers).
+- [ ] **H-P2.2 — FIFA ranking tiebreaker** — Maintain FIFA ranking dataset, use as final tiebreaker before random.
+- [ ] **H-P2.3 — Favorites/underdogs toggle** — Show betting odds or FIFA rankings during group predictions (optional config).
+- [ ] **H-P2.4 — Bracket comparison** — Compare your bracket vs friends, highlight differences.
+- [ ] **H-P2.5 — "What if" simulator** — Change one match result, see cascading bracket impact.
 
 ## Tournament Brackets (Future — Needs Design)
 
