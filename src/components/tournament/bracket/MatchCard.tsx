@@ -92,9 +92,11 @@ export default function MatchCard({
   return (
     <div
       id={`match-${match.match_id}`}
+      role="group"
+      aria-label={`Match: ${match.home_team} vs ${match.away_team}`}
       className={`
-        rounded-lg border p-3 transition-all
-        ${isHighlighted ? 'ring-2 ring-ps-amber animate-pulse' : ''}
+        rounded-lg border p-3 transition-all duration-200
+        ${isHighlighted ? 'ring-2 ring-ps-amber scale-[1.01]' : ''}
         ${match.result ? 'border-ps-border bg-ps-surface' : 'border-ps-border bg-ps-surface'}
       `}
     >
@@ -105,12 +107,14 @@ export default function MatchCard({
           onClick={() =>
             onResultChange(match.result === 'home_win' ? null : 'home_win')
           }
+          aria-label={`Predict ${match.home_team} to win`}
+          aria-pressed={match.result === 'home_win'}
           className={`
-            flex-1 min-h-[44px] rounded-md px-3 py-2 text-sm font-semibold transition-all
+            flex-1 min-h-[44px] rounded-md px-3 py-2 text-sm font-semibold transition-all duration-150
             ${
               match.result === 'home_win'
-                ? `${selectedTextColor} ${selectedBgColor} border ${selectedBorderColor}`
-                : 'text-ps-text-sec hover:bg-ps-chip'
+                ? `${selectedTextColor} ${selectedBgColor} border ${selectedBorderColor} scale-105`
+                : 'text-ps-text-sec hover:bg-ps-chip hover:scale-102'
             }
           `}
         >
@@ -123,12 +127,14 @@ export default function MatchCard({
         {/* Draw button */}
         <button
           onClick={() => onResultChange(match.result === 'draw' ? null : 'draw')}
+          aria-label="Predict draw"
+          aria-pressed={match.result === 'draw'}
           className={`
-            shrink-0 min-h-[44px] min-w-[48px] rounded-md px-3 py-2 text-sm font-semibold transition-all
+            shrink-0 min-h-[44px] min-w-[48px] rounded-md px-3 py-2 text-sm font-semibold transition-all duration-150
             ${
               match.result === 'draw'
-                ? `${selectedTextColor} ${selectedBgColor} border ${selectedBorderColor}`
-                : 'text-ps-text-sec hover:bg-ps-chip'
+                ? `${selectedTextColor} ${selectedBgColor} border ${selectedBorderColor} scale-105`
+                : 'text-ps-text-sec hover:bg-ps-chip hover:scale-102'
             }
           `}
         >
@@ -140,12 +146,14 @@ export default function MatchCard({
           onClick={() =>
             onResultChange(match.result === 'away_win' ? null : 'away_win')
           }
+          aria-label={`Predict ${match.away_team} to win`}
+          aria-pressed={match.result === 'away_win'}
           className={`
-            flex-1 min-h-[44px] rounded-md px-3 py-2 text-sm font-semibold transition-all
+            flex-1 min-h-[44px] rounded-md px-3 py-2 text-sm font-semibold transition-all duration-150
             ${
               match.result === 'away_win'
-                ? `${selectedTextColor} ${selectedBgColor} border ${selectedBorderColor}`
-                : 'text-ps-text-sec hover:bg-ps-chip'
+                ? `${selectedTextColor} ${selectedBgColor} border ${selectedBorderColor} scale-105`
+                : 'text-ps-text-sec hover:bg-ps-chip hover:scale-102'
             }
           `}
         >

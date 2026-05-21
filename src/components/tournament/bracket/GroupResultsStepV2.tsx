@@ -52,6 +52,8 @@ export default function GroupResultsStepV2({
   const [selectedGroupIndex, setSelectedGroupIndex] = useState(0)
   const [highlightedMatchId, setHighlightedMatchId] = useState<string | null>(null)
   const [autoSaveTimer, setAutoSaveTimer] = useState<NodeJS.Timeout | null>(null)
+  const [isSaving, setIsSaving] = useState(false)
+  const [saveSuccess, setSaveSuccess] = useState(false)
 
   const currentGroup = groups[selectedGroupIndex]
   const completedGroups = groups.filter((g) =>
@@ -70,12 +72,23 @@ export default function GroupResultsStepV2({
   const triggerAutoSave = useCallback(() => {
     if (autoSaveTimer) clearTimeout(autoSaveTimer)
 
-    const timer = setTimeout(() => {
-      // Save to localStorage as backup
-      localStorage.setItem('bracket_draft_groups', JSON.stringify(groups))
+    const timer = setTimeout(async () => {
+      setIsSaving(true)
+      try {
+        // Save to localStorage as backup
+        localStorage.setItem('bracket_draft_groups', JSON.stringify(groups))
 
-      // Trigger parent save (will call API)
-      onUpdate(groups)
+        // Trigger parent save (will call API)
+        onUpdate(groups)
+
+        // Show success indicator briefly
+        setSaveSuccess(true)
+        setTimeout(() => setSaveSuccess(false), 2000)
+      } catch (error) {
+        console.error('Failed to save:', error)
+      } finally {
+        setIsSaving(false)
+      }
     }, 500)
 
     setAutoSaveTimer(timer)
@@ -154,7 +167,18 @@ export default function GroupResultsStepV2({
       {/* Progress indicator */}
       <div className="rounded-lg border border-ps-border bg-ps-surface p-3">
         <div className="mb-2 flex items-center justify-between text-sm">
-          <span className="font-semibold text-ps-text">Group Stage Progress</span>
+          <div className="flex items-center gap-2">
+            <span className="font-semibold text-ps-text">Group Stage Progress</span>
+            {isSaving && (
+              <span className="animate-pulse text-xs text-ps-text-sec">Saving...</span>
+            )}
+            {saveSuccess && (
+              <span className="flex items-center gap-1 text-xs text-ps-green">
+                <span>✓</span>
+                <span>Saved</span>
+              </span>
+            )}
+          </div>
           <span className="font-mono text-xs font-semibold text-ps-amber">
             {completedGroups}/{groups.length}
           </span>
