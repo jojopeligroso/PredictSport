@@ -226,7 +226,7 @@ See `SPORTS-ARCHITECTURE.md` for detailed spec (TBD).
 
 ### Phase WC-G — Consequence Table & UI
 
-- [ ] **WC-G1 — Consequence table API** — `GET /api/tournament/consequence-table?competitionId=X` returns the resolved curve, group allocation, qualification rules, and finalist count for display before launch.
+- [x] **WC-G1 — Consequence table API** — `GET /api/tournament/consequence-table?competitionId=X` returns the resolved curve, group allocation, qualification rules, and finalist count for display before launch.
 - [ ] **WC-G2 — Consequence table UI** — Pre-launch admin/entrant view showing the full elimination curve, group allocation breakdown, and "this locks when PW1 locks" warning. Copy per design doc S16.1.
 
 ### Phase WC-H — 5th Classification (Pre-Tournament Stage Pick)
