@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { verifyCompetitionAdmin } from "@/lib/admin";
+import { hasTBAParticipant } from "@/lib/sports/tba-detection";
 import type { EventStatus, PredictionType } from "@/types/database";
 
 interface PredictionTypeInput {
@@ -279,6 +280,17 @@ export async function POST(request: Request) {
         { status: 400 }
       );
     }
+  }
+
+  // Block TBA fixtures: check config.options across all prediction types
+  const allOptions = body.prediction_type_configs.flatMap(
+    (ptc) => (ptc.config?.options as string[] | undefined) ?? []
+  );
+  if (allOptions.length > 0 && hasTBAParticipant(allOptions)) {
+    return NextResponse.json(
+      { error: "tba_fixture", message: "Cannot create events with unconfirmed participants (TBA/TBC)" },
+      { status: 422 }
+    );
   }
 
   // Fetch competition scoring_rules for defaults
