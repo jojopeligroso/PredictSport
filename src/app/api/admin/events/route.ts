@@ -22,6 +22,7 @@ interface CreateEventBody {
   external_event_id?: string;
   provider_league?: string;
   nominated_by?: string;
+  is_bracket_placeholder?: boolean;
 }
 
 interface CloneEventBody {
@@ -282,15 +283,17 @@ export async function POST(request: Request) {
     }
   }
 
-  // Block TBA fixtures: check config.options across all prediction types
-  const allOptions = body.prediction_type_configs.flatMap(
-    (ptc) => (ptc.config?.options as string[] | undefined) ?? []
-  );
-  if (allOptions.length > 0 && hasTBAParticipant(allOptions)) {
-    return NextResponse.json(
-      { error: "tba_fixture", message: "Cannot create events with unconfirmed participants (TBA/TBC)" },
-      { status: 422 }
+  // Block TBA fixtures (unless bracket placeholder)
+  if (!body.is_bracket_placeholder) {
+    const allOptions = body.prediction_type_configs.flatMap(
+      (ptc) => (ptc.config?.options as string[] | undefined) ?? []
     );
+    if (allOptions.length > 0 && hasTBAParticipant(allOptions)) {
+      return NextResponse.json(
+        { error: "tba_fixture", message: "Cannot create events with unconfirmed participants (TBA/TBC)" },
+        { status: 422 }
+      );
+    }
   }
 
   // Fetch competition scoring_rules for defaults
@@ -315,6 +318,7 @@ export async function POST(request: Request) {
       external_event_id: body.external_event_id || null,
       provider_league: body.provider_league || null,
       nominated_by: body.nominated_by || null,
+      is_bracket_placeholder: body.is_bracket_placeholder ?? false,
       status: "upcoming",
     })
     .select()

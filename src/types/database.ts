@@ -107,6 +107,7 @@ export interface Event {
   external_event_id: string | null;
   sporting_event_id: string | null;
   provider_league: string | null;
+  is_bracket_placeholder: boolean;
   created_at: string;
 }
 
