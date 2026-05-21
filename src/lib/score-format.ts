@@ -2,7 +2,7 @@ import type { Sport } from "@/lib/sports/types";
 
 export type ScoreFormat = "standard" | "gaa" | null;
 
-/** Sports that support exact_score predictions */
+/** Sports with standard numeric scores (home vs away) — used for result entry and score derivation */
 const STANDARD_SCORE_SPORTS: Sport[] = [
   "soccer", "rugby", "rugby_league", "american_football", "basketball", "ice_hockey", "baseball",
   "snooker", "cricket",
@@ -10,8 +10,11 @@ const STANDARD_SCORE_SPORTS: Sport[] = [
 
 const GAA_SPORTS: Sport[] = ["gaa", "gaelic_football", "hurling"];
 
-/** Position-based sports that cannot have exact_score */
-const POSITION_SPORTS: Sport[] = ["formula_1", "golf", "horse_racing", "tennis", "athletics"];
+/** Sports that cannot have exact_score predictions.
+ *  Position-based sports have no score, cricket scores are too variable (multi-format, innings). */
+const NO_EXACT_SCORE_SPORTS: Sport[] = [
+  "formula_1", "golf", "horse_racing", "tennis", "athletics", "cricket",
+];
 
 export function getScoreFormat(sport: string): ScoreFormat {
   if (GAA_SPORTS.includes(sport as Sport)) return "gaa";
@@ -20,7 +23,7 @@ export function getScoreFormat(sport: string): ScoreFormat {
 }
 
 export function supportsExactScore(sport: string): boolean {
-  return !POSITION_SPORTS.includes(sport as Sport);
+  return !NO_EXACT_SCORE_SPORTS.includes(sport as Sport);
 }
 
 /** Derive winner from a score prediction */

@@ -197,15 +197,10 @@ See `SPORTS-ARCHITECTURE.md` for detailed spec (TBD).
 
 **Investigation checklist:**
 
-- [ ] 7.1 — Check `AddEventForm.tsx`: does fixture → event creation correctly wire `fixture.participants` into `config.options` for the `winner` prediction type? Check `parseWinnerOptions` is called with participants, not just the event name string.
-- [ ] 7.2 — Query existing cricket events to confirm `config.options` is empty:
-  ```sql
-  SELECT e.event_name, ept.prediction_type, ept.config
-  FROM events e JOIN event_prediction_types ept ON ept.event_id = e.id
-  WHERE e.sport = 'cricket' ORDER BY e.created_at DESC LIMIT 20;
-  ```
-- [ ] 7.3 — Confirm `allow_draw: false` for cricket (no draw in cricket). `parseWinnerOptions` in `src/lib/parse-options.ts` already handles this — verify it's being called correctly.
-- [ ] 7.4 — Confirm `exact_score` is excluded for cricket. Check `supportsExactScore()` (likely `src/lib/sports/scoring.ts`).
+- [x] 7.1 — Check `AddEventForm.tsx`: fixture → event creation correctly wires participants into `config.options`. For `head_to_head`: explicit `[homeTeam, awayTeam]` in config. For `winner`: `getRaceEntrants()` for F1, UI fallback via `parseWinnerOptions()` for others. No fix needed.
+- [x] 7.2 — Query existing cricket events: all 8 cricket events (personal predictions, `round_id=null`) have `config.options` correctly populated. No cricket events in group competitions. 5 non-cricket admin-created events have null config (backfill candidates for 7.6).
+- [x] 7.3 — Confirmed: `allowsDraws("cricket")` returns false (RoundBuilder:199), `config.allow_draw` set false at creation, prediction form only shows Draw if truthy. `parseWinnerOptions` drawSports also excludes cricket. No fix needed.
+- [x] 7.4 — Fixed: `supportsExactScore("cricket")` was returning true. Added cricket to `NO_EXACT_SCORE_SPORTS` in `score-format.ts`. Cricket scores are too variable (multi-format, innings) for exact_score predictions.
 - [ ] 7.5 — Fix: ensure admin event creation populates `config: { options: ["Team A", "Team B"] }` from `fixture.participants`.
 - [ ] 7.6 — Backfill any existing broken cricket events with correct `config.options`.
 
