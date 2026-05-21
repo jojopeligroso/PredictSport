@@ -78,65 +78,46 @@ export async function eliminateFromFormat(
 
   const targetSurvivors = stageConfig.target_survivors;
 
-  // Fetch all groups to compute group-level standings
+  // Fetch all groups with target_size for group-size-aware qualification rules
   const { data: groups, error: groupsError } = await supabase
     .from("format_prediction_groups")
-    .select("id, group_number")
+    .select("id, group_number, target_size")
     .eq("classification_id", classificationId)
     .order("group_number", { ascending: true });
 
   if (groupsError) throw new Error(`Failed to fetch groups: ${groupsError.message}`);
 
-  const groupList = (groups ?? []) as { id: string; group_number: number }[];
+  const groupList = (groups ?? []) as { id: string; group_number: number; target_size: number }[];
 
-  // Collect all entrant standings across groups
-  type EntrantScore = {
-    user_id: string;
-    group_id: string;
-    group_position: number;
-    points: number;
-    exact_hits: number;
-    outcome_hits: number;
-  };
-
-  const allEntrants: EntrantScore[] = [];
+  // Qualify/eliminate per group based on group size:
+  // - 3-player: top 2 qualify, 3rd eliminated (never qualifies)
+  // - 4-player: top 2 qualify, 3rd enters best-third pool, 4th eliminated
+  // - 5-player: top 2 qualify, 3rd auto-qualifies, 4th-5th eliminated
+  const qualifyingUserIds = new Set<string>();
+  const eliminatedDirectly: string[] = [];
 
   for (const group of groupList) {
     const standings = await computeFormatGroupStandings(supabase, group.id, stageId);
-    for (const row of standings) {
-      allEntrants.push({
-        user_id: row.user_id,
-        group_id: group.id,
-        group_position: row.group_position,
-        points: row.points,
-        exact_hits: row.tie_break_values?.exact_hits ?? 0,
-        outcome_hits: row.tie_break_values?.outcome_hits ?? 0,
-      });
-    }
-  }
+    const sorted = standings.sort((a, b) => a.group_position - b.group_position);
 
-  // Top 2 per group auto-qualify; 3rd-place fight for remaining spots
-  const qualifyingUserIds = new Set<string>();
-  const thirdPlaceCandidates: EntrantScore[] = [];
-  const eliminatedDirectly: EntrantScore[] = [];
-
-  for (const group of groupList) {
-    const groupEntrants = allEntrants
-      .filter((e) => e.group_id === group.id)
-      .sort((a, b) => compareEntrantScore(a, b));
-
-    groupEntrants.forEach((entrant, idx) => {
+    for (let idx = 0; idx < sorted.length; idx++) {
+      const userId = sorted[idx].user_id;
       if (idx < 2) {
-        // Top 2 — qualify automatically
-        qualifyingUserIds.add(entrant.user_id);
+        // Top 2 — always qualify
+        qualifyingUserIds.add(userId);
       } else if (idx === 2) {
-        // Third place — enters best-third competition
-        thirdPlaceCandidates.push(entrant);
+        // Third place — depends on group size
+        if (group.target_size === 5) {
+          qualifyingUserIds.add(userId); // auto-qualifies
+        } else if (group.target_size === 3) {
+          eliminatedDirectly.push(userId); // last place, never qualifies
+        }
+        // target_size === 4: handled by best-third ranking below
       } else {
-        // 4th and below — eliminated directly
-        eliminatedDirectly.push(entrant);
+        // 4th and below — always eliminated
+        eliminatedDirectly.push(userId);
       }
-    });
+    }
   }
 
   // Determine how many best-third spots remain
@@ -153,7 +134,7 @@ export async function eliminateFromFormat(
 
   // Build final eliminated set
   const toEliminate = [
-    ...eliminatedDirectly.map((e) => e.user_id),
+    ...eliminatedDirectly,
     ...eliminatedThirds,
   ];
 
