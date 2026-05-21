@@ -238,7 +238,7 @@ See `SPORTS-ARCHITECTURE.md` for detailed spec (TBD).
 - [ ] **H1.1 — Tiebreaker utilities** — Implement FIFA tiebreaker logic (steps 1-5: points, H2H GD, H2H GS, overall GD, overall GS). Phase 1: random fallback for ties beyond step 5. Phase 2: add fair play (6) and FIFA ranking (7).
 - [x] **H1.2 — Best-third ranking** — `rankBestThirds(allThirds)` applies steps 1-5 + random to rank 12 third-place teams, returns top 8.
 - [x] **H1.3 — Best-third slot allocation** — `allocateBestThirdsToSlots(bestThirds)` applies FIFA R32 slot rules based on group origins. **Implemented as `allocateR32Slots()` in fifa-world-cup-2026.ts:218**
-- [ ] **H1.4 — R32 bracket generation** — `generateR32Bracket(winners, runnersUp, thirds)` creates full R32 matchup structure.
+- [x] **H1.4 — R32 bracket generation** — `generateR32Bracket(winners, runnersUp, thirds)` creates full R32 matchup structure. **Implemented as `generateFIFAR32Bracket()` in fifa-world-cup-2026.ts:172**
 
 **WC-H2: Group Stage UI**
 - [ ] **H2.1 — GroupMatchPredictor component** — Single-group UI: 4 teams, 6 matches, H/D/A buttons. Real-time standings calculation.
