@@ -37,7 +37,7 @@ export const FIFA_TIEBREAKERS: TiebreakerRule[] = [
     type: 'random',
     config: {
       uiMessage:
-        '⚠️ Your predictions created an exact tie. FIFA would use fair play scores to decide this, but for now we've randomly placed teams. Phase 2 will add fair play tracking.\n\n💡 Tip: Predict different scores to avoid ties in your bracket!',
+        '⚠️ Your predictions created an exact tie. FIFA would use fair play scores to decide this, but for now we\'ve randomly placed teams. Phase 2 will add fair play tracking.\n\n💡 Tip: Predict different scores to avoid ties in your bracket!',
     },
   },
 ]

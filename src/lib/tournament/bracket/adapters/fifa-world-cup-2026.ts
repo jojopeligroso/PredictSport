@@ -19,6 +19,7 @@ import {
   SlotAssignment,
   QualifiedTeam,
 } from '../types'
+import { rankBestThirds } from '../utils'
 
 // ============================================================================
 // FIFA World Cup 2026 Template
@@ -235,6 +236,23 @@ export function generateFIFAR32Bracket(
   }
 
   return matches
+}
+
+// ============================================================================
+// FIFA Best-Third Ranking
+// ============================================================================
+
+/**
+ * Ranks all 12 third-place teams and returns the top 8
+ *
+ * This is a convenience wrapper around the generic rankBestThirds function
+ * that applies FIFA-specific tiebreakers.
+ *
+ * @param allThirds - All 12 third-place teams from groups
+ * @returns Top 8 third-place teams, ranked 1-8
+ */
+export function rankFIFABestThirds(allThirds: TeamWithStats[]): TeamWithStats[] {
+  return rankBestThirds(allThirds, FIFA_TIEBREAKERS)
 }
 
 // ============================================================================
