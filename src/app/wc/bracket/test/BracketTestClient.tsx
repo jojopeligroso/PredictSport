@@ -8,13 +8,14 @@
  */
 
 import { useState } from 'react'
-import GroupResultsStep, {
+import GroupResultsStepV2, {
   GroupData,
   MatchPrediction,
-} from '@/components/tournament/bracket/GroupResultsStep'
+} from '@/components/tournament/bracket/GroupResultsStepV2'
+import TiebreakerResolutionPage from '@/components/tournament/bracket/TiebreakerResolutionPage'
 import ThirdPlaceRankingStep from '@/components/tournament/bracket/ThirdPlaceRankingStep'
 
-type TestStep = 'groups' | 'third_place' | 'complete'
+type TestStep = 'groups' | 'tiebreaker' | 'third_place' | 'complete'
 
 // Mock FIFA WC 2026 groups (simplified to 3 groups for testing)
 const MOCK_GROUPS: GroupData[] = [
@@ -46,6 +47,9 @@ export default function BracketTestClient() {
   const [groups, setGroups] = useState<GroupData[]>(MOCK_GROUPS)
   const [qualifiedThirds, setQualifiedThirds] = useState<string[]>([])
   const [saveLog, setSaveLog] = useState<string[]>([])
+  const [tiebreakerGroupIndex, setTiebreakerGroupIndex] = useState<number | null>(null)
+  const [tiebreakerTeams, setTiebreakerTeams] = useState<string[]>([])
+  const [pickColor] = useState<'green' | 'amber'>('green')
 
   function handleGroupUpdate(updatedGroups: GroupData[]) {
     setGroups(updatedGroups)
@@ -54,6 +58,28 @@ export default function BracketTestClient() {
 
   function handleGroupComplete(groupId: string) {
     logSave(`Group ${groupId} completed`)
+  }
+
+  function handleTiebreakerNeeded(groupIndex: number, tiedTeams: string[]) {
+    logSave(`Tiebreaker needed for Group ${groups[groupIndex].group_id} - ${tiedTeams.join(', ')}`)
+    setTiebreakerGroupIndex(groupIndex)
+    setTiebreakerTeams(tiedTeams)
+    setCurrentStep('tiebreaker')
+  }
+
+  function handleTiebreakerResolved(updatedGroup: GroupData) {
+    const updatedGroups = [...groups]
+    if (tiebreakerGroupIndex !== null) {
+      updatedGroups[tiebreakerGroupIndex] = {
+        ...updatedGroup,
+        has_tiebreaker_scores: true,
+      }
+    }
+    setGroups(updatedGroups)
+    logSave(`Tiebreaker resolved for Group ${updatedGroup.group_id}`)
+    setCurrentStep('groups')
+    setTiebreakerGroupIndex(null)
+    setTiebreakerTeams([])
   }
 
   function handleAllGroupsComplete() {
@@ -110,10 +136,12 @@ export default function BracketTestClient() {
         {/* Step content */}
         {currentStep === 'groups' && (
           <div>
-            <GroupResultsStep
+            <GroupResultsStepV2
               groups={groups}
+              pickColor={pickColor}
               onUpdate={handleGroupUpdate}
               onGroupComplete={handleGroupComplete}
+              onTiebreakerNeeded={handleTiebreakerNeeded}
             />
 
             {/* Manual trigger for testing third-place */}
@@ -126,6 +154,15 @@ export default function BracketTestClient() {
               </button>
             )}
           </div>
+        )}
+
+        {currentStep === 'tiebreaker' && tiebreakerGroupIndex !== null && (
+          <TiebreakerResolutionPage
+            group={groups[tiebreakerGroupIndex]}
+            tiedTeams={tiebreakerTeams}
+            onResolve={handleTiebreakerResolved}
+            onBack={() => setCurrentStep('groups')}
+          />
         )}
 
         {currentStep === 'third_place' && (
