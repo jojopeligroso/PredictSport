@@ -215,7 +215,7 @@ See `SPORTS-ARCHITECTURE.md` for detailed spec (TBD).
 - [x] **WC-E1 — Formula-based curve generator** — Implemented. Passes all 22 test cases (16 design + 6 audit edge). All 89 curves (8-96) are strictly decreasing. Boundary validation for <8 and >96.
 - [ ] **WC-E2 — Curve storage format migration** — Update `classification.config.elimination_curve` from stage-keyed `Record<string, { target_survivors }>` to ordered array format `{ entrantCount, locked, curve: [{ stage, remaining }], groupAllocation, qualificationRules }`. Migration must be backward-compatible (existing data can be null/empty for non-tournament competitions).
 - [x] **WC-E3 — Replace `getEliminationCurveForPreset()`** — Replaced with `generateEliminationCurve()`. Changed `entrantPreset` (5 fixed values) to `entrantCount` (any 8-96). New curve format: `{ entrantCount, locked, curve: CurveStep[] }`.
-- [ ] **WC-E4 — Merge PW8/PW9** — In `create-world-cup-competition.ts`, merge Third-Place Play-Off and Final into a single Prediction Window (PW8). Update `PREDICTION_WINDOWS` array from 9 entries to 8. Update `STAGE_IDS` accordingly.
+- [x] **WC-E4 — Merge PW8/PW9** — Merged Third-Place Play-Off and Final into PW8 "Finals". PREDICTION_WINDOWS reduced from 9 to 8 entries. Removed THIRD from STAGE_IDS. Seed migration stages unchanged (still separate sporting events).
 
 ### Phase WC-F — Group Allocation & Qualification
 

@@ -16,11 +16,10 @@ const STAGE_IDS = {
   R16: "b0000000-0000-0000-0005-000000000026",
   QF: "b0000000-0000-0000-0006-000000000026",
   SF: "b0000000-0000-0000-0007-000000000026",
-  THIRD: "b0000000-0000-0000-0008-000000000026",
   FINAL: "b0000000-0000-0000-0009-000000000026",
 } as const;
 
-// Prediction window definitions — one per sporting stage
+// Prediction window definitions — PW8 bundles Third-Place + Final (no internal elimination)
 const PREDICTION_WINDOWS = [
   { name: "Group Matchday 1", stageId: STAGE_IDS.GM1, windowNumber: 1 },
   { name: "Group Matchday 2", stageId: STAGE_IDS.GM2, windowNumber: 2 },
@@ -29,8 +28,7 @@ const PREDICTION_WINDOWS = [
   { name: "Round of 16", stageId: STAGE_IDS.R16, windowNumber: 5 },
   { name: "Quarter-Finals", stageId: STAGE_IDS.QF, windowNumber: 6 },
   { name: "Semi-Finals", stageId: STAGE_IDS.SF, windowNumber: 7 },
-  { name: "Third-Place Play-Off", stageId: STAGE_IDS.THIRD, windowNumber: 8 },
-  { name: "Final", stageId: STAGE_IDS.FINAL, windowNumber: 9 },
+  { name: "Finals", stageId: STAGE_IDS.FINAL, windowNumber: 8 },
 ] as const;
 
 interface CreateWCOptions {
@@ -40,7 +38,7 @@ interface CreateWCOptions {
 }
 
 /**
- * Creates a World Cup 2026 prediction game with all 4 classifications and 9 prediction windows.
+ * Creates a World Cup 2026 prediction game with all 4 classifications and 8 prediction windows.
  * Atomic — if any step fails, partial data may remain (caller should handle).
  */
 export async function createWorldCupCompetition(
@@ -155,7 +153,7 @@ export async function createWorldCupCompetition(
     throw new Error(`Failed to create classifications: ${classError?.message}`);
   }
 
-  // 3. Create 9 prediction windows (rounds)
+  // 3. Create 8 prediction windows (rounds)
   const roundRows = PREDICTION_WINDOWS.map((pw) => ({
     competition_id: competitionId,
     name: pw.name,
