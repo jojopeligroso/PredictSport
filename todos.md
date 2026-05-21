@@ -212,7 +212,7 @@ See `SPORTS-ARCHITECTURE.md` for detailed spec (TBD).
 
 ### Phase WC-E — Curve Generator & Storage
 
-- [ ] **WC-E1 — Formula-based curve generator** — `src/lib/tournament/format/curve-generator.ts`: Implement `generateEliminationCurve(entrantCount: number)` per the pseudocode in the audit appendix. Accepts 8-96. Returns ordered array of `{ stage, remaining }`. Must pass all 16 test cases from the design doc + 6 edge cases from the audit.
+- [x] **WC-E1 — Formula-based curve generator** — Implemented. Passes all 22 test cases (16 design + 6 audit edge). All 89 curves (8-96) are strictly decreasing. Boundary validation for <8 and >96.
 - [ ] **WC-E2 — Curve storage format migration** — Update `classification.config.elimination_curve` from stage-keyed `Record<string, { target_survivors }>` to ordered array format `{ entrantCount, locked, curve: [{ stage, remaining }], groupAllocation, qualificationRules }`. Migration must be backward-compatible (existing data can be null/empty for non-tournament competitions).
 - [ ] **WC-E3 — Replace `getEliminationCurveForPreset()`** — In `create-world-cup-competition.ts`, replace the hard-coded preset lookup table with a call to the new formula generator. Remove the preset-only constraint.
 - [ ] **WC-E4 — Merge PW8/PW9** — In `create-world-cup-competition.ts`, merge Third-Place Play-Off and Final into a single Prediction Window (PW8). Update `PREDICTION_WINDOWS` array from 9 entries to 8. Update `STAGE_IDS` accordingly.
