@@ -1,16 +1,6 @@
 import { supportsExactScore } from "@/lib/score-format";
+import { allowsDraws } from "@/lib/draw-eligibility";
 import type { Sport } from "@/lib/sports/types";
-
-/** Sports where a draw is a valid winner outcome */
-export const DRAW_SPORTS = new Set<Sport>([
-  "soccer",
-  "rugby",
-  "rugby_league",
-  "gaa",
-  "gaelic_football",
-  "hurling",
-  "cricket",
-]);
 
 /** Position-based / multi-competitor sports (no home/away) */
 export const RACE_SPORTS = new Set<Sport>([
@@ -42,12 +32,13 @@ export interface PersonalPredictionTypeRow {
 export function getPersonalDefaults(
   sport: Sport | string,
   participants: string[],
+  providerLeague?: string | null,
 ): PersonalPredictionTypeRow[] {
   const isRace = RACE_SPORTS.has(sport as Sport);
   const isTwoTeam = !isRace && participants.length === 2;
 
   if (isTwoTeam) {
-    const allowDraw = DRAW_SPORTS.has(sport as Sport);
+    const allowDraw = allowsDraws(sport, providerLeague);
     const options = allowDraw
       ? [participants[0], "Draw", participants[1]]
       : [participants[0], participants[1]];

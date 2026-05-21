@@ -20,6 +20,7 @@ import { CardBasedConfig } from "./PredictionCards";
 import type { PredictionTypeConfig as CardPredictionTypeConfig } from "./PredictionCards";
 import { getPillLabel, SELECTABLE_TYPES } from "@/lib/prediction-labels";
 import { getRaceEntrants } from "@/lib/race-entrants";
+import { allowsDraws } from "@/lib/draw-eligibility";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -193,13 +194,7 @@ function getValidPredictionTypes(fixture: SearchResult): PredictionTypeName[] {
   }
 }
 
-/**
- * Determines if a sport allows draws in head-to-head matches.
- */
-function allowsDraws(sport: string): boolean {
-  const drawSports = ["soccer", "rugby", "gaa", "hockey", "ice_hockey"];
-  return drawSports.includes(sport.toLowerCase());
-}
+// allowsDraws imported from @/lib/draw-eligibility
 
 /**
  * Returns the primary/default prediction type for a fixture.
@@ -805,6 +800,7 @@ function Step2Configure({
                       awayTeam: fc.fixture.awayTeam,
                       sport: fc.fixture.sport,
                       name: fc.fixture.name,
+                      providerLeague: fc.fixture.providerLeague,
                     }}
                     initialConfigs={fc.predictionTypes as CardPredictionTypeConfig[]}
                     defaultPoints={{
@@ -1115,7 +1111,7 @@ export function RoundBuilder({
         primaryType === 'head_to_head'
           ? {
               options: [f.homeTeam || 'Home', f.awayTeam || 'Away'],
-              allow_draw: allowsDraws(f.sport),
+              allow_draw: allowsDraws(f.sport, f.providerLeague),
               draw_points: defaultPoints[primaryType] > 0 ? defaultPoints[primaryType] : 10,
             }
           : entrants.length > 0

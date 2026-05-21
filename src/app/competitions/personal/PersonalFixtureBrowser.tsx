@@ -16,15 +16,12 @@ import {
   type ScoreValue,
 } from "@/components/ExactScoreInput";
 import { supportsExactScore, deriveWinnerFromScore } from "@/lib/score-format";
+import { allowsDraws } from "@/lib/draw-eligibility";
 import { hasTBAParticipant } from "@/lib/sports/tba-detection";
 import type { NormalizedFixture } from "@/app/api/sports/fixtures/route";
 import type { Sport } from "@/lib/sports/types";
 
 // ── Sport classification ──────────────────────────────────────────────────────
-
-const DRAW_SPORTS = new Set([
-  "soccer", "rugby", "rugby_league", "gaa", "gaelic_football", "hurling", "cricket",
-]);
 
 const RACE_SPORTS = new Set([
   "formula_1", "golf", "horse_racing", "athletics",
@@ -259,7 +256,7 @@ function getPredictionOptions(fixture: NormalizedFixture): PredictionOption[] | 
 
   if (!home || !away) return null;
 
-  if (DRAW_SPORTS.has(fixture.sport)) {
+  if (allowsDraws(fixture.sport, fixture.provider_league)) {
     return [
       { value: home, label: home, sub: "Home" },
       { value: "Draw", label: "Draw" },

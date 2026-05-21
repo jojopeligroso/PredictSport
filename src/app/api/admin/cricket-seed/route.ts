@@ -56,7 +56,7 @@ export async function POST(request: Request) {
     // Caller specified explicit IDs — look them up in the manifest, or create ad-hoc entries
     leagues = body.leagueIds.map((id) => {
       const known = ALL_CRICKET_LEAGUES.find((l) => l.id === id);
-      return known ?? { id, name: `Cricket (${id})`, permanent: false, active: true };
+      return known ?? { id, name: `Cricket (${id})`, format: "t20" as const, permanent: false, active: true };
     });
   } else if (body.all) {
     leagues = ALL_CRICKET_LEAGUES;

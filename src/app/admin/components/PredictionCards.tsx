@@ -11,6 +11,7 @@
  */
 
 import { useState } from "react";
+import { allowsDraws } from "@/lib/draw-eligibility";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -67,14 +68,10 @@ interface Fixture {
   awayTeam?: string;
   sport: string;
   name: string;
+  providerLeague?: string;
 }
 
-// ── Helpers ───────────────────────────────────────────────────────────────────
-
-function allowsDraws(sport: string): boolean {
-  const drawSports = ["soccer", "rugby", "gaa", "hockey", "ice_hockey"];
-  return drawSports.includes(sport.toLowerCase());
-}
+// allowsDraws imported from @/lib/draw-eligibility
 
 // ── State Transformation ──────────────────────────────────────────────────────
 
@@ -198,7 +195,7 @@ export function configsToCards(
     (isTwoTeam
       ? {
           options: [fixture.homeTeam || "Home", fixture.awayTeam || "Away"],
-          allow_draw: allowsDraws(fixture.sport),
+          allow_draw: allowsDraws(fixture.sport, fixture.providerLeague),
           draw_points: primaryConfig?.points || 10,
         }
       : undefined);
@@ -340,7 +337,7 @@ export function PrimaryOutcomeCard({
   defaultPoints,
 }: PrimaryOutcomeCardProps) {
   const isTwoTeam = !!(fixture.homeTeam && fixture.awayTeam);
-  const showDraw = isTwoTeam && allowsDraws(fixture.sport);
+  const showDraw = isTwoTeam && allowsDraws(fixture.sport, fixture.providerLeague);
 
   const handlePointsChange = (points: number) => {
     onChange({ ...value, points });
@@ -984,7 +981,7 @@ export function CardBasedConfig({
         config: isTwoTeam
           ? {
               options: [fixture.homeTeam || "Home", fixture.awayTeam || "Away"],
-              allow_draw: allowsDraws(fixture.sport),
+              allow_draw: allowsDraws(fixture.sport, fixture.providerLeague),
               draw_points: defaultPoints.head_to_head,
             }
           : undefined,

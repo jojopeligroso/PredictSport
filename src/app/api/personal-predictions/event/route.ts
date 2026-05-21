@@ -95,8 +95,8 @@ export async function POST(request: Request) {
     });
   }
 
-  // Build event_prediction_types based on sport/participants
-  const predictionTypeRows = getPersonalDefaults(body.sport as Sport, body.participants);
+  // Build event_prediction_types based on sport/participants/league
+  const predictionTypeRows = getPersonalDefaults(body.sport as Sport, body.participants, body.provider_league);
 
   // Insert event (lock_time = start_time for personal predictions — no early lock needed)
   const { data: event, error: eventError } = await supabase
