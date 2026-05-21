@@ -147,7 +147,7 @@ See `MANUAL-EVENTS-AND-API-GAPS.md` for detailed task breakdown.
 - [x] 4.9 — Create provider integration guide (docs for contributors)
 - [x] 4.10 — Implement top-priority provider (TBD based on 4.8 ROI)
 - [x] 4.11 — Add provider health monitoring dashboard
-- [ ] 4.12 — Document unsupported sports & workarounds
+- [x] 4.12 — Document unsupported sports & workarounds
 
 **Recommended sequencing:**
 1. Complete Phase 1 ✅
