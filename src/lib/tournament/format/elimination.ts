@@ -1,20 +1,8 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { Classification } from "@/types/tournament";
+import type { CurveStep } from "./curve-generator";
 import { eliminateEntrant } from "../membership";
 import { computeFormatGroupStandings, computeBestThirdRanking } from "./scoring";
-
-// ============================================================
-// Exported types for elimination mechanics
-// ============================================================
-
-export interface EliminationCurveStage {
-  target_survivors: number;
-}
-
-export interface EliminationCurve {
-  preset: number;
-  stages: Record<string, EliminationCurveStage>;
-}
 
 export interface ConsequenceRow {
   stage_key: string;
@@ -25,7 +13,6 @@ export interface ConsequenceRow {
 }
 
 export interface ConsequenceTable {
-  preset: number;
   initial_entrants: number;
   rows: ConsequenceRow[];
 }
@@ -56,7 +43,7 @@ export async function eliminateFromFormat(
   if (clsError) throw new Error(`Failed to fetch classification: ${clsError.message}`);
 
   const classification = cls as Classification;
-  const curve = getEliminationCurve(classification);
+  const curveSteps = getEliminationCurve(classification);
 
   // Identify which stage key this stageId maps to
   const { data: stage, error: stageError } = await supabase
@@ -68,15 +55,18 @@ export async function eliminateFromFormat(
   if (stageError) throw new Error(`Failed to fetch sporting stage: ${stageError.message}`);
 
   const stageKey = stage.slug as string;
-  const stageConfig = curve.stages[stageKey];
 
-  if (!stageConfig) {
+  // Map DB slug (e.g. "group-matchday-3") to curve stage name (e.g. "group_stage")
+  const curveStage = mapStageToCurveStep(stageKey);
+  const curveStep = curveSteps.find((s) => s.stage === curveStage);
+
+  if (!curveStep) {
     throw new Error(
-      `No elimination config for stage '${stageKey}' in classification ${classificationId}`
+      `No elimination curve step for stage '${stageKey}' (mapped to '${curveStage}') in classification ${classificationId}`
     );
   }
 
-  const targetSurvivors = stageConfig.target_survivors;
+  const targetSurvivors = curveStep.remaining;
 
   // Fetch all groups with target_size for group-size-aware qualification rules
   const { data: groups, error: groupsError } = await supabase
@@ -193,25 +183,20 @@ export async function eliminateFromFormat(
 
 // ============================================================
 // Read the elimination curve from classification config
+// New format: { entrantCount, locked, curve: CurveStep[] }
 // ============================================================
 
-export function getEliminationCurve(classification: Classification): EliminationCurve {
+export function getEliminationCurve(classification: Classification): CurveStep[] {
   const config = classification.config as Record<string, unknown>;
-  const curve = config?.elimination_curve as EliminationCurve | undefined;
+  const curveConfig = config?.elimination_curve as { curve?: CurveStep[] } | undefined;
 
-  if (!curve) {
+  if (!curveConfig?.curve || !Array.isArray(curveConfig.curve)) {
     throw new Error(
-      `No elimination_curve found in config for classification ${classification.id}`
+      `No elimination_curve.curve found in config for classification ${classification.id}`
     );
   }
 
-  if (!curve.stages || typeof curve.stages !== "object") {
-    throw new Error(
-      `Invalid elimination_curve.stages in classification ${classification.id}`
-    );
-  }
-
-  return curve;
+  return curveConfig.curve;
 }
 
 // ============================================================
@@ -219,38 +204,54 @@ export function getEliminationCurve(classification: Classification): Elimination
 // ============================================================
 
 export function previewEliminationConsequences(
-  curve: EliminationCurve,
-  entrantCount: number
+  curveSteps: CurveStep[]
 ): ConsequenceTable {
   const rows: ConsequenceRow[] = [];
-  let current = entrantCount;
 
-  for (const [stageKey, stageConfig] of Object.entries(curve.stages)) {
-    const target = stageConfig.target_survivors;
-    const eliminated = Math.max(0, current - target);
-    const survivors = current - eliminated;
+  for (let i = 1; i < curveSteps.length; i++) {
+    const prev = curveSteps[i - 1];
+    const current = curveSteps[i];
+    const eliminated = prev.remaining - current.remaining;
 
     rows.push({
-      stage_key: stageKey,
-      entrants_before: current,
-      target_survivors: target,
+      stage_key: current.stage,
+      entrants_before: prev.remaining,
+      target_survivors: current.remaining,
       eliminated_count: eliminated,
-      survivors_after: survivors,
+      survivors_after: current.remaining,
     });
-
-    current = survivors;
   }
 
   return {
-    preset: curve.preset,
-    initial_entrants: entrantCount,
+    initial_entrants: curveSteps[0]?.remaining ?? 0,
     rows,
   };
 }
 
 // ============================================================
-// Internal comparison helper (same tie-break as standings)
+// Internal helpers
 // ============================================================
+
+/**
+ * Map a DB sporting stage slug to the corresponding curve step stage name.
+ * Group matchdays (group-matchday-1/2/3) all map to "group_stage" since
+ * elimination runs once after the final group matchday.
+ */
+function mapStageToCurveStep(slug: string): string {
+  if (slug.startsWith("group-matchday")) return "group_stage";
+
+  // Knockout slugs use dashes in DB, underscores in curve
+  const SLUG_TO_CURVE: Record<string, string> = {
+    "round-of-32": "round_of_32",
+    "round-of-16": "round_of_16",
+    "quarter-finals": "quarter_finals",
+    "semi-finals": "semi_finals",
+    "final": "final",
+    "third-place": "final", // third-place bundled into final window
+  };
+
+  return SLUG_TO_CURVE[slug] ?? slug.replace(/-/g, "_");
+}
 
 function compareEntrantScore(
   a: { points: number; exact_hits: number; outcome_hits: number },
