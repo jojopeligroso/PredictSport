@@ -14,7 +14,7 @@
  * - Better mobile UX and accessibility
  */
 
-import { useState, useCallback, useEffect } from 'react'
+import { useState, useCallback, useEffect, useRef } from 'react'
 import GroupResultsStepV2, { GroupData } from './GroupResultsStepV2'
 import TiebreakerResolutionPage from './TiebreakerResolutionPage'
 import ThirdPlaceRankingStep from './ThirdPlaceRankingStep'
@@ -50,8 +50,13 @@ export default function BracketWizardV2({
   const [qualifiedThirds, setQualifiedThirds] = useState<string[]>([])
   const [saving, setSaving] = useState(false)
 
-  // Auto-save when groups change
+  // Auto-save when groups change (skip initial mount)
+  const isInitialMount = useRef(true)
   useEffect(() => {
+    if (isInitialMount.current) {
+      isInitialMount.current = false
+      return
+    }
     if (onAutoSave) {
       const timer = setTimeout(() => {
         onAutoSave({ groupsV2: groups }).catch(console.error)
