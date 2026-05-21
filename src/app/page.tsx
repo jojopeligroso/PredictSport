@@ -7,6 +7,8 @@ import { PersonalPredictionsLink } from "@/components/PersonalPredictionsLink";
 
 export const dynamic = "force-dynamic";
 
+const WC2026_TOURNAMENT_ID = "a0000000-0000-0000-0000-000000000026";
+
 // ── Landing page (unauthenticated) ──────────────────────────────────────────
 
 function LandingPage() {
@@ -27,6 +29,32 @@ function LandingPage() {
           className="w-full max-w-xs rounded-xl bg-ps-text px-6 py-4 text-center text-base font-semibold text-ps-bg transition-all duration-150 hover:opacity-90 active:scale-[0.97] md:text-lg"
         >
           Get started
+        </Link>
+      </section>
+
+      {/* World Cup 2026 promo */}
+      <section className="w-full max-w-md pb-6">
+        <Link
+          href="/wc"
+          className="block rounded-2xl p-5 transition-all active:scale-[0.98]"
+          style={{ background: "#0a0f0a", color: "#f1ece2" }}
+        >
+          <p
+            className="text-[10px] font-bold uppercase tracking-widest"
+            style={{ color: "#006847" }}
+          >
+            Coming June 2026
+          </p>
+          <h2 className="mt-1 text-lg font-extrabold">World Cup 2026</h2>
+          <p className="mt-1 text-xs" style={{ color: "#a8a090" }}>
+            Predict every match. 5 ways to compete. Bragging rights guaranteed.
+          </p>
+          <span
+            className="mt-3 inline-block rounded-lg px-4 py-2 text-sm font-semibold"
+            style={{ background: "#d4af37", color: "#0a0f0a" }}
+          >
+            Learn more
+          </span>
         </Link>
       </section>
 
@@ -114,6 +142,17 @@ async function Dashboard({ userId }: { userId: string }) {
     .map((m) => m.competitions)
     .filter((c): c is NonNullable<typeof c> => c !== null && c.status === "active");
 
+  // Check for visible WC competition
+  const { data: wcComp } = await supabase
+    .from("competitions")
+    .select("id, name")
+    .eq("tournament_id", WC2026_TOURNAMENT_ID)
+    .is("hidden_at", null)
+    .limit(1)
+    .maybeSingle();
+
+  const showWcCard = !!wcComp;
+
   // Fetch active rounds for all competitions
   const compIds = comps.map((c) => c.id);
   let rounds: RoundRow[] = [];
@@ -165,6 +204,36 @@ async function Dashboard({ userId }: { userId: string }) {
         <BrandMark className="h-9 w-auto shrink-0" />
         <h1 className="text-lg font-extrabold text-ps-text">Home</h1>
       </div>
+
+      {/* World Cup 2026 promo card */}
+      {showWcCard && (
+        <Link
+          href="/wc"
+          className="mb-4 block rounded-2xl p-5 transition-all active:scale-[0.98]"
+          style={{ background: "#0a0f0a", color: "#f1ece2" }}
+        >
+          <div className="flex items-center justify-between">
+            <div>
+              <p
+                className="text-[10px] font-bold uppercase tracking-widest"
+                style={{ color: "#006847" }}
+              >
+                World Cup 2026
+              </p>
+              <h2 className="mt-1 text-lg font-extrabold">Make your picks</h2>
+              <p className="mt-1 text-xs" style={{ color: "#a8a090" }}>
+                48 teams. 5 ways to play. Free entry.
+              </p>
+            </div>
+            <span
+              className="text-3xl font-extrabold"
+              style={{ color: "#d4af37" }}
+            >
+              26
+            </span>
+          </div>
+        </Link>
+      )}
 
       {comps.length === 0 ? (
         <div className="space-y-3">

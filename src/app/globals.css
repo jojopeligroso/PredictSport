@@ -109,3 +109,51 @@ p, h1, h2, h3, h4, h5, h6 {
 /* Hide scrollbars in scroll containers */
 .ps-scroll::-webkit-scrollbar { display: none; }
 .ps-scroll { scrollbar-width: none; }
+
+/* ── World Cup 2026 Theme ──────────────────────────────────────────────── */
+/* Scoped to .wc-theme — overrides ps-* custom properties so all existing  */
+/* Tailwind classes (bg-ps-bg, text-ps-amber, etc.) pick up WC colors.     */
+/* Stadium dark green + trophy gold + Mexico flag green.                    */
+
+.wc-theme {
+  --ps-bg: #0a0f0a;
+  --ps-bg-alt: #0d140d;
+  --ps-surface: #1a231a;
+  --ps-surface2: #141c14;
+  --ps-text: #f1ece2;
+  --ps-text-sec: #a8a090;
+  --ps-text-ter: #706858;
+  --ps-amber: #d4af37;
+  --ps-amber-deep: #b8941f;
+  --ps-amber-soft: rgba(212, 175, 55, 0.12);
+  --ps-border: rgba(212, 175, 55, 0.10);
+  --ps-border-strong: rgba(212, 175, 55, 0.20);
+  --ps-chip: rgba(212, 175, 55, 0.06);
+  --ps-overlay: rgba(10, 15, 10, 0.85);
+  /* green, red, blue — unchanged (semantic correctness colors) */
+
+  /* WC-specific tokens */
+  --wc-mexico-green: #006847;
+  --wc-gold: #d4af37;
+  --wc-dark: #0a0f0a;
+}
+
+/* WC theme is already dark — prevent double-inversion */
+@media (prefers-color-scheme: dark) {
+  .wc-theme {
+    --ps-bg: #0a0f0a;
+    --ps-bg-alt: #0d140d;
+    --ps-surface: #1a231a;
+    --ps-surface2: #141c14;
+    --ps-text: #f1ece2;
+    --ps-text-sec: #a8a090;
+    --ps-text-ter: #706858;
+    --ps-amber: #d4af37;
+    --ps-amber-deep: #b8941f;
+    --ps-amber-soft: rgba(212, 175, 55, 0.12);
+    --ps-border: rgba(212, 175, 55, 0.10);
+    --ps-border-strong: rgba(212, 175, 55, 0.20);
+    --ps-chip: rgba(212, 175, 55, 0.06);
+    --ps-overlay: rgba(10, 15, 10, 0.85);
+  }
+}

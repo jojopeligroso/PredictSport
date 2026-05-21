@@ -1,6 +1,8 @@
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
-import { BrandMark } from "@/components/BrandMark";
+import { OracleDot } from "@/components/OracleDot";
+import { UmpireLogo } from "@/components/UmpireLogo";
+import { BubbleCall } from "@/components/BubbleCall";
 
 export const dynamic = "force-dynamic";
 
@@ -10,7 +12,7 @@ export default async function WorldCupLanding() {
     data: { user },
   } = await supabase.auth.getUser();
 
-  // Calculate countdown to June 11 2026
+  // Countdown to June 11 2026
   const kickoff = new Date("2026-06-11T15:00:00Z");
   const now = new Date();
   const diffMs = kickoff.getTime() - now.getTime();
@@ -19,22 +21,41 @@ export default async function WorldCupLanding() {
   return (
     <div className="flex flex-1 flex-col items-center px-4">
       {/* Hero */}
-      <section className="flex w-full max-w-md flex-col items-center gap-6 pt-12 pb-10 text-center md:pt-20">
-        <BrandMark className="h-16 w-auto md:h-24" />
+      <section className="flex w-full max-w-md flex-col items-center gap-5 pt-10 pb-8 text-center md:pt-16">
+        {/* All 3 brand marks */}
+        <div className="flex items-center gap-4">
+          <OracleDot className="h-8 w-auto opacity-70" />
+          <UmpireLogo className="h-10 w-auto opacity-70" flagColor="#006847" />
+          <BubbleCall className="h-8 w-auto opacity-70" />
+        </div>
+
+        {/* Wordmark */}
         <div>
           <h1 className="text-3xl font-extrabold tracking-tight text-ps-text md:text-4xl">
-            World Cup 2026
+            World Cup{" "}
+            <span className="text-ps-amber">2026</span>
           </h1>
           <p className="mt-2 font-serif text-lg italic text-ps-text-sec">
             48 teams. Your call.
+          </p>
+          <p
+            className="mt-1.5 font-mono text-[10px] font-bold uppercase tracking-[0.25em]"
+            style={{ color: "#006847" }}
+          >
+            Viva Mexico
           </p>
         </div>
 
         {/* Countdown */}
         {daysUntil > 0 && (
-          <div className="rounded-xl bg-ps-surface border border-ps-border px-6 py-4">
-            <p className="font-mono text-3xl font-bold text-ps-amber">{daysUntil}</p>
-            <p className="text-xs font-semibold uppercase tracking-widest text-ps-text-ter">
+          <div
+            className="rounded-xl border border-ps-border bg-ps-surface px-6 py-4"
+            style={{ borderBottom: "2px solid #006847" }}
+          >
+            <p className="font-mono text-3xl font-bold text-ps-amber">
+              {daysUntil}
+            </p>
+            <p className="text-[10px] font-semibold uppercase tracking-widest text-ps-text-ter">
               days to kickoff
             </p>
           </div>
@@ -44,24 +65,37 @@ export default async function WorldCupLanding() {
         {user ? (
           <Link
             href="/wc/picks"
-            className="w-full max-w-xs rounded-xl bg-ps-text px-6 py-4 text-center text-base font-semibold text-ps-bg transition-all hover:opacity-90 active:scale-[0.97]"
+            className="w-full max-w-xs rounded-xl px-6 py-4 text-center text-base font-semibold transition-all hover:opacity-90 active:scale-[0.97]"
+            style={{
+              background: "linear-gradient(135deg, #d4af37, #b8941f)",
+              color: "#0a0f0a",
+            }}
           >
             Make your picks
           </Link>
         ) : (
           <Link
             href="/wc/join"
-            className="w-full max-w-xs rounded-xl bg-ps-text px-6 py-4 text-center text-base font-semibold text-ps-bg transition-all hover:opacity-90 active:scale-[0.97]"
+            className="w-full max-w-xs rounded-xl px-6 py-4 text-center text-base font-semibold transition-all hover:opacity-90 active:scale-[0.97]"
+            style={{
+              background: "linear-gradient(135deg, #d4af37, #b8941f)",
+              color: "#0a0f0a",
+            }}
           >
             Join the game
           </Link>
         )}
       </section>
 
-      {/* How it works */}
-      <section className="w-full max-w-md border-t border-ps-border pt-8 pb-10">
-        <h2 className="text-center text-xs font-bold uppercase tracking-widest text-ps-text-ter">
-          Four ways to play
+      {/* Host cities */}
+      <p className="text-[10px] font-medium tracking-widest text-ps-text-ter uppercase">
+        Mexico City &middot; Guadalajara &middot; Monterrey
+      </p>
+
+      {/* Four ways to play */}
+      <section className="w-full max-w-md border-t border-ps-border pt-8 pb-8 mt-6">
+        <h2 className="text-center text-[10px] font-bold uppercase tracking-widest text-ps-text-ter">
+          Five ways to play
         </h2>
         <div className="mt-6 grid grid-cols-2 gap-3">
           <ClassificationCard
@@ -74,18 +108,23 @@ export default async function WorldCupLanding() {
           />
           <ClassificationCard
             title="Full Bracket"
-            description="Pick every group and knockout result before kickoff. One wrong pick and you're dead."
+            description="Pick every group and knockout result before kickoff."
           />
           <ClassificationCard
             title="KO Bracket"
-            description="Bracket picks from R32 onwards. Opens after the group stage."
+            description="Bracket picks from R32. Opens after the group stage."
+          />
+          <ClassificationCard
+            title="Stage Pick"
+            description="Predict outcomes at a knockout stage. Lock before kickoff."
+            span
           />
         </div>
       </section>
 
-      {/* Scoring summary */}
+      {/* Scoring */}
       <section className="w-full max-w-md border-t border-ps-border pt-8 pb-14">
-        <h2 className="text-center text-xs font-bold uppercase tracking-widest text-ps-text-ter">
+        <h2 className="text-center text-[10px] font-bold uppercase tracking-widest text-ps-text-ter">
           Scoring
         </h2>
         <div className="mt-6 space-y-3">
@@ -93,8 +132,8 @@ export default async function WorldCupLanding() {
           <ScoringRow points={3} label="Exact score bonus" />
           <ScoringRow points={1} label="Correct advancing team (knockout)" />
         </div>
-        <p className="mt-4 text-center text-xs text-ps-text-ter">
-          Group matches: max 5pts. Knockout: max 6pts.
+        <p className="mt-4 text-center text-[10px] text-ps-text-ter">
+          Group matches: max 5pts &middot; Knockout: max 6pts
         </p>
       </section>
     </div>
@@ -104,14 +143,22 @@ export default async function WorldCupLanding() {
 function ClassificationCard({
   title,
   description,
+  span,
 }: {
   title: string;
   description: string;
+  span?: boolean;
 }) {
   return (
-    <div className="rounded-xl border border-ps-border bg-ps-surface p-4">
+    <div
+      className={`rounded-xl border border-ps-border bg-ps-surface p-4 transition-colors hover:border-ps-border-strong ${
+        span ? "col-span-2" : ""
+      }`}
+    >
       <h3 className="text-sm font-bold text-ps-text">{title}</h3>
-      <p className="mt-1 text-xs leading-relaxed text-ps-text-sec">{description}</p>
+      <p className="mt-1 text-xs leading-relaxed text-ps-text-sec">
+        {description}
+      </p>
     </div>
   );
 }

@@ -53,6 +53,7 @@ export interface Competition {
   product_mode: string | null;
   entry_closes_at: string | null;
   entry_close_trigger: string | null;
+  hidden_at: string | null;
   created_at: string;
 }
 
