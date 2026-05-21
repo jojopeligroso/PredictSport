@@ -19,11 +19,11 @@
 
 import { useState, useEffect } from 'react'
 import {
-  TournamentTemplate,
   GroupPredictionData,
   MatchPrediction,
   TeamWithStats,
 } from '@/lib/tournament/bracket/types'
+import { TournamentTemplate } from '@/lib/tournament/bracket/templates/types'
 import {
   calculateGroupStandings,
   detectTiebreakersNeeded,
@@ -305,12 +305,15 @@ function generateTeamNames(groupLabel: string, count: number): string[] {
  */
 function generateGroupMatches(teams: string[]): MatchPrediction[] {
   const matches: MatchPrediction[] = []
+  let matchCounter = 0
 
   for (let i = 0; i < teams.length; i++) {
     for (let j = i + 1; j < teams.length; j++) {
       matches.push({
+        match_id: `match_${matchCounter++}`,
         home_team: teams[i],
         away_team: teams[j],
+        outcome: 'draw',  // Default outcome
         home_score: null,
         away_score: null,
       })

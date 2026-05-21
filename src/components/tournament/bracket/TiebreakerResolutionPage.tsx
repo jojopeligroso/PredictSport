@@ -15,7 +15,7 @@
  */
 
 import { useState } from 'react'
-import type { GroupData, MatchPrediction, MatchResult } from './MatchCard'
+import type { GroupData, MatchPrediction, MatchResult } from './GroupResultsStepV2'
 
 interface TiebreakerResolutionPageProps {
   group: GroupData

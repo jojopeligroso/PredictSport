@@ -10,7 +10,7 @@
 
 Users predict FIFA World Cup 2026 bracket outcomes through a **lightweight, mobile-first, color-driven** interface. The experience prioritizes:
 
-1. **Minimal cognitive load**: Users make ~90-100 decisions (not 80+ score inputs)
+1. **Minimal cognitive load**: Users make ~90-100 decisions (not 80+ exact score inputs)
 2. **Visual clarity over text**: Color signals selection state, not labels
 3. **Progressive disclosure**: Show complexity only when needed (tiebreakers, scores)
 4. **Personalization**: Users customize "my pick color" during onboarding - reinforces ownership

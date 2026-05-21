@@ -46,20 +46,39 @@ export interface TeamWithStats {
   losses: number
   position?: number // 1-4 in group
   groupId?: string
+  // Aliases for compatibility
+  goalDifference?: number  // Deprecated, use gd
+  goalsFor?: number        // Deprecated, use gs
+  goalsAgainst?: number    // Deprecated, use gc
+  played?: number          // matches played
 }
 
 export interface MatchPrediction {
   match_id: string
   home_team: string
   away_team: string
-  outcome: 'home' | 'draw' | 'away'
-  home_score?: number
-  away_score?: number
+  outcome: 'home' | 'draw' | 'away'  // Legacy format
+  result?: 'home_win' | 'draw' | 'away_win' | null  // V2 format - preferred
+  home_score?: number | null
+  away_score?: number | null
+  exact_score?: {  // V2 format - preferred
+    home_score: number
+    away_score: number
+  }
+  home_tries?: number    // For rugby scoring
+  away_tries?: number    // For rugby scoring
 }
 
 export interface GroupPredictionData {
-  predictions: MatchPrediction[]
-  standings: TeamWithStats[]
+  group_id: string
+  group_name?: string  // V2 format
+  teams?: string[]  // V2 format
+  team_names: string[]  // Legacy format
+  matches?: MatchPrediction[]  // V2 format - preferred
+  match_predictions: MatchPrediction[]  // Legacy format
+  has_tiebreaker_scores?: boolean  // V2 format
+  standings?: TeamWithStats[]
+  predictions?: MatchPrediction[] // Deprecated, use match_predictions or matches
 }
 
 // ============================================================================
@@ -82,6 +101,13 @@ export interface BracketMatch {
     home_source: string  // "Group A Winner"
     away_source: string  // "Best 3rd from Groups A/B/C"
   }
+}
+
+export interface KnockoutPrediction {
+  match_number: number
+  home_team?: string
+  away_team?: string
+  winner: string | null
 }
 
 export interface KnockoutBracket {

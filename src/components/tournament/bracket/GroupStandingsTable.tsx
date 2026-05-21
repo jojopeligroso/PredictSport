@@ -35,7 +35,7 @@ export default function GroupStandingsTable({
         </thead>
         <tbody>
           {standings.map((team) => {
-            const isQualifying = highlightPositions.includes(team.position)
+            const isQualifying = highlightPositions.includes(team.position || 0)
 
             return (
               <tr
@@ -68,7 +68,7 @@ export default function GroupStandingsTable({
 
                 {/* Stats */}
                 <td className="py-2 pr-1 text-center text-ps-ink/80">
-                  {team.played}
+                  {team.played ?? (team.wins + team.draws + team.losses)}
                 </td>
                 <td className="py-2 pr-1 text-center text-ps-ink/80">
                   {team.wins}
@@ -80,22 +80,22 @@ export default function GroupStandingsTable({
                   {team.losses}
                 </td>
                 <td className="py-2 pr-1 text-center text-ps-ink/80">
-                  {team.goalsFor}
+                  {team.goalsFor ?? team.gs}
                 </td>
                 <td className="py-2 pr-1 text-center text-ps-ink/80">
-                  {team.goalsAgainst}
+                  {team.goalsAgainst ?? team.gc}
                 </td>
                 <td
                   className={`py-2 pr-1 text-center ${
-                    team.goalDifference > 0
+                    (team.goalDifference ?? team.gd) > 0
                       ? 'text-ps-green'
-                      : team.goalDifference < 0
+                      : (team.goalDifference ?? team.gd) < 0
                         ? 'text-ps-red'
                         : 'text-ps-ink/80'
                   }`}
                 >
-                  {team.goalDifference > 0 ? '+' : ''}
-                  {team.goalDifference}
+                  {(team.goalDifference ?? team.gd) > 0 ? '+' : ''}
+                  {team.goalDifference ?? team.gd}
                 </td>
 
                 {/* Points */}

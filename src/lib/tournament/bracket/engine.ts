@@ -15,12 +15,12 @@ import {
   MatchPrediction,
   TeamWithStats,
   TiebreakerRule,
-  TournamentTemplate,
   QualifiedTeam,
   BracketMatch,
   BracketData,
   GroupPredictionData,
 } from './types'
+import { TournamentTemplate } from './templates/types'
 
 // ============================================================================
 // Group Stage: Calculate Standings with Tiebreakers

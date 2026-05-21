@@ -15,7 +15,7 @@
  */
 
 import { useState, useEffect } from 'react'
-import { GroupData, MatchPrediction } from './GroupResultsStep'
+import { GroupData, MatchPrediction } from './GroupResultsStepV2'
 
 interface ThirdPlaceTeam {
   team_name: string

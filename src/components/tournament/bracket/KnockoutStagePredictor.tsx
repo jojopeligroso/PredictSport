@@ -17,10 +17,10 @@
 
 import { useState, useEffect } from 'react'
 import {
-  TournamentTemplate,
   KnockoutPrediction,
   BracketMatch,
 } from '@/lib/tournament/bracket/types'
+import { TournamentTemplate } from '@/lib/tournament/bracket/templates/types'
 import KnockoutMatchCard from './KnockoutMatchCard'
 
 interface KnockoutStagePredictorProps {
@@ -162,8 +162,8 @@ export default function KnockoutStagePredictor({
             <KnockoutMatchCard
               key={`${currentStage.id}-${index}`}
               matchNumber={index + 1}
-              homeTeam={match.home_team}
-              awayTeam={match.away_team}
+              homeTeam={match.home_team || 'TBD'}
+              awayTeam={match.away_team || 'TBD'}
               selectedWinner={prediction?.winner || null}
               onWinnerSelect={(winner) => handleWinnerSelect(index, winner)}
             />
