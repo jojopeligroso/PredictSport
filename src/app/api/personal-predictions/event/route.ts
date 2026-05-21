@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { getOrCreatePersonalCompetition } from "@/lib/personal-competition";
 import { getPersonalDefaults } from "@/lib/personal-prediction-defaults";
+import { hasTBAParticipant } from "@/lib/sports/tba-detection";
 import type { Sport } from "@/lib/sports/types";
 
 interface CreatePersonalEventBody {
@@ -50,6 +51,13 @@ export async function POST(request: Request) {
     return NextResponse.json(
       { error: "participants array is required and must be non-empty" },
       { status: 400 },
+    );
+  }
+
+  if (hasTBAParticipant(body.participants)) {
+    return NextResponse.json(
+      { error: "tba_fixture", message: "Cannot create predictions for fixtures with unconfirmed participants" },
+      { status: 422 },
     );
   }
 

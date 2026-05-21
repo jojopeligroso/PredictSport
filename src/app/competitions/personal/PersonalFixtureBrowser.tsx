@@ -16,6 +16,7 @@ import {
   type ScoreValue,
 } from "@/components/ExactScoreInput";
 import { supportsExactScore, deriveWinnerFromScore } from "@/lib/score-format";
+import { hasTBAParticipant } from "@/lib/sports/tba-detection";
 import type { NormalizedFixture } from "@/app/api/sports/fixtures/route";
 import type { Sport } from "@/lib/sports/types";
 
@@ -1893,15 +1894,27 @@ export function PersonalFixtureBrowser({
     }
   }, [picks, pickMap, ensureEvent]);
 
-  // Group upcoming fixtures by date
-  const grouped = useMemo(() => {
-    const map = new Map<string, NormalizedFixture[]>();
+  // Filter out TBA fixtures and group by date
+  const { grouped, tbaCount } = useMemo(() => {
+    const eligible: NormalizedFixture[] = [];
+    let hidden = 0;
     for (const f of fixtures) {
+      if (hasTBAParticipant(f.participants)) {
+        hidden++;
+      } else {
+        eligible.push(f);
+      }
+    }
+    const map = new Map<string, NormalizedFixture[]>();
+    for (const f of eligible) {
       const key = dateKey(f.start_time);
       if (!map.has(key)) map.set(key, []);
       map.get(key)!.push(f);
     }
-    return Array.from(map.entries()).sort(([a], [b]) => a.localeCompare(b));
+    return {
+      grouped: Array.from(map.entries()).sort(([a], [b]) => a.localeCompare(b)),
+      tbaCount: hidden,
+    };
   }, [fixtures]);
 
   const now = new Date();
@@ -2069,6 +2082,13 @@ export function PersonalFixtureBrowser({
               <p className="text-sm font-semibold text-ps-text-sec">No upcoming fixtures</p>
               <p className="mt-1 text-xs text-ps-text-ter">Try a different league</p>
             </div>
+          )}
+
+          {/* TBA fixtures hidden notice */}
+          {!loading && tbaCount > 0 && (
+            <p className="text-xs font-semibold text-ps-text-ter">
+              {tbaCount} {tbaCount === 1 ? "fixture" : "fixtures"} hidden — teams not yet confirmed
+            </p>
           )}
 
           {/* Fixture list grouped by date */}

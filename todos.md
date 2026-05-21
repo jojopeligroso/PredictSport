@@ -274,7 +274,7 @@ Fixtures with unknown participants (TBA / TBC team names from providers) should 
 - [x] **G2 — Block personal prediction creation for TBA fixtures** — In `POST /api/personal-predictions/event`, if any participant in `config.options` matches TBA, return 422 with `{ error: "tba_fixture" }`. Fixture browser should show these as greyed-out with "Teams TBA" label instead of a pick button.
 - [x] **G3 — Block admin event creation for TBA fixtures (non-bracket)** — In `POST /api/admin/events`, if `config.options` contains TBA values and the event is not marked `is_bracket_placeholder: true`, return 422. In `AddEventForm.tsx`, show a warning when a fixture with TBA participants is selected.
 - [ ] **G4 — Bracket placeholder flag** — Add `is_bracket_placeholder boolean default false` to `events` table (migration). Admin can set this when creating a bracket-style event ("Winner of Match A vs Winner of Match B"). TBA check is bypassed for these events. Bracket placeholders are locked at round lock time regardless.
-- [ ] **G5 — Filter TBA fixtures from personal fixture browser** — In `PersonalFixtureBrowser.tsx`, filter out fixtures where `hasTBAParticipant` returns true before rendering the pick list. Show a count if any were hidden ("3 fixtures hidden — teams not yet confirmed").
+- [x] **G5 — Filter TBA fixtures from personal fixture browser** — Filters TBA fixtures before grouping, shows "N fixtures hidden — teams not yet confirmed" notice. Also added 422 block in personal-predictions/event API route.
 
 ## All-Competitions Dashboard (Future — Needs Design)
 
