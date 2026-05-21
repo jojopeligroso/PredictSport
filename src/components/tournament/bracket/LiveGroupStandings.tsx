@@ -125,20 +125,20 @@ export default function LiveGroupStandings({
                   {/* Goal Difference */}
                   <td
                     className={`py-2 pr-1 text-center ${
-                      team.gd > 0
+                      ((team.goalDifference ?? team.gd) ?? 0) > 0
                         ? 'text-ps-green'
-                        : team.gd < 0
+                        : ((team.goalDifference ?? team.gd) ?? 0) < 0
                           ? 'text-ps-red'
                           : 'text-ps-ink/80'
                     }`}
                   >
-                    {team.gd > 0 ? '+' : ''}
-                    {team.gd}
+                    {((team.goalDifference ?? team.gd) ?? 0) > 0 ? '+' : ''}
+                    {(team.goalDifference ?? team.gd) ?? 0}
                   </td>
 
                   {/* Goals For */}
                   <td className="py-2 pr-1 text-center text-ps-ink/80">
-                    {team.gs}
+                    {(team.goalsFor ?? team.gs) ?? 0}
                   </td>
                 </tr>
               )

@@ -38,12 +38,12 @@ export interface TiebreakerRule {
 export interface TeamWithStats {
   name: string
   points: number
-  gd: number        // goal difference
-  gs: number        // goals scored
-  gc: number        // goals conceded
-  wins: number
-  draws: number
-  losses: number
+  gd?: number        // goal difference
+  gs?: number        // goals scored
+  gc?: number        // goals conceded
+  wins?: number
+  draws?: number
+  losses?: number
   position?: number // 1-4 in group
   groupId?: string
   // Aliases for compatibility
