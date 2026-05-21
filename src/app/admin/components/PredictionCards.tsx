@@ -191,12 +191,24 @@ export function configsToCards(
   const primaryType = isTwoTeam ? "head_to_head" : "winner";
   const primaryConfig = configs.find((c) => c.type === primaryType);
 
+  // Auto-generate config from fixture data if missing (safety net for paths
+  // that rebuild prediction types without preserving config)
+  const primaryOutcomeConfig: PrimaryOutcome["config"] =
+    (primaryConfig?.config as PrimaryOutcome["config"]) ??
+    (isTwoTeam
+      ? {
+          options: [fixture.homeTeam || "Home", fixture.awayTeam || "Away"],
+          allow_draw: allowsDraws(fixture.sport),
+          draw_points: primaryConfig?.points || 10,
+        }
+      : undefined);
+
   const state: CardBasedPredictionState = {
     primaryOutcome: {
       type: primaryType,
       points: primaryConfig?.points || 10,
       partialPoints: primaryConfig?.partial_points,
-      config: primaryConfig?.config as PrimaryOutcome["config"],
+      config: primaryOutcomeConfig,
     },
   };
 

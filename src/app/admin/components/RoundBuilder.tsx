@@ -521,11 +521,16 @@ function Step2Configure({
       if (fc.useCustom) return fc;
       const predictionTypes: PredictionTypeConfig[] = validTypes.filter(
         (t) => types[t]
-      ).map((t) => ({
-        type: t,
-        points: pointsOverride[t] ?? defaultPoints[t],
-        partial_points: defaultPartial[t],
-      }));
+      ).map((t) => {
+        // Preserve existing config (e.g. options, allow_draw) for this type
+        const existing = fc.predictionTypes.find((p) => p.type === t);
+        return {
+          type: t,
+          points: pointsOverride[t] ?? defaultPoints[t],
+          partial_points: defaultPartial[t],
+          ...(existing?.config ? { config: existing.config } : {}),
+        };
+      });
       return { ...fc, predictionTypes };
     });
     onConfigChange(newConfigs);
@@ -554,15 +559,21 @@ function Step2Configure({
 
   function resetFixtureToGlobal(fixtureIdx: number) {
     const newConfigs = [...fixtureConfigs];
+    const fc = newConfigs[fixtureIdx];
     const predictionTypes: PredictionTypeConfig[] = ALL_PREDICTION_TYPES.filter(
       (t) => globalTypes[t]
-    ).map((t) => ({
-      type: t,
-      points: globalPointsOverride[t] ?? defaultPoints[t],
-      partial_points: defaultPartial[t],
-    }));
+    ).map((t) => {
+      // Preserve existing config (e.g. options, allow_draw) for this type
+      const existing = fc.predictionTypes.find((p) => p.type === t);
+      return {
+        type: t,
+        points: globalPointsOverride[t] ?? defaultPoints[t],
+        partial_points: defaultPartial[t],
+        ...(existing?.config ? { config: existing.config } : {}),
+      };
+    });
     newConfigs[fixtureIdx] = {
-      ...newConfigs[fixtureIdx],
+      ...fc,
       predictionTypes,
       useCustom: false,
     };
