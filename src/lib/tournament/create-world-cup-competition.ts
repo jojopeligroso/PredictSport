@@ -1,6 +1,7 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { Competition } from "@/types/database";
 import type { Classification } from "@/types/tournament";
+import { generateEliminationCurve } from "@/lib/tournament/format/curve-generator";
 
 // Well-known IDs from seed migration
 const WC2026_TOURNAMENT_ID = "a0000000-0000-0000-0000-000000000026";
@@ -35,7 +36,7 @@ const PREDICTION_WINDOWS = [
 interface CreateWCOptions {
   name: string;
   visibility: "public" | "private";
-  entrantPreset: 12 | 24 | 48 | 64 | 96;
+  entrantCount: number; // 8-96, validated by generateEliminationCurve
 }
 
 /**
@@ -106,11 +107,15 @@ export async function createWorldCupCompetition(
       },
       elimination_strategy: {
         type: "curve",
-        preset: options.entrantPreset,
+        entrant_count: options.entrantCount,
       },
       config: {
         group_size: 4,
-        elimination_curve: getEliminationCurveForPreset(options.entrantPreset),
+        elimination_curve: {
+          entrantCount: options.entrantCount,
+          locked: false,
+          curve: generateEliminationCurve(options.entrantCount),
+        },
       },
     },
     {
@@ -198,47 +203,3 @@ export async function createWorldCupCompetition(
   return { competition: competition as Competition, classifications: classifications as Classification[] };
 }
 
-/**
- * Returns elimination curve config for a given entrant preset.
- * Exact target_survivors values are TBD — these are reasonable defaults.
- * The engine reads whatever is in config, so these can be adjusted per-competition.
- */
-function getEliminationCurveForPreset(preset: number): Record<string, { target_survivors: number }> {
-  // Roughly halve at each stage. Adjust for specific preset sizes.
-  const curves: Record<number, Record<string, { target_survivors: number }>> = {
-    12: {
-      group_stage: { target_survivors: 8 },
-      round_of_32: { target_survivors: 4 },
-      round_of_16: { target_survivors: 2 },
-    },
-    24: {
-      group_stage: { target_survivors: 16 },
-      round_of_32: { target_survivors: 8 },
-      round_of_16: { target_survivors: 4 },
-      quarter_finals: { target_survivors: 2 },
-    },
-    48: {
-      group_stage: { target_survivors: 24 },
-      round_of_32: { target_survivors: 12 },
-      round_of_16: { target_survivors: 6 },
-      quarter_finals: { target_survivors: 3 },
-      semi_finals: { target_survivors: 2 },
-    },
-    64: {
-      group_stage: { target_survivors: 32 },
-      round_of_32: { target_survivors: 16 },
-      round_of_16: { target_survivors: 8 },
-      quarter_finals: { target_survivors: 4 },
-      semi_finals: { target_survivors: 2 },
-    },
-    96: {
-      group_stage: { target_survivors: 48 },
-      round_of_32: { target_survivors: 24 },
-      round_of_16: { target_survivors: 12 },
-      quarter_finals: { target_survivors: 6 },
-      semi_finals: { target_survivors: 3 },
-    },
-  };
-
-  return curves[preset] ?? curves[48];
-}
