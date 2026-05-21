@@ -166,6 +166,24 @@ function formatTime(iso: string): string {
 function formatDateHeading(iso: string): string {
   const d = new Date(iso);
   if (isNaN(d.getTime())) return "Date TBC";
+
+  const now = new Date();
+  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  const tomorrow = new Date(today);
+  tomorrow.setDate(tomorrow.getDate() + 1);
+  const fixtureDate = new Date(d.getFullYear(), d.getMonth(), d.getDate());
+
+  const formattedDate = d.toLocaleDateString("en-IE", {
+    day: "numeric",
+    month: "short",
+  });
+
+  if (fixtureDate.getTime() === today.getTime()) {
+    return `Today (${formattedDate})`;
+  } else if (fixtureDate.getTime() === tomorrow.getTime()) {
+    return `Tomorrow (${formattedDate})`;
+  }
+
   return d.toLocaleDateString("en-IE", {
     weekday: "long",
     day: "numeric",
@@ -805,8 +823,10 @@ function OutrightsTab({ onNavigateToLeague }: { onNavigateToLeague?: (sportCateg
   const ORDER: OutrightStatus[] = ["open", "pending", "resolved"];
   const hasOutrights = outrights.length > 0;
 
-  // Filter suggestions to known leagues only
-  const validSuggestions = suggestions.filter((s) => getLeagueLabel(s.provider_league));
+  // Filter suggestions to known leagues only and sort by pick count (most-guessed first)
+  const validSuggestions = suggestions
+    .filter((s) => getLeagueLabel(s.provider_league))
+    .sort((a, b) => b.pick_count - a.pick_count);
 
   return (
     <div className="flex flex-col gap-5">
@@ -814,7 +834,7 @@ function OutrightsTab({ onNavigateToLeague }: { onNavigateToLeague?: (sportCateg
       {validSuggestions.length > 0 && (
         <div>
           <p className="mb-2 text-[10px] font-extrabold tracking-widest uppercase text-ps-text-ter">
-            Suggested outrights
+            Do you want to take a stab at
           </p>
           <div className="flex flex-col gap-2">
             {validSuggestions.map((s) => {
@@ -862,6 +882,47 @@ function OutrightsTab({ onNavigateToLeague }: { onNavigateToLeague?: (sportCateg
           </div>
         </div>
       )}
+
+      {/* Search for other competitions */}
+      {validSuggestions.length === 0 && !hasOutrights && (
+        <div>
+          <p className="mb-3 text-sm font-semibold text-ps-text">
+            Looking for a specific competition?
+          </p>
+          <div className="rounded-xl border border-ps-border bg-ps-surface p-4">
+            <p className="mb-3 text-xs text-ps-text-sec">
+              Search for leagues and tournaments to make outright predictions
+            </p>
+            <button
+              onClick={() => {
+                if (onNavigateToLeague) {
+                  // Navigate to fixtures tab to browse leagues
+                  window.scrollTo({ top: 0, behavior: 'smooth' });
+                }
+              }}
+              className="w-full rounded-lg bg-ps-text px-4 py-2.5 text-sm font-semibold text-ps-bg hover:opacity-90 transition-opacity"
+            >
+              Browse All Leagues
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Suggest a competition */}
+      <div className="rounded-xl border border-dashed border-ps-border bg-ps-surface/50 p-4">
+        <p className="mb-2 text-xs font-semibold text-ps-text">
+          Can't find what you're looking for?
+        </p>
+        <a
+          href="mailto:hello@predictsport.com?subject=Competition Suggestion"
+          className="inline-flex items-center gap-1.5 text-xs font-semibold text-ps-amber hover:text-ps-amber-deep transition-colors"
+        >
+          <span>Suggest a competition to be included</span>
+          <svg width="12" height="12" viewBox="0 0 16 16" fill="none">
+            <path d="M6 4l4 4-4 4" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+          </svg>
+        </a>
+      </div>
 
       {/* Existing outrights grouped by status */}
       {hasOutrights ? (
