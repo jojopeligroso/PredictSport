@@ -219,7 +219,7 @@ See `SPORTS-ARCHITECTURE.md` for detailed spec (TBD).
 
 ### Phase WC-F — Group Allocation & Qualification
 
-- [ ] **WC-F1 — Target-aware group allocation** — Rewrite `src/lib/tournament/format/group-allocation.ts` `allocatePredictionGroups()` to implement the deterministic algorithm from the design doc S22.4. Must handle groups of 3, 4, and 5 entrants. Must be target-aware (choose group sizes to reach the survivor target).
+- [x] **WC-F1 — Target-aware group allocation** — Rewrite `src/lib/tournament/format/group-allocation.ts` `allocatePredictionGroups()` to implement the deterministic algorithm from the design doc S22.4. Must handle groups of 3, 4, and 5 entrants. Must be target-aware (choose group sizes to reach the survivor target).
 - [ ] **WC-F2 — Group-size-aware best-third ranking** — Update `src/lib/tournament/format/scoring.ts` `computeBestThirdRanking()` to filter by group size: exclude thirds from 3-player groups (never qualify), exclude thirds from 5-player groups (auto-qualify, not in the best-third pool), only include thirds from 4-player groups.
 - [ ] **WC-F3 — Rewrite elimination logic** — Update `src/lib/tournament/format/elimination.ts` `eliminateFromFormat()` to implement the full qualification rules: top 2 auto-qualify, 5-player thirds auto-qualify, 3-player thirds never qualify, best-third from 4-player groups only. Variable best-third pool size.
 - [ ] **WC-F4 — Curve reader update** — Update `getEliminationCurve()` in `elimination.ts` to read the new array-format curve from classification config instead of the old stage-keyed map.

@@ -2,13 +2,119 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import type { FormatPredictionGroup, FormatGroupMembership } from "@/types/tournament";
 
 // ============================================================
+// Group composition result — exported for testing/reuse
+// ============================================================
+
+export interface GroupComposition {
+  groups3: number; // number of 3-player groups
+  groups4: number; // number of 4-player groups
+  groups5: number; // number of 5-player groups
+  totalGroups: number;
+  autoQualifiers: number; // top 2 from each + thirds from 5-player
+  bestThirdSlots: number; // additional best-third from 4-player groups
+  totalSurvivors: number;
+}
+
+/**
+ * Compute the group composition that reaches the survivor target.
+ *
+ * Exhaustive search over all valid (g3, g4, g5) where 3*g3 + 4*g4 + 5*g5 = N.
+ * Qualification rules:
+ * - Top 2 from every group auto-qualify
+ * - Third-place from 5-player groups auto-qualifies
+ * - Third-place from 4-player groups eligible for best-third selection
+ * - Third-place from 3-player groups never qualifies
+ *
+ * Prefers most 4-player groups (fairest), then fewest total groups.
+ *
+ * @param entrantCount Total entrants (must be >= 3)
+ * @param survivorTarget Number of survivors after group stage
+ * @returns Group composition details
+ */
+export function computeGroupComposition(
+  entrantCount: number,
+  survivorTarget: number
+): GroupComposition {
+  if (entrantCount < 3) {
+    throw new Error(`Need at least 3 entrants, got ${entrantCount}`);
+  }
+  return solveGroupComposition(entrantCount, survivorTarget);
+}
+
+/**
+ * Find the optimal (g3, g4, g5) group composition.
+ * Prefers more 4-player groups (fairest). Among solutions that hit the target,
+ * minimises the number of 3 and 5-player groups.
+ */
+function solveGroupComposition(
+  entrantCount: number,
+  survivorTarget: number
+): GroupComposition {
+  let best: GroupComposition | null = null;
+
+  // g5 can range from 0 to floor(N/5)
+  const maxG5 = Math.floor(entrantCount / 5);
+
+  for (let g5 = 0; g5 <= maxG5; g5++) {
+    const remaining = entrantCount - 5 * g5;
+    // remaining = 3*g3 + 4*g4
+    // g3 can be 0..floor(remaining/3)
+    const maxG3 = Math.floor(remaining / 3);
+
+    for (let g3 = 0; g3 <= maxG3; g3++) {
+      const leftover = remaining - 3 * g3;
+      if (leftover % 4 !== 0) continue;
+      const g4 = leftover / 4;
+
+      const totalGroups = g3 + g4 + g5;
+      if (totalGroups === 0) continue;
+
+      // Qualification: top 2 from each + thirds from 5-player auto-qualify
+      const autoQualifiers = totalGroups * 2 + g5;
+      const bestThirdSlots = survivorTarget - autoQualifiers;
+
+      // best-third must come from 4-player groups only
+      if (bestThirdSlots < 0 || bestThirdSlots > g4) continue;
+
+      const candidate: GroupComposition = {
+        groups3: g3,
+        groups4: g4,
+        groups5: g5,
+        totalGroups,
+        autoQualifiers,
+        bestThirdSlots,
+        totalSurvivors: survivorTarget,
+      };
+
+      // Prefer: most 4-player groups (fairest), then fewest total groups
+      if (
+        !best ||
+        candidate.groups4 > best.groups4 ||
+        (candidate.groups4 === best.groups4 && candidate.totalGroups < best.totalGroups)
+      ) {
+        best = candidate;
+      }
+    }
+  }
+
+  if (!best) {
+    throw new Error(
+      `No valid group composition for ${entrantCount} entrants with ${survivorTarget} survivors`
+    );
+  }
+
+  return best;
+}
+
+// ============================================================
 // Allocate entrants into prediction groups (random draw)
-// Targets groups of 4. Remainder produces groups of 3 or 5.
+// Target-aware: chooses group sizes to reach the survivor target.
 // ============================================================
 
 export async function allocatePredictionGroups(
   supabase: SupabaseClient,
-  classificationId: string
+  classificationId: string,
+  survivorTarget: number
 ): Promise<FormatPredictionGroup[]> {
   // Fetch all active members for this classification
   const { data: memberships, error: mbError } = await supabase
@@ -31,11 +137,14 @@ export async function allocatePredictionGroups(
 
   if (clsError) throw new Error(`Failed to fetch classification: ${clsError.message}`);
 
+  // Compute target-aware group composition
+  const composition = computeGroupComposition(userIds.length, survivorTarget);
+
   // Cryptographically random Fisher-Yates shuffle
   const shuffled = cryptoShuffle([...userIds]);
 
-  // Chunk into groups of 4, distribute remainder
-  const chunks = chunkIntoGroups(shuffled, 4);
+  // Build group chunks according to composition
+  const chunks = distributeIntoGroups(shuffled, composition);
 
   // Delete any existing groups + memberships (regeneration path)
   await supabase
@@ -101,7 +210,7 @@ export async function addLateEntrant(
     throw new Error("No prediction groups exist for this classification");
   }
 
-  const { data: memberships, error: mbError } = await supabase
+  const { data: mbData, error: mbError } = await supabase
     .from("format_group_memberships")
     .select("group_id")
     .eq("classification_id", classificationId);
@@ -113,7 +222,7 @@ export async function addLateEntrant(
   for (const g of groups as { id: string; group_number: number }[]) {
     sizeCounts.set(g.id, 0);
   }
-  for (const m of memberships ?? []) {
+  for (const m of mbData ?? []) {
     const current = sizeCounts.get(m.group_id) ?? 0;
     sizeCounts.set(m.group_id, current + 1);
   }
@@ -156,8 +265,31 @@ export function canRegenerateDraw(firstWindowLockTime: Date): boolean {
 // Internal helpers
 // ============================================================
 
+/** Distribute shuffled users into groups according to composition. */
+function distributeIntoGroups<T>(arr: T[], composition: GroupComposition): T[][] {
+  const chunks: T[][] = [];
+  let offset = 0;
+
+  // Groups of 5 first (they get auto-qualifying third)
+  for (let i = 0; i < composition.groups5; i++) {
+    chunks.push(arr.slice(offset, offset + 5));
+    offset += 5;
+  }
+  // Groups of 4
+  for (let i = 0; i < composition.groups4; i++) {
+    chunks.push(arr.slice(offset, offset + 4));
+    offset += 4;
+  }
+  // Groups of 3
+  for (let i = 0; i < composition.groups3; i++) {
+    chunks.push(arr.slice(offset, offset + 3));
+    offset += 3;
+  }
+
+  return chunks;
+}
+
 function cryptoShuffle<T>(arr: T[]): T[] {
-  // Fisher-Yates with crypto.getRandomValues
   for (let i = arr.length - 1; i > 0; i--) {
     const randomBytes = new Uint32Array(1);
     crypto.getRandomValues(randomBytes);
@@ -174,24 +306,7 @@ function cryptoChoice<T>(arr: T[]): T {
   return arr[randomBytes[0] % arr.length];
 }
 
-function chunkIntoGroups<T>(arr: T[], targetSize: number): T[][] {
-  if (arr.length === 0) return [];
-
-  const groupCount = Math.ceil(arr.length / targetSize);
-  const chunks: T[][] = Array.from({ length: groupCount }, () => []);
-
-  // Distribute items — fills groups left to right
-  for (let i = 0; i < arr.length; i++) {
-    chunks[i % groupCount].push(arr[i]);
-  }
-
-  // Sort each chunk to maintain sequential assignment; redistribute overflow
-  // for clean group sizes (prefer groups of 4, allow 3 or 5 at edges)
-  return chunks;
-}
-
 function numberToLetter(n: number): string {
-  // 1→A, 2→B, … 26→Z, 27→AA, 28→AB, etc.
   let result = "";
   let num = n;
   while (num > 0) {
