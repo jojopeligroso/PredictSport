@@ -252,7 +252,7 @@ See `SPORTS-ARCHITECTURE.md` for detailed spec (TBD).
 - [ ] **H3.3 — Progress indicator** — Shows Groups A-L → R32 → R16 → QF → SF → Final with completion status.
 
 **WC-H4: Knockout Stage UI**
-- [ ] **H4.1 — KnockoutStagePredictor component** — Shows all matches for a stage (16 for R32, 8 for R16, etc.), winner picker per match.
+- [x] **H4.1 — KnockoutStagePredictor component** — Shows all matches for a stage (16 for R32, 8 for R16, etc.), winner picker per match. **✅ Implemented in `KnockoutStagePredictor.tsx` + `KnockoutMatchCard.tsx`** — stage-by-stage winner picker, match count from `template.knockoutStages[].matchCount`, auto-populates later stages from previous winners.
 - [ ] **H4.2 — Bracket context hints** — (?) icons explaining slot allocation ("Argentina here because they're Group C runner-up").
 - [ ] **H4.3 — Auto-population** — Winners from previous stage pre-fill into next stage matches.
 

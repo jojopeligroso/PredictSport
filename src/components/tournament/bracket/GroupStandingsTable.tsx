@@ -68,7 +68,7 @@ export default function GroupStandingsTable({
 
                 {/* Stats */}
                 <td className="py-2 pr-1 text-center text-ps-ink/80">
-                  {team.played ?? (team.wins + team.draws + team.losses)}
+                  {team.played ?? ((team.wins ?? 0) + (team.draws ?? 0) + (team.losses ?? 0))}
                 </td>
                 <td className="py-2 pr-1 text-center text-ps-ink/80">
                   {team.wins}
@@ -87,15 +87,15 @@ export default function GroupStandingsTable({
                 </td>
                 <td
                   className={`py-2 pr-1 text-center ${
-                    (team.goalDifference ?? team.gd) > 0
+                    (team.goalDifference ?? team.gd ?? 0) > 0
                       ? 'text-ps-green'
-                      : (team.goalDifference ?? team.gd) < 0
+                      : (team.goalDifference ?? team.gd ?? 0) < 0
                         ? 'text-ps-red'
                         : 'text-ps-ink/80'
                   }`}
                 >
-                  {(team.goalDifference ?? team.gd) > 0 ? '+' : ''}
-                  {team.goalDifference ?? team.gd}
+                  {(team.goalDifference ?? team.gd ?? 0) > 0 ? '+' : ''}
+                  {team.goalDifference ?? team.gd ?? 0}
                 </td>
 
                 {/* Points */}

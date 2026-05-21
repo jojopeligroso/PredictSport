@@ -221,9 +221,9 @@ function initializeGroups(): GroupData[] {
   return WC2026_GROUPS.map(group => ({
     group_id: group.groupId,
     group_name: group.name,
-    teams: group.teams.map(t => t.name),
-    team_names: group.teams.map(t => t.name), // Compatibility
-    matches: generateGroupMatches(group.groupId, group.teams.map(t => t.name)),
+    teams: group.teams,
+    team_names: group.teams, // Compatibility
+    matches: generateGroupMatches(group.groupId, group.teams),
     match_predictions: [], // Compatibility
     has_tiebreaker_scores: false,
   }))

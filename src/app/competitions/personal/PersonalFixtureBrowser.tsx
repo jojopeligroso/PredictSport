@@ -77,12 +77,31 @@ const LEAGUE_GROUPS: LeagueGroup[] = [
     ],
   },
   {
-    label: "US Sports",
+    label: "Baseball",
+    leagues: [
+      { id: "4424", label: "MLB", sport: "baseball" },
+      // Ready for: NPB (Japan), KBO (Korea), CPBL (Taiwan), LMB (Mexico), ABL (Australia)
+    ],
+  },
+  {
+    label: "Basketball",
     leagues: [
       { id: "4387", label: "NBA", sport: "basketball" },
-      { id: "4424", label: "MLB", sport: "baseball" },
+      // Ready for: EuroLeague, NBL (Australia), CBA (China), etc.
+    ],
+  },
+  {
+    label: "Ice Hockey",
+    leagues: [
       { id: "4380", label: "NHL", sport: "ice_hockey" },
+      // Ready for: KHL, SHL, Liiga, DEL, etc.
+    ],
+  },
+  {
+    label: "American Football",
+    leagues: [
       { id: "4391", label: "NFL", sport: "american_football" },
+      // Ready for: CFL, XFL, etc.
     ],
   },
   {
@@ -1086,6 +1105,10 @@ function OutrightCard({
 // ── Results tab content ───────────────────────────────────────────────────────
 
 function ResultsTab({ picks }: { picks: PersonalPick[] }) {
+  const [viewMode, setViewMode] = useState<"all" | "sport">("all");
+  const [selectedSport, setSelectedSport] = useState<string | null>(null);
+  const [selectedLeague, setSelectedLeague] = useState<string | null>(null);
+
   const settled = useMemo(
     () =>
       picks
@@ -1094,7 +1117,31 @@ function ResultsTab({ picks }: { picks: PersonalPick[] }) {
     [picks]
   );
 
-  const correct = settled.filter((p) => p.predictions.winner?.is_correct === true).length;
+  // Get unique sports from results
+  const availableSports = useMemo(() => {
+    const sports = new Set<string>();
+    settled.forEach(p => sports.add(p.sport));
+    return Array.from(sports).sort();
+  }, [settled]);
+
+  // Filter results based on selection
+  const filteredResults = useMemo(() => {
+    let results = settled;
+
+    if (viewMode === "sport") {
+      if (selectedSport) {
+        results = results.filter(p => p.sport === selectedSport);
+      }
+      if (selectedLeague) {
+        results = results.filter(p => p.provider_league === selectedLeague);
+      }
+    }
+
+    return results;
+  }, [settled, viewMode, selectedSport, selectedLeague]);
+
+  const correct = filteredResults.filter((p) => p.predictions.winner?.is_correct === true).length;
+  const displayTotal = filteredResults.length;
 
   if (settled.length === 0) {
     return (
@@ -1109,6 +1156,95 @@ function ResultsTab({ picks }: { picks: PersonalPick[] }) {
 
   return (
     <div className="flex flex-col gap-4">
+      {/* View mode toggle */}
+      <div className="flex gap-2">
+        <button
+          onClick={() => {
+            setViewMode("all");
+            setSelectedSport(null);
+            setSelectedLeague(null);
+          }}
+          className={`flex-1 rounded-lg px-3 py-2 text-xs font-semibold transition-colors ${
+            viewMode === "all"
+              ? "bg-ps-text text-ps-bg"
+              : "border border-ps-border bg-ps-surface text-ps-text-sec hover:bg-ps-chip"
+          }`}
+        >
+          All Results
+        </button>
+        <button
+          onClick={() => setViewMode("sport")}
+          className={`flex-1 rounded-lg px-3 py-2 text-xs font-semibold transition-colors ${
+            viewMode === "sport"
+              ? "bg-ps-text text-ps-bg"
+              : "border border-ps-border bg-ps-surface text-ps-text-sec hover:bg-ps-chip"
+          }`}
+        >
+          By Sport/League
+        </button>
+      </div>
+
+      {/* Sport/League filters */}
+      {viewMode === "sport" && (
+        <div className="flex flex-col gap-2">
+          {/* Sport selector */}
+          <div className="flex gap-2 flex-wrap">
+            {availableSports.map((sport) => (
+              <button
+                key={sport}
+                onClick={() => {
+                  setSelectedSport(sport);
+                  setSelectedLeague(null);
+                }}
+                className={`rounded-lg px-3 py-1.5 text-xs font-semibold transition-colors ${
+                  selectedSport === sport
+                    ? "bg-ps-amber text-ps-text"
+                    : "border border-ps-border bg-ps-surface text-ps-text-sec hover:bg-ps-chip"
+                }`}
+              >
+                {SPORT_CONFIG[toSportKey(sport)]?.name || sport}
+              </button>
+            ))}
+          </div>
+
+          {/* League selector (if sport selected) */}
+          {selectedSport && (
+            <div className="flex gap-2 flex-wrap">
+              <button
+                onClick={() => setSelectedLeague(null)}
+                className={`rounded-lg px-3 py-1.5 text-xs font-semibold transition-colors ${
+                  !selectedLeague
+                    ? "bg-ps-text text-ps-bg"
+                    : "border border-ps-border bg-ps-surface text-ps-text-sec hover:bg-ps-chip"
+                }`}
+              >
+                All {SPORT_CONFIG[toSportKey(selectedSport)]?.name || selectedSport}
+              </button>
+              {/* Get unique leagues for selected sport */}
+              {Array.from(
+                new Set(
+                  settled
+                    .filter(p => p.sport === selectedSport && p.provider_league)
+                    .map(p => p.provider_league)
+                )
+              ).map((league) => (
+                <button
+                  key={league}
+                  onClick={() => setSelectedLeague(league)}
+                  className={`rounded-lg px-3 py-1.5 text-xs font-semibold transition-colors ${
+                    selectedLeague === league
+                      ? "bg-ps-text text-ps-bg"
+                      : "border border-ps-border bg-ps-surface text-ps-text-sec hover:bg-ps-chip"
+                  }`}
+                >
+                  {getLeagueLabel(league) || league}
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+
       {/* Summary bar */}
       <div className="flex flex-col rounded-xl border border-ps-border bg-ps-surface px-4 py-3">
         <div className="flex items-center gap-3">
@@ -1117,7 +1253,7 @@ function ResultsTab({ picks }: { picks: PersonalPick[] }) {
               Record
             </p>
             <p className="mt-0.5 text-sm font-extrabold text-ps-text">
-              {correct} / {settled.length} correct
+              {correct} / {displayTotal} correct
             </p>
           </div>
           <div className="text-right">
@@ -1125,7 +1261,7 @@ function ResultsTab({ picks }: { picks: PersonalPick[] }) {
               Hit rate
             </p>
             <p className="mt-0.5 text-sm font-extrabold text-ps-text">
-              {Math.round((correct / settled.length) * 100)}%
+              {displayTotal > 0 ? Math.round((correct / displayTotal) * 100) : 0}%
             </p>
           </div>
         </div>
@@ -1133,14 +1269,14 @@ function ResultsTab({ picks }: { picks: PersonalPick[] }) {
         <div className="mt-3 h-1.5 w-full rounded-full bg-ps-chip overflow-hidden">
           <div
             className="h-full rounded-full bg-ps-green transition-all"
-            style={{ width: `${Math.round((correct / settled.length) * 100)}%` }}
+            style={{ width: `${displayTotal > 0 ? Math.round((correct / displayTotal) * 100) : 0}%` }}
           />
         </div>
       </div>
 
       {/* Results list */}
       <div className="flex flex-col gap-2">
-        {settled.map((pick) => {
+        {filteredResults.map((pick) => {
           const participants = pick.participants;
           const [home, away] = participants;
           const hasTeams = Boolean(home && away);
