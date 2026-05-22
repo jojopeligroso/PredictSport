@@ -168,6 +168,25 @@ Replace `BracketWizardV2.tsx:191` `alert('Knockout stages coming soon!')` with
 the knockout progression flow (`KnockoutStagePredictor` exists) and wire real
 submission to `/api/bracket/submit`.
 
+**Knockout prediction has two views (clarified 2026-05-22).** A knockout match
+is predicted differently per classification — the same split as group matches:
+
+- **Bracket classification** — progression only: *Home advances / Away
+  advances*. This is the locked exception; it stays in `bracket_data`. The
+  richer detail below does NOT affect Bracket scoring.
+- **Overall & Format classifications** — need the full match shape:
+  - 90-minute result: **H / D / A** (a draw at full time is a real outcome);
+  - if **D**, who advances (**Home / Away**) and the method
+    (**AET** / **penalties**).
+
+So a knockout pick for Overall/Format is compound:
+`{ result: 'H'|'D'|'A', advances?: 'H'|'A', method?: 'AET'|'PENS' }`
+(`advances` / `method` required only when `result === 'D'`). U5 must surface
+both — the progression pick for Bracket and this compound pick for
+Overall/Format. Whether the compound pick lands in per-event `predictions` or
+alongside the blob is a U5 design call, deferred. **Not in U2 scope** — U2 is
+group stage only.
+
 ### U6 — Window scheduling: cron + admin override
 - **Cron:** build `/api/wc/cron/window-lifecycle` (or similar) that opens/locks
   matchday windows based on `events.lock_time`. Built but **NOT added to
