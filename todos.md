@@ -247,7 +247,8 @@ See `SPORTS-ARCHITECTURE.md` for detailed spec (TBD).
 - [ ] **H2.4 — Tiebreaker messaging** — Clear UI for random fallback: "FIFA would use fair play, we've randomly placed Team A ahead. Tip: predict different scores to avoid ties."
 
 **WC-H3: Bracket Wizard Shell**
-- [ ] **H3.1 — BracketWizard component** — Multi-step wizard with checkpoint system (12 group checkpoints + 5 knockout stage checkpoints).
+> ⚠️ **H3.x BLOCKED pending design (2026-05-22).** `DESIGN-WC-H1-FULL-BRACKET.md` (May 21) is partly superseded by `DESIGN-WC-UNIFIED-PREDICTIONS.md` (May 22, status: proposal), which moves group-score capture into windowed flows (24/24/24 by matchday) instead of group-by-group, and treats `BracketWizardV2.tsx` as the live wizard to extend (not a new component). Two wizard files already exist: `BracketWizard.tsx` (V1, old ranking model) and `BracketWizardV2.tsx` (V2, W/D/L model). Do not build a third wizard. H3.1–H3.3 should be reframed once the unified design is approved — likely "finish BracketWizardV2's knockout stages + checkpoints" rather than a fresh `BracketWizard` component.
+- [ ] **H3.1 — BracketWizard component** — Multi-step wizard with checkpoint system (12 group checkpoints + 5 knockout stage checkpoints). *(BLOCKED — see note above.)*
 - [ ] **H3.2 — Save/resume state** — "Continue later" button, persists bracket_data as draft, resumes from last checkpoint.
 - [ ] **H3.3 — Progress indicator** — Shows Groups A-L → R32 → R16 → QF → SF → Final with completion status.
 
@@ -332,12 +333,11 @@ Fixtures with unknown participants (TBA / TBC team names from providers) should 
 - [x] **G4 — Bracket placeholder flag** — Add `is_bracket_placeholder boolean default false` to `events` table (migration). Admin can set this when creating a bracket-style event ("Winner of Match A vs Winner of Match B"). TBA check is bypassed for these events. Bracket placeholders are locked at round lock time regardless.
 - [x] **G5 — Filter TBA fixtures from personal fixture browser** — Filters TBA fixtures before grouping, shows "N fixtures hidden — teams not yet confirmed" notice. Also added 422 block in personal-predictions/event API route.
 
-## All-Competitions Dashboard (Future — Needs Design)
+## All-Competitions Dashboard
 
-> **Note:** Run `/grill-with-docs` before implementing any of this. Significant design decisions required (card layout, data model, cross-competition aggregation, what's useful vs noisy).
+> **Design complete:** `docs/DESIGN-F1-ALL-COMPETITIONS-DASHBOARD.md` (2026-05-22, grill session). Decision record: `docs/adr/0010-cached-non-authoritative-standings.md`. The dashboard answers "how am I doing" across all of a user's competitions via a top "Your form" card + a per-card rank line on `/competitions`.
 
-A global dashboard card/view accessible from `/competitions` — giving users a high-level view across all competitions they're in, not just personal predictions.
-
-- [ ] **F1 — Design spike (grill session)** — What does a cross-competition dashboard show? Options: recent activity across all competitions, leaderboard positions at a glance, upcoming lock times, hit rate per competition. Use `/grill-with-docs` to define scope before any implementation.
-- [ ] **F2 — Dashboard card on /competitions** — A summary card on the competitions list page showing user's position and recent activity for each competition they're in. Requires deciding what data to surface.
-- [ ] **F3 — Global stats** — Aggregate hit rate across all scored predictions (personal + group). Separate from personal dashboard stats.
+- [x] **F1 — Design spike (grill session)** — ✅ Done. Produced `DESIGN-F1-ALL-COMPETITIONS-DASHBOARD.md`, ADR-0010, and four `CONTEXT.md` terms. Primary job = "how am I doing"; cached non-authoritative `competition_standings`; lazy read-through write path; scheduled job built dormant.
+- [ ] **F2 — Dashboard card on /competitions** — Build per the design doc §3–§4: (a) migration for `competition_standings` cache table + RLS; (b) extract `computeStandings()` from `leaderboard/page.tsx` into `src/lib/leaderboard.ts`; (c) `src/lib/standings-cache.ts` with `recomputeStandings()` + read-through `getCachedStandings()`; (d) dormant `/api/cron/recompute-standings` route (NOT in `vercel.json`); (e) top "Your form" card with three display modes (empty / single-competition / full), gated to ≥1 group competition; (f) per-card rank line. Card expansion: 1 line → 5 results (stop there — F4 is the deeper target).
+- [ ] **F3 — Global stats** — Global Hit Rate: aggregate correct ÷ resolved across ALL the user's competitions (personal + group). The headline number of F2's top card. Not a separate page. Distinct from the personal-stats hit rate (which is personal-competition-only). See design doc §3.7.
+- [ ] **F4 — Cross-competition results page** — *(new — added by F1 spike)* `/competitions/results`: every resolved prediction across all the user's competitions, with sport/competition filtering. The real target of the dashboard card's second expansion (F2 stops at 5 results because this page doesn't exist yet). Note: today's only `ResultsTab` lives inside `PersonalFixtureBrowser` and is personal-only.
