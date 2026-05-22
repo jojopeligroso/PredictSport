@@ -101,9 +101,11 @@ bracket_prediction_submissions.bracket_data  ← knockouts + champion only
   back into the Bracket. (Simpler; the cost is a user who picks windows first
   could re-enter in the Bracket — accepted.)
 
-## Build plan (phased — file-level — none of this is done yet)
+## Build plan (phased — file-level)
 
-### U0 — Correct the placeholder group data  ⚠️ PREREQUISITE, BLOCKS U1
+> **Progress (2026-05-22):** U0 ✅ done · U1 ✅ done · U2–U7 pending.
+
+### U0 — Correct the placeholder group data  ✅ DONE (2026-05-22)
 The codebase has **three inconsistent placeholder versions** of the WC groups,
 none matching the real Dec-2025 draw (verified data in
 `WC2026-OFFICIAL-FIXTURES.md`):
@@ -111,21 +113,30 @@ none matching the real Dec-2025 draw (verified data in
 - `WC2026_GROUPS` in `src/lib/bracket/adapters/fifa-world-cup-2026.ts`
 - the bracket wizard (imports the adapter constant)
 
-Tasks:
-1. Rewrite `WC2026_GROUPS` in the adapter to the official 12 groups.
-2. New migration: `UPDATE bracket_templates SET config = ...` for
-   `template_key='fifa_world_cup_2026'` — replace the `groups` array, and
-   re-check `r32Seeding` / `bestThirdConfig` still describe a valid bracket.
-3. Confirm no user has a saved `bracket_prediction_submissions` row yet (none
-   expected — competition was created 2026-05-22). If any exist, they reference
-   fictional teams and must be invalidated.
-4. Verify the bracket wizard renders the corrected groups.
+What was done:
+1. ✅ `WC2026_GROUPS` in the adapter rewritten to the official 12 groups.
+2. ✅ Migration `20260522300000_correct_wc2026_groups.sql` — updated
+   `bracket_templates.config.groups`. (`r32Seeding`/`bestThirdConfig` are
+   letter-keyed placeholders, unaffected — separate pre-existing TODO.)
+3. ✅ Verified zero `bracket_prediction_submissions` rows — no user data
+   referenced the placeholders.
+4. ⚠️ Not yet visually verified that the bracket wizard renders the corrected
+   groups — do this in the next session (load `/wc/bracket/wizard`).
 
-### U1 — Group fixture events  (safe to seed only AFTER U0)
-Create the **72 group `events`** (12 groups × 6; resolve Group F's missing
-6th match first — see fixtures doc). Distribute across windows 1–3 by matchday.
-Per match, also create `event_prediction_types` rows: `winner` (with
-`config.options` = the two team names) and `exact_score`.
+The second WC adapter (`src/lib/tournament/bracket/adapters/`) holds only
+structural group config (count/teamsPerGroup), no team names — nothing to fix.
+
+### U1 — Group fixture events  ✅ DONE (2026-05-22)
+Created the **72 group `events`** (12 groups × 6, 24 per matchday window) for
+the World Cup competition, each with `winner` (2pts, `config.options`) +
+`exact_score` (3pts) `event_prediction_types`. Times in UTC, `lock_time` =
+kickoff − 30min, `sport='soccer'`, `external_event_id` = `wc2026-grp-{G}-md{N}-{n}`.
+Idempotent seed script + fixture data committed (`scripts/seed-wc2026-group-events.ts`,
+`scripts/wc2026-group-fixtures.ts`); this run applied via Supabase MCP.
+
+⚠️ The events exist but are **not yet pickable** — `/wc/picks/[windowId]` is
+still read-only (U2). They will show as fixtures with no working pick control
+until U2 ships.
 - `competition_id` = the World Cup competition.
 - `round_id` = the matchday window (`rounds` rows already exist, 1–3).
 - `sport='soccer'`, `start_time` from fixtures doc (UK→UTC −1h),
