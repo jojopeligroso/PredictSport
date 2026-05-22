@@ -16,7 +16,8 @@
  * - Score = count of correct teams (max 32)
  */
 
-import { BracketData, TeamWithStats, TournamentTemplate } from '../bracket/types'
+import { BracketData, TeamWithStats } from '../bracket/types'
+import { TournamentTemplate } from '../bracket/templates/types'
 import { processAllGroups, extractStageQualifiers } from '../bracket/engine'
 
 export interface StagePickScore {
@@ -182,9 +183,10 @@ function extractQualifiersFromUserBracket(
       const rankedThirds = allThirds.sort((a, b) => {
         // Simple ranking by points, then GD, then GS
         if (b.points !== a.points) return b.points - a.points
-        if (b.goalDifference !== a.goalDifference)
-          return b.goalDifference - a.goalDifference
-        return b.goalsFor - a.goalsFor
+        const aGd = a.goalDifference ?? 0
+        const bGd = b.goalDifference ?? 0
+        if (bGd !== aGd) return bGd - aGd
+        return (b.goalsFor ?? 0) - (a.goalsFor ?? 0)
       })
 
       // Take top N thirds
@@ -226,9 +228,10 @@ function extractQualifiersFromActualResults(
 
       const rankedThirds = allThirds.sort((a, b) => {
         if (b.points !== a.points) return b.points - a.points
-        if (b.goalDifference !== a.goalDifference)
-          return b.goalDifference - a.goalDifference
-        return b.goalsFor - a.goalsFor
+        const aGd = a.goalDifference ?? 0
+        const bGd = b.goalDifference ?? 0
+        if (bGd !== aGd) return bGd - aGd
+        return (b.goalsFor ?? 0) - (a.goalsFor ?? 0)
       })
 
       const selectTop = rule.conditions?.selectTop || rule.count

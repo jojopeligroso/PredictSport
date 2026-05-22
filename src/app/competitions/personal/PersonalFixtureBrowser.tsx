@@ -2498,6 +2498,7 @@ function DashboardTab() {
   const [error, setError] = useState<string | null>(null);
   const [drillSport, setDrillSport] = useState<string | null>(null);
   const [showOnboarding, setShowOnboarding] = useState(false);
+  const [showCustomiseToast, setShowCustomiseToast] = useState(false);
   const leagueSectionRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -2569,8 +2570,6 @@ function DashboardTab() {
     setDrillSport(prev => prev === sport ? null : sport);
     setTimeout(() => leagueSectionRef.current?.scrollIntoView({ behavior: "smooth", block: "nearest" }), 50);
   }
-
-  const [showCustomiseToast, setShowCustomiseToast] = useState(false);
 
   return (
     <div className="flex flex-col gap-4">

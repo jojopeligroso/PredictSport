@@ -70,6 +70,8 @@ export interface MatchPrediction {
   }
   home_tries?: number    // For rugby scoring
   away_tries?: number    // For rugby scoring
+  home_bonus_points?: number  // For rugby scoring
+  away_bonus_points?: number  // For rugby scoring
 }
 
 export interface GroupPredictionData {

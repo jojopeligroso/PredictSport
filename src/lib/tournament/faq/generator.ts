@@ -10,7 +10,7 @@
  * - Sport-specific terminology
  */
 
-import { TournamentTemplate } from '../bracket/types'
+import { TournamentTemplate } from '../bracket/templates/types'
 import { getR32ClassificationExplanation } from '../scoring/stage-pick'
 
 export interface FAQItem {

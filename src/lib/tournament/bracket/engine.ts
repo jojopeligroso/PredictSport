@@ -27,6 +27,36 @@ import { TournamentTemplate } from './templates/types'
 // ============================================================================
 
 /**
+ * Fully-populated team stats used internally by the engine.
+ *
+ * `TeamWithStats` declares every numeric field optional for cross-module
+ * compatibility, but `calculateGroupStandings` constructs every team with all
+ * fields initialised to 0. This alias makes that invariant explicit so the
+ * engine can do arithmetic without non-null assertions. It widens cleanly back
+ * to `TeamWithStats` on return.
+ */
+type EngineTeamStats = Required<
+  Pick<
+    TeamWithStats,
+    | 'name'
+    | 'played'
+    | 'wins'
+    | 'draws'
+    | 'losses'
+    | 'goalsFor'
+    | 'goalsAgainst'
+    | 'goalDifference'
+    | 'points'
+    | 'triesScored'
+    | 'bonusPoints'
+    | 'position'
+    | 'gd'
+    | 'gs'
+    | 'gc'
+  >
+>
+
+/**
  * Calculate group standings from match predictions
  *
  * Applies full tiebreaker hierarchy when teams are level on points.
@@ -43,7 +73,7 @@ export function calculateGroupStandings(
   teamNames: string[]
 ): TeamWithStats[] {
   // Step 1: Initialize stats for all teams
-  const statsMap = new Map<string, TeamWithStats>()
+  const statsMap = new Map<string, EngineTeamStats>()
 
   teamNames.forEach((name) => {
     statsMap.set(name, {
@@ -78,18 +108,26 @@ export function calculateGroupStandings(
       return
     }
 
+    // Skip predictions with incomplete scores — they can't contribute to
+    // standings. `validateBracketCompleteness` flags these separately.
+    const homeScore = pred.home_score
+    const awayScore = pred.away_score
+    if (homeScore == null || awayScore == null) {
+      return
+    }
+
     home.played++
     away.played++
 
     // Handle draw
-    if (pred.home_score === pred.away_score) {
+    if (homeScore === awayScore) {
       home.draws++
       away.draws++
       home.points += 1
       away.points += 1
     }
     // Home win
-    else if (pred.home_score > pred.away_score) {
+    else if (homeScore > awayScore) {
       home.wins++
       away.losses++
       home.points += 3
@@ -102,10 +140,10 @@ export function calculateGroupStandings(
     }
 
     // Goals/points scored
-    home.goalsFor += pred.home_score
-    home.goalsAgainst += pred.away_score
-    away.goalsFor += pred.away_score
-    away.goalsAgainst += pred.home_score
+    home.goalsFor += homeScore
+    home.goalsAgainst += awayScore
+    away.goalsFor += awayScore
+    away.goalsAgainst += homeScore
 
     // Goal difference
     home.goalDifference = home.goalsFor - home.goalsAgainst
@@ -275,16 +313,16 @@ function applyTiebreaker(
     }
 
     case 'overall_gd':
-      sorted.sort((a, b) => b.goalDifference - a.goalDifference)
+      sorted.sort((a, b) => (b.goalDifference ?? 0) - (a.goalDifference ?? 0))
       break
 
     case 'overall_gs':
     case 'goals_scored':
-      sorted.sort((a, b) => b.goalsFor - a.goalsFor)
+      sorted.sort((a, b) => (b.goalsFor ?? 0) - (a.goalsFor ?? 0))
       break
 
     case 'tries_scored':
-      sorted.sort((a, b) => b.triesScored - a.triesScored)
+      sorted.sort((a, b) => (b.triesScored ?? 0) - (a.triesScored ?? 0))
       break
 
     case 'fair_play':
@@ -377,14 +415,14 @@ function isStillTied(
     }
 
     case 'overall_gd':
-      return a.goalDifference === b.goalDifference
+      return (a.goalDifference ?? 0) === (b.goalDifference ?? 0)
 
     case 'overall_gs':
     case 'goals_scored':
-      return a.goalsFor === b.goalsFor
+      return (a.goalsFor ?? 0) === (b.goalsFor ?? 0)
 
     case 'tries_scored':
-      return a.triesScored === b.triesScored
+      return (a.triesScored ?? 0) === (b.triesScored ?? 0)
 
     case 'fair_play':
     case 'ranking':
@@ -424,6 +462,7 @@ function calculateHeadToHeadPoints(
   )
 
   h2hMatches.forEach((match) => {
+    if (match.home_score == null || match.away_score == null) return
     if (match.home_score === match.away_score) {
       points.set(match.home_team, points.get(match.home_team)! + 1)
       points.set(match.away_team, points.get(match.away_team)! + 1)
@@ -454,6 +493,7 @@ function calculateHeadToHeadGD(
   )
 
   h2hMatches.forEach((match) => {
+    if (match.home_score == null || match.away_score == null) return
     const homeDiff = match.home_score - match.away_score
     gd.set(match.home_team, gd.get(match.home_team)! + homeDiff)
     gd.set(match.away_team, gd.get(match.away_team)! - homeDiff)
@@ -479,6 +519,7 @@ function calculateHeadToHeadGS(
   )
 
   h2hMatches.forEach((match) => {
+    if (match.home_score == null || match.away_score == null) return
     gs.set(match.home_team, gs.get(match.home_team)! + match.home_score)
     gs.set(match.away_team, gs.get(match.away_team)! + match.away_score)
   })

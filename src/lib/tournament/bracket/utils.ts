@@ -48,10 +48,14 @@ export function rankBestThirds(
     if (b.points !== a.points) return b.points - a.points
 
     // Step 5: Overall goal difference (descending)
-    if (b.gd !== a.gd) return b.gd - a.gd
+    const aGd = a.gd ?? 0
+    const bGd = b.gd ?? 0
+    if (bGd !== aGd) return bGd - aGd
 
     // Step 6: Overall goals scored (descending)
-    if (b.gs !== a.gs) return b.gs - a.gs
+    const aGs = a.gs ?? 0
+    const bGs = b.gs ?? 0
+    if (bGs !== aGs) return bGs - aGs
 
     // Step 7: Fair play score (Phase 2 - not implemented yet)
     // Step 8: FIFA ranking (Phase 2 - not implemented yet)
@@ -93,8 +97,12 @@ export function applyTiebreakers(
   // For now, just sort by overall stats
   return [...teams].sort((a, b) => {
     if (b.points !== a.points) return b.points - a.points
-    if (b.gd !== a.gd) return b.gd - a.gd
-    if (b.gs !== a.gs) return b.gs - a.gs
+    const aGd = a.gd ?? 0
+    const bGd = b.gd ?? 0
+    if (bGd !== aGd) return bGd - aGd
+    const aGs = a.gs ?? 0
+    const bGs = b.gs ?? 0
+    if (bGs !== aGs) return bGs - aGs
     return a.name.localeCompare(b.name)
   })
 }
