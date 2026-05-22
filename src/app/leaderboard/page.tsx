@@ -9,6 +9,7 @@ import {
 } from "./LeaderboardTable";
 import { getClassificationsForCompetition } from "@/lib/tournament/classification-engine";
 import { ClassificationTabs } from "@/components/tournament/ClassificationTabs";
+import { computeStandings } from "@/lib/leaderboard";
 
 interface PageProps {
   searchParams: Promise<{ competition?: string }>;
@@ -322,21 +323,28 @@ export default async function LeaderboardPage({ searchParams }: PageProps) {
     return streak;
   }
 
-  // Build leaderboard entries
-  const entries: LeaderboardEntry[] = memberList.map((m) => {
-    const userObj = m.users as unknown as {
-      id: string;
-      display_name: string;
-      avatar_url: string | null;
-    } | null;
+  // --- Display-only per-user computation ---
+  // The standings/rank computation (qualification, percentage, sort, rank)
+  // is shared with the standings cache via computeStandings(). The page
+  // still computes display-only fields here: accuracy, streak, partial /
+  // wrong counts, the predictions list, rounds participated and tiebreaker.
+  interface DisplayStats {
+    partial_count: number;
+    wrong_count: number;
+    total_predictions: number;
+    accuracy: number;
+    streak: number;
+    percentage: number;
+    rounds_participated: number;
+    predictions: EventPrediction[];
+  }
 
+  const displayStatsByUser = new Map<string, DisplayStats>();
+  for (const m of memberList) {
+    const userObj = m.users as unknown as { id: string } | null;
     const userId = userObj?.id ?? m.user_id;
-    const displayName = userObj?.display_name ?? "Unknown";
-    const avatarUrl = userObj?.avatar_url ?? null;
 
-    // Display predictions (resulted events only)
     const preds = predictionsByUser.get(userId) ?? [];
-    // All predictions (for round participation)
     const allUserPreds = allPredsByUser.get(userId) ?? [];
 
     const totalPoints = preds.reduce((sum, p) => sum + p.points_awarded, 0);
@@ -352,9 +360,7 @@ export default async function LeaderboardPage({ searchParams }: PageProps) {
         : 0;
     const streak = calculateStreak(preds);
 
-    // --- Percentage scoring ---
-    // Determine which scored rounds this user participated in
-    // (submitted at least 1 prediction for any event in that round)
+    // Percentage scoring — scored rounds the user participated in.
     const userRoundsParticipated = new Set<string | null>();
     for (const p of allUserPreds) {
       const roundKey = eventToRound.get(p.event_id);
@@ -362,87 +368,51 @@ export default async function LeaderboardPage({ searchParams }: PageProps) {
         userRoundsParticipated.add(roundKey);
       }
     }
-
-    // Max possible points across participated rounds
     const maxPossible = Array.from(userRoundsParticipated).reduce(
       (sum, rk) => sum + (maxPointsByRound.get(rk) ?? 0),
       0
     );
-
     const percentage = maxPossible > 0 ? (totalPoints / maxPossible) * 100 : 0;
-    const roundsParticipated = userRoundsParticipated.size;
 
-    // Qualification: participated in at least 1/3 of all scored rounds
-    const qualified =
-      totalScoredRounds === 0
-        ? false
-        : roundsParticipated >= Math.ceil(totalScoredRounds / 3);
-
-    return {
-      user_id: userId,
-      display_name: displayName,
-      avatar_url: avatarUrl,
-      rank: 0, // assigned below
-      total_points: totalPoints,
-      correct_count: correctCount,
+    displayStatsByUser.set(userId, {
       partial_count: partialCount,
       wrong_count: wrongCount,
       total_predictions: preds.length,
       accuracy,
       streak,
       percentage,
-      rounds_participated: roundsParticipated,
-      total_rounds: totalScoredRounds,
-      qualified,
-      tiebreaker: tiebreakerByUser.get(userId) ?? null,
+      rounds_participated: userRoundsParticipated.size,
       predictions: preds,
+    });
+  }
+
+  // Authoritative standings/rank — shared with the standings cache.
+  // Returns entries already sorted (qualified ranked, then unqualified)
+  // exactly as this page renders them.
+  const standings = await computeStandings(selectedId, supabase);
+
+  const entries_final: LeaderboardEntry[] = standings.map((s) => {
+    const display = displayStatsByUser.get(s.user_id);
+    return {
+      user_id: s.user_id,
+      display_name: s.display_name,
+      avatar_url: s.avatar_url,
+      rank: s.rank,
+      total_points: s.total_points,
+      correct_count: s.correct_count,
+      partial_count: display?.partial_count ?? 0,
+      wrong_count: display?.wrong_count ?? 0,
+      total_predictions: display?.total_predictions ?? 0,
+      accuracy: display?.accuracy ?? 0,
+      streak: display?.streak ?? 0,
+      percentage: display?.percentage ?? 0,
+      rounds_participated: display?.rounds_participated ?? 0,
+      total_rounds: totalScoredRounds,
+      qualified: s.qualified,
+      tiebreaker: tiebreakerByUser.get(s.user_id) ?? null,
+      predictions: display?.predictions ?? [],
     };
   });
-
-  // Sort qualified entries by percentage desc, then tiebreaker distance asc
-  // Unqualified entries are sorted the same way but placed after
-  function sortKey(a: LeaderboardEntry, b: LeaderboardEntry): number {
-    if (b.percentage !== a.percentage) {
-      return b.percentage - a.percentage;
-    }
-    const aDist = a.tiebreaker?.distance ?? Infinity;
-    const bDist = b.tiebreaker?.distance ?? Infinity;
-    return aDist - bDist;
-  }
-
-  const qualifiedEntries = entries.filter((e) => e.qualified).sort(sortKey);
-  const unqualifiedEntries = entries.filter((e) => !e.qualified).sort(sortKey);
-
-  const sortedEntries = [...qualifiedEntries, ...unqualifiedEntries];
-
-  // Assign ranks only among qualified entries (tied users share the same rank)
-  let currentRank = 1;
-  for (let i = 0; i < qualifiedEntries.length; i++) {
-    if (i === 0) {
-      qualifiedEntries[i]!.rank = 1;
-    } else {
-      const prev = qualifiedEntries[i - 1]!;
-      const curr = qualifiedEntries[i]!;
-      const samePct = curr.percentage === prev.percentage;
-      const sameTiebreaker =
-        (curr.tiebreaker?.distance ?? Infinity) ===
-        (prev.tiebreaker?.distance ?? Infinity);
-
-      if (samePct && sameTiebreaker) {
-        curr.rank = prev.rank;
-      } else {
-        currentRank = i + 1;
-        curr.rank = currentRank;
-      }
-    }
-  }
-
-  // Unqualified entries get rank 0 (displayed as "—" in the table)
-  for (const e of unqualifiedEntries) {
-    e.rank = 0;
-  }
-
-  const entries_final = sortedEntries;
 
   return (
     <div className="mx-auto max-w-2xl p-4 sm:p-6">
