@@ -4,6 +4,20 @@
 **Phase:** WC-H (5th Classification - Pre-Tournament Stage Pick)
 **Related:** SPEC.md §16.2, §16.8
 
+> **Clarification (2026-05-22) — knockout terminology.** Throughout this doc,
+> a knockout "winner" / "winner picker" means the **advancing team** — who
+> progresses to the next round. That is the **Bracket** classification's view
+> and it is correct: for Bracket, only the advancing team matters (a match
+> drawn at 90+ET and decided on penalties still has one advancing team).
+>
+> This doc is **not wrong** — it is the Bracket view. The **Overall** and
+> **Format** classifications need *more* from a knockout match: the actual
+> result (Home win / Draw / Away win) and exact score. A knockout match
+> therefore carries **two predictions**, the same split as a group match:
+> the **advancing team** (Bracket, in the `bracket_data` blob) and the
+> **90+ET result + score** (Overall/Format, as per-event `predictions` rows).
+> See `DESIGN-WC-UNIFIED-PREDICTIONS.md` §U5 and the "after extra time" rule.
+
 ---
 
 ## Overview
@@ -149,7 +163,10 @@ Ready to predict the knockouts →
 
 **Match Cards:**
 - Team A vs Team B (from user's group predictions)
-- Winner picker (no draw in knockouts)
+- Advancing-team picker (no draw — exactly one team advances). For the
+  Bracket classification this is the only knockout input. The 90+ET
+  result/score that Overall/Format need is collected separately as a
+  per-event prediction (see the clarification note at the top of this doc).
 - (?) icon: explains slot allocation
 
 **Example:**

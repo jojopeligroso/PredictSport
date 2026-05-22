@@ -190,6 +190,19 @@ The `winner` type supports "Draw" as a valid prediction option for applicable sp
 - **Draw result, `allow_draw: false`:** Prediction voided — `is_correct: null`, 0 points.
 - **Required for exact_score:** When an exact score implies equal scores, winner derivation sets the winner pick to "Draw". This requires `allow_draw: true` on the same event.
 
+### "After extra time" rule (knockout matches)
+
+A `winner` / `exact_score` prediction (and the confirmed result) is the score
+**after extra time, excluding penalties**. A knockout match decided by a
+penalty shootout is predicted and recorded as a **Draw** — the score at the
+end of extra time. The team that wins the shootout is captured separately as
+the *advancing team* (a progression-style prediction for the World Cup
+Bracket classification — see `docs/DESIGN-WC-UNIFIED-PREDICTIONS.md`), never as
+the match result. This matches how providers report the data (ESPN
+`soccer/fifa.world` exposes the drawn `score` and the `shootoutScore`
+separately). Group-stage matches never reach extra time, so for them this is
+simply "the final score".
+
 ### `yes_no` vs `winner` Overlap
 
 `yes_no` is functionally similar to `winner` with 2 options. The distinction is UX: `yes_no` frames the question as a binary ("Will X happen?") while `winner` frames it as selection ("Who wins?"). Both are valid ways to express the same question. The admin picks whichever framing fits better.
