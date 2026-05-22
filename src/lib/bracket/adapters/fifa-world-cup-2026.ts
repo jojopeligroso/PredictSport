@@ -13,19 +13,22 @@ import { validateBracketSubmission } from '@/lib/bracket/engine';
 
 // 48 qualified teams (FIFA draw confirmed for WC2026 — update if draw changes).
 // Groups A-L, 4 teams each.
+// Official FIFA World Cup 2026 group draw (held 5 December 2025, Washington D.C.).
+// Verified 2026-05-22 against NBC Sports and Sky Sports — see
+// docs/WC2026-OFFICIAL-FIXTURES.md. Replaces the earlier pre-draw placeholders.
 export const WC2026_GROUPS: BracketTemplateConfig['groups'] = [
-  { groupId: 'A', name: 'Group A', teams: ['USA', 'Panama', 'Canada', 'Morocco'] },
-  { groupId: 'B', name: 'Group B', teams: ['Argentina', 'Chile', 'Peru', 'Australia'] },
-  { groupId: 'C', name: 'Group C', teams: ['Mexico', 'Uruguay', 'Poland', 'Saudi Arabia'] },
-  { groupId: 'D', name: 'Group D', teams: ['England', 'France', 'Algeria', 'DR Congo'] },
-  { groupId: 'E', name: 'Group E', teams: ['Spain', 'Portugal', 'Senegal', 'New Zealand'] },
-  { groupId: 'F', name: 'Group F', teams: ['Germany', 'Colombia', 'Ecuador', 'Ukraine'] },
-  { groupId: 'G', name: 'Group G', teams: ['Brazil', 'Japan', 'Ivory Coast', 'Paraguay'] },
-  { groupId: 'H', name: 'Group H', teams: ['Netherlands', 'Belgium', 'Iran', 'South Korea'] },
-  { groupId: 'I', name: 'Group I', teams: ['Italy', 'Cameroon', 'Costa Rica', 'Honduras'] },
-  { groupId: 'J', name: 'Group J', teams: ['Croatia', 'Serbia', 'South Africa', 'Egypt'] },
-  { groupId: 'K', name: 'Group K', teams: ['Switzerland', 'Norway', 'Nigeria', 'Tunisia'] },
-  { groupId: 'L', name: 'Group L', teams: ['Denmark', 'Turkey', 'Venezuela', 'Indonesia'] },
+  { groupId: 'A', name: 'Group A', teams: ['Mexico', 'South Korea', 'South Africa', 'Czechia'] },
+  { groupId: 'B', name: 'Group B', teams: ['Canada', 'Switzerland', 'Qatar', 'Bosnia & Herzegovina'] },
+  { groupId: 'C', name: 'Group C', teams: ['Brazil', 'Morocco', 'Scotland', 'Haiti'] },
+  { groupId: 'D', name: 'Group D', teams: ['USA', 'Paraguay', 'Australia', 'Turkiye'] },
+  { groupId: 'E', name: 'Group E', teams: ['Germany', 'Ecuador', 'Ivory Coast', 'Curacao'] },
+  { groupId: 'F', name: 'Group F', teams: ['Netherlands', 'Japan', 'Tunisia', 'Sweden'] },
+  { groupId: 'G', name: 'Group G', teams: ['Belgium', 'Iran', 'Egypt', 'New Zealand'] },
+  { groupId: 'H', name: 'Group H', teams: ['Spain', 'Uruguay', 'Saudi Arabia', 'Cape Verde'] },
+  { groupId: 'I', name: 'Group I', teams: ['France', 'Senegal', 'Norway', 'Iraq'] },
+  { groupId: 'J', name: 'Group J', teams: ['Argentina', 'Austria', 'Algeria', 'Jordan'] },
+  { groupId: 'K', name: 'Group K', teams: ['Portugal', 'Colombia', 'Uzbekistan', 'DR Congo'] },
+  { groupId: 'L', name: 'Group L', teams: ['England', 'Croatia', 'Panama', 'Ghana'] },
 ];
 
 // Knockout rounds for WC2026.
