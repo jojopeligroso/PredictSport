@@ -90,7 +90,9 @@ export default function TiebreakerResolutionPage({
           </h1>
           <p className="text-sm text-ps-text-sec">
             {tiedTeams.join(' and ')} are tied on points. Enter exact scores for
-            their matches to break the tie using Goal Difference and Goals Scored.
+            their matches so the tie can be broken using FIFA&apos;s rules —
+            head-to-head results first, then overall goal difference and goals
+            scored.
           </p>
         </div>
       </div>
@@ -141,10 +143,11 @@ export default function TiebreakerResolutionPage({
 
       {/* Help text */}
       <div className="rounded border border-ps-border bg-ps-bg p-3 text-xs text-ps-text-sec">
-        <p className="font-semibold">How tiebreakers work:</p>
+        <p className="font-semibold">How tiebreakers work (FIFA order):</p>
         <ol className="mt-2 list-inside list-decimal space-y-1">
-          <li>Teams tied on points are separated by Goal Difference</li>
-          <li>If still tied, Goals Scored is used</li>
+          <li>Points in the matches between the tied teams (head-to-head)</li>
+          <li>Head-to-head goal difference, then head-to-head goals scored</li>
+          <li>If still level, overall goal difference, then overall goals scored</li>
           <li>Exact scores must match your predicted results (W/D/L)</li>
         </ol>
       </div>

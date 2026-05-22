@@ -1,8 +1,11 @@
 "use client";
 
 import { useState, useCallback } from "react";
-import type { BracketSubmissionData } from "@/types/tournament";
+import type { BracketSubmissionData, GroupDataV2 } from "@/types/tournament";
 import { WC2026_GROUPS, WC2026_KNOCKOUT_ROUNDS, generateWC2026R32Matchups } from "@/lib/bracket/adapters/fifa-world-cup-2026";
+import GroupResultsStepV2, { type GroupData } from "./GroupResultsStepV2";
+import TiebreakerResolutionPage from "./TiebreakerResolutionPage";
+import { groupDataToRankings } from "@/lib/tournament/bracket/group-ranking";
 
 // ---------------------------------------------------------------------------
 // Types
@@ -24,7 +27,7 @@ const FULL_STEPS: Step[] = ["groups", "best_thirds", "review_r32", "knockout", "
 const KO_STEPS: Step[] = ["knockout", "champion", "review"];
 
 const STEP_LABELS: Record<Step, string> = {
-  groups: "Rank Groups",
+  groups: "Group Results",
   best_thirds: "Best Thirds",
   review_r32: "Review R32",
   knockout: "Knockout Picks",
@@ -33,6 +36,66 @@ const STEP_LABELS: Record<Step, string> = {
 };
 
 const GROUP_IDS = WC2026_GROUPS.map((g) => g.groupId);
+
+// ---------------------------------------------------------------------------
+// W/D/L group-step helpers
+// ---------------------------------------------------------------------------
+
+/** Round-robin match order for a 4-team group: matches 1..6. */
+function buildGroupMatches(groupId: string, teams: string[]): GroupData["matches"] {
+  const matches: GroupData["matches"] = [];
+  let n = 0;
+  for (let i = 0; i < teams.length; i++) {
+    for (let j = i + 1; j < teams.length; j++) {
+      n++;
+      matches.push({
+        match_id: `${groupId}-m${n}`,
+        home_team: teams[i],
+        away_team: teams[j],
+        result: null,
+      });
+    }
+  }
+  return matches;
+}
+
+/** Fresh, unpredicted W/D/L group set for all 12 WC groups. */
+function buildInitialGroupsV2(): GroupData[] {
+  return WC2026_GROUPS.map((g) => ({
+    group_id: g.groupId,
+    group_name: g.name,
+    teams: g.teams,
+    matches: buildGroupMatches(g.groupId, g.teams),
+    has_tiebreaker_scores: false,
+  }));
+}
+
+/**
+ * Resume a saved draft's W/D/L groups. `GroupDataV2` (storable) and `GroupData`
+ * (the component type) are structurally identical; this re-bases a draft onto
+ * the current group set so a stale draft can't carry dropped groups/teams.
+ */
+function resumeGroupsV2(saved: GroupDataV2[] | undefined): GroupData[] {
+  if (!saved || saved.length === 0) return buildInitialGroupsV2();
+  const fresh = buildInitialGroupsV2();
+  const savedById = new Map(saved.map((g) => [g.group_id, g]));
+  return fresh.map((group) => {
+    const prior = savedById.get(group.group_id);
+    if (!prior) return group;
+    // Re-map saved results onto fresh matches, keyed by match_id.
+    const priorByMatch = new Map(prior.matches.map((m) => [m.match_id, m]));
+    return {
+      ...group,
+      has_tiebreaker_scores: prior.has_tiebreaker_scores,
+      matches: group.matches.map((m) => {
+        const pm = priorByMatch.get(m.match_id);
+        return pm
+          ? { ...m, result: pm.result, exact_score: pm.exact_score }
+          : m;
+      }),
+    };
+  });
+}
 
 // ---------------------------------------------------------------------------
 // Main wizard
@@ -52,9 +115,10 @@ export function BracketWizard({
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [submitted, setSubmitted] = useState(false);
 
-  // Bracket state
-  const [groupRankings, setGroupRankings] = useState<Record<string, string[]>>(
-    existingData?.groupRankings ?? buildInitialGroupRankings()
+  // Bracket state — groups are captured as W/D/L match predictions; the
+  // positional `groupRankings` contract is derived from them at save/submit.
+  const [groupsV2, setGroupsV2] = useState<GroupData[]>(
+    () => resumeGroupsV2(existingData?.groupsV2)
   );
   const [bestThirdPicks, setBestThirdPicks] = useState<string[]>(
     existingData?.bestThirdPicks ?? []
@@ -65,7 +129,18 @@ export function BracketWizard({
   const [champion, setChampion] = useState(existingData?.champion ?? "");
   const [thirdPlace, setThirdPlace] = useState(existingData?.thirdPlace ?? "");
 
+  // Within the `groups` step, the user may divert to a tiebreaker sub-page.
+  const [tiebreaker, setTiebreaker] = useState<{
+    groupIndex: number;
+    teams: string[];
+  } | null>(null);
+
   const currentStep = steps[stepIndex];
+
+  // Positional finishing order (1st→4th per group), derived from W/D/L picks
+  // via the FIFA tiebreaker engine. This is the shape every downstream
+  // consumer (scoring, validation, R32 generation) reads.
+  const groupRankings = groupDataToRankings(groupsV2);
 
   // R32 matchups derived from group rankings + best thirds
   const r32Matchups =
@@ -78,24 +153,61 @@ export function BracketWizard({
   const goPrev = () => setStepIndex((i) => Math.max(0, i - 1));
   const goNext = () => setStepIndex((i) => Math.min(steps.length - 1, i + 1));
 
+  // Whether the current step is complete enough to advance. Gates the Next
+  // button so a step's downstream data (R32 matchups, scoring) is never
+  // derived from a half-finished group/third-place selection.
+  const allGroupsPredicted = groupsV2.every((g) =>
+    g.matches.every((m) => m.result !== null)
+  );
+  const canAdvance = (() => {
+    switch (currentStep) {
+      case "groups":
+        return allGroupsPredicted;
+      case "best_thirds":
+        return bestThirdPicks.length === 8;
+      default:
+        return true;
+    }
+  })();
+
+  // Single source for the submission payload. `groupRankings` is the derived
+  // positional contract; `groupsV2` carries the raw W/D/L picks so a resumed
+  // draft can rebuild the group step exactly as the user left it.
+  const buildBracketData = useCallback(
+    (): BracketSubmissionData => ({
+      groupRankings,
+      groupsV2: groupsV2.map((g) => ({
+        group_id: g.group_id,
+        group_name: g.group_name,
+        teams: g.teams,
+        matches: g.matches.map((m) => ({
+          match_id: m.match_id,
+          home_team: m.home_team,
+          away_team: m.away_team,
+          result: m.result,
+          exact_score: m.exact_score,
+        })),
+        has_tiebreaker_scores: g.has_tiebreaker_scores,
+      })),
+      bestThirdPicks,
+      knockoutPicks,
+      champion,
+      thirdPlace: thirdPlace || undefined,
+    }),
+    [groupRankings, groupsV2, bestThirdPicks, knockoutPicks, champion, thirdPlace]
+  );
+
   const saveDraft = useCallback(async () => {
     setSaving(true);
     setSubmitError(null);
     try {
-      const data: BracketSubmissionData = {
-        groupRankings,
-        bestThirdPicks,
-        knockoutPicks,
-        champion,
-        thirdPlace: thirdPlace || undefined,
-      };
       const res = await fetch("/api/tournament/bracket/submit", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           classificationId,
           competitionId,
-          bracketData: data,
+          bracketData: buildBracketData(),
           action: "save_draft",
         }),
       });
@@ -108,26 +220,19 @@ export function BracketWizard({
     } finally {
       setSaving(false);
     }
-  }, [groupRankings, bestThirdPicks, knockoutPicks, champion, thirdPlace, classificationId, competitionId]);
+  }, [buildBracketData, classificationId, competitionId]);
 
   const submitBracket = useCallback(async () => {
     setSaving(true);
     setSubmitError(null);
     try {
-      const data: BracketSubmissionData = {
-        groupRankings,
-        bestThirdPicks,
-        knockoutPicks,
-        champion,
-        thirdPlace: thirdPlace || undefined,
-      };
       const res = await fetch("/api/tournament/bracket/submit", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           classificationId,
           competitionId,
-          bracketData: data,
+          bracketData: buildBracketData(),
           action: "submit",
         }),
       });
@@ -144,7 +249,7 @@ export function BracketWizard({
     } finally {
       setSaving(false);
     }
-  }, [groupRankings, bestThirdPicks, knockoutPicks, champion, thirdPlace, classificationId, competitionId]);
+  }, [buildBracketData, classificationId, competitionId]);
 
   if (submitted) {
     return (
@@ -162,6 +267,29 @@ export function BracketWizard({
     );
   }
 
+  // The tiebreaker resolution page takes over the whole wizard surface — it
+  // carries its own Back / Resolve controls, so the step nav is suppressed.
+  if (currentStep === "groups" && tiebreaker) {
+    return (
+      <TiebreakerResolutionPage
+        group={groupsV2[tiebreaker.groupIndex]}
+        tiedTeams={tiebreaker.teams}
+        onResolve={(updatedGroup) => {
+          setGroupsV2((prev) => {
+            const next = [...prev];
+            next[tiebreaker.groupIndex] = {
+              ...updatedGroup,
+              has_tiebreaker_scores: true,
+            };
+            return next;
+          });
+          setTiebreaker(null);
+        }}
+        onBack={() => setTiebreaker(null)}
+      />
+    );
+  }
+
   return (
     <div>
       {/* Step indicator */}
@@ -170,9 +298,13 @@ export function BracketWizard({
       {/* Step content */}
       <div className="mt-4">
         {currentStep === "groups" && (
-          <GroupRankingStep
-            rankings={groupRankings}
-            onUpdate={setGroupRankings}
+          <GroupResultsStepV2
+            groups={groupsV2}
+            onUpdate={setGroupsV2}
+            onGroupComplete={() => {}}
+            onTiebreakerNeeded={(groupIndex, teams) =>
+              setTiebreaker({ groupIndex, teams })
+            }
           />
         )}
         {currentStep === "best_thirds" && (
@@ -251,7 +383,15 @@ export function BracketWizard({
           ) : (
             <button
               onClick={goNext}
-              className="rounded-lg bg-ps-text px-4 py-2 text-sm font-semibold text-ps-bg transition-all hover:opacity-90 active:scale-[0.98]"
+              disabled={!canAdvance}
+              title={
+                canAdvance
+                  ? undefined
+                  : currentStep === "groups"
+                    ? "Predict every group match to continue"
+                    : "Pick 8 best-third teams to continue"
+              }
+              className="rounded-lg bg-ps-text px-4 py-2 text-sm font-semibold text-ps-bg transition-all hover:opacity-90 active:scale-[0.98] disabled:opacity-40"
             >
               Next
             </button>
@@ -289,89 +429,10 @@ function StepIndicator({ steps, currentIndex }: { steps: Step[]; currentIndex: n
 }
 
 // ---------------------------------------------------------------------------
-// Step 1: Rank Groups
+// Step 1: Group results — see GroupResultsStepV2 (W/D/L match prediction).
+// The legacy drag-to-rank GroupRankingStep was retired here; the W/D/L flow
+// is the format mandated by DESIGN-WC-UNIFIED-PREDICTIONS.md.
 // ---------------------------------------------------------------------------
-
-function GroupRankingStep({
-  rankings,
-  onUpdate,
-}: {
-  rankings: Record<string, string[]>;
-  onUpdate: (r: Record<string, string[]>) => void;
-}) {
-  const rankedCount = Object.values(rankings).filter(
-    (teams) => teams.length === 4
-  ).length;
-
-  const moveTeam = (groupId: string, fromIndex: number, toIndex: number) => {
-    const teams = [...(rankings[groupId] ?? [])];
-    const [moved] = teams.splice(fromIndex, 1);
-    teams.splice(toIndex, 0, moved);
-    onUpdate({ ...rankings, [groupId]: teams });
-  };
-
-  return (
-    <div>
-      <div className="flex items-center justify-between">
-        <h2 className="text-base font-bold text-ps-text">Rank Each Group</h2>
-        <span className="font-mono text-xs font-semibold text-ps-amber">
-          {rankedCount}/12
-        </span>
-      </div>
-      <p className="mt-1 text-xs text-ps-text-sec">
-        For each group, arrange teams from 1st to 4th. Tap arrows to reorder.
-      </p>
-
-      <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2">
-        {WC2026_GROUPS.map((group) => (
-          <div
-            key={group.groupId}
-            className="rounded-xl border border-ps-border bg-ps-surface p-3"
-          >
-            <h3 className="text-xs font-bold text-ps-text-ter">{group.name}</h3>
-            <div className="mt-2 space-y-1">
-              {(rankings[group.groupId] ?? group.teams).map((team, idx) => (
-                <div
-                  key={team}
-                  className="flex items-center justify-between rounded-md bg-ps-bg px-2 py-1.5"
-                >
-                  <div className="flex items-center gap-2">
-                    <span className="w-4 text-center font-mono text-xs font-bold text-ps-text-ter">
-                      {idx + 1}
-                    </span>
-                    <span className="text-sm text-ps-text">{team}</span>
-                  </div>
-                  <div className="flex gap-0.5">
-                    <button
-                      onClick={() => moveTeam(group.groupId, idx, idx - 1)}
-                      disabled={idx === 0}
-                      className="rounded p-1 text-ps-text-ter transition-colors hover:bg-ps-chip hover:text-ps-text disabled:opacity-20"
-                      aria-label={`Move ${team} up`}
-                    >
-                      <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" d="M4.5 15.75l7.5-7.5 7.5 7.5" />
-                      </svg>
-                    </button>
-                    <button
-                      onClick={() => moveTeam(group.groupId, idx, idx + 1)}
-                      disabled={idx === 3}
-                      className="rounded p-1 text-ps-text-ter transition-colors hover:bg-ps-chip hover:text-ps-text disabled:opacity-20"
-                      aria-label={`Move ${team} down`}
-                    >
-                      <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 8.25l-7.5 7.5-7.5-7.5" />
-                      </svg>
-                    </button>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-        ))}
-      </div>
-    </div>
-  );
-}
 
 // ---------------------------------------------------------------------------
 // Step 2: Best Thirds
@@ -785,14 +846,6 @@ function ReviewItem({
 // ---------------------------------------------------------------------------
 // Helpers
 // ---------------------------------------------------------------------------
-
-function buildInitialGroupRankings(): Record<string, string[]> {
-  const rankings: Record<string, string[]> = {};
-  for (const group of WC2026_GROUPS) {
-    rankings[group.groupId] = [...group.teams];
-  }
-  return rankings;
-}
 
 /** Returns the two feeder slot IDs for a given knockout slot */
 function getFeedingSlots(slotId: string): [string, string] {
