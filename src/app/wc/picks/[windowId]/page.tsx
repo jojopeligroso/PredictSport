@@ -53,9 +53,13 @@ export default async function WindowPicksPage({
     redirect(`/wc/join?next=/wc/picks/${windowId}`);
   }
 
-  // A window in 'draft' (knockout windows) is not open for picks yet.
+  // round.status ∈ "draft" | "open" | "locked" | "scored" (RoundStatus).
+  // 'draft' (knockout windows) — not open for picks yet.
+  // 'locked' / 'scored' — the whole window is closed; render read-only even
+  // for events whose own lock_time hasn't passed (e.g. an admin override).
   const isDraft = round.status === "draft";
   const isFinalised = round.status === "scored";
+  const isWindowLocked = round.status === "locked" || round.status === "scored";
 
   // Get events in this window with their prediction types.
   const { data: eventsRaw } = await supabase
@@ -96,9 +100,9 @@ export default async function WindowPicksPage({
 
       <h1 className="mt-3 text-xl font-extrabold text-ps-text">{round.name}</h1>
 
-      {isFinalised && (
+      {(isFinalised || (isWindowLocked && !isFinalised)) && (
         <div className="mt-2 inline-block rounded-full bg-ps-amber/20 px-3 py-1 text-xs font-semibold text-ps-amber">
-          Finalised
+          {isFinalised ? "Finalised" : "Locked"}
         </div>
       )}
 
@@ -112,6 +116,7 @@ export default async function WindowPicksPage({
             competitionId={round.competition_id}
             events={events}
             predictions={predictions}
+            windowLocked={isWindowLocked}
           />
         </div>
       )}

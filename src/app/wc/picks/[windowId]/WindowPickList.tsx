@@ -42,6 +42,12 @@ interface WindowPickListProps {
   events: WindowEvent[];
   /** All existing predictions for this user across the window's events. */
   predictions: Prediction[];
+  /**
+   * Whether the whole window is closed (round status 'locked'/'scored').
+   * When true every event renders read-only, regardless of its own lock_time
+   * — e.g. a superadmin override that locks the window early.
+   */
+  windowLocked: boolean;
 }
 
 /** Per-event save lifecycle, surfaced as a small status line on the card. */
@@ -80,10 +86,12 @@ function EventPickCard({
   competitionId,
   event,
   initialPredictions,
+  windowLocked,
 }: {
   competitionId: string;
   event: WindowEvent;
   initialPredictions: Prediction[];
+  windowLocked: boolean;
 }) {
   const router = useRouter();
 
@@ -94,11 +102,14 @@ function EventPickCard({
     (e) => e.prediction_type === "exact_score",
   );
 
-  // Locked once kickoff lock_time passes or the event leaves "upcoming".
-  // POST /api/predictions enforces this server-side regardless — the UI gate
-  // is only to avoid showing controls that would fail.
+  // Locked when: the whole window is closed, OR this event's kickoff lock_time
+  // has passed, OR the event has left "upcoming". POST /api/predictions
+  // enforces lock_time server-side regardless — the UI gate only avoids
+  // showing controls that would fail.
   const isLocked =
-    new Date(event.lock_time) <= new Date() || event.status !== "upcoming";
+    windowLocked ||
+    new Date(event.lock_time) <= new Date() ||
+    event.status !== "upcoming";
 
   const { home, away } = useMemo(
     () => splitTeams(event.event_name),
@@ -317,6 +328,7 @@ export function WindowPickList({
   competitionId,
   events,
   predictions,
+  windowLocked,
 }: WindowPickListProps) {
   // Group existing predictions by event for O(1) lookup per card.
   const predsByEvent = useMemo(() => {
@@ -345,6 +357,7 @@ export function WindowPickList({
           competitionId={competitionId}
           event={event}
           initialPredictions={predsByEvent.get(event.id) ?? []}
+          windowLocked={windowLocked}
         />
       ))}
     </div>
