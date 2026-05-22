@@ -61,30 +61,19 @@ export default async function WorldCupLanding() {
           </div>
         )}
 
-        {/* CTA */}
-        {user ? (
-          <Link
-            href="/wc/picks"
-            className="w-full max-w-xs rounded-xl px-6 py-4 text-center text-base font-semibold transition-all hover:opacity-90 active:scale-[0.97]"
-            style={{
-              background: "linear-gradient(135deg, #d4af37, #b8941f)",
-              color: "#0a0f0a",
-            }}
-          >
-            Make your picks
-          </Link>
-        ) : (
-          <Link
-            href="/wc/join"
-            className="w-full max-w-xs rounded-xl px-6 py-4 text-center text-base font-semibold transition-all hover:opacity-90 active:scale-[0.97]"
-            style={{
-              background: "linear-gradient(135deg, #d4af37, #b8941f)",
-              color: "#0a0f0a",
-            }}
-          >
-            Join the game
-          </Link>
-        )}
+        {/* CTA — both routes go via /wc/join, which enrols the user
+            (idempotent) before redirecting to /wc/picks. A logged-in
+            user who never joined would otherwise hit a 403 on submit. */}
+        <Link
+          href="/wc/join"
+          className="w-full max-w-xs rounded-xl px-6 py-4 text-center text-base font-semibold transition-all hover:opacity-90 active:scale-[0.97]"
+          style={{
+            background: "linear-gradient(135deg, #d4af37, #b8941f)",
+            color: "#0a0f0a",
+          }}
+        >
+          {user ? "Make your picks" : "Join the game"}
+        </Link>
       </section>
 
       {/* Host cities */}

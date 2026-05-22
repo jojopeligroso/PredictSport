@@ -45,7 +45,7 @@ function LandingPage() {
           >
             Coming June 2026
           </p>
-          <h2 className="mt-1 text-lg font-extrabold">World Cup 2026</h2>
+          <h2 className="mt-1 text-lg font-extrabold">World Cup</h2>
           <p className="mt-1 text-xs" style={{ color: "#a8a090" }}>
             Predict every match. 5 ways to compete. Bragging rights guaranteed.
           </p>
@@ -218,7 +218,7 @@ async function Dashboard({ userId }: { userId: string }) {
                 className="text-[10px] font-bold uppercase tracking-widest"
                 style={{ color: "#006847" }}
               >
-                World Cup 2026
+                World Cup
               </p>
               <h2 className="mt-1 text-lg font-extrabold">Make your picks</h2>
               <p className="mt-1 text-xs" style={{ color: "#a8a090" }}>
