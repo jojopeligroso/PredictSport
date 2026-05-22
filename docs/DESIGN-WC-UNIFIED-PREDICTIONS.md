@@ -88,34 +88,108 @@ bracket_prediction_submissions.bracket_data  ← knockouts + champion only
 - A group match score entered in a window → satisfies a Bracket tiebreaker with
   no re-prompt.
 
-## Build plan (phased — none of this is done yet)
+## Decisions locked (from the user, 2026-05-22)
 
-- **U1 — Group fixture events.** Create the 72 group `events` (12 groups × 6
-  matches), distributed across windows 1–3 by matchday (24 each), each with
-  `winner` + `exact_score` `event_prediction_types`. Per CLAUDE.md manual-event
-  checklist: `sport='soccer'`, `lock_time` before `start_time`,
-  `config.options` = the two team names.
-- **U2 — Windowed pick UI.** Build the interactive pick component for
-  `/wc/picks/[windowId]` (currently read-only): W/D/L buttons + optional score,
-  submitting to `/api/predictions`.
-- **U3 — BracketData⇄predictions adapter.** Bracket wizard save fans out group
-  W/D/L + tiebreaker scores to `predictions` rows; wizard load hydrates from
-  them. Knockouts stay in `bracket_data`.
-- **U4 — Carry-over wiring.** Both surfaces read existing `predictions` and
-  pre-fill. Verify a tiebreaker score in the Bracket appears pre-filled in the
-  window, and vice versa.
-- **U5 — Complete the Bracket wizard knockouts.** Replace
-  `alert('Knockout stages coming soon!')` with the knockout progression flow
-  and real submission.
-- **U6 — Elimination-curve recompute** (see WC-LAUNCH-FOLLOWUPS C5): regenerate
-  the `format` classification curve from the actual entrant count once known.
+- **Storage:** Option A — per-event `predictions` is the single source of truth.
+- **Window lifecycle:** schedule-based logic is *built* (real fixture dates,
+  see `WC2026-OFFICIAL-FIXTURES.md`), driven by a cron job — but **admin
+  control is the default** to avoid hitting Vercel Hobby cron limits. A
+  **superadmin-only manual override** can open/lock any window for **all** WC
+  competitions.
+- **Carry-over:** **one-way, Bracket → windows.** A score entered in the Bracket
+  (tiebreaker) pre-fills the matching matchday window. Window picks do NOT flow
+  back into the Bracket. (Simpler; the cost is a user who picks windows first
+  could re-enter in the Bracket — accepted.)
 
-U1 is *not* a standalone task — seeding events before U2/U3 produces fixtures
-that advertise a pick UI that doesn't exist. U1–U4 ship together.
+## Build plan (phased — file-level — none of this is done yet)
 
-## Open questions for the user
+### U0 — Correct the placeholder group data  ⚠️ PREREQUISITE, BLOCKS U1
+The codebase has **three inconsistent placeholder versions** of the WC groups,
+none matching the real Dec-2025 draw (verified data in
+`WC2026-OFFICIAL-FIXTURES.md`):
+- `bracket_templates` DB row (migration `20260522000000_seed_wc2026_tournament.sql`)
+- `WC2026_GROUPS` in `src/lib/bracket/adapters/fifa-world-cup-2026.ts`
+- the bracket wizard (imports the adapter constant)
 
-- Window lifecycle: do matchday windows open/lock on a schedule (real fixture
-  dates) or by admin action? Affects `rounds.deadline` / `events.lock_time`.
-- Does predicting a window also count toward the Bracket's group stage, or only
-  the reverse? (Design assumes fully bidirectional carry-over.)
+Tasks:
+1. Rewrite `WC2026_GROUPS` in the adapter to the official 12 groups.
+2. New migration: `UPDATE bracket_templates SET config = ...` for
+   `template_key='fifa_world_cup_2026'` — replace the `groups` array, and
+   re-check `r32Seeding` / `bestThirdConfig` still describe a valid bracket.
+3. Confirm no user has a saved `bracket_prediction_submissions` row yet (none
+   expected — competition was created 2026-05-22). If any exist, they reference
+   fictional teams and must be invalidated.
+4. Verify the bracket wizard renders the corrected groups.
+
+### U1 — Group fixture events  (safe to seed only AFTER U0)
+Create the **72 group `events`** (12 groups × 6; resolve Group F's missing
+6th match first — see fixtures doc). Distribute across windows 1–3 by matchday.
+Per match, also create `event_prediction_types` rows: `winner` (with
+`config.options` = the two team names) and `exact_score`.
+- `competition_id` = the World Cup competition.
+- `round_id` = the matchday window (`rounds` rows already exist, 1–3).
+- `sport='soccer'`, `start_time` from fixtures doc (UK→UTC −1h),
+  `lock_time = start_time − 30min`, `status='upcoming'`.
+- Best done as an idempotent seed script keyed on a stable `external_event_id`
+  (e.g. `wc2026-A-md1-mex-rsa`) so it can be re-run safely.
+
+### U2 — Windowed pick UI
+`/wc/picks/[windowId]` is currently read-only. Build an interactive client
+component (new file, e.g. `WindowPickList.tsx`) rendering each event with
+W/D/L buttons + optional exact-score input, submitting to the existing
+`POST /api/predictions`. Respect `events.lock_time` and window `status`.
+Reuse `PickButton` / `ExactScoreInput` from the general app.
+
+### U3 — BracketData→predictions adapter (one-way write)
+On bracket wizard save (`/api/bracket/checkpoint` + `/api/bracket/submit`),
+fan out group-stage W/D/L + tiebreaker scores into `predictions` rows
+(`prediction_type='winner'`, and `'exact_score'` where a score exists), keyed
+`(user_id, event_id)`. Knockouts + champion stay in `bracket_data`. The
+windowed flow then reads those rows for pre-fill (U4). One-way only.
+
+### U4 — Carry-over (Bracket → windows)
+The U2 windowed UI reads existing `predictions` for the user+window and
+pre-fills any value already written by U3. Verify: a tiebreaker score entered
+in the Bracket shows pre-filled in its matchday window.
+
+### U5 — Complete the Bracket wizard knockouts
+Replace `BracketWizardV2.tsx:191` `alert('Knockout stages coming soon!')` with
+the knockout progression flow (`KnockoutStagePredictor` exists) and wire real
+submission to `/api/bracket/submit`.
+
+### U6 — Window scheduling: cron + admin override
+- **Cron:** build `/api/wc/cron/window-lifecycle` (or similar) that opens/locks
+  matchday windows based on `events.lock_time`. Built but **NOT added to
+  `vercel.json` crons by default** (Hobby limit — see
+  `vercel.crons.dormant.json`). Document re-activation for Vercel Pro.
+- **Admin override:** superadmin-only controls on `/wc/admin` to open/lock any
+  window for any WC competition, plus an API route. This is the default
+  operating mode while the cron stays dormant.
+
+### U7 — Elimination-curve recompute (was C5)
+Regenerate the `format` classification curve from the actual entrant count once
+known (window 1 open → window 2 lock). The current `entrant_count: 48` is a
+placeholder.
+
+## Sequencing
+
+`U0` → `U1` → (`U2` + `U3` together) → `U4` → `U5` → `U6` → `U7`.
+
+U1 is NOT standalone — seeding events before U2/U3 produces fixtures advertising
+a pick UI that doesn't exist. U0 strictly blocks U1: seeding events for
+fictional groups would compound the placeholder problem.
+
+## Open questions — RESOLVED 2026-05-22
+
+- ~~Window lifecycle~~ → schedule logic built + cron, but admin-control default;
+  superadmin override for all WC competitions. See U6.
+- ~~Carry-over direction~~ → one-way, Bracket → windows. See U3/U4.
+
+## Remaining unknowns to confirm at build time
+
+- Group F lists only 5 fixtures in the source — the 6th (Netherlands vs Sweden,
+  matchday 2) must be confirmed before U1 seeds Group F.
+- Whether any `bracket_prediction_submissions` rows already exist (U0 step 3) —
+  none expected, but verify; if present they reference placeholder teams.
+- `r32Seeding` / `bestThirdConfig` in the bracket template may need review once
+  real groups are in (U0 step 2) — the placeholder matrix was marked PLACEHOLDER.
