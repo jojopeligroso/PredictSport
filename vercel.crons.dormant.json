@@ -1,0 +1,50 @@
+{
+  "_comment": "DORMANT CRON JOBS — not scheduled by Vercel. Reference only.",
+  "_why": [
+    "The Vercel Hobby (free) plan allows a maximum of 2 cron jobs, each running",
+    "at most once per day. PredictSport currently runs on Hobby, so vercel.json",
+    "keeps only the single cron the app cannot function without (results/cron).",
+    "",
+    "Every cron route below still exists and works as a normal API endpoint —",
+    "removing it from vercel.json only stops Vercel from triggering it on a",
+    "schedule. Until automated scheduling is restored, run these manually from",
+    "the admin tools (or by hitting the route) when needed.",
+    "",
+    "TO RE-ACTIVATE: move the desired entry into the `crons` array in",
+    "vercel.json. On Hobby you may have at most 2 total and they must be daily",
+    "(no `*/5` style schedules). The two tournament crons below need a sub-daily",
+    "cadence to be useful, which requires the Vercel Pro plan."
+  ],
+  "dormant_crons": [
+    {
+      "path": "/api/notifications/cron",
+      "schedule": "0 8 * * *",
+      "_note": "Daily notification digest. Manual alternative: admin trigger."
+    },
+    {
+      "path": "/api/cricket-seed/cron",
+      "schedule": "0 6 * * *",
+      "_note": "Daily cricket fixture pool seeder. Manual alternative: admin trigger."
+    },
+    {
+      "path": "/api/tournament/cron/lock-windows",
+      "schedule": "*/5 * * * *",
+      "_note": "Locks prediction windows. Needs sub-daily cadence — requires Vercel Pro. Manual alternative: admin locks windows."
+    },
+    {
+      "path": "/api/tournament/cron/auto-finalise",
+      "schedule": "*/5 * * * *",
+      "_note": "Auto-finalises tournament windows. Needs sub-daily cadence — requires Vercel Pro. Manual alternative: admin finalises."
+    },
+    {
+      "path": "/api/notifications/missing-results",
+      "schedule": "0 10 * * *",
+      "_note": "Alerts on missing results. Manual alternative: admin reviews missing results."
+    },
+    {
+      "path": "/api/wc/hide-card",
+      "schedule": "0 0 1 9 *",
+      "_note": "Hides the World Cup promo card once per year. Manual alternative: admin toggles card."
+    }
+  ]
+}
