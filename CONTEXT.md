@@ -80,3 +80,27 @@ The canonical output shape of the provider chain. All providers normalise their 
 ## Manual Event
 
 An event with no sports data provider coverage. Result and score must be entered by the admin at confirmation time. Covers local GAA clubs, niche competitions, and any event where the provider chain returns null.
+
+---
+
+## All-Competitions Dashboard
+
+A cross-competition summary surface on `/competitions` that answers "how am I doing" across every competition a participant belongs to. Shows performance/standing per competition, with a conditional action prompt when a prediction is genuinely due. Not a per-competition leaderboard and not the personal predictions stats page.
+
+---
+
+## Standing
+
+A participant's position and accumulated points within a single competition, derived from the `points_awarded` on their predictions. Always computed live by the leaderboard from prediction rows — there is no authoritative stored standing.
+
+---
+
+## Standings Cache
+
+A best-effort, non-authoritative stored copy of competition standings (`competition_standings`), written after results are confirmed, carrying an `updated_at`. Read for speed by the All-Competitions Dashboard. The live leaderboard remains the source of truth; a missing or stale cache row triggers a live recompute, so the cache is never silently wrong.
+
+---
+
+## Global Hit Rate
+
+A participant's aggregate prediction accuracy across all their competitions (group and personal combined) — distinct from the personal-predictions hit rate, which covers only the personal competition.
