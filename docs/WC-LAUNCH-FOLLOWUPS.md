@@ -37,10 +37,26 @@ At creation, show the admin a participant counter: `x/8` minimum (the min
 disappears once the 8-entrant threshold is met) and `x/96` maximum cap. 8 and
 96 are the hard bounds of `generateEliminationCurve()`.
 
-## C4 — Group fixture events (open the matchday windows properly)
-Group matchday windows 1–3 are `status='open'` but have **no `events`**. To make
-them genuinely predictable, create the 72 group-stage match events (12 groups ×
-6 matches) wired to the windows. Until then, only the Full Bracket is meaningful.
+## C4 — Unified prediction model (SUPERSEDES the old "seed 72 events" framing)
+Originally scoped as "create 72 group fixture events". That framing was wrong.
+Investigation (2026-05-22) found the World Cup has **two storage-isolated
+prediction systems**:
+
+- **Bracket** → `bracket_prediction_submissions` (JSON blob). Group stage uses
+  W/D/L picks with scores only for tiebreaker-tied matches. Works today.
+- **Per-event picks** → `predictions` rows. The `/wc/picks/[windowId]` page is
+  **read-only** — no pick-submission UI exists; nothing calls `/api/predictions`.
+
+Nothing bridges them, so the user's "never enter a prediction twice"
+requirement is currently **architecturally impossible**. Seeding 72 events
+without the windowed pick UI + shared store would advertise an interaction the
+app can't fulfil — do NOT do it as a standalone step.
+
+The real work is a unified prediction model: per-event `predictions` as the
+single source of truth, the Bracket writing through a `BracketData⇄predictions`
+adapter, a windowed pick UI, and carry-over. Full design + phased plan (U1–U6)
+in **`docs/DESIGN-WC-UNIFIED-PREDICTIONS.md`**. The `overall` and `format`
+classifications are unscoreable until this is built.
 
 ## C5 — Elimination curve recompute  ⚠️ blocking-for-format-classification
 The `format` classification was created with a **placeholder** `entrant_count`
