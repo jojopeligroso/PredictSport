@@ -7,16 +7,28 @@ export const dynamic = "force-dynamic";
 /**
  * /wc/join — Entry flow for World Cup prediction game.
  * If not logged in → redirect to login.
- * If logged in → auto-enroll in the WC competition → redirect to picks.
+ * If logged in → auto-enroll in the WC competition → redirect onward.
+ *
+ * Accepts an optional `?next=` param so other WC pages (e.g. a pick window)
+ * can route a non-member here for idempotent enrollment and get them back.
+ * `next` is validated to an internal /wc path to avoid an open redirect.
  */
-export default async function JoinPage() {
+export default async function JoinPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ next?: string }>;
+}) {
+  const { next } = await searchParams;
+  const destination =
+    next && next.startsWith("/wc/") ? next : "/wc/picks";
+
   const supabase = await createClient();
   const {
     data: { user },
   } = await supabase.auth.getUser();
 
   if (!user) {
-    redirect("/login?next=/wc/join");
+    redirect(`/login?next=${encodeURIComponent(`/wc/join?next=${destination}`)}`);
   }
 
   // Find the active WC competition
@@ -61,5 +73,5 @@ export default async function JoinPage() {
   // Enroll in all active classifications (idempotent — handles duplicates)
   await enrollEntrant(supabase, competition.id, user.id);
 
-  redirect("/wc/picks");
+  redirect(destination);
 }

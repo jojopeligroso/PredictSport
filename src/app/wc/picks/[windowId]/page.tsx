@@ -1,12 +1,17 @@
 import { createClient } from "@/lib/supabase/server";
 import { redirect, notFound } from "next/navigation";
 import Link from "next/link";
+import { WindowPickList, type WindowEvent } from "./WindowPickList";
+import type { Prediction } from "@/types/database";
 
 export const dynamic = "force-dynamic";
 
 /**
- * /picks/[windowId] — Single prediction window picks page.
- * Shows all events in this window with pick submission UI.
+ * /wc/picks/[windowId] — Single World Cup matchday window picks page (U2).
+ *
+ * Server component: handles auth, ensures the user is enrolled in the WC
+ * competition, fetches the window's events + the user's existing predictions,
+ * then delegates the interactive pick UI to <WindowPickList>.
  */
 export default async function WindowPicksPage({
   params,
@@ -23,7 +28,7 @@ export default async function WindowPicksPage({
     redirect(`/login?next=/wc/picks/${windowId}`);
   }
 
-  // Get the round
+  // Get the round (window) and its competition.
   const { data: round } = await supabase
     .from("rounds")
     .select("id, name, competition_id, status, sporting_stage_id")
@@ -34,41 +39,55 @@ export default async function WindowPicksPage({
     notFound();
   }
 
-  const isLocked = round.status === "locked" || round.status === "scored";
+  // The pick API requires competition membership. A logged-in user who reached
+  // this page without going through /wc/join would 403 on every pick — route
+  // them through join (idempotent enrollment) and back here.
+  const { data: membership } = await supabase
+    .from("competition_members")
+    .select("id")
+    .eq("competition_id", round.competition_id)
+    .eq("user_id", user.id)
+    .maybeSingle();
 
-  // Get events in this window
-  const { data: events } = await supabase
+  if (!membership) {
+    redirect(`/wc/join?next=/wc/picks/${windowId}`);
+  }
+
+  // round.status ∈ "draft" | "open" | "locked" | "scored" (RoundStatus).
+  // 'draft' (knockout windows) — not open for picks yet.
+  // 'locked' / 'scored' — the whole window is closed; render read-only even
+  // for events whose own lock_time hasn't passed (e.g. an admin override).
+  const isDraft = round.status === "draft";
+  const isFinalised = round.status === "scored";
+  const isWindowLocked = round.status === "locked" || round.status === "scored";
+
+  // Get events in this window with their prediction types.
+  const { data: eventsRaw } = await supabase
     .from("events")
     .select(`
-      id, event_name, sport, start_time, lock_time, status, result_data, result_confirmed,
-      event_prediction_types (id, prediction_type, points, partial_points, config)
+      id, event_name, sport, start_time, lock_time, status, result_confirmed,
+      event_prediction_types (id, event_id, prediction_type, points, partial_points, config)
     `)
     .eq("round_id", windowId)
     .order("start_time", { ascending: true });
 
-  // Get user's existing predictions for this window
-  const eventIds = (events ?? []).map((e: { id: string }) => e.id);
-  const { data: userPredictions } = eventIds.length > 0
-    ? await supabase
-        .from("predictions")
-        .select("id, event_id, prediction_type, prediction_data, points_awarded, is_correct")
-        .eq("user_id", user.id)
-        .in("event_id", eventIds)
-    : { data: [] };
+  const events = (eventsRaw ?? []) as WindowEvent[];
 
-  // Group predictions by event
-  const predictionsByEvent = new Map<string, Array<{
-    id: string;
-    prediction_type: string;
-    prediction_data: Record<string, unknown>;
-    points_awarded: number;
-    is_correct: boolean | null;
-  }>>();
-  for (const p of userPredictions ?? []) {
-    const existing = predictionsByEvent.get(p.event_id) ?? [];
-    existing.push(p);
-    predictionsByEvent.set(p.event_id, existing);
-  }
+  // Get the user's existing predictions for this window's events (display +
+  // pre-fill). U2 only reads these; the bracket→windows carry-over is U3/U4.
+  const eventIds = events.map((e) => e.id);
+  const { data: predictionsRaw } =
+    eventIds.length > 0
+      ? await supabase
+          .from("predictions")
+          .select(
+            "id, event_prediction_type_id, event_id, user_id, prediction_type, prediction_data, is_correct, is_partial, points_awarded, note_text, note_visibility, submitted_at, updated_at",
+          )
+          .eq("user_id", user.id)
+          .in("event_id", eventIds)
+      : { data: [] };
+
+  const predictions = (predictionsRaw ?? []) as Prediction[];
 
   return (
     <div className="mx-auto max-w-[480px] px-4 pt-6 pb-16">
@@ -81,145 +100,26 @@ export default async function WindowPicksPage({
 
       <h1 className="mt-3 text-xl font-extrabold text-ps-text">{round.name}</h1>
 
-      {isLocked && (
+      {(isFinalised || (isWindowLocked && !isFinalised)) && (
         <div className="mt-2 inline-block rounded-full bg-ps-amber/20 px-3 py-1 text-xs font-semibold text-ps-amber">
-          {round.status === "scored" ? "Finalised" : "Locked"}
+          {isFinalised ? "Finalised" : "Locked"}
         </div>
       )}
 
-      <div className="mt-6 space-y-4">
-        {(events ?? []).map((event: {
-          id: string;
-          event_name: string;
-          sport: string;
-          start_time: string;
-          lock_time: string;
-          status: string;
-          result_data: Record<string, unknown> | null;
-          result_confirmed: boolean;
-          event_prediction_types: Array<{
-            id: string;
-            prediction_type: string;
-            points: number;
-            partial_points: number;
-            config: Record<string, unknown> | null;
-          }>;
-        }) => {
-          const eventPreds = predictionsByEvent.get(event.id) ?? [];
-          const eventLocked = new Date(event.lock_time) <= new Date() || event.status !== "upcoming";
-
-          return (
-            <div
-              key={event.id}
-              className="rounded-xl border border-ps-border bg-ps-surface p-4"
-            >
-              <div className="flex items-start justify-between">
-                <div>
-                  <h3 className="text-sm font-bold text-ps-text">{event.event_name}</h3>
-                  <p className="mt-0.5 font-mono text-xs text-ps-text-ter">
-                    {new Date(event.start_time).toLocaleDateString("en-GB", {
-                      weekday: "short",
-                      day: "numeric",
-                      month: "short",
-                      hour: "2-digit",
-                      minute: "2-digit",
-                    })}
-                  </p>
-                </div>
-                {eventLocked && (
-                  <span className="rounded-full bg-ps-chip px-2 py-0.5 text-xs font-semibold text-ps-text-sec">
-                    {event.result_confirmed ? "Resulted" : "Locked"}
-                  </span>
-                )}
-              </div>
-
-              {/* Prediction types for this event */}
-              <div className="mt-3 space-y-2">
-                {event.event_prediction_types.map((ept) => {
-                  const pred = eventPreds.find(
-                    (p) => p.prediction_type === ept.prediction_type
-                  );
-
-                  return (
-                    <div
-                      key={ept.id}
-                      className="flex items-center justify-between rounded-lg bg-ps-bg px-3 py-2"
-                    >
-                      <div>
-                        <span className="text-xs font-semibold text-ps-text">
-                          {formatPredictionType(ept.prediction_type)}
-                        </span>
-                        <span className="ml-2 font-mono text-xs text-ps-text-ter">
-                          {ept.points}pts
-                        </span>
-                      </div>
-                      <div className="text-right">
-                        {pred ? (
-                          <span
-                            className={`text-sm font-semibold ${
-                              pred.is_correct === true
-                                ? "text-ps-green"
-                                : pred.is_correct === false
-                                  ? "text-ps-red"
-                                  : "text-ps-text"
-                            }`}
-                          >
-                            {formatPredictionValue(pred.prediction_type, pred.prediction_data)}
-                            {pred.is_correct !== null && (
-                              <span className="ml-1 font-mono text-xs">
-                                ({pred.points_awarded}pts)
-                              </span>
-                            )}
-                          </span>
-                        ) : eventLocked ? (
-                          <span className="text-xs text-ps-text-ter">No pick</span>
-                        ) : (
-                          <span className="text-xs font-medium text-ps-amber">Pick needed</span>
-                        )}
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-            </div>
-          );
-        })}
-
-        {(!events || events.length === 0) && (
-          <p className="text-center text-sm text-ps-text-sec py-8">
-            No fixtures scheduled for this window yet.
-          </p>
-        )}
-      </div>
+      {isDraft ? (
+        <p className="mt-6 rounded-xl border border-ps-border bg-ps-surface px-4 py-8 text-center text-sm text-ps-text-sec">
+          This window isn&apos;t open for predictions yet.
+        </p>
+      ) : (
+        <div className="mt-6">
+          <WindowPickList
+            competitionId={round.competition_id}
+            events={events}
+            predictions={predictions}
+            windowLocked={isWindowLocked}
+          />
+        </div>
+      )}
     </div>
   );
-}
-
-function formatPredictionType(type: string): string {
-  const labels: Record<string, string> = {
-    winner: "Match Outcome",
-    exact_score: "Exact Score",
-    head_to_head: "Advancing Team",
-    yes_no: "Yes/No",
-    over_under: "Over/Under",
-    margin: "Margin",
-    progression: "Progression",
-    top_n: "Top N",
-    final_standings: "Final Standings",
-    handicap: "Handicap",
-  };
-  return labels[type] ?? type;
-}
-
-function formatPredictionValue(type: string, data: Record<string, unknown>): string {
-  if (type === "winner" || type === "head_to_head") {
-    return (data.winner as string) ?? (data.selection as string) ?? (data.value as string) ?? "-";
-  }
-  if (type === "exact_score") {
-    const home = data.home_score ?? data.homeScore;
-    const away = data.away_score ?? data.awayScore;
-    if (home !== undefined && away !== undefined) return `${home}-${away}`;
-    return (data.score as string) ?? "-";
-  }
-  return JSON.stringify(data);
 }
