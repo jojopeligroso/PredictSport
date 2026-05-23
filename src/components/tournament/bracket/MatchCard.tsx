@@ -11,7 +11,7 @@
  * - Minimum 44px tap targets for accessibility
  */
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 
 export type MatchResult = 'home_win' | 'draw' | 'away_win' | null
 
@@ -50,6 +50,7 @@ export default function MatchCard({
   const [awayScore, setAwayScore] = useState(
     match.exact_score?.away_score?.toString() || ''
   )
+  const awayRef = useRef<HTMLInputElement>(null)
 
   // Update local state when match score changes
   useEffect(() => {
@@ -188,19 +189,34 @@ export default function MatchCard({
               <div className="flex items-center gap-2">
                 <input
                   type="number"
+                  inputMode="numeric"
                   min="0"
                   value={homeScore}
-                  onChange={(e) => setHomeScore(e.target.value)}
+                  onChange={(e) => {
+                    const next = e.target.value
+                    setHomeScore(next)
+                    // Empty → non-empty: jump focus to away. Skip on
+                    // subsequent digits (10, 12) so the user can click
+                    // back without re-firing.
+                    if (homeScore === '' && next !== '') {
+                      awayRef.current?.focus()
+                      awayRef.current?.select()
+                    }
+                  }}
                   placeholder="0"
+                  aria-label={`${match.home_team} score`}
                   className="w-16 rounded border border-ps-border bg-ps-surface px-2 py-2 text-center font-mono text-sm"
                 />
                 <span className="text-sm text-ps-text-ter">-</span>
                 <input
+                  ref={awayRef}
                   type="number"
+                  inputMode="numeric"
                   min="0"
                   value={awayScore}
                   onChange={(e) => setAwayScore(e.target.value)}
                   placeholder="0"
+                  aria-label={`${match.away_team} score`}
                   className="w-16 rounded border border-ps-border bg-ps-surface px-2 py-2 text-center font-mono text-sm"
                 />
                 <button

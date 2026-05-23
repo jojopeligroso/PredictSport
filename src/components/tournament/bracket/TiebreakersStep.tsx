@@ -32,7 +32,7 @@
  * breaks automated tests).
  */
 
-import { useState, useMemo, useCallback } from "react";
+import { useState, useMemo, useCallback, useRef } from "react";
 import type { GroupData } from "./GroupResultsStepV2";
 import type { MatchPrediction } from "./MatchCard";
 import {
@@ -270,6 +270,7 @@ function TiebreakerMatchRow({
     match.exact_score?.away_score?.toString() ?? "",
   );
   const [error, setError] = useState<string | null>(null);
+  const awayRef = useRef<HTMLInputElement>(null);
 
   const hasScore = match.exact_score !== undefined;
 
@@ -318,16 +319,30 @@ function TiebreakerMatchRow({
       <div className="flex items-center gap-2">
         <input
           type="number"
+          inputMode="numeric"
           min="0"
           value={homeVal}
-          onChange={(e) => { setHomeVal(e.target.value); setError(null); }}
+          onChange={(e) => {
+            const next = e.target.value;
+            setHomeVal(next);
+            setError(null);
+            // Empty → non-empty transition: auto-advance to away. The
+            // empty-precondition means typing a second digit (10, 12) does
+            // NOT re-fire after the user clicks back into this field.
+            if (homeVal === "" && next !== "") {
+              awayRef.current?.focus();
+              awayRef.current?.select();
+            }
+          }}
           placeholder="0"
           aria-label={`${match.home_team} score`}
           className="w-14 rounded border border-ps-border bg-ps-bg px-2 py-1.5 text-center font-mono text-sm focus:border-ps-text focus:outline-none"
         />
         <span className="font-mono text-xs text-ps-text-ter">–</span>
         <input
+          ref={awayRef}
           type="number"
+          inputMode="numeric"
           min="0"
           value={awayVal}
           onChange={(e) => { setAwayVal(e.target.value); setError(null); }}

@@ -14,7 +14,7 @@
  * already knows how to do.
  */
 
-import { useState, useMemo, useCallback } from "react";
+import { useState, useMemo, useCallback, useRef } from "react";
 import type { GroupData, MatchPrediction } from "./GroupResultsStepV2";
 import { resolveGroupStandings } from "@/lib/tournament/bracket/group-ranking";
 
@@ -282,6 +282,7 @@ function ScoreEntryRow({
   const [home, setHome] = useState(match.exact_score?.home_score?.toString() ?? "");
   const [away, setAway] = useState(match.exact_score?.away_score?.toString() ?? "");
   const [err, setErr] = useState<string | null>(null);
+  const awayRef = useRef<HTMLInputElement>(null);
   const saved = match.exact_score !== undefined;
   const resultLabel =
     match.result === "home_win"
@@ -319,13 +320,24 @@ function ScoreEntryRow({
           inputMode="numeric"
           min={0}
           value={home}
-          onChange={(e) => setHome(e.target.value)}
+          onChange={(e) => {
+            const next = e.target.value;
+            setHome(next);
+            // Empty → non-empty: auto-advance focus to the away input.
+            // The empty-precondition prevents re-firing when the user
+            // clicks back to type a second digit (10, 12).
+            if (home === "" && next !== "") {
+              awayRef.current?.focus();
+              awayRef.current?.select();
+            }
+          }}
           placeholder="0"
           className="w-12 rounded border border-ps-border bg-ps-bg px-1.5 py-1 text-center font-mono text-sm"
           aria-label={`${match.home_team} score`}
         />
         <span className="text-xs text-ps-text-ter">–</span>
         <input
+          ref={awayRef}
           type="number"
           inputMode="numeric"
           min={0}
