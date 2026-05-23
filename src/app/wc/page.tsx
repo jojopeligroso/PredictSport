@@ -1,3 +1,4 @@
+import Image from "next/image";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import { OracleDot } from "@/components/OracleDot";
@@ -126,6 +127,19 @@ export default async function WorldCupLanding() {
 
   return (
     <div className="flex flex-1 flex-col items-center px-4">
+      {/* Full-bleed hero banner — negative margin breaks out of the page's px-4 */}
+      <div className="-mx-4 w-screen max-w-none">
+        <Image
+          src="/wc/hero-fifa-2026.png"
+          alt="FIFA World Cup 2026"
+          width={1024}
+          height={577}
+          priority
+          sizes="100vw"
+          className="h-auto w-full"
+        />
+      </div>
+
       {/* Hero */}
       <section className="flex w-full max-w-md flex-col items-center gap-5 pt-10 pb-8 text-center md:pt-16">
         {/* All 3 brand marks */}
