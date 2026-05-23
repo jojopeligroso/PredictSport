@@ -16,6 +16,7 @@ interface BracketReviewStepProps {
   groupRankings: Record<string, string[]>;
   qualifyingThirds: string[]; // group IDs of best-8 thirds
   knockoutPicks: Record<string, { winner: string }>;
+  allMatchups?: Record<string, { home: string; away: string }>;
   champion: string;
   thirdPlace: string;
   pickColor?: PickColor;
@@ -28,6 +29,7 @@ export default function BracketReviewStep({
   groupRankings,
   qualifyingThirds,
   knockoutPicks,
+  allMatchups = {},
   champion,
   thirdPlace,
   pickColor = "green",
@@ -35,7 +37,7 @@ export default function BracketReviewStep({
 }: BracketReviewStepProps) {
   // R32 team list = 12 winners + 12 runners-up + 8 qualifying thirds
   const r32Teams = buildR32TeamList(groupRankings, qualifyingThirds);
-  const championPath = buildChampionPath(knockoutPicks, champion);
+  const championPath = buildChampionPath(knockoutPicks, champion, allMatchups);
 
   const accent = pickColor === "amber" ? "text-ps-amber" : "text-ps-green";
 
@@ -270,107 +272,54 @@ function buildR32TeamList(
 function buildChampionPath(
   knockoutPicks: Record<string, { winner: string }>,
   champion: string,
+  allMatchups: Record<string, { home: string; away: string }>,
 ): Array<{ slotId: string; roundLabel: string; winner: string; loser: string }> {
   if (!champion) return [];
 
-  // Walk from the Final backward. Each round, find the slot the champion
-  // appears in as winner, and identify the team they beat.
   const path: Array<{ slotId: string; roundLabel: string; winner: string; loser: string }> = [];
-  const pathWinner = champion;
-
-  // Final
-  if (knockoutPicks.final?.winner === champion) {
-    const losers: string[] = [];
-    // SF feeders → final
-    for (const slotId of ["sf_m1", "sf_m2"]) {
-      const w = knockoutPicks[slotId]?.winner;
-      if (w && w !== champion) losers.push(w);
-    }
-    path.push({
-      slotId: "final",
-      roundLabel: "Final",
-      winner: champion,
-      loser: losers[0] ?? "?",
-    });
-  }
-
-  // Walk backward through SF → QF → R16 → R32
   const reverseRounds: Array<{
-    key: "sf" | "qf" | "r16" | "r32";
     label: string;
     slots: string[];
   }> = [
-    { key: "sf", label: "Semi", slots: ["sf_m1", "sf_m2"] },
     {
-      key: "qf",
-      label: "QF",
-      slots: ["qf_m1", "qf_m2", "qf_m3", "qf_m4"],
-    },
-    {
-      key: "r16",
-      label: "R16",
-      slots: ["r16_m1", "r16_m2", "r16_m3", "r16_m4", "r16_m5", "r16_m6", "r16_m7", "r16_m8"],
-    },
-    {
-      key: "r32",
       label: "R32",
       slots: [
-        "r32_m1",
-        "r32_m2",
-        "r32_m3",
-        "r32_m4",
-        "r32_m5",
-        "r32_m6",
-        "r32_m7",
-        "r32_m8",
-        "r32_m9",
-        "r32_m10",
-        "r32_m11",
-        "r32_m12",
-        "r32_m13",
-        "r32_m14",
-        "r32_m15",
-        "r32_m16",
+        "r32_m1","r32_m2","r32_m3","r32_m4","r32_m5","r32_m6","r32_m7","r32_m8",
+        "r32_m9","r32_m10","r32_m11","r32_m12","r32_m13","r32_m14","r32_m15","r32_m16",
       ],
     },
+    {
+      label: "R16",
+      slots: ["r16_m1","r16_m2","r16_m3","r16_m4","r16_m5","r16_m6","r16_m7","r16_m8"],
+    },
+    { label: "QF", slots: ["qf_m1","qf_m2","qf_m3","qf_m4"] },
+    { label: "Semi", slots: ["sf_m1","sf_m2"] },
+    { label: "Final", slots: ["final"] },
   ];
 
   for (const round of reverseRounds) {
-    const slot = round.slots.find((s) => knockoutPicks[s]?.winner === pathWinner);
+    const slot = round.slots.find((s) => knockoutPicks[s]?.winner === champion);
     if (!slot) continue;
-    // The feeders for this slot — derive who the champion beat
-    const feeders = feedersFor(slot);
-    const feederWinners = feeders.map((f) => knockoutPicks[f]?.winner).filter(Boolean);
-    // If we're at R32 there are no feeders — champion's R32 opponent is the
-    // other side of the matchup; we can't determine without R32 matchups here.
-    const opponent =
-      feederWinners.find((w) => w !== pathWinner) ?? "?";
-    path.unshift({
+    const matchup = allMatchups[slot];
+    let opponent = "?";
+    if (matchup) {
+      if (matchup.home && matchup.home !== champion) opponent = matchup.home;
+      else if (matchup.away && matchup.away !== champion) opponent = matchup.away;
+    } else {
+      // Fallback: derive from feeders' winners.
+      const feeders = feedersFor(slot);
+      opponent =
+        feeders.map((f) => knockoutPicks[f]?.winner).find((w) => w && w !== champion) ?? "?";
+    }
+    path.push({
       slotId: slot,
       roundLabel: round.label,
-      winner: pathWinner,
+      winner: champion,
       loser: opponent,
     });
   }
 
-  // We push final last so unshift order makes it last.
-  // But the loop only handles backward up to R32; let's re-sort by round.
-  const order = ["r32", "r16", "qf", "sf", "final"];
-  path.sort(
-    (a, b) =>
-      order.indexOf(roundFromSlot(a.slotId)) - order.indexOf(roundFromSlot(b.slotId)),
-  );
-
   return path;
-}
-
-function roundFromSlot(slotId: string): string {
-  if (slotId === "final") return "final";
-  if (slotId.startsWith("sf_")) return "sf";
-  if (slotId.startsWith("qf_")) return "qf";
-  if (slotId.startsWith("r16_")) return "r16";
-  if (slotId.startsWith("r32_")) return "r32";
-  return "";
 }
 
 function feedersFor(slotId: string): string[] {

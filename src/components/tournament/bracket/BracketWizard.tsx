@@ -452,6 +452,7 @@ export function BracketWizard({
           groupRankings={groupRankings}
           qualifyingThirds={bestThirdPicks}
           knockoutPicks={knockoutPicks}
+          allMatchups={allMatchups}
           champion={champion}
           thirdPlace={thirdPlace}
           onJumpToStep={(step) => goToStep(step)}
