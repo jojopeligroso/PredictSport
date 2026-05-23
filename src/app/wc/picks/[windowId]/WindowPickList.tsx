@@ -1,8 +1,7 @@
 "use client";
 
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import { PickButton } from "@/components/ui";
 import { ExactScoreSection } from "@/components/ExactScoreSection";
 import type {
   EventPredictionType,
@@ -11,17 +10,23 @@ import type {
 } from "@/types/database";
 
 /**
- * WindowPickList — interactive pick UI for one World Cup matchday window (U2).
+ * WindowPickList — compact interactive pick UI for one World Cup matchday window.
  *
- * Renders each group event with a 3-way W/D/L pick (PickButton) and an optional
- * exact-score input (ExactScoreSection). Picks save per-event: each tap / score
- * save fires its own POST /api/predictions. Per-event locking — a match goes
- * read-only once its lock_time passes; the rest of the window stays pickable.
+ * Each match renders as a single-row card: [Home] [Draw] [Away] with a small
+ * "Exact score…" trigger underneath. The dates/times of the matches matter
+ * less than fast outcome picking, so the card intentionally strips the
+ * fixture header and metadata — the colour of the selected button is the
+ * visual signal.
  *
- * The exact score and W/D/L are the single source of truth feeding the Overall
- * and Format classifications (and Bracket group-stage tiebreakers). This
- * component only WRITES per-event `predictions`; it does not touch the bracket
- * blob (carry-over is U3/U4).
+ * Taps are optimistic. The W/D/L choice updates local state immediately, the
+ * POST fires in the background, and only an error reverts the UI. A per-event
+ * AbortController guarantees the latest tap wins if the user changes their
+ * mind while a previous save is still in flight — the old behaviour of
+ * disabling the buttons during save was eating taps and making the UI feel
+ * dead.
+ *
+ * When the user lands their final pick of the window, `onWindowComplete`
+ * fires once so the page can run a celebration overlay.
  */
 
 // ── Types ────────────────────────────────────────────────────────────────────
@@ -44,22 +49,15 @@ interface WindowPickListProps {
   predictions: Prediction[];
   /**
    * Whether the whole window is closed (round status 'locked'/'scored').
-   * When true every event renders read-only, regardless of its own lock_time
-   * — e.g. a superadmin override that locks the window early.
+   * When true every event renders read-only, regardless of its own lock_time.
    */
   windowLocked: boolean;
+  /** Fires the first time the user lands a pick that makes all matches picked. */
+  onWindowComplete?: () => void;
 }
-
-/** Per-event save lifecycle, surfaced as a small status line on the card. */
-type SaveState =
-  | { kind: "idle" }
-  | { kind: "saving" }
-  | { kind: "saved" }
-  | { kind: "error"; message: string };
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
 
-/** Split "Mexico vs South Africa" into [home, away] for the score input labels. */
 function splitTeams(eventName: string): { home: string; away: string } {
   for (const sep of [" vs ", " v ", " VS ", " V "]) {
     const idx = eventName.indexOf(sep);
@@ -73,25 +71,40 @@ function splitTeams(eventName: string): { home: string; away: string } {
   return { home: eventName, away: "" };
 }
 
-/** The winner value the user currently has stored, if any. */
 function winnerValue(pred: Prediction | undefined): string | null {
   if (!pred) return null;
   const d = pred.prediction_data ?? {};
   return (d.value as string) ?? (d.selection as string) ?? null;
 }
 
-// ── Single event card ────────────────────────────────────────────────────────
+/**
+ * Map an option label to a button "slot". The slot drives the colour scheme:
+ * home wins (left) glow amber-warm, draws (middle) glow ink-neutral, away
+ * wins (right) glow amber-deep. We don't tie colour to the team name because
+ * options like "Draw" are language-y rather than positional.
+ */
+type Slot = "home" | "draw" | "away";
+function slotOf(label: string, home: string, away: string): Slot {
+  if (label === home) return "home";
+  if (label === away) return "away";
+  return "draw";
+}
 
-function EventPickCard({
+// ── Single match row ─────────────────────────────────────────────────────────
+
+function MatchPickRow({
   competitionId,
   event,
   initialPredictions,
   windowLocked,
+  onWinnerLanded,
 }: {
   competitionId: string;
   event: WindowEvent;
   initialPredictions: Prediction[];
   windowLocked: boolean;
+  /** Fired AFTER the optimistic state has a non-null winner. */
+  onWinnerLanded: (eventId: string, hasWinner: boolean) => void;
 }) {
   const router = useRouter();
 
@@ -102,10 +115,6 @@ function EventPickCard({
     (e) => e.prediction_type === "exact_score",
   );
 
-  // Locked when: the whole window is closed, OR this event's kickoff lock_time
-  // has passed, OR the event has left "upcoming". POST /api/predictions
-  // enforces lock_time server-side regardless — the UI gate only avoids
-  // showing controls that would fail.
   const isLocked =
     windowLocked ||
     new Date(event.lock_time) <= new Date() ||
@@ -116,8 +125,6 @@ function EventPickCard({
     [event.event_name],
   );
 
-  // Existing predictions for this event, kept in local state so the UI updates
-  // optimistically after a save without a full round-trip refresh.
   const initialWinner =
     initialPredictions.find((p) => p.prediction_type === "winner") ?? null;
   const initialScore =
@@ -127,24 +134,25 @@ function EventPickCard({
     initialWinner,
   );
   const [scorePred, setScorePred] = useState<Prediction | null>(initialScore);
-  const [winnerSave, setWinnerSave] = useState<SaveState>({ kind: "idle" });
+  const [errorMsg, setErrorMsg] = useState<string | null>(null);
+
+  // Abort the previous in-flight winner POST when a new tap arrives so the
+  // latest tap is what gets persisted even if the earlier one was slow.
+  const winnerAbortRef = useRef<AbortController | null>(null);
 
   const currentWinner = winnerValue(winnerPred ?? undefined);
 
-  // W/D/L options come straight from config.options — the U2 migration
-  // rewrote these to [home, "Draw", away]. Fall back to a derived 3-way if a
-  // row somehow lacks options.
   const winnerOptions = useMemo<string[]>(() => {
     const opts = winnerEpt?.config?.options as string[] | undefined;
     if (opts && opts.length > 0) return opts;
     return away ? [home, "Draw", away] : [home];
   }, [winnerEpt, home, away]);
 
-  /** POST a prediction; returns the saved row. Throws with the API message. */
   const submitPrediction = useCallback(
     async (
       predictionType: PredictionType,
       predictionData: Record<string, unknown>,
+      signal?: AbortSignal,
     ): Promise<Prediction | null> => {
       const res = await fetch("/api/predictions", {
         method: "POST",
@@ -155,6 +163,7 @@ function EventPickCard({
           prediction_type: predictionType,
           prediction_data: predictionData,
         }),
+        signal,
       });
       const body = await res.json().catch(() => ({}));
       if (!res.ok) {
@@ -169,28 +178,89 @@ function EventPickCard({
     [event.id, competitionId],
   );
 
-  /** W/D/L tap: save immediately, optimistic local update. */
+  /**
+   * Optimistic W/D/L tap.
+   *
+   * 1. Immediately reflect the new pick in local state.
+   * 2. Abort any in-flight POST so a fresh, slow request can't overwrite the
+   *    latest tap.
+   * 3. Fire the new POST. On success, sync the canonical row back. On error,
+   *    revert the optimistic state and show a small inline error.
+   *
+   * We deliberately do NOT disable the buttons during the request. Disabling
+   * eats taps when the user changes their mind quickly and is the main reason
+   * the old UI felt unresponsive.
+   */
   const handlePickWinner = useCallback(
-    async (value: string) => {
+    (value: string) => {
       if (isLocked || !winnerEpt) return;
-      if (value === currentWinner) return; // no-op re-tap
-      setWinnerSave({ kind: "saving" });
-      try {
-        const saved = await submitPrediction("winner", { value });
-        setWinnerPred(saved);
-        setWinnerSave({ kind: "saved" });
-      } catch (err) {
-        setWinnerSave({
-          kind: "error",
-          message: err instanceof Error ? err.message : "Failed to save",
+      if (value === currentWinner) return;
+
+      const previousPred = winnerPred;
+      const hadWinner = currentWinner !== null;
+
+      // Optimistic local prediction so the UI updates instantly.
+      const optimistic: Prediction = {
+        ...(previousPred ??
+          ({
+            id: `optimistic-${event.id}`,
+            event_prediction_type_id: winnerEpt.id,
+            event_id: event.id,
+            user_id: "",
+            prediction_type: "winner",
+            is_correct: null,
+            is_partial: null,
+            points_awarded: null,
+            note_text: null,
+            note_visibility: "private",
+            submitted_at: new Date().toISOString(),
+            updated_at: new Date().toISOString(),
+          } as unknown as Prediction)),
+        prediction_data: { value },
+      };
+      setWinnerPred(optimistic);
+      setErrorMsg(null);
+
+      if (!hadWinner) onWinnerLanded(event.id, true);
+
+      winnerAbortRef.current?.abort();
+      const controller = new AbortController();
+      winnerAbortRef.current = controller;
+
+      submitPrediction("winner", { value }, controller.signal)
+        .then((saved) => {
+          // A stale tap finished after a newer tap aborted it.
+          if (controller.signal.aborted) return;
+          if (saved) setWinnerPred(saved);
+        })
+        .catch((err: unknown) => {
+          if (
+            err instanceof Error &&
+            (err.name === "AbortError" || controller.signal.aborted)
+          ) {
+            return;
+          }
+          // Revert.
+          setWinnerPred(previousPred);
+          if (!hadWinner) onWinnerLanded(event.id, false);
+          setErrorMsg(
+            err instanceof Error ? err.message : "Couldn’t save that pick",
+          );
         });
-      }
     },
-    [isLocked, winnerEpt, currentWinner, submitPrediction],
+    [
+      isLocked,
+      winnerEpt,
+      currentWinner,
+      winnerPred,
+      event.id,
+      submitPrediction,
+      onWinnerLanded,
+    ],
   );
 
   // ExactScoreSection callbacks. It owns its own submit/clear/derivation state;
-  // we just persist and mirror the result into local state.
+  // we persist and mirror the result into local state.
   const handleSubmitScore = useCallback(
     async (data: {
       eventId: string;
@@ -213,110 +283,92 @@ function EventPickCard({
       predictionType: PredictionType;
       predictionData: Record<string, unknown>;
     }) => {
-      // ExactScoreSection derives a winner from a complete score and syncs it.
       const saved = await submitPrediction(
         data.predictionType,
         data.predictionData,
       );
       setWinnerPred(saved);
+      const hasWinner = winnerValue(saved ?? undefined) !== null;
+      onWinnerLanded(event.id, hasWinner);
     },
-    [submitPrediction],
+    [submitPrediction, onWinnerLanded, event.id],
   );
 
-  return (
-    <div className="rounded-xl border border-ps-border bg-ps-surface p-4">
-      <div className="flex items-start justify-between">
-        <div>
-          <h3 className="text-sm font-bold text-ps-text">
-            {event.event_name}
-          </h3>
-          <p className="mt-0.5 font-mono text-xs text-ps-text-ter">
-            {new Date(event.start_time).toLocaleDateString("en-GB", {
-              weekday: "short",
-              day: "numeric",
-              month: "short",
-              hour: "2-digit",
-              minute: "2-digit",
-            })}
-          </p>
-        </div>
-        {isLocked && (
-          <span className="rounded-full bg-ps-chip px-2 py-0.5 text-xs font-semibold text-ps-text-sec">
+  if (isLocked) {
+    // Read-only compact row. No buttons, just the locked pick.
+    return (
+      <div className="rounded-lg border border-ps-border bg-ps-surface px-3 py-2">
+        <div className="flex items-center justify-between gap-2">
+          <span className="text-sm font-semibold text-ps-text">
+            {home}
+            <span className="mx-1.5 text-ps-text-ter">v</span>
+            {away}
+          </span>
+          <span className="rounded-full bg-ps-chip px-2 py-0.5 text-[10px] font-semibold uppercase text-ps-text-sec">
             {event.result_confirmed ? "Resulted" : "Locked"}
           </span>
+        </div>
+        {currentWinner ? (
+          <p className="mt-1 text-xs text-ps-text-sec">
+            Picked:{" "}
+            <span className="font-semibold text-ps-text">{currentWinner}</span>
+          </p>
+        ) : (
+          <p className="mt-1 text-xs text-ps-text-ter">No pick</p>
         )}
       </div>
+    );
+  }
 
-      {/* W/D/L pick */}
-      {winnerEpt && (
-        <div className="mt-3">
-          <div className="mb-1.5 flex items-center justify-between">
-            <span className="text-[11px] font-bold uppercase tracking-wide text-ps-text-sec">
-              Match Outcome
-            </span>
-            <span className="font-mono text-[11px] text-ps-text-ter">
-              +{winnerEpt.points}pts
-            </span>
-          </div>
-
-          {isLocked ? (
-            <p className="text-sm font-semibold text-ps-text">
-              {currentWinner ?? (
-                <span className="font-normal text-ps-text-ter">No pick</span>
-              )}
-            </p>
-          ) : (
-            <div
-              className="grid gap-2"
-              style={{
-                gridTemplateColumns: `repeat(${winnerOptions.length}, minmax(0, 1fr))`,
-              }}
+  return (
+    <div className="rounded-lg border border-ps-border bg-ps-surface px-2 py-2">
+      <div className="grid grid-cols-3 gap-1.5">
+        {winnerOptions.map((opt) => {
+          const isSelected = currentWinner === opt;
+          const slot = slotOf(opt, home, away);
+          return (
+            <button
+              key={opt}
+              type="button"
+              onClick={() => handlePickWinner(opt)}
+              aria-pressed={isSelected}
+              className={[
+                "rounded-md px-2 py-2 text-center text-[13px] font-bold leading-tight transition-all duration-150",
+                "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ps-amber/50",
+                "motion-reduce:transition-none active:scale-[0.97]",
+                isSelected
+                  ? slot === "draw"
+                    ? "bg-ps-text text-ps-bg"
+                    : "bg-ps-amber text-ps-text"
+                  : "bg-ps-chip text-ps-text hover:bg-ps-chip/70",
+              ].join(" ")}
             >
-              {winnerOptions.map((opt) => (
-                <PickButton
-                  key={opt}
-                  label={opt}
-                  selected={currentWinner === opt}
-                  disabled={winnerSave.kind === "saving"}
-                  onClick={() => handlePickWinner(opt)}
-                />
-              ))}
-            </div>
-          )}
+              {opt}
+            </button>
+          );
+        })}
+      </div>
 
-          {winnerSave.kind === "saving" && (
-            <p className="mt-1.5 text-[11px] font-medium text-ps-text-ter">
-              Saving…
-            </p>
-          )}
-          {winnerSave.kind === "saved" && (
-            <p className="mt-1.5 text-[11px] font-medium text-ps-green">
-              Saved ✓
-            </p>
-          )}
-          {winnerSave.kind === "error" && (
-            <p className="mt-1.5 text-[11px] font-medium text-ps-red">
-              {winnerSave.message}
-            </p>
-          )}
+      {scoreEpt && (
+        <div className="mt-1.5">
+          <ExactScoreSection
+            eventId={event.id}
+            sport={event.sport}
+            homeTeam={home}
+            awayTeam={away}
+            ept={scoreEpt}
+            winnerOptions={winnerOptions}
+            currentWinnerPick={currentWinner}
+            existingScorePrediction={scorePred}
+            isLocked={isLocked}
+            onSubmitScore={handleSubmitScore}
+            onUpdateWinner={handleUpdateWinner}
+          />
         </div>
       )}
 
-      {/* Exact score — required for Overall/Format scoring and group tiebreakers */}
-      {scoreEpt && (
-        <ExactScoreSection
-          eventId={event.id}
-          sport={event.sport}
-          homeTeam={home}
-          awayTeam={away}
-          ept={scoreEpt}
-          winnerOptions={winnerOptions}
-          currentWinnerPick={currentWinner}
-          existingScorePrediction={scorePred}
-          isLocked={isLocked}
-          onSubmitScore={handleSubmitScore}
-          onUpdateWinner={handleUpdateWinner}
-        />
+      {errorMsg && (
+        <p className="mt-1 text-[11px] font-medium text-ps-red">{errorMsg}</p>
       )}
     </div>
   );
@@ -329,8 +381,8 @@ export function WindowPickList({
   events,
   predictions,
   windowLocked,
+  onWindowComplete,
 }: WindowPickListProps) {
-  // Group existing predictions by event for O(1) lookup per card.
   const predsByEvent = useMemo(() => {
     const map = new Map<string, Prediction[]>();
     for (const p of predictions) {
@@ -341,6 +393,77 @@ export function WindowPickList({
     return map;
   }, [predictions]);
 
+  // Track which events have a (live or just-landed) winner pick. Used to
+  // detect the "all matches picked" moment so the page can fire the
+  // matchday-complete celebration.
+  const initialPickedSet = useMemo(() => {
+    const set = new Set<string>();
+    for (const p of predictions) {
+      if (p.prediction_type === "winner" && winnerValue(p)) {
+        set.add(p.event_id);
+      }
+    }
+    return set;
+  }, [predictions]);
+
+  const [, setPickedEventIds] = useState<Set<string>>(initialPickedSet);
+  const completedFiredRef = useRef(false);
+
+  // Pickable events: live, unlocked matches in the window. The celebration
+  // should fire when those are all picked — already-locked matches without a
+  // pick can't be picked, so they shouldn't block completion.
+  //
+  // We snapshot `Date.now()` once at first render via a useState initializer
+  // (the only render-safe place to call an impure function). A page reload
+  // refreshes it, which is fine — windows lock on minute boundaries, not
+  // tap-by-tap.
+  const [nowAtMount] = useState<number>(() => Date.now());
+
+  const pickableEventIds = useMemo(() => {
+    const ids: string[] = [];
+    for (const e of events) {
+      const eventLocked =
+        windowLocked ||
+        new Date(e.lock_time).getTime() <= nowAtMount ||
+        e.status !== "upcoming";
+      if (!eventLocked) ids.push(e.id);
+    }
+    return ids;
+  }, [events, windowLocked, nowAtMount]);
+
+  // If the user already finished the window before this mount (every pickable
+  // match has a saved winner), don't fire the celebration — they're revisiting.
+  useEffect(() => {
+    if (pickableEventIds.length === 0) return;
+    const alreadyComplete = pickableEventIds.every((id) =>
+      initialPickedSet.has(id),
+    );
+    if (alreadyComplete) completedFiredRef.current = true;
+  }, [pickableEventIds, initialPickedSet]);
+
+  const handleWinnerLanded = useCallback(
+    (eventId: string, hasWinner: boolean) => {
+      setPickedEventIds((prev) => {
+        const next = new Set(prev);
+        if (hasWinner) next.add(eventId);
+        else next.delete(eventId);
+
+        if (
+          !completedFiredRef.current &&
+          pickableEventIds.length > 0 &&
+          pickableEventIds.every((id) => next.has(id))
+        ) {
+          completedFiredRef.current = true;
+          // Defer so React commits this set update before the overlay mounts.
+          queueMicrotask(() => onWindowComplete?.());
+        }
+
+        return next;
+      });
+    },
+    [pickableEventIds, onWindowComplete],
+  );
+
   if (events.length === 0) {
     return (
       <p className="py-8 text-center text-sm text-ps-text-sec">
@@ -350,14 +473,15 @@ export function WindowPickList({
   }
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-2">
       {events.map((event) => (
-        <EventPickCard
+        <MatchPickRow
           key={event.id}
           competitionId={competitionId}
           event={event}
           initialPredictions={predsByEvent.get(event.id) ?? []}
           windowLocked={windowLocked}
+          onWinnerLanded={handleWinnerLanded}
         />
       ))}
     </div>

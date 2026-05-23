@@ -74,82 +74,18 @@ export async function POST(request: NextRequest) {
     );
   }
 
-  // Verify user is a member of the competition
-  const { data: membership, error: membershipError } = await supabase
-    .from("competition_members")
-    .select("id")
-    .eq("competition_id", competition_id)
-    .eq("user_id", user.id)
-    .maybeSingle();
-
-  if (membershipError || !membership) {
-    return NextResponse.json(
-      { error: "You are not a member of this competition" },
-      { status: 403 }
-    );
-  }
-
-  // Verify competition is active and check prediction update rules
-  const { data: competition, error: compError } = await supabase
-    .from("competitions")
-    .select("id, status, allow_prediction_updates")
-    .eq("id", competition_id)
-    .maybeSingle();
-
-  if (compError || !competition) {
-    return NextResponse.json(
-      { error: "Competition not found" },
-      { status: 404 }
-    );
-  }
-
-  if (competition.status !== "active") {
-    return NextResponse.json(
-      { error: "Competition is not active" },
-      { status: 403 }
-    );
-  }
-
-  // Verify event exists, belongs to the competition, and is not locked
-  const { data: event, error: eventError } = await supabase
-    .from("events")
-    .select("id, competition_id, lock_time, status")
-    .eq("id", event_id)
-    .eq("competition_id", competition_id)
-    .maybeSingle();
-
-  if (eventError || !event) {
-    return NextResponse.json(
-      { error: "Event not found in this competition" },
-      { status: 404 }
-    );
-  }
-
-  // Server-side lock check
-  const now = new Date();
-  const lockTime = new Date(event.lock_time);
-
-  if (lockTime <= now) {
-    return NextResponse.json(
-      { error: "This event is locked. Predictions can no longer be submitted." },
-      { status: 403 }
-    );
-  }
-
-  if (event.status !== "upcoming") {
-    return NextResponse.json(
-      {
-        error: `Event status is "${event.status}". Predictions can only be submitted for upcoming events.`,
-      },
-      { status: 403 }
-    );
-  }
-
-  // Resolve the event_prediction_type_id — enforces that this prediction type is
-  // actually configured for the event (referential integrity via FK).
+  // Resolve event_prediction_type + event in one round-trip. The embedded
+  // event lets us also sanity-check competition_id and surface a useful error
+  // before we hand the write to RLS. RLS itself enforces membership, lock_time,
+  // competition.status='active', and allow_prediction_updates — so the
+  // previous separate membership/competition/event/lock pre-checks were
+  // redundant latency. They added ~4 round-trips per tap and contributed to
+  // the "selection is too slow" feel.
   const { data: ept, error: eptError } = await supabase
     .from("event_prediction_types")
-    .select("id")
+    .select(
+      "id, event:events!inner(id, competition_id, lock_time, status)"
+    )
     .eq("event_id", event_id)
     .eq("prediction_type", prediction_type)
     .maybeSingle();
@@ -161,23 +97,44 @@ export async function POST(request: NextRequest) {
     );
   }
 
+  const eptEvent = (ept as unknown as {
+    event: { id: string; competition_id: string; lock_time: string; status: string };
+  }).event;
+
+  if (eptEvent.competition_id !== competition_id) {
+    return NextResponse.json(
+      { error: "Event not found in this competition" },
+      { status: 404 }
+    );
+  }
+
+  if (new Date(eptEvent.lock_time) <= new Date()) {
+    return NextResponse.json(
+      { error: "This event is locked. Predictions can no longer be submitted." },
+      { status: 403 }
+    );
+  }
+
+  if (eptEvent.status !== "upcoming") {
+    return NextResponse.json(
+      {
+        error: `Event status is "${eptEvent.status}". Predictions can only be submitted for upcoming events.`,
+      },
+      { status: 403 }
+    );
+  }
+
   const event_prediction_type_id = ept.id;
 
-  // Check for existing prediction (upsert)
+  // Check for existing prediction (upsert). RLS will block the actual write if
+  // the competition disallows updates, so we don't need a separate competition
+  // lookup just to check that flag.
   const { data: existing } = await supabase
     .from("predictions")
     .select("id")
     .eq("event_prediction_type_id", event_prediction_type_id)
     .eq("user_id", user.id)
     .maybeSingle();
-
-  // Block updates when competition disallows prediction changes
-  if (existing && !competition.allow_prediction_updates) {
-    return NextResponse.json(
-      { error: "Prediction updates are not allowed for this competition" },
-      { status: 403 }
-    );
-  }
 
   // Handle clear/delete request (e.g., removing exact_score prediction)
   if (prediction_data._clear === true && existing) {
@@ -216,9 +173,19 @@ export async function POST(request: NextRequest) {
       .single();
 
     if (updateError) {
+      // PGRST116 = no row returned, which after a successful WHERE-id update
+      // means RLS hid the row from us. That happens when the competition
+      // disallows prediction updates, when the event has locked between this
+      // request and the prior read, or when the competition is no longer
+      // active.
+      const isRlsReject = updateError.code === "PGRST116";
       return NextResponse.json(
-        { error: "Failed to update prediction" },
-        { status: 500 }
+        {
+          error: isRlsReject
+            ? "Can't change this pick — the match may have locked or updates are disabled for this competition."
+            : "Failed to update prediction",
+        },
+        { status: isRlsReject ? 403 : 500 }
       );
     }
 

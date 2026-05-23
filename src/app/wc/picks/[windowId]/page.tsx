@@ -1,17 +1,19 @@
 import { createClient } from "@/lib/supabase/server";
 import { redirect, notFound } from "next/navigation";
 import Link from "next/link";
-import { WindowPickList, type WindowEvent } from "./WindowPickList";
+import { PicksClient } from "./PicksClient";
+import type { WindowEvent } from "./WindowPickList";
 import type { Prediction } from "@/types/database";
 
 export const dynamic = "force-dynamic";
 
 /**
- * /wc/picks/[windowId] — Single World Cup matchday window picks page (U2).
+ * /wc/picks/[windowId] — Single World Cup matchday window picks page.
  *
  * Server component: handles auth, ensures the user is enrolled in the WC
  * competition, fetches the window's events + the user's existing predictions,
- * then delegates the interactive pick UI to <WindowPickList>.
+ * resolves the prev/next sibling windows for in-page navigation, then hands
+ * the interactive UI to <PicksClient>.
  */
 export default async function WindowPicksPage({
   params,
@@ -28,10 +30,9 @@ export default async function WindowPicksPage({
     redirect(`/login?next=/wc/picks/${windowId}`);
   }
 
-  // Get the round (window) and its competition.
   const { data: round } = await supabase
     .from("rounds")
-    .select("id, name, competition_id, status, sporting_stage_id")
+    .select("id, name, competition_id, status, sporting_stage_id, round_number")
     .eq("id", windowId)
     .single();
 
@@ -39,9 +40,6 @@ export default async function WindowPicksPage({
     notFound();
   }
 
-  // The pick API requires competition membership. A logged-in user who reached
-  // this page without going through /wc/join would 403 on every pick — route
-  // them through join (idempotent enrollment) and back here.
   const { data: membership } = await supabase
     .from("competition_members")
     .select("id")
@@ -53,15 +51,25 @@ export default async function WindowPicksPage({
     redirect(`/wc/join?next=/wc/picks/${windowId}`);
   }
 
-  // round.status ∈ "draft" | "open" | "locked" | "scored" (RoundStatus).
-  // 'draft' (knockout windows) — not open for picks yet.
-  // 'locked' / 'scored' — the whole window is closed; render read-only even
-  // for events whose own lock_time hasn't passed (e.g. an admin override).
   const isDraft = round.status === "draft";
   const isFinalised = round.status === "scored";
   const isWindowLocked = round.status === "locked" || round.status === "scored";
 
-  // Get events in this window with their prediction types.
+  // Sibling windows for prev/next navigation. Ordered by round_number; we
+  // pick the immediate neighbours so the celebration's "Next matchday" CTA
+  // and the page's "← Prev" link know where to go.
+  const { data: siblings } = await supabase
+    .from("rounds")
+    .select("id, name, round_number, status")
+    .eq("competition_id", round.competition_id)
+    .order("round_number", { ascending: true });
+
+  const siblingList = siblings ?? [];
+  const idx = siblingList.findIndex((s) => s.id === windowId);
+  const prevWindow = idx > 0 ? siblingList[idx - 1] : null;
+  const nextWindow =
+    idx >= 0 && idx < siblingList.length - 1 ? siblingList[idx + 1] : null;
+
   const { data: eventsRaw } = await supabase
     .from("events")
     .select(`
@@ -73,8 +81,6 @@ export default async function WindowPicksPage({
 
   const events = (eventsRaw ?? []) as WindowEvent[];
 
-  // Get the user's existing predictions for this window's events (display +
-  // pre-fill). U2 only reads these; the bracket→windows carry-over is U3/U4.
   const eventIds = events.map((e) => e.id);
   const { data: predictionsRaw } =
     eventIds.length > 0
@@ -91,12 +97,23 @@ export default async function WindowPicksPage({
 
   return (
     <div className="mx-auto max-w-[480px] px-4 pt-6 pb-16">
-      <Link
-        href="/wc/picks"
-        className="text-sm font-medium text-ps-text-sec hover:text-ps-text"
-      >
-        &larr; All windows
-      </Link>
+      <div className="flex items-center justify-between gap-2 text-sm">
+        <Link
+          href="/wc/picks"
+          className="font-medium text-ps-text-sec hover:text-ps-text"
+        >
+          &larr; All windows
+        </Link>
+        {prevWindow && (
+          <Link
+            href={`/wc/picks/${prevWindow.id}`}
+            className="font-medium text-ps-text-sec hover:text-ps-text"
+            aria-label={`Previous: ${prevWindow.name}`}
+          >
+            &larr; {prevWindow.name}
+          </Link>
+        )}
+      </div>
 
       <h1 className="mt-3 text-xl font-extrabold text-ps-text">{round.name}</h1>
 
@@ -112,11 +129,14 @@ export default async function WindowPicksPage({
         </p>
       ) : (
         <div className="mt-6">
-          <WindowPickList
+          <PicksClient
             competitionId={round.competition_id}
             events={events}
             predictions={predictions}
             windowLocked={isWindowLocked}
+            matchdayName={round.name}
+            nextWindowId={nextWindow?.id ?? null}
+            nextWindowName={nextWindow?.name ?? null}
           />
         </div>
       )}
