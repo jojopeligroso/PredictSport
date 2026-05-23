@@ -72,3 +72,8 @@ venv/
 .queue-session
 .queue.lock
 supabase/.temp/
+
+# FIFA WC 2026 regulations PDFs — copyrighted source material for
+# scripts/extract-annex-c.ts. Re-download from FIFA if needed.
+FWC2026_regulations_EN.pdf
+annexes_FWC2026_regulations_EN.pdf

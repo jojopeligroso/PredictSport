@@ -5,9 +5,12 @@
  * made it." 1 point per correct team, max 32. Path-insensitive: it doesn't
  * matter which R32 slot the team was placed in, just whether it made the cut.
  *
- * Sources of truth:
- *   - User's pick set: `bracket_data.groupRankings` (top 2 from each group) +
- *     `bracket_data.bestThirdPicks` (their 8 selected third-place groups).
+ * Sources of truth (post-2026-05-23 amendment):
+ *   - User's pick set: `groupRankings` (computed from per-event `predictions`
+ *     rows via `groupDataToRankings`) for top 2 of each group, plus
+ *     `bracket_data.bestThirdPicks` (the 8 selected third-place groups).
+ *     The caller is responsible for populating `groupRankings` on the passed
+ *     `BracketSubmissionData` before invoking this — it's no longer stored.
  *   - Reality: same shape, derived from confirmed group-match results once
  *     the real tournament resolves. Until then, scoring returns 0 / not
  *     scored.
@@ -34,15 +37,16 @@ export interface R32ClassificationScore {
  */
 export function extractR32Teams(data: BracketSubmissionData): string[] {
   const teams: string[] = [];
+  const groupRankings = data.groupRankings ?? {};
 
-  for (const groupId of Object.keys(data.groupRankings).sort()) {
-    const ranking = data.groupRankings[groupId];
+  for (const groupId of Object.keys(groupRankings).sort()) {
+    const ranking = groupRankings[groupId];
     if (ranking[0]) teams.push(ranking[0]);
     if (ranking[1]) teams.push(ranking[1]);
   }
 
   for (const groupId of data.bestThirdPicks) {
-    const third = data.groupRankings[groupId]?.[2];
+    const third = groupRankings[groupId]?.[2];
     if (third) teams.push(third);
   }
 

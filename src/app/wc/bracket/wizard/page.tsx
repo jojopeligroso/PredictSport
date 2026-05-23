@@ -3,6 +3,8 @@ import { redirect, notFound } from "next/navigation";
 import Link from "next/link";
 import { BracketWizard } from "@/components/tournament/bracket/BracketWizard";
 import type { BracketSubmissionData } from "@/types/tournament";
+import { WC2026_GROUPS } from "@/lib/bracket/adapters/fifa-world-cup-2026";
+import { loadGroupDataAndEventMap } from "@/lib/tournament/bracket/adapters/predictions-to-group-data";
 
 export const dynamic = "force-dynamic";
 
@@ -83,6 +85,16 @@ export default async function BracketWizardPage({
     );
   }
 
+  // Source-of-truth load: group W/D/L and tiebreaker scores live in
+  // `predictions`; this projection feeds the wizard's initial state and per-
+  // tap writes. See docs/DESIGN-WC-UNIFIED-PREDICTIONS.md (Amendment 2026-05-23).
+  const { groups: initialGroups, eventIdByMatchId } =
+    await loadGroupDataAndEventMap(supabase, {
+      userId: user.id,
+      competitionId: classification.competition_id,
+      groups: WC2026_GROUPS,
+    });
+
   return (
     <div className="mx-auto max-w-[480px] px-4 pt-5 pb-16">
       <Link
@@ -112,7 +124,11 @@ export default async function BracketWizardPage({
           classificationId={classificationId}
           competitionId={classification.competition_id}
           mode={isKnockout ? "knockout_only" : "full"}
-          existingData={existingSubmission?.bracket_data as BracketSubmissionData | undefined}
+          existingData={
+            existingSubmission?.bracket_data as BracketSubmissionData | undefined
+          }
+          initialGroups={initialGroups}
+          eventIdByMatchId={eventIdByMatchId}
         />
       </div>
     </div>

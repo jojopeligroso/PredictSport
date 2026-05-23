@@ -128,11 +128,17 @@ export function validateBracketSubmission(
   const errors: string[] = [];
   const warnings: string[] = [];
 
+  // Under the 2026-05-23 unified-predictions amendment, groupRankings is
+  // computed from `predictions` rows by the caller and attached to `data`
+  // before validation runs. Treat absence as "no rankings yet" — every group
+  // check below already handles a missing entry with a specific error.
+  const groupRankings = data.groupRankings ?? {};
+
   const groupIds = new Set(template.groups.map((g) => g.groupId));
 
   // --- Group rankings ---
   for (const group of template.groups) {
-    const ranking = data.groupRankings[group.groupId];
+    const ranking = groupRankings[group.groupId];
     if (!ranking) {
       err(errors, `Group ${group.groupId} has no ranking.`);
       continue;
@@ -189,20 +195,20 @@ export function validateBracketSubmission(
   // --- Knockout picks: slot-sensitive reachability ---
   // Collect all teams the user has ranked in group stage.
   const allRankedTeams = new Set<string>();
-  for (const ranking of Object.values(data.groupRankings)) {
+  for (const ranking of Object.values(groupRankings)) {
     for (const team of ranking) allRankedTeams.add(team);
   }
 
   // Build the set of teams the user expects to qualify (winners, runners-up, qualifying thirds).
   const qualifyingTeams = new Set<string>();
   for (const group of template.groups) {
-    const ranking = data.groupRankings[group.groupId];
+    const ranking = groupRankings[group.groupId];
     if (!ranking || ranking.length < 2) continue;
     qualifyingTeams.add(ranking[0]); // winner
     qualifyingTeams.add(ranking[1]); // runner-up
   }
   for (const groupId of data.bestThirdPicks) {
-    const ranking = data.groupRankings[groupId];
+    const ranking = groupRankings[groupId];
     if (ranking && ranking[2]) qualifyingTeams.add(ranking[2]);
   }
 
@@ -313,8 +319,9 @@ export function scoreBracket(
   let isDead = false;
 
   // --- Group rankings ---
+  const submissionGroupRankings = submission.groupRankings ?? {};
   for (const group of template.groups) {
-    const predicted = submission.groupRankings[group.groupId];
+    const predicted = submissionGroupRankings[group.groupId];
     const actual = officialResults.groupRankings[group.groupId];
 
     if (!actual) {

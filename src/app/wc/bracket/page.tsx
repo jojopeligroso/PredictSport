@@ -5,18 +5,17 @@ import type { BracketSubmissionData } from "@/types/tournament";
 
 export const dynamic = "force-dynamic";
 
-function describeDraftProgress(data: BracketSubmissionData | null): {
+function describeDraftProgress(
+  data: BracketSubmissionData | null,
+  groupPicksCount: number,
+): {
   pct: number;
   label: string;
 } {
-  if (!data) return { pct: 0, label: "Not started" };
-  const groups = data.groupsV2 ?? [];
+  if (!data && groupPicksCount === 0) return { pct: 0, label: "Not started" };
   const groupTotal = 72;
-  const groupDone = groups.reduce(
-    (sum, g) => sum + g.matches.filter((m) => m.result !== null).length,
-    0,
-  );
-  const thirdsDone = (data.bestThirdPicks ?? []).length === 8;
+  const groupDone = Math.min(groupTotal, groupPicksCount);
+  const thirdsDone = (data?.bestThirdPicks ?? []).length === 8;
   const koSlots = [
     "r32_m1","r32_m2","r32_m3","r32_m4","r32_m5","r32_m6","r32_m7","r32_m8",
     "r32_m9","r32_m10","r32_m11","r32_m12","r32_m13","r32_m14","r32_m15","r32_m16",
@@ -26,9 +25,9 @@ function describeDraftProgress(data: BracketSubmissionData | null): {
     "final",
   ];
   const koDone = koSlots.filter(
-    (s) => data.knockoutPicks?.[s]?.winner,
+    (s) => data?.knockoutPicks?.[s]?.winner,
   ).length;
-  const finalDone = Boolean(data.champion) && Boolean(data.thirdPlace);
+  const finalDone = Boolean(data?.champion) && Boolean(data?.thirdPlace);
 
   const total = groupTotal + 1 + koSlots.length + 1; // groups + thirds + KO + final
   const done = groupDone + (thirdsDone ? 1 : 0) + koDone + (finalDone ? 1 : 0);
@@ -93,6 +92,20 @@ export default async function BracketPage() {
     .eq("user_id", user.id)
     .neq("status", "superseded");
 
+  // Group-stage progress now comes from `predictions` rows (per the 2026-05-23
+  // unified-predictions amendment), not from `bracket_data.groupsV2`. One
+  // count is enough for both bracket classifications shown on this page.
+  const { count: groupPicksCount } = await supabase
+    .from("predictions")
+    .select("event_id, events!inner(competition_id, external_event_id)", {
+      count: "exact",
+      head: true,
+    })
+    .eq("user_id", user.id)
+    .eq("prediction_type", "winner")
+    .eq("events.competition_id", competition.id)
+    .like("events.external_event_id", "wc2026-grp-%");
+
   const submissionMap = new Map(
     (submissions ?? []).map(
       (s: {
@@ -156,7 +169,10 @@ export default async function BracketPage() {
               )}
 
               {submission && (() => {
-                const progress = describeDraftProgress(submission.bracket_data);
+                const progress = describeDraftProgress(
+                  submission.bracket_data,
+                  groupPicksCount ?? 0,
+                );
                 return (
                   <div className="mt-3 space-y-2 rounded-lg bg-ps-bg px-3 py-2.5">
                     <div className="flex items-center justify-between">

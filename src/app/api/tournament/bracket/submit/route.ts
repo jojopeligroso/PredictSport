@@ -1,7 +1,11 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
-import { validateWC2026Bracket } from "@/lib/bracket/adapters/fifa-world-cup-2026";
-import { fanoutBracketToPredictions } from "@/lib/tournament/bracket/predictions-adapter";
+import {
+  validateWC2026Bracket,
+  WC2026_GROUPS,
+} from "@/lib/bracket/adapters/fifa-world-cup-2026";
+import { loadGroupDataFromPredictions } from "@/lib/tournament/bracket/adapters/predictions-to-group-data";
+import { groupDataToRankings } from "@/lib/tournament/bracket/group-ranking";
 import type { BracketSubmissionData } from "@/types/tournament";
 
 export async function POST(request: Request) {
@@ -19,7 +23,7 @@ export async function POST(request: Request) {
     classificationId,
     competitionId,
     bracketData,
-    action, // 'save_draft' | 'submit'
+    action,
   } = body as {
     classificationId: string;
     competitionId: string;
@@ -54,13 +58,29 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Classification not active" }, { status: 400 });
   }
 
-  // Validate bracket on submit (not on draft save)
+  // Validate bracket on submit (not on draft save).
+  //
+  // groupRankings is *never stored* — under the 2026-05-23 unified-predictions
+  // amendment, group W/D/L lives in `predictions` rows. We compute the
+  // rankings here from those rows so the validator can apply WC2026
+  // group-count / id checks without depending on client-supplied data.
+  let groupRankingsForValidation: Record<string, string[]> = {};
   if (action === "submit") {
-    const validation = validateWC2026Bracket(bracketData);
+    const groups = await loadGroupDataFromPredictions(supabase, {
+      userId: user.id,
+      competitionId,
+      groups: WC2026_GROUPS,
+    });
+    groupRankingsForValidation = groupDataToRankings(groups);
+
+    const validation = validateWC2026Bracket({
+      ...bracketData,
+      groupRankings: groupRankingsForValidation,
+    });
     if (!validation.valid) {
       return NextResponse.json(
         { error: "Invalid bracket", errors: validation.errors, warnings: validation.warnings },
-        { status: 422 }
+        { status: 422 },
       );
     }
   }
@@ -75,6 +95,15 @@ export async function POST(request: Request) {
   if (!template) {
     return NextResponse.json({ error: "Bracket template not found" }, { status: 500 });
   }
+
+  // Strip any legacy fields the client may still send. Storage shape is now:
+  //   { bestThirdPicks, knockoutPicks, champion, thirdPlace? }
+  const persistedData: BracketSubmissionData = {
+    bestThirdPicks: bracketData.bestThirdPicks ?? [],
+    knockoutPicks: bracketData.knockoutPicks ?? {},
+    champion: bracketData.champion ?? "",
+    thirdPlace: bracketData.thirdPlace,
+  };
 
   // Check for existing submission (non-superseded)
   const { data: existing } = await supabase
@@ -99,7 +128,7 @@ export async function POST(request: Request) {
     const { data: updated, error } = await supabase
       .from("bracket_prediction_submissions")
       .update({
-        bracket_data: bracketData,
+        bracket_data: persistedData,
         status,
         version_number: existing.version_number + 1,
         submitted_at: action === "submit" ? now : null,
@@ -123,7 +152,7 @@ export async function POST(request: Request) {
         user_id: user.id,
         version_number: 1,
         status,
-        bracket_data: bracketData,
+        bracket_data: persistedData,
         submitted_at: action === "submit" ? now : null,
       })
       .select("id, version_number, status, submitted_at")
@@ -134,16 +163,6 @@ export async function POST(request: Request) {
     }
     savedSubmission = created;
   }
-
-  // Fan out group-stage W/D/L picks + tiebreaker scores into `predictions` rows
-  // so the Overall/Format classifications can score this user's group matches.
-  // Failure here doesn't roll back the bracket save — bracket_data is the
-  // source of truth and we can re-run this projection any time.
-  const fanout = await fanoutBracketToPredictions(supabase, {
-    userId: user.id,
-    competitionId,
-    bracketData,
-  });
 
   // R32 Pick is an automatic byproduct of the Full Bracket — opt the user into
   // the R32 Pick classification membership the moment they submit a bracket
@@ -173,13 +192,7 @@ export async function POST(request: Request) {
   }
 
   return NextResponse.json(
-    {
-      submission: savedSubmission,
-      fanout: {
-        predictions_written: fanout.predictionsWritten,
-        errors: fanout.errors,
-      },
-    },
+    { submission: savedSubmission },
     { status: existing ? 200 : 201 },
   );
 }

@@ -46,8 +46,22 @@ async function getBracketSnapshot(
     .neq("status", "superseded")
     .maybeSingle();
 
+  // Group progress now comes from `predictions` (per the 2026-05-23 unified-
+  // predictions amendment), not from `bracket_data.groupsV2`. Count winner
+  // predictions on this competition's WC group events.
+  const { count: groupPicksCount } = await supabase
+    .from("predictions")
+    .select("event_id, events!inner(competition_id, external_event_id)", {
+      count: "exact",
+      head: true,
+    })
+    .eq("user_id", userId)
+    .eq("prediction_type", "winner")
+    .eq("events.competition_id", competition.id)
+    .like("events.external_event_id", "wc2026-grp-%");
+
   const data = submission?.bracket_data as BracketSubmissionData | null;
-  const progress = bracketProgress(data);
+  const progress = bracketProgress(data, groupPicksCount ?? 0);
 
   return {
     classificationId: cls.id,
@@ -60,15 +74,15 @@ async function getBracketSnapshot(
 
 function bracketProgress(
   data: BracketSubmissionData | null,
+  groupPicksCount: number,
 ): { pct: number; label: string } {
-  if (!data) return { pct: 0, label: "Not started" };
-  const groups = data.groupsV2 ?? [];
-  const groupDone = groups.reduce(
-    (sum, g) => sum + g.matches.filter((m) => m.result !== null).length,
-    0,
-  );
-  const thirdsDone = (data.bestThirdPicks ?? []).length === 8;
-  const knockoutPicks = data.knockoutPicks ?? {};
+  // A user with no bracket draft but with group picks via /picks should still
+  // see partial progress — group state lives in `predictions`, not in the
+  // (possibly missing) bracket_data blob.
+  if (!data && groupPicksCount === 0) return { pct: 0, label: "Not started" };
+  const groupDone = Math.min(72, groupPicksCount);
+  const thirdsDone = (data?.bestThirdPicks ?? []).length === 8;
+  const knockoutPicks = data?.knockoutPicks ?? {};
   const koSlots = [
     "r32_m1","r32_m2","r32_m3","r32_m4","r32_m5","r32_m6","r32_m7","r32_m8",
     "r32_m9","r32_m10","r32_m11","r32_m12","r32_m13","r32_m14","r32_m15","r32_m16",
@@ -78,7 +92,7 @@ function bracketProgress(
     "final",
   ];
   const koDone = koSlots.filter((s) => knockoutPicks[s]?.winner).length;
-  const finalDone = Boolean(data.champion) && Boolean(data.thirdPlace);
+  const finalDone = Boolean(data?.champion) && Boolean(data?.thirdPlace);
 
   const total = 72 + 1 + koSlots.length + 1;
   const done = groupDone + (thirdsDone ? 1 : 0) + koDone + (finalDone ? 1 : 0);

@@ -1,13 +1,13 @@
 "use client";
 
-import { useState, useCallback, useMemo } from "react";
-import type { BracketSubmissionData, GroupDataV2 } from "@/types/tournament";
+import { useState, useCallback, useMemo, useRef } from "react";
+import type { BracketSubmissionData } from "@/types/tournament";
 import {
-  WC2026_GROUPS,
   WC2026_KNOCKOUT_ROUNDS,
   generateWC2026R32Matchups,
 } from "@/lib/bracket/adapters/fifa-world-cup-2026";
 import { groupDataToRankings } from "@/lib/tournament/bracket/group-ranking";
+import { selectionForResult } from "@/lib/tournament/bracket/adapters/predictions-to-group-data";
 import type { GroupData } from "./GroupResultsStepV2";
 import GroupStep from "./GroupStep";
 import ThirdPlaceStep from "./ThirdPlaceStep";
@@ -32,13 +32,22 @@ import TiebreakerResolutionPage from "./TiebreakerResolutionPage";
  * Knockout-only mode skips steps 1-2 and uses pre-filled official R32
  * matchups (passed in by the page).
  *
- * Implementation notes:
+ * Storage model (per docs/DESIGN-WC-UNIFIED-PREDICTIONS.md, amended 2026-05-23):
+ *
+ * - Group W/D/L picks and tiebreaker `exact_score` live in the `predictions`
+ *   table — the same store the `/picks` matchday flow writes to. The wizard
+ *   reads them via `loadGroupDataFromPredictions()` in the parent server
+ *   component and receives them as `initialGroups` here. Every tap on a match
+ *   button writes through `/api/predictions` immediately; local state is an
+ *   optimistic mirror, not the source of truth.
+ *
  * - The Bracket classification only needs the *advancing* team per knockout
- *   match. The 90+ET result / exact score required by Overall/Format lives in
- *   per-event `predictions` rows and is collected by the windowed pick UI.
- *   See docs/DESIGN-WC-UNIFIED-PREDICTIONS.md §U5.
- * - `bestThirdPicks` is auto-derived from the third-place ranking — the user
- *   no longer picks 8 group letters by hand.
+ *   match. Knockout picks, champion, third-place, and best-third group picks
+ *   stay in `bracket_data` because they have no per-event analogue.
+ *
+ * - `groupRankings` is *never stored* — derived on the fly from the local
+ *   `groups` state (which mirrors `predictions`) via `groupDataToRankings`.
+ *   Server-side validation rebuilds it the same way.
  */
 
 interface BracketWizardProps {
@@ -47,8 +56,21 @@ interface BracketWizardProps {
   mode: "full" | "knockout_only";
   /** Pre-filled R32 matchups from official results (knockout_only mode) */
   officialR32?: Record<string, { home: string; away: string }>;
-  /** Existing draft to resume */
+  /** Existing draft to resume — only knockoutPicks/champion/thirdPlace/bestThirdPicks are used */
   existingData?: BracketSubmissionData;
+  /**
+   * Initial group state derived from `predictions` rows by the parent server
+   * component. The wizard treats this as the source-of-truth snapshot at
+   * page-load; subsequent edits write to `/api/predictions` and mirror back
+   * into local state optimistically.
+   */
+  initialGroups: GroupData[];
+  /**
+   * Map of `{groupId}-m{n}` → `events.id`. Needed so per-tap writes to
+   * `/api/predictions` can identify the correct event without a round-trip
+   * lookup. Resolved server-side once.
+   */
+  eventIdByMatchId: Record<string, string>;
 }
 
 type Step =
@@ -85,56 +107,6 @@ const STEP_NUMBERS: Record<Step, { num: number; label: string }> = {
 };
 
 // ---------------------------------------------------------------------------
-// Group state helpers
-// ---------------------------------------------------------------------------
-
-function buildGroupMatches(groupId: string, teams: string[]): GroupData["matches"] {
-  const matches: GroupData["matches"] = [];
-  let n = 0;
-  for (let i = 0; i < teams.length; i++) {
-    for (let j = i + 1; j < teams.length; j++) {
-      n++;
-      matches.push({
-        match_id: `${groupId}-m${n}`,
-        home_team: teams[i],
-        away_team: teams[j],
-        result: null,
-      });
-    }
-  }
-  return matches;
-}
-
-function buildInitialGroups(): GroupData[] {
-  return WC2026_GROUPS.map((g) => ({
-    group_id: g.groupId,
-    group_name: g.name,
-    teams: g.teams,
-    matches: buildGroupMatches(g.groupId, g.teams),
-    has_tiebreaker_scores: false,
-  }));
-}
-
-function resumeGroups(saved: GroupDataV2[] | undefined): GroupData[] {
-  if (!saved || saved.length === 0) return buildInitialGroups();
-  const fresh = buildInitialGroups();
-  const savedById = new Map(saved.map((g) => [g.group_id, g]));
-  return fresh.map((group) => {
-    const prior = savedById.get(group.group_id);
-    if (!prior) return group;
-    const priorByMatch = new Map(prior.matches.map((m) => [m.match_id, m]));
-    return {
-      ...group,
-      has_tiebreaker_scores: prior.has_tiebreaker_scores,
-      matches: group.matches.map((m) => {
-        const pm = priorByMatch.get(m.match_id);
-        return pm ? { ...m, result: pm.result, exact_score: pm.exact_score } : m;
-      }),
-    };
-  });
-}
-
-// ---------------------------------------------------------------------------
 // Component
 // ---------------------------------------------------------------------------
 
@@ -144,20 +116,21 @@ export function BracketWizard({
   mode,
   officialR32,
   existingData,
+  initialGroups,
+  eventIdByMatchId,
 }: BracketWizardProps) {
   const steps = mode === "full" ? FULL_STEPS : KO_STEPS;
 
   const [stepIndex, setStepIndex] = useState(() =>
-    pickResumeStepIndex(steps, existingData),
+    pickResumeStepIndex(steps, existingData, initialGroups),
   );
   const [saving, setSaving] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [submitted, setSubmitted] = useState(false);
   const [lastSavedAt, setLastSavedAt] = useState<number | null>(null);
+  const [pickWriteError, setPickWriteError] = useState<string | null>(null);
 
-  const [groups, setGroups] = useState<GroupData[]>(() =>
-    resumeGroups(existingData?.groupsV2),
-  );
+  const [groups, setGroups] = useState<GroupData[]>(initialGroups);
   const [bestThirdPicks, setBestThirdPicks] = useState<string[]>(
     existingData?.bestThirdPicks ?? [],
   );
@@ -172,15 +145,17 @@ export function BracketWizard({
     teams: string[];
   } | null>(null);
 
+  // Track the latest pick per (event_id, prediction_type) to detect stale
+  // responses. If two taps race, we keep only the most recent one's effect.
+  const latestPickSeq = useRef<Map<string, number>>(new Map());
+  const seqCounter = useRef(0);
+
   const currentStep = steps[stepIndex];
 
   const groupRankings = useMemo(() => groupDataToRankings(groups), [groups]);
 
   const r32Matchups = useMemo(() => {
     if (mode === "knockout_only" && officialR32) return officialR32;
-    // Only generate when every group is fully ranked AND the eight saved third
-    // picks still reference groups whose third-place team exists. Otherwise we
-    // would project stale group letters onto a freshly edited ranking.
     const allGroupsRanked = Object.keys(groupRankings).length === 12;
     const picksStillValid =
       bestThirdPicks.length === 8 &&
@@ -191,7 +166,6 @@ export function BracketWizard({
     return {};
   }, [mode, officialR32, bestThirdPicks, groupRankings]);
 
-  // Derive each later round's matchups from the previous round's picks.
   const allMatchups = useMemo(() => {
     return resolveAllKnockoutMatchups(r32Matchups, knockoutPicks);
   }, [r32Matchups, knockoutPicks]);
@@ -203,28 +177,139 @@ export function BracketWizard({
     if (idx !== -1) setStepIndex(idx);
   };
 
+  // -------------------------------------------------------------------------
+  // Per-tap write to /api/predictions
+  // -------------------------------------------------------------------------
+
+  const writePrediction = useCallback(
+    async (args: {
+      event_id: string;
+      prediction_type: "winner" | "exact_score";
+      prediction_data: Record<string, unknown>;
+    }) => {
+      const key = `${args.event_id}::${args.prediction_type}`;
+      const seq = ++seqCounter.current;
+      latestPickSeq.current.set(key, seq);
+
+      try {
+        const res = await fetch("/api/predictions", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            event_id: args.event_id,
+            competition_id: competitionId,
+            prediction_type: args.prediction_type,
+            prediction_data: args.prediction_data,
+          }),
+        });
+        // Ignore the response if a newer tap on the same (event, type) has
+        // since superseded it — its result is the one that should stand.
+        if (latestPickSeq.current.get(key) !== seq) return;
+
+        if (!res.ok) {
+          const body = await res.json().catch(() => ({}));
+          setPickWriteError(
+            (body && (body.error as string)) ?? "Couldn't save that pick",
+          );
+        } else {
+          setPickWriteError(null);
+        }
+      } catch {
+        if (latestPickSeq.current.get(key) === seq) {
+          setPickWriteError("Network error — pick may not be saved");
+        }
+      }
+    },
+    [competitionId],
+  );
+
+  // Diff old vs new groups to discover which match changed. GroupStep replaces
+  // the whole array on every tap, so the parent does the diff once rather
+  // than threading a granular callback through.
+  const handleGroupsUpdate = useCallback(
+    (next: GroupData[]) => {
+      // Apply optimistic update immediately.
+      setGroups(next);
+
+      // Find the changed match (at most one per tap in practice).
+      for (let gi = 0; gi < next.length; gi++) {
+        const before = groups[gi];
+        const after = next[gi];
+        if (!before || !after) continue;
+        for (let mi = 0; mi < after.matches.length; mi++) {
+          const bm = before.matches[mi];
+          const am = after.matches[mi];
+          if (!bm || !am) continue;
+          const resultChanged = bm.result !== am.result;
+          const scoreChanged =
+            JSON.stringify(bm.exact_score ?? null) !==
+            JSON.stringify(am.exact_score ?? null);
+          if (!resultChanged && !scoreChanged) continue;
+
+          const event_id = eventIdByMatchId[am.match_id];
+          if (!event_id) {
+            // No event mapping — bracket template and seeded events disagree.
+            // Surface but don't block: the optimistic UI still works for the
+            // user, but the pick won't survive a reload.
+            setPickWriteError(
+              `No event found for ${am.match_id} — pick saved locally only`,
+            );
+            continue;
+          }
+
+          if (resultChanged) {
+            if (am.result === null) {
+              void writePrediction({
+                event_id,
+                prediction_type: "winner",
+                prediction_data: { _clear: true },
+              });
+            } else {
+              void writePrediction({
+                event_id,
+                prediction_type: "winner",
+                prediction_data: {
+                  selection: selectionForResult(am.result, am.home_team, am.away_team),
+                },
+              });
+            }
+          }
+          if (scoreChanged) {
+            if (am.exact_score) {
+              void writePrediction({
+                event_id,
+                prediction_type: "exact_score",
+                prediction_data: {
+                  home_score: am.exact_score.home_score,
+                  away_score: am.exact_score.away_score,
+                },
+              });
+            } else {
+              void writePrediction({
+                event_id,
+                prediction_type: "exact_score",
+                prediction_data: { _clear: true },
+              });
+            }
+          }
+        }
+      }
+    },
+    [groups, eventIdByMatchId, writePrediction],
+  );
+
+  // -------------------------------------------------------------------------
+  // Bracket-data save (no group fields)
+  // -------------------------------------------------------------------------
+
   const buildBracketData = useCallback(
     (): BracketSubmissionData => ({
-      groupRankings,
-      groupsV2: groups.map((g) => ({
-        group_id: g.group_id,
-        group_name: g.group_name,
-        teams: g.teams,
-        matches: g.matches.map((m) => ({
-          match_id: m.match_id,
-          home_team: m.home_team,
-          away_team: m.away_team,
-          result: m.result,
-          exact_score: m.exact_score,
-        })),
-        has_tiebreaker_scores: g.has_tiebreaker_scores,
-      })),
       bestThirdPicks,
       knockoutPicks,
       champion,
       thirdPlace: thirdPlace || undefined,
     }),
-    [groupRankings, groups, bestThirdPicks, knockoutPicks, champion, thirdPlace],
+    [bestThirdPicks, knockoutPicks, champion, thirdPlace],
   );
 
   const saveDraft = useCallback(async () => {
@@ -292,7 +377,6 @@ export function BracketWizard({
         clearDownstreamPicks(next, slotId);
         return next;
       });
-      // If we changed an SF slot, clear champion/thirdPlace if they no longer match.
       if (slotId.startsWith("sf_")) {
         setChampion("");
         setThirdPlace("");
@@ -347,14 +431,15 @@ export function BracketWizard({
         group={groups[tiebreaker.groupIndex]}
         tiedTeams={tiebreaker.teams}
         onResolve={(updatedGroup) => {
-          setGroups((prev) => {
-            const next = [...prev];
-            next[tiebreaker.groupIndex] = {
-              ...updatedGroup,
-              has_tiebreaker_scores: true,
-            };
-            return next;
-          });
+          // The tiebreaker page mutates exact_score on the affected matches.
+          // We funnel through handleGroupsUpdate so each changed score is
+          // written to /api/predictions exactly like a normal tap.
+          const next = [...groups];
+          next[tiebreaker.groupIndex] = {
+            ...updatedGroup,
+            has_tiebreaker_scores: true,
+          };
+          handleGroupsUpdate(next);
           setTiebreaker(null);
         }}
         onBack={() => setTiebreaker(null)}
@@ -375,15 +460,23 @@ export function BracketWizard({
         onSaveDraft={saveDraft}
       />
 
+      {pickWriteError && (
+        <div
+          role="alert"
+          className="rounded-lg border border-ps-red/30 bg-ps-red/5 px-3 py-2 text-xs text-ps-red"
+        >
+          {pickWriteError}
+        </div>
+      )}
+
       {currentStep === "groups" && (
         <GroupStep
           groups={groups}
-          onUpdate={setGroups}
+          onUpdate={handleGroupsUpdate}
           onTiebreakerNeeded={(groupIndex, teams) =>
             setTiebreaker({ groupIndex, teams })
           }
           onAllGroupsComplete={() => {
-            // auto-save on big milestone, then advance.
             void saveDraft();
             goNext();
           }}
@@ -393,7 +486,7 @@ export function BracketWizard({
       {currentStep === "third_place" && (
         <ThirdPlaceStep
           groups={groups}
-          onUpdateGroups={setGroups}
+          onUpdateGroups={handleGroupsUpdate}
           onComplete={(groupIds) => {
             setBestThirdPicks(groupIds);
             void saveDraft();
@@ -603,16 +696,36 @@ function slotIdsFor(step: Step): string[] {
   }
 }
 
+/**
+ * Bracket tree per Articles 12.7-12.11 of the WC 2026 Regulations. Each
+ * later-round slot's two feeders are explicit because FIFA's mapping is
+ * non-sequential (e.g. R16-1 = W74+W77, not W73+W74). Mechanical
+ * `2n-1, 2n` would be wrong here.
+ */
+const KNOCKOUT_FEEDERS: Record<string, [string, string]> = {
+  // R16 (Article 12.7) — M89..M96
+  r16_m1: ["r32_m2", "r32_m5"],   // M89 = W74 v W77
+  r16_m2: ["r32_m1", "r32_m3"],   // M90 = W73 v W75
+  r16_m3: ["r32_m4", "r32_m6"],   // M91 = W76 v W78
+  r16_m4: ["r32_m7", "r32_m8"],   // M92 = W79 v W80
+  r16_m5: ["r32_m11", "r32_m12"], // M93 = W83 v W84
+  r16_m6: ["r32_m9", "r32_m10"],  // M94 = W81 v W82
+  r16_m7: ["r32_m14", "r32_m16"], // M95 = W86 v W88
+  r16_m8: ["r32_m13", "r32_m15"], // M96 = W85 v W87
+  // QF (Article 12.8) — M97..M100
+  qf_m1: ["r16_m1", "r16_m2"], // M97 = W89 v W90
+  qf_m2: ["r16_m5", "r16_m6"], // M98 = W93 v W94
+  qf_m3: ["r16_m3", "r16_m4"], // M99 = W91 v W92
+  qf_m4: ["r16_m7", "r16_m8"], // M100 = W95 v W96
+  // SF (Article 12.9) — M101..M102
+  sf_m1: ["qf_m1", "qf_m2"], // M101 = W97 v W98
+  sf_m2: ["qf_m3", "qf_m4"], // M102 = W99 v W100
+  // Final (Article 12.11) — M104
+  final: ["sf_m1", "sf_m2"],
+};
+
 function feedersFor(slotId: string): string[] {
-  const m = slotId.match(/^(r16|qf|sf|final)_?m?(\d*)$/);
-  if (!m) return [];
-  const [, round, numStr] = m;
-  const num = parseInt(numStr || "1", 10);
-  if (round === "r16") return [`r32_m${2 * num - 1}`, `r32_m${2 * num}`];
-  if (round === "qf") return [`r16_m${2 * num - 1}`, `r16_m${2 * num}`];
-  if (round === "sf") return [`qf_m${2 * num - 1}`, `qf_m${2 * num}`];
-  if (round === "final") return ["sf_m1", "sf_m2"];
-  return [];
+  return KNOCKOUT_FEEDERS[slotId] ?? [];
 }
 
 function resolveAllKnockoutMatchups(
@@ -675,16 +788,20 @@ function clearDownstreamPicks(
   }
 }
 
+/**
+ * Pick the resume step. Group completeness is determined from the
+ * predictions-derived `initialGroups`, not from any stored blob.
+ */
 function pickResumeStepIndex(
   steps: Step[],
   existing: BracketSubmissionData | undefined,
+  initialGroups: GroupData[],
 ): number {
-  if (!existing) return 0;
   const groupsDone =
-    (existing.groupsV2 ?? []).length === 12 &&
-    (existing.groupsV2 ?? []).every((g) => g.matches.every((m) => m.result !== null));
-  const thirdsDone = (existing.bestThirdPicks ?? []).length === 8;
-  const knockoutPicks = existing.knockoutPicks ?? {};
+    initialGroups.length === 12 &&
+    initialGroups.every((g) => g.matches.every((m) => m.result !== null));
+  const thirdsDone = (existing?.bestThirdPicks ?? []).length === 8;
+  const knockoutPicks = existing?.knockoutPicks ?? {};
   const r32Done = WC2026_KNOCKOUT_ROUNDS[0].slotIds.every(
     (s) => knockoutPicks[s]?.winner,
   );
@@ -697,7 +814,7 @@ function pickResumeStepIndex(
   const sfDone = WC2026_KNOCKOUT_ROUNDS[3].slotIds.every(
     (s) => knockoutPicks[s]?.winner,
   );
-  const finalDone = Boolean(existing.champion) && Boolean(existing.thirdPlace);
+  const finalDone = Boolean(existing?.champion) && Boolean(existing?.thirdPlace);
 
   let target: Step = "groups";
   if (groupsDone) target = "third_place";

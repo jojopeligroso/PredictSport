@@ -201,41 +201,18 @@ export interface BracketPredictionSubmission {
 
 export interface BracketSubmissionData {
   /**
-   * Per-group finishing order (1st → 4th). The contract consumed by the
-   * scoring engine, `validateWC2026Bracket`, and `generateWC2026R32Matchups`.
-   * Derived from `groupsV2` via `groupDataToRankings` at save/submit time.
+   * Per-group finishing order (1st → 4th). Computed from `predictions` rows
+   * via `groupDataToRankings` whenever needed (scoring, validation, knockout
+   * matchup generation). Optional in the stored blob and never written by the
+   * wizard under the 2026-05-23 unified-predictions amendment — kept here so
+   * the submit endpoint can attach it to the validator input and so legacy
+   * stored drafts can still be read.
    */
-  groupRankings: Record<string, string[]>;
-  /**
-   * Raw W/D/L group predictions from the wizard's match-based group step.
-   * Additive and optional — no scoring path reads it; it exists so a draft
-   * can round-trip the richer match/tiebreaker data the user entered.
-   */
-  groupsV2?: GroupDataV2[];
+  groupRankings?: Record<string, string[]>;
   bestThirdPicks: string[];
   knockoutPicks: Record<string, { winner: string }>;
   champion: string;
   thirdPlace?: string;
-}
-
-/**
- * One group's match-level predictions, as captured by the W/D/L group step
- * (`GroupResultsStepV2`). Structurally mirrors that component's `GroupData`;
- * declared here so `BracketSubmissionData` (a server-and-client type) does not
- * import a client component module.
- */
-export interface GroupDataV2 {
-  group_id: string;
-  group_name: string;
-  teams: string[];
-  matches: Array<{
-    match_id: string;
-    home_team: string;
-    away_team: string;
-    result: "home_win" | "draw" | "away_win" | null;
-    exact_score?: { home_score: number; away_score: number };
-  }>;
-  has_tiebreaker_scores: boolean;
 }
 
 // ============================================================

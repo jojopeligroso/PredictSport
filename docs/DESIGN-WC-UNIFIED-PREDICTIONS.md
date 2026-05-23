@@ -1,9 +1,83 @@
 # Design — World Cup Unified Prediction Model
 
-Status: **accepted** · Created 2026-05-22 · Ratified by build (U0–U2 shipped;
-storage decision locked by the user 2026-05-22). Supersedes the group-by-group
-capture flow and the winner-only knockout framing in
-`DESIGN-WC-H1-FULL-BRACKET.md` (which remains valid as the Bracket view).
+Status: **accepted** · Created 2026-05-22 · **Amended 2026-05-23** (carry-over
+direction reversed, `groupsV2` retired — see "Amendment 2026-05-23" below).
+Supersedes the group-by-group capture flow and the winner-only knockout framing
+in `DESIGN-WC-H1-FULL-BRACKET.md` (which remains valid as the Bracket view).
+
+## Amendment 2026-05-23 — `predictions` is the only group-pick store
+
+The 2026-05-22 design locked carry-over as **one-way, Bracket → windows**, and
+explicitly accepted the cost: *"a user who picks windows first could re-enter
+in the Bracket — accepted."*
+
+In practice that cost wasn't acceptable. On 2026-05-23 a user (eoinmaleoin)
+made all 72 group picks via the `/picks` matchday flow first, then opened
+`/wc/bracket/wizard` and found 11 of 12 groups empty (Group A had a separate,
+partial entry from earlier in the wizard). The accepted cost was a real bug —
+the Bracket can't be a *view* if it doesn't read the *predictions* it's a view
+of.
+
+**Amendment:** drop `bracket_data.groupsV2` entirely. There is no second
+store of group W/D/L or tiebreaker scores. The Bracket wizard reads group
+state from `predictions` on every render (initial state and after any local
+edit). Every tap on a match button in the wizard writes to `/api/predictions`,
+the same endpoint the matchday `/picks` page uses. Carry-over becomes **bi-
+directional and structural**, not by sync code — because there is only one
+store.
+
+`bracket_prediction_submissions.bracket_data` now contains *only* the bracket-
+classification extras that have no per-event analogue:
+
+```jsonc
+{
+  "bestThirdPicks": ["A", "C", "F", "H", "I", "J", "K", "L"],   // group letters
+  "knockoutPicks":  { "R32-1": { "winner": "Mexico" }, ... },    // advancing team per slot
+  "champion":       "Brazil",
+  "thirdPlace":     "France"
+}
+```
+
+Retired fields (must be migrated out of any existing rows and stop being
+written):
+
+- `groupsV2` — group W/D/L + tiebreaker `exact_score`. Now lives in
+  `predictions` as `prediction_type='winner'` and `'exact_score'` rows.
+- `groupRankings` — derived on the fly via `groupDataToRankings()` whenever
+  needed (wizard render, knockout matchup generation, scoring).
+- `has_tiebreaker_scores` — was UI bookkeeping; derivable from "do all
+  contested matches have exact_score rows in predictions?".
+
+Implementation consequences:
+
+1. **U3 (BracketData → predictions adapter)** is retired in its current
+   bracket-write-then-fanout form. Instead the wizard writes directly to
+   `/api/predictions` per tap. The fanout code in
+   `src/lib/tournament/bracket/predictions-adapter.ts` is no longer called and
+   should be deleted.
+2. **U4 (windowed UI reads predictions)** is now trivially satisfied — the
+   windowed UI already uses `predictions`, and so does the wizard.
+3. **The dead `BracketWizardV2.tsx` + `/api/bracket/*` routes** (which wrote to
+   a non-existent `bracket_predictions` table) are deleted as part of this
+   amendment — they confused the previous audit. The live wizard is
+   `src/components/tournament/bracket/BracketWizard.tsx`, mounted at
+   `/wc/bracket/wizard`, which already has the full 8-step flow (including
+   the knockouts that U5 was supposed to add). U5 becomes "verify the existing
+   knockout flow still works after `groupsV2` is gone."
+4. **Scoring engine** (`engine.ts` + `fifa-world-cup-2026.ts`) reads
+   `predictions` via a new `predictions → GroupData` adapter (the mirror of
+   the now-retired write fanout), then runs `groupDataToRankings` +
+   `FIFA_TIEBREAKERS` exactly as before.
+5. **Existing draft rows** in `bracket_prediction_submissions` (there is
+   exactly one, system-wide, as of 2026-05-23: eoinmaleoin's draft) are
+   discarded. The user's 72 `predictions` rows are untouched — they become the
+   source of truth for those picks.
+
+This amendment makes the doc's stated requirement — *"A user must never enter
+the same prediction twice"* — actually true. Under the original 2026-05-22
+design it was only true when the user happened to enter via the Bracket first.
+
+
 
 ## The requirement (user's words, restated)
 

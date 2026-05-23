@@ -1,0 +1,186 @@
+/**
+ * Generates the SQL migration that overwrites the WC2026 entry in
+ * `bracket_templates.config` with the FIFA-correct structure derived from
+ * Articles 12.6-12.11 of the WC 2026 Regulations and Annex C.
+ *
+ * Why a generator rather than a hand-written SQL file:
+ *   - The 495-row allocation matrix is too big to maintain in two places.
+ *   - The bracket tree, R32 seeding, and allocation matrix have to agree
+ *     pairwise; deriving them from one source rules out drift.
+ *
+ * Run from project root:
+ *   npx tsx scripts/generate-wc2026-template-migration.ts
+ *
+ * Writes `supabase/migrations/20260523100000_fix_wc2026_bracket_config.sql`.
+ */
+
+import { writeFileSync } from "node:fs";
+import { resolve } from "node:path";
+import {
+  WC2026_BEST_THIRD_ALLOCATION,
+  WC2026_WINNER_SLOTS,
+} from "../src/lib/bracket/data/wc2026-best-third-allocation";
+
+// R32 — Article 12.6
+const r32Seeding: Record<string, { home: string; away: string; fifaMatchNo: number }> = {
+  r32_m1:  { fifaMatchNo: 73, home: "2A",   away: "2B"   },
+  r32_m2:  { fifaMatchNo: 74, home: "1E",   away: "3?:E" },
+  r32_m3:  { fifaMatchNo: 75, home: "1F",   away: "2C"   },
+  r32_m4:  { fifaMatchNo: 76, home: "1C",   away: "2F"   },
+  r32_m5:  { fifaMatchNo: 77, home: "1I",   away: "3?:I" },
+  r32_m6:  { fifaMatchNo: 78, home: "2E",   away: "2I"   },
+  r32_m7:  { fifaMatchNo: 79, home: "1A",   away: "3?:A" },
+  r32_m8:  { fifaMatchNo: 80, home: "1L",   away: "3?:L" },
+  r32_m9:  { fifaMatchNo: 81, home: "1D",   away: "3?:D" },
+  r32_m10: { fifaMatchNo: 82, home: "1G",   away: "3?:G" },
+  r32_m11: { fifaMatchNo: 83, home: "2K",   away: "2L"   },
+  r32_m12: { fifaMatchNo: 84, home: "1H",   away: "2J"   },
+  r32_m13: { fifaMatchNo: 85, home: "1B",   away: "3?:B" },
+  r32_m14: { fifaMatchNo: 86, home: "1J",   away: "2H"   },
+  r32_m15: { fifaMatchNo: 87, home: "1K",   away: "3?:K" },
+  r32_m16: { fifaMatchNo: 88, home: "2D",   away: "2G"   },
+};
+
+// Articles 12.7 - 12.11
+const bracketTree: Record<string, [string, string]> = {
+  r16_m1: ["r32_m2", "r32_m5"],
+  r16_m2: ["r32_m1", "r32_m3"],
+  r16_m3: ["r32_m4", "r32_m6"],
+  r16_m4: ["r32_m7", "r32_m8"],
+  r16_m5: ["r32_m11", "r32_m12"],
+  r16_m6: ["r32_m9", "r32_m10"],
+  r16_m7: ["r32_m14", "r32_m16"],
+  r16_m8: ["r32_m13", "r32_m15"],
+  qf_m1: ["r16_m1", "r16_m2"],
+  qf_m2: ["r16_m5", "r16_m6"],
+  qf_m3: ["r16_m3", "r16_m4"],
+  qf_m4: ["r16_m7", "r16_m8"],
+  sf_m1: ["qf_m1", "qf_m2"],
+  sf_m2: ["qf_m3", "qf_m4"],
+  third_place_match: ["sf_m1_loser", "sf_m2_loser"],
+  final: ["sf_m1", "sf_m2"],
+};
+
+const bestThirdConfig = {
+  totalGroups: 12,
+  qualifyCount: 8,
+  winnerSlots: WC2026_WINNER_SLOTS,
+  allocationMatrix: WC2026_BEST_THIRD_ALLOCATION,
+};
+
+let entries = 0;
+for (const [key, mapping] of Object.entries(WC2026_BEST_THIRD_ALLOCATION)) {
+  entries++;
+  const keyLetters = key.split(",");
+  if (keyLetters.length !== 8 || new Set(keyLetters).size !== 8) {
+    throw new Error(`Bad allocationMatrix key: ${key}`);
+  }
+  const valueSet = new Set(Object.values(mapping));
+  if (valueSet.size !== 8) {
+    throw new Error(`Bad allocationMatrix value for ${key}`);
+  }
+  for (const v of valueSet) {
+    if (!keyLetters.includes(v)) {
+      throw new Error(`Value ${v} not in key ${key}`);
+    }
+  }
+}
+if (entries !== 495) {
+  throw new Error(`Expected 495 allocation matrix entries, found ${entries}`);
+}
+
+// Structural fields go in the first chunk; the 495-row matrix is split into
+// smaller batches so the migration file's individual statements stay readable
+// and so chunked-application paths (e.g. MCP `execute_sql` with token caps)
+// can apply it one batch at a time.
+
+const structuralPayload = JSON.stringify({
+  r32Seeding,
+  bracketTree,
+  bestThirdConfig: {
+    totalGroups: bestThirdConfig.totalGroups,
+    qualifyCount: bestThirdConfig.qualifyCount,
+    winnerSlots: bestThirdConfig.winnerSlots,
+    allocationMatrix: {}, // populated by subsequent UPDATE statements
+  },
+  thirdPlacePlayoff: true,
+});
+const structuralSql = structuralPayload.replace(/'/g, "''");
+
+// Chunk the allocation matrix into batches of ~33 entries (~15 statements).
+const matrixEntries = Object.entries(WC2026_BEST_THIRD_ALLOCATION);
+const CHUNK_SIZE = 33;
+const chunks: Array<Record<string, typeof matrixEntries[number][1]>> = [];
+for (let i = 0; i < matrixEntries.length; i += CHUNK_SIZE) {
+  chunks.push(Object.fromEntries(matrixEntries.slice(i, i + CHUNK_SIZE)));
+}
+
+const chunkStatements = chunks.map((chunk, i) => {
+  const chunkSql = JSON.stringify(chunk).replace(/'/g, "''");
+  return `-- Allocation matrix chunk ${i + 1}/${chunks.length} (${Object.keys(chunk).length} entries)
+UPDATE bracket_templates
+SET config = jsonb_set(
+  config,
+  '{bestThirdConfig,allocationMatrix}',
+  (config->'bestThirdConfig'->'allocationMatrix') || '${chunkSql}'::jsonb
+)
+WHERE template_key = 'fifa_world_cup_2026';`;
+});
+
+const sql = `-- AUTO-GENERATED by scripts/generate-wc2026-template-migration.ts
+-- Source: Articles 12.6-12.11 + Annex C of FWC2026_regulations_EN.pdf
+--
+-- Replaces the WC 2026 bracket template's r32Seeding, bracketTree, and
+-- bestThirdConfig (including the 495-row allocation matrix) with the
+-- FIFA-correct values. Preserves the existing 'groups' (team rosters) and
+-- 'knockoutRounds' (slot ID enumerations) from earlier migrations.
+--
+-- The 495-row allocation matrix is split into ${chunks.length} chunks so each
+-- statement stays small enough to apply via MCP/CLI with token caps.
+
+BEGIN;
+
+-- 1) Replace the structural fields (R32 seeding, bracket tree, best-third
+--    config skeleton with empty allocationMatrix).
+WITH new_struct AS (
+  SELECT '${structuralSql}'::jsonb AS p
+)
+UPDATE bracket_templates
+SET config = (
+  SELECT config
+         || jsonb_build_object('r32Seeding',        p -> 'r32Seeding')
+         || jsonb_build_object('bracketTree',       p -> 'bracketTree')
+         || jsonb_build_object('bestThirdConfig',   p -> 'bestThirdConfig')
+         || jsonb_build_object('thirdPlacePlayoff', to_jsonb(true))
+  FROM new_struct
+),
+    updated_at = now()
+WHERE template_key = 'fifa_world_cup_2026';
+
+-- 2) Populate the allocation matrix in chunks.
+
+${chunkStatements.join("\n\n")}
+
+-- 3) Sanity check.
+DO $$
+DECLARE
+  matrix_size int;
+BEGIN
+  SELECT count(*) INTO matrix_size
+    FROM jsonb_object_keys(
+      (SELECT config->'bestThirdConfig'->'allocationMatrix'
+       FROM bracket_templates
+       WHERE template_key = 'fifa_world_cup_2026'));
+  IF matrix_size <> 495 THEN
+    RAISE EXCEPTION 'Expected 495 allocation matrix entries, found %', matrix_size;
+  END IF;
+END $$;
+
+COMMIT;
+`;
+
+const outPath = resolve("supabase/migrations/20260523100000_fix_wc2026_bracket_config.sql");
+writeFileSync(outPath, sql);
+console.log(`✅ Wrote ${outPath}`);
+console.log(`   Allocation matrix chunks: ${chunks.length}`);
+console.log(`   Allocation matrix entries: ${entries}`);
