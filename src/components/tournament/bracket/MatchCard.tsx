@@ -51,13 +51,6 @@ export default function MatchCard({
     match.exact_score?.away_score?.toString() || ''
   )
 
-  // Auto-expand score input if tiebreaker detected
-  useEffect(() => {
-    if (needsScore && !match.exact_score) {
-      setShowScoreInput(true)
-    }
-  }, [needsScore, match.exact_score])
-
   // Update local state when match score changes
   useEffect(() => {
     setHomeScore(match.exact_score?.home_score?.toString() || '')
@@ -83,11 +76,8 @@ export default function MatchCard({
     setShowScoreInput(false)
   }
 
-  // Color classes based on pick color
   const selectedTextColor = pickColor === 'amber' ? 'text-ps-amber' : 'text-ps-green'
   const selectedBgColor = pickColor === 'amber' ? 'bg-ps-amber/10' : 'bg-ps-green/10'
-  const selectedBorderColor =
-    pickColor === 'amber' ? 'border-ps-amber/30' : 'border-ps-green/30'
 
   return (
     <div
@@ -100,9 +90,10 @@ export default function MatchCard({
         ${match.result ? 'border-ps-border bg-ps-surface' : 'border-ps-border bg-ps-surface'}
       `}
     >
-      {/* Team name buttons - single row, compact */}
-      <div className="flex items-center gap-2">
-        {/* Home team button */}
+      {/* Pick row — home / D / away. The D button replaces "vs" as the
+          centered separator: tapping it predicts a draw. Per
+          docs/DESIGN-PROMPT-WC2026-BRACKET.md §"Match Card Structure". */}
+      <div className="flex items-center gap-1">
         <button
           onClick={() =>
             onResultChange(match.result === 'home_win' ? null : 'home_win')
@@ -110,38 +101,33 @@ export default function MatchCard({
           aria-label={`Predict ${match.home_team} to win`}
           aria-pressed={match.result === 'home_win'}
           className={`
-            flex-1 min-h-[44px] rounded-md px-3 py-2 text-sm font-semibold transition-all duration-150
+            flex-1 min-h-[44px] rounded-md px-2 py-2 text-right text-sm font-semibold transition-all duration-150
             ${
               match.result === 'home_win'
-                ? `${selectedTextColor} ${selectedBgColor} border ${selectedBorderColor} scale-105`
-                : 'text-ps-text-sec hover:bg-ps-chip hover:scale-102'
+                ? `${selectedTextColor} ${selectedBgColor}`
+                : 'text-ps-text-sec hover:bg-ps-chip'
             }
           `}
         >
           {match.home_team}
         </button>
 
-        {/* vs label */}
-        <span className="shrink-0 font-mono text-xs text-ps-text-ter">vs</span>
-
-        {/* Draw button */}
         <button
           onClick={() => onResultChange(match.result === 'draw' ? null : 'draw')}
           aria-label="Predict draw"
           aria-pressed={match.result === 'draw'}
           className={`
-            shrink-0 min-h-[44px] min-w-[48px] rounded-md px-3 py-2 text-sm font-semibold transition-all duration-150
+            shrink-0 min-h-[44px] min-w-[40px] rounded-md px-2 py-2 text-center text-xs font-mono font-bold uppercase tracking-widest transition-all duration-150
             ${
               match.result === 'draw'
-                ? `${selectedTextColor} ${selectedBgColor} border ${selectedBorderColor} scale-105`
-                : 'text-ps-text-sec hover:bg-ps-chip hover:scale-102'
+                ? `${selectedTextColor} ${selectedBgColor}`
+                : 'text-ps-text-ter hover:bg-ps-chip hover:text-ps-text-sec'
             }
           `}
         >
           D
         </button>
 
-        {/* Away team button */}
         <button
           onClick={() =>
             onResultChange(match.result === 'away_win' ? null : 'away_win')
@@ -149,11 +135,11 @@ export default function MatchCard({
           aria-label={`Predict ${match.away_team} to win`}
           aria-pressed={match.result === 'away_win'}
           className={`
-            flex-1 min-h-[44px] rounded-md px-3 py-2 text-sm font-semibold transition-all duration-150
+            flex-1 min-h-[44px] rounded-md px-2 py-2 text-left text-sm font-semibold transition-all duration-150
             ${
               match.result === 'away_win'
-                ? `${selectedTextColor} ${selectedBgColor} border ${selectedBorderColor} scale-105`
-                : 'text-ps-text-sec hover:bg-ps-chip hover:scale-102'
+                ? `${selectedTextColor} ${selectedBgColor}`
+                : 'text-ps-text-sec hover:bg-ps-chip'
             }
           `}
         >
