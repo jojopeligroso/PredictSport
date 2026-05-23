@@ -10,24 +10,26 @@ import { groupDataToRankings } from "@/lib/tournament/bracket/group-ranking";
 import { selectionForResult } from "@/lib/tournament/bracket/adapters/predictions-to-group-data";
 import type { GroupData } from "./GroupResultsStepV2";
 import GroupStep from "./GroupStep";
+import TiebreakersStep from "./TiebreakersStep";
 import ThirdPlaceStep from "./ThirdPlaceStep";
 import KnockoutStageStep from "./KnockoutStageStep";
 import FinalStep from "./FinalStep";
 import BracketReviewStep from "./BracketReviewStep";
-import TiebreakerResolutionPage from "./TiebreakerResolutionPage";
+import { allTiebreakersResolved } from "@/lib/tournament/bracket/group-ranking";
 
 /**
- * WC2026 BracketWizard — bite-sized, 8-step flow.
+ * WC2026 BracketWizard — bite-sized, 9-step flow.
  *
  * Step list (full mode):
  *   1. Groups               — one-group-at-a-time W/D/L picker
- *   2. Third-place ranking  — auto-ranked best-thirds with inline tiebreakers
- *   3. R32                  — knockout round 1 (one stage = one step)
- *   4. R16
- *   5. QF
- *   6. SF
- *   7. Final + 3rd-place playoff — names the champion
- *   8. Review               — visual summary, edit-back, submit
+ *   2. Tiebreakers          — resolve any point ties with exact scores
+ *   3. Third-place ranking  — auto-ranked best-thirds
+ *   4. R32                  — knockout round 1 (one stage = one step)
+ *   5. R16
+ *   6. QF
+ *   7. SF
+ *   8. Final + 3rd-place playoff — names the champion
+ *   9. Review               — visual summary, edit-back, submit
  *
  * Knockout-only mode skips steps 1-2 and uses pre-filled official R32
  * matchups (passed in by the page).
@@ -75,6 +77,7 @@ interface BracketWizardProps {
 
 type Step =
   | "groups"
+  | "tiebreakers"
   | "third_place"
   | "r32"
   | "r16"
@@ -85,6 +88,7 @@ type Step =
 
 const FULL_STEPS: Step[] = [
   "groups",
+  "tiebreakers",
   "third_place",
   "r32",
   "r16",
@@ -97,13 +101,14 @@ const KO_STEPS: Step[] = ["r32", "r16", "qf", "sf", "final", "review"];
 
 const STEP_NUMBERS: Record<Step, { num: number; label: string }> = {
   groups: { num: 1, label: "Groups" },
-  third_place: { num: 2, label: "Best thirds" },
-  r32: { num: 3, label: "Round of 32" },
-  r16: { num: 4, label: "Round of 16" },
-  qf: { num: 5, label: "Quarter-finals" },
-  sf: { num: 6, label: "Semi-finals" },
-  final: { num: 7, label: "Final" },
-  review: { num: 8, label: "Review" },
+  tiebreakers: { num: 2, label: "Tiebreakers" },
+  third_place: { num: 3, label: "Best thirds" },
+  r32: { num: 4, label: "Round of 32" },
+  r16: { num: 5, label: "Round of 16" },
+  qf: { num: 6, label: "Quarter-finals" },
+  sf: { num: 7, label: "Semi-finals" },
+  final: { num: 8, label: "Final" },
+  review: { num: 9, label: "Review" },
 };
 
 // ---------------------------------------------------------------------------
@@ -139,11 +144,6 @@ export function BracketWizard({
   >(existingData?.knockoutPicks ?? {});
   const [champion, setChampion] = useState(existingData?.champion ?? "");
   const [thirdPlace, setThirdPlace] = useState(existingData?.thirdPlace ?? "");
-
-  const [tiebreaker, setTiebreaker] = useState<{
-    groupIndex: number;
-    teams: string[];
-  } | null>(null);
 
   // Track the latest pick per (event_id, prediction_type) to detect stale
   // responses. If two taps race, we keep only the most recent one's effect.
@@ -423,30 +423,6 @@ export function BracketWizard({
     );
   }
 
-  // ----- Render tiebreaker overlay -----
-
-  if (currentStep === "groups" && tiebreaker) {
-    return (
-      <TiebreakerResolutionPage
-        group={groups[tiebreaker.groupIndex]}
-        tiedTeams={tiebreaker.teams}
-        onResolve={(updatedGroup) => {
-          // The tiebreaker page mutates exact_score on the affected matches.
-          // We funnel through handleGroupsUpdate so each changed score is
-          // written to /api/predictions exactly like a normal tap.
-          const next = [...groups];
-          next[tiebreaker.groupIndex] = {
-            ...updatedGroup,
-            has_tiebreaker_scores: true,
-          };
-          handleGroupsUpdate(next);
-          setTiebreaker(null);
-        }}
-        onBack={() => setTiebreaker(null)}
-      />
-    );
-  }
-
   // ----- Default rendering -----
 
   return (
@@ -473,10 +449,18 @@ export function BracketWizard({
         <GroupStep
           groups={groups}
           onUpdate={handleGroupsUpdate}
-          onTiebreakerNeeded={(groupIndex, teams) =>
-            setTiebreaker({ groupIndex, teams })
-          }
           onAllGroupsComplete={() => {
+            void saveDraft();
+            goNext();
+          }}
+        />
+      )}
+
+      {currentStep === "tiebreakers" && (
+        <TiebreakersStep
+          groups={groups}
+          onUpdateGroups={handleGroupsUpdate}
+          onComplete={() => {
             void saveDraft();
             goNext();
           }}
@@ -791,6 +775,12 @@ function clearDownstreamPicks(
 /**
  * Pick the resume step. Group completeness is determined from the
  * predictions-derived `initialGroups`, not from any stored blob.
+ *
+ * Resume ladder:
+ *   groups → tiebreakers (once all 12 groups have W/D/L picks)
+ *   tiebreakers → third_place (once all point ties have exact scores)
+ *   third_place → r32 (once 8 best-third groups are chosen)
+ *   r32 → r16 → qf → sf → final → review
  */
 function pickResumeStepIndex(
   steps: Step[],
@@ -800,6 +790,7 @@ function pickResumeStepIndex(
   const groupsDone =
     initialGroups.length === 12 &&
     initialGroups.every((g) => g.matches.every((m) => m.result !== null));
+  const tiebreakersDone = groupsDone && allTiebreakersResolved(initialGroups);
   const thirdsDone = (existing?.bestThirdPicks ?? []).length === 8;
   const knockoutPicks = existing?.knockoutPicks ?? {};
   const r32Done = WC2026_KNOCKOUT_ROUNDS[0].slotIds.every(
@@ -817,8 +808,9 @@ function pickResumeStepIndex(
   const finalDone = Boolean(existing?.champion) && Boolean(existing?.thirdPlace);
 
   let target: Step = "groups";
-  if (groupsDone) target = "third_place";
-  if (groupsDone && thirdsDone) target = "r32";
+  if (groupsDone) target = "tiebreakers";
+  if (tiebreakersDone) target = "third_place";
+  if (tiebreakersDone && thirdsDone) target = "r32";
   if (r32Done) target = "r16";
   if (r16Done) target = "qf";
   if (qfDone) target = "sf";

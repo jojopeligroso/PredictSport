@@ -121,3 +121,68 @@ export function groupDataToRankings(
   }
   return rankings
 }
+
+// ---------------------------------------------------------------------------
+// Tiebreaker detection helpers (shared between GroupStep and TiebreakersStep)
+// ---------------------------------------------------------------------------
+
+/**
+ * Derive a simple points-only standings table from W/D/L results, using
+ * synthesised 1-0/0-0/0-1 scores for goal-diff display. Only used for
+ * tie detection — the ranking engine handles the authoritative order.
+ */
+function computePointsTable(group: GroupData): Record<string, number> {
+  const pts: Record<string, number> = {}
+  for (const t of group.teams) pts[t] = 0
+  for (const m of group.matches) {
+    if (!m.result) continue
+    if (m.result === 'home_win') pts[m.home_team] = (pts[m.home_team] ?? 0) + 3
+    else if (m.result === 'away_win') pts[m.away_team] = (pts[m.away_team] ?? 0) + 3
+    else {
+      pts[m.home_team] = (pts[m.home_team] ?? 0) + 1
+      pts[m.away_team] = (pts[m.away_team] ?? 0) + 1
+    }
+  }
+  return pts
+}
+
+/**
+ * Return the names of teams that share the same points total in a group.
+ * Empty array means no tie — group is unambiguously ranked by points alone.
+ */
+export function tiedTeamsInGroup(group: GroupData): string[] {
+  const pts = computePointsTable(group)
+  const tied = new Set<string>()
+  const entries = Object.entries(pts).sort((a, b) => b[1] - a[1])
+  for (let i = 0; i < entries.length - 1; i++) {
+    if (entries[i][1] === entries[i + 1][1]) {
+      tied.add(entries[i][0])
+      tied.add(entries[i + 1][0])
+    }
+  }
+  return [...tied]
+}
+
+/**
+ * A group's tiebreaker is "resolved" when every match that involves at least
+ * one tied team has an exact_score recorded. That gives the ranking engine
+ * real goal-difference data to work with.
+ */
+export function groupTiebreakerResolved(group: GroupData): boolean {
+  const tied = tiedTeamsInGroup(group)
+  if (tied.length === 0) return true
+  return group.matches
+    .filter((m) => tied.includes(m.home_team) || tied.includes(m.away_team))
+    .every((m) => m.exact_score !== undefined)
+}
+
+/**
+ * True when every fully-predicted group has either no point ties or has had
+ * its tiebreaker resolved via exact scores. This is the condition that allows
+ * the wizard to advance past the Tiebreakers step.
+ */
+export function allTiebreakersResolved(groups: GroupData[]): boolean {
+  return groups
+    .filter((g) => g.matches.every((m) => m.result !== null))
+    .every(groupTiebreakerResolved)
+}

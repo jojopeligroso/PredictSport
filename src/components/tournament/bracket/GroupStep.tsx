@@ -29,7 +29,6 @@ interface GroupStepProps {
   groups: GroupData[];
   pickColor?: PickColor;
   onUpdate: (groups: GroupData[]) => void;
-  onTiebreakerNeeded: (groupIndex: number, tiedTeams: string[]) => void;
   onAllGroupsComplete: () => void;
 }
 
@@ -37,7 +36,6 @@ export default function GroupStep({
   groups,
   pickColor = "green",
   onUpdate,
-  onTiebreakerNeeded,
   onAllGroupsComplete,
 }: GroupStepProps) {
   const [activeIndex, setActiveIndex] = useState<number>(() => {
@@ -53,14 +51,7 @@ export default function GroupStep({
   );
 
   const standings = useMemo(() => calculateLiveStandings(currentGroup), [currentGroup]);
-  const tiedNames = useMemo(() => detectPointsTies(standings), [standings]);
-  const needsTiebreaker = tiedNames.length > 0;
   const currentGroupComplete = currentGroup.matches.every((m) => m.result !== null);
-  const tiebreakerResolved =
-    !needsTiebreaker ||
-    currentGroup.matches
-      .filter((m) => tiedNames.includes(m.home_team) || tiedNames.includes(m.away_team))
-      .every((m) => m.exact_score !== undefined);
 
   const updateMatch = useCallback(
     (matchId: string, patch: Partial<MatchPrediction>) => {
@@ -99,10 +90,6 @@ export default function GroupStep({
 
   function handleContinue() {
     if (!currentGroupComplete) return;
-    if (needsTiebreaker && !tiebreakerResolved) {
-      onTiebreakerNeeded(activeIndex, tiedNames);
-      return;
-    }
     // Move to next incomplete group, else signal completion.
     const nextIncomplete = groups.findIndex(
       (g, i) => i > activeIndex && g.matches.some((m) => m.result === null),
@@ -160,10 +147,6 @@ export default function GroupStep({
             key={match.match_id}
             match={match}
             pickColor={pickColor}
-            needsScore={
-              needsTiebreaker &&
-              (tiedNames.includes(match.home_team) || tiedNames.includes(match.away_team))
-            }
             onResultChange={(result) => handleResultChange(match.match_id, result)}
             onScoreEntry={(home, away) => handleScoreEntry(match.match_id, home, away)}
           />
@@ -181,23 +164,16 @@ export default function GroupStep({
         className={`w-full rounded-xl px-6 py-3.5 text-sm font-semibold transition-all active:scale-[0.99] ${
           !currentGroupComplete
             ? "cursor-not-allowed bg-ps-chip text-ps-text-ter"
-            : needsTiebreaker && !tiebreakerResolved
-              ? "bg-ps-amber text-ps-bg hover:opacity-90"
-              : "bg-ps-text text-ps-bg hover:opacity-90"
+            : "bg-ps-text text-ps-bg hover:opacity-90"
         }`}
       >
         {!currentGroupComplete ? (
           `Pick ${6 - currentGroup.matches.filter((m) => m.result !== null).length} more match${
             6 - currentGroup.matches.filter((m) => m.result !== null).length === 1 ? "" : "es"
           }`
-        ) : needsTiebreaker && !tiebreakerResolved ? (
-          <span className="inline-flex items-center justify-center gap-2">
-            Resolve tiebreaker
-            <span aria-hidden>→</span>
-          </span>
         ) : completedCount === groups.length ? (
           <span className="inline-flex items-center justify-center gap-2">
-            Continue to third-place ranking
+            Continue to tiebreakers
             <span aria-hidden>→</span>
           </span>
         ) : (
@@ -416,13 +392,3 @@ function calculateLiveStandings(group: GroupData): TeamStanding[] {
   return sorted;
 }
 
-function detectPointsTies(standings: TeamStanding[]): string[] {
-  const tied = new Set<string>();
-  for (let i = 0; i < standings.length - 1; i++) {
-    if (standings[i].points === standings[i + 1].points) {
-      tied.add(standings[i].name);
-      tied.add(standings[i + 1].name);
-    }
-  }
-  return [...tied];
-}
