@@ -31,7 +31,9 @@ export async function middleware(request: NextRequest) {
     }
   }
 
-  return await updateSession(request);
+  const response = await updateSession(request);
+  response.headers.set("x-pathname", request.nextUrl.pathname);
+  return response;
 }
 
 export const config = {
