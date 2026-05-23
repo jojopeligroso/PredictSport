@@ -1,12 +1,45 @@
 "use client";
 
-import { useState, useCallback } from "react";
-import type { BracketSubmissionData } from "@/types/tournament";
-import { WC2026_GROUPS, WC2026_KNOCKOUT_ROUNDS, generateWC2026R32Matchups } from "@/lib/bracket/adapters/fifa-world-cup-2026";
+import { useState, useCallback, useMemo } from "react";
+import type { BracketSubmissionData, GroupDataV2 } from "@/types/tournament";
+import {
+  WC2026_GROUPS,
+  WC2026_KNOCKOUT_ROUNDS,
+  generateWC2026R32Matchups,
+} from "@/lib/bracket/adapters/fifa-world-cup-2026";
+import { groupDataToRankings } from "@/lib/tournament/bracket/group-ranking";
+import type { GroupData } from "./GroupResultsStepV2";
+import GroupStep from "./GroupStep";
+import ThirdPlaceStep from "./ThirdPlaceStep";
+import KnockoutStageStep from "./KnockoutStageStep";
+import FinalStep from "./FinalStep";
+import BracketReviewStep from "./BracketReviewStep";
+import TiebreakerResolutionPage from "./TiebreakerResolutionPage";
 
-// ---------------------------------------------------------------------------
-// Types
-// ---------------------------------------------------------------------------
+/**
+ * WC2026 BracketWizard — bite-sized, 8-step flow.
+ *
+ * Step list (full mode):
+ *   1. Groups               — one-group-at-a-time W/D/L picker
+ *   2. Third-place ranking  — auto-ranked best-thirds with inline tiebreakers
+ *   3. R32                  — knockout round 1 (one stage = one step)
+ *   4. R16
+ *   5. QF
+ *   6. SF
+ *   7. Final + 3rd-place playoff — names the champion
+ *   8. Review               — visual summary, edit-back, submit
+ *
+ * Knockout-only mode skips steps 1-2 and uses pre-filled official R32
+ * matchups (passed in by the page).
+ *
+ * Implementation notes:
+ * - The Bracket classification only needs the *advancing* team per knockout
+ *   match. The 90+ET result / exact score required by Overall/Format lives in
+ *   per-event `predictions` rows and is collected by the windowed pick UI.
+ *   See docs/DESIGN-WC-UNIFIED-PREDICTIONS.md §U5.
+ * - `bestThirdPicks` is auto-derived from the third-place ranking — the user
+ *   no longer picks 8 group letters by hand.
+ */
 
 interface BracketWizardProps {
   classificationId: string;
@@ -18,24 +51,91 @@ interface BracketWizardProps {
   existingData?: BracketSubmissionData;
 }
 
-type Step = "groups" | "best_thirds" | "review_r32" | "knockout" | "champion" | "review";
+type Step =
+  | "groups"
+  | "third_place"
+  | "r32"
+  | "r16"
+  | "qf"
+  | "sf"
+  | "final"
+  | "review";
 
-const FULL_STEPS: Step[] = ["groups", "best_thirds", "review_r32", "knockout", "champion", "review"];
-const KO_STEPS: Step[] = ["knockout", "champion", "review"];
+const FULL_STEPS: Step[] = [
+  "groups",
+  "third_place",
+  "r32",
+  "r16",
+  "qf",
+  "sf",
+  "final",
+  "review",
+];
+const KO_STEPS: Step[] = ["r32", "r16", "qf", "sf", "final", "review"];
 
-const STEP_LABELS: Record<Step, string> = {
-  groups: "Rank Groups",
-  best_thirds: "Best Thirds",
-  review_r32: "Review R32",
-  knockout: "Knockout Picks",
-  champion: "Champion",
-  review: "Review & Submit",
+const STEP_NUMBERS: Record<Step, { num: number; label: string }> = {
+  groups: { num: 1, label: "Groups" },
+  third_place: { num: 2, label: "Best thirds" },
+  r32: { num: 3, label: "Round of 32" },
+  r16: { num: 4, label: "Round of 16" },
+  qf: { num: 5, label: "Quarter-finals" },
+  sf: { num: 6, label: "Semi-finals" },
+  final: { num: 7, label: "Final" },
+  review: { num: 8, label: "Review" },
 };
 
-const GROUP_IDS = WC2026_GROUPS.map((g) => g.groupId);
+// ---------------------------------------------------------------------------
+// Group state helpers
+// ---------------------------------------------------------------------------
+
+function buildGroupMatches(groupId: string, teams: string[]): GroupData["matches"] {
+  const matches: GroupData["matches"] = [];
+  let n = 0;
+  for (let i = 0; i < teams.length; i++) {
+    for (let j = i + 1; j < teams.length; j++) {
+      n++;
+      matches.push({
+        match_id: `${groupId}-m${n}`,
+        home_team: teams[i],
+        away_team: teams[j],
+        result: null,
+      });
+    }
+  }
+  return matches;
+}
+
+function buildInitialGroups(): GroupData[] {
+  return WC2026_GROUPS.map((g) => ({
+    group_id: g.groupId,
+    group_name: g.name,
+    teams: g.teams,
+    matches: buildGroupMatches(g.groupId, g.teams),
+    has_tiebreaker_scores: false,
+  }));
+}
+
+function resumeGroups(saved: GroupDataV2[] | undefined): GroupData[] {
+  if (!saved || saved.length === 0) return buildInitialGroups();
+  const fresh = buildInitialGroups();
+  const savedById = new Map(saved.map((g) => [g.group_id, g]));
+  return fresh.map((group) => {
+    const prior = savedById.get(group.group_id);
+    if (!prior) return group;
+    const priorByMatch = new Map(prior.matches.map((m) => [m.match_id, m]));
+    return {
+      ...group,
+      has_tiebreaker_scores: prior.has_tiebreaker_scores,
+      matches: group.matches.map((m) => {
+        const pm = priorByMatch.get(m.match_id);
+        return pm ? { ...m, result: pm.result, exact_score: pm.exact_score } : m;
+      }),
+    };
+  });
+}
 
 // ---------------------------------------------------------------------------
-// Main wizard
+// Component
 // ---------------------------------------------------------------------------
 
 export function BracketWizard({
@@ -47,94 +147,133 @@ export function BracketWizard({
 }: BracketWizardProps) {
   const steps = mode === "full" ? FULL_STEPS : KO_STEPS;
 
-  const [stepIndex, setStepIndex] = useState(0);
+  const [stepIndex, setStepIndex] = useState(() =>
+    pickResumeStepIndex(steps, existingData),
+  );
   const [saving, setSaving] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [submitted, setSubmitted] = useState(false);
+  const [lastSavedAt, setLastSavedAt] = useState<number | null>(null);
 
-  // Bracket state
-  const [groupRankings, setGroupRankings] = useState<Record<string, string[]>>(
-    existingData?.groupRankings ?? buildInitialGroupRankings()
+  const [groups, setGroups] = useState<GroupData[]>(() =>
+    resumeGroups(existingData?.groupsV2),
   );
   const [bestThirdPicks, setBestThirdPicks] = useState<string[]>(
-    existingData?.bestThirdPicks ?? []
+    existingData?.bestThirdPicks ?? [],
   );
-  const [knockoutPicks, setKnockoutPicks] = useState<Record<string, { winner: string }>>(
-    existingData?.knockoutPicks ?? {}
-  );
+  const [knockoutPicks, setKnockoutPicks] = useState<
+    Record<string, { winner: string }>
+  >(existingData?.knockoutPicks ?? {});
   const [champion, setChampion] = useState(existingData?.champion ?? "");
   const [thirdPlace, setThirdPlace] = useState(existingData?.thirdPlace ?? "");
 
+  const [tiebreaker, setTiebreaker] = useState<{
+    groupIndex: number;
+    teams: string[];
+  } | null>(null);
+
   const currentStep = steps[stepIndex];
 
-  // R32 matchups derived from group rankings + best thirds
-  const r32Matchups =
-    mode === "knockout_only" && officialR32
-      ? officialR32
-      : bestThirdPicks.length === 8
-        ? generateWC2026R32Matchups(groupRankings, bestThirdPicks)
-        : {};
+  const groupRankings = useMemo(() => groupDataToRankings(groups), [groups]);
+
+  const r32Matchups = useMemo(() => {
+    if (mode === "knockout_only" && officialR32) return officialR32;
+    // Only generate when every group is fully ranked AND the eight saved third
+    // picks still reference groups whose third-place team exists. Otherwise we
+    // would project stale group letters onto a freshly edited ranking.
+    const allGroupsRanked = Object.keys(groupRankings).length === 12;
+    const picksStillValid =
+      bestThirdPicks.length === 8 &&
+      bestThirdPicks.every((g) => groupRankings[g]?.[2]);
+    if (allGroupsRanked && picksStillValid) {
+      return generateWC2026R32Matchups(groupRankings, bestThirdPicks);
+    }
+    return {};
+  }, [mode, officialR32, bestThirdPicks, groupRankings]);
+
+  // Derive each later round's matchups from the previous round's picks.
+  const allMatchups = useMemo(() => {
+    return resolveAllKnockoutMatchups(r32Matchups, knockoutPicks);
+  }, [r32Matchups, knockoutPicks]);
 
   const goPrev = () => setStepIndex((i) => Math.max(0, i - 1));
   const goNext = () => setStepIndex((i) => Math.min(steps.length - 1, i + 1));
+  const goToStep = (step: Step) => {
+    const idx = steps.indexOf(step);
+    if (idx !== -1) setStepIndex(idx);
+  };
+
+  const buildBracketData = useCallback(
+    (): BracketSubmissionData => ({
+      groupRankings,
+      groupsV2: groups.map((g) => ({
+        group_id: g.group_id,
+        group_name: g.group_name,
+        teams: g.teams,
+        matches: g.matches.map((m) => ({
+          match_id: m.match_id,
+          home_team: m.home_team,
+          away_team: m.away_team,
+          result: m.result,
+          exact_score: m.exact_score,
+        })),
+        has_tiebreaker_scores: g.has_tiebreaker_scores,
+      })),
+      bestThirdPicks,
+      knockoutPicks,
+      champion,
+      thirdPlace: thirdPlace || undefined,
+    }),
+    [groupRankings, groups, bestThirdPicks, knockoutPicks, champion, thirdPlace],
+  );
 
   const saveDraft = useCallback(async () => {
     setSaving(true);
     setSubmitError(null);
     try {
-      const data: BracketSubmissionData = {
-        groupRankings,
-        bestThirdPicks,
-        knockoutPicks,
-        champion,
-        thirdPlace: thirdPlace || undefined,
-      };
       const res = await fetch("/api/tournament/bracket/submit", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           classificationId,
           competitionId,
-          bracketData: data,
+          bracketData: buildBracketData(),
           action: "save_draft",
         }),
       });
       if (!res.ok) {
         const err = await res.json();
         setSubmitError(err.error ?? "Failed to save draft");
+      } else {
+        setLastSavedAt(Date.now());
       }
     } catch {
       setSubmitError("Network error");
     } finally {
       setSaving(false);
     }
-  }, [groupRankings, bestThirdPicks, knockoutPicks, champion, thirdPlace, classificationId, competitionId]);
+  }, [buildBracketData, classificationId, competitionId]);
 
   const submitBracket = useCallback(async () => {
     setSaving(true);
     setSubmitError(null);
     try {
-      const data: BracketSubmissionData = {
-        groupRankings,
-        bestThirdPicks,
-        knockoutPicks,
-        champion,
-        thirdPlace: thirdPlace || undefined,
-      };
       const res = await fetch("/api/tournament/bracket/submit", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           classificationId,
           competitionId,
-          bracketData: data,
+          bracketData: buildBracketData(),
           action: "submit",
         }),
       });
       const result = await res.json();
       if (!res.ok) {
         setSubmitError(
-          result.errors?.join("; ") ?? result.error ?? "Submission failed"
+          (result.errors as string[] | undefined)?.join("; ") ??
+            result.error ??
+            "Submission failed",
         );
       } else {
         setSubmitted(true);
@@ -144,640 +283,303 @@ export function BracketWizard({
     } finally {
       setSaving(false);
     }
-  }, [groupRankings, bestThirdPicks, knockoutPicks, champion, thirdPlace, classificationId, competitionId]);
+  }, [buildBracketData, classificationId, competitionId]);
+
+  const pickKnockout = useCallback(
+    (slotId: string, winner: string) => {
+      setKnockoutPicks((prev) => {
+        const next = { ...prev, [slotId]: { winner } };
+        clearDownstreamPicks(next, slotId);
+        return next;
+      });
+      // If we changed an SF slot, clear champion/thirdPlace if they no longer match.
+      if (slotId.startsWith("sf_")) {
+        setChampion("");
+        setThirdPlace("");
+      }
+      if (slotId === "final") {
+        setChampion(winner);
+      }
+    },
+    [setKnockoutPicks, setChampion, setThirdPlace],
+  );
+
+  // ----- Render submitted state -----
 
   if (submitted) {
     return (
-      <div className="py-12 text-center">
-        <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-ps-green/15">
-          <svg className="h-6 w-6 text-ps-green" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
-            <path strokeLinecap="round" strokeLinejoin="round" d="M4.5 12.75l6 6 9-13.5" />
+      <div className="py-10 text-center">
+        <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-ps-green/15">
+          <svg
+            className="h-7 w-7 text-ps-green"
+            fill="none"
+            viewBox="0 0 24 24"
+            strokeWidth={2.5}
+            stroke="currentColor"
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              d="M4.5 12.75l6 6 9-13.5"
+            />
           </svg>
         </div>
-        <h2 className="text-lg font-bold text-ps-text">Bracket Submitted</h2>
-        <p className="mt-1 text-sm text-ps-text-sec">
-          Your bracket has been locked in. Good luck!
+        <h2 className="font-display text-2xl font-extrabold text-ps-text">
+          Bracket locked in
+        </h2>
+        <p className="mt-2 text-sm text-ps-text-sec">
+          Your World Cup picks are saved. Good luck.
         </p>
+        {champion && (
+          <p className="mt-4 inline-block rounded-full bg-ps-amber/15 px-3 py-1 text-xs font-bold text-ps-amber">
+            Champion pick: {champion}
+          </p>
+        )}
       </div>
     );
   }
 
+  // ----- Render tiebreaker overlay -----
+
+  if (currentStep === "groups" && tiebreaker) {
+    return (
+      <TiebreakerResolutionPage
+        group={groups[tiebreaker.groupIndex]}
+        tiedTeams={tiebreaker.teams}
+        onResolve={(updatedGroup) => {
+          setGroups((prev) => {
+            const next = [...prev];
+            next[tiebreaker.groupIndex] = {
+              ...updatedGroup,
+              has_tiebreaker_scores: true,
+            };
+            return next;
+          });
+          setTiebreaker(null);
+        }}
+        onBack={() => setTiebreaker(null)}
+      />
+    );
+  }
+
+  // ----- Default rendering -----
+
   return (
-    <div>
-      {/* Step indicator */}
-      <StepIndicator steps={steps} currentIndex={stepIndex} />
+    <div className="space-y-4">
+      <StepHeader
+        step={currentStep}
+        stepCount={steps.length}
+        index={stepIndex}
+        saving={saving}
+        lastSavedAt={lastSavedAt}
+        onSaveDraft={saveDraft}
+      />
 
-      {/* Step content */}
-      <div className="mt-4">
-        {currentStep === "groups" && (
-          <GroupRankingStep
-            rankings={groupRankings}
-            onUpdate={setGroupRankings}
-          />
-        )}
-        {currentStep === "best_thirds" && (
-          <BestThirdsStep
-            picks={bestThirdPicks}
-            onUpdate={setBestThirdPicks}
-          />
-        )}
-        {currentStep === "review_r32" && (
-          <ReviewR32Step matchups={r32Matchups} />
-        )}
-        {currentStep === "knockout" && (
-          <KnockoutPicksStep
-            r32Matchups={r32Matchups}
-            picks={knockoutPicks}
-            onUpdate={setKnockoutPicks}
-          />
-        )}
-        {currentStep === "champion" && (
-          <ChampionStep
-            picks={knockoutPicks}
-            champion={champion}
-            thirdPlace={thirdPlace}
-            onChampionChange={setChampion}
-            onThirdPlaceChange={setThirdPlace}
-          />
-        )}
-        {currentStep === "review" && (
-          <ReviewStep
-            groupRankings={groupRankings}
-            bestThirdPicks={bestThirdPicks}
-            knockoutPicks={knockoutPicks}
-            champion={champion}
-            thirdPlace={thirdPlace}
-            mode={mode}
-          />
-        )}
-      </div>
+      {currentStep === "groups" && (
+        <GroupStep
+          groups={groups}
+          onUpdate={setGroups}
+          onTiebreakerNeeded={(groupIndex, teams) =>
+            setTiebreaker({ groupIndex, teams })
+          }
+          onAllGroupsComplete={() => {
+            // auto-save on big milestone, then advance.
+            void saveDraft();
+            goNext();
+          }}
+        />
+      )}
 
-      {/* Error display */}
+      {currentStep === "third_place" && (
+        <ThirdPlaceStep
+          groups={groups}
+          onUpdateGroups={setGroups}
+          onComplete={(groupIds) => {
+            setBestThirdPicks(groupIds);
+            void saveDraft();
+            goNext();
+          }}
+        />
+      )}
+
+      {(currentStep === "r32" ||
+        currentStep === "r16" ||
+        currentStep === "qf" ||
+        currentStep === "sf") && (
+        <KnockoutStageStep
+          roundKey={currentStep}
+          roundName={STEP_NUMBERS[currentStep].label}
+          slotIds={slotIdsFor(currentStep)}
+          matchups={allMatchups}
+          picks={knockoutPicks}
+          nextRoundName={
+            currentStep === "sf" ? "the Final" : STEP_NUMBERS[steps[stepIndex + 1]].label
+          }
+          onPick={pickKnockout}
+          onContinue={() => {
+            void saveDraft();
+            goNext();
+          }}
+        />
+      )}
+
+      {currentStep === "final" && (
+        <FinalStep
+          finalists={{
+            home: knockoutPicks.sf_m1?.winner ?? "",
+            away: knockoutPicks.sf_m2?.winner ?? "",
+          }}
+          sfLosers={{
+            home: getSFLoser("sf_m1", knockoutPicks, allMatchups),
+            away: getSFLoser("sf_m2", knockoutPicks, allMatchups),
+          }}
+          champion={champion}
+          thirdPlace={thirdPlace}
+          onChampionPick={(team) => {
+            setChampion(team);
+            setKnockoutPicks((prev) => ({ ...prev, final: { winner: team } }));
+          }}
+          onThirdPlacePick={setThirdPlace}
+          onContinue={() => {
+            void saveDraft();
+            goNext();
+          }}
+        />
+      )}
+
+      {currentStep === "review" && (
+        <BracketReviewStep
+          groupRankings={groupRankings}
+          qualifyingThirds={bestThirdPicks}
+          knockoutPicks={knockoutPicks}
+          allMatchups={allMatchups}
+          champion={champion}
+          thirdPlace={thirdPlace}
+          onJumpToStep={(step) => goToStep(step)}
+        />
+      )}
+
       {submitError && (
-        <div className="mt-3 rounded-lg bg-ps-red/10 px-3 py-2 text-xs text-ps-red">
+        <div
+          role="alert"
+          className="rounded-lg border border-ps-red/30 bg-ps-red/5 px-3 py-2 text-xs text-ps-red"
+        >
           {submitError}
         </div>
       )}
 
-      {/* Navigation */}
-      <div className="mt-6 flex items-center justify-between">
-        <button
-          onClick={goPrev}
-          disabled={stepIndex === 0}
-          className="rounded-lg px-4 py-2 text-sm font-semibold text-ps-text-sec transition-colors hover:text-ps-text disabled:opacity-30"
-        >
-          Back
-        </button>
-
-        <div className="flex items-center gap-2">
-          {currentStep !== "review" && (
-            <button
-              onClick={saveDraft}
-              disabled={saving}
-              className="rounded-lg border border-ps-border px-3 py-2 text-xs font-semibold text-ps-text-sec transition-colors hover:bg-ps-chip"
-            >
-              {saving ? "Saving..." : "Save draft"}
-            </button>
-          )}
-
-          {currentStep === "review" ? (
-            <button
-              onClick={submitBracket}
-              disabled={saving}
-              className="rounded-lg bg-ps-text px-6 py-2.5 text-sm font-semibold text-ps-bg transition-all hover:opacity-90 active:scale-[0.98] disabled:opacity-50"
-            >
-              {saving ? "Submitting..." : "Submit Bracket"}
-            </button>
-          ) : (
-            <button
-              onClick={goNext}
-              className="rounded-lg bg-ps-text px-4 py-2 text-sm font-semibold text-ps-bg transition-all hover:opacity-90 active:scale-[0.98]"
-            >
-              Next
-            </button>
-          )}
-        </div>
-      </div>
+      <NavBar
+        stepIndex={stepIndex}
+        stepCount={steps.length}
+        isReview={currentStep === "review"}
+        saving={saving}
+        onPrev={goPrev}
+        onSubmit={submitBracket}
+      />
     </div>
   );
 }
 
 // ---------------------------------------------------------------------------
-// Step indicator
+// Header
 // ---------------------------------------------------------------------------
 
-function StepIndicator({ steps, currentIndex }: { steps: Step[]; currentIndex: number }) {
-  return (
-    <div className="flex items-center gap-1 overflow-x-auto">
-      {steps.map((step, i) => (
-        <div
-          key={step}
-          className={`flex items-center gap-1 whitespace-nowrap rounded-full px-2.5 py-1 text-[11px] font-semibold transition-colors ${
-            i === currentIndex
-              ? "bg-ps-text text-ps-bg"
-              : i < currentIndex
-                ? "bg-ps-green/15 text-ps-green"
-                : "bg-ps-chip text-ps-text-ter"
-          }`}
-        >
-          <span>{i + 1}</span>
-          <span className="hidden sm:inline">{STEP_LABELS[step]}</span>
-        </div>
-      ))}
-    </div>
-  );
-}
-
-// ---------------------------------------------------------------------------
-// Step 1: Rank Groups
-// ---------------------------------------------------------------------------
-
-function GroupRankingStep({
-  rankings,
-  onUpdate,
+function StepHeader({
+  step,
+  stepCount,
+  index,
+  saving,
+  lastSavedAt,
+  onSaveDraft,
 }: {
-  rankings: Record<string, string[]>;
-  onUpdate: (r: Record<string, string[]>) => void;
+  step: Step;
+  stepCount: number;
+  index: number;
+  saving: boolean;
+  lastSavedAt: number | null;
+  onSaveDraft: () => void;
 }) {
-  const rankedCount = Object.values(rankings).filter(
-    (teams) => teams.length === 4
-  ).length;
-
-  const moveTeam = (groupId: string, fromIndex: number, toIndex: number) => {
-    const teams = [...(rankings[groupId] ?? [])];
-    const [moved] = teams.splice(fromIndex, 1);
-    teams.splice(toIndex, 0, moved);
-    onUpdate({ ...rankings, [groupId]: teams });
-  };
-
+  const pct = ((index + 1) / stepCount) * 100;
   return (
-    <div>
+    <div className="space-y-2">
       <div className="flex items-center justify-between">
-        <h2 className="text-base font-bold text-ps-text">Rank Each Group</h2>
-        <span className="font-mono text-xs font-semibold text-ps-amber">
-          {rankedCount}/12
-        </span>
-      </div>
-      <p className="mt-1 text-xs text-ps-text-sec">
-        For each group, arrange teams from 1st to 4th. Tap arrows to reorder.
-      </p>
-
-      <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2">
-        {WC2026_GROUPS.map((group) => (
-          <div
-            key={group.groupId}
-            className="rounded-xl border border-ps-border bg-ps-surface p-3"
+        <div>
+          <p className="font-mono text-[10px] font-bold uppercase tracking-widest text-ps-text-ter">
+            Step {STEP_NUMBERS[step].num} of {stepCount}
+          </p>
+        </div>
+        <div className="flex items-center gap-2 text-[11px] text-ps-text-sec">
+          {saving ? (
+            <span className="animate-pulse">Saving…</span>
+          ) : lastSavedAt ? (
+            <span className="text-ps-green">✓ Saved</span>
+          ) : null}
+          <button
+            type="button"
+            onClick={onSaveDraft}
+            disabled={saving}
+            className="rounded-md border border-ps-border px-2 py-0.5 font-semibold text-ps-text-sec hover:bg-ps-chip disabled:opacity-40"
           >
-            <h3 className="text-xs font-bold text-ps-text-ter">{group.name}</h3>
-            <div className="mt-2 space-y-1">
-              {(rankings[group.groupId] ?? group.teams).map((team, idx) => (
-                <div
-                  key={team}
-                  className="flex items-center justify-between rounded-md bg-ps-bg px-2 py-1.5"
-                >
-                  <div className="flex items-center gap-2">
-                    <span className="w-4 text-center font-mono text-xs font-bold text-ps-text-ter">
-                      {idx + 1}
-                    </span>
-                    <span className="text-sm text-ps-text">{team}</span>
-                  </div>
-                  <div className="flex gap-0.5">
-                    <button
-                      onClick={() => moveTeam(group.groupId, idx, idx - 1)}
-                      disabled={idx === 0}
-                      className="rounded p-1 text-ps-text-ter transition-colors hover:bg-ps-chip hover:text-ps-text disabled:opacity-20"
-                      aria-label={`Move ${team} up`}
-                    >
-                      <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" d="M4.5 15.75l7.5-7.5 7.5 7.5" />
-                      </svg>
-                    </button>
-                    <button
-                      onClick={() => moveTeam(group.groupId, idx, idx + 1)}
-                      disabled={idx === 3}
-                      className="rounded p-1 text-ps-text-ter transition-colors hover:bg-ps-chip hover:text-ps-text disabled:opacity-20"
-                      aria-label={`Move ${team} down`}
-                    >
-                      <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 8.25l-7.5 7.5-7.5-7.5" />
-                      </svg>
-                    </button>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-        ))}
-      </div>
-    </div>
-  );
-}
-
-// ---------------------------------------------------------------------------
-// Step 2: Best Thirds
-// ---------------------------------------------------------------------------
-
-function BestThirdsStep({
-  picks,
-  onUpdate,
-}: {
-  picks: string[];
-  onUpdate: (p: string[]) => void;
-}) {
-  const toggle = (groupId: string) => {
-    if (picks.includes(groupId)) {
-      onUpdate(picks.filter((id) => id !== groupId));
-    } else if (picks.length < 8) {
-      onUpdate([...picks, groupId]);
-    }
-  };
-
-  return (
-    <div>
-      <div className="flex items-center justify-between">
-        <h2 className="text-base font-bold text-ps-text">Pick Best Thirds</h2>
-        <span
-          className={`font-mono text-xs font-semibold ${
-            picks.length === 8 ? "text-ps-green" : "text-ps-amber"
-          }`}
-        >
-          {picks.length}/8
-        </span>
-      </div>
-      <p className="mt-1 text-xs text-ps-text-sec">
-        Select 8 groups whose third-place team you think will qualify for the R32.
-      </p>
-
-      <div className="mt-4 grid grid-cols-3 gap-2 sm:grid-cols-4">
-        {GROUP_IDS.map((groupId) => {
-          const isSelected = picks.includes(groupId);
-          return (
-            <button
-              key={groupId}
-              onClick={() => toggle(groupId)}
-              className={`rounded-xl border-2 px-3 py-3 text-center transition-all ${
-                isSelected
-                  ? "border-ps-green bg-ps-green/10 text-ps-green"
-                  : picks.length >= 8
-                    ? "border-ps-border bg-ps-surface text-ps-text-ter opacity-50"
-                    : "border-ps-border bg-ps-surface text-ps-text hover:border-ps-text/30"
-              }`}
-            >
-              <span className="text-lg font-bold">
-                {groupId}
-              </span>
-              <span className="mt-0.5 block text-[10px]">Group {groupId}</span>
-            </button>
-          );
-        })}
-      </div>
-    </div>
-  );
-}
-
-// ---------------------------------------------------------------------------
-// Step 3: Review R32
-// ---------------------------------------------------------------------------
-
-function ReviewR32Step({
-  matchups,
-}: {
-  matchups: Record<string, { home: string; away: string }>;
-}) {
-  const slots = WC2026_KNOCKOUT_ROUNDS[0].slotIds;
-
-  return (
-    <div>
-      <h2 className="text-base font-bold text-ps-text">Round of 32 Preview</h2>
-      <p className="mt-1 text-xs text-ps-text-sec">
-        These matchups are derived from your group rankings and best-third picks.
-        Go back to adjust.
-      </p>
-
-      <div className="mt-4 space-y-2">
-        {slots.map((slotId, i) => {
-          const m = matchups[slotId];
-          return (
-            <div
-              key={slotId}
-              className="flex items-center justify-between rounded-lg border border-ps-border bg-ps-surface px-3 py-2"
-            >
-              <span className="font-mono text-xs text-ps-text-ter">M{i + 1}</span>
-              <span className="text-sm font-semibold text-ps-text">
-                {m?.home || "?"} <span className="text-ps-text-ter">vs</span>{" "}
-                {m?.away || "?"}
-              </span>
-            </div>
-          );
-        })}
-      </div>
-    </div>
-  );
-}
-
-// ---------------------------------------------------------------------------
-// Step 4: Knockout picks
-// ---------------------------------------------------------------------------
-
-function KnockoutPicksStep({
-  r32Matchups,
-  picks,
-  onUpdate,
-}: {
-  r32Matchups: Record<string, { home: string; away: string }>;
-  picks: Record<string, { winner: string }>;
-  onUpdate: (p: Record<string, { winner: string }>) => void;
-}) {
-  // Build matchups for each round, flowing winners forward
-  const getMatchup = (slotId: string): { home: string; away: string } => {
-    // R32: from r32Matchups
-    if (slotId.startsWith("r32_")) {
-      return r32Matchups[slotId] ?? { home: "", away: "" };
-    }
-    // Later rounds: derive from previous round winners
-    const feeders = getFeedingSlots(slotId);
-    return {
-      home: picks[feeders[0]]?.winner ?? "",
-      away: picks[feeders[1]]?.winner ?? "",
-    };
-  };
-
-  const pickWinner = (slotId: string, winner: string) => {
-    const updated = { ...picks, [slotId]: { winner } };
-    // Clear downstream picks that depended on a different winner
-    clearDownstream(updated, slotId);
-    onUpdate(updated);
-  };
-
-  // Render rounds in order
-  const knockoutRounds = WC2026_KNOCKOUT_ROUNDS;
-  const totalSlots = knockoutRounds.reduce((sum, r) => sum + r.slotIds.length, 0);
-  const pickedCount = knockoutRounds.reduce(
-    (sum, r) => sum + r.slotIds.filter((s) => picks[s]?.winner).length,
-    0
-  );
-
-  return (
-    <div>
-      <div className="flex items-center justify-between">
-        <h2 className="text-base font-bold text-ps-text">Knockout Picks</h2>
-        <span
-          className={`font-mono text-xs font-semibold ${
-            pickedCount === totalSlots ? "text-ps-green" : "text-ps-amber"
-          }`}
-        >
-          {pickedCount}/{totalSlots}
-        </span>
-      </div>
-      <p className="mt-1 text-xs text-ps-text-sec">
-        Pick the advancing team in each match. Winners flow into the next round.
-      </p>
-
-      <div className="mt-4 space-y-6">
-        {knockoutRounds.map((round) => (
-          <div key={round.roundKey}>
-            <h3 className="text-xs font-bold uppercase tracking-widest text-ps-text-ter">
-              {round.name}
-            </h3>
-            <div className="mt-2 space-y-2">
-              {round.slotIds.map((slotId) => {
-                const matchup = getMatchup(slotId);
-                const selected = picks[slotId]?.winner;
-                const bothAvailable = matchup.home && matchup.away;
-
-                return (
-                  <div
-                    key={slotId}
-                    className="rounded-lg border border-ps-border bg-ps-surface p-2"
-                  >
-                    {bothAvailable ? (
-                      <div className="flex gap-1">
-                        <TeamButton
-                          team={matchup.home}
-                          isSelected={selected === matchup.home}
-                          onClick={() => pickWinner(slotId, matchup.home)}
-                        />
-                        <TeamButton
-                          team={matchup.away}
-                          isSelected={selected === matchup.away}
-                          onClick={() => pickWinner(slotId, matchup.away)}
-                        />
-                      </div>
-                    ) : (
-                      <div className="py-2 text-center text-xs text-ps-text-ter">
-                        Waiting for previous round picks...
-                      </div>
-                    )}
-                  </div>
-                );
-              })}
-            </div>
-          </div>
-        ))}
-      </div>
-    </div>
-  );
-}
-
-function TeamButton({
-  team,
-  isSelected,
-  onClick,
-}: {
-  team: string;
-  isSelected: boolean;
-  onClick: () => void;
-}) {
-  return (
-    <button
-      onClick={onClick}
-      className={`flex-1 rounded-md px-3 py-2 text-sm font-semibold transition-all ${
-        isSelected
-          ? "bg-ps-text text-ps-bg"
-          : "bg-ps-bg text-ps-text hover:bg-ps-chip"
-      }`}
-    >
-      {team}
-    </button>
-  );
-}
-
-// ---------------------------------------------------------------------------
-// Step 5: Champion & Third Place
-// ---------------------------------------------------------------------------
-
-function ChampionStep({
-  picks,
-  champion,
-  thirdPlace,
-  onChampionChange,
-  onThirdPlaceChange,
-}: {
-  picks: Record<string, { winner: string }>;
-  champion: string;
-  thirdPlace: string;
-  onChampionChange: (t: string) => void;
-  onThirdPlaceChange: (t: string) => void;
-}) {
-  // Semi-final winners are the finalists
-  const finalist1 = picks["sf_m1"]?.winner ?? "";
-  const finalist2 = picks["sf_m2"]?.winner ?? "";
-  // Semi-final losers play for third
-  const sfLoser1 = getSFLoser("sf_m1", picks);
-  const sfLoser2 = getSFLoser("sf_m2", picks);
-
-  return (
-    <div>
-      <h2 className="text-base font-bold text-ps-text">Pick Your Champion</h2>
-
-      {/* Final */}
-      <div className="mt-4">
-        <h3 className="text-xs font-bold uppercase tracking-widest text-ps-text-ter">
-          Final
-        </h3>
-        {finalist1 && finalist2 ? (
-          <div className="mt-2 flex gap-2">
-            <TeamButton
-              team={finalist1}
-              isSelected={champion === finalist1}
-              onClick={() => onChampionChange(finalist1)}
-            />
-            <TeamButton
-              team={finalist2}
-              isSelected={champion === finalist2}
-              onClick={() => onChampionChange(finalist2)}
-            />
-          </div>
-        ) : (
-          <p className="mt-2 text-xs text-ps-text-ter">
-            Complete semi-final picks first.
-          </p>
-        )}
-      </div>
-
-      {/* Third place */}
-      <div className="mt-6">
-        <h3 className="text-xs font-bold uppercase tracking-widest text-ps-text-ter">
-          Third Place Match
-        </h3>
-        {sfLoser1 && sfLoser2 ? (
-          <div className="mt-2 flex gap-2">
-            <TeamButton
-              team={sfLoser1}
-              isSelected={thirdPlace === sfLoser1}
-              onClick={() => onThirdPlaceChange(sfLoser1)}
-            />
-            <TeamButton
-              team={sfLoser2}
-              isSelected={thirdPlace === sfLoser2}
-              onClick={() => onThirdPlaceChange(sfLoser2)}
-            />
-          </div>
-        ) : (
-          <p className="mt-2 text-xs text-ps-text-ter">
-            Complete semi-final picks first.
-          </p>
-        )}
-      </div>
-    </div>
-  );
-}
-
-// ---------------------------------------------------------------------------
-// Step 6: Review & Submit
-// ---------------------------------------------------------------------------
-
-function ReviewStep({
-  groupRankings,
-  bestThirdPicks,
-  knockoutPicks,
-  champion,
-  thirdPlace,
-  mode,
-}: {
-  groupRankings: Record<string, string[]>;
-  bestThirdPicks: string[];
-  knockoutPicks: Record<string, { winner: string }>;
-  champion: string;
-  thirdPlace: string;
-  mode: "full" | "knockout_only";
-}) {
-  const totalKO = WC2026_KNOCKOUT_ROUNDS.reduce((s, r) => s + r.slotIds.length, 0);
-  const pickedKO = WC2026_KNOCKOUT_ROUNDS.reduce(
-    (s, r) => s + r.slotIds.filter((id) => knockoutPicks[id]?.winner).length,
-    0
-  );
-
-  return (
-    <div>
-      <h2 className="text-base font-bold text-ps-text">Review Your Bracket</h2>
-      <p className="mt-1 text-xs text-ps-text-sec">
-        Check everything looks right, then submit. You can edit until the bracket locks.
-      </p>
-
-      <div className="mt-4 space-y-3">
-        {mode === "full" && (
-          <>
-            <ReviewItem
-              label="Groups Ranked"
-              value={`${Object.keys(groupRankings).length}/12`}
-              ok={Object.keys(groupRankings).length === 12}
-            />
-            <ReviewItem
-              label="Best Thirds"
-              value={`${bestThirdPicks.length}/8`}
-              ok={bestThirdPicks.length === 8}
-            />
-          </>
-        )}
-        <ReviewItem
-          label="Knockout Picks"
-          value={`${pickedKO}/${totalKO}`}
-          ok={pickedKO === totalKO}
-        />
-        <ReviewItem
-          label="Champion"
-          value={champion || "Not picked"}
-          ok={!!champion}
-        />
-        <ReviewItem
-          label="Third Place"
-          value={thirdPlace || "Not picked"}
-          ok={!!thirdPlace}
-        />
-      </div>
-
-      {champion && (
-        <div className="mt-6 rounded-xl border-2 border-ps-amber bg-ps-amber/5 p-4 text-center">
-          <p className="text-xs font-bold uppercase tracking-widest text-ps-amber">
-            Your Champion
-          </p>
-          <p className="mt-1 text-xl font-extrabold text-ps-text">{champion}</p>
+            Save draft
+          </button>
         </div>
-      )}
+      </div>
+      <div className="h-1 w-full overflow-hidden rounded-full bg-ps-chip">
+        <div
+          className="h-full bg-ps-text transition-all duration-300"
+          style={{ width: `${pct}%` }}
+        />
+      </div>
     </div>
   );
 }
 
-function ReviewItem({
-  label,
-  value,
-  ok,
+// ---------------------------------------------------------------------------
+// Nav
+// ---------------------------------------------------------------------------
+
+function NavBar({
+  stepIndex,
+  stepCount,
+  isReview,
+  saving,
+  onPrev,
+  onSubmit,
 }: {
-  label: string;
-  value: string;
-  ok: boolean;
+  stepIndex: number;
+  stepCount: number;
+  isReview: boolean;
+  saving: boolean;
+  onPrev: () => void;
+  onSubmit: () => void;
 }) {
   return (
-    <div className="flex items-center justify-between rounded-lg border border-ps-border bg-ps-surface px-3 py-2">
-      <span className="text-sm text-ps-text">{label}</span>
-      <span
-        className={`font-mono text-sm font-semibold ${
-          ok ? "text-ps-green" : "text-ps-amber"
-        }`}
+    <div className="flex items-center justify-between border-t border-ps-border pt-3">
+      <button
+        type="button"
+        onClick={onPrev}
+        disabled={stepIndex === 0}
+        className="rounded-md px-3 py-2 text-xs font-semibold text-ps-text-sec transition-colors hover:text-ps-text disabled:opacity-30"
       >
-        {value}
+        ← Back
+      </button>
+
+      <span className="font-mono text-[10px] text-ps-text-ter">
+        {stepIndex + 1} / {stepCount}
       </span>
+
+      {isReview ? (
+        <button
+          type="button"
+          onClick={onSubmit}
+          disabled={saving}
+          className="rounded-xl bg-ps-amber px-5 py-2.5 text-sm font-extrabold text-ps-bg transition-all hover:opacity-90 active:scale-[0.98] disabled:opacity-50"
+        >
+          {saving ? "Submitting…" : "Submit bracket 🏆"}
+        </button>
+      ) : (
+        <span className="w-[80px]" aria-hidden />
+      )}
     </div>
   );
 }
@@ -786,68 +588,126 @@ function ReviewItem({
 // Helpers
 // ---------------------------------------------------------------------------
 
-function buildInitialGroupRankings(): Record<string, string[]> {
-  const rankings: Record<string, string[]> = {};
-  for (const group of WC2026_GROUPS) {
-    rankings[group.groupId] = [...group.teams];
+function slotIdsFor(step: Step): string[] {
+  switch (step) {
+    case "r32":
+      return WC2026_KNOCKOUT_ROUNDS[0].slotIds;
+    case "r16":
+      return WC2026_KNOCKOUT_ROUNDS[1].slotIds;
+    case "qf":
+      return WC2026_KNOCKOUT_ROUNDS[2].slotIds;
+    case "sf":
+      return WC2026_KNOCKOUT_ROUNDS[3].slotIds;
+    default:
+      return [];
   }
-  return rankings;
 }
 
-/** Returns the two feeder slot IDs for a given knockout slot */
-function getFeedingSlots(slotId: string): [string, string] {
-  // R16 matchN fed by R32 match(2N-1) and R32 match(2N)
-  const match = slotId.match(/^(r16|qf|sf|final)_?m?(\d*)$/);
-  if (!match) return ["", ""];
-
-  const [, round, numStr] = match;
+function feedersFor(slotId: string): string[] {
+  const m = slotId.match(/^(r16|qf|sf|final)_?m?(\d*)$/);
+  if (!m) return [];
+  const [, round, numStr] = m;
   const num = parseInt(numStr || "1", 10);
-
   if (round === "r16") return [`r32_m${2 * num - 1}`, `r32_m${2 * num}`];
   if (round === "qf") return [`r16_m${2 * num - 1}`, `r16_m${2 * num}`];
   if (round === "sf") return [`qf_m${2 * num - 1}`, `qf_m${2 * num}`];
   if (round === "final") return ["sf_m1", "sf_m2"];
-
-  return ["", ""];
+  return [];
 }
 
-/** Get the loser of a semi-final (the team that wasn't picked as winner) */
-function getSFLoser(
-  sfSlotId: string,
-  picks: Record<string, { winner: string }>
-): string {
-  const feeders = getFeedingSlots(sfSlotId);
-  const home = picks[feeders[0]]?.winner ?? "";
-  const away = picks[feeders[1]]?.winner ?? "";
-  const winner = picks[sfSlotId]?.winner;
-
-  if (!winner || !home || !away) return "";
-  return winner === home ? away : home;
-}
-
-/** Clear downstream picks that become invalid when an upstream pick changes */
-function clearDownstream(
+function resolveAllKnockoutMatchups(
+  r32: Record<string, { home: string; away: string }>,
   picks: Record<string, { winner: string }>,
-  changedSlot: string
+): Record<string, { home: string; away: string }> {
+  const all: Record<string, { home: string; away: string }> = { ...r32 };
+
+  const laterRounds = [
+    WC2026_KNOCKOUT_ROUNDS[1], // r16
+    WC2026_KNOCKOUT_ROUNDS[2], // qf
+    WC2026_KNOCKOUT_ROUNDS[3], // sf
+    WC2026_KNOCKOUT_ROUNDS[4], // final
+  ];
+
+  for (const round of laterRounds) {
+    for (const slotId of round.slotIds) {
+      const [homeFeeder, awayFeeder] = feedersFor(slotId);
+      all[slotId] = {
+        home: picks[homeFeeder]?.winner ?? "",
+        away: picks[awayFeeder]?.winner ?? "",
+      };
+    }
+  }
+
+  return all;
+}
+
+function getSFLoser(
+  sfSlot: string,
+  picks: Record<string, { winner: string }>,
+  matchups: Record<string, { home: string; away: string }>,
+): string {
+  const winner = picks[sfSlot]?.winner;
+  if (!winner) return "";
+  const matchup = matchups[sfSlot];
+  if (!matchup) return "";
+  if (matchup.home && winner === matchup.home) return matchup.away;
+  if (matchup.away && winner === matchup.away) return matchup.home;
+  return "";
+}
+
+function clearDownstreamPicks(
+  picks: Record<string, { winner: string }>,
+  changedSlot: string,
 ): void {
-  // For each knockout round, check if any slot's feeders include changedSlot
   const allRounds = WC2026_KNOCKOUT_ROUNDS;
   for (const round of allRounds) {
     for (const slotId of round.slotIds) {
-      const feeders = getFeedingSlots(slotId);
-      if (feeders.includes(changedSlot)) {
-        // If the current pick in this slot is no longer valid
-        const currentPick = picks[slotId]?.winner;
-        if (currentPick) {
-          const feederWinner0 = picks[feeders[0]]?.winner;
-          const feederWinner1 = picks[feeders[1]]?.winner;
-          if (currentPick !== feederWinner0 && currentPick !== feederWinner1) {
-            delete picks[slotId];
-            // Recursively clear further downstream
-            clearDownstream(picks, slotId);
-          }
-        }
+      const feeders = feedersFor(slotId);
+      if (!feeders.includes(changedSlot)) continue;
+      const existing = picks[slotId]?.winner;
+      if (!existing) continue;
+      const fw = feeders.map((f) => picks[f]?.winner);
+      if (existing !== fw[0] && existing !== fw[1]) {
+        delete picks[slotId];
+        clearDownstreamPicks(picks, slotId);
       }
     }
   }
+}
+
+function pickResumeStepIndex(
+  steps: Step[],
+  existing: BracketSubmissionData | undefined,
+): number {
+  if (!existing) return 0;
+  const groupsDone =
+    (existing.groupsV2 ?? []).length === 12 &&
+    (existing.groupsV2 ?? []).every((g) => g.matches.every((m) => m.result !== null));
+  const thirdsDone = (existing.bestThirdPicks ?? []).length === 8;
+  const knockoutPicks = existing.knockoutPicks ?? {};
+  const r32Done = WC2026_KNOCKOUT_ROUNDS[0].slotIds.every(
+    (s) => knockoutPicks[s]?.winner,
+  );
+  const r16Done = WC2026_KNOCKOUT_ROUNDS[1].slotIds.every(
+    (s) => knockoutPicks[s]?.winner,
+  );
+  const qfDone = WC2026_KNOCKOUT_ROUNDS[2].slotIds.every(
+    (s) => knockoutPicks[s]?.winner,
+  );
+  const sfDone = WC2026_KNOCKOUT_ROUNDS[3].slotIds.every(
+    (s) => knockoutPicks[s]?.winner,
+  );
+  const finalDone = Boolean(existing.champion) && Boolean(existing.thirdPlace);
+
+  let target: Step = "groups";
+  if (groupsDone) target = "third_place";
+  if (groupsDone && thirdsDone) target = "r32";
+  if (r32Done) target = "r16";
+  if (r16Done) target = "qf";
+  if (qfDone) target = "sf";
+  if (sfDone) target = "final";
+  if (finalDone) target = "review";
+
+  const idx = steps.indexOf(target);
+  return idx === -1 ? 0 : idx;
 }
