@@ -24,8 +24,8 @@ export function psDefaultPickCopy({
 /**
  * Default copy for sharing "my sheet is locked" to WhatsApp.
  */
-export function psDefaultSheetCopy(eventName: string): string {
-  return `My picks for ${eventName} are in 🔒 — let's see who bottles it.`;
+export function psDefaultSheetCopy(_eventName: string): string {
+  return `Sheet locked 🔒 Come at me.`;
 }
 
 /**
