@@ -150,10 +150,13 @@ function buildGroupData(
       if (evt) {
         const winnerPred = predictionByKey.get(predictionKey(evt.id, "winner"));
         if (winnerPred) {
-          const selection = (winnerPred.prediction_data ?? {})["selection"];
+          // The /picks UI stores { value: teamName }; the bracket wizard stores
+          // { selection: teamName }. Accept both — scoring engine does the same.
+          const data = winnerPred.prediction_data ?? {};
+          const selection = (data["selection"] ?? data["value"]) as string | undefined;
           if (selection === home_team) result = "home_win";
           else if (selection === away_team) result = "away_win";
-          else if (selection === "Draw") result = "draw";
+          else if (selection === "Draw" || selection === "draw") result = "draw";
           // Any other value (stale team name etc.) leaves result null — safer
           // than guessing.
         }

@@ -189,6 +189,27 @@ async function run() {
     assertEqual(m4.result, null, "m4 with no prediction → null");
   }
 
+  // Test 2b: /picks UI stores { value: teamName } — adapter must accept both keys
+  {
+    const predictions: FakePrediction[] = [
+      { event_id: "e-A-1", user_id: USER, prediction_type: "winner", prediction_data: { value: "Mexico" } },
+      { event_id: "e-A-2", user_id: USER, prediction_type: "winner", prediction_data: { value: "South Africa" } },
+      { event_id: "e-A-3", user_id: USER, prediction_type: "winner", prediction_data: { value: "Draw" } },
+    ];
+    const client = makeFakeClient(GROUP_A_EVENTS, predictions);
+    const result = await loadGroupDataFromPredictions(client, {
+      userId: USER,
+      competitionId: COMP,
+      groups: [GROUP_A_SPEC],
+    });
+    const m1 = result[0].matches.find((m) => m.match_id === "A-m1")!;
+    const m2 = result[0].matches.find((m) => m.match_id === "A-m2")!;
+    const m3 = result[0].matches.find((m) => m.match_id === "A-m3")!;
+    assertEqual(m1.result, "home_win", "{ value: 'Mexico' } → home_win");
+    assertEqual(m2.result, "away_win", "{ value: 'South Africa' } → away_win");
+    assertEqual(m3.result, "draw", "{ value: 'Draw' } → draw");
+  }
+
   // Test 3: exact_score row populates exact_score and flips has_tiebreaker_scores
   {
     const predictions: FakePrediction[] = [
