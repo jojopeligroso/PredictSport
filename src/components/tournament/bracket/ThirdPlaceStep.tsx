@@ -16,6 +16,7 @@
 
 import { useState, useMemo, useCallback } from "react";
 import type { GroupData, MatchPrediction } from "./GroupResultsStepV2";
+import { resolveGroupStandings } from "@/lib/tournament/bracket/group-ranking";
 
 type PickColor = "green" | "amber";
 
@@ -86,11 +87,11 @@ export default function ThirdPlaceStep({
 
       {!allResolved && (
         <div className="rounded-xl border-2 border-ps-amber/40 bg-ps-amber/5 p-3 text-xs text-ps-text">
-          <span className="font-bold text-ps-amber">Tiebreaker needed.</span>{" "}
-          {blockedTies.size === 1 ? "One team is" : `${blockedTies.size} teams are`} tied
-          on points. Tap{" "}
+          <span className="font-bold text-ps-amber">Cut-line tie.</span>{" "}
+          {blockedTies.size === 1 ? "One team sits" : `${blockedTies.size} teams sit`}{" "}
+          on the same points across the top-8 boundary. Tap{" "}
           <span className="font-bold">&ldquo;Add scores&rdquo;</span> below to enter
-          their match scores so we can rank them by goal difference.
+          their match scores so FIFA goal difference and goals scored can rank them.
         </div>
       )}
 
@@ -354,27 +355,37 @@ function ScoreEntryRow({
 // Helpers
 // ---------------------------------------------------------------------------
 
+/**
+ * Identify each group's third-placed team using the full FIFA tiebreaker
+ * engine — not a simplified local ranker. This matters because within-group
+ * order (who is 3rd vs 4th) can hinge on head-to-head results, which the
+ * engine handles and a points-only sort does not.
+ *
+ * Points are taken from the engine output. GD/GS are only meaningful when
+ * every one of that team's three matches has a real exact_score recorded;
+ * otherwise we leave them as 0 and let `detectBlockingTies` decide whether
+ * to demand scores.
+ */
 function extractThirdPlaceTeams(groups: GroupData[]): ThirdPlaceCandidate[] {
   const candidates: ThirdPlaceCandidate[] = [];
 
   for (const group of groups) {
     if (group.matches.some((m) => m.result === null)) continue;
-    const ranking = rankWithinGroup(group);
-    if (ranking.length < 3) continue;
-    const third = ranking[2];
+    const standings = resolveGroupStandings(group);
+    if (standings.length < 3) continue;
+    const third = standings[2];
 
     const teamMatches = group.matches.filter(
       (m) => m.home_team === third.name || m.away_team === third.name,
     );
     const hasAllScores = teamMatches.every((m) => m.exact_score !== undefined);
-    const stats = hasAllScores ? aggregate(teamMatches, third.name) : null;
 
     candidates.push({
       team_name: third.name,
       group_id: group.group_id,
       points: third.points,
-      goal_diff: stats?.gd ?? 0,
-      goals_for: stats?.gf ?? 0,
+      goal_diff: hasAllScores ? third.goalDifference ?? 0 : 0,
+      goals_for: hasAllScores ? third.goalsFor ?? 0 : 0,
       matches: teamMatches,
       has_all_scores: hasAllScores,
       rank: 0,
@@ -401,79 +412,51 @@ function rankThirdPlaceTeams(teams: ThirdPlaceCandidate[]): ThirdPlaceCandidate[
 }
 
 /**
- * Returns the set of team names whose finishing position can't be settled
- * without exact scores: teams on the same points as a neighbour where
- * either side is missing scores. Includes both sides of the tie.
+ * Returns the set of team names whose finishing position blocks the wizard
+ * from advancing — i.e., teams in a points-cluster that straddles the rank-8
+ * cut line and are missing the exact scores needed for FIFA Article 42.3
+ * cross-group ranking (points → GD → GS).
+ *
+ * Why only the cut-line cluster matters
+ * -------------------------------------
+ * Article 12.6 (Annex C) slot allocation keys off the *set* of 8 group
+ * letters whose third-placed team qualified — not their ordinal rank among
+ * the 12. So a points-tie that sits entirely inside the top 8 (e.g., ranks
+ * 3-4-5) or entirely outside (e.g., ranks 10-11) doesn't change which 8
+ * groups qualify, even if we can't order the tied teams. Only a tie that
+ * crosses the rank-8/rank-9 boundary actually affects qualification.
+ *
+ * What "blocking" requires
+ * ------------------------
+ * If such a straddling tie exists AND any team in that cluster is missing
+ * exact scores for all three of its group matches, the engine can't compare
+ * overall GD/GS and the cluster's split across the cut line is ambiguous.
+ * The teams in the cluster that are missing scores are reported as blocked
+ * so the UI surfaces an "Add scores" affordance on exactly those rows.
+ *
+ * If every team in the straddling cluster already has full scores, GD/GS can
+ * resolve them (or fall through to the random tiebreaker). That's not
+ * blocking — the wizard can advance.
  */
 function detectBlockingTies(ranked: ThirdPlaceCandidate[]): Set<string> {
   const blocked = new Set<string>();
-  for (let i = 0; i < ranked.length - 1; i++) {
-    const a = ranked[i];
-    const b = ranked[i + 1];
-    if (a.points !== b.points) continue;
-    if (!a.has_all_scores) blocked.add(a.team_name);
-    if (!b.has_all_scores) blocked.add(b.team_name);
+  if (ranked.length < 9) return blocked;
+
+  // The cut line sits between ranked[7] (rank 8, last qualifier) and
+  // ranked[8] (rank 9, first non-qualifier). If they share a points total,
+  // the entire cluster on that points value straddles the line.
+  const cutA = ranked[7];
+  const cutB = ranked[8];
+  if (cutA.points !== cutB.points) return blocked;
+
+  const tiedAtCut = ranked.filter((t) => t.points === cutA.points);
+  const anyMissing = tiedAtCut.some((t) => !t.has_all_scores);
+  if (!anyMissing) return blocked;
+
+  for (const t of tiedAtCut) {
+    if (!t.has_all_scores) blocked.add(t.team_name);
   }
-  // If two teams are tied on points AND both have full scores AND straddle the
-  // cut line, that's resolvable by GD/GS — not blocking.
   return blocked;
-}
-
-function rankWithinGroup(
-  group: GroupData,
-): Array<{ name: string; points: number; gd: number; gf: number; position: number }> {
-  const stats: Record<string, { pts: number; gf: number; ga: number }> = {};
-  group.teams.forEach((t) => {
-    stats[t] = { pts: 0, gf: 0, ga: 0 };
-  });
-  for (const m of group.matches) {
-    if (!m.result) continue;
-    const [hs, as] = m.exact_score
-      ? [m.exact_score.home_score, m.exact_score.away_score]
-      : m.result === "home_win"
-        ? [1, 0]
-        : m.result === "away_win"
-          ? [0, 1]
-          : [0, 0];
-    stats[m.home_team].gf += hs;
-    stats[m.home_team].ga += as;
-    stats[m.away_team].gf += as;
-    stats[m.away_team].ga += hs;
-    if (m.result === "home_win") stats[m.home_team].pts += 3;
-    else if (m.result === "away_win") stats[m.away_team].pts += 3;
-    else {
-      stats[m.home_team].pts += 1;
-      stats[m.away_team].pts += 1;
-    }
-  }
-  const sorted = Object.entries(stats)
-    .map(([name, s]) => ({ name, points: s.pts, gd: s.gf - s.ga, gf: s.gf, position: 0 }))
-    .sort((a, b) => {
-      if (b.points !== a.points) return b.points - a.points;
-      if (b.gd !== a.gd) return b.gd - a.gd;
-      if (b.gf !== a.gf) return b.gf - a.gf;
-      return a.name.localeCompare(b.name);
-    });
-  sorted.forEach((t, i) => {
-    t.position = i + 1;
-  });
-  return sorted;
-}
-
-function aggregate(matches: MatchPrediction[], teamName: string): { gd: number; gf: number } {
-  let gf = 0;
-  let ga = 0;
-  for (const m of matches) {
-    if (!m.exact_score) continue;
-    if (m.home_team === teamName) {
-      gf += m.exact_score.home_score;
-      ga += m.exact_score.away_score;
-    } else if (m.away_team === teamName) {
-      gf += m.exact_score.away_score;
-      ga += m.exact_score.home_score;
-    }
-  }
-  return { gd: gf - ga, gf };
 }
 
 function matchesResult(result: MatchPrediction["result"], home: number, away: number): boolean {

@@ -19,7 +19,7 @@
 
 import { calculateGroupStandings } from './engine'
 import { FIFA_TIEBREAKERS } from './tiebreakers/fifa'
-import type { MatchPrediction } from './types'
+import type { MatchPrediction, TeamWithStats } from './types'
 import type { GroupData } from '@/components/tournament/bracket/GroupResultsStepV2'
 
 /**
@@ -79,26 +79,32 @@ function toScoredPrediction(match: GroupData['matches'][number]): MatchPredictio
 }
 
 /**
- * Resolve a single group to its finish order (1st → 4th).
+ * Resolve a single group to its full finishing standings (1st → 4th) with
+ * stats. Use this when you need the team's points/GD/GS — e.g., for
+ * cross-group best-thirds ranking.
  *
- * @returns Team names in finishing position. Empty array if the group has
- *   unpredicted matches — a complete prediction is the caller's precondition
- *   (the wizard blocks submit until every match has a result).
+ * @returns Full standings in finishing position. Empty array if the group has
+ *   unpredicted matches.
  */
-export function resolveGroupRanking(group: GroupData): string[] {
+export function resolveGroupStandings(group: GroupData): TeamWithStats[] {
   const allPredicted = group.matches.every((m) => m.result !== null)
   if (!allPredicted) {
     return []
   }
 
   const predictions = group.matches.map(toScoredPrediction)
-  const standings = calculateGroupStandings(
-    predictions,
-    FIFA_TIEBREAKERS,
-    group.teams,
-  )
+  return calculateGroupStandings(predictions, FIFA_TIEBREAKERS, group.teams)
+}
 
-  return standings.map((team) => team.name)
+/**
+ * Resolve a single group to its finish order (1st → 4th), name-only.
+ *
+ * @returns Team names in finishing position. Empty array if the group has
+ *   unpredicted matches — a complete prediction is the caller's precondition
+ *   (the wizard blocks submit until every match has a result).
+ */
+export function resolveGroupRanking(group: GroupData): string[] {
+  return resolveGroupStandings(group).map((team) => team.name)
 }
 
 /**

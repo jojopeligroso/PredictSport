@@ -4,7 +4,11 @@
  * Run with: npx tsx src/lib/tournament/bracket/group-ranking.test.ts
  */
 
-import { resolveGroupRanking, groupDataToRankings } from './group-ranking'
+import {
+  resolveGroupRanking,
+  resolveGroupStandings,
+  groupDataToRankings,
+} from './group-ranking'
 import type { GroupData } from '@/components/tournament/bracket/GroupResultsStepV2'
 import type { MatchResult } from '@/components/tournament/bracket/MatchCard'
 
@@ -177,6 +181,52 @@ assertEqual(
   rankings['A'],
   ['Alpha', 'Bravo', 'Charlie', 'Delta'],
   'Included group carries its resolved ranking',
+)
+
+// ----------------------------------------------------------------------------
+// Test 6: 3rd-vs-4th H2H tiebreaker — the exact case ThirdPlaceStep depends on
+// ----------------------------------------------------------------------------
+console.log('\nTest Suite 6: 3rd/4th identified by H2H, not overall GD')
+// Alpha=9pts (wins everything). Bravo=6pts (clear 2nd). Charlie and Delta both
+// finish on 3pts: each beat one of the bottom teams and lost to Alpha+Bravo.
+// In their head-to-head, Delta beat Charlie. FIFA says Delta is 3rd, Charlie
+// is 4th — even if Charlie's other result was a bigger blowout.
+//
+// Round-robin pairs: Alpha-Bravo, Alpha-Charlie, Alpha-Delta,
+//                    Bravo-Charlie, Bravo-Delta, Charlie-Delta.
+const h2hThirdGroup = buildGroup(
+  'TP',
+  ['Alpha', 'Bravo', 'Charlie', 'Delta'],
+  {
+    'Alpha vs Bravo': 'home_win',
+    'Alpha vs Charlie': 'home_win',
+    'Alpha vs Delta': 'home_win',
+    'Bravo vs Charlie': 'home_win',
+    'Bravo vs Delta': 'home_win',
+    'Charlie vs Delta': 'away_win', // Delta beats Charlie in H2H
+  },
+  {
+    // Tiebreaker scores: both Charlie and Delta are tied for 3rd on points.
+    // Charlie's points (3) come from a single big result; Delta's come from
+    // beating Charlie. With synthesised 1-0/0-0/0-1 fallback Charlie's GD
+    // would look identical to Delta's, but H2H must override overall stats.
+    'Alpha vs Charlie': [3, 0],
+    'Alpha vs Delta': [3, 0],
+    'Bravo vs Charlie': [2, 0],
+    'Bravo vs Delta': [2, 0],
+    'Charlie vs Delta': [0, 1], // Delta wins H2H
+  },
+)
+const tpStandings = resolveGroupStandings(h2hThirdGroup)
+assertEqual(
+  tpStandings.map((t) => t.name),
+  ['Alpha', 'Bravo', 'Delta', 'Charlie'],
+  'H2H winner takes 3rd place — overall GD irrelevant when H2H decides',
+)
+assertEqual(
+  tpStandings[2].name,
+  'Delta',
+  '3rd-placed team is Delta (H2H winner), not Charlie',
 )
 
 console.log('\n✅ All tests passed!\n')
