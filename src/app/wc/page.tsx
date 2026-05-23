@@ -123,7 +123,7 @@ export default async function WorldCupLanding() {
 
         {/* Wordmark */}
         <div>
-          <h1 className="text-3xl font-extrabold tracking-tight text-ps-text md:text-4xl">
+          <h1 className="font-display text-3xl uppercase tracking-tight text-ps-text md:text-4xl">
             World Cup{" "}
             <span className="text-ps-amber">2026</span>
           </h1>

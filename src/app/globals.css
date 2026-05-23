@@ -1,5 +1,15 @@
 @import "tailwindcss";
 
+/* ── FWC 2026 display font — used in /wc shell only ─────────────────────── */
+/* License: Free for personal use (see public/fonts/FWC2026-LICENSE.txt).    */
+@font-face {
+  font-family: "FWC 2026";
+  src: url("/fonts/FWC2026-SemiExpandedBlack.ttf") format("truetype");
+  font-weight: 900;
+  font-style: normal;
+  font-display: swap;
+}
+
 /* ── PredictSport Design Tokens ─────────────────────────────────────────── */
 
 :root {
@@ -136,6 +146,11 @@ p, h1, h2, h3, h4, h5, h6 {
   --wc-mexico-green: #006847;
   --wc-gold: #d4af37;
   --wc-dark: #0a0f0a;
+
+  /* WC typography: Noto Sans for body/UI, FWC 2026 for the wordmark + headlines. */
+  --font-sans: var(--font-noto-sans), system-ui, -apple-system, sans-serif;
+  --font-display: "FWC 2026", var(--font-noto-sans), system-ui, sans-serif;
+  font-family: var(--font-sans);
 }
 
 /* WC theme is already dark — prevent double-inversion */

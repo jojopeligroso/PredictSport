@@ -4,7 +4,7 @@
 export default function RulesPage() {
   return (
     <div className="mx-auto max-w-[480px] px-4 pt-6 pb-16">
-      <h1 className="text-xl font-extrabold text-ps-text">Rules</h1>
+      <h1 className="font-display text-2xl uppercase tracking-tight text-ps-text">Rules</h1>
 
       <div className="mt-6 space-y-8">
         <Section title="How It Works">

@@ -56,6 +56,9 @@ yarn-error.log*
 *.log
 .~lock.*
 
+# Local design/font source artifacts (font files live in public/fonts/)
+/*.zip
+
 # Python (future)
 __pycache__/
 *.pyc

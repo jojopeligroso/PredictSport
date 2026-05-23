@@ -109,7 +109,7 @@ export default async function BracketPage() {
 
   return (
     <div className="mx-auto max-w-[480px] px-4 pt-6 pb-16">
-      <h1 className="text-xl font-extrabold text-ps-text">Bracket Predictions</h1>
+      <h1 className="font-display text-2xl uppercase tracking-tight text-ps-text">Bracket Predictions</h1>
       <p className="mt-1 text-sm text-ps-text-sec">
         Predict the entire tournament bracket. One wrong pick and you&apos;re out.
       </p>

@@ -43,7 +43,7 @@ export default async function LeaderboardPage() {
 
   return (
     <div className="mx-auto max-w-[480px] px-4 pt-6 pb-16">
-      <h1 className="text-xl font-extrabold text-ps-text">Leaderboard</h1>
+      <h1 className="font-display text-2xl uppercase tracking-tight text-ps-text">Leaderboard</h1>
       <div className="mt-4">
         <ClassificationTabs
           classifications={classifications ?? []}

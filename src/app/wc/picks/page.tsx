@@ -87,7 +87,7 @@ export default async function PicksPage() {
 
   return (
     <div className="mx-auto max-w-[480px] px-4 pt-6 pb-16">
-      <h1 className="text-xl font-extrabold text-ps-text">Your Picks</h1>
+      <h1 className="font-display text-2xl uppercase tracking-tight text-ps-text">Your Picks</h1>
       <p className="mt-1 text-sm text-ps-text-sec">
         Select a matchday to make your predictions.
       </p>

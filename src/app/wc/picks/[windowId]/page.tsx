@@ -115,7 +115,7 @@ export default async function WindowPicksPage({
         )}
       </div>
 
-      <h1 className="mt-3 text-xl font-extrabold text-ps-text">{round.name}</h1>
+      <h1 className="mt-3 font-display text-2xl uppercase tracking-tight text-ps-text">{round.name}</h1>
 
       {(isFinalised || (isWindowLocked && !isFinalised)) && (
         <div className="mt-2 inline-block rounded-full bg-ps-amber/20 px-3 py-1 text-xs font-semibold text-ps-amber">
