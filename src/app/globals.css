@@ -147,10 +147,17 @@ p, h1, h2, h3, h4, h5, h6 {
   --wc-gold: #d4af37;
   --wc-dark: #0a0f0a;
 
-  /* WC typography: Noto Sans for body/UI, FWC 2026 for the wordmark + headlines. */
+  /* WC typography: two fonts only. Noto Sans for body/UI + everywhere
+     `font-mono` / `font-serif` was previously used. FWC 2026 for the
+     wordmark + headlines. Inter / JetBrains Mono / Instrument Serif
+     are still registered globally for the main app, but never resolved
+     here because every var below points at Noto Sans or FWC 2026. */
   --font-sans: var(--font-noto-sans), system-ui, -apple-system, sans-serif;
   --font-display: "FWC 2026", var(--font-noto-sans), system-ui, sans-serif;
+  --font-mono: var(--font-noto-sans), system-ui, -apple-system, sans-serif;
+  --font-serif: var(--font-noto-sans), system-ui, -apple-system, sans-serif;
   font-family: var(--font-sans);
+  font-variant-numeric: tabular-nums;
 }
 
 /* WC theme is already dark — prevent double-inversion */
