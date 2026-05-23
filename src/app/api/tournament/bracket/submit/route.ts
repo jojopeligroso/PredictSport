@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { validateWC2026Bracket } from "@/lib/bracket/adapters/fifa-world-cup-2026";
+import { fanoutBracketToPredictions } from "@/lib/tournament/bracket/predictions-adapter";
 import type { BracketSubmissionData } from "@/types/tournament";
 
 export async function POST(request: Request) {
@@ -92,8 +93,9 @@ export async function POST(request: Request) {
   const status = action === "submit" ? "submitted" : "draft";
   const now = new Date().toISOString();
 
+  let savedSubmission;
+
   if (existing) {
-    // Update existing draft/submitted
     const { data: updated, error } = await supabase
       .from("bracket_prediction_submissions")
       .update({
@@ -110,27 +112,47 @@ export async function POST(request: Request) {
     if (error) {
       return NextResponse.json({ error: error.message }, { status: 500 });
     }
-    return NextResponse.json({ submission: updated });
+    savedSubmission = updated;
+  } else {
+    const { data: created, error } = await supabase
+      .from("bracket_prediction_submissions")
+      .insert({
+        competition_id: competitionId,
+        classification_id: classificationId,
+        bracket_template_id: template.id,
+        user_id: user.id,
+        version_number: 1,
+        status,
+        bracket_data: bracketData,
+        submitted_at: action === "submit" ? now : null,
+      })
+      .select("id, version_number, status, submitted_at")
+      .single();
+
+    if (error) {
+      return NextResponse.json({ error: error.message }, { status: 500 });
+    }
+    savedSubmission = created;
   }
 
-  // Create new submission
-  const { data: created, error } = await supabase
-    .from("bracket_prediction_submissions")
-    .insert({
-      competition_id: competitionId,
-      classification_id: classificationId,
-      bracket_template_id: template.id,
-      user_id: user.id,
-      version_number: 1,
-      status,
-      bracket_data: bracketData,
-      submitted_at: action === "submit" ? now : null,
-    })
-    .select("id, version_number, status, submitted_at")
-    .single();
+  // Fan out group-stage W/D/L picks + tiebreaker scores into `predictions` rows
+  // so the Overall/Format classifications can score this user's group matches.
+  // Failure here doesn't roll back the bracket save — bracket_data is the
+  // source of truth and we can re-run this projection any time.
+  const fanout = await fanoutBracketToPredictions(supabase, {
+    userId: user.id,
+    competitionId,
+    bracketData,
+  });
 
-  if (error) {
-    return NextResponse.json({ error: error.message }, { status: 500 });
-  }
-  return NextResponse.json({ submission: created }, { status: 201 });
+  return NextResponse.json(
+    {
+      submission: savedSubmission,
+      fanout: {
+        predictions_written: fanout.predictionsWritten,
+        errors: fanout.errors,
+      },
+    },
+    { status: existing ? 200 : 201 },
+  );
 }
