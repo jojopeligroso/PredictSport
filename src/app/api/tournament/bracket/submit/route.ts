@@ -145,6 +145,33 @@ export async function POST(request: Request) {
     bracketData,
   });
 
+  // R32 Pick is an automatic byproduct of the Full Bracket — opt the user into
+  // the R32 Pick classification membership the moment they submit a bracket
+  // for the full_bracket classification. Idempotent: existing memberships are
+  // left untouched.
+  if (action === "submit") {
+    const { data: r32Cls } = await supabase
+      .from("classifications")
+      .select("id")
+      .eq("competition_id", competitionId)
+      .eq("classification_key", "r32_pick")
+      .eq("status", "active")
+      .maybeSingle();
+    if (r32Cls) {
+      await supabase
+        .from("classification_memberships")
+        .upsert(
+          {
+            classification_id: r32Cls.id,
+            competition_id: competitionId,
+            user_id: user.id,
+            status: "active",
+          },
+          { onConflict: "classification_id,user_id" },
+        );
+    }
+  }
+
   return NextResponse.json(
     {
       submission: savedSubmission,
