@@ -23,6 +23,7 @@ import MatchCard, {
   type MatchResult,
   type MatchPrediction,
 } from './MatchCard'
+import { CountryFlag } from '@/components/CountryFlag'
 
 export type { MatchResult, MatchPrediction }
 
@@ -304,6 +305,7 @@ function StandingsTable({ standings }: { standings: TeamStanding[] }) {
             <span className="w-6 text-center font-mono text-xs font-semibold text-ps-text-sec">
               {team.position}
             </span>
+            <CountryFlag name={team.name} size={14} />
             <span className="text-sm font-semibold text-ps-text">{team.name}</span>
           </div>
           <span className="font-mono text-xs font-semibold text-ps-text-sec">

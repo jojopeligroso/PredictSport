@@ -12,6 +12,7 @@
  */
 
 import type { PickColor } from "./bracket-types";
+import { CountryFlag } from "@/components/CountryFlag";
 
 interface FinalStepProps {
   finalists: { home: string; away: string };
@@ -193,13 +194,14 @@ function FinalPickButton({
       type="button"
       onClick={onClick}
       aria-pressed={isSelected}
-      className={`flex flex-1 items-center justify-center rounded-md border-2 px-2 py-2 font-extrabold transition-all active:scale-[0.98] ${sizeClasses} ${
+      className={`flex flex-1 items-center justify-center gap-2 rounded-md border-2 px-2 py-2 font-extrabold transition-all active:scale-[0.98] ${sizeClasses} ${
         isSelected
           ? selectedClasses
           : "border-ps-border bg-ps-bg text-ps-text hover:border-ps-text/30"
       }`}
     >
-      {team}
+      <CountryFlag name={team} size={large ? 22 : 18} />
+      <span className="truncate">{team}</span>
     </button>
   );
 }

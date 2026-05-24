@@ -128,13 +128,14 @@ export default function ThirdPlaceStep({
           {top8.map((t) => (
             <span
               key={t.team_name}
-              className={`rounded-full px-2.5 py-1 text-xs font-bold ${
+              className={`inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-xs font-bold ${
                 pickColor === "amber"
                   ? "bg-ps-amber/15 text-ps-amber"
                   : "bg-ps-green/15 text-ps-green"
               }`}
             >
-              {t.team_name}{" "}
+              <CountryFlag name={t.team_name} size={12} />
+              <span>{t.team_name}</span>
               <span className="font-mono opacity-70">({t.group_id})</span>
             </span>
           ))}

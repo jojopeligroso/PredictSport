@@ -117,7 +117,7 @@ export default function BracketReviewStep({
         editLabel="Edit groups"
         onEdit={() => onJumpToStep("groups")}
       >
-        <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
+        <div className="grid grid-cols-2 gap-2">
           {Object.keys(groupRankings)
             .sort()
             .map((groupId) => (
@@ -129,14 +129,19 @@ export default function BracketReviewStep({
                   Group {groupId}
                 </p>
                 <ol className="mt-1 space-y-0.5 text-[11px]">
-                  {groupRankings[groupId].slice(0, 3).map((team, i) => (
+                  {groupRankings[groupId].slice(0, 4).map((team, i) => (
                     <li
                       key={team}
                       className={`flex items-center gap-1 ${
-                        i < 2 ? `font-semibold ${accent}` : "text-ps-amber"
+                        i < 2
+                          ? `font-semibold ${accent}`
+                          : i === 2
+                          ? "text-ps-amber"
+                          : "text-ps-text-ter line-through decoration-ps-text-ter/60"
                       }`}
                     >
                       <span className="font-mono">{i + 1}.</span>
+                      <CountryFlag name={team} size={12} />
                       <span className="truncate">{team}</span>
                     </li>
                   ))}
@@ -158,13 +163,14 @@ export default function BracketReviewStep({
             return (
               <span
                 key={groupId}
-                className={`rounded-full px-2.5 py-1 text-[11px] font-bold ${
+                className={`inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-[11px] font-bold ${
                   pickColor === "amber"
                     ? "bg-ps-amber/15 text-ps-amber"
                     : "bg-ps-green/15 text-ps-green"
                 }`}
               >
-                {teamName}{" "}
+                <CountryFlag name={teamName} size={12} />
+                <span>{teamName}</span>
                 <span className="font-mono opacity-70">({groupId})</span>
               </span>
             );
@@ -185,9 +191,10 @@ export default function BracketReviewStep({
           {r32Teams.map((team) => (
             <span
               key={team}
-              className="rounded-md bg-ps-bg px-2 py-0.5 text-[11px] font-semibold text-ps-text"
+              className="inline-flex items-center gap-1 rounded-md bg-ps-bg px-2 py-0.5 text-[11px] font-semibold text-ps-text"
             >
-              {team}
+              <CountryFlag name={team} size={12} />
+              <span>{team}</span>
             </span>
           ))}
         </div>
@@ -203,9 +210,10 @@ export default function BracketReviewStep({
               {eliminatedTeams.map((team) => (
                 <span
                   key={team}
-                  className="rounded-md border border-ps-border bg-ps-chip px-2 py-0.5 text-[11px] font-medium text-ps-text-sec line-through decoration-ps-text-ter/60"
+                  className="inline-flex items-center gap-1 rounded-md border border-ps-border bg-ps-chip px-2 py-0.5 text-[11px] font-medium text-ps-text-sec"
                 >
-                  {team}
+                  <CountryFlag name={team} size={12} className="opacity-60" />
+                  <span className="line-through decoration-ps-text-ter/60">{team}</span>
                 </span>
               ))}
             </div>
