@@ -31,9 +31,12 @@ export async function middleware(request: NextRequest) {
     }
   }
 
-  const response = await updateSession(request);
-  response.headers.set("x-pathname", request.nextUrl.pathname);
-  return response;
+  // Expose pathname to Server Components via the *request* headers — response
+  // headers are not visible to headers() in RSC. updateSession() calls
+  // NextResponse.next({ request }), which forwards request headers downstream.
+  request.headers.set("x-pathname", request.nextUrl.pathname);
+
+  return updateSession(request);
 }
 
 export const config = {
