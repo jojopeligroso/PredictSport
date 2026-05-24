@@ -3,6 +3,7 @@
 import type { BracketSubmissionData } from "@/types/tournament";
 import type { OfficialBracketResults } from "@/lib/bracket/types";
 import { WC2026_KNOCKOUT_ROUNDS } from "@/lib/bracket/adapters/fifa-world-cup-2026";
+import { CountryFlag } from "@/components/CountryFlag";
 
 interface BracketTreeProps {
   submission: BracketSubmissionData;
@@ -50,8 +51,11 @@ export function BracketTree({
         <span className="text-[10px] font-bold uppercase tracking-widest text-ps-amber">
           Champion
         </span>
-        <p className="text-base font-extrabold text-ps-text">
-          {submission.champion || "?"}
+        <p className="flex items-center justify-center gap-2 text-base font-extrabold text-ps-text">
+          {submission.champion && (
+            <CountryFlag name={submission.champion} size={24} />
+          )}
+          <span>{submission.champion || "?"}</span>
         </p>
       </div>
 
@@ -74,7 +78,7 @@ export function BracketTree({
                   return (
                     <div
                       key={slotId}
-                      className={`rounded px-2 py-1 text-xs font-semibold ${
+                      className={`flex items-center gap-1 rounded px-2 py-1 text-xs font-semibold ${
                         correct
                           ? "bg-ps-green/10 text-ps-green"
                           : wrong
@@ -82,9 +86,12 @@ export function BracketTree({
                             : "bg-ps-bg text-ps-text"
                       }`}
                     >
-                      {pick || "?"}
-                      {correct && " \u2713"}
-                      {wrong && ` \u2717 (${official})`}
+                      {pick && <CountryFlag name={pick} size={14} />}
+                      <span className="truncate">
+                        {pick || "?"}
+                        {correct && " \u2713"}
+                        {wrong && ` \u2717 (${official})`}
+                      </span>
                     </div>
                   );
                 })}
@@ -96,8 +103,10 @@ export function BracketTree({
 
       {/* Third place */}
       {submission.thirdPlace && (
-        <div className="mt-3 text-center text-xs text-ps-text-sec">
-          3rd Place: <span className="font-semibold text-ps-text">{submission.thirdPlace}</span>
+        <div className="mt-3 flex items-center justify-center gap-1.5 text-center text-xs text-ps-text-sec">
+          3rd Place:
+          <CountryFlag name={submission.thirdPlace} size={14} />
+          <span className="font-semibold text-ps-text">{submission.thirdPlace}</span>
         </div>
       )}
     </div>

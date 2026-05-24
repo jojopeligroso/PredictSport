@@ -17,6 +17,7 @@
 import { useState, useMemo, useCallback, useRef } from "react";
 import type { GroupData, MatchPrediction } from "./GroupResultsStepV2";
 import { resolveGroupStandings } from "@/lib/tournament/bracket/group-ranking";
+import { CountryFlag } from "@/components/CountryFlag";
 
 type PickColor = "green" | "amber";
 
@@ -308,8 +309,12 @@ function ScoreEntryRow({
 
   return (
     <div className="rounded-md bg-ps-surface p-2">
-      <p className="text-[11px] font-semibold text-ps-text">
-        {match.home_team} vs {match.away_team}{" "}
+      <p className="flex items-center gap-1 text-[11px] font-semibold text-ps-text">
+        <CountryFlag name={match.home_team} size={14} />
+        <span>{match.home_team}</span>
+        <span className="text-ps-text-ter">vs</span>
+        <CountryFlag name={match.away_team} size={14} />
+        <span>{match.away_team}</span>
         <span className="ml-1 rounded bg-ps-chip px-1.5 py-0.5 font-mono text-[10px] text-ps-text-sec">
           {resultLabel}
         </span>

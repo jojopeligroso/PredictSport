@@ -12,6 +12,7 @@
 import type { PickColor } from "./bracket-types";
 import { WC2026_GROUPS, WC2026_KNOCKOUT_ROUNDS } from "@/lib/bracket/adapters/fifa-world-cup-2026";
 import { ChampionFlagFountain } from "./ChampionFlagFountain";
+import { CountryFlag } from "@/components/CountryFlag";
 
 interface BracketReviewStepProps {
   groupRankings: Record<string, string[]>;
@@ -97,9 +98,11 @@ export default function BracketReviewStep({
                 <span className="font-mono text-[10px] font-bold uppercase text-ps-text-ter">
                   {step.roundLabel}
                 </span>
-                <span className="ml-auto text-xs">
-                  <span className="font-semibold text-ps-text">{step.winner}</span>{" "}
-                  <span className="text-ps-text-ter">d.</span>{" "}
+                <span className="ml-auto inline-flex items-center gap-1 text-xs">
+                  <CountryFlag name={step.winner} size={14} />
+                  <span className="font-semibold text-ps-text">{step.winner}</span>
+                  <span className="text-ps-text-ter">d.</span>
+                  <CountryFlag name={step.loser} size={14} />
                   <span className="text-ps-text-sec">{step.loser}</span>
                 </span>
               </li>

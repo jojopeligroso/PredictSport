@@ -12,6 +12,7 @@
  */
 
 import { useState, useEffect, useRef } from 'react'
+import { CountryFlag } from '@/components/CountryFlag'
 
 export type MatchResult = 'home_win' | 'draw' | 'away_win' | null
 
@@ -102,7 +103,8 @@ export default function MatchCard({
           aria-label={`Predict ${match.home_team} to win`}
           aria-pressed={match.result === 'home_win'}
           className={`
-            flex-1 min-h-[44px] rounded-md px-2 py-2 text-right text-sm font-semibold transition-all duration-150
+            flex-1 min-h-[44px] rounded-md px-2 py-2 text-sm font-semibold transition-all duration-150
+            inline-flex items-center justify-end gap-1.5
             ${
               match.result === 'home_win'
                 ? `${selectedTextColor} ${selectedBgColor}`
@@ -110,7 +112,8 @@ export default function MatchCard({
             }
           `}
         >
-          {match.home_team}
+          <CountryFlag name={match.home_team} size={18} />
+          <span className="truncate">{match.home_team}</span>
         </button>
 
         <button
@@ -136,7 +139,8 @@ export default function MatchCard({
           aria-label={`Predict ${match.away_team} to win`}
           aria-pressed={match.result === 'away_win'}
           className={`
-            flex-1 min-h-[44px] rounded-md px-2 py-2 text-left text-sm font-semibold transition-all duration-150
+            flex-1 min-h-[44px] rounded-md px-2 py-2 text-sm font-semibold transition-all duration-150
+            inline-flex items-center justify-start gap-1.5
             ${
               match.result === 'away_win'
                 ? `${selectedTextColor} ${selectedBgColor}`
@@ -144,7 +148,8 @@ export default function MatchCard({
             }
           `}
         >
-          {match.away_team}
+          <CountryFlag name={match.away_team} size={18} />
+          <span className="truncate">{match.away_team}</span>
         </button>
       </div>
 

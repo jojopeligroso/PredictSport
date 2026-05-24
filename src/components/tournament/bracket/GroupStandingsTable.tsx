@@ -6,6 +6,7 @@
  */
 
 import { TeamWithStats } from '@/lib/tournament/bracket/types'
+import { CountryFlag } from '@/components/CountryFlag'
 
 interface GroupStandingsTableProps {
   standings: TeamWithStats[]
@@ -63,7 +64,10 @@ export default function GroupStandingsTable({
 
                 {/* Team name */}
                 <td className="py-2 pr-2 font-sans font-semibold text-ps-ink">
-                  {team.name}
+                  <span className="inline-flex items-center gap-1.5">
+                    <CountryFlag name={team.name} size={16} />
+                    <span>{team.name}</span>
+                  </span>
                 </td>
 
                 {/* Stats */}

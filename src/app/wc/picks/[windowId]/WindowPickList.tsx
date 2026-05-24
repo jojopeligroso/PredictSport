@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { ExactScoreSection } from "@/components/ExactScoreSection";
+import { CountryFlag } from "@/components/CountryFlag";
 import type {
   EventPredictionType,
   Prediction,
@@ -299,9 +300,11 @@ function MatchPickRow({
     return (
       <div className="rounded-lg border border-ps-border bg-ps-surface px-3 py-2">
         <div className="flex items-center justify-between gap-2">
-          <span className="text-sm font-semibold text-ps-text">
+          <span className="flex items-center gap-1.5 text-sm font-semibold text-ps-text">
+            <CountryFlag name={home} size={18} />
             {home}
-            <span className="mx-1.5 text-ps-text-ter">v</span>
+            <span className="mx-1 text-ps-text-ter">v</span>
+            <CountryFlag name={away} size={18} />
             {away}
           </span>
           <span className="rounded-full bg-ps-chip px-2 py-0.5 text-[10px] font-semibold uppercase text-ps-text-sec">
@@ -333,7 +336,7 @@ function MatchPickRow({
               onClick={() => handlePickWinner(opt)}
               aria-pressed={isSelected}
               className={[
-                "rounded-md px-2 py-2 text-center text-[13px] font-bold leading-tight transition-all duration-150",
+                "flex items-center justify-center gap-1.5 rounded-md px-2 py-2 text-center text-[13px] font-bold leading-tight transition-all duration-150",
                 "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ps-amber/50",
                 "motion-reduce:transition-none active:scale-[0.97]",
                 isSelected
@@ -343,7 +346,8 @@ function MatchPickRow({
                   : "bg-ps-chip text-ps-text hover:bg-ps-chip/70",
               ].join(" ")}
             >
-              {opt}
+              {slot !== "draw" && <CountryFlag name={opt} size={18} />}
+              <span className="truncate">{opt}</span>
             </button>
           );
         })}

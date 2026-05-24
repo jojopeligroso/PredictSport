@@ -13,6 +13,7 @@
 import { useState, useCallback, useMemo } from "react";
 import MatchCard, { type MatchResult, type MatchPrediction } from "./MatchCard";
 import type { GroupData } from "./GroupResultsStepV2";
+import { CountryFlag } from "@/components/CountryFlag";
 
 type PickColor = "green" | "amber";
 
@@ -311,7 +312,12 @@ function LiveStandingsTable({
                   >
                     {team.position}
                   </td>
-                  <td className="px-2 py-1.5 font-semibold text-ps-text">{team.name}</td>
+                  <td className="px-2 py-1.5 font-semibold text-ps-text">
+                    <span className="inline-flex items-center gap-1.5">
+                      <CountryFlag name={team.name} size={16} />
+                      <span>{team.name}</span>
+                    </span>
+                  </td>
                   <td className="px-2 py-1.5 text-right font-mono text-ps-text-sec">
                     {team.played}
                   </td>

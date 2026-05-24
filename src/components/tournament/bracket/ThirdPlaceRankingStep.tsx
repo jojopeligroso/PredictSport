@@ -16,6 +16,7 @@
 
 import { useState, useEffect } from 'react'
 import { GroupData, MatchPrediction } from './GroupResultsStepV2'
+import { CountryFlag } from '@/components/CountryFlag'
 
 interface ThirdPlaceTeam {
   team_name: string
@@ -316,11 +317,13 @@ function MatchScoreInput({ match, teamName, onScoreEntry }: MatchScoreInputProps
   return (
     <div className="rounded bg-ps-bg p-2">
       <div className="mb-1 flex items-center justify-between text-xs">
-        <span className="font-semibold text-ps-text">
+        <span className="inline-flex items-center gap-1 font-semibold text-ps-text">
+          <CountryFlag name={match.home_team} size={14} />
           {match.home_team}
         </span>
         <span className="text-ps-text-ter">vs</span>
-        <span className="font-semibold text-ps-text">
+        <span className="inline-flex items-center gap-1 font-semibold text-ps-text">
+          <CountryFlag name={match.away_team} size={14} />
           {match.away_team}
         </span>
       </div>

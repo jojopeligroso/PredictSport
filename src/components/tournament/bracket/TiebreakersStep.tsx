@@ -36,6 +36,7 @@ import { useState, useMemo, useCallback, useRef } from "react";
 import type React from "react";
 import type { GroupData } from "./GroupResultsStepV2";
 import type { MatchPrediction } from "./MatchCard";
+import { CountryFlag } from "@/components/CountryFlag";
 import {
   tiedTeamsInGroup,
   groupTiebreakerResolved,
@@ -354,8 +355,12 @@ function TiebreakerMatchRow({
           : "border-ps-border bg-ps-surface"
       }`}
     >
-      <p className="mb-2 text-xs font-semibold text-ps-text">
-        {match.home_team} vs {match.away_team}
+      <p className="mb-2 flex items-center gap-1 text-xs font-semibold text-ps-text">
+        <CountryFlag name={match.home_team} size={14} />
+        <span>{match.home_team}</span>
+        <span className="text-ps-text-ter">vs</span>
+        <CountryFlag name={match.away_team} size={14} />
+        <span>{match.away_team}</span>
       </p>
 
       <ChosenBanner winnerName={winnerName} isDraw={isDraw} />

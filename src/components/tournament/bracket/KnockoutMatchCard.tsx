@@ -7,6 +7,8 @@
  * User selects which team advances (no score prediction needed).
  */
 
+import { CountryFlag } from '@/components/CountryFlag'
+
 interface KnockoutMatchCardProps {
   matchNumber: number
   homeTeam: string
@@ -52,7 +54,7 @@ export default function KnockoutMatchCard({
           onClick={() => onWinnerSelect(homeTeam)}
           disabled={isTBD}
           className={`
-            flex-1 rounded-lg border-2 p-4 text-left font-semibold transition-all
+            flex flex-1 flex-col items-center gap-2 rounded-lg border-2 p-4 text-center font-semibold transition-all
             ${
               selectedWinner === homeTeam
                 ? 'border-ps-amber bg-ps-amber/10 text-ps-ink shadow-md'
@@ -61,6 +63,7 @@ export default function KnockoutMatchCard({
             ${isTBD ? 'cursor-not-allowed opacity-40' : 'cursor-pointer'}
           `}
         >
+          <CountryFlag name={isTBD ? null : homeTeam} size={32} />
           <span className="block text-sm font-semibold">{homeTeam}</span>
         </button>
 
@@ -74,7 +77,7 @@ export default function KnockoutMatchCard({
           onClick={() => onWinnerSelect(awayTeam)}
           disabled={isTBD}
           className={`
-            flex-1 rounded-lg border-2 p-4 text-left font-semibold transition-all
+            flex flex-1 flex-col items-center gap-2 rounded-lg border-2 p-4 text-center font-semibold transition-all
             ${
               selectedWinner === awayTeam
                 ? 'border-ps-amber bg-ps-amber/10 text-ps-ink shadow-md'
@@ -83,6 +86,7 @@ export default function KnockoutMatchCard({
             ${isTBD ? 'cursor-not-allowed opacity-40' : 'cursor-pointer'}
           `}
         >
+          <CountryFlag name={isTBD ? null : awayTeam} size={32} />
           <span className="block text-sm font-semibold">{awayTeam}</span>
         </button>
       </div>

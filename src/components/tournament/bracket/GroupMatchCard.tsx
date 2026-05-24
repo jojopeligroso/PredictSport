@@ -9,6 +9,7 @@
 
 import { useState } from 'react'
 import { MatchPrediction } from '@/lib/tournament/bracket/types'
+import { CountryFlag } from '@/components/CountryFlag'
 
 interface GroupMatchCardProps {
   match: MatchPrediction
@@ -112,9 +113,12 @@ export default function GroupMatchCard({
       <div className="flex items-center justify-between gap-4">
         {/* Home team */}
         <div className="flex-1">
-          <p className="mb-2 text-sm font-semibold text-ps-ink">
-            {match.home_team}
-          </p>
+          <div className="mb-2 flex items-center gap-1.5">
+            <CountryFlag name={match.home_team} size={20} />
+            <p className="text-sm font-semibold text-ps-ink">
+              {match.home_team}
+            </p>
+          </div>
           <input
             type="number"
             min="0"
@@ -150,9 +154,12 @@ export default function GroupMatchCard({
 
         {/* Away team */}
         <div className="flex-1">
-          <p className="mb-2 text-sm font-semibold text-ps-ink">
-            {match.away_team}
-          </p>
+          <div className="mb-2 flex items-center gap-1.5">
+            <CountryFlag name={match.away_team} size={20} />
+            <p className="text-sm font-semibold text-ps-ink">
+              {match.away_team}
+            </p>
+          </div>
           <input
             type="number"
             min="0"

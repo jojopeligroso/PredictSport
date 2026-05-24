@@ -1,5 +1,19 @@
 import { createClient } from "@/lib/supabase/server";
 import { redirect } from "next/navigation";
+import { CountryFlag } from "@/components/CountryFlag";
+
+function splitTeams(eventName: string): { home: string; away: string } | null {
+  for (const sep of [" vs ", " v ", " VS ", " V "]) {
+    const idx = eventName.indexOf(sep);
+    if (idx !== -1) {
+      return {
+        home: eventName.slice(0, idx).trim(),
+        away: eventName.slice(idx + sep.length).trim(),
+      };
+    }
+  }
+  return null;
+}
 
 export const dynamic = "force-dynamic";
 
@@ -79,7 +93,21 @@ export default async function ResultsPage() {
             >
               <div className="flex items-start justify-between">
                 <div>
-                  <h3 className="text-sm font-bold text-ps-text">{event.event_name}</h3>
+                  <h3 className="flex items-center gap-1.5 text-sm font-bold text-ps-text">
+                    {(() => {
+                      const teams = splitTeams(event.event_name);
+                      if (!teams) return <span>{event.event_name}</span>;
+                      return (
+                        <>
+                          <CountryFlag name={teams.home} size={18} />
+                          <span>{teams.home}</span>
+                          <span className="mx-0.5 text-ps-text-ter">v</span>
+                          <CountryFlag name={teams.away} size={18} />
+                          <span>{teams.away}</span>
+                        </>
+                      );
+                    })()}
+                  </h3>
                   <p className="mt-0.5 font-mono text-xs text-ps-text-ter">
                     {new Date(event.start_time).toLocaleDateString("en-GB", {
                       weekday: "short",
