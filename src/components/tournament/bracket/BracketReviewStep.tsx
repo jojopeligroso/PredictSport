@@ -185,7 +185,7 @@ export default function BracketReviewStep({
         onEdit={() => onJumpToStep("r32")}
       >
         <p className="mb-2 text-[10px] text-ps-text-ter">
-          Score: 1 point per correct team in the R32 Pick classification.
+          Score: 1 point per correct team in the Last 32 classification.
         </p>
         <div className="flex flex-wrap gap-1">
           {r32Teams.map((team) => (

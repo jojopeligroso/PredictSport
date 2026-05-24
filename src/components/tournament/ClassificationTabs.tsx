@@ -25,10 +25,14 @@ export function ClassificationTabs({
   classifications,
   competitionId,
   currentUserId,
+  inviteCode,
+  kickoffIso,
 }: {
   classifications: Classification[];
   competitionId: string;
   currentUserId: string;
+  inviteCode?: string | null;
+  kickoffIso?: string | null;
 }) {
   const [activeId, setActiveId] = useState<string>(
     classifications[0]?.id ?? ""
@@ -101,11 +105,11 @@ export function ClassificationTabs({
             <div className="h-5 w-5 animate-spin rounded-full border-2 border-ps-text-ter border-t-ps-text" />
           </div>
         ) : standings.length === 0 ? (
-          <p className="py-8 text-center text-sm text-ps-text-sec">
-            {active?.status === "draft"
-              ? "This classification hasn't started yet."
-              : "No standings available yet."}
-          </p>
+          <EmptyStandings
+            isDraft={active?.status === "draft"}
+            inviteCode={inviteCode ?? null}
+            kickoffIso={kickoffIso ?? null}
+          />
         ) : (
           <StandingsTable
             standings={standings}
@@ -196,6 +200,103 @@ function shortLabel(key: string): string {
     format: "Format",
     full_bracket: "Bracket",
     knockout_bracket: "KO Bracket",
+    r32_pick: "Last 32",
   };
   return labels[key] ?? key;
+}
+
+function EmptyStandings({
+  isDraft,
+  inviteCode,
+  kickoffIso,
+}: {
+  isDraft: boolean;
+  inviteCode: string | null;
+  kickoffIso: string | null;
+}) {
+  const daysUntil = kickoffIso ? daysFromNow(kickoffIso) : null;
+
+  const headline = isDraft
+    ? "This classification hasn't opened yet."
+    : daysUntil && daysUntil > 0
+      ? `Standings open when results land. Kickoff in ${daysUntil} ${
+          daysUntil === 1 ? "day" : "days"
+        }.`
+      : "Standings will appear here once results land.";
+
+  return (
+    <div className="rounded-xl border border-ps-border bg-ps-surface px-4 py-6">
+      <p className="text-center text-sm text-ps-text-sec">{headline}</p>
+      {inviteCode && (
+        <div className="mt-5 border-t border-ps-border pt-5">
+          <p className="text-center text-xs text-ps-text-ter">
+            Bring a rival before kickoff.
+          </p>
+          <InviteCodeBlock code={inviteCode} />
+        </div>
+      )}
+    </div>
+  );
+}
+
+function InviteCodeBlock({ code }: { code: string }) {
+  const [copied, setCopied] = useState(false);
+  const [error, setError] = useState(false);
+
+  const handleCopy = async () => {
+    setError(false);
+    try {
+      if (navigator.clipboard?.writeText) {
+        await navigator.clipboard.writeText(code);
+      } else {
+        // Fallback for older browsers / non-secure contexts
+        const el = document.createElement("textarea");
+        el.value = code;
+        el.setAttribute("readonly", "");
+        el.style.position = "absolute";
+        el.style.left = "-9999px";
+        document.body.appendChild(el);
+        el.select();
+        document.execCommand("copy");
+        document.body.removeChild(el);
+      }
+      setCopied(true);
+      window.setTimeout(() => setCopied(false), 1800);
+    } catch {
+      setError(true);
+    }
+  };
+
+  return (
+    <div className="mt-3 flex flex-col items-center gap-2">
+      <button
+        type="button"
+        onClick={handleCopy}
+        aria-label={`Copy competition code ${code}`}
+        className="group flex items-center gap-2 rounded-lg border border-ps-border bg-ps-bg px-4 py-2 transition-colors hover:border-ps-amber/40"
+      >
+        <span className="font-mono text-base font-bold tracking-wider text-ps-text">
+          {code}
+        </span>
+        <span
+          aria-hidden="true"
+          className="text-xs font-semibold text-ps-text-ter transition-colors group-hover:text-ps-amber-deep"
+        >
+          {copied ? "Copied" : "Copy"}
+        </span>
+      </button>
+      {error && (
+        <p className="text-xs text-ps-red">
+          Couldn&apos;t copy — long-press the code instead.
+        </p>
+      )}
+    </div>
+  );
+}
+
+function daysFromNow(iso: string): number {
+  const target = new Date(iso).getTime();
+  if (!Number.isFinite(target)) return 0;
+  const diffMs = target - Date.now();
+  return Math.max(0, Math.ceil(diffMs / (1000 * 60 * 60 * 24)));
 }

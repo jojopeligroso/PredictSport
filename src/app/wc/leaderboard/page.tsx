@@ -20,7 +20,7 @@ export default async function LeaderboardPage() {
   // Find the WC competition
   const { data: competition } = await supabase
     .from("competitions")
-    .select("id")
+    .select("id, invite_code")
     .eq("product_mode", "world_cup_2026_shell")
     .in("status", ["active", "draft", "completed"])
     .limit(1)
@@ -49,6 +49,8 @@ export default async function LeaderboardPage() {
           classifications={classifications ?? []}
           competitionId={competition.id}
           currentUserId={user.id}
+          inviteCode={competition.invite_code ?? null}
+          kickoffIso="2026-06-11T15:00:00Z"
         />
       </div>
     </div>

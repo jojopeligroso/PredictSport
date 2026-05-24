@@ -125,9 +125,11 @@ export default async function PicksPage() {
   // The full_bracket classification is a parallel surface that owns
   // tiebreaker scores and best-thirds-ranking — decisions that don't exist
   // anywhere in the matchday flow. Surfaced once, as the pinned hero card
-  // above the windows list, and only while the bracket is still open.
+  // above the windows list. Stays visible while submitted (still editable
+  // until lock) and disappears only once the round itself is locked.
   const bracket = await getWcBracketSnapshot(supabase, user.id);
-  const showBracket = bracket && bracket.status !== "locked";
+  const showBracket = bracket && bracket.stage !== "locked";
+  const bracketSubmitted = bracket?.stage === "submitted";
 
   return (
     <div className="mx-auto max-w-[480px] px-4 pt-6 pb-16">
@@ -139,34 +141,48 @@ export default async function PicksPage() {
       {showBracket && (
         <Link
           href={`/wc/bracket/wizard?classificationId=${bracket.classificationId}`}
-          className="mt-5 block rounded-xl border-2 border-ps-amber/40 bg-ps-amber/5 p-4 transition-all hover:border-ps-amber/70 hover:bg-ps-amber/10 active:scale-[0.99]"
+          className={`mt-5 block rounded-xl border-2 p-4 transition-all active:scale-[0.99] ${
+            bracketSubmitted
+              ? "border-ps-green/40 bg-ps-green/5 hover:border-ps-green/70 hover:bg-ps-green/10"
+              : "border-ps-amber/40 bg-ps-amber/5 hover:border-ps-amber/70 hover:bg-ps-amber/10"
+          }`}
         >
           <div className="flex items-baseline justify-between">
-            <span className="font-mono text-[10px] font-bold uppercase tracking-widest text-ps-amber-deep">
+            <span
+              className={`font-mono text-[10px] font-bold uppercase tracking-widest ${
+                bracketSubmitted ? "text-ps-green" : "text-ps-amber-deep"
+              }`}
+            >
               Your bracket
             </span>
-            <span className="font-mono text-[10px] font-bold text-ps-amber-deep">
-              {bracket.pct}%
+            <span
+              className={`font-mono text-[10px] font-bold ${
+                bracketSubmitted ? "text-ps-green" : "text-ps-amber-deep"
+              }`}
+            >
+              {bracketSubmitted ? "SUBMITTED" : `${bracket.pct}%`}
             </span>
           </div>
           <p className="mt-1 text-base font-extrabold text-ps-text">
-            {bracket.pct === 0
-              ? "Start your bracket"
-              : bracket.pct === 100
-                ? "Review & submit your bracket"
-                : "Continue your bracket"}
+            {bracket.copy.heroHeadline}
           </p>
           <p className="mt-0.5 text-xs text-ps-text-sec">
-            {bracket.label} · tiebreakers and best thirds live here, not in matchdays.
+            {bracket.copy.heroSubhead}
           </p>
-          <div className="mt-3 h-1.5 w-full overflow-hidden rounded-full bg-ps-chip">
-            <div
-              className="h-full bg-ps-amber transition-all duration-300"
-              style={{ width: `${bracket.pct}%` }}
-            />
-          </div>
-          <p className="mt-2 text-xs font-semibold text-ps-amber-deep">
-            Open bracket →
+          {!bracketSubmitted && (
+            <div className="mt-3 h-1.5 w-full overflow-hidden rounded-full bg-ps-chip">
+              <div
+                className="h-full bg-ps-amber transition-all duration-300"
+                style={{ width: `${bracket.pct}%` }}
+              />
+            </div>
+          )}
+          <p
+            className={`mt-2 text-xs font-semibold ${
+              bracketSubmitted ? "text-ps-green" : "text-ps-amber-deep"
+            }`}
+          >
+            {bracket.copy.heroCtaLabel} →
           </p>
         </Link>
       )}

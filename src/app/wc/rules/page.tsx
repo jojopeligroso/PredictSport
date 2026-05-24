@@ -62,7 +62,7 @@ export default function RulesPage() {
               description="Same shape as Full Bracket but only for the knockout rounds, seeded with the real qualifying teams. Opens after the group stage finishes."
             />
             <ClassificationRule
-              name="R32 Pick"
+              name="Last 32"
               description="An automatic byproduct of your Full Bracket. 1 point for every team you correctly predicted to make the Round of 32 (12 winners + 12 runners-up + 8 best thirds). Path-insensitive — only whether they made the cut, not which slot."
             />
           </div>

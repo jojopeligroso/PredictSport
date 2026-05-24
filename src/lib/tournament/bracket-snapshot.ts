@@ -1,12 +1,30 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { BracketSubmissionData } from "@/types/tournament";
 
+export type BracketStage =
+  | "not_started"
+  | "in_progress"
+  | "ready_to_submit"
+  | "submitted"
+  | "locked";
+
+export interface BracketCopy {
+  heroHeadline: string;
+  heroSubhead: string;
+  heroCtaLabel: string;
+  pickListHeadline: string;
+  dashboardPrimaryCta: string;
+  dashboardSecondaryCta: string;
+}
+
 export interface BracketSnapshot {
   classificationId: string;
   classificationName: string;
   status: string;
   pct: number;
   label: string;
+  stage: BracketStage;
+  copy: BracketCopy;
 }
 
 /**
@@ -64,14 +82,76 @@ export async function getWcBracketSnapshot(
 
   const data = submission?.bracket_data as BracketSubmissionData | null;
   const progress = bracketProgress(data, groupPicksCount ?? 0);
+  const status = submission?.status ?? "not_started";
+  const stage = resolveBracketStage(status, progress.pct);
 
   return {
     classificationId: cls.id,
     classificationName: cls.name,
-    status: submission?.status ?? "not_started",
+    status,
     pct: progress.pct,
     label: progress.label,
+    stage,
+    copy: bracketCopyFor(stage, progress.pct),
   };
+}
+
+function resolveBracketStage(status: string, pct: number): BracketStage {
+  if (status === "locked") return "locked";
+  if (status === "submitted") return "submitted";
+  if (pct === 0) return "not_started";
+  if (pct === 100) return "ready_to_submit";
+  return "in_progress";
+}
+
+function bracketCopyFor(stage: BracketStage, pct: number): BracketCopy {
+  switch (stage) {
+    case "not_started":
+      return {
+        heroHeadline: "Start your bracket",
+        heroSubhead: "Pick every group and knockout before kickoff.",
+        heroCtaLabel: "Start bracket",
+        pickListHeadline: "Start your bracket",
+        dashboardPrimaryCta: "Start your bracket",
+        dashboardSecondaryCta: "View bracket",
+      };
+    case "in_progress":
+      return {
+        heroHeadline: `Continue your bracket · ${pct}%`,
+        heroSubhead: "Tiebreakers and best thirds live here, not in matchdays.",
+        heroCtaLabel: "Continue bracket",
+        pickListHeadline: `Continue your bracket · ${pct}%`,
+        dashboardPrimaryCta: `Continue your bracket · ${pct}%`,
+        dashboardSecondaryCta: "View bracket",
+      };
+    case "ready_to_submit":
+      return {
+        heroHeadline: "Review & submit your bracket",
+        heroSubhead: "All picks made — confirm them before kickoff.",
+        heroCtaLabel: "Review & submit",
+        pickListHeadline: "Review & submit your bracket",
+        dashboardPrimaryCta: "Review & submit your bracket",
+        dashboardSecondaryCta: "Review bracket",
+      };
+    case "submitted":
+      return {
+        heroHeadline: "Bracket submitted",
+        heroSubhead: "Still editable until kickoff — pop in if anything needs a change.",
+        heroCtaLabel: "Review bracket",
+        pickListHeadline: "Bracket submitted · review →",
+        dashboardPrimaryCta: "Make your picks",
+        dashboardSecondaryCta: "Review your bracket",
+      };
+    case "locked":
+      return {
+        heroHeadline: "Bracket locked in",
+        heroSubhead: "Picks are sealed. Good luck.",
+        heroCtaLabel: "View bracket",
+        pickListHeadline: "Bracket locked",
+        dashboardPrimaryCta: "Make your picks",
+        dashboardSecondaryCta: "View your bracket",
+      };
+  }
 }
 
 const KO_SLOTS = [

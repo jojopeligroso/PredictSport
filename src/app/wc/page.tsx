@@ -41,7 +41,12 @@ export default async function WorldCupLanding() {
     }
   }
   const picksHref = isMember ? "/wc/picks" : "/wc/join";
-  const bracketLocked = bracket?.status === "locked";
+  // "Done" = user has at least submitted the bracket. Both `submitted`
+  // (editable until lock) and `locked` (sealed) demote the bracket to a
+  // secondary CTA — only the in-progress / ready-to-submit / not-started
+  // states keep the bracket as the hero action.
+  const bracketDone =
+    bracket?.stage === "submitted" || bracket?.stage === "locked";
 
   // Countdown to June 11 2026
   const kickoff = new Date("2026-06-11T15:00:00Z");
@@ -107,19 +112,22 @@ export default async function WorldCupLanding() {
 
         {/* Primary CTA, in priority order:
          *
-         * 1. Bracket in progress (user signed in, bracket exists, not locked) —
-         *    bracket IS the primary action. Tiebreakers and best-thirds-
-         *    ranking can only be captured there, and users who don't finish
-         *    the bracket have skipped the onboarding contract.
-         * 2. Bracket locked — bracket is done; the next action is matchday
-         *    picks. "Make your picks" takes the hero slot; a secondary
-         *    "View your bracket" button stays visible (not hidden) but is
-         *    clearly subordinate so users aren't channelled back into a
-         *    finished workflow.
+         * 1. Bracket not yet submitted (not_started / in_progress /
+         *    ready_to_submit) — bracket IS the primary action. Tiebreakers
+         *    and best-thirds-ranking can only be captured there, and users
+         *    who don't finish the bracket have skipped the onboarding
+         *    contract. "Skip ahead to matchday picks" stays visible as a
+         *    demoted escape hatch.
+         * 2. Bracket submitted OR locked — bracket is done (sealed or
+         *    editable-until-lock); matchday picks become the hero. The
+         *    secondary "Review / View your bracket" button stays visible
+         *    (not hidden) but is clearly subordinate. Submitted gets
+         *    "Review" so users know they can still revise; locked gets
+         *    "View".
          * 3. Signed-out / no bracket snapshot — "Join the game" → /wc/join,
          *    the idempotent enrolment door.
          */}
-        {user && bracket && !bracketLocked ? (
+        {user && bracket && !bracketDone ? (
           <>
             <Link
               href={`/wc/bracket/wizard?classificationId=${bracket.classificationId}`}
@@ -129,11 +137,7 @@ export default async function WorldCupLanding() {
                 color: "#0a0f0a",
               }}
             >
-              {bracket.pct === 0
-                ? "Make your bracket"
-                : bracket.pct === 100
-                  ? "Review & submit your bracket"
-                  : `Continue your bracket · ${bracket.pct}%`}
+              {bracket.copy.dashboardPrimaryCta}
             </Link>
             <BracketProgressMeter snapshot={bracket} />
             <Link
@@ -143,7 +147,7 @@ export default async function WorldCupLanding() {
               Or skip ahead to matchday picks →
             </Link>
           </>
-        ) : user && bracketLocked && bracket ? (
+        ) : user && bracketDone && bracket ? (
           <>
             <Link
               href={picksHref}
@@ -157,12 +161,12 @@ export default async function WorldCupLanding() {
             </Link>
             <Link
               href={`/wc/bracket/wizard?classificationId=${bracket.classificationId}`}
-              className="inline-flex items-center gap-1.5 rounded-lg border border-ps-border bg-ps-surface px-4 py-2 text-xs font-semibold text-ps-text-sec transition-colors hover:border-ps-amber/40 hover:text-ps-text"
+              className="inline-flex items-center gap-1.5 rounded-lg border border-ps-border bg-ps-surface px-4 py-2 text-xs font-semibold text-ps-text-sec transition-colors hover:border-ps-green/40 hover:text-ps-text"
             >
               <span className="font-mono text-[10px] font-bold uppercase tracking-widest text-ps-green">
-                Locked
+                {bracket.stage === "locked" ? "Locked" : "Submitted"}
               </span>
-              View your bracket →
+              {bracket.copy.dashboardSecondaryCta} →
             </Link>
           </>
         ) : (
@@ -177,7 +181,6 @@ export default async function WorldCupLanding() {
             >
               {user ? "Make your picks" : "Join the game"}
             </Link>
-            {bracket && <BracketSnapshotCard snapshot={bracket} />}
           </>
         )}
       </section>
@@ -276,56 +279,6 @@ function BracketProgressMeter({ snapshot }: { snapshot: BracketSnapshot }) {
         />
       </div>
     </div>
-  );
-}
-
-function BracketSnapshotCard({ snapshot }: { snapshot: BracketSnapshot }) {
-  const isLocked = snapshot.status === "locked";
-  const isReady = snapshot.pct === 100;
-  const ctaLabel = isLocked
-    ? "View your bracket"
-    : isReady
-      ? "Review & submit"
-      : snapshot.pct === 0
-        ? "Start your bracket"
-        : "Continue your bracket";
-
-  return (
-    <Link
-      href={`/wc/bracket/wizard?classificationId=${snapshot.classificationId}`}
-      className="block w-full max-w-xs overflow-hidden rounded-xl border-2 border-ps-border bg-ps-surface p-4 text-left transition-all hover:border-ps-amber/40 hover:shadow-sm active:scale-[0.98]"
-    >
-      <div className="flex items-baseline justify-between">
-        <span className="font-mono text-[10px] font-bold uppercase tracking-widest text-ps-text-ter">
-          Your bracket
-        </span>
-        <span
-          className={`font-mono text-[10px] font-bold ${
-            isLocked
-              ? "text-ps-green"
-              : isReady
-                ? "text-ps-amber"
-                : "text-ps-text-sec"
-          }`}
-        >
-          {isLocked ? "LOCKED" : `${snapshot.pct}%`}
-        </span>
-      </div>
-      <p className="mt-1 text-sm font-bold text-ps-text">
-        {snapshot.label}
-      </p>
-      {!isLocked && (
-        <div className="mt-2 h-1.5 w-full overflow-hidden rounded-full bg-ps-chip">
-          <div
-            className="h-full bg-ps-amber transition-all duration-300"
-            style={{ width: `${snapshot.pct}%` }}
-          />
-        </div>
-      )}
-      <p className="mt-2 text-xs font-semibold text-ps-amber">
-        {ctaLabel} →
-      </p>
-    </Link>
   );
 }
 
