@@ -13,7 +13,13 @@ An admin-defined prediction contest. Contains rounds, has a lifecycle (draft →
 
 ## Round
 
-An admin-defined grouping of events within a competition. Rounds can mix sports. All events in a round lock at the earliest fixture start time in that round.
+An admin-defined grouping of events within a competition. Rounds can mix sports. A round has an authoring lifecycle: `draft → open → finalised → scored`. The lifecycle is about admin authoring, not about user prediction availability — predictions are gated per-[[Event]] by that event's `lock_time`, never by `round.status`.
+
+---
+
+## Finalised (Round status)
+
+Admin authoring is complete: the round's structure (events, prediction types, points) is frozen as a design artefact. Distinct from "locked for predictions" — individual events in a finalised round can still accept predictions until their own `lock_time` passes. A [[Super Administrator]] or [[Competition Admin]] may unfinalise the round (return to `open`) only to edit events that have not yet started; events past their `lock_time` remain frozen. Renames the previous `locked` status, which was misleading.
 
 ---
 
@@ -104,3 +110,21 @@ A best-effort, non-authoritative stored copy of competition standings (`competit
 ## Global Hit Rate
 
 A participant's aggregate prediction accuracy across all their competitions (group and personal combined) — distinct from the personal-predictions hit rate, which covers only the personal competition.
+
+---
+
+## Super Administrator
+
+A platform-level role responsible for canonical tournament truth: confirming official fixture results, finalising windows/stages, maintaining tournament templates. Operates across all Prediction Games that share a tournament. Desktop-primary user. See ADR 0005.
+
+---
+
+## Competition Admin
+
+The owner of a single Prediction Game. Manages invites, copy, and preset selection for their own game; cannot confirm official results or alter fixtures (those are [[Super Administrator]] actions). Mobile-first user — typically picks from a small set of presets rather than authoring rounds from scratch.
+
+---
+
+## Preset
+
+A pre-built, ready-to-use bundle of rounds, events, and prediction-type configuration that a [[Competition Admin]] selects to set up their Prediction Game without authoring anything from scratch. Presets are authored by the [[Super Administrator]] and intentionally limited in variation.

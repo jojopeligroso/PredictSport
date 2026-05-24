@@ -320,6 +320,15 @@ function RoundSection({
                   Lock Round
                 </button>
               )}
+              {round.status === "locked" && (
+                <button
+                  onClick={() => onRoundStatusChange(round, "open")}
+                  disabled={isUpdating}
+                  className="rounded-xl border border-ps-amber px-3 py-1.5 text-xs font-medium text-ps-amber-deep transition-colors hover:bg-ps-amber-soft disabled:opacity-50"
+                >
+                  Reopen Round
+                </button>
+              )}
               {round.status === "draft" && (
                 <button
                   onClick={() => onDeleteRound(round)}
@@ -534,7 +543,8 @@ export function EventsSection({ competition, events, rounds }: EventsSectionProp
         const data = await res.json();
         const errors = data.validation_errors;
         if (errors && Array.isArray(errors)) {
-          alert(`Cannot open round:\n\n${errors.join("\n")}`);
+          const verb = round.status === "locked" ? "reopen" : "open";
+          alert(`Cannot ${verb} round:\n\n${errors.join("\n")}`);
         } else {
           alert(data.error ?? "Failed to update round");
         }

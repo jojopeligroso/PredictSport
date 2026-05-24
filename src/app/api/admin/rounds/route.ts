@@ -53,7 +53,7 @@ const VALID_ROUND_STATUSES: RoundStatus[] = [
 const ALLOWED_ROUND_TRANSITIONS: Record<RoundStatus, RoundStatus[]> = {
   draft: ["open"],
   open: ["locked"],
-  locked: ["scored"],
+  locked: ["scored", "open"],
   scored: [],
 };
 
@@ -396,8 +396,32 @@ export async function PATCH(request: Request) {
       // Fetch all events for this round
       const { data: roundEvents } = await supabase
         .from("events")
-        .select("id, event_name, start_time, lock_time")
+        .select("id, event_name, start_time, lock_time, status")
         .eq("round_id", body.round_id);
+
+      // Reopening a locked round: refuse if any active event has already
+      // passed its lock_time. Predictions on those would race the live match.
+      if (currentRound.status === "locked") {
+        const now = Date.now();
+        const passed = (roundEvents ?? []).filter(
+          (e) =>
+            e.status !== "cancelled" &&
+            e.status !== "postponed" &&
+            e.lock_time &&
+            new Date(e.lock_time).getTime() <= now,
+        );
+        if (passed.length > 0) {
+          return NextResponse.json(
+            {
+              error: "Cannot reopen: one or more events have already locked",
+              validation_errors: passed.map(
+                (e) => `Event '${e.event_name}' lock time has passed`,
+              ),
+            },
+            { status: 400 },
+          );
+        }
+      }
 
       for (const evt of roundEvents ?? []) {
         // Fetch prediction types for this event

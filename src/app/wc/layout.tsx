@@ -47,7 +47,7 @@ export default async function WorldCupLayout({
         <div className="mx-auto flex h-12 w-full max-w-3xl items-center justify-between px-4 sm:px-6">
           <Link href="/wc" className="flex items-center gap-1.5">
             <BrandMark className="h-7 w-auto shrink-0" />
-            <span className="font-display text-[1.25rem] uppercase tracking-tight text-ps-text">
+            <span className="text-[1.1rem] font-extrabold lowercase tracking-tight text-ps-text">
               sports<span className="text-ps-amber">predict.</span>
             </span>
           </Link>
