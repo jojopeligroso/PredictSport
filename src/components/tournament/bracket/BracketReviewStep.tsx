@@ -10,7 +10,7 @@
  */
 
 import type { PickColor } from "./bracket-types";
-import { WC2026_KNOCKOUT_ROUNDS } from "@/lib/bracket/adapters/fifa-world-cup-2026";
+import { WC2026_GROUPS, WC2026_KNOCKOUT_ROUNDS } from "@/lib/bracket/adapters/fifa-world-cup-2026";
 
 interface BracketReviewStepProps {
   groupRankings: Record<string, string[]>;
@@ -37,6 +37,10 @@ export default function BracketReviewStep({
 }: BracketReviewStepProps) {
   // R32 team list = 12 winners + 12 runners-up + 8 qualifying thirds
   const r32Teams = buildR32TeamList(groupRankings, qualifyingThirds);
+  // Eliminated = 4 non-qualifying thirds + 12 fourth-place teams = 16 teams.
+  // Derived from the full group rosters so we don't depend on the ranking
+  // having all 4 slots filled (defensive: rankings can be partial mid-edit).
+  const eliminatedTeams = buildEliminatedTeams(groupRankings, qualifyingThirds);
   const championPath = buildChampionPath(knockoutPicks, champion, allMatchups);
 
   const accent = pickColor === "amber" ? "text-ps-amber" : "text-ps-green";
@@ -49,7 +53,8 @@ export default function BracketReviewStep({
         </p>
         <h2 className="mt-1 text-lg font-extrabold text-ps-text">Review your bracket</h2>
         <p className="mt-1 text-xs text-ps-text-sec">
-          One last look. Hit any section to edit it. Submitting locks it in until kickoff.
+          One last look. Hit any section to edit it. You can keep editing and
+          resubmitting right up until the day before kick-off.
         </p>
       </div>
 
@@ -181,6 +186,33 @@ export default function BracketReviewStep({
             </span>
           ))}
         </div>
+
+        {/* Eliminated teams — fast scan of who you DIDN'T put through.
+            Helps the user spot a missing favourite before submitting. */}
+        {eliminatedTeams.length > 0 && (
+          <div className="mt-4 border-t border-ps-border pt-3">
+            <p className="mb-2 font-mono text-[10px] font-bold uppercase tracking-widest text-ps-text-ter">
+              Eliminated teams ({eliminatedTeams.length}/16)
+            </p>
+            <div className="flex flex-wrap gap-1">
+              {eliminatedTeams.map((team) => (
+                <span
+                  key={team}
+                  className="rounded-md border border-ps-border bg-ps-chip px-2 py-0.5 text-[11px] font-medium text-ps-text-sec line-through decoration-ps-text-ter/60"
+                >
+                  {team}
+                </span>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Soft deadline reminder. The actual hard lock is ~1h before kickoff,
+            but we promise users "day before" so they always have a buffer. */}
+        <p className="mt-3 rounded-md bg-ps-amber-soft px-2.5 py-1.5 text-[11px] text-ps-amber-deep">
+          <span className="font-semibold">Don&apos;t worry</span> — you can keep
+          editing and resubmitting until the day before kick-off.
+        </p>
       </Section>
 
       {/* Knockout summary */}
@@ -265,6 +297,32 @@ function buildR32TeamList(
   for (const groupId of qualifyingThirds) {
     const third = groupRankings[groupId]?.[2];
     if (third) teams.push(third);
+  }
+  return teams;
+}
+
+/**
+ * Returns teams the user has knocked out at the group stage:
+ *   - every 4th-place team (12 total)
+ *   - every 3rd-place team whose group is NOT in qualifyingThirds (4 total)
+ *
+ * Order: by group A..L, then 3rd-place before 4th within the same group, so
+ * the list reads in the same flow as the rankings step.
+ */
+function buildEliminatedTeams(
+  groupRankings: Record<string, string[]>,
+  qualifyingThirds: string[],
+): string[] {
+  const qualifyingThirdSet = new Set(qualifyingThirds);
+  const teams: string[] = [];
+  for (const group of WC2026_GROUPS) {
+    const ranking = groupRankings[group.groupId] ?? [];
+    const third = ranking[2];
+    const fourth = ranking[3];
+    if (third && !qualifyingThirdSet.has(group.groupId)) {
+      teams.push(third);
+    }
+    if (fourth) teams.push(fourth);
   }
   return teams;
 }
