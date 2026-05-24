@@ -124,10 +124,8 @@ export default async function PicksPage() {
 
   // The full_bracket classification is a parallel surface that owns
   // tiebreaker scores and best-thirds-ranking — decisions that don't exist
-  // anywhere in the matchday flow. We surface it twice here: once as a
-  // pinned hero card above the list (loud, hard to miss), and once as a row
-  // inside the list (familiar shape, sits alongside the other windows). Both
-  // disappear once the bracket is locked.
+  // anywhere in the matchday flow. Surfaced once, as the pinned hero card
+  // above the windows list, and only while the bracket is still open.
   const bracket = await getWcBracketSnapshot(supabase, user.id);
   const showBracket = bracket && bracket.status !== "locked";
 
@@ -177,7 +175,6 @@ export default async function PicksPage() {
         <PredictionWindowSelector
           windows={enrichedWindows}
           competitionId={competition.id}
-          bracket={showBracket ? bracket : null}
         />
       </div>
     </div>

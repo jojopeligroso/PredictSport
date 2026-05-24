@@ -19,6 +19,30 @@ export default async function WorldCupLanding() {
 
   const bracket = user ? await getWcBracketSnapshot(supabase, user.id) : null;
 
+  // Members skip the /wc/join hop on "Make your picks" — they're already
+  // enrolled, sending them through join just adds a redirect.
+  let isMember = false;
+  if (user) {
+    const { data: competition } = await supabase
+      .from("competitions")
+      .select("id")
+      .eq("product_mode", "world_cup_2026_shell")
+      .in("status", ["active", "draft"])
+      .limit(1)
+      .maybeSingle();
+    if (competition) {
+      const { data: membership } = await supabase
+        .from("competition_members")
+        .select("id")
+        .eq("competition_id", competition.id)
+        .eq("user_id", user.id)
+        .maybeSingle();
+      isMember = Boolean(membership);
+    }
+  }
+  const picksHref = isMember ? "/wc/picks" : "/wc/join";
+  const bracketLocked = bracket?.status === "locked";
+
   // Countdown to June 11 2026
   const kickoff = new Date("2026-06-11T15:00:00Z");
   const now = new Date();
@@ -81,18 +105,21 @@ export default async function WorldCupLanding() {
           </div>
         )}
 
-        {/* Primary CTA.
+        {/* Primary CTA, in priority order:
          *
-         * Until the bracket is locked, the bracket *is* the primary action —
-         * tiebreakers and best-thirds-ranking can only be captured there, and
-         * users who don't finish their bracket have effectively skipped the
-         * onboarding contract. Once the bracket is locked it becomes a static
-         * snapshot and "Make your picks" takes the hero slot.
-         *
-         * Non-members and signed-out users see "Join the game" because /wc/join
-         * is the idempotent enrolment door — without it they'd 403 on submit.
+         * 1. Bracket in progress (user signed in, bracket exists, not locked) —
+         *    bracket IS the primary action. Tiebreakers and best-thirds-
+         *    ranking can only be captured there, and users who don't finish
+         *    the bracket have skipped the onboarding contract.
+         * 2. Bracket locked — bracket is done; the next action is matchday
+         *    picks. "Make your picks" takes the hero slot; a secondary
+         *    "View your bracket" button stays visible (not hidden) but is
+         *    clearly subordinate so users aren't channelled back into a
+         *    finished workflow.
+         * 3. Signed-out / no bracket snapshot — "Join the game" → /wc/join,
+         *    the idempotent enrolment door.
          */}
-        {user && bracket && bracket.status !== "locked" ? (
+        {user && bracket && !bracketLocked ? (
           <>
             <Link
               href={`/wc/bracket/wizard?classificationId=${bracket.classificationId}`}
@@ -110,16 +137,38 @@ export default async function WorldCupLanding() {
             </Link>
             <BracketProgressMeter snapshot={bracket} />
             <Link
-              href="/wc/join"
+              href={picksHref}
               className="text-sm font-semibold text-ps-text-sec underline-offset-2 hover:text-ps-text hover:underline"
             >
               Or skip ahead to matchday picks →
             </Link>
           </>
+        ) : user && bracketLocked && bracket ? (
+          <>
+            <Link
+              href={picksHref}
+              className="w-full max-w-xs rounded-xl px-6 py-4 text-center text-base font-semibold transition-all hover:opacity-90 active:scale-[0.97]"
+              style={{
+                background: "linear-gradient(135deg, #d4af37, #b8941f)",
+                color: "#0a0f0a",
+              }}
+            >
+              Make your picks
+            </Link>
+            <Link
+              href={`/wc/bracket/wizard?classificationId=${bracket.classificationId}`}
+              className="inline-flex items-center gap-1.5 rounded-lg border border-ps-border bg-ps-surface px-4 py-2 text-xs font-semibold text-ps-text-sec transition-colors hover:border-ps-amber/40 hover:text-ps-text"
+            >
+              <span className="font-mono text-[10px] font-bold uppercase tracking-widest text-ps-green">
+                Locked
+              </span>
+              View your bracket →
+            </Link>
+          </>
         ) : (
           <>
             <Link
-              href="/wc/join"
+              href={picksHref}
               className="w-full max-w-xs rounded-xl px-6 py-4 text-center text-base font-semibold transition-all hover:opacity-90 active:scale-[0.97]"
               style={{
                 background: "linear-gradient(135deg, #d4af37, #b8941f)",
