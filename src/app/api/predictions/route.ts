@@ -126,22 +126,16 @@ export async function POST(request: NextRequest) {
 
   const event_prediction_type_id = ept.id;
 
-  // Check for existing prediction (upsert). RLS will block the actual write if
-  // the competition disallows updates, so we don't need a separate competition
-  // lookup just to check that flag.
-  const { data: existing } = await supabase
-    .from("predictions")
-    .select("id")
-    .eq("event_prediction_type_id", event_prediction_type_id)
-    .eq("user_id", user.id)
-    .maybeSingle();
-
-  // Handle clear/delete request (e.g., removing exact_score prediction)
-  if (prediction_data._clear === true && existing) {
+  // Handle clear/delete request (e.g., removing exact_score prediction). This
+  // is the only branch that still needs a separate existence read — DELETE
+  // doesn't have an upsert analogue and we want a 200 (not an error) if the
+  // row was never there in the first place.
+  if (prediction_data._clear === true) {
     const { error: deleteError } = await supabase
       .from("predictions")
       .delete()
-      .eq("id", existing.id);
+      .eq("event_prediction_type_id", event_prediction_type_id)
+      .eq("user_id", user.id);
 
     if (deleteError) {
       return NextResponse.json(
@@ -153,67 +147,44 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ deleted: true });
   }
 
-  // If clearing a non-existent prediction, just return success
-  if (prediction_data._clear === true) {
-    return NextResponse.json({ deleted: true });
-  }
-
-  if (existing) {
-    // Update existing prediction
-    const { data: updated, error: updateError } = await supabase
-      .from("predictions")
-      .update({
+  // Single race-safe upsert on the (event_prediction_type_id, user_id) unique
+  // constraint. Replaces the previous read-then-insert-or-update which raced
+  // under rapid taps (autosave-on-blur, bracket diff-loop) and returned a
+  // 409 → misleading "event may have locked" message to the user even though
+  // the first-winner write had succeeded.
+  const { data: saved, error: upsertError } = await supabase
+    .from("predictions")
+    .upsert(
+      {
+        event_prediction_type_id,
+        event_id,
+        user_id: user.id,
+        prediction_type,
         prediction_data,
         ...(note_text !== undefined && { note_text }),
         ...(note_visibility && { note_visibility }),
         updated_at: new Date().toISOString(),
-      })
-      .eq("id", existing.id)
-      .select()
-      .single();
-
-    if (updateError) {
-      // PGRST116 = no row returned, which after a successful WHERE-id update
-      // means RLS hid the row from us. That happens when the competition
-      // disallows prediction updates, when the event has locked between this
-      // request and the prior read, or when the competition is no longer
-      // active.
-      const isRlsReject = updateError.code === "PGRST116";
-      return NextResponse.json(
-        {
-          error: isRlsReject
-            ? "Can't change this pick — the match may have locked or updates are disabled for this competition."
-            : "Failed to update prediction",
-        },
-        { status: isRlsReject ? 403 : 500 }
-      );
-    }
-
-    return NextResponse.json({ prediction: updated });
-  }
-
-  // Insert new prediction
-  const { data: created, error: insertError } = await supabase
-    .from("predictions")
-    .insert({
-      event_prediction_type_id,
-      event_id,
-      user_id: user.id,
-      prediction_type,
-      prediction_data,
-      ...(note_text !== undefined && { note_text }),
-      ...(note_visibility && { note_visibility }),
-    })
+      },
+      { onConflict: "event_prediction_type_id,user_id" }
+    )
     .select()
     .single();
 
-  if (insertError) {
-    // Could be RLS rejection if lock_time has passed between check and insert
+  if (upsertError) {
+    // PGRST116 = no row returned after the write succeeded at the SQL layer,
+    // which means RLS hid the post-write row. Caused by: event lock_time
+    // passed between the EPT lookup above and this write, the competition
+    // disallowing updates, or the competition no longer being active.
+    const isRlsReject = upsertError.code === "PGRST116";
     return NextResponse.json(
-      { error: "Failed to submit prediction. The event may have locked." },
-      { status: 500 }
+      {
+        error: isRlsReject
+          ? "Can't save that pick — the match may have locked or updates are disabled for this competition."
+          : "Couldn't save that pick. Please try again.",
+      },
+      { status: isRlsReject ? 403 : 500 }
     );
   }
 
-  return NextResponse.json({ prediction: created }, { status: 201 });
+  return NextResponse.json({ prediction: saved });
 }
