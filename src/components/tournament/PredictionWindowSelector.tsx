@@ -13,7 +13,12 @@ interface PredictionWindow {
   eventCount: number;
   earliestLock: string | null;
   allResulted: boolean;
+  /** Distinct events in this round with a saved `winner` prediction. */
   userPredictionCount: number;
+  /** Distinct events in this round with a saved `exact_score` tiebreaker. */
+  userScoreCount: number;
+  /** How many events in this round have an `exact_score` EPT (knockout rounds = 0). */
+  scoreEligibleCount: number;
 }
 
 export function PredictionWindowSelector({
@@ -62,7 +67,7 @@ export function PredictionWindowSelector({
               />
             </div>
 
-            {/* Lock countdown or user progress */}
+            {/* Lock countdown */}
             <div className="mt-3 flex items-center justify-between">
               {isOpen && lockDate && !isOverdue ? (
                 <LockCountdown lockDate={lockDate} />
@@ -73,25 +78,59 @@ export function PredictionWindowSelector({
                   {isScored ? "Finalised" : isLocked ? "Predictions locked" : ""}
                 </span>
               )}
-
-              {w.eventCount > 0 && (
-                <span
-                  className={`font-mono text-xs font-semibold ${
-                    w.userPredictionCount >= w.eventCount
-                      ? "text-ps-green"
-                      : w.userPredictionCount > 0
-                        ? "text-ps-amber"
-                        : "text-ps-text-ter"
-                  }`}
-                >
-                  {w.userPredictionCount}/{w.eventCount} picked
-                </span>
-              )}
             </div>
+
+            {/* Progress chips: outcomes + tiebreaker scores. Hidden until the
+                round has fixtures. Score chip is hidden in knockout rounds
+                where no event carries an exact_score EPT. */}
+            {w.eventCount > 0 && (
+              <div className="mt-2 flex flex-wrap items-center gap-1.5">
+                <ProgressChip
+                  label="Outcomes"
+                  done={w.userPredictionCount}
+                  total={w.eventCount}
+                />
+                {w.scoreEligibleCount > 0 && (
+                  <ProgressChip
+                    label="Scores"
+                    done={w.userScoreCount}
+                    total={w.scoreEligibleCount}
+                  />
+                )}
+              </div>
+            )}
           </Link>
         );
       })}
     </div>
+  );
+}
+
+function ProgressChip({
+  label,
+  done,
+  total,
+}: {
+  label: string;
+  done: number;
+  total: number;
+}) {
+  const complete = done >= total;
+  const started = done > 0;
+  const tone = complete
+    ? "border-ps-green/40 bg-ps-green-soft text-ps-green"
+    : started
+      ? "border-ps-amber/40 bg-ps-amber-soft text-ps-amber-deep"
+      : "border-ps-border bg-ps-chip text-ps-text-ter";
+  return (
+    <span
+      className={`inline-flex items-center gap-1.5 rounded-full border px-2 py-0.5 text-[11px] font-semibold ${tone}`}
+    >
+      <span className="uppercase tracking-wide opacity-80">{label}</span>
+      <span className="font-mono">
+        {done}/{total}
+      </span>
+    </span>
   );
 }
 

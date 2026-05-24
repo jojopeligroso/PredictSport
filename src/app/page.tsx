@@ -190,9 +190,22 @@ async function Dashboard({ userId }: { userId: string }) {
         .eq("user_id", userId)
         .in("event_id", eventIds);
 
+      // Dedupe by event_id per round — a single event can hold multiple
+      // prediction rows (winner + exact_score for group fixtures), but the
+      // card shows "matches picked", not "rows written".
+      const eventsByRound = new Map<string, Set<string>>();
       for (const p of (preds ?? []) as Array<{ event_id: string; events: { round_id: string | null }[] }>) {
         const rid = p.events?.[0]?.round_id;
-        if (rid) pickCounts[rid] = (pickCounts[rid] ?? 0) + 1;
+        if (!rid || !p.event_id) continue;
+        let set = eventsByRound.get(rid);
+        if (!set) {
+          set = new Set<string>();
+          eventsByRound.set(rid, set);
+        }
+        set.add(p.event_id);
+      }
+      for (const [rid, set] of eventsByRound) {
+        pickCounts[rid] = set.size;
       }
     }
   }
@@ -279,7 +292,15 @@ async function Dashboard({ userId }: { userId: string }) {
                       {activeRound.name ?? `Round ${activeRound.round_number}`}
                       {activeRound.status === "locked" && " — locked"}
                     </span>
-                    <span className="text-xs font-medium text-ps-text-ter">
+                    <span
+                      className={`font-mono text-xs font-semibold ${
+                        evtCount > 0 && pickCount >= evtCount
+                          ? "text-ps-green"
+                          : pickCount > 0
+                            ? "text-ps-amber-deep"
+                            : "text-ps-text-ter"
+                      }`}
+                    >
                       {pickCount}/{evtCount} picked
                     </span>
                   </div>

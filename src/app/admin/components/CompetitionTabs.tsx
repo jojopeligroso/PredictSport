@@ -153,6 +153,8 @@ export function CompetitionTabs({
                 earliestLock: null,
                 allResulted: (events ?? []).filter((e) => e.round_id === r.id).every((e) => e.result_confirmed),
                 userPredictionCount: 0,
+                userScoreCount: 0,
+                scoreEligibleCount: 0,
               }))}
             competitionId={competition.id}
             basePath={`/competitions/${competition.id}/picks`}

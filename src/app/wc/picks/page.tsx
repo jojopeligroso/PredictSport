@@ -43,46 +43,81 @@ export default async function PicksPage() {
     .eq("competition_id", competition.id)
     .order("round_number", { ascending: true });
 
-  // Get event counts and earliest lock time per window
+  // Get events + their prediction-type rows per window. The exact_score EPT
+  // existence is what makes a match eligible for a tiebreaker prediction
+  // (group fixtures: yes; knockouts: no), so we use it to size the
+  // "scores predicted" denominator.
   const windowData = await Promise.all(
     (windows ?? []).map(async (w: { id: string; name: string; round_number: number; status: string; deadline: string | null; sporting_stage_id: string | null; prediction_window_number: number | null }) => {
       const { data: events } = await supabase
         .from("events")
-        .select("id, lock_time, status")
+        .select("id, lock_time, status, event_prediction_types(prediction_type)")
         .eq("round_id", w.id)
         .order("lock_time", { ascending: true });
 
-      const eventCount = events?.length ?? 0;
-      const earliestLock = events?.[0]?.lock_time ?? null;
-      const allResulted = eventCount > 0 && events?.every((e: { status: string }) => e.status === "resulted");
+      const evs = (events ?? []) as Array<{
+        id: string;
+        lock_time: string;
+        status: string;
+        event_prediction_types: { prediction_type: string }[] | null;
+      }>;
+      const eventCount = evs.length;
+      const earliestLock = evs[0]?.lock_time ?? null;
+      const allResulted = eventCount > 0 && evs.every((e) => e.status === "resulted");
+      const scoreEligibleCount = evs.filter((e) =>
+        (e.event_prediction_types ?? []).some((ept) => ept.prediction_type === "exact_score"),
+      ).length;
 
       return {
         ...w,
         eventCount,
         earliestLock,
         allResulted: allResulted ?? false,
+        scoreEligibleCount,
       };
     })
   );
 
-  // Get user's prediction counts per window
+  // Get user's prediction rows for this competition. We need the
+  // prediction_type so we can split the "winner" count (matches picked) from
+  // the "exact_score" count (scores predicted).
   const { data: userPredictions } = await supabase
     .from("predictions")
-    .select("event_id, events!inner(round_id)")
+    .select("event_id, prediction_type, events!inner(round_id)")
     .eq("user_id", user.id)
     .eq("events.competition_id", competition.id);
 
-  const predCountByWindow = new Map<string, number>();
+  // Tally per round, deduping by event_id within each {round, type} bucket so
+  // duplicate rows can never inflate either counter.
+  const winnerEventsByRound = new Map<string, Set<string>>();
+  const scoreEventsByRound = new Map<string, Set<string>>();
   for (const p of userPredictions ?? []) {
-    const roundId = (p as unknown as { events: { round_id: string } }).events?.round_id;
-    if (roundId) {
-      predCountByWindow.set(roundId, (predCountByWindow.get(roundId) ?? 0) + 1);
+    const row = p as unknown as {
+      event_id: string;
+      prediction_type: string;
+      events: { round_id: string };
+    };
+    const roundId = row.events?.round_id;
+    if (!roundId || !row.event_id) continue;
+    const target =
+      row.prediction_type === "exact_score"
+        ? scoreEventsByRound
+        : row.prediction_type === "winner"
+          ? winnerEventsByRound
+          : null;
+    if (!target) continue;
+    let set = target.get(roundId);
+    if (!set) {
+      set = new Set<string>();
+      target.set(roundId, set);
     }
+    set.add(row.event_id);
   }
 
   const enrichedWindows = windowData.map((w) => ({
     ...w,
-    userPredictionCount: predCountByWindow.get(w.id) ?? 0,
+    userPredictionCount: winnerEventsByRound.get(w.id)?.size ?? 0,
+    userScoreCount: scoreEventsByRound.get(w.id)?.size ?? 0,
   }));
 
   return (
