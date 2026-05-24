@@ -40,8 +40,26 @@
   /* Sport pills — unified warm tones (no per-sport hues) */
 }
 
+/* Dark mode tokens — applied when html[data-theme="dark"] OR when no explicit
+   theme is set and the OS prefers dark. The pre-paint script in layout.tsx
+   sets data-theme synchronously, so this @media block only fires on first
+   paint before JS, and as a fallback for users with JS disabled. */
+html[data-theme="dark"] {
+  --ps-bg: #0e1116;
+  --ps-bg-alt: #161a21;
+  --ps-surface: #1a1f27;
+  --ps-surface2: #222831;
+  --ps-border: rgba(255, 255, 255, 0.08);
+  --ps-border-strong: rgba(255, 255, 255, 0.16);
+  --ps-text: #f1ece2;
+  --ps-text-sec: rgba(241, 236, 226, 0.62);
+  --ps-text-ter: rgba(241, 236, 226, 0.36);
+  --ps-chip: rgba(255, 255, 255, 0.05);
+  --ps-overlay: rgba(20, 24, 30, 0.85);
+}
+
 @media (prefers-color-scheme: dark) {
-  :root {
+  html:not([data-theme]) {
     --ps-bg: #0e1116;
     --ps-bg-alt: #161a21;
     --ps-surface: #1a1f27;
@@ -53,8 +71,6 @@
     --ps-text-ter: rgba(241, 236, 226, 0.36);
     --ps-chip: rgba(255, 255, 255, 0.05);
     --ps-overlay: rgba(20, 24, 30, 0.85);
-
-    /* Sport pills use --ps-text-sec in dark mode (no per-sport overrides) */
   }
 }
 
@@ -160,22 +176,23 @@ p, h1, h2, h3, h4, h5, h6 {
   font-variant-numeric: tabular-nums;
 }
 
-/* WC theme is already dark — prevent double-inversion */
-@media (prefers-color-scheme: dark) {
-  .wc-theme {
-    --ps-bg: #0a0f0a;
-    --ps-bg-alt: #0d140d;
-    --ps-surface: #1a231a;
-    --ps-surface2: #141c14;
-    --ps-text: #f1ece2;
-    --ps-text-sec: #a8a090;
-    --ps-text-ter: #706858;
-    --ps-amber: #d4af37;
-    --ps-amber-deep: #b8941f;
-    --ps-amber-soft: rgba(212, 175, 55, 0.12);
-    --ps-border: rgba(212, 175, 55, 0.10);
-    --ps-border-strong: rgba(212, 175, 55, 0.20);
-    --ps-chip: rgba(212, 175, 55, 0.06);
-    --ps-overlay: rgba(10, 15, 10, 0.85);
-  }
+/* WC light variant — cream base with Mexico green + trophy gold accents.
+   Active when the user has chosen Light explicitly. Dark remains the default
+   WC look (set in .wc-theme above), and is also forced when the user picks
+   Dark or when no theme is set and the OS prefers dark. */
+html[data-theme="light"] .wc-theme {
+  --ps-bg: #efe9de;
+  --ps-bg-alt: #e7dfd0;
+  --ps-surface: #ffffff;
+  --ps-surface2: #faf6ee;
+  --ps-text: #0a0f0a;
+  --ps-text-sec: #4a5a4a;
+  --ps-text-ter: #7a8a7a;
+  --ps-amber: #b8941f;
+  --ps-amber-deep: #8a6e10;
+  --ps-amber-soft: rgba(184, 148, 31, 0.14);
+  --ps-border: rgba(0, 104, 71, 0.18);
+  --ps-border-strong: rgba(0, 104, 71, 0.32);
+  --ps-chip: rgba(0, 104, 71, 0.06);
+  --ps-overlay: rgba(255, 253, 247, 0.85);
 }

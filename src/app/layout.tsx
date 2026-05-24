@@ -4,8 +4,11 @@ import { headers } from "next/headers";
 import { NavBar } from "@/components/NavBar";
 import { Footer } from "@/components/Footer";
 import { PushPromptWrapper } from "@/components/PushPromptWrapper";
+import { ThemeProvider, themeInitScript } from "@/components/ThemeProvider";
 import { isWorldCupShell } from "@/lib/product-mode";
 import "./globals.css";
+
+export const dynamic = "force-dynamic";
 
 const inter = Inter({
   variable: "--font-inter",
@@ -63,14 +66,17 @@ export default async function RootLayout({
         <link rel="manifest" href="/manifest.json" />
         <meta name="theme-color" content="#f59e0b" />
         <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+        <script dangerouslySetInnerHTML={{ __html: themeInitScript }} />
       </head>
       <body className="min-h-full flex flex-col bg-ps-bg text-ps-text">
-        {showGlobalChrome && <NavBar />}
-        <main className="flex flex-1 flex-col">
-          {children}
-        </main>
-        {showGlobalChrome && <Footer />}
-        <PushPromptWrapper />
+        <ThemeProvider>
+          {showGlobalChrome && <NavBar />}
+          <main className="flex flex-1 flex-col">
+            {children}
+          </main>
+          {showGlobalChrome && <Footer />}
+          <PushPromptWrapper />
+        </ThemeProvider>
       </body>
     </html>
   );

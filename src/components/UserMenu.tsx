@@ -3,6 +3,13 @@
 import { useState, useRef, useEffect } from "react";
 import Link from "next/link";
 import { LogoutButton } from "./LogoutButton";
+import { useTheme, type ThemePref } from "./ThemeProvider";
+
+const THEME_LABEL: Record<ThemePref, string> = {
+  light: "Light",
+  dark: "Dark",
+  system: "System",
+};
 
 interface UserMenuProps {
   displayName: string;
@@ -12,6 +19,7 @@ interface UserMenuProps {
 export function UserMenu({ displayName, avatarUrl }: UserMenuProps) {
   const [isOpen, setIsOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
+  const { theme, cycleTheme } = useTheme();
 
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
@@ -73,9 +81,28 @@ export function UserMenu({ displayName, avatarUrl }: UserMenuProps) {
             <Link
               href="/profile"
               className="block rounded-md px-2 py-1.5 text-sm text-ps-text-sec transition-colors hover:bg-ps-chip hover:text-ps-text"
+              onClick={() => setIsOpen(false)}
             >
               Profile
             </Link>
+            <Link
+              href="/profile#settings"
+              className="block rounded-md px-2 py-1.5 text-sm text-ps-text-sec transition-colors hover:bg-ps-chip hover:text-ps-text"
+              onClick={() => setIsOpen(false)}
+            >
+              Settings
+            </Link>
+            <button
+              type="button"
+              onClick={cycleTheme}
+              className="flex w-full items-center justify-between rounded-md px-2 py-1.5 text-left text-sm text-ps-text-sec transition-colors hover:bg-ps-chip hover:text-ps-text"
+              aria-label={`Theme: ${THEME_LABEL[theme]}. Click to change.`}
+            >
+              <span>Theme</span>
+              <span className="text-xs font-semibold text-ps-text-ter">
+                {THEME_LABEL[theme]}
+              </span>
+            </button>
             <LogoutButton />
           </div>
         </div>
