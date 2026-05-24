@@ -284,6 +284,14 @@ function TiebreakerMatchRow({
         ? `${match.away_team} win`
         : "Draw";
 
+  const isDraw = match.result === "draw";
+  const winnerName =
+    match.result === "home_win"
+      ? match.home_team
+      : match.result === "away_win"
+        ? match.away_team
+        : null;
+
   // Are the current input values different from the committed score?
   const dirty =
     !hasCommitted ||
@@ -346,16 +354,13 @@ function TiebreakerMatchRow({
           : "border-ps-border bg-ps-surface"
       }`}
     >
-      <div className="mb-2 flex items-center justify-between">
-        <span className="text-xs font-semibold text-ps-text">
-          {match.home_team} vs {match.away_team}
-        </span>
-        <span className="rounded bg-ps-chip px-2 py-0.5 font-mono text-[10px] text-ps-text-sec">
-          {resultLabel}
-        </span>
-      </div>
+      <p className="mb-2 text-xs font-semibold text-ps-text">
+        {match.home_team} vs {match.away_team}
+      </p>
 
-      <div className="flex items-center gap-2">
+      <ChosenBanner winnerName={winnerName} isDraw={isDraw} />
+
+      <div className="mt-3 flex items-center gap-2">
         <input
           ref={homeRef}
           type="number"
@@ -425,6 +430,34 @@ function TiebreakerMatchRow({
       {error && (
         <p className="mt-1.5 text-[11px] text-ps-red">{error}</p>
       )}
+    </div>
+  );
+}
+
+function ChosenBanner({
+  winnerName,
+  isDraw,
+}: {
+  winnerName: string | null;
+  isDraw: boolean;
+}) {
+  const tone = isDraw
+    ? "border-ps-amber/40 bg-ps-amber-soft text-ps-amber-deep"
+    : "border-ps-green/40 bg-ps-green-soft text-ps-green";
+
+  return (
+    <div
+      className={`flex items-center gap-2 rounded-md border px-2.5 py-1.5 ${tone}`}
+    >
+      <span className="font-mono text-[9px] font-bold uppercase tracking-widest opacity-80">
+        You chose
+      </span>
+      <span aria-hidden className="text-base leading-none">
+        {isDraw ? "·" : "▶"}
+      </span>
+      <span className="text-sm font-extrabold uppercase tracking-tight">
+        {isDraw ? "Draw" : `${winnerName} win`}
+      </span>
     </div>
   );
 }
