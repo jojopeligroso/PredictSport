@@ -1,0 +1,137 @@
+import type { SupabaseClient } from "@supabase/supabase-js";
+
+/**
+ * Per-classification display visibility (ADR 0011).
+ *
+ * One chokepoint that everything reading standings goes through. Format is
+ * always public — the survival ladder needs real names. Self always sees
+ * their own real name. Everyone else sees the user's stable Mystery {Animal}
+ * pseudonym when `display_visibility = 'private'`.
+ */
+
+// Curated list. Stable: don't reorder. Append only. Pseudonyms are persisted,
+// so re-ordering wouldn't actually rename anyone — but it would change which
+// new users get which animal, which makes test fixtures churn for no reason.
+const MYSTERY_ANIMALS = [
+  "Otter", "Hawk", "Lynx", "Badger", "Fox", "Stoat", "Heron", "Pine Marten",
+  "Hare", "Owl", "Falcon", "Stag", "Salmon", "Wren", "Curlew", "Kestrel",
+  "Jay", "Magpie", "Raven", "Finch", "Swift", "Robin", "Linnet", "Goldcrest",
+  "Pike", "Trout", "Mackerel", "Seal", "Dolphin", "Whale", "Puffin", "Gannet",
+  "Razorbill", "Tern", "Plover", "Lapwing", "Snipe", "Woodcock", "Pheasant",
+  "Partridge", "Grouse", "Buzzard", "Harrier", "Eagle", "Osprey", "Merlin",
+  "Goshawk", "Sparrowhawk", "Peregrine", "Bittern", "Egret", "Cormorant",
+  "Kingfisher", "Dipper", "Treecreeper", "Nuthatch", "Bullfinch", "Greenfinch",
+  "Siskin", "Crossbill",
+] as const;
+
+export interface VisibleStandingRow {
+  user_id: string;
+  display_name: string;
+  [k: string]: unknown;
+}
+
+interface MembershipVisibility {
+  user_id: string;
+  display_visibility: "public" | "private";
+  pseudonym: string | null;
+}
+
+/**
+ * Apply visibility rules to a list of standing rows.
+ *
+ * - Format (`classification_type === 'format_elimination'`) returns rows
+ *   untouched.
+ * - The viewer always sees their own real name (caller renders the YOU chip).
+ * - Other rows whose membership is `private` get their `display_name`
+ *   swapped for the persisted pseudonym. If a pseudonym is somehow missing
+ *   (race: toggle without ensurePseudonym), we fall back to "Mystery Player"
+ *   rather than leak the name.
+ */
+export function applyVisibility<T extends VisibleStandingRow>(
+  rows: T[],
+  memberships: MembershipVisibility[],
+  classificationType: string,
+  viewerUserId: string,
+): T[] {
+  if (classificationType === "format_elimination") return rows;
+
+  const byUser = new Map(memberships.map((m) => [m.user_id, m]));
+
+  return rows.map((row) => {
+    if (row.user_id === viewerUserId) return row;
+    const m = byUser.get(row.user_id);
+    if (!m || m.display_visibility !== "private") return row;
+    return {
+      ...row,
+      display_name: m.pseudonym ?? "Mystery Player",
+    };
+  });
+}
+
+/**
+ * Generate or fetch the stable pseudonym for a user in a classification.
+ *
+ * Persists on first call so toggling private→public→private returns the same
+ * handle. Uses a deterministic preferred index from a hash of
+ * (user_id, classification_id) and then walks forward through the list until
+ * an unused slot is found in that classification (collision unlikely for
+ * <60 entrants, but worth guarding the unique index).
+ */
+export async function ensurePseudonym(
+  supabase: SupabaseClient,
+  classificationId: string,
+  userId: string,
+): Promise<string> {
+  const { data: existing } = await supabase
+    .from("classification_memberships")
+    .select("pseudonym")
+    .eq("classification_id", classificationId)
+    .eq("user_id", userId)
+    .maybeSingle();
+
+  if (existing?.pseudonym) return existing.pseudonym;
+
+  const { data: taken } = await supabase
+    .from("classification_memberships")
+    .select("pseudonym")
+    .eq("classification_id", classificationId)
+    .not("pseudonym", "is", null);
+
+  const used = new Set((taken ?? []).map((r: { pseudonym: string | null }) => r.pseudonym));
+
+  const seed = hashSeed(`${userId}:${classificationId}`);
+  let pseudonym = "";
+  for (let i = 0; i < MYSTERY_ANIMALS.length; i++) {
+    const candidate = `Mystery ${MYSTERY_ANIMALS[(seed + i) % MYSTERY_ANIMALS.length]}`;
+    if (!used.has(candidate)) {
+      pseudonym = candidate;
+      break;
+    }
+  }
+  // If every animal is taken (>60 entrants), fall back to numeric suffix on
+  // the seed-preferred animal. Vanishingly rare for Phase 1 but worth
+  // covering — beats throwing.
+  if (!pseudonym) {
+    const base = MYSTERY_ANIMALS[seed % MYSTERY_ANIMALS.length];
+    let suffix = 2;
+    while (used.has(`Mystery ${base} ${suffix}`)) suffix++;
+    pseudonym = `Mystery ${base} ${suffix}`;
+  }
+
+  await supabase
+    .from("classification_memberships")
+    .update({ pseudonym })
+    .eq("classification_id", classificationId)
+    .eq("user_id", userId);
+
+  return pseudonym;
+}
+
+function hashSeed(input: string): number {
+  let h = 2166136261;
+  for (let i = 0; i < input.length; i++) {
+    h ^= input.charCodeAt(i);
+    h = Math.imul(h, 16777619);
+  }
+  return Math.abs(h);
+}

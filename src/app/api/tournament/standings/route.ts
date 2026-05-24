@@ -1,11 +1,16 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
+import { applyVisibility } from "@/lib/tournament/visibility";
 
 /**
  * GET /api/tournament/standings?classificationId=xxx&provisional=true
  * Get standings for a classification.
  * If provisional=true, returns live-computed standings.
  * Otherwise, returns the latest finalised snapshot.
+ *
+ * All rows pass through `applyVisibility()` so private members appear as
+ * their stable Mystery {Animal} pseudonym to non-self viewers. Format
+ * classification is exempt (always real names). See ADR 0011.
  */
 export async function GET(request: NextRequest) {
   const supabase = await createClient();
@@ -25,21 +30,38 @@ export async function GET(request: NextRequest) {
     );
   }
 
+  const { data: classification } = await supabase
+    .from("classifications")
+    .select("competition_id, classification_type")
+    .eq("id", classificationId)
+    .single();
+
+  if (!classification) {
+    return NextResponse.json({ error: "Classification not found" }, { status: 404 });
+  }
+
+  // Visibility map for every member of this classification — used by both
+  // the live and snapshot paths.
+  const { data: visibilityRows } = await supabase
+    .from("classification_memberships")
+    .select("user_id, display_visibility, pseudonym")
+    .eq("classification_id", classificationId);
+
+  const visibility = (visibilityRows ?? []) as Array<{
+    user_id: string;
+    display_visibility: "public" | "private";
+    pseudonym: string | null;
+  }>;
+
+  // Whether the current user has opted private on this classification —
+  // returned so the UI can render the toggle in the right state without a
+  // second roundtrip.
+  const selfVisibility =
+    visibility.find((v) => v.user_id === user.id)?.display_visibility ?? "public";
+
   const provisional = request.nextUrl.searchParams.get("provisional") === "true";
 
   if (provisional) {
-    // Live-computed standings from current predictions
-    // Get the classification to determine its competition
-    const { data: classification } = await supabase
-      .from("classifications")
-      .select("competition_id, classification_type")
-      .eq("id", classificationId)
-      .single();
-
-    if (!classification) {
-      return NextResponse.json({ error: "Classification not found" }, { status: 404 });
-    }
-
     // Get active members
     const { data: memberships } = await supabase
       .from("classification_memberships")
@@ -47,7 +69,11 @@ export async function GET(request: NextRequest) {
       .eq("classification_id", classificationId);
 
     if (!memberships || memberships.length === 0) {
-      return NextResponse.json({ standings: [], provisional: true });
+      return NextResponse.json({
+        standings: [],
+        provisional: true,
+        selfVisibility,
+      });
     }
 
     const userIds = memberships.map((m: { user_id: string }) => m.user_id);
@@ -79,7 +105,7 @@ export async function GET(request: NextRequest) {
       (users ?? []).map((u: { id: string; display_name: string }) => [u.id, u.display_name])
     );
 
-    const standings = [...pointsMap.entries()]
+    const rawStandings = [...pointsMap.entries()]
       .sort((a, b) => b[1] - a[1])
       .map(([userId, points], idx) => ({
         rank: idx + 1,
@@ -90,7 +116,14 @@ export async function GET(request: NextRequest) {
         eliminated: memberships.find((m: { user_id: string }) => m.user_id === userId)?.status === "eliminated",
       }));
 
-    return NextResponse.json({ standings, provisional: true });
+    const standings = applyVisibility(
+      rawStandings,
+      visibility,
+      classification.classification_type,
+      user.id,
+    );
+
+    return NextResponse.json({ standings, provisional: true, selfVisibility });
   }
 
   // Return latest finalised snapshot
@@ -103,13 +136,26 @@ export async function GET(request: NextRequest) {
     .maybeSingle();
 
   if (!snapshot) {
-    return NextResponse.json({ standings: [], provisional: false, message: "No finalised standings yet" });
+    return NextResponse.json({
+      standings: [],
+      provisional: false,
+      message: "No finalised standings yet",
+      selfVisibility,
+    });
   }
 
+  const standings = applyVisibility(
+    (snapshot.standings_data ?? []) as Array<{ user_id: string; display_name: string }>,
+    visibility,
+    classification.classification_type,
+    user.id,
+  );
+
   return NextResponse.json({
-    standings: snapshot.standings_data,
+    standings,
     provisional: false,
     snapshot_type: snapshot.snapshot_type,
     generated_at: snapshot.generated_at,
+    selfVisibility,
   });
 }

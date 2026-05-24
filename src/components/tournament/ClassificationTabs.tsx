@@ -40,6 +40,7 @@ export function ClassificationTabs({
   const [standings, setStandings] = useState<StandingRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [loadedId, setLoadedId] = useState<string>("");
+  const [selfVisibility, setSelfVisibility] = useState<"public" | "private">("public");
 
   useEffect(() => {
     if (!activeId) return;
@@ -52,6 +53,7 @@ export function ClassificationTabs({
       .then((data) => {
         if (!cancelled) {
           setStandings(data?.standings ?? []);
+          setSelfVisibility(data?.selfVisibility === "private" ? "private" : "public");
           setLoadedId(activeId);
           setLoading(false);
         }
@@ -115,6 +117,25 @@ export function ClassificationTabs({
             standings={standings}
             currentUserId={currentUserId}
             classificationType={active?.classification_type ?? "leaderboard"}
+            selfVisibility={selfVisibility}
+            onToggleVisibility={async (next) => {
+              const prev = selfVisibility;
+              setSelfVisibility(next);
+              try {
+                const res = await fetch("/api/tournament/visibility", {
+                  method: "POST",
+                  headers: { "Content-Type": "application/json" },
+                  body: JSON.stringify({ classificationId: activeId, visibility: next }),
+                });
+                if (!res.ok) throw new Error("toggle failed");
+                const data = await fetch(
+                  `/api/tournament/standings?classificationId=${activeId}&competitionId=${competitionId}`,
+                ).then((r) => r.json());
+                setStandings(data?.standings ?? []);
+              } catch {
+                setSelfVisibility(prev);
+              }
+            }}
           />
         )}
       </div>
@@ -126,12 +147,17 @@ function StandingsTable({
   standings,
   currentUserId,
   classificationType,
+  selfVisibility,
+  onToggleVisibility,
 }: {
   standings: StandingRow[];
   currentUserId: string;
   classificationType: string;
+  selfVisibility: "public" | "private";
+  onToggleVisibility: (next: "public" | "private") => void;
 }) {
   const isBracket = classificationType === "bracket_survivor";
+  const isFormat = classificationType === "format_elimination";
 
   return (
     <div className="divide-y divide-ps-border rounded-xl border border-ps-border bg-ps-surface">
@@ -169,6 +195,12 @@ function StandingsTable({
                   YOU
                 </span>
               )}
+              {isMe && !isFormat && (
+                <VisibilityToggle
+                  visibility={selfVisibility}
+                  onToggle={onToggleVisibility}
+                />
+              )}
               {isEliminated && (
                 <span className="rounded bg-ps-red/15 px-1 py-0.5 text-[10px] font-bold text-ps-red">
                   {row.status === "dead" ? "DEAD" : "OUT"}
@@ -191,6 +223,34 @@ function StandingsTable({
         );
       })}
     </div>
+  );
+}
+
+function VisibilityToggle({
+  visibility,
+  onToggle,
+}: {
+  visibility: "public" | "private";
+  onToggle: (next: "public" | "private") => void;
+}) {
+  const isPrivate = visibility === "private";
+  return (
+    <button
+      type="button"
+      onClick={() => onToggle(isPrivate ? "public" : "private")}
+      aria-label={
+        isPrivate
+          ? "Currently anonymous. Tap to show your name on this leaderboard."
+          : "Currently public. Tap to appear anonymously on this leaderboard."
+      }
+      className={`rounded px-1.5 py-0.5 text-[10px] font-semibold transition-colors ${
+        isPrivate
+          ? "bg-ps-text-ter/15 text-ps-text-ter hover:bg-ps-text-ter/25"
+          : "bg-ps-amber/10 text-ps-amber hover:bg-ps-amber/20"
+      }`}
+    >
+      {isPrivate ? "Anon" : "Hide me"}
+    </button>
   );
 }
 
