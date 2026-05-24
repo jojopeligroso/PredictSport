@@ -11,6 +11,7 @@
 
 import type { PickColor } from "./bracket-types";
 import { WC2026_GROUPS, WC2026_KNOCKOUT_ROUNDS } from "@/lib/bracket/adapters/fifa-world-cup-2026";
+import { ChampionFlagFountain } from "./ChampionFlagFountain";
 
 interface BracketReviewStepProps {
   groupRankings: Record<string, string[]>;
@@ -68,6 +69,7 @@ export default function BracketReviewStep({
           <p className="font-mono text-[10px] font-bold uppercase tracking-widest text-ps-amber">
             Your World Cup champion
           </p>
+          <ChampionFlagFountain champion={champion} teams={r32Teams} />
           <p className="mt-2 font-display text-3xl font-extrabold text-ps-text">
             {champion}
           </p>
