@@ -1,6 +1,8 @@
 import { createClient } from "@/lib/supabase/server";
 import { redirect } from "next/navigation";
+import Link from "next/link";
 import { PredictionWindowSelector } from "@/components/tournament/PredictionWindowSelector";
+import { getWcBracketSnapshot } from "@/lib/tournament/bracket-snapshot";
 
 export const dynamic = "force-dynamic";
 
@@ -120,16 +122,62 @@ export default async function PicksPage() {
     userScoreCount: scoreEventsByRound.get(w.id)?.size ?? 0,
   }));
 
+  // The full_bracket classification is a parallel surface that owns
+  // tiebreaker scores and best-thirds-ranking — decisions that don't exist
+  // anywhere in the matchday flow. We surface it twice here: once as a
+  // pinned hero card above the list (loud, hard to miss), and once as a row
+  // inside the list (familiar shape, sits alongside the other windows). Both
+  // disappear once the bracket is locked.
+  const bracket = await getWcBracketSnapshot(supabase, user.id);
+  const showBracket = bracket && bracket.status !== "locked";
+
   return (
     <div className="mx-auto max-w-[480px] px-4 pt-6 pb-16">
       <h1 className="font-display text-2xl uppercase tracking-tight text-ps-text">Your Picks</h1>
       <p className="mt-1 text-sm text-ps-text-sec">
         Select a matchday to make your predictions.
       </p>
+
+      {showBracket && (
+        <Link
+          href={`/wc/bracket/wizard?classificationId=${bracket.classificationId}`}
+          className="mt-5 block rounded-xl border-2 border-ps-amber/40 bg-ps-amber/5 p-4 transition-all hover:border-ps-amber/70 hover:bg-ps-amber/10 active:scale-[0.99]"
+        >
+          <div className="flex items-baseline justify-between">
+            <span className="font-mono text-[10px] font-bold uppercase tracking-widest text-ps-amber-deep">
+              Your bracket
+            </span>
+            <span className="font-mono text-[10px] font-bold text-ps-amber-deep">
+              {bracket.pct}%
+            </span>
+          </div>
+          <p className="mt-1 text-base font-extrabold text-ps-text">
+            {bracket.pct === 0
+              ? "Start your bracket"
+              : bracket.pct === 100
+                ? "Review & submit your bracket"
+                : "Continue your bracket"}
+          </p>
+          <p className="mt-0.5 text-xs text-ps-text-sec">
+            {bracket.label} · tiebreakers and best thirds live here, not in matchdays.
+          </p>
+          <div className="mt-3 h-1.5 w-full overflow-hidden rounded-full bg-ps-chip">
+            <div
+              className="h-full bg-ps-amber transition-all duration-300"
+              style={{ width: `${bracket.pct}%` }}
+            />
+          </div>
+          <p className="mt-2 text-xs font-semibold text-ps-amber-deep">
+            Open bracket →
+          </p>
+        </Link>
+      )}
+
       <div className="mt-6">
         <PredictionWindowSelector
           windows={enrichedWindows}
           competitionId={competition.id}
+          bracket={showBracket ? bracket : null}
         />
       </div>
     </div>

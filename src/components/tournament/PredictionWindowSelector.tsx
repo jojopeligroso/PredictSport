@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import type { BracketSnapshot } from "@/lib/tournament/bracket-snapshot";
 
 interface PredictionWindow {
   id: string;
@@ -25,12 +26,19 @@ export function PredictionWindowSelector({
   windows,
   competitionId: _competitionId,
   basePath = "/wc/picks",
+  bracket = null,
 }: {
   windows: PredictionWindow[];
   competitionId: string;
   basePath?: string;
+  /**
+   * Optional full-bracket snapshot. When provided (i.e. bracket exists and
+   * isn't locked), the bracket renders as a row at the top of the windows
+   * list so users navigating by matchday can still see and act on it.
+   */
+  bracket?: BracketSnapshot | null;
 }) {
-  if (windows.length === 0) {
+  if (windows.length === 0 && !bracket) {
     return (
       <p className="py-8 text-center text-sm text-ps-text-sec">
         No prediction windows available yet.
@@ -40,6 +48,7 @@ export function PredictionWindowSelector({
 
   return (
     <div className="space-y-3">
+      {bracket && <BracketWindowRow snapshot={bracket} />}
       {windows.map((w) => {
         const isOpen = w.status === "open";
         const isLocked = w.status === "locked";
@@ -103,6 +112,42 @@ export function PredictionWindowSelector({
         );
       })}
     </div>
+  );
+}
+
+function BracketWindowRow({ snapshot }: { snapshot: BracketSnapshot }) {
+  const label =
+    snapshot.pct === 0
+      ? "Start your bracket"
+      : snapshot.pct === 100
+        ? "Review & submit your bracket"
+        : "Continue your bracket";
+  return (
+    <Link
+      href={`/wc/bracket/wizard?classificationId=${snapshot.classificationId}`}
+      className="block rounded-xl border-2 border-dashed border-ps-amber/50 bg-ps-amber/5 p-4 transition-all hover:border-ps-amber hover:bg-ps-amber/10 active:scale-[0.99]"
+    >
+      <div className="flex items-start justify-between">
+        <div>
+          <h3 className="text-sm font-bold text-ps-text">Bracket</h3>
+          <p className="mt-0.5 font-mono text-xs text-ps-amber-deep">
+            {label}
+          </p>
+        </div>
+        <span className="rounded-full bg-ps-amber/20 px-2 py-0.5 text-xs font-semibold text-ps-amber-deep">
+          {snapshot.pct}%
+        </span>
+      </div>
+      <p className="mt-2 text-xs text-ps-text-sec">
+        {snapshot.label} · tiebreakers and best thirds
+      </p>
+      <div className="mt-2 h-1.5 w-full overflow-hidden rounded-full bg-ps-chip">
+        <div
+          className="h-full bg-ps-amber transition-all duration-300"
+          style={{ width: `${snapshot.pct}%` }}
+        />
+      </div>
+    </Link>
   );
 }
 

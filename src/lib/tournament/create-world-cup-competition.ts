@@ -7,8 +7,9 @@ import { generateEliminationCurve } from "@/lib/tournament/format/curve-generato
 const WC2026_TOURNAMENT_ID = "a0000000-0000-0000-0000-000000000026";
 const WC2026_BRACKET_TEMPLATE_ID = "c0000000-0000-0000-0000-000000000026";
 
-// Sporting stage IDs from seed
-const STAGE_IDS = {
+// Sporting stage IDs from seed. Exported so other modules (e.g. the
+// /wc/picks page) can detect specific stages without duplicating the UUIDs.
+export const WC2026_STAGE_IDS = {
   GM1: "b0000000-0000-0000-0001-000000000026",
   GM2: "b0000000-0000-0000-0002-000000000026",
   GM3: "b0000000-0000-0000-0003-000000000026",
@@ -18,6 +19,8 @@ const STAGE_IDS = {
   SF: "b0000000-0000-0000-0007-000000000026",
   FINAL: "b0000000-0000-0000-0009-000000000026",
 } as const;
+
+const STAGE_IDS = WC2026_STAGE_IDS;
 
 // Prediction window definitions — PW8 bundles Third-Place + Final (no internal elimination)
 const PREDICTION_WINDOWS = [

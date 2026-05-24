@@ -22,6 +22,14 @@ interface MatchdayCompleteCelebrationProps {
   /** Slug for the next window — if null, no "Next matchday" CTA. */
   nextWindowId: string | null;
   nextWindowName: string | null;
+  /**
+   * If set, the primary CTA routes to the bracket wizard instead of the next
+   * matchday. Used after the final group matchday so the user is invited into
+   * tiebreakers + best-thirds-ranking, which is the only place those decisions
+   * can be captured. Without this hand-off the user silently skips the bracket
+   * stage and the bracket classification stays incomplete.
+   */
+  bracketHandoffClassificationId?: string | null;
   onClose: () => void;
 }
 
@@ -30,6 +38,7 @@ export function MatchdayCompleteCelebration({
   matchdayName,
   nextWindowId,
   nextWindowName,
+  bracketHandoffClassificationId,
   onClose,
 }: MatchdayCompleteCelebrationProps) {
   // Close on Escape.
@@ -102,11 +111,20 @@ export function MatchdayCompleteCelebration({
             {matchdayName} complete
           </h2>
           <p className="mt-2 max-w-[280px] text-center text-sm text-ps-text-sec">
-            Now you wait. Or get a head start on the next one.
+            {bracketHandoffClassificationId
+              ? "Group stage locked in. Now resolve any ties and rank your best third-place teams."
+              : "Now you wait. Or get a head start on the next one."}
           </p>
 
           <div className="mt-6 flex w-full flex-col gap-2">
-            {nextWindowId ? (
+            {bracketHandoffClassificationId ? (
+              <Link
+                href={`/wc/bracket/wizard?classificationId=${bracketHandoffClassificationId}`}
+                className="flex h-12 items-center justify-center rounded-xl bg-ps-amber text-base font-bold text-ps-text shadow transition-transform hover:scale-[1.01] active:scale-[0.99]"
+              >
+                Tiebreakers &amp; best thirds →
+              </Link>
+            ) : nextWindowId ? (
               <Link
                 href={`/wc/picks/${nextWindowId}`}
                 className="flex h-12 items-center justify-center rounded-xl bg-ps-amber text-base font-bold text-ps-text shadow transition-transform hover:scale-[1.01] active:scale-[0.99]"
@@ -162,79 +180,59 @@ export function MatchdayCompleteCelebration({
 // ── Trophy ───────────────────────────────────────────────────────────────────
 
 function Trophy() {
-  // A stylised football trophy — globe + curved arms + plinth. Uses ps-amber
-  // for the body so it sits in the brand palette.
+  // Classic two-handled cup trophy. Amber body, ink base, single highlight on
+  // the bowl. Built around an 80×96 viewBox so the wiggle keyframes (which
+  // pivot from 50% 90%) stay centred over the plinth.
+  const amber = "var(--ps-amber)";
+  const amberDeep = "var(--ps-amber-deep, #b45309)";
+  const ink = "var(--ps-text)";
+
   return (
     <svg
-      width="76"
+      width="80"
       height="96"
-      viewBox="0 0 76 96"
+      viewBox="0 0 80 96"
       fill="none"
       aria-hidden="true"
     >
-      {/* Globe top */}
-      <ellipse cx="38" cy="22" rx="14" ry="12" fill="var(--ps-amber)" />
+      {/* Handles — drawn first so the bowl overlaps their inner curves */}
       <path
-        d="M24 22 Q38 14 52 22"
-        stroke="var(--ps-text)"
-        strokeWidth="1.5"
-        fill="none"
-        opacity="0.4"
-      />
-      <ellipse
-        cx="38"
-        cy="22"
-        rx="6"
-        ry="12"
-        stroke="var(--ps-text)"
-        strokeWidth="1.5"
-        fill="none"
-        opacity="0.35"
-      />
-      {/* Curved arms wrapping under the globe to form the cup shape */}
-      <path
-        d="M24 30 C18 38 18 48 24 56 L52 56 C58 48 58 38 52 30"
-        fill="var(--ps-amber)"
-      />
-      <path
-        d="M22 32 C16 42 18 54 28 60"
-        stroke="var(--ps-amber-deep, #b45309)"
-        strokeWidth="1.5"
-        fill="none"
-      />
-      <path
-        d="M54 32 C60 42 58 54 48 60"
-        stroke="var(--ps-amber-deep, #b45309)"
-        strokeWidth="1.5"
-        fill="none"
-      />
-      {/* Stem */}
-      <rect x="34" y="56" width="8" height="14" fill="var(--ps-amber)" />
-      {/* Plinth */}
-      <rect
-        x="22"
-        y="70"
-        width="32"
-        height="6"
-        rx="1.5"
-        fill="var(--ps-text)"
-      />
-      <rect
-        x="18"
-        y="76"
-        width="40"
-        height="8"
-        rx="2"
-        fill="var(--ps-text)"
-      />
-      {/* Shine */}
-      <path
-        d="M31 14 Q33 12 35 14"
-        stroke="white"
-        strokeWidth="1.5"
+        d="M18 22 C8 24 6 36 16 44 C20 47 24 47 26 46"
+        stroke={amber}
+        strokeWidth="5"
         strokeLinecap="round"
-        opacity="0.8"
+        fill="none"
       />
+      <path
+        d="M62 22 C72 24 74 36 64 44 C60 47 56 47 54 46"
+        stroke={amber}
+        strokeWidth="5"
+        strokeLinecap="round"
+        fill="none"
+      />
+
+      {/* Bowl — wide rim tapering to a rounded base */}
+      <path
+        d="M22 16 H58 V40 C58 52 50 60 40 60 C30 60 22 52 22 40 Z"
+        fill={amber}
+      />
+      {/* Rim band */}
+      <rect x="20" y="14" width="40" height="6" rx="2" fill={amberDeep} />
+      {/* Highlight */}
+      <path
+        d="M28 22 C27 30 28 38 32 44"
+        stroke="white"
+        strokeWidth="2"
+        strokeLinecap="round"
+        opacity="0.55"
+        fill="none"
+      />
+
+      {/* Stem */}
+      <rect x="35" y="60" width="10" height="10" fill={amberDeep} />
+      {/* Plinth — two tiers */}
+      <rect x="26" y="70" width="28" height="6" rx="1.5" fill={ink} />
+      <rect x="20" y="76" width="40" height="10" rx="2.5" fill={ink} />
     </svg>
   );
 }

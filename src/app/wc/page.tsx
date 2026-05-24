@@ -4,112 +4,12 @@ import { createClient } from "@/lib/supabase/server";
 import { OracleDot } from "@/components/OracleDot";
 import { UmpireLogo } from "@/components/UmpireLogo";
 import { BubbleCall } from "@/components/BubbleCall";
-import type { BracketSubmissionData } from "@/types/tournament";
+import {
+  getWcBracketSnapshot,
+  type BracketSnapshot,
+} from "@/lib/tournament/bracket-snapshot";
 
 export const dynamic = "force-dynamic";
-
-interface BracketSnapshot {
-  classificationId: string;
-  classificationName: string;
-  status: string;
-  pct: number;
-  label: string;
-}
-
-async function getBracketSnapshot(
-  supabase: Awaited<ReturnType<typeof createClient>>,
-  userId: string,
-): Promise<BracketSnapshot | null> {
-  const { data: competition } = await supabase
-    .from("competitions")
-    .select("id")
-    .eq("product_mode", "world_cup_2026_shell")
-    .in("status", ["active", "draft"])
-    .limit(1)
-    .maybeSingle();
-  if (!competition) return null;
-
-  const { data: cls } = await supabase
-    .from("classifications")
-    .select("id, name, status")
-    .eq("competition_id", competition.id)
-    .eq("classification_key", "full_bracket")
-    .eq("status", "active")
-    .maybeSingle();
-  if (!cls) return null;
-
-  const { data: submission } = await supabase
-    .from("bracket_prediction_submissions")
-    .select("status, bracket_data")
-    .eq("competition_id", competition.id)
-    .eq("classification_id", cls.id)
-    .eq("user_id", userId)
-    .neq("status", "superseded")
-    .maybeSingle();
-
-  // Group progress now comes from `predictions` (per the 2026-05-23 unified-
-  // predictions amendment), not from `bracket_data.groupsV2`. Count winner
-  // predictions on this competition's WC group events.
-  const { count: groupPicksCount } = await supabase
-    .from("predictions")
-    .select("event_id, events!inner(competition_id, external_event_id)", {
-      count: "exact",
-      head: true,
-    })
-    .eq("user_id", userId)
-    .eq("prediction_type", "winner")
-    .eq("events.competition_id", competition.id)
-    .like("events.external_event_id", "wc2026-grp-%");
-
-  const data = submission?.bracket_data as BracketSubmissionData | null;
-  const progress = bracketProgress(data, groupPicksCount ?? 0);
-
-  return {
-    classificationId: cls.id,
-    classificationName: cls.name,
-    status: submission?.status ?? "not_started",
-    pct: progress.pct,
-    label: progress.label,
-  };
-}
-
-function bracketProgress(
-  data: BracketSubmissionData | null,
-  groupPicksCount: number,
-): { pct: number; label: string } {
-  // A user with no bracket draft but with group picks via /picks should still
-  // see partial progress — group state lives in `predictions`, not in the
-  // (possibly missing) bracket_data blob.
-  if (!data && groupPicksCount === 0) return { pct: 0, label: "Not started" };
-  const groupDone = Math.min(72, groupPicksCount);
-  const thirdsDone = (data?.bestThirdPicks ?? []).length === 8;
-  const knockoutPicks = data?.knockoutPicks ?? {};
-  const koSlots = [
-    "r32_m1","r32_m2","r32_m3","r32_m4","r32_m5","r32_m6","r32_m7","r32_m8",
-    "r32_m9","r32_m10","r32_m11","r32_m12","r32_m13","r32_m14","r32_m15","r32_m16",
-    "r16_m1","r16_m2","r16_m3","r16_m4","r16_m5","r16_m6","r16_m7","r16_m8",
-    "qf_m1","qf_m2","qf_m3","qf_m4",
-    "sf_m1","sf_m2",
-    "final",
-  ];
-  const koDone = koSlots.filter((s) => knockoutPicks[s]?.winner).length;
-  const finalDone = Boolean(data?.champion) && Boolean(data?.thirdPlace);
-
-  const total = 72 + 1 + koSlots.length + 1;
-  const done = groupDone + (thirdsDone ? 1 : 0) + koDone + (finalDone ? 1 : 0);
-  const pct = Math.min(100, Math.round((done / total) * 100));
-
-  let label = "Groups in progress";
-  if (groupDone === 72) label = "Best thirds";
-  if (thirdsDone) label = "Round of 32";
-  if (koDone >= 16) label = "Round of 16";
-  if (koDone >= 24) label = "Quarter-finals";
-  if (koDone >= 28) label = "Semi-finals";
-  if (koDone >= 30) label = "Final";
-  if (finalDone) label = "Ready to submit";
-
-  return { pct, label };
-}
 
 export default async function WorldCupLanding() {
   const supabase = await createClient();
@@ -117,7 +17,7 @@ export default async function WorldCupLanding() {
     data: { user },
   } = await supabase.auth.getUser();
 
-  const bracket = user ? await getBracketSnapshot(supabase, user.id) : null;
+  const bracket = user ? await getWcBracketSnapshot(supabase, user.id) : null;
 
   // Countdown to June 11 2026
   const kickoff = new Date("2026-06-11T15:00:00Z");
@@ -181,22 +81,55 @@ export default async function WorldCupLanding() {
           </div>
         )}
 
-        {/* CTA — both routes go via /wc/join, which enrols the user
-            (idempotent) before redirecting to /wc/picks. A logged-in
-            user who never joined would otherwise hit a 403 on submit. */}
-        <Link
-          href="/wc/join"
-          className="w-full max-w-xs rounded-xl px-6 py-4 text-center text-base font-semibold transition-all hover:opacity-90 active:scale-[0.97]"
-          style={{
-            background: "linear-gradient(135deg, #d4af37, #b8941f)",
-            color: "#0a0f0a",
-          }}
-        >
-          {user ? "Make your picks" : "Join the game"}
-        </Link>
-
-        {bracket && (
-          <BracketSnapshotCard snapshot={bracket} />
+        {/* Primary CTA.
+         *
+         * Until the bracket is locked, the bracket *is* the primary action —
+         * tiebreakers and best-thirds-ranking can only be captured there, and
+         * users who don't finish their bracket have effectively skipped the
+         * onboarding contract. Once the bracket is locked it becomes a static
+         * snapshot and "Make your picks" takes the hero slot.
+         *
+         * Non-members and signed-out users see "Join the game" because /wc/join
+         * is the idempotent enrolment door — without it they'd 403 on submit.
+         */}
+        {user && bracket && bracket.status !== "locked" ? (
+          <>
+            <Link
+              href={`/wc/bracket/wizard?classificationId=${bracket.classificationId}`}
+              className="w-full max-w-xs rounded-xl px-6 py-4 text-center text-base font-semibold transition-all hover:opacity-90 active:scale-[0.97]"
+              style={{
+                background: "linear-gradient(135deg, #d4af37, #b8941f)",
+                color: "#0a0f0a",
+              }}
+            >
+              {bracket.pct === 0
+                ? "Make your bracket"
+                : bracket.pct === 100
+                  ? "Review & submit your bracket"
+                  : `Continue your bracket · ${bracket.pct}%`}
+            </Link>
+            <BracketProgressMeter snapshot={bracket} />
+            <Link
+              href="/wc/join"
+              className="text-sm font-semibold text-ps-text-sec underline-offset-2 hover:text-ps-text hover:underline"
+            >
+              Or skip ahead to matchday picks →
+            </Link>
+          </>
+        ) : (
+          <>
+            <Link
+              href="/wc/join"
+              className="w-full max-w-xs rounded-xl px-6 py-4 text-center text-base font-semibold transition-all hover:opacity-90 active:scale-[0.97]"
+              style={{
+                background: "linear-gradient(135deg, #d4af37, #b8941f)",
+                color: "#0a0f0a",
+              }}
+            >
+              {user ? "Make your picks" : "Join the game"}
+            </Link>
+            {bracket && <BracketSnapshotCard snapshot={bracket} />}
+          </>
         )}
       </section>
 
@@ -272,6 +205,27 @@ function ClassificationCard({
       <p className="mt-1 text-xs leading-relaxed text-ps-text-sec">
         {description}
       </p>
+    </div>
+  );
+}
+
+function BracketProgressMeter({ snapshot }: { snapshot: BracketSnapshot }) {
+  return (
+    <div className="w-full max-w-xs">
+      <div className="flex items-baseline justify-between">
+        <span className="font-mono text-[10px] font-bold uppercase tracking-widest text-ps-text-ter">
+          {snapshot.label}
+        </span>
+        <span className="font-mono text-[10px] font-bold text-ps-text-sec">
+          {snapshot.pct}%
+        </span>
+      </div>
+      <div className="mt-1 h-1.5 w-full overflow-hidden rounded-full bg-ps-chip">
+        <div
+          className="h-full bg-ps-amber transition-all duration-300"
+          style={{ width: `${snapshot.pct}%` }}
+        />
+      </div>
     </div>
   );
 }

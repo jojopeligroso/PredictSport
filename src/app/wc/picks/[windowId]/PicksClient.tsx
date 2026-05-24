@@ -23,6 +23,12 @@ interface PicksClientProps {
   matchdayName: string;
   nextWindowId: string | null;
   nextWindowName: string | null;
+  /**
+   * If set, the matchday-complete CTA hands the user off to the bracket
+   * wizard instead of the next picks window. Used after Group Matchday 3 to
+   * pull the user into the tiebreakers + best-thirds flow.
+   */
+  bracketHandoffClassificationId: string | null;
 }
 
 export function PicksClient({
@@ -33,6 +39,7 @@ export function PicksClient({
   matchdayName,
   nextWindowId,
   nextWindowName,
+  bracketHandoffClassificationId,
 }: PicksClientProps) {
   const [celebrating, setCelebrating] = useState(false);
 
@@ -50,6 +57,7 @@ export function PicksClient({
         matchdayName={matchdayName}
         nextWindowId={nextWindowId}
         nextWindowName={nextWindowName}
+        bracketHandoffClassificationId={bracketHandoffClassificationId}
         onClose={() => setCelebrating(false)}
       />
     </>

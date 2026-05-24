@@ -2,8 +2,24 @@ import { createClient } from "@/lib/supabase/server";
 import { redirect, notFound } from "next/navigation";
 import Link from "next/link";
 import { PicksClient } from "./PicksClient";
+import { EmbeddedBracketKoEditor } from "./EmbeddedBracketKoEditor";
 import type { WindowEvent } from "./WindowPickList";
 import type { Prediction } from "@/types/database";
+import type { BracketSubmissionData } from "@/types/tournament";
+import { WC2026_STAGE_IDS } from "@/lib/tournament/create-world-cup-competition";
+import { WC2026_GROUPS } from "@/lib/bracket/adapters/fifa-world-cup-2026";
+import { loadGroupDataFromPredictions } from "@/lib/tournament/bracket/adapters/predictions-to-group-data";
+import { groupDataToRankings } from "@/lib/tournament/bracket/group-ranking";
+
+type KoRoundKey = "r32" | "r16" | "qf" | "sf" | "final";
+
+const STAGE_TO_ROUND_KEY: Record<string, KoRoundKey> = {
+  [WC2026_STAGE_IDS.R32]: "r32",
+  [WC2026_STAGE_IDS.R16]: "r16",
+  [WC2026_STAGE_IDS.QF]: "qf",
+  [WC2026_STAGE_IDS.SF]: "sf",
+  [WC2026_STAGE_IDS.FINAL]: "final",
+};
 
 export const dynamic = "force-dynamic";
 
@@ -81,6 +97,81 @@ export default async function WindowPicksPage({
 
   const events = (eventsRaw ?? []) as WindowEvent[];
 
+  // Look up the user's full_bracket classification + submission once. Two
+  // places need it: (a) the GM3 celebration handoff that invites the user
+  // into the wizard's tiebreakers + best-thirds flow; (b) bracket-edit mode,
+  // which swaps the read-only locked KO card for an inline bracket editor
+  // when the round is locked for picks but the bracket itself is still open.
+  const { data: bracketCls } = await supabase
+    .from("classifications")
+    .select("id, status")
+    .eq("competition_id", round.competition_id)
+    .eq("classification_key", "full_bracket")
+    .eq("status", "active")
+    .maybeSingle();
+
+  type BracketSubmissionRow = {
+    bracket_data: BracketSubmissionData | null;
+    status: string;
+  };
+  let bracketSubmission: BracketSubmissionRow | null = null;
+  if (bracketCls) {
+    const { data: sub } = await supabase
+      .from("bracket_prediction_submissions")
+      .select("bracket_data, status")
+      .eq("competition_id", round.competition_id)
+      .eq("classification_id", bracketCls.id)
+      .eq("user_id", user.id)
+      .neq("status", "superseded")
+      .maybeSingle();
+    bracketSubmission = (sub as BracketSubmissionRow | null) ?? null;
+  }
+  const bracketIsLocked = bracketSubmission?.status === "locked";
+
+  const bracketHandoffClassificationId =
+    bracketCls && round.sporting_stage_id === WC2026_STAGE_IDS.GM3
+      ? bracketCls.id
+      : null;
+
+  // Bracket edit mode: this round is a knockout stage AND it's locked for
+  // general picks AND the user's bracket submission isn't locked yet. The
+  // user can no longer move format/overall leaderboard picks for these
+  // events, but the bracket classification still wants their pick — so we
+  // render the wizard's KnockoutStageStep inline. Decisions persist to
+  // bracket_data.knockoutPicks via /api/tournament/bracket/submit.
+  const koRoundKey: KoRoundKey | null = round.sporting_stage_id
+    ? (STAGE_TO_ROUND_KEY[round.sporting_stage_id] ?? null)
+    : null;
+  const showBracketEditMode = Boolean(
+    koRoundKey && isWindowLocked && bracketCls && !bracketIsLocked,
+  );
+
+  let bracketEditPayload:
+    | {
+        classificationId: string;
+        roundKey: KoRoundKey;
+        groupRankings: Record<string, string[]>;
+        groupsIncomplete: boolean;
+        existingBracketData: BracketSubmissionData | null;
+      }
+    | null = null;
+  if (showBracketEditMode && koRoundKey && bracketCls) {
+    const groups = await loadGroupDataFromPredictions(supabase, {
+      userId: user.id,
+      competitionId: round.competition_id,
+      groups: WC2026_GROUPS,
+    });
+    const groupRankings = groupDataToRankings(groups);
+    const groupsIncomplete = Object.keys(groupRankings).length !== 12;
+    bracketEditPayload = {
+      classificationId: bracketCls.id,
+      roundKey: koRoundKey,
+      groupRankings,
+      groupsIncomplete,
+      existingBracketData: bracketSubmission?.bracket_data ?? null,
+    };
+  }
+
   const eventIds = events.map((e) => e.id);
   const { data: predictionsRaw } =
     eventIds.length > 0
@@ -127,6 +218,17 @@ export default async function WindowPicksPage({
         <p className="mt-6 rounded-xl border border-ps-border bg-ps-surface px-4 py-8 text-center text-sm text-ps-text-sec">
           This window isn&apos;t open for predictions yet.
         </p>
+      ) : bracketEditPayload ? (
+        <div className="mt-6">
+          <EmbeddedBracketKoEditor
+            classificationId={bracketEditPayload.classificationId}
+            competitionId={round.competition_id}
+            roundKey={bracketEditPayload.roundKey}
+            groupRankings={bracketEditPayload.groupRankings}
+            existingBracketData={bracketEditPayload.existingBracketData}
+            groupsIncomplete={bracketEditPayload.groupsIncomplete}
+          />
+        </div>
       ) : (
         <div className="mt-6">
           <PicksClient
@@ -137,6 +239,7 @@ export default async function WindowPicksPage({
             matchdayName={round.name}
             nextWindowId={nextWindow?.id ?? null}
             nextWindowName={nextWindow?.name ?? null}
+            bracketHandoffClassificationId={bracketHandoffClassificationId}
           />
         </div>
       )}
