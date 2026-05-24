@@ -33,6 +33,7 @@
  */
 
 import { useState, useMemo, useCallback, useRef } from "react";
+import type React from "react";
 import type { GroupData } from "./GroupResultsStepV2";
 import type { MatchPrediction } from "./MatchCard";
 import {
@@ -263,16 +264,18 @@ function TiebreakerMatchRow({
   match: MatchPrediction;
   onScoreEntry: (home: number, away: number) => void;
 }) {
-  const [homeVal, setHomeVal] = useState(
-    match.exact_score?.home_score?.toString() ?? "",
-  );
-  const [awayVal, setAwayVal] = useState(
-    match.exact_score?.away_score?.toString() ?? "",
-  );
-  const [error, setError] = useState<string | null>(null);
-  const awayRef = useRef<HTMLInputElement>(null);
+  const committedHome = match.exact_score?.home_score;
+  const committedAway = match.exact_score?.away_score;
+  const hasCommitted = match.exact_score !== undefined;
 
-  const hasScore = match.exact_score !== undefined;
+  const [homeVal, setHomeVal] = useState(committedHome?.toString() ?? "");
+  const [awayVal, setAwayVal] = useState(committedAway?.toString() ?? "");
+  const [error, setError] = useState<string | null>(null);
+  // Locked === there is a committed score AND the user hasn't tapped the lock
+  // to edit it. While locked, inputs are read-only and no Update button shows.
+  const [locked, setLocked] = useState<boolean>(hasCommitted);
+  const homeRef = useRef<HTMLInputElement>(null);
+  const awayRef = useRef<HTMLInputElement>(null);
 
   const resultLabel =
     match.result === "home_win"
@@ -281,28 +284,64 @@ function TiebreakerMatchRow({
         ? `${match.away_team} win`
         : "Draw";
 
-  function handleSave() {
+  // Are the current input values different from the committed score?
+  const dirty =
+    !hasCommitted ||
+    homeVal !== (committedHome?.toString() ?? "") ||
+    awayVal !== (committedAway?.toString() ?? "");
+
+  function tryCommit(): boolean {
+    if (homeVal === "" || awayVal === "") return false;
+
     const home = parseInt(homeVal, 10);
     const away = parseInt(awayVal, 10);
 
     if (isNaN(home) || isNaN(away) || home < 0 || away < 0) {
       setError("Enter valid scores (0 or higher)");
-      return;
+      return false;
     }
-
     if (!scoreMatchesResult(match.result, home, away)) {
       setError(`Score must match predicted result: ${resultLabel}`);
-      return;
+      return false;
     }
 
     setError(null);
     onScoreEntry(home, away);
+    setLocked(true);
+    return true;
+  }
+
+  function handleBlur(e: React.FocusEvent<HTMLDivElement>) {
+    // Only autosave when focus leaves the whole row — moving between the two
+    // score inputs shouldn't fire a save.
+    if (e.currentTarget.contains(e.relatedTarget as Node | null)) return;
+    if (!dirty) return;
+    tryCommit();
+  }
+
+  function handleKeyDown(e: React.KeyboardEvent<HTMLInputElement>) {
+    if (e.key === "Enter") {
+      e.preventDefault();
+      tryCommit();
+      (e.target as HTMLInputElement).blur();
+    }
+  }
+
+  function handleUnlock() {
+    setLocked(false);
+    setError(null);
+    // Defer focus so the input has flipped to editable.
+    setTimeout(() => {
+      homeRef.current?.focus();
+      homeRef.current?.select();
+    }, 0);
   }
 
   return (
     <div
+      onBlur={handleBlur}
       className={`rounded-lg border p-3 ${
-        hasScore
+        locked
           ? "border-ps-green/25 bg-ps-green/5"
           : "border-ps-border bg-ps-surface"
       }`}
@@ -318,10 +357,12 @@ function TiebreakerMatchRow({
 
       <div className="flex items-center gap-2">
         <input
+          ref={homeRef}
           type="number"
           inputMode="numeric"
           min="0"
           value={homeVal}
+          readOnly={locked}
           onChange={(e) => {
             const next = e.target.value;
             setHomeVal(next);
@@ -334,9 +375,13 @@ function TiebreakerMatchRow({
               awayRef.current?.select();
             }
           }}
-          placeholder="0"
+          onKeyDown={handleKeyDown}
           aria-label={`${match.home_team} score`}
-          className="w-14 rounded border border-ps-border bg-ps-bg px-2 py-1.5 text-center font-mono text-sm focus:border-ps-text focus:outline-none"
+          className={`w-14 rounded border px-2 py-1.5 text-center font-mono text-sm focus:outline-none ${
+            locked
+              ? "cursor-default border-ps-green/30 bg-ps-green/10 text-ps-text"
+              : "border-ps-border bg-ps-bg focus:border-ps-text"
+          }`}
         />
         <span className="font-mono text-xs text-ps-text-ter">–</span>
         <input
@@ -345,24 +390,61 @@ function TiebreakerMatchRow({
           inputMode="numeric"
           min="0"
           value={awayVal}
+          readOnly={locked}
           onChange={(e) => { setAwayVal(e.target.value); setError(null); }}
-          placeholder="0"
+          onKeyDown={handleKeyDown}
           aria-label={`${match.away_team} score`}
-          className="w-14 rounded border border-ps-border bg-ps-bg px-2 py-1.5 text-center font-mono text-sm focus:border-ps-text focus:outline-none"
+          className={`w-14 rounded border px-2 py-1.5 text-center font-mono text-sm focus:outline-none ${
+            locked
+              ? "cursor-default border-ps-green/30 bg-ps-green/10 text-ps-text"
+              : "border-ps-border bg-ps-bg focus:border-ps-text"
+          }`}
         />
-        <button
-          type="button"
-          onClick={handleSave}
-          className="ml-auto rounded-md bg-ps-text px-3 py-1.5 text-xs font-semibold text-ps-bg hover:opacity-90 active:scale-[0.98]"
-        >
-          {hasScore ? "Update" : "Save"}
-        </button>
+
+        {locked ? (
+          <button
+            type="button"
+            onClick={handleUnlock}
+            aria-label="Edit score"
+            title="Edit score"
+            className="ml-auto flex h-7 w-7 items-center justify-center rounded-md text-ps-green hover:bg-ps-green/10 active:scale-[0.96]"
+          >
+            <LockIcon />
+          </button>
+        ) : hasCommitted && dirty ? (
+          <button
+            type="button"
+            onClick={tryCommit}
+            className="ml-auto rounded-md bg-ps-text px-3 py-1.5 text-xs font-semibold text-ps-bg hover:opacity-90 active:scale-[0.98]"
+          >
+            Update
+          </button>
+        ) : null}
       </div>
 
       {error && (
         <p className="mt-1.5 text-[11px] text-ps-red">{error}</p>
       )}
     </div>
+  );
+}
+
+function LockIcon() {
+  return (
+    <svg
+      width="14"
+      height="14"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2.2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden
+    >
+      <rect x="4" y="11" width="16" height="10" rx="2" />
+      <path d="M8 11V8a4 4 0 0 1 8 0v3" />
+    </svg>
   );
 }
 
