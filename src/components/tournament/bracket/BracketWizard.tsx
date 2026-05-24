@@ -1,6 +1,7 @@
 "use client";
 
-import { useState, useCallback, useMemo, useRef } from "react";
+import { useState, useCallback, useEffect, useMemo, useRef } from "react";
+import Link from "next/link";
 import type { BracketSubmissionData } from "@/types/tournament";
 import {
   WC2026_KNOCKOUT_ROUNDS,
@@ -134,6 +135,14 @@ export function BracketWizard({
   const [submitted, setSubmitted] = useState(false);
   const [lastSavedAt, setLastSavedAt] = useState<number | null>(null);
   const [pickWriteError, setPickWriteError] = useState<string | null>(null);
+
+  // Auto-clear pick errors after 6s so a stale banner doesn't sit forever on
+  // a page the user has already moved past.
+  useEffect(() => {
+    if (!pickWriteError) return;
+    const t = setTimeout(() => setPickWriteError(null), 6000);
+    return () => clearTimeout(t);
+  }, [pickWriteError]);
 
   const [groups, setGroups] = useState<GroupData[]>(initialGroups);
   const [bestThirdPicks, setBestThirdPicks] = useState<string[]>(
@@ -419,6 +428,14 @@ export function BracketWizard({
             Champion pick: {champion}
           </p>
         )}
+        <div className="mt-6">
+          <Link
+            href="/wc"
+            className="inline-block rounded-xl bg-ps-amber px-5 py-2.5 text-sm font-extrabold text-ps-bg transition-all hover:opacity-90 active:scale-[0.98]"
+          >
+            Go to your dashboard
+          </Link>
+        </div>
       </div>
     );
   }
@@ -439,9 +456,17 @@ export function BracketWizard({
       {pickWriteError && (
         <div
           role="alert"
-          className="rounded-lg border border-ps-red/30 bg-ps-red/5 px-3 py-2 text-xs text-ps-red"
+          className="flex items-start gap-2 rounded-lg border border-ps-red/30 bg-ps-red/5 px-3 py-2 text-xs text-ps-red"
         >
-          {pickWriteError}
+          <span className="flex-1">{pickWriteError}</span>
+          <button
+            type="button"
+            onClick={() => setPickWriteError(null)}
+            aria-label="Dismiss"
+            className="-mr-1 -mt-0.5 flex h-5 w-5 items-center justify-center rounded text-base leading-none opacity-70 hover:bg-ps-red/10 hover:opacity-100"
+          >
+            ×
+          </button>
         </div>
       )}
 
