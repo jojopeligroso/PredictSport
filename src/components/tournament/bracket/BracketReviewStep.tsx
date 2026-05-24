@@ -207,12 +207,6 @@ export default function BracketReviewStep({
           </div>
         )}
 
-        {/* Soft deadline reminder. The actual hard lock is ~1h before kickoff,
-            but we promise users "day before" so they always have a buffer. */}
-        <p className="mt-3 rounded-md bg-ps-amber-soft px-2.5 py-1.5 text-[11px] text-ps-amber-deep">
-          <span className="font-semibold">Don&apos;t worry</span> — you can keep
-          editing and resubmitting until the day before kick-off.
-        </p>
       </Section>
 
       {/* Knockout summary */}
@@ -252,6 +246,14 @@ export default function BracketReviewStep({
           })}
         </div>
       </Section>
+
+      {/* Soft deadline reminder — last beat of the review so it's the parting
+          thought before the submit CTA. Actual operator lock fires ~1h before
+          kickoff, but we promise users "day before" so there's always a buffer. */}
+      <p className="rounded-md bg-ps-amber-soft px-3 py-2 text-center text-[11px] text-ps-amber-deep">
+        <span className="font-semibold">Don&apos;t worry</span> — you can keep
+        editing and resubmitting until the day before kick-off.
+      </p>
     </div>
   );
 }
