@@ -87,7 +87,7 @@ export default function MatchCard({
           <CountryFlag shape="pill" name={match.home_team} size={24} />
           <span
             className={`
-              max-w-full truncate text-[11px] font-semibold text-center leading-tight
+              max-w-full truncate text-xs font-semibold text-center leading-tight
               ${match.result === 'home_win' ? selectedTextColor : 'text-ps-text-ter'}
             `}
           >
@@ -165,7 +165,7 @@ export default function MatchCard({
           <CountryFlag shape="pill" name={match.away_team} size={24} />
           <span
             className={`
-              max-w-full truncate text-[11px] font-semibold text-center leading-tight
+              max-w-full truncate text-xs font-semibold text-center leading-tight
               ${match.result === 'away_win' ? selectedTextColor : 'text-ps-text-ter'}
             `}
           >

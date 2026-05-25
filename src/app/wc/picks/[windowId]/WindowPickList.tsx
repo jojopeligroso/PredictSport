@@ -391,7 +391,7 @@ function MatchPickRow({
           <CountryFlag shape="pill" name={home} size={24} />
           <span
             className={[
-              "max-w-full truncate text-[11px] font-semibold text-center leading-tight",
+              "max-w-full truncate text-xs font-semibold text-center leading-tight",
               homeSelected ? "text-ps-amber" : "text-ps-text-ter",
             ].join(" ")}
           >
@@ -485,7 +485,7 @@ function MatchPickRow({
           <CountryFlag shape="pill" name={away} size={24} />
           <span
             className={[
-              "max-w-full truncate text-[11px] font-semibold text-center leading-tight",
+              "max-w-full truncate text-xs font-semibold text-center leading-tight",
               awaySelected ? "text-ps-amber" : "text-ps-text-ter",
             ].join(" ")}
           >

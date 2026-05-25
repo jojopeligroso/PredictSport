@@ -59,6 +59,7 @@ export function FixturesTabs({ fixtures, resultsByExternalId, serverDateIso, pre
   const hasPredictions = Object.keys(predictionsByExternalId).length > 0;
   const [showPredictions, setShowPredictions] = useState(hasPredictions);
   const [showCorrectness, setShowCorrectness] = useState(true);
+  const [biggerCards, setBiggerCards] = useState(false);
   const hasResults = useMemo(
     () => Object.values(resultsByExternalId).some((r) => r !== undefined),
     [resultsByExternalId],
@@ -121,32 +122,42 @@ export function FixturesTabs({ fixtures, resultsByExternalId, serverDateIso, pre
         </TabButton>
       </div>
 
-      {hasPredictions && (
-        <div className="mt-3 space-y-0 rounded-lg border border-ps-border bg-ps-surface px-3 py-2">
-          <div className="flex items-center justify-between">
-            <span className="text-xs text-ps-text-sec">
-              {showPredictions ? "Your predictions are shown" : "Fixtures only"}
-            </span>
-            <ToggleSwitch
-              label={showPredictions ? "Hide picks" : "Show picks"}
-              checked={showPredictions}
-              onChange={() => setShowPredictions((v) => !v)}
-            />
-          </div>
-          {showPredictions && hasResults && (
+      <div className="mt-3 space-y-0 rounded-lg border border-ps-border bg-ps-surface px-3 py-2">
+        <div className="flex items-center justify-between">
+          <span className="text-xs text-ps-text-sec">Bigger cards</span>
+          <ToggleSwitch
+            label={biggerCards ? "On" : "Off"}
+            checked={biggerCards}
+            onChange={() => setBiggerCards((v) => !v)}
+          />
+        </div>
+        {hasPredictions && (
+          <>
             <div className="flex items-center justify-between border-t border-ps-border/50 pt-2 mt-2">
               <span className="text-xs text-ps-text-sec">
-                Show correct / wrong
+                {showPredictions ? "Your predictions are shown" : "Fixtures only"}
               </span>
               <ToggleSwitch
-                label={showCorrectness ? "On" : "Off"}
-                checked={showCorrectness}
-                onChange={() => setShowCorrectness((v) => !v)}
+                label={showPredictions ? "Hide picks" : "Show picks"}
+                checked={showPredictions}
+                onChange={() => setShowPredictions((v) => !v)}
               />
             </div>
-          )}
-        </div>
-      )}
+            {showPredictions && hasResults && (
+              <div className="flex items-center justify-between border-t border-ps-border/50 pt-2 mt-2">
+                <span className="text-xs text-ps-text-sec">
+                  Show correct / wrong
+                </span>
+                <ToggleSwitch
+                  label={showCorrectness ? "On" : "Off"}
+                  checked={showCorrectness}
+                  onChange={() => setShowCorrectness((v) => !v)}
+                />
+              </div>
+            )}
+          </>
+        )}
+      </div>
 
       <div className="mt-4 space-y-3">
         {active.length === 0 && (
@@ -165,6 +176,7 @@ export function FixturesTabs({ fixtures, resultsByExternalId, serverDateIso, pre
             result={resultsByExternalId[f.externalId]}
             prediction={showPredictions ? predictionsByExternalId[f.externalId] : undefined}
             showCorrectness={showPredictions && showCorrectness}
+            large={biggerCards}
           />
         ))}
       </div>
@@ -250,11 +262,13 @@ function FixtureCard({
   result,
   prediction,
   showCorrectness,
+  large,
 }: {
   fixture: WcFixture;
   result: FixtureResult | undefined;
   prediction: FixturePredictionData | undefined;
   showCorrectness: boolean;
+  large: boolean;
 }) {
   const city = HOST_CITIES[fixture.city as HostCitySlug];
   const kickoff = new Date(fixture.kickoffUtc);
@@ -401,16 +415,31 @@ function FixtureCard({
   const localTzAbbr = formatTzAbbr(kickoff);
   const sameClock = cityTime === localTime;
 
+  // Size tokens — default vs large
+  const flagSize = large ? 36 : 24;
+  const flagSizeRo = large ? 26 : 20;
+  const teamText = large ? "text-sm" : "text-xs";
+  const scoreSize = large ? "w-[40px] h-[38px] text-lg" : "w-[30px] h-[28px] text-sm";
+  const drawSize = large ? "px-3.5 py-2 text-sm" : "px-2.5 py-1.5 text-xs";
+  const teamPad = large ? "gap-1.5 px-2 py-2" : "gap-1 px-1.5 py-1.5";
+  const headerText = large ? "text-xs" : "text-[0.7rem]";
+  const stadiumText = large ? "text-[0.7rem]" : "text-[0.625rem]";
+  const bodyPad = large ? "px-5 pb-4 pt-3" : "px-4 pb-3 pt-2";
+  const headerPad = large ? "px-5 pt-4" : "px-4 pt-3";
+  const rowGap = large ? "gap-2" : "gap-1.5";
+  const timeText = large ? "text-sm" : "text-xs";
+
   return (
     <article
       className={[
-        "overflow-hidden rounded-xl text-white shadow-sm transition-all",
+        large ? "overflow-hidden rounded-2xl text-white shadow-sm transition-all"
+              : "overflow-hidden rounded-xl text-white shadow-sm transition-all",
         ringClass,
       ].join(" ")}
       style={{ backgroundColor: city.color }}
     >
       {/* Header: stage + city/stadium */}
-      <header className="flex items-center justify-between px-4 pt-3 text-[0.7rem] font-bold uppercase tracking-wide text-white/85">
+      <header className={`flex items-center justify-between ${headerPad} ${headerText} font-bold uppercase tracking-wide text-white/85`}>
         <span>
           {fixture.stage === "group"
             ? `Group ${fixture.group} · MD${fixture.matchday}`
@@ -418,32 +447,32 @@ function FixtureCard({
         </span>
         <span className="text-right">
           <span className="block">{city.name}</span>
-          <span className="block text-[0.6rem] font-medium normal-case tracking-normal text-white/50">
+          <span className={`block ${stadiumText} font-medium normal-case tracking-normal text-white/50`}>
             {city.stadium}
           </span>
         </span>
       </header>
 
-      <div className="px-4 pb-3 pt-2">
+      <div className={bodyPad}>
         {/* ── Prediction row (upcoming + unlocked) ── */}
         {canPredict && (
           <>
-            <div className="flex items-center justify-center gap-1.5">
+            <div className={`flex items-center justify-center ${rowGap}`}>
               {/* Home team button */}
               <button
                 type="button"
                 onClick={() => handlePickWinner(fixture.home)}
                 className={[
-                  "flex-1 min-w-0 flex flex-col items-center gap-1 px-1.5 py-1.5 rounded-lg transition-all duration-150 cursor-pointer",
+                  `flex-1 min-w-0 flex flex-col items-center ${teamPad} rounded-lg transition-all duration-150 cursor-pointer`,
                   homeSelected
                     ? "bg-white/12 shadow-[inset_0_0_0_2px_rgba(255,255,255,0.5)]"
                     : "hover:bg-white/8",
                 ].join(" ")}
               >
-                <CountryFlag shape="pill" name={fixture.home} size={24} />
+                <CountryFlag shape="pill" name={fixture.home} size={flagSize} />
                 <span
                   className={[
-                    "max-w-full truncate text-[11px] font-semibold text-center leading-tight",
+                    `max-w-full truncate ${teamText} font-semibold text-center leading-tight`,
                     homeSelected ? "text-white" : "text-white/55",
                   ].join(" ")}
                 >
@@ -469,7 +498,7 @@ function FixtureCard({
                   onBlur={() => handleScoreBlur(homeScore, awayScore)}
                   aria-label={`${fixture.home} score`}
                   className={[
-                    "w-[30px] h-[28px] rounded-full border text-center font-mono text-sm font-semibold text-white outline-none transition-all duration-150 shrink-0",
+                    `${scoreSize} rounded-full border text-center font-mono font-semibold text-white outline-none transition-all duration-150 shrink-0`,
                     homeScore !== ""
                       ? "bg-white/18 border-white/50"
                       : "bg-white/8 border-white/25",
@@ -484,7 +513,7 @@ function FixtureCard({
                 type="button"
                 onClick={() => handlePickWinner(drawOption)}
                 className={[
-                  "shrink-0 px-2.5 py-1.5 rounded-lg text-xs font-medium transition-all duration-150 cursor-pointer",
+                  `shrink-0 ${drawSize} rounded-lg font-medium transition-all duration-150 cursor-pointer`,
                   drawSelected
                     ? "bg-white/12 text-white shadow-[inset_0_0_0_2px_rgba(255,255,255,0.5)]"
                     : "text-white/45 hover:bg-white/8 hover:text-white/65",
@@ -509,7 +538,7 @@ function FixtureCard({
                   onBlur={() => handleScoreBlur(homeScore, awayScore)}
                   aria-label={`${fixture.away} score`}
                   className={[
-                    "w-[30px] h-[28px] rounded-full border text-center font-mono text-sm font-semibold text-white outline-none transition-all duration-150 shrink-0",
+                    `${scoreSize} rounded-full border text-center font-mono font-semibold text-white outline-none transition-all duration-150 shrink-0`,
                     awayScore !== ""
                       ? "bg-white/18 border-white/50"
                       : "bg-white/8 border-white/25",
@@ -524,16 +553,16 @@ function FixtureCard({
                 type="button"
                 onClick={() => handlePickWinner(fixture.away)}
                 className={[
-                  "flex-1 min-w-0 flex flex-col items-center gap-1 px-1.5 py-1.5 rounded-lg transition-all duration-150 cursor-pointer",
+                  `flex-1 min-w-0 flex flex-col items-center ${teamPad} rounded-lg transition-all duration-150 cursor-pointer`,
                   awaySelected
                     ? "bg-white/12 shadow-[inset_0_0_0_2px_rgba(255,255,255,0.5)]"
                     : "hover:bg-white/8",
                 ].join(" ")}
               >
-                <CountryFlag shape="pill" name={fixture.away} size={24} />
+                <CountryFlag shape="pill" name={fixture.away} size={flagSize} />
                 <span
                   className={[
-                    "max-w-full truncate text-[11px] font-semibold text-center leading-tight",
+                    `max-w-full truncate ${teamText} font-semibold text-center leading-tight`,
                     awaySelected ? "text-white" : "text-white/55",
                   ].join(" ")}
                 >
@@ -551,14 +580,14 @@ function FixtureCard({
         {/* ── Read-only teams + result (finished) ── */}
         {isFinished && (
           <>
-            <h3 className="flex flex-wrap items-center gap-1.5 text-base font-bold text-white">
-              <CountryFlag shape="pill" name={fixture.home} size={20} />
+            <h3 className={`flex flex-wrap items-center gap-1.5 ${large ? "text-lg" : "text-base"} font-bold text-white`}>
+              <CountryFlag shape="pill" name={fixture.home} size={flagSizeRo} />
               <span>{fixture.home}</span>
               <span className="mx-0.5 text-white/70">v</span>
-              <CountryFlag shape="pill" name={fixture.away} size={20} />
+              <CountryFlag shape="pill" name={fixture.away} size={flagSizeRo} />
               <span>{fixture.away}</span>
             </h3>
-            <div className="mt-2 inline-flex items-center gap-2 rounded-md bg-white/15 px-2.5 py-1 font-mono text-sm font-bold tabular-nums">
+            <div className={`mt-2 inline-flex items-center gap-2 rounded-md bg-white/15 px-2.5 py-1 font-mono ${large ? "text-base" : "text-sm"} font-bold tabular-nums`}>
               {result?.homeScore !== null && result?.awayScore !== null
                 ? `${result?.homeScore} – ${result?.awayScore}`
                 : (result?.winner ?? "Result")}
@@ -576,18 +605,18 @@ function FixtureCard({
 
         {/* ── Read-only teams (upcoming but locked / no prediction context) ── */}
         {!isFinished && !canPredict && (
-          <h3 className="flex flex-wrap items-center gap-1.5 text-base font-bold text-white">
-            <CountryFlag shape="pill" name={fixture.home} size={20} />
+          <h3 className={`flex flex-wrap items-center gap-1.5 ${large ? "text-lg" : "text-base"} font-bold text-white`}>
+            <CountryFlag shape="pill" name={fixture.home} size={flagSizeRo} />
             <span>{fixture.home}</span>
             <span className="mx-0.5 text-white/70">v</span>
-            <CountryFlag shape="pill" name={fixture.away} size={20} />
+            <CountryFlag shape="pill" name={fixture.away} size={flagSizeRo} />
             <span>{fixture.away}</span>
           </h3>
         )}
 
         {/* ── Time info (upcoming only) ── */}
         {!isFinished && (
-          <dl className="mt-2 grid grid-cols-2 gap-x-3 text-xs text-white/90">
+          <dl className={`mt-2 grid grid-cols-2 gap-x-3 ${timeText} text-white/90`}>
             <div>
               <dt className="font-semibold uppercase tracking-wide text-white/70">
                 In {city.name.split(" ")[0]}
