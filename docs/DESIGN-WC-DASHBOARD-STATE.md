@@ -1,10 +1,10 @@
 # Design: WC Dashboard State Machine
 
-> Section A of a three-part design doc. This section defines the state machine,
-> card stacks, derivation rules, and data contract for the `/wc` dashboard.
+> Two-part design doc (so far). Section A defines the state machine, card
+> stacks, derivation rules, and data contract. Section B defines the Format
+> Classification hero card — content, modes, qualification shading, and the
+> enriched leaderboard detail page.
 >
-> - **Section B** (future session): Format Classification hero surface — what
->   the user sees when Format is primary, onboarding flow, rules presentation.
 > - **Section C** (future session): Surface-wide polish — copy tone rules,
 >   fixture card anatomy, naming conventions, brand mark usage.
 
@@ -266,9 +266,8 @@ These items are noted but not designed in this document:
 - **Public Format groups:** Groups of 32–48 strangers forming Format
   classifications, confirmed by email. Dormant cron or manual push notification.
 
-- **R32 classification naming:** Current name ("R32 Classification" / "Last 32")
-  is weak. This is more of a fun stat (X/32 correct) than a competitive
-  classification. Needs a better name. Session C territory.
+- **~~R32 classification naming~~:** **Resolved in Section B.** Renamed to
+  "The Cut" (tab label) / "Who Made the Cut" (full title).
 
 ---
 
@@ -293,3 +292,203 @@ Usage guidance:
   colour language for fixture cards, group headers, and bracket sections.
 - The existing fixture/results card design (city colour background + white text)
   is the reference for what "looks good" — extend that pattern.
+
+---
+
+# Section B: Format Classification Hero Card
+
+> Designed in Session B (2026-05-25). Defines the Format hero card content,
+> modes, qualification shading, knockout adaptation, onboarding approach, and
+> the enriched Format leaderboard tab.
+
+---
+
+## 11. Hero Card — Two Modes
+
+The Format hero card is a single component with two rendering modes, determined
+by whether PW1 has been finalised (i.e., Format standings exist with non-zero
+points).
+
+| Mode | Active when | Emotional register |
+|---|---|---|
+| **Weigh-in** (PW1) | PW1 not yet finalised | Curiosity — sizing up your rivals |
+| **Survival** (post-PW1) | PW1 finalised onward | Tension — am I safe or in danger? |
+
+The PW1 weigh-in mode IS the Format onboarding. There is no separate modal,
+interstitial, or multi-step onboarding flow. The card itself orients the user.
+
+---
+
+## 12. Weigh-in Mode (PW1)
+
+Card anatomy, top to bottom:
+
+1. **Display name nudge** (conditional) — appears only if `display_name` is
+   null or empty. A prominent inline nudge: "You'll appear as 'Player' — set
+   your name" linking to `/profile`. Not an inline editor — the profile page
+   handles name changes. Dismisses permanently once a name is set.
+
+2. **One-liner headline** — sets the weigh-in tone. E.g., "Your group. Your
+   rivals." Copy finalised in Session C.
+
+3. **Group roster** — all group members listed by display name. No points
+   column (everyone is at zero). No ranking. Just names. Tapping any row
+   navigates to the Format detail page (see Section 16).
+
+4. **Elimination curve** — compact horizontal sequence showing the full
+   survival path. E.g., "12 → 8 → 5 → 4 → 3 → 2 → 1". Persists in both
+   modes — always useful context.
+
+5. **Minimal guide** — one or two sentences on Format rules. E.g., "Bottom of
+   your group drops after the group stage. Points reset each stage." No scoring
+   breakdown — the existing scoring section on `/wc` covers that. No KO Bracket
+   messaging — that belongs in the bracket wizard (see Section 8).
+
+6. **Explicit link** — "View all groups" linking to the enriched Format
+   leaderboard tab (see Section 16).
+
+---
+
+## 13. Survival Mode (Post-PW1)
+
+### Ternary headline
+
+The card leads with a survival status headline. Three states:
+
+| Status | Condition | Tone | Colour |
+|---|---|---|---|
+| **Safe** | Above the qualification line | Neutral | Default text |
+| **Contested** | 3rd in a 4-player group (best-third lottery) | Amber | `ps-amber` |
+| **Danger** | Below the qualification line | Red | `ps-red` |
+
+Example headlines:
+- Safe: "2nd of 4. You're through."
+- Contested: "3rd of 4. Best third — your fate's in other groups' hands."
+- Danger: "4th of 4. Below the line."
+
+Copy is indicative — final wording in Session C.
+
+### Qualification shading
+
+The mini-leaderboard uses background shading to visually separate qualification
+tiers. The shading mirrors the FIFA World Cup group stage qualification rules,
+which is the entire point of the Format.
+
+| Position | Group of 3 | Group of 4 | Group of 5 |
+|---|---|---|---|
+| 1st–2nd | Neutral (safe) | Neutral (safe) | Neutral (safe) |
+| 3rd | Red (never qualifies) | Amber (best-third) | Neutral (auto-qualifies) |
+| 4th | — | Red (eliminated) | Red (eliminated) |
+| 5th | — | — | Red (eliminated) |
+
+Colours: red shading uses `bg-ps-red/10`, amber shading uses `bg-ps-amber/10`.
+Safe rows have no tint — the absence of colour means safety.
+
+### Mini-leaderboard columns
+
+Kept tight. Four elements per row:
+
+- **Rank** (1st, 2nd, etc.)
+- **Display name**
+- **Stage-local points** (Format resets per stage)
+- **YOU badge** on the current user's row
+
+Excluded: movement arrows, tie-break detail, overall points, global rank across
+groups. These belong on the full leaderboard, not the hero card.
+
+### Persistent elements
+
+- **Elimination curve** — same compact sequence as weigh-in mode.
+- **Explicit link** — "View all groups" / "View full standings" at the card
+  bottom, linking to `/wc/leaderboard?tab=format`.
+- **Tappable roster rows** — tapping any row also navigates to the Format
+  detail page. Same destination as the explicit link.
+
+---
+
+## 14. Knockout Stage Adaptation (PW4+)
+
+After PW3 finalisation, the group stage cut happens and Format becomes a single
+elimination pool. Groups dissolve. The hero card adapts:
+
+### Neighbourhood view
+
+Instead of a full group roster, the card shows a 3-row window into the survivor
+pool:
+
+- The row **above** the current user
+- The current user's row (**YOU**)
+- The row **below** the current user
+
+If the user is 1st, show the top 3. If last, show the bottom 3.
+
+The same qualification shading applies — rows below the stage's survival
+threshold are red-tinted. The ternary headline adapts to pool context:
+"5th of 8. Top 5 survive."
+
+### Tap-through
+
+The explicit link updates to "View full standings". Tapping any row or the link
+navigates to `/wc/leaderboard?tab=format`, which shows the full survivor pool
+leaderboard during knockouts.
+
+---
+
+## 15. R32 Classification Rename
+
+**Resolved.** The R32 Classification is renamed:
+
+| Context | Label |
+|---|---|
+| Tab bar (short) | The Cut |
+| Full title (card headers, detail views) | Who Made the Cut |
+
+No question mark on the full title. "The Cut" echoes the elimination theme and
+describes what the user predicted — which teams survived the group stage.
+
+---
+
+## 16. Format Detail Page
+
+The Format detail page is NOT a new route. It is an enhancement of the existing
+Format tab on `/wc/leaderboard` (`ClassificationTabs.tsx`).
+
+### Group stage content (PW1–PW3)
+
+Top to bottom:
+
+1. **Curve header** — elimination curve as a compact bar/sequence.
+2. **Your group** — hero treatment. Full mini-leaderboard with qualification
+   shading (neutral/amber/red). Same visual treatment as the hero card but at
+   full width.
+3. **All other groups** — listed below, each with their ranked members and
+   stage-local points. Same shading rules.
+4. **Best-third comparison table** — appears only if 4-player groups exist.
+   Ranks all third-place finishers from 4-player groups to show which are in
+   the strongest position for best-third qualification. This is the high-drama
+   table for amber-zone users.
+
+### Knockout stage content (PW4+)
+
+The groups view is replaced by:
+
+1. **Curve header** — updated to show current stage position in the curve.
+2. **Full survivor pool leaderboard** — all remaining entrants ranked by
+   stage-local points. Cut line visible via red shading on rows below the
+   survival threshold.
+
+---
+
+## 17. Future Considerations (Section B)
+
+These items are noted but not designed:
+
+- **H2H knockout format:** A potential future classification type where knockout
+  stage survivors are paired into head-to-head matchups each stage, rather than
+  ranked in a single pool. Genuinely different from the current stage-leaderboard
+  approach — would require its own classification type. Phase 2.
+
+- **Format onboarding animation:** Still deferred (see Section 9). The PW1
+  weigh-in card handles onboarding without animation.
+
+- **Public Format groups:** Still deferred (see Section 9).

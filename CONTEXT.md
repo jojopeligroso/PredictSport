@@ -134,3 +134,9 @@ A pre-built, ready-to-use bundle of rounds, events, and prediction-type configur
 ## Dashboard State
 
 A UI-level concept, never stored in the database. Computed from the user's auth session, bracket submission status, and [[Classification]] membership statuses to determine which dashboard layout the `/wc` surface shows. The states are: `visitor`, `bracket`, `format`, `overall`, and `archive`. No table, no column — a pure function of existing data.
+
+---
+
+## The Cut
+
+The R32 Classification, renamed. Measures how many of the 32 knockout-stage teams the user correctly predicted from their Full Bracket group stage picks. Not path-sensitive — only checks whether each team made the knockouts, regardless of position. Short label: "The Cut". Full title: "Who Made the Cut". No question mark.
