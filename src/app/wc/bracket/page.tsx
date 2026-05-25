@@ -2,13 +2,6 @@ import { createClient } from "@/lib/supabase/server";
 import { redirect } from "next/navigation";
 import Link from "next/link";
 import type { BracketSubmissionData } from "@/types/tournament";
-import { FoldedBracket } from "@/components/tournament/bracket/FoldedBracket";
-import { loadGroupDataAndEventMap } from "@/lib/tournament/bracket/adapters/predictions-to-group-data";
-import { groupDataToRankings } from "@/lib/tournament/bracket/group-ranking";
-import {
-  generateWC2026R32Matchups,
-  WC2026_GROUPS,
-} from "@/lib/bracket/adapters/fifa-world-cup-2026";
 
 export const dynamic = "force-dynamic";
 
@@ -127,68 +120,12 @@ export default async function BracketPage() {
     ),
   );
 
-  // ---- Folded bracket poster -------------------------------------------
-  // Show the poster the moment the user has any progress (a draft submission
-  // or at least one group pick). Prefer the full_bracket classification's
-  // blob because it carries the user's bestThirdPicks; fall back to knockout.
-  const fullBracketCls = (classifications ?? []).find(
-    (c: { classification_key: string }) => c.classification_key === "full_bracket",
-  );
-  const knockoutCls = (classifications ?? []).find(
-    (c: { classification_key: string }) => c.classification_key === "knockout_bracket",
-  );
-  const posterSubmission =
-    (fullBracketCls && submissionMap.get(fullBracketCls.id)) ??
-    (knockoutCls && submissionMap.get(knockoutCls.id)) ??
-    null;
-
-  const hasAnyProgress = Boolean(posterSubmission) || (groupPicksCount ?? 0) > 0;
-
-  let posterRankings: Record<string, string[]> = {};
-  let posterMatchups: Record<string, { home: string; away: string }> = {};
-  let posterData: BracketSubmissionData | null = null;
-  if (hasAnyProgress) {
-    // Build live rankings from `predictions` (source of truth post 2026-05-23).
-    const { groups: groupData } = await loadGroupDataAndEventMap(supabase, {
-      userId: user.id,
-      competitionId: competition.id,
-      groups: WC2026_GROUPS,
-    });
-    posterRankings = groupDataToRankings(groupData);
-
-    posterData = posterSubmission?.bracket_data ?? {
-      bestThirdPicks: [],
-      knockoutPicks: {},
-      champion: "",
-    };
-
-    // Generate R32 matchups so empty knockout slots can still show "Home v Away".
-    if (
-      Object.keys(posterRankings).length === 12 &&
-      (posterData.bestThirdPicks?.length ?? 0) === 8
-    ) {
-      posterMatchups = generateWC2026R32Matchups(
-        posterRankings,
-        posterData.bestThirdPicks,
-      );
-    }
-  }
   return (
     <div className="mx-auto max-w-[480px] px-4 pt-6 pb-16">
       <h1 className="font-display text-2xl uppercase tracking-tight text-ps-text">Bracket Predictions</h1>
       <p className="mt-1 text-sm text-ps-text-sec">
         Predict the entire tournament bracket. One wrong pick and you&apos;re out.
       </p>
-
-      {hasAnyProgress && posterData && (
-        <div className="mt-6">
-          <FoldedBracket
-            submission={posterData}
-            groupRankings={posterRankings}
-            matchups={posterMatchups}
-          />
-        </div>
-      )}
 
       <div className="mt-6 space-y-4">
         {(classifications ?? []).map((cls: {
