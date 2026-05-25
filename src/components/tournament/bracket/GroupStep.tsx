@@ -238,8 +238,8 @@ function GroupOverviewStrip({
   pickColor: PickColor;
 }) {
   return (
-    <div className="-mx-1 overflow-x-auto px-1">
-      <div className="flex gap-1.5 pb-1">
+    <div className="px-1">
+      <div className="flex flex-wrap gap-1.5 pb-1">
         {groups.map((group, i) => {
           const complete = group.matches.every((m) => m.result !== null);
           const inProgress = !complete && group.matches.some((m) => m.result !== null);

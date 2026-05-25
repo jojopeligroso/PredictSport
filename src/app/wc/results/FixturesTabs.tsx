@@ -180,7 +180,10 @@ function FixtureCard({
             ? `Group ${fixture.group} · MD${fixture.matchday}`
             : stageLabel(fixture.stage)}
         </span>
-        <span>{city.name}</span>
+        <span className="text-right">
+          <span className="block">{city.name}</span>
+          <span className="block text-[0.6rem] font-medium normal-case tracking-normal text-white/50">{city.stadium}</span>
+        </span>
       </header>
 
       <div className="px-4 pb-3 pt-2">
@@ -224,7 +227,6 @@ function FixtureCard({
           </div>
         </dl>
 
-        <p className="mt-2 text-[0.7rem] text-white/70">{city.stadium}</p>
       </div>
     </article>
   );
