@@ -314,7 +314,7 @@ function LiveStandingsTable({
                   </td>
                   <td className="px-2 py-1.5 font-semibold text-ps-text">
                     <span className="inline-flex items-center gap-1.5">
-                      <CountryFlag name={team.name} size={16} />
+                      <CountryFlag shape="pill" name={team.name} size={16} />
                       <span>{team.name}</span>
                     </span>
                   </td>

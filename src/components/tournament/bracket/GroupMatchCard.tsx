@@ -114,7 +114,7 @@ export default function GroupMatchCard({
         {/* Home team */}
         <div className="flex-1">
           <div className="mb-2 flex items-center gap-1.5">
-            <CountryFlag name={match.home_team} size={20} />
+            <CountryFlag shape="pill" name={match.home_team} size={20} />
             <p className="text-sm font-semibold text-ps-ink">
               {match.home_team}
             </p>
@@ -155,7 +155,7 @@ export default function GroupMatchCard({
         {/* Away team */}
         <div className="flex-1">
           <div className="mb-2 flex items-center gap-1.5">
-            <CountryFlag name={match.away_team} size={20} />
+            <CountryFlag shape="pill" name={match.away_team} size={20} />
             <p className="text-sm font-semibold text-ps-ink">
               {match.away_team}
             </p>

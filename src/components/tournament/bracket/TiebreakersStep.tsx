@@ -356,10 +356,10 @@ function TiebreakerMatchRow({
       }`}
     >
       <p className="mb-2 flex items-center gap-1 text-xs font-semibold text-ps-text">
-        <CountryFlag name={match.home_team} size={14} />
+        <CountryFlag shape="pill" name={match.home_team} size={14} />
         <span>{match.home_team}</span>
         <span className="text-ps-text-ter">vs</span>
-        <CountryFlag name={match.away_team} size={14} />
+        <CountryFlag shape="pill" name={match.away_team} size={14} />
         <span>{match.away_team}</span>
       </p>
 

@@ -134,7 +134,7 @@ export default function ThirdPlaceStep({
                   : "bg-ps-green/15 text-ps-green"
               }`}
             >
-              <CountryFlag name={t.team_name} size={12} />
+              <CountryFlag shape="pill" name={t.team_name} size={12} />
               <span>{t.team_name}</span>
               <span className="font-mono opacity-70">({t.group_id})</span>
             </span>
@@ -311,10 +311,10 @@ function ScoreEntryRow({
   return (
     <div className="rounded-md bg-ps-surface p-2">
       <p className="flex items-center gap-1 text-[11px] font-semibold text-ps-text">
-        <CountryFlag name={match.home_team} size={14} />
+        <CountryFlag shape="pill" name={match.home_team} size={14} />
         <span>{match.home_team}</span>
         <span className="text-ps-text-ter">vs</span>
-        <CountryFlag name={match.away_team} size={14} />
+        <CountryFlag shape="pill" name={match.away_team} size={14} />
         <span>{match.away_team}</span>
         <span className="ml-1 rounded bg-ps-chip px-1.5 py-0.5 font-mono text-[10px] text-ps-text-sec">
           {resultLabel}

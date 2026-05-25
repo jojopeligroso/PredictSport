@@ -112,7 +112,7 @@ export default function MatchCard({
             }
           `}
         >
-          <CountryFlag name={match.home_team} size={18} />
+          <CountryFlag shape="pill" name={match.home_team} size={18} />
           <span className="truncate">{match.home_team}</span>
         </button>
 
@@ -148,7 +148,7 @@ export default function MatchCard({
             }
           `}
         >
-          <CountryFlag name={match.away_team} size={18} />
+          <CountryFlag shape="pill" name={match.away_team} size={18} />
           <span className="truncate">{match.away_team}</span>
         </button>
       </div>

@@ -111,10 +111,10 @@ export default function BracketReviewStep({
                   {step.roundLabel}
                 </span>
                 <span className="ml-auto inline-flex items-center gap-1 text-xs">
-                  <CountryFlag name={step.winner} size={14} />
+                  <CountryFlag shape="pill" name={step.winner} size={14} />
                   <span className="font-semibold text-ps-text">{step.winner}</span>
                   <span className="text-ps-text-ter">d.</span>
-                  <CountryFlag name={step.loser} size={14} />
+                  <CountryFlag shape="pill" name={step.loser} size={14} />
                   <span className="text-ps-text-sec">{step.loser}</span>
                 </span>
               </li>
@@ -153,7 +153,7 @@ export default function BracketReviewStep({
                       }`}
                     >
                       <span className="font-mono">{i + 1}.</span>
-                      <CountryFlag name={team} size={12} />
+                      <CountryFlag shape="pill" name={team} size={12} />
                       <span className="truncate">{team}</span>
                     </li>
                   ))}
@@ -181,7 +181,7 @@ export default function BracketReviewStep({
                     : "bg-ps-green/15 text-ps-green"
                 }`}
               >
-                <CountryFlag name={teamName} size={12} />
+                <CountryFlag shape="pill" name={teamName} size={12} />
                 <span>{teamName}</span>
                 <span className="font-mono opacity-70">({groupId})</span>
               </span>
@@ -205,7 +205,7 @@ export default function BracketReviewStep({
               key={team}
               className="inline-flex items-center gap-1 rounded-md bg-ps-bg px-2 py-0.5 text-[11px] font-semibold text-ps-text"
             >
-              <CountryFlag name={team} size={12} />
+              <CountryFlag shape="pill" name={team} size={12} />
               <span>{team}</span>
             </span>
           ))}
@@ -224,7 +224,7 @@ export default function BracketReviewStep({
                   key={team}
                   className="inline-flex items-center gap-1 rounded-md border border-ps-border bg-ps-chip px-2 py-0.5 text-[11px] font-medium text-ps-text-sec"
                 >
-                  <CountryFlag name={team} size={12} className="opacity-60" />
+                  <CountryFlag shape="pill" name={team} size={12} className="opacity-60" />
                   <span className="line-through decoration-ps-text-ter/60">{team}</span>
                 </span>
               ))}

@@ -348,7 +348,7 @@ function GroupCard({
           return (
             <li key={`${team}-${i}`} className={`flex items-center gap-1 text-[10px] ${colour}`}>
               <span className="font-mono w-2 shrink-0">{i + 1}</span>
-              <CountryFlag name={team} size={10} />
+              <CountryFlag shape="pill" name={team} size={10} />
               <span className="truncate">{team}</span>
             </li>
           );
@@ -387,7 +387,7 @@ function BracketColumn({
             >
               {winner ? (
                 <div className="flex items-center gap-1 text-[10px] font-semibold text-ps-text">
-                  <CountryFlag name={winner} size={10} />
+                  <CountryFlag shape="pill" name={winner} size={10} />
                   <span className="truncate">{winner}</span>
                 </div>
               ) : matchup ? (
@@ -422,7 +422,7 @@ function ChampionSeam({
       </p>
       {champion ? (
         <p className="mt-1 flex items-center justify-center gap-2 font-display text-2xl font-extrabold text-ps-text">
-          <CountryFlag name={champion} size={28} />
+          <CountryFlag shape="pill" name={champion} size={28} />
           <span>{champion}</span>
         </p>
       ) : (

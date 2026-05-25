@@ -318,12 +318,12 @@ function MatchScoreInput({ match, teamName, onScoreEntry }: MatchScoreInputProps
     <div className="rounded bg-ps-bg p-2">
       <div className="mb-1 flex items-center justify-between text-xs">
         <span className="inline-flex items-center gap-1 font-semibold text-ps-text">
-          <CountryFlag name={match.home_team} size={14} />
+          <CountryFlag shape="pill" name={match.home_team} size={14} />
           {match.home_team}
         </span>
         <span className="text-ps-text-ter">vs</span>
         <span className="inline-flex items-center gap-1 font-semibold text-ps-text">
-          <CountryFlag name={match.away_team} size={14} />
+          <CountryFlag shape="pill" name={match.away_team} size={14} />
           {match.away_team}
         </span>
       </div>

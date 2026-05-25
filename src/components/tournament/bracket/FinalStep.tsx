@@ -200,7 +200,7 @@ function FinalPickButton({
           : "border-ps-border bg-ps-bg text-ps-text hover:border-ps-text/30"
       }`}
     >
-      <CountryFlag name={team} size={large ? 22 : 18} />
+      <CountryFlag shape="pill" name={team} size={large ? 22 : 18} />
       <span className="truncate">{team}</span>
     </button>
   );

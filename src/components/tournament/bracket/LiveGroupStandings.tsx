@@ -113,7 +113,7 @@ export default function LiveGroupStandings({
                   {/* Team name */}
                   <td className="py-2 pr-2 font-sans font-semibold text-ps-ink">
                     <span className="inline-flex items-center gap-1.5">
-                      <CountryFlag name={team.name} size={16} />
+                      <CountryFlag shape="pill" name={team.name} size={16} />
                       <span>{team.name}</span>
                       {isTied && highlightTies && (
                         <span className="ml-1 text-ps-amber">⚠️</span>

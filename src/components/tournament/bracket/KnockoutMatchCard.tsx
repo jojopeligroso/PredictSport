@@ -63,7 +63,7 @@ export default function KnockoutMatchCard({
             ${isTBD ? 'cursor-not-allowed opacity-40' : 'cursor-pointer'}
           `}
         >
-          <CountryFlag name={isTBD ? null : homeTeam} size={32} />
+          <CountryFlag shape="pill" name={isTBD ? null : homeTeam} size={32} />
           <span className="block text-sm font-semibold">{homeTeam}</span>
         </button>
 
@@ -86,7 +86,7 @@ export default function KnockoutMatchCard({
             ${isTBD ? 'cursor-not-allowed opacity-40' : 'cursor-pointer'}
           `}
         >
-          <CountryFlag name={isTBD ? null : awayTeam} size={32} />
+          <CountryFlag shape="pill" name={isTBD ? null : awayTeam} size={32} />
           <span className="block text-sm font-semibold">{awayTeam}</span>
         </button>
       </div>

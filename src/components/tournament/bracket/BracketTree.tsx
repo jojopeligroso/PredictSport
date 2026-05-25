@@ -53,7 +53,7 @@ export function BracketTree({
         </span>
         <p className="flex items-center justify-center gap-2 text-base font-extrabold text-ps-text">
           {submission.champion && (
-            <CountryFlag name={submission.champion} size={24} />
+            <CountryFlag shape="pill" name={submission.champion} size={24} />
           )}
           <span>{submission.champion || "?"}</span>
         </p>
@@ -86,7 +86,7 @@ export function BracketTree({
                             : "bg-ps-bg text-ps-text"
                       }`}
                     >
-                      {pick && <CountryFlag name={pick} size={14} />}
+                      {pick && <CountryFlag shape="pill" name={pick} size={14} />}
                       <span className="truncate">
                         {pick || "?"}
                         {correct && " \u2713"}
@@ -105,7 +105,7 @@ export function BracketTree({
       {submission.thirdPlace && (
         <div className="mt-3 flex items-center justify-center gap-1.5 text-center text-xs text-ps-text-sec">
           3rd Place:
-          <CountryFlag name={submission.thirdPlace} size={14} />
+          <CountryFlag shape="pill" name={submission.thirdPlace} size={14} />
           <span className="font-semibold text-ps-text">{submission.thirdPlace}</span>
         </div>
       )}

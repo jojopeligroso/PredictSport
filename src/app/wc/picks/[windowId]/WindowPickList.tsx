@@ -301,10 +301,10 @@ function MatchPickRow({
       <div className="rounded-lg border border-ps-border bg-ps-surface px-3 py-2">
         <div className="flex items-center justify-between gap-2">
           <span className="flex items-center gap-1.5 text-sm font-semibold text-ps-text">
-            <CountryFlag name={home} size={18} />
+            <CountryFlag shape="pill" name={home} size={18} />
             {home}
             <span className="mx-1 text-ps-text-ter">v</span>
-            <CountryFlag name={away} size={18} />
+            <CountryFlag shape="pill" name={away} size={18} />
             {away}
           </span>
           <span className="rounded-full bg-ps-chip px-2 py-0.5 text-[10px] font-semibold uppercase text-ps-text-sec">
@@ -346,7 +346,7 @@ function MatchPickRow({
                   : "bg-ps-chip text-ps-text hover:bg-ps-chip/70",
               ].join(" ")}
             >
-              {slot !== "draw" && <CountryFlag name={opt} size={18} />}
+              {slot !== "draw" && <CountryFlag shape="pill" name={opt} size={18} />}
               <span className="truncate">{opt}</span>
             </button>
           );

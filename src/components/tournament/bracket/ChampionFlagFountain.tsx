@@ -50,7 +50,7 @@ export function ChampionFlagFountain({ champion, teams }: ChampionFlagFountainPr
                 ["--drift" as string]: `${drift}px`,
               }}
             >
-              <CountryFlag name={team} size={14} />
+              <CountryFlag shape="pill" name={team} size={14} />
             </span>
           );
         })}
@@ -69,7 +69,7 @@ export function ChampionFlagFountain({ champion, teams }: ChampionFlagFountainPr
 
       {/* Focal champion flag */}
       <div className="champion-pop relative z-[1] mb-1 motion-reduce:animate-none">
-        <CountryFlag name={champion} size={56} />
+        <CountryFlag shape="pill" name={champion} size={56} />
       </div>
 
       <style jsx>{`

@@ -185,10 +185,10 @@ function FixtureCard({
 
       <div className="px-4 pb-3 pt-2">
         <h3 className="flex flex-wrap items-center gap-1.5 text-base font-bold text-white">
-          <CountryFlag name={fixture.home} size={20} />
+          <CountryFlag shape="pill" name={fixture.home} size={20} />
           <span>{fixture.home}</span>
           <span className="mx-0.5 text-white/70">v</span>
-          <CountryFlag name={fixture.away} size={20} />
+          <CountryFlag shape="pill" name={fixture.away} size={20} />
           <span>{fixture.away}</span>
         </h3>
 
