@@ -115,13 +115,31 @@ A participant's aggregate prediction accuracy across all their competitions (gro
 
 ## Super Administrator
 
-A platform-level role responsible for canonical tournament truth: confirming official fixture results, finalising windows/stages, maintaining tournament templates. Operates across all Prediction Games that share a tournament. Desktop-primary user. See ADR 0005.
+A platform-level role responsible for canonical tournament truth: confirming official fixture results, finalising windows/stages, maintaining tournament templates. Operates across all Prediction Games that share a tournament. Terminal-primary user — the surface can be extremely utilitarian (CLI-like). See ADR 0005.
 
 ---
 
 ## Competition Admin
 
-The owner of a single Prediction Game. Manages invites, copy, and preset selection for their own game; cannot confirm official results or alter fixtures (those are [[Super Administrator]] actions). Mobile-first user — typically picks from a small set of presets rather than authoring rounds from scratch.
+The owner of a single Prediction Game. Their surface is deliberately minimal: league settings and member management across two dedicated pages. Cannot confirm official results, alter fixtures, or edit round/event structure (those are [[Super Administrator]] actions). Mobile-first, non-technical user — picks from presets, never authors from scratch.
+
+---
+
+## Global Classification
+
+A platform-wide leaderboard across all users on the /wc surface, regardless of which private league they belong to. Same scores as league standings, just a wider ranking pool. Only activates once the platform exceeds 2,000 users to avoid a sparse leaderboard. Users who have opted out of visibility appear anonymised. Phase 2 — deferred.
+
+---
+
+## Privacy Mode
+
+The access control setting for a competition. Three modes: **Open** (discoverable, instant join), **Link-only** (need the invite link, link = instant join), **Approval** (need the invite link, admin approves from queue). No email gating in any mode — the link is the invitation. Email allowlists deferred to phase 2 as an optional layer on top of Approval mode.
+
+---
+
+## Treasurer
+
+A distinct member role within a competition, nominated by the [[Competition Admin]]. Responsible for tracking entry fee payments. Can mark members as paid/unpaid but has no other admin powers. Admin can hold the treasurer role themselves. Only available for competitions with 96 or fewer members. Phase 2 — deferred.
 
 ---
 
