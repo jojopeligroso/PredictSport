@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import { UserMenu } from "@/components/UserMenu";
+import { MobileNav } from "@/components/MobileNav";
 import { BrandMark } from "@/components/BrandMark";
 
 const wcNavLinks = [
@@ -64,16 +65,23 @@ export default async function WorldCupLayout({
             ))}
           </div>
 
-          {authUser ? (
-            <UserMenu displayName={displayName} avatarUrl={avatarUrl} />
-          ) : (
-            <Link
-              href="/login"
-              className="rounded-lg bg-ps-text px-3 py-1.5 text-sm font-semibold text-ps-bg"
-            >
-              Sign in
-            </Link>
-          )}
+          <div className="flex items-center gap-2">
+            {authUser ? (
+              <UserMenu displayName={displayName} avatarUrl={avatarUrl} />
+            ) : (
+              <Link
+                href="/login"
+                className="hidden rounded-lg bg-ps-text px-3 py-1.5 text-sm font-semibold text-ps-bg md:block"
+              >
+                Sign in
+              </Link>
+            )}
+            <MobileNav
+              isLoggedIn={!!authUser}
+              displayName={displayName}
+              avatarUrl={avatarUrl}
+            />
+          </div>
         </div>
 
         {/* Mobile tab bar */}
