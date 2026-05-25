@@ -137,6 +137,18 @@ A UI-level concept, never stored in the database. Computed from the user's auth 
 
 ---
 
+## Stage
+
+A phase of the tournament after which Format elimination occurs. During the group stage, all three matchdays form a single stage — elimination happens after Matchday 3, not after each matchday. During knockouts, each round is its own stage (Round of 32, Round of 16, Quarter-finals, Semi-finals, Final). The Final stage includes the third-place match — one prediction window, two fixtures. User-facing label is always lowercase "stage" with no qualifier. "Sporting Stage" is not used.
+
+---
+
+## Matchday
+
+User-facing label for a prediction window during the World Cup group stage. Maps to a `rounds` row in the database. "Matchday 1", "Matchday 2", "Matchday 3". During knockout stages, the user-facing label switches to the stage name: "Round of 32", "Round of 16", "Quarter-finals", "Semi-finals", "Final". The spec/admin term "Prediction Window" and the DB term "Round" are never shown to users on the `/wc` surface. Outside the WC surface, "Round" is the default user-facing label.
+
+---
+
 ## The Cut
 
 The R32 Classification, renamed. Measures how many of the 32 knockout-stage teams the user correctly predicted from their Full Bracket group stage picks. Not path-sensitive — only checks whether each team made the knockouts, regardless of position. Short label: "The Cut". Full title: "Who Made the Cut". No question mark.

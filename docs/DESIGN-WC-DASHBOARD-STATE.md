@@ -1,12 +1,11 @@
 # Design: WC Dashboard State Machine
 
-> Two-part design doc (so far). Section A defines the state machine, card
-> stacks, derivation rules, and data contract. Section B defines the Format
+> Three-part design doc. Section A defines the state machine, card stacks,
+> derivation rules, and data contract. Section B defines the Format
 > Classification hero card — content, modes, qualification shading, and the
-> enriched leaderboard detail page.
->
-> - **Section C** (future session): Surface-wide polish — copy tone rules,
->   fixture card anatomy, naming conventions, brand mark usage.
+> enriched leaderboard detail page. Section C defines copy tone, fixture card
+> anatomy, naming conventions, brand mark placement, and the visitor page
+> narrative.
 
 ## 1. Overview
 
@@ -269,6 +268,10 @@ These items are noted but not designed in this document:
 - **~~R32 classification naming~~:** **Resolved in Section B.** Renamed to
   "The Cut" (tab label) / "Who Made the Cut" (full title).
 
+- **~~Surface-wide polish~~:** **Resolved in Section C.** Copy tone rules,
+  naming conventions, fixture card anatomy, brand mark placement, and
+  visitor page narrative flow.
+
 ---
 
 ## 10. Visual Direction (Session B/C Reference)
@@ -492,3 +495,248 @@ These items are noted but not designed:
   weigh-in card handles onboarding without animation.
 
 - **Public Format groups:** Still deferred (see Section 9).
+
+---
+
+# Section C: Surface-Wide Polish
+
+> Designed in Session C (2026-05-25). Defines the copy voice, naming
+> conventions, fixture card anatomy, brand mark placement, and the visitor
+> page narrative flow for the `/wc` surface.
+
+---
+
+## 18. Copy Tone — Two Tiers
+
+All user-facing copy on the `/wc` surface falls into one of two tiers.
+
+### Personality tier
+
+Headlines, taglines, hero card status lines, celebration moments. The pub
+chalkboard voice: confident, punchy, second-person.
+
+Rules:
+
+- **No exclamation marks.** One exception: the champion moment. Literally one
+  `!` in the entire app. Everything else is periods and dashes.
+- **Second person, present tense.** Always "you" / "your".
+- **Fragment-first.** Good news and neutral status use bare fragments:
+  "2nd of 4. You're through." Bad news and uncertainty use a fragment plus a
+  clarifying clause after a dash: "4th of 4. Below the line — one more
+  matchday to turn it around." The dash is the workhorse punctuation for
+  adding context without going full-sentence.
+- **No articles, no filler.** "Your call." not "It's your call."
+
+### Functional tier
+
+Navigation labels, status chips, form labels, instructional copy, progress
+indicators. Clean and clear — no personality injection. "Open", "Locked",
+"Matchday 2", "Select a matchday."
+
+### The line between them
+
+If the user is *reading it to understand what to do*, keep it functional. If
+the user is *feeling something about their position*, give it personality.
+
+### Ternary headline register
+
+The Format hero card's survival headlines use two registers, not three.
+Drama is good — it's a game, not a compliance notice.
+
+| Status | Register | Example |
+|---|---|---|
+| Safe | Punchy fragment | "2nd of 4. You're through." |
+| Contested | Fragment + clause | "3rd of 4. Best third — other groups decide your fate." |
+| Danger | Fragment + clause | "4th of 4. Below the line — one more matchday to turn it around." |
+
+---
+
+## 19. Naming Conventions
+
+### Prediction windows — user-facing labels
+
+The `/wc` surface uses **two** user-facing terms depending on tournament
+phase. The spec term "Prediction Window" and the DB term "Round" are never
+shown to users.
+
+| Phase | User sees | Examples |
+|---|---|---|
+| Group stage | **Matchday** | Matchday 1, Matchday 2, Matchday 3 |
+| Knockout stage | **Stage name** | Round of 32, Round of 16, Quarter-finals, Semi-finals, Final |
+
+The DB `rounds.name` values ("Group Matchday 1", "Round of 32", etc.) are
+the source. Strip the "Group " prefix at display time for matchday labels.
+Knockout names pass through verbatim.
+
+Outside the `/wc` surface, "Round" remains the default user-facing label for
+other competitions.
+
+### Round-aware CTAs
+
+Every picks CTA on the `/wc` surface names the current active window:
+
+- Group stage: "**Matchday 2 picks →**"
+- Knockout: "**Round of 16 picks →**"
+- Secondary (bracket hero): "Or skip ahead to **Matchday 2** picks →"
+
+If no active window exists or derivation fails for any reason, fall back to
+**"Make your picks"**.
+
+### Stages
+
+"Stage" is the only term — no "Sporting Stage" qualifier. Lowercase in
+running copy ("the group stage", "each stage"). See `CONTEXT.md` for the
+full definition.
+
+The group stage spans all three matchdays but counts as one Format
+elimination stage. During knockouts, each round is its own stage. The Final
+stage includes the third-place match — one prediction window, two fixtures.
+
+### Knockout stage labels (canonical)
+
+| DB code | User sees |
+|---|---|
+| `R32` | Round of 32 |
+| `R16` | Round of 16 |
+| `QF` | Quarter-finals |
+| `SF` | Semi-finals |
+| `3RD` | (not shown separately — bundled into Final window) |
+| `FINAL` | Final |
+
+No abbreviations in user-facing UI. Code-level abbreviations (`R32`, `QF`)
+stay in code.
+
+---
+
+## 20. Fixture Card Anatomy
+
+### Team display
+
+- **Full country names** always. FIFA three-letter codes only as a last
+  resort for genuinely tight layouts (e.g. compact bracket tree cells).
+- **Pill-shaped flag icon** (`CountryFlag` with `shape="pill"`) on the `/wc`
+  surface, per DESIGN-RULES.md. Always accompanies the team name.
+
+### Time and date
+
+- **User's local time only.** No dual-time display. No host-city timezone.
+- **Time format:** device locale (12h or 24h). App-wide setting to override
+  is a future feature — not designed here.
+- **Date format:** abbreviated day, date number, abbreviated month.
+  Example: "Wed 11 Jun".
+- The host city still appears on the card as venue context and provides the
+  background colour — but its timezone is not shown.
+
+### Prediction status
+
+No per-card status badge. The filled/empty state of the input controls is
+the indicator — a selected winner button is visually distinct from an
+unpicked state. Progress chips at the window level ("Outcomes: 3/8",
+"Scores: 1/8") provide the overview.
+
+### Result badges
+
+| Badge | Meaning | Colour |
+|---|---|---|
+| **Final** | Result confirmed by admin | Ink on neutral chip (`bg-ps-chip text-ps-ink`) |
+| **Provisional** | Result entered, not yet confirmed | Amber (`ps-amber`) |
+
+"Final" must not use green — green means "correct prediction" in the
+palette. Using it for result confirmation creates a false signal.
+
+---
+
+## 21. Brand Mark Placement
+
+The sportspredict brand marks (Oracle Dot, Umpire, Bubble Call) play a
+minimal role on the `/wc` surface. The FIFA WC 2026 mark owns the content
+identity.
+
+### Where marks appear
+
+| Location | Treatment |
+|---|---|
+| **Nav bar** | `BrandMark` component, daily-stable weighted random (60/30/10). Existing behaviour, unchanged. |
+| **Page footer** | Small `BrandMark` at the bottom of every `/wc` page. Subtle, low opacity, links to `/` (sportspredict home). A quiet "this is a sportspredict game" anchor. |
+
+### Where marks do NOT appear
+
+- **Landing page hero** — the triple-mark display (OracleDot + Umpire +
+  BubbleCall) is removed. The FIFA hero image and "World Cup 2026" wordmark
+  carry the page.
+- **Page headers** — FIFA mark only, via `WcBrandedTitle`. No brand marks.
+- **Cards, dividers, content** — no brand marks. Host city colours and pill
+  flags are the visual language.
+- **Celebration moments** — no brand marks. The celebration overlay
+  (`MatchdayCompleteCelebration`) stands on its own.
+
+---
+
+## 22. Visitor Page — Narrative Flow
+
+The `/wc` landing page for unauthenticated or new users uses a narrative
+flow rather than a feature grid. The arc mirrors the predictor's journey
+through the tournament.
+
+### Page structure (top to bottom)
+
+1. **FIFA hero image** — full-bleed, existing `hero-fifa-2026.png`.
+
+2. **Title block** — "World Cup 2026" with "2026" in amber. Subtitle:
+   "48 teams. Your call." in serif italic.
+
+3. **Hook** — the four-beat tagline:
+   > "Predict every match. Survive the cut. Outlast everyone. Win."
+
+4. **Narrative beats** — four visual blocks, each with a personality-tier
+   headline and one or two lines of functional-tier supporting copy. The
+   beats map 1:1 to the hook's four phrases. Survive and Outlast should
+   bleed into each other — continuous escalation, not hard boxes.
+
+   | Beat | Hook phrase | What it explains |
+   |---|---|---|
+   | **Pick** | "Predict every match." | Winner and exact score predictions across all 104 matches. |
+   | **Survive** | "Survive the cut." | Format — groups of four, bottom drops each stage. The elimination drama. |
+   | **Outlast** | "Outlast everyone." | Multiple classifications — Overall cumulative, Bracket all-or-nothing. |
+   | **Claim** | "Win." | Leaderboard, bragging rights, the payoff. |
+
+5. **Countdown** — "X days to kickoff" widget. Pre-tournament only.
+   Disappears once the tournament starts — page gets shorter, CTA moves up.
+
+6. **CTA** — round-aware primary button. Names the current active window
+   ("Matchday 1 picks →"). Falls back to "Make your picks" if no active
+   window. Gold gradient, same existing button style.
+
+7. **Rules link** — "Simple scoring. Full rules →" as a text link to
+   `/wc/rules`. Below the CTA, for the curious. Not prominent.
+
+8. **Footer brand mark** — small `BrandMark` linking to `/`. Last element
+   on the page.
+
+### What was removed
+
+- **Triple brand mark display** in the hero section.
+- **"Viva Mexico"** country label.
+- **Five-card classification grid** ("Five ways to play") — replaced by the
+  narrative beats.
+- **Scoring section** (three-row list + max-points footer) — moved to
+  `/wc/rules` only, replaced by the text link.
+- **Host cities ticker** ("Mexico City · Guadalajara · Monterrey").
+
+---
+
+## 23. Future Considerations (Section C)
+
+- **Time format setting:** App-wide user preference for 12h/24h time
+  display. Not designed here — device locale is the default until the
+  settings page exists.
+
+- **Narrative beat copy:** The beat headlines and supporting copy in
+  Section 22 are structural — final wording is an implementation-time
+  decision within the tone rules defined in Section 18.
+
+- **Overall Classification detail view:** Noted in previous sessions as
+  needing engagement work — most users land here by QF/SF stage. Not
+  addressed in this section.
+
+- **Animated demo concept:** Still deferred (see Section 9).
