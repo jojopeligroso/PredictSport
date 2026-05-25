@@ -34,8 +34,9 @@ export function ClassificationTabs({
   inviteCode?: string | null;
   kickoffIso?: string | null;
 }) {
+  const visibleClassifications = classifications.filter((c) => c.status !== "draft");
   const [activeId, setActiveId] = useState<string>(
-    classifications[0]?.id ?? ""
+    visibleClassifications[0]?.id ?? ""
   );
   const [standings, setStandings] = useState<StandingRow[]>([]);
   const [loading, setLoading] = useState(true);
@@ -71,7 +72,7 @@ export function ClassificationTabs({
 
   const isLoading = loading || loadedId !== activeId;
 
-  if (classifications.length === 0) {
+  if (visibleClassifications.length === 0) {
     return (
       <p className="py-8 text-center text-sm text-ps-text-sec">
         No classifications configured yet.
@@ -79,13 +80,13 @@ export function ClassificationTabs({
     );
   }
 
-  const active = classifications.find((c) => c.id === activeId);
+  const active = visibleClassifications.find((c) => c.id === activeId);
 
   return (
     <div>
       {/* Tab bar */}
       <div className="flex gap-1 overflow-x-auto rounded-lg bg-ps-bg p-1">
-        {classifications.map((cls) => (
+        {visibleClassifications.map((cls) => (
           <button
             key={cls.id}
             onClick={() => { setActiveId(cls.id); setLoading(true); }}
