@@ -310,14 +310,14 @@ function MatchPickRow({
         setScorePred(saved);
         router.refresh();
 
-        // Auto-infer winner if none is selected.
-        if (!currentWinner && winnerEpt) {
+        // Score is source of truth — always align the winner to match it.
+        if (winnerEpt) {
           const implied = deriveWinnerFromScore(
             { home: homeNum, away: awayNum },
             event.sport,
             winnerOptions,
           );
-          if (implied) handlePickWinner(implied);
+          if (implied && implied !== currentWinner) handlePickWinner(implied);
         }
       } catch {
         // Silently ignore score submission errors.
@@ -381,7 +381,7 @@ function MatchPickRow({
           onClick={() => handlePickWinner(home)}
           aria-pressed={homeSelected}
           className={[
-            "flex flex-col items-center gap-1 min-w-[68px] px-1.5 py-1.5 rounded-lg transition-all duration-150 cursor-pointer",
+            "flex-1 min-w-0 flex flex-col items-center gap-1 px-1.5 py-1.5 rounded-lg transition-all duration-150 cursor-pointer",
             "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ps-amber/50",
             homeSelected
               ? "bg-ps-amber/10 ring-2 ring-ps-amber"
@@ -391,7 +391,7 @@ function MatchPickRow({
           <CountryFlag shape="pill" name={home} size={24} />
           <span
             className={[
-              "text-[11px] font-semibold text-center leading-tight",
+              "max-w-full truncate text-[11px] font-semibold text-center leading-tight",
               homeSelected ? "text-ps-amber" : "text-ps-text-ter",
             ].join(" ")}
           >
@@ -475,7 +475,7 @@ function MatchPickRow({
           onClick={() => handlePickWinner(away)}
           aria-pressed={awaySelected}
           className={[
-            "flex flex-col items-center gap-1 min-w-[68px] px-1.5 py-1.5 rounded-lg transition-all duration-150 cursor-pointer",
+            "flex-1 min-w-0 flex flex-col items-center gap-1 px-1.5 py-1.5 rounded-lg transition-all duration-150 cursor-pointer",
             "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ps-amber/50",
             awaySelected
               ? "bg-ps-amber/10 ring-2 ring-ps-amber"
@@ -485,7 +485,7 @@ function MatchPickRow({
           <CountryFlag shape="pill" name={away} size={24} />
           <span
             className={[
-              "text-[11px] font-semibold text-center leading-tight",
+              "max-w-full truncate text-[11px] font-semibold text-center leading-tight",
               awaySelected ? "text-ps-amber" : "text-ps-text-ter",
             ].join(" ")}
           >

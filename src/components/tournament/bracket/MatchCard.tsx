@@ -55,13 +55,12 @@ export default function MatchCard({
 
     if (isNaN(home) || isNaN(away) || home < 0 || away < 0) return
 
-    if (!match.result) {
-      const inferred: MatchResult =
-        home > away ? 'home_win' : away > home ? 'away_win' : 'draw'
+    // Score is source of truth — always align the result to match it.
+    const inferred: MatchResult =
+      home > away ? 'home_win' : away > home ? 'away_win' : 'draw'
+    if (match.result !== inferred) {
       onResultChange(inferred)
     }
-
-    if (match.result && !scoreMatchesResult(match.result, home, away)) return
 
     onScoreEntry(home, away)
   }
@@ -85,14 +84,14 @@ export default function MatchCard({
           aria-label={`Predict ${match.home_team} to win`}
           aria-pressed={match.result === 'home_win'}
           className={`
-            flex flex-col items-center gap-1 min-w-[68px] px-1.5 py-1.5 rounded-lg transition-all duration-150 cursor-pointer
+            flex-1 min-w-0 flex flex-col items-center gap-1 px-1.5 py-1.5 rounded-lg transition-all duration-150 cursor-pointer
             ${match.result === 'home_win' ? `${selectedBgColor} ring-2 ring-ps-amber` : 'hover:bg-ps-chip'}
           `}
         >
           <CountryFlag shape="pill" name={match.home_team} size={24} />
           <span
             className={`
-              text-[11px] font-semibold text-center leading-tight
+              max-w-full truncate text-[11px] font-semibold text-center leading-tight
               ${match.result === 'home_win' ? selectedTextColor : 'text-ps-text-ter'}
             `}
           >
@@ -163,14 +162,14 @@ export default function MatchCard({
           aria-label={`Predict ${match.away_team} to win`}
           aria-pressed={match.result === 'away_win'}
           className={`
-            flex flex-col items-center gap-1 min-w-[68px] px-1.5 py-1.5 rounded-lg transition-all duration-150 cursor-pointer
+            flex-1 min-w-0 flex flex-col items-center gap-1 px-1.5 py-1.5 rounded-lg transition-all duration-150 cursor-pointer
             ${match.result === 'away_win' ? `${selectedBgColor} ring-2 ring-ps-amber` : 'hover:bg-ps-chip'}
           `}
         >
           <CountryFlag shape="pill" name={match.away_team} size={24} />
           <span
             className={`
-              text-[11px] font-semibold text-center leading-tight
+              max-w-full truncate text-[11px] font-semibold text-center leading-tight
               ${match.result === 'away_win' ? selectedTextColor : 'text-ps-text-ter'}
             `}
           >
@@ -180,18 +179,4 @@ export default function MatchCard({
       </div>
     </div>
   )
-}
-
-function scoreMatchesResult(
-  result: MatchResult,
-  homeScore: number,
-  awayScore: number
-): boolean {
-  if (!result) return true
-
-  if (result === 'home_win') return homeScore > awayScore
-  if (result === 'away_win') return awayScore > homeScore
-  if (result === 'draw') return homeScore === awayScore
-
-  return false
 }
