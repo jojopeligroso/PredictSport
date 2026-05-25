@@ -1,0 +1,10 @@
+import { chromium } from 'playwright';
+const browser = await chromium.launch({ headless: true });
+const ctx = await browser.newContext({ viewport: { width: 1600, height: 1100 }, deviceScaleFactor: 2 });
+const page = await ctx.newPage();
+await page.goto('http://127.0.0.1:8000/design/wc-poster/poster.html');
+await page.waitForLoadState('networkidle');
+const bracket = await page.locator('#standalone .bracket').first();
+await bracket.screenshot({ path: '/tmp/poster_bracket.png' });
+await browser.close();
+console.log('saved /tmp/poster_bracket.png');
