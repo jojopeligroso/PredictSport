@@ -211,21 +211,23 @@ function FixtureCard({
           </div>
         )}
 
-        <dl className="mt-2 grid grid-cols-2 gap-x-3 text-xs text-white/90">
-          <div>
-            <dt className="font-semibold uppercase tracking-wide text-white/70">In {city.name.split(" ")[0]}</dt>
-            <dd className="font-mono tabular-nums">
-              {cityTime}
-              <span className="ml-1 text-white/70">· {cityDate}</span>
-            </dd>
-          </div>
-          <div>
-            <dt className="font-semibold uppercase tracking-wide text-white/70">Your time</dt>
-            <dd className="font-mono tabular-nums">
-              {sameClock ? "Same" : `${localTime} ${localTzAbbr}`}
-            </dd>
-          </div>
-        </dl>
+        {!isFinished && (
+          <dl className="mt-2 grid grid-cols-2 gap-x-3 text-xs text-white/90">
+            <div>
+              <dt className="font-semibold uppercase tracking-wide text-white/70">In {city.name.split(" ")[0]}</dt>
+              <dd className="font-mono tabular-nums">
+                {cityTime}
+                <span className="ml-1 text-white/70">· {cityDate}</span>
+              </dd>
+            </div>
+            <div>
+              <dt className="font-semibold uppercase tracking-wide text-white/70">Your time</dt>
+              <dd className="font-mono tabular-nums">
+                {sameClock ? "Same" : `${localTime} ${localTzAbbr}`}
+              </dd>
+            </div>
+          </dl>
+        )}
 
       </div>
     </article>
