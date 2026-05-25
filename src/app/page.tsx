@@ -4,6 +4,7 @@ import { BrandMark } from "@/components/BrandMark";
 import JoinCompetitionCard from "@/components/JoinCompetitionCard";
 import { OrDivider } from "@/components/OrDivider";
 import { PersonalPredictionsLink } from "@/components/PersonalPredictionsLink";
+import { computePickCounts, findActiveRound } from "@/lib/dashboard-helpers";
 
 export const dynamic = "force-dynamic";
 
@@ -193,20 +194,8 @@ async function Dashboard({ userId }: { userId: string }) {
       // Dedupe by event_id per round — a single event can hold multiple
       // prediction rows (winner + exact_score for group fixtures), but the
       // card shows "matches picked", not "rows written".
-      const eventsByRound = new Map<string, Set<string>>();
-      for (const p of (preds ?? []) as unknown as Array<{ event_id: string; events: { round_id: string | null } }>) {
-        const rid = p.events?.round_id;
-        if (!rid || !p.event_id) continue;
-        let set = eventsByRound.get(rid);
-        if (!set) {
-          set = new Set<string>();
-          eventsByRound.set(rid, set);
-        }
-        set.add(p.event_id);
-      }
-      for (const [rid, set] of eventsByRound) {
-        pickCounts[rid] = set.size;
-      }
+      const predsTyped = (preds ?? []) as unknown as Array<{ event_id: string; events: { round_id: string | null } }>;
+      pickCounts = computePickCounts(predsTyped);
     }
   }
 
@@ -270,7 +259,7 @@ async function Dashboard({ userId }: { userId: string }) {
       ) : (
         <div className="space-y-4">
           {comps.map((comp) => {
-            const activeRound = rounds.find((r) => r.competition_id === comp.id);
+            const activeRound = findActiveRound(rounds, comp.id);
             const evtCount = activeRound ? (eventCounts[activeRound.id] ?? 0) : 0;
             const pickCount = activeRound ? (pickCounts[activeRound.id] ?? 0) : 0;
 
