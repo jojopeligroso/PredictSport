@@ -55,13 +55,9 @@ export default function MatchCard({
 
     if (isNaN(home) || isNaN(away) || home < 0 || away < 0) return
 
-    // Score is source of truth — always align the result to match it.
-    const inferred: MatchResult =
-      home > away ? 'home_win' : away > home ? 'away_win' : 'draw'
-    if (match.result !== inferred) {
-      onResultChange(inferred)
-    }
-
+    // Single callback — the parent handles both result + score atomically
+    // to avoid the stale-closure race where two sequential updateMatch calls
+    // each read from the same pre-update groups snapshot.
     onScoreEntry(home, away)
   }
 

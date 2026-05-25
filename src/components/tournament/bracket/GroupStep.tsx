@@ -84,7 +84,16 @@ export default function GroupStep({
 
   const handleScoreEntry = useCallback(
     (matchId: string, homeScore: number, awayScore: number) => {
-      updateMatch(matchId, { exact_score: { home_score: homeScore, away_score: awayScore } });
+      // Derive result from the score and update both atomically in a single
+      // updateMatch call. This avoids the stale-closure race that occurs when
+      // MatchCard fires onResultChange + onScoreEntry as two sequential calls
+      // against the same pre-update groups snapshot.
+      const inferred: MatchResult =
+        homeScore > awayScore ? 'home_win' : awayScore > homeScore ? 'away_win' : 'draw';
+      updateMatch(matchId, {
+        result: inferred,
+        exact_score: { home_score: homeScore, away_score: awayScore },
+      });
     },
     [updateMatch],
   );
