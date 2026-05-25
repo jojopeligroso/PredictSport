@@ -1,9 +1,6 @@
 import Image from "next/image";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
-import { OracleDot } from "@/components/OracleDot";
-import { UmpireLogo } from "@/components/UmpireLogo";
-import { BubbleCall } from "@/components/BubbleCall";
 import {
   getWcBracketSnapshot,
   type BracketSnapshot,
@@ -69,16 +66,8 @@ export default async function WorldCupLanding() {
         />
       </div>
 
-      {/* Hero */}
-      <section className="flex w-full max-w-md flex-col items-center gap-5 pt-10 pb-8 text-center md:pt-16">
-        {/* All 3 brand marks */}
-        <div className="flex items-center gap-4">
-          <OracleDot className="h-8 w-auto opacity-70" />
-          <UmpireLogo className="h-10 w-auto opacity-70" flagColor="#006847" />
-          <BubbleCall className="h-8 w-auto opacity-70" />
-        </div>
-
-        {/* Wordmark */}
+      {/* Title block */}
+      <section className="flex w-full max-w-md flex-col items-center gap-5 pt-10 pb-4 text-center md:pt-16">
         <div>
           <h1 className="font-display text-3xl uppercase tracking-tight text-ps-text md:text-4xl">
             World Cup{" "}
@@ -87,20 +76,63 @@ export default async function WorldCupLanding() {
           <p className="mt-2 font-serif text-lg italic text-ps-text-sec">
             48 teams. Your call.
           </p>
-          <p
-            className="mt-1.5 font-mono text-[10px] font-bold uppercase tracking-[0.25em]"
-            style={{ color: "#006847" }}
-          >
-            Viva Mexico
+        </div>
+
+        {/* Hook tagline */}
+        <p className="font-display text-xl font-extrabold leading-snug text-ps-text md:text-2xl">
+          Predict every match. Survive the cut. Outlast everyone. Win.
+        </p>
+      </section>
+
+      {/* Narrative beats — four-beat arc mirroring the hook */}
+      <section className="w-full max-w-md pb-8">
+        {/* Pick */}
+        <div className="border-t border-ps-border py-6">
+          <h2 className="font-display text-lg font-extrabold text-ps-text">
+            Predict every match.
+          </h2>
+          <p className="mt-1.5 text-sm leading-relaxed text-ps-text-sec">
+            Winner and exact score across all 104 fixtures. Group stage through
+            the final.
           </p>
         </div>
 
-        {/* Countdown */}
-        {daysUntil > 0 && (
-          <div
-            className="rounded-xl border border-ps-border bg-ps-surface px-6 py-4"
-            style={{ borderBottom: "2px solid #006847" }}
-          >
+        {/* Survive + Outlast bleed into each other — no hard visual break between them */}
+        <div className="border-t border-ps-border py-6">
+          <h2 className="font-display text-lg font-extrabold text-ps-text">
+            Survive the cut.
+          </h2>
+          <p className="mt-1.5 text-sm leading-relaxed text-ps-text-sec">
+            Prediction groups of four. Bottom drops after each stage. Miss the
+            cut and you&apos;re out.
+          </p>
+        </div>
+
+        <div className="border-t border-dashed border-ps-border py-6">
+          <h2 className="font-display text-lg font-extrabold text-ps-text">
+            Outlast everyone.
+          </h2>
+          <p className="mt-1.5 text-sm leading-relaxed text-ps-text-sec">
+            Overall points. Bracket picks. Multiple ways to win — or claw your
+            way back.
+          </p>
+        </div>
+
+        {/* Claim */}
+        <div className="border-t border-ps-border py-6">
+          <h2 className="font-display text-2xl font-extrabold text-ps-amber">
+            Win.
+          </h2>
+          <p className="mt-1.5 text-sm leading-relaxed text-ps-text-sec">
+            Top of the table when the dust settles. Bragging rights included.
+          </p>
+        </div>
+      </section>
+
+      {/* Countdown — pre-tournament only */}
+      {daysUntil > 0 && (
+        <div className="mb-8">
+          <div className="rounded-xl border border-ps-border bg-ps-surface px-6 py-4 text-center">
             <p className="font-mono text-3xl font-bold text-ps-amber">
               {daysUntil}
             </p>
@@ -108,25 +140,27 @@ export default async function WorldCupLanding() {
               days to kickoff
             </p>
           </div>
-        )}
+        </div>
+      )}
 
-        {/* Primary CTA, in priority order:
-         *
-         * 1. Bracket not yet submitted (not_started / in_progress /
-         *    ready_to_submit) — bracket IS the primary action. Tiebreakers
-         *    and best-thirds-ranking can only be captured there, and users
-         *    who don't finish the bracket have skipped the onboarding
-         *    contract. "Skip ahead to matchday picks" stays visible as a
-         *    demoted escape hatch.
-         * 2. Bracket submitted OR locked — bracket is done (sealed or
-         *    editable-until-lock); matchday picks become the hero. The
-         *    secondary "Review / View your bracket" button stays visible
-         *    (not hidden) but is clearly subordinate. Submitted gets
-         *    "Review" so users know they can still revise; locked gets
-         *    "View".
-         * 3. Signed-out / no bracket snapshot — "Join the game" → /wc/join,
-         *    the idempotent enrolment door.
-         */}
+      {/* Primary CTA, in priority order:
+       *
+       * 1. Bracket not yet submitted (not_started / in_progress /
+       *    ready_to_submit) — bracket IS the primary action. Tiebreakers
+       *    and best-thirds-ranking can only be captured there, and users
+       *    who don't finish the bracket have skipped the onboarding
+       *    contract. "Skip ahead to matchday picks" stays visible as a
+       *    demoted escape hatch.
+       * 2. Bracket submitted OR locked — bracket is done (sealed or
+       *    editable-until-lock); matchday picks become the hero. The
+       *    secondary "Review / View your bracket" button stays visible
+       *    (not hidden) but is clearly subordinate. Submitted gets
+       *    "Review" so users know they can still revise; locked gets
+       *    "View".
+       * 3. Signed-out / no bracket snapshot — "Join the game" → /wc/join,
+       *    the idempotent enrolment door.
+       */}
+      <section className="flex w-full max-w-md flex-col items-center gap-4 pb-8">
         {user && bracket && !bracketDone ? (
           <>
             <Link
@@ -183,80 +217,16 @@ export default async function WorldCupLanding() {
             </Link>
           </>
         )}
+
+        {/* Rules link — secondary, below the CTA */}
+        <Link
+          href="/wc/rules"
+          className="text-xs text-ps-text-ter underline-offset-2 hover:text-ps-text-sec hover:underline"
+        >
+          Simple scoring. Full rules →
+        </Link>
       </section>
 
-      {/* Host cities */}
-      <p className="text-[10px] font-medium tracking-widest text-ps-text-ter uppercase">
-        Mexico City &middot; Guadalajara &middot; Monterrey
-      </p>
-
-      {/* Four ways to play */}
-      <section className="w-full max-w-md border-t border-ps-border pt-8 pb-8 mt-6">
-        <h2 className="text-center text-[10px] font-bold uppercase tracking-widest text-ps-text-ter">
-          Five ways to play
-        </h2>
-        <div className="mt-6 grid grid-cols-2 gap-3">
-          <ClassificationCard
-            title="Overall"
-            description="Every match, every point. Cumulative from start to finish."
-          />
-          <ClassificationCard
-            title="Format"
-            description="Prediction groups of 4. Bottom drops each stage."
-          />
-          <ClassificationCard
-            title="Full Bracket"
-            description="Pick every group and knockout result before kickoff."
-          />
-          <ClassificationCard
-            title="KO Bracket"
-            description="Bracket picks from R32. Opens after the group stage."
-          />
-          <ClassificationCard
-            title="Stage Pick"
-            description="Predict outcomes at a knockout stage. Lock before kickoff."
-            span
-          />
-        </div>
-      </section>
-
-      {/* Scoring */}
-      <section className="w-full max-w-md border-t border-ps-border pt-8 pb-14">
-        <h2 className="text-center text-[10px] font-bold uppercase tracking-widest text-ps-text-ter">
-          Scoring
-        </h2>
-        <div className="mt-6 space-y-3">
-          <ScoringRow points={2} label="Correct match outcome" />
-          <ScoringRow points={3} label="Exact score bonus" />
-          <ScoringRow points={1} label="Correct advancing team (knockout)" />
-        </div>
-        <p className="mt-4 text-center text-[10px] text-ps-text-ter">
-          Group matches: max 5pts &middot; Knockout: max 6pts
-        </p>
-      </section>
-    </div>
-  );
-}
-
-function ClassificationCard({
-  title,
-  description,
-  span,
-}: {
-  title: string;
-  description: string;
-  span?: boolean;
-}) {
-  return (
-    <div
-      className={`rounded-xl border border-ps-border bg-ps-surface p-4 transition-colors hover:border-ps-border-strong ${
-        span ? "col-span-2" : ""
-      }`}
-    >
-      <h3 className="text-sm font-bold text-ps-text">{title}</h3>
-      <p className="mt-1 text-xs leading-relaxed text-ps-text-sec">
-        {description}
-      </p>
     </div>
   );
 }
@@ -278,15 +248,6 @@ function BracketProgressMeter({ snapshot }: { snapshot: BracketSnapshot }) {
           style={{ width: `${snapshot.pct}%` }}
         />
       </div>
-    </div>
-  );
-}
-
-function ScoringRow({ points, label }: { points: number; label: string }) {
-  return (
-    <div className="flex items-center gap-3 rounded-lg bg-ps-surface px-4 py-3">
-      <span className="font-mono text-lg font-bold text-ps-amber">{points}</span>
-      <span className="text-sm text-ps-text">{label}</span>
     </div>
   );
 }

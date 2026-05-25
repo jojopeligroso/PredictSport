@@ -93,6 +93,13 @@ export default async function WorldCupLayout({
       </nav>
 
       <div className="flex-1">{children}</div>
+
+      {/* Footer brand mark — Section 21 */}
+      <footer className="flex justify-center py-8">
+        <Link href="/" className="opacity-30 transition-opacity hover:opacity-50">
+          <BrandMark className="h-6 w-auto" />
+        </Link>
+      </footer>
     </div>
   );
 }
