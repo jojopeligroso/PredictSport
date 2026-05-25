@@ -162,7 +162,7 @@ async function Dashboard({ userId }: { userId: string }) {
       .select("id, competition_id, name, round_number, status")
       .in("competition_id", compIds)
       .in("status", ["open", "locked"])
-      .order("round_number", { ascending: false });
+      .order("round_number", { ascending: true });
     rounds = (data ?? []) as RoundRow[];
   }
 
@@ -194,8 +194,8 @@ async function Dashboard({ userId }: { userId: string }) {
       // prediction rows (winner + exact_score for group fixtures), but the
       // card shows "matches picked", not "rows written".
       const eventsByRound = new Map<string, Set<string>>();
-      for (const p of (preds ?? []) as Array<{ event_id: string; events: { round_id: string | null }[] }>) {
-        const rid = p.events?.[0]?.round_id;
+      for (const p of (preds ?? []) as unknown as Array<{ event_id: string; events: { round_id: string | null } }>) {
+        const rid = p.events?.round_id;
         if (!rid || !p.event_id) continue;
         let set = eventsByRound.get(rid);
         if (!set) {
