@@ -4,12 +4,6 @@ import { UserMenu } from "./UserMenu";
 import { MobileNav } from "./MobileNav";
 import { BrandMark } from "./BrandMark";
 
-const publicNavLinks = [
-  { href: "/competitions/personal", label: "Predictions" },
-  { href: "/leaderboard", label: "Table" },
-  { href: "/competitions", label: "Competitions" },
-] as const;
-
 export async function NavBar() {
   const supabase = await createClient();
   const {
@@ -36,26 +30,13 @@ export async function NavBar() {
   const avatarUrl =
     profile?.avatar_url ?? authUser?.user_metadata?.avatar_url ?? null;
 
-  // Check for an active public tournament competition to feature in nav
-  const { data: tournamentComp } = authUser
-    ? await supabase
-        .from("competitions")
-        .select("id, name")
-        .not("tournament_id", "is", null)
-        .eq("status", "active")
-        .eq("visibility", "public")
-        .limit(1)
-        .maybeSingle()
-    : { data: null };
-
-  const extraNavLinks: { href: string; label: string }[] = tournamentComp
-    ? [{ href: `/competitions/${tournamentComp.id}`, label: tournamentComp.name }]
-    : [];
-
   return (
     <nav className="relative bg-ps-bg">
-      <div className="mx-auto flex h-12 w-full max-w-3xl items-center justify-between px-4 sm:px-6">
-        {/* Logo: brand mark + wordmark */}
+      <div className="mx-auto grid h-12 w-full max-w-3xl grid-cols-[1fr_auto_1fr] items-center px-4 sm:px-6">
+        {/* Left spacer */}
+        <div />
+
+        {/* Center: brand mark + wordmark */}
         <Link href="/" className="flex items-center gap-1.5">
           <BrandMark className="h-7 w-auto shrink-0" />
           <span className="text-[1.1rem] font-extrabold lowercase tracking-tight text-ps-text">
@@ -63,30 +44,8 @@ export async function NavBar() {
           </span>
         </Link>
 
-        {/* Desktop nav links */}
-        <div className="hidden items-center gap-1 md:flex">
-          {publicNavLinks.map((link) => (
-            <Link
-              key={link.href}
-              href={link.href}
-              className="rounded-md px-3 py-1.5 text-sm font-medium text-ps-text-sec transition-colors hover:bg-ps-chip hover:text-ps-text"
-            >
-              {link.label}
-            </Link>
-          ))}
-          {extraNavLinks.map((link) => (
-            <Link
-              key={link.href}
-              href={link.href}
-              className="rounded-md px-3 py-1.5 text-sm font-bold text-ps-amber transition-colors hover:bg-ps-chip"
-            >
-              {link.label}
-            </Link>
-          ))}
-        </div>
-
-        {/* Right side: auth + mobile toggle */}
-        <div className="flex items-center gap-2">
+        {/* Right: auth + mobile toggle */}
+        <div className="flex items-center justify-end gap-2">
           {/* Desktop auth */}
           <div className="hidden md:block">
             {authUser ? (
@@ -106,7 +65,6 @@ export async function NavBar() {
             isLoggedIn={!!authUser}
             displayName={displayName}
             avatarUrl={avatarUrl}
-            extraNavLinks={extraNavLinks}
           />
         </div>
       </div>
