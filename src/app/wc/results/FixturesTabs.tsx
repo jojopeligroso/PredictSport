@@ -58,6 +58,11 @@ export function FixturesTabs({ fixtures, resultsByExternalId, serverDateIso, pre
   const [tab, setTab] = useState<TabId>("today");
   const hasPredictions = Object.keys(predictionsByExternalId).length > 0;
   const [showPredictions, setShowPredictions] = useState(hasPredictions);
+  const [showCorrectness, setShowCorrectness] = useState(true);
+  const hasResults = useMemo(
+    () => Object.values(resultsByExternalId).some((r) => r !== undefined),
+    [resultsByExternalId],
+  );
 
   const buckets = useMemo(() => {
     const today: WcFixture[] = [];
@@ -106,30 +111,29 @@ export function FixturesTabs({ fixtures, resultsByExternalId, serverDateIso, pre
       </div>
 
       {hasPredictions && (
-        <div className="mt-3 flex items-center justify-between rounded-lg border border-ps-border bg-ps-surface px-3 py-2">
-          <span className="text-xs text-ps-text-sec">
-            {showPredictions ? "Your predictions are shown" : "Fixtures only"}
-          </span>
-          <button
-            type="button"
-            onClick={() => setShowPredictions((v) => !v)}
-            className="flex items-center gap-1.5 rounded-md px-2 py-1 text-[11px] font-semibold text-ps-text-sec transition-colors hover:bg-ps-chip hover:text-ps-text"
-          >
-            {showPredictions ? "Hide picks" : "Show picks"}
-            <span
-              className={[
-                "relative inline-flex h-4 w-7 items-center rounded-full transition-colors",
-                showPredictions ? "bg-ps-amber" : "bg-ps-border",
-              ].join(" ")}
-            >
-              <span
-                className={[
-                  "inline-block h-3 w-3 rounded-full bg-white transition-transform",
-                  showPredictions ? "translate-x-3.5" : "translate-x-0.5",
-                ].join(" ")}
-              />
+        <div className="mt-3 space-y-0 rounded-lg border border-ps-border bg-ps-surface px-3 py-2">
+          <div className="flex items-center justify-between">
+            <span className="text-xs text-ps-text-sec">
+              {showPredictions ? "Your predictions are shown" : "Fixtures only"}
             </span>
-          </button>
+            <ToggleSwitch
+              label={showPredictions ? "Hide picks" : "Show picks"}
+              checked={showPredictions}
+              onChange={() => setShowPredictions((v) => !v)}
+            />
+          </div>
+          {showPredictions && hasResults && (
+            <div className="flex items-center justify-between border-t border-ps-border/50 pt-2 mt-2">
+              <span className="text-xs text-ps-text-sec">
+                Show correct / wrong
+              </span>
+              <ToggleSwitch
+                label={showCorrectness ? "On" : "Off"}
+                checked={showCorrectness}
+                onChange={() => setShowCorrectness((v) => !v)}
+              />
+            </div>
+          )}
         </div>
       )}
 
@@ -149,6 +153,7 @@ export function FixturesTabs({ fixtures, resultsByExternalId, serverDateIso, pre
             fixture={f}
             result={resultsByExternalId[f.externalId]}
             prediction={showPredictions ? predictionsByExternalId[f.externalId] : undefined}
+            showCorrectness={showPredictions && showCorrectness}
           />
         ))}
       </div>
@@ -196,14 +201,49 @@ function TabButton({
   );
 }
 
+function ToggleSwitch({
+  label,
+  checked,
+  onChange,
+}: {
+  label: string;
+  checked: boolean;
+  onChange: () => void;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onChange}
+      className="flex items-center gap-1.5 rounded-md px-2 py-1 text-[11px] font-semibold text-ps-text-sec transition-colors hover:bg-ps-chip hover:text-ps-text"
+    >
+      {label}
+      <span
+        className={[
+          "relative inline-flex h-4 w-7 items-center rounded-full transition-colors",
+          checked ? "bg-ps-amber" : "bg-ps-border",
+        ].join(" ")}
+      >
+        <span
+          className={[
+            "inline-block h-3 w-3 rounded-full bg-white transition-transform",
+            checked ? "translate-x-3.5" : "translate-x-0.5",
+          ].join(" ")}
+        />
+      </span>
+    </button>
+  );
+}
+
 function FixtureCard({
   fixture,
   result,
   prediction,
+  showCorrectness,
 }: {
   fixture: WcFixture;
   result: FixtureResult | undefined;
   prediction: FixturePredictionData | undefined;
+  showCorrectness: boolean;
 }) {
   const city = HOST_CITIES[fixture.city as HostCitySlug];
   const kickoff = new Date(fixture.kickoffUtc);
@@ -316,6 +356,34 @@ function FixtureCard({
   const awaySelected = currentWinner === fixture.away;
   const drawSelected = currentWinner === drawOption;
 
+  // Ring color: green (correct), red (wrong), white (pending / correctness off)
+  let ringClass = "";
+  if (hasPrediction && prediction) {
+    if (isFinished && result && currentWinner) {
+      // Determine actual winner from result
+      const actualWinner =
+        result.homeScore !== null && result.awayScore !== null
+          ? result.homeScore > result.awayScore
+            ? fixture.home
+            : result.awayScore > result.homeScore
+              ? fixture.away
+              : drawOption
+          : result.winner ?? null;
+
+      if (showCorrectness && actualWinner) {
+        ringClass =
+          currentWinner === actualWinner
+            ? "ring-2 ring-ps-green"
+            : "ring-2 ring-ps-red";
+      } else {
+        ringClass = "ring-2 ring-white/30";
+      }
+    } else {
+      // Upcoming / pending — neutral ring
+      ringClass = "ring-2 ring-white/30";
+    }
+  }
+
   const cityTime = formatTime(kickoff, city.timezone);
   const cityDate = formatDateShort(kickoff, city.timezone);
   const localTime = formatTime(kickoff, undefined);
@@ -326,7 +394,7 @@ function FixtureCard({
     <article
       className={[
         "overflow-hidden rounded-xl text-white shadow-sm transition-all",
-        hasPrediction && canPredict ? "ring-2 ring-white/30" : "",
+        ringClass,
       ].join(" ")}
       style={{ backgroundColor: city.color }}
     >
