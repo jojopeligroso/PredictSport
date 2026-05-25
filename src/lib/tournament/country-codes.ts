@@ -18,6 +18,7 @@ const COUNTRY_CODES: Record<string, string> = {
   austria: 'at',
   belgium: 'be',
   'bosnia and herzegovina': 'ba',
+  'bosnia & herzegovina': 'ba',
   bosnia: 'ba',
   croatia: 'hr',
   'czech republic': 'cz',
