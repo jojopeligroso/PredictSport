@@ -1,0 +1,1134 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>WC bracket — poster mockup</title>
+<style>
+  /* ───────────────────────────── Tokens ───────────────────────────── */
+  :root {
+    --bg: #050505;
+    --canvas: #0d0d0e;
+    --canvas-edge: #1a1a1c;
+    --slot-fill: #1a1a1c;
+    --slot-border: #3a3a40;
+    --line-dim: rgba(255,255,255,0.35);
+    --text: #f5f5f5;
+    --text-sec: #b8b8b8;
+    --text-ter: #6e6e6e;
+    --chip-bg: #f5f5f5;
+    --chip-ink: #050505;
+    --amber: #f59e0b;
+
+    /* 12 group neons */
+    --g-A: #ff3b4f; --g-B: #ff7a45; --g-C: #ffb733;
+    --g-D: #45c4ff; --g-E: #b76cff; --g-F: #4f7dff;
+    --g-G: #ff5277; --g-H: #38d39f; --g-I: #ff4fd0;
+    --g-J: #5ae0ff; --g-K: #e6e23a; --g-L: #2bd0ff;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; background: var(--bg); color: var(--text); font-family: 'Inter', system-ui, -apple-system, Segoe UI, sans-serif; }
+
+  /* ───────────────────────── Mockup chrome ───────────────────────── */
+  .mockup-shell { max-width: 1480px; margin: 0 auto; padding: 28px 24px 80px; }
+  .mockup-bar {
+    display: flex; align-items: center; gap: 14px;
+    padding: 12px 18px; border: 1px solid #222;
+    background: #101012; border-radius: 12px; margin-bottom: 18px;
+  }
+  .mockup-bar h1 { font-size: 13px; font-weight: 700; letter-spacing: 0.04em; text-transform: uppercase; color: #ddd; margin: 0; }
+  .mockup-bar .spacer { flex: 1; }
+
+  /* ───────────────────────── Poster canvas ───────────────────────── */
+  .poster {
+    position: relative;
+    background: var(--canvas);
+    border: 1px solid var(--canvas-edge);
+    border-radius: 18px;
+    padding: 24px 22px 30px;
+    overflow: hidden;
+  }
+  .poster-header {
+    display: flex; align-items: center; gap: 14px; margin-bottom: 18px;
+  }
+  .poster-header .mark {
+    width: 44px; height: 44px; flex-shrink: 0;
+    background: url('/public/wc/fifa-wc2026-mark.svg') center/contain no-repeat;
+  }
+  .poster-header .title { display: flex; flex-direction: column; gap: 2px; margin-top: -3px; }
+  .poster-header .title h2 { margin: 0; font-size: 18px; font-weight: 800; letter-spacing: -0.01em; }
+  .poster-header .title p { margin: 0; font-size: 12px; color: var(--text-sec); }
+  .poster-header .grow { flex: 1; }
+  .view-toggle {
+    display: inline-flex; padding: 3px; gap: 2px;
+    background: #141416; border: 1px solid #222; border-radius: 999px;
+  }
+  .view-toggle button {
+    appearance: none; border: 0; background: transparent; color: var(--text-sec);
+    font: 700 11px/1 'Inter'; letter-spacing: 0.10em; text-transform: uppercase;
+    padding: 7px 12px; border-radius: 999px; cursor: pointer;
+  }
+  .view-toggle button[aria-pressed="true"] { background: #f5f5f5; color: #050505; }
+
+  /* ═══════════════════════ Pill primitives ═══════════════════════ */
+  /* A "pill-frame" is a layered shape: outer = border colour, inner = fill or flag.
+     Both layers use clip-path to draw the rotationally-symmetric flag silhouette. */
+  .pill-frame {
+    position: relative; display: inline-block; flex-shrink: 0;
+    filter: drop-shadow(0 1px 2px rgba(0,0,0,0.25));
+  }
+  .pill-frame > .inner {
+    position: absolute; inset: 1px; overflow: hidden;
+  }
+  .pill-frame > .inner > img {
+    width: 100%; height: 100%; display: block; object-fit: cover;
+    filter: saturate(0.88) brightness(0.96);
+  }
+
+  /* ═════════════════════ Group rail + card ═════════════════════ */
+  .group-rail {
+    display: flex; flex-direction: column;
+    justify-content: space-around;
+    gap: 6px;
+    align-self: stretch;
+  }
+  .group-rail.right { align-items: flex-end; }
+
+  .group-card {
+    position: relative;
+    background: transparent;
+    border: 2px solid var(--g-color, #444);
+    border-radius: 8px;
+    padding: 5px 5px 0;
+    display: flex; flex-direction: column;
+    gap: 5px;
+    width: 86px;
+    cursor: pointer;
+    overflow: hidden;
+    transition: transform 140ms ease, box-shadow 140ms ease;
+  }
+  .group-card .flag-grid {
+    display: grid; grid-template-columns: 1fr 1fr; gap: 4px;
+  }
+  .group-card .group-tab {
+    background: var(--g-color);
+    color: #fff;
+    font: 800 9px/1 'Inter';
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    text-align: center;
+    padding: 5px 4px 6px;
+    margin: 5px -5px 0;             /* bleed to the card edge */
+  }
+  .group-card:hover { transform: translateY(-1px); box-shadow: 0 0 0 3px color-mix(in srgb, var(--g-color) 25%, transparent); }
+
+  .group-card.expanded {
+    position: absolute; z-index: 30;
+    width: 280px; padding: 0;
+    background: #0a0a0b; box-shadow: 0 18px 60px rgba(0,0,0,0.55);
+    cursor: default;
+    overflow: hidden;
+  }
+  .group-card.expanded .flag-grid { display: none; }
+  .group-card.expanded .group-tab {
+    margin: 0; border-radius: 0; padding: 9px 12px; text-align: left; font-size: 11px;
+  }
+  .group-card .expand-body { display: none; }
+  .group-card.expanded .expand-body { display: block; padding: 4px 0 8px; }
+
+  /* Mini standings table */
+  .standings { width: 100%; border-collapse: collapse; }
+  .standings thead th {
+    font: 700 8.5px/1 'Inter';
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--text-ter);
+    padding: 8px 4px 6px;
+    text-align: center;
+    font-weight: 700;
+  }
+  .standings thead th:first-child { width: 18px; }
+  .standings thead th:nth-child(2) { text-align: left; padding-left: 8px; }
+  .standings thead th.pts { color: var(--text-sec); }
+  .standings tbody td {
+    padding: 6px 4px;
+    font: 700 11px/1 ui-monospace, SFMono-Regular, Menlo, monospace;
+    color: var(--text);
+    text-align: center;
+    border-top: 1px solid #181820;
+  }
+  .standings tbody td.flag { padding-left: 10px; padding-right: 4px; width: 28px; }
+  .standings tbody td.country {
+    font: 600 12px/1.2 'Inter';
+    text-align: left;
+    color: var(--text);
+    letter-spacing: -0.005em;
+  }
+  .standings tbody td.pts { font-weight: 800; color: var(--g-color); }
+  .standings tbody tr.qualifies { background: color-mix(in srgb, var(--g-color) 6%, transparent); }
+  .standings tbody tr.qualifies td.country::before {
+    content: "•";
+    color: var(--g-color);
+    margin-right: 6px;
+    font-weight: 800;
+  }
+  .standings tbody tr.eliminated td { color: var(--text-ter); }
+  .group-card .expand-body .close {
+    appearance: none; background: transparent; border: 0; color: var(--text-ter);
+    font: 600 11px/1 'Inter'; cursor: pointer; padding: 8px 12px 10px; margin: 0;
+    width: 100%; text-align: right;
+  }
+
+  /* ═══════════════════════ Unfolded layout ═══════════════════════ */
+  .unfolded {
+    position: relative;
+    display: flex;
+    align-items: stretch;
+    justify-content: center;
+    gap: 16px;
+    overflow-x: auto;
+  }
+  .unfolded::-webkit-scrollbar { height: 8px; }
+  .unfolded::-webkit-scrollbar-thumb { background: #222; border-radius: 4px; }
+
+  .bracket {
+    position: relative;
+    display: flex;
+    align-items: stretch;
+    gap: 44px;
+  }
+
+  /* A "round" is now a relative container; slots are positioned absolutely
+     by JS at exact Y coordinates derived from pair midpoints. */
+  .round {
+    position: relative;
+    flex-shrink: 0;
+  }
+  /* R32 is split: a team-chips column (16 chips per side, paired tight)
+     and a winners column (8 dark pills per side, one per match). */
+  .round.r32-teams { width: 56px; }
+  .round.r32       { width: 42px; }   /* winner pills only, no chip */
+  .round.r16 { width: 42px; }
+  .round.qf  { width: 52px; }
+  .round.sf  { width: 64px; }
+  .round.centre { width: 120px; }  /* Final + 3rd column */
+
+  /* Team chip — absolute-positioned inside r32-teams column. Clickable. */
+  .team-chip {
+    position: absolute;
+    background: var(--chip-bg); color: var(--chip-ink);
+    font: 700 10px/1.1 ui-monospace, SFMono-Regular, Menlo, monospace;
+    letter-spacing: 0.04em;
+    border-radius: 3px;
+    padding: 6px 6px;
+    text-align: center;
+    width: 48px;
+    cursor: pointer;
+    transition: transform 120ms ease, box-shadow 120ms ease;
+  }
+  .team-chip:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(255,255,255,0.08);
+  }
+  .team-chip.expanded {
+    z-index: 30;
+    width: 220px;
+    text-align: left;
+    padding: 12px;
+    cursor: default;
+    box-shadow: 0 18px 60px rgba(0,0,0,0.55);
+  }
+  .team-chip .seed { font: 700 11px/1 ui-monospace; }
+  .team-chip .team-detail { display: none; }
+  .team-chip.expanded .team-detail {
+    display: flex; align-items: center; gap: 10px;
+    margin-top: 8px;
+    font: 600 12px/1.2 'Inter';
+    color: var(--chip-ink);
+    letter-spacing: -0.005em;
+  }
+  .team-chip.expanded .team-detail .name { font-weight: 800; font-size: 13px; }
+  .team-chip.expanded .team-detail .note { font: 500 10px/1.3 'Inter'; color: #555; margin-top: 2px; }
+  .team-chip.expanded .close {
+    appearance: none; background: transparent; border: 0; color: #555;
+    font: 600 11px/1 'Inter'; cursor: pointer; padding: 6px 0 0; margin-top: 6px;
+    display: block; margin-left: auto;
+  }
+  .round.r32-teams.right .team-chip { right: 0; }
+
+  /* ───── Seed chip ───── */
+  .seed-chip {
+    background: var(--chip-bg); color: var(--chip-ink);
+    font: 700 9px/1.1 ui-monospace, SFMono-Regular, Menlo, monospace;
+    letter-spacing: 0.04em;
+    border-radius: 3px;
+    padding: 4px 5px;
+    text-align: center;
+    display: inline-flex; flex-direction: column; align-items: center;
+    gap: 1px;
+    width: 48px;
+    flex-shrink: 0;
+  }
+  .seed-chip .a { font-size: 9.5px; }
+  .seed-chip .b { font-size: 7.5px; opacity: 0.7; line-height: 1.1; }
+
+  /* ───── Slot (pill-shaped) ───── */
+  .slot {
+    cursor: pointer;
+    transition: transform 120ms ease;
+  }
+  .slot:hover .pill-frame { transform: scale(1.08); }
+  .slot .pill-frame { display: block; background: var(--slot-border); transition: transform 120ms ease; }
+  .slot .pill-frame > .inner { background: var(--slot-fill); }
+
+  /* Standalone (non-grouped) slots within a round get absolute positioning
+     (set by JS top). Slots inside .r32-row, .final-pair, .third-pair stay
+     in normal flow so they stack tight together. */
+  .round .slot { position: absolute; left: 0; }
+  .round.r32 .slot,
+  .final-pair .slot,
+  .third-pair .slot { position: static; }
+
+  /* ───── Centre column: Final + 3rd ───── */
+  .centre-stack {
+    position: absolute; left: 50%; transform: translateX(-50%);
+    display: flex; flex-direction: column; align-items: center; gap: 14px;
+  }
+  /* Stacked vertically — each match = two pills stacked tight, like R32 pairs. */
+  .final-pair { display: flex; flex-direction: column; align-items: center; gap: 6px; }
+  .third-pair { display: flex; flex-direction: column; align-items: center; gap: 4px; }
+  .final-pair .slot.mirrored { /* mirror only the lower (right finalist) slot */ }
+  .final-label, .third-label {
+    font: 800 8px/1 'Inter'; letter-spacing: 0.22em; color: var(--text-ter);
+    text-transform: uppercase; margin-top: 4px; text-align: center;
+  }
+
+  /* ───── Connector lines ───── */
+  .bracket-lines {
+    position: absolute; inset: 0; pointer-events: none;
+    width: 100%; height: 100%;
+  }
+  .bracket-lines path { fill: none; stroke: var(--line-dim); stroke-width: 1; }
+
+  /* ═══════════════════════ Folded layout ═══════════════════════ */
+  .folded { display: block; }
+  .side-tabs { display: flex; justify-content: center; gap: 8px; margin-bottom: 14px; }
+  .side-tabs button {
+    appearance: none; background: #141416; color: var(--text-sec); border: 1px solid #222;
+    font: 700 10px/1 'Inter'; letter-spacing: 0.16em; text-transform: uppercase;
+    padding: 7px 14px; border-radius: 999px; cursor: pointer;
+  }
+  .side-tabs button[aria-pressed="true"] { background: #f5f5f5; color: #050505; border-color: #f5f5f5; }
+  .folded .stage {
+    display: flex; gap: 14px; justify-content: center; align-items: stretch;
+  }
+  .folded[data-side="B"] .stage   { flex-direction: row-reverse; }
+  .folded[data-side="B"] .bracket { flex-direction: row-reverse; }
+  /* Final/3rd labels also need to point inward when the bracket is mirrored */
+  .folded[data-side="B"] .third-label { /* keep centred — no change */ }
+
+  /* ═══════════════════════ Champion card ═══════════════════════ */
+  .champion-card {
+    margin-top: 22px;
+    background: linear-gradient(180deg, #1a1208, #0a0805);
+    border: 1px solid #3a2810;
+    border-radius: 14px;
+    padding: 22px 22px 26px;
+    display: grid; grid-template-columns: auto 1fr; gap: 22px; align-items: center;
+  }
+  .champion-card .label {
+    font: 800 10px/1 'Inter'; letter-spacing: 0.24em; text-transform: uppercase;
+    color: var(--amber); margin-bottom: 10px;
+  }
+  .champion-card .name { font: 800 32px/1.05 'Inter'; letter-spacing: -0.015em; color: var(--text); }
+  .champion-card .hint { font: 500 12px/1.4 'Inter'; color: var(--text-sec); margin-top: 6px; }
+
+  /* ═══════════════════════ Fixture card ═══════════════════════ */
+  .fixture-card {
+    margin: 14px 0 4px;
+    background: #15151a;
+    border: 1px solid #2b2b32;
+    border-radius: 12px;
+    padding: 18px;
+    display: none;
+  }
+  .fixture-card[data-open="true"] { display: block; }
+  .fixture-card .meta {
+    display: flex; gap: 10px; align-items: center; font: 700 10px/1 'Inter';
+    letter-spacing: 0.18em; text-transform: uppercase; color: var(--text-sec);
+    margin-bottom: 14px;
+  }
+  .fixture-card .meta .dot { width: 4px; height: 4px; border-radius: 50%; background: var(--text-ter); }
+  .fixture-card .teams { display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; gap: 16px; }
+  .fixture-card .team { display: flex; flex-direction: column; align-items: center; gap: 10px; }
+  .fixture-card .team .name { font: 800 16px/1.1 'Inter'; text-align: center; }
+  .fixture-card .team .seed { font: 700 10px/1 ui-monospace; color: var(--text-ter); letter-spacing: 0.1em; }
+  .fixture-card .scores { display: flex; align-items: center; gap: 6px; font: 800 28px/1 ui-monospace; }
+  .fixture-card .scores input {
+    width: 56px; height: 64px;
+    background: #0a0a0c; border: 1px solid #2b2b32; border-radius: 8px;
+    text-align: center; font: inherit; color: var(--text);
+  }
+  .fixture-card .scores input:focus { outline: 2px solid var(--amber); outline-offset: 1px; }
+  .fixture-card .scores .x { color: var(--text-ter); font-size: 18px; }
+  .fixture-card .actions { display: flex; justify-content: space-between; align-items: center; margin-top: 16px; }
+  .fixture-card .pick-winner { display: flex; gap: 8px; }
+  .fixture-card .pick-winner button {
+    appearance: none; border: 1px solid #2b2b32; background: #0a0a0c; color: var(--text);
+    font: 700 11px/1 'Inter'; letter-spacing: 0.06em; text-transform: uppercase;
+    padding: 9px 14px; border-radius: 8px; cursor: pointer;
+  }
+  .fixture-card .pick-winner button[aria-pressed="true"] { background: var(--amber); color: #1a1208; border-color: var(--amber); }
+  .fixture-card .close {
+    appearance: none; background: transparent; border: 0; color: var(--text-ter);
+    font: 600 12px/1 'Inter'; cursor: pointer; padding: 6px;
+  }
+
+  .hide { display: none !important; }
+</style>
+</head>
+<body>
+
+<div class="mockup-shell">
+
+  <!-- ====== Standalone view ====== -->
+  <div class="mockup-bar">
+    <h1>1 · /wc/bracket  (standalone)</h1>
+    <div class="spacer"></div>
+    <span style="color:#888;font-size:12px;">Default: unfolded ≥900px</span>
+  </div>
+
+  <div class="poster" id="standalone">
+    <div class="poster-header">
+      <div class="mark" aria-hidden="true"></div>
+      <div class="title">
+        <h2>Bracket Predictions</h2>
+        <p>Predict the entire tournament. One wrong pick and you're out.</p>
+      </div>
+      <div class="grow"></div>
+      <div class="view-toggle" role="tablist" aria-label="Bracket view">
+        <button data-view-toggle="standalone" data-view="folded">Folded</button>
+        <button data-view-toggle="standalone" data-view="unfolded" aria-pressed="true">Unfolded</button>
+      </div>
+    </div>
+
+    <div data-view-pane="unfolded">
+      <div class="unfolded">
+        <div class="group-rail" data-rail="left"></div>
+        <div class="bracket" data-bracket>
+          <svg class="bracket-lines" aria-hidden="true"></svg>
+          <div class="round r32-teams"     data-round="r32teamsL"></div>
+          <div class="round r32"           data-round="r32L"></div>
+          <div class="round r16"           data-round="r16L"></div>
+          <div class="round qf"            data-round="qfL"></div>
+          <div class="round sf"            data-round="sfL"></div>
+          <div class="round centre"        data-round="centre"></div>
+          <div class="round sf"            data-round="sfR"></div>
+          <div class="round qf"            data-round="qfR"></div>
+          <div class="round r16"           data-round="r16R"></div>
+          <div class="round r32 right"     data-round="r32R"></div>
+          <div class="round r32-teams right" data-round="r32teamsR"></div>
+        </div>
+        <div class="group-rail right" data-rail="right"></div>
+      </div>
+
+      <div class="fixture-card" data-fixture-card>
+        <div class="meta"><span>Round of 32</span><span class="dot"></span><span>1A vs 3CEFHI</span></div>
+        <div class="teams">
+          <div class="team"><span id="home-pill"></span><div class="name">Mexico</div><div class="seed">1A</div></div>
+          <div class="scores"><input type="text" inputmode="numeric" maxlength="2" aria-label="Home score" /><span class="x">–</span><input type="text" inputmode="numeric" maxlength="2" aria-label="Away score" /></div>
+          <div class="team"><span id="away-pill"></span><div class="name">France</div><div class="seed">3CEFHI</div></div>
+        </div>
+        <div class="actions">
+          <div class="pick-winner"><button data-pick="home">Mexico wins</button><button data-pick="away">France wins</button></div>
+          <button class="close" data-close>Close ×</button>
+        </div>
+      </div>
+    </div>
+
+    <div data-view-pane="folded" class="hide">
+      <div class="folded" data-side="A">
+        <div class="side-tabs">
+          <button data-side-tab="A" aria-pressed="true">Side A · A–F</button>
+          <button data-side-tab="B">Side B · G–L</button>
+        </div>
+        <div class="stage">
+          <div class="group-rail" data-rail="folded"></div>
+          <div class="bracket" data-bracket>
+            <svg class="bracket-lines" aria-hidden="true"></svg>
+            <div class="round r32-teams" data-round="folded-r32teams"></div>
+            <div class="round r32"       data-round="folded-r32"></div>
+            <div class="round r16" data-round="folded-r16"></div>
+            <div class="round qf"  data-round="folded-qf"></div>
+            <div class="round sf"  data-round="folded-sf"></div>
+            <div class="round centre" data-round="folded-centre"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="champion-card">
+      <span id="champion-pill"></span>
+      <div>
+        <div class="label">Your world champions are</div>
+        <div class="name">Brazil</div>
+        <div class="hint">Tap any fixture above to revise.</div>
+      </div>
+    </div>
+  </div>
+
+
+  <!-- ====== Wizard embed ====== -->
+  <div class="mockup-bar" style="margin-top: 60px;">
+    <h1>2 · /wc/bracket/wizard  (review step)</h1>
+    <div class="spacer"></div>
+    <span style="color:#888;font-size:12px;">Default: folded</span>
+  </div>
+
+  <div class="poster" id="wizard" style="max-width: 760px; margin: 0 auto;">
+    <div class="poster-header">
+      <div class="mark" aria-hidden="true"></div>
+      <div class="title"><h2>Review your bracket</h2><p>Step 7 of 7 · Tap any fixture to revise.</p></div>
+      <div class="grow"></div>
+      <div class="view-toggle" role="tablist" aria-label="Bracket view">
+        <button data-view-toggle="wizard" data-view="folded" aria-pressed="true">Folded</button>
+        <button data-view-toggle="wizard" data-view="unfolded">Unfolded</button>
+      </div>
+    </div>
+
+    <div data-view-pane="folded">
+      <div class="folded" data-side="A">
+        <div class="side-tabs">
+          <button data-side-tab="A" aria-pressed="true">Side A</button>
+          <button data-side-tab="B">Side B</button>
+        </div>
+        <div class="stage">
+          <div class="group-rail" data-rail="wizard-folded"></div>
+          <div class="bracket" data-bracket>
+            <svg class="bracket-lines" aria-hidden="true"></svg>
+            <div class="round r32-teams" data-round="wizard-folded-r32teams"></div>
+            <div class="round r32"       data-round="wizard-folded-r32"></div>
+            <div class="round r16" data-round="wizard-folded-r16"></div>
+            <div class="round qf"  data-round="wizard-folded-qf"></div>
+            <div class="round sf"  data-round="wizard-folded-sf"></div>
+            <div class="round centre" data-round="wizard-folded-centre"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div data-view-pane="unfolded" class="hide">
+      <div class="unfolded">
+        <div class="group-rail" data-rail="wizard-left"></div>
+        <div class="bracket" data-bracket>
+          <svg class="bracket-lines" aria-hidden="true"></svg>
+          <div class="round r32-teams" data-round="wizard-r32teamsL"></div>
+          <div class="round r32"       data-round="wizard-r32L"></div>
+          <div class="round r16" data-round="wizard-r16L"></div>
+          <div class="round qf"  data-round="wizard-qfL"></div>
+          <div class="round sf"  data-round="wizard-sfL"></div>
+          <div class="round centre" data-round="wizard-centre"></div>
+          <div class="round sf"  data-round="wizard-sfR"></div>
+          <div class="round qf"  data-round="wizard-qfR"></div>
+          <div class="round r16" data-round="wizard-r16R"></div>
+          <div class="round r32 right"      data-round="wizard-r32R"></div>
+          <div class="round r32-teams right" data-round="wizard-r32teamsR"></div>
+        </div>
+        <div class="group-rail right" data-rail="wizard-right"></div>
+      </div>
+    </div>
+
+    <div class="champion-card">
+      <span id="wizard-champion-pill"></span>
+      <div>
+        <div class="label">Your world champions are</div>
+        <div class="name">Argentina</div>
+        <div class="hint">Final pick — locks at first kickoff.</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+/* ───────────────────────── Data ───────────────────────── */
+/* Each team carries the user's predicted record for this group.
+   gp / w / d / l / pts. */
+const t = (name, code, w, d, l) => ({ name, code, gp: w+d+l, w, d, l, pts: w*3 + d });
+const GROUPS = {
+  A: { teams: [t('Mexico','mx',2,1,0), t('South Korea','kr',1,1,1), t('Czechia','cz',1,0,2), t('South Africa','za',0,2,1)] },
+  B: { teams: [t('Switzerland','ch',2,1,0), t('Canada','ca',2,0,1), t('Bosnia','ba',1,1,1), t('Qatar','qa',0,0,3)] },
+  C: { teams: [t('Brazil','br',3,0,0), t('Morocco','ma',1,1,1), t('Scotland','gb-sct',1,0,2), t('Haiti','ht',0,2,1)] },
+  D: { teams: [t('USA','us',2,1,0), t('Australia','au',1,1,1), t('Turkiye','tr',1,1,1), t('Paraguay','py',0,1,2)] },
+  E: { teams: [t('Germany','de',2,1,0), t('Ivory Coast','ci',1,2,0), t('Ecuador','ec',1,0,2), t('Curacao','cw',0,1,2)] },
+  F: { teams: [t('Netherlands','nl',2,0,1), t('Japan','jp',2,0,1), t('Sweden','se',1,1,1), t('Tunisia','tn',0,1,2)] },
+  G: { teams: [t('Belgium','be',1,2,0), t('Egypt','eg',1,1,1), t('Iran','ir',1,1,1), t('New Zealand','nz',0,0,3)] },
+  H: { teams: [t('Spain','es',3,0,0), t('Uruguay','uy',2,0,1), t('Cape Verde','cv',1,0,2), t('Saudi Arabia','sa',0,1,2)] },
+  I: { teams: [t('France','fr',2,1,0), t('Senegal','sn',2,0,1), t('Norway','no',1,1,1), t('Iraq','iq',0,0,3)] },
+  J: { teams: [t('Argentina','ar',2,1,0), t('Austria','at',1,1,1), t('Algeria','dz',1,1,1), t('Jordan','jo',0,1,2)] },
+  K: { teams: [t('Portugal','pt',2,1,0), t('Colombia','co',2,0,1), t('Uzbekistan','uz',1,1,1), t('DR Congo','cd',0,1,2)] },
+  L: { teams: [t('England','gb-eng',2,1,0), t('Croatia','hr',1,2,0), t('Panama','pa',1,0,2), t('Ghana','gh',0,1,2)] },
+};
+const SIDE_A = ['A','B','C','D','E','F'];
+const SIDE_B = ['G','H','I','J','K','L'];
+
+const SEEDS_L = [
+  [['1E','3ABCDF'], ['1I','3CDFGH']],
+  [['2A','2B'],     ['1F','2C']],
+  [['2K','2L'],     ['1H','2J']],
+  [['1D','3BEFIJ'], ['1G','3AEHIJ']],
+];
+const SEEDS_R = [
+  [['1C','2F'],     ['2E','2I']],
+  [['1A','3CEFHI'], ['1L','3EHIJK']],
+  [['1J','2H'],     ['2D','2G']],
+  [['1B','3EFGIJ'], ['1K','3DEIJL']],
+];
+
+/* Slot sizes per round — progressive enlargement.
+   Each round ~15-25% larger than the previous. */
+const SIZES = {
+  r32: { w: 36, h: 27 },
+  r16: { w: 42, h: 32 },
+  qf:  { w: 52, h: 39 },
+  sf:  { w: 64, h: 48 },
+  fnl: { w: 78, h: 58 },
+  trd: { w: 28, h: 21 },
+};
+
+/* Pair geometry (R32). Inter-gap is chosen so the bracket column fills
+   roughly the same vertical extent as the 6-card group rail beside it. */
+const R32_INTRA_GAP = 6;       /* tight gap between the two slots of one R32 pair */
+const R32_INTER_GAP = 80;      /* gap between R32 pairs */
+const R32_ROW_HEIGHT = SIZES.r32.h;
+const R32_PAIR_HEIGHT = R32_ROW_HEIGHT * 2 + R32_INTRA_GAP;
+
+/* ───────────────────────── Pill builder ─────────────────────────
+   Two silhouettes:
+   - normal: rounded top-right + bottom-left (matches left half of bracket)
+   - mirrored: rounded top-left + bottom-right (right half of bracket)
+   Both are rotationally symmetric onto themselves, but they're mirror
+   images of each other across a vertical axis. */
+function pillPath(w, h, r) {
+  return `path('M 0 0 L ${w-r} 0 A ${r} ${r} 0 0 1 ${w} ${r} L ${w} ${h} L ${r} ${h} A ${r} ${r} 0 0 1 0 ${h-r} Z')`;
+}
+function pillPathMirrored(w, h, r) {
+  return `path('M ${r} 0 L ${w} 0 L ${w} ${h-r} A ${r} ${r} 0 0 1 ${w-r} ${h} L 0 ${h} L 0 ${r} A ${r} ${r} 0 0 1 ${r} 0 Z')`;
+}
+function buildPill({ code, width, alt, fill }) {
+  const w = width;
+  const h = Math.round(w * 3/4);
+  const r = Math.round(w * 0.35);
+  const B = Math.max(1, Math.round(w * 0.04));
+  const iw = w - B*2, ih = h - B*2, ir = Math.max(1, r - B);
+  const span = document.createElement('span');
+  span.className = 'pill-frame';
+  span.style.width = w+'px'; span.style.height = h+'px';
+  span.style.background = '#fff';
+  span.style.clipPath = pillPath(w,h,r); span.style.webkitClipPath = pillPath(w,h,r);
+  const inner = document.createElement('span');
+  inner.className = 'inner';
+  inner.style.width = iw+'px'; inner.style.height = ih+'px';
+  inner.style.top = B+'px'; inner.style.left = B+'px';
+  inner.style.clipPath = pillPath(iw,ih,ir); inner.style.webkitClipPath = pillPath(iw,ih,ir);
+  if (fill) inner.style.background = fill;
+  if (code) {
+    const img = document.createElement('img');
+    img.src = `https://flagcdn.com/${code}.svg`;
+    img.alt = alt || code; img.loading = 'lazy';
+    inner.appendChild(img);
+  }
+  span.appendChild(inner);
+  return span;
+}
+function buildSlotPill(width, fixtureId, mirrored = false) {
+  const w = width;
+  const h = Math.round(w * 3/4);
+  const r = Math.round(w * 0.35);
+  const B = 1;
+  const iw = w - B*2, ih = h - B*2, ir = Math.max(1, r - B);
+  const pathFn = mirrored ? pillPathMirrored : pillPath;
+  const wrap = document.createElement('div');
+  wrap.className = 'slot' + (mirrored ? ' mirrored' : '');
+  if (fixtureId) wrap.dataset.fixture = fixtureId;
+  wrap.style.width = w+'px'; wrap.style.height = h+'px';
+  const outer = document.createElement('span');
+  outer.className = 'pill-frame';
+  outer.style.width = w+'px'; outer.style.height = h+'px';
+  outer.style.background = 'var(--slot-border)';
+  outer.style.clipPath = pathFn(w,h,r); outer.style.webkitClipPath = pathFn(w,h,r);
+  const inner = document.createElement('span');
+  inner.className = 'inner';
+  inner.style.width = iw+'px'; inner.style.height = ih+'px';
+  inner.style.top = B+'px'; inner.style.left = B+'px';
+  inner.style.background = 'var(--slot-fill)';
+  inner.style.clipPath = pathFn(iw,ih,ir); inner.style.webkitClipPath = pathFn(iw,ih,ir);
+  outer.appendChild(inner);
+  wrap.appendChild(outer);
+  return wrap;
+}
+
+/* ───────────────────────── Group card ───────────────────────── */
+function buildGroupCard(id) {
+  const data = GROUPS[id];
+  const card = document.createElement('div');
+  card.className = 'group-card';
+  card.style.setProperty('--g-color', `var(--g-${id})`);
+  card.dataset.group = id;
+  card.setAttribute('role','button');
+  card.setAttribute('aria-label', `Group ${id} — tap for your prediction stats`);
+
+  const grid = document.createElement('div');
+  grid.className = 'flag-grid';
+  data.teams.forEach(team => grid.appendChild(buildPill({ code: team.code, width: 32, alt: team.name })));
+  card.appendChild(grid);
+
+  const tab = document.createElement('div');
+  tab.className = 'group-tab';
+  tab.textContent = `Group ${id}`;
+  card.appendChild(tab);
+
+  // Sort by points desc, then by goal diff proxy (W-L), then by W
+  const ranked = [...data.teams].sort((a,b) =>
+    b.pts - a.pts || (b.w - b.l) - (a.w - a.l) || b.w - a.w
+  );
+  const body = document.createElement('div');
+  body.className = 'expand-body';
+  const rows = ranked.map((team, i) => {
+    const cls = i < 2 ? 'qualifies' : (i === 3 ? 'eliminated' : '');
+    return `
+      <tr class="${cls}">
+        <td class="flag"></td>
+        <td class="country">${team.name}</td>
+        <td>${team.gp}</td>
+        <td>${team.w}</td>
+        <td>${team.d}</td>
+        <td>${team.l}</td>
+        <td class="pts">${team.pts}</td>
+      </tr>
+    `;
+  }).join('');
+  body.innerHTML = `
+    <table class="standings">
+      <thead>
+        <tr>
+          <th></th>
+          <th>Team</th>
+          <th>GP</th>
+          <th>W</th>
+          <th>D</th>
+          <th>L</th>
+          <th class="pts">Pts</th>
+        </tr>
+      </thead>
+      <tbody>${rows}</tbody>
+    </table>
+    <button class="close" data-close-group>Close ×</button>
+  `;
+  // Inject the flag pills into each row (HTML strings can't hold DOM nodes)
+  ranked.forEach((team, i) => {
+    const cell = body.querySelectorAll('tbody td.flag')[i];
+    cell.appendChild(buildPill({ code: team.code, width: 22, alt: team.name }));
+  });
+  card.appendChild(body);
+  return card;
+}
+
+/* ───────────────────────── Seed chip + R32 row ───────────────────────── */
+function buildSeed([a,b]) {
+  const c = document.createElement('div');
+  c.className = 'seed-chip';
+  c.innerHTML = `<span class="a">${a}</span><span class="b">${b}</span>`;
+  return c;
+}
+
+/* ───────────────────────── Layout: R32 ─────────────────────────
+   New model: R32 spans TWO rounds.
+   - r32-teams: 16 team chips per side, paired tight (2 chips per match).
+   - r32: 8 winner pills per side, one per match, at chip-pair midpoint.
+   `seedPairs` is shaped as [pair1, pair2, ...], where each `pair` is a
+   list of TWO matches, and each match is `[teamA_seed, teamB_seed]`.
+   Hence chips per side = pairs.length * 2 (matches) * 2 (teams) = 16. */
+const CHIP_H = 22;          /* team chip height */
+const CHIP_INTRA = 3;       /* tight gap between the 2 chips of a match */
+const CHIP_INTER = 10;      /* gap between matches inside a "pair-block" */
+const MATCH_H = CHIP_H*2 + CHIP_INTRA;
+const R32_INTRA_GAP_NEW = CHIP_INTER;   /* gap between matches WITHIN the same R16-feeding pair */
+const R32_LOOSE_GAP = 60;               /* gap between R32 pair-blocks (= R16-feeding boundary) */
+const R32_BLOCK_H = MATCH_H * 2 + R32_INTRA_GAP_NEW;   /* two matches stacked = one R16-feeding block */
+
+function layoutR32(teamsRound, winnersRound, seedPairs, side, fixtureOffset) {
+  if (!teamsRound || !winnersRound) return [];
+  teamsRound.innerHTML = '';
+  winnersRound.innerHTML = '';
+  const winnerPositions = [];
+  const mirrored = side === 'right';
+  // Slot pill height for winners
+  const { w: pw, h: ph } = SIZES.r32;
+  seedPairs.forEach((pair, pi) => {
+    const blockTop = pi * (R32_BLOCK_H + R32_LOOSE_GAP);
+    pair.forEach((match, mi) => {
+      const matchTop = blockTop + mi * (MATCH_H + R32_INTRA_GAP_NEW);
+      // Two stacked team chips
+      match.forEach((teamSeed, ti) => {
+        const chip = document.createElement('div');
+        chip.className = 'team-chip';
+        chip.dataset.seed = teamSeed;
+        chip.dataset.side = side;
+        chip.innerHTML = `<span class="seed">${teamSeed}</span><div class="team-detail"></div>`;
+        chip.style.top = (matchTop + ti * (CHIP_H + CHIP_INTRA)) + 'px';
+        if (mirrored) chip.style.right = '0'; else chip.style.left = '0';
+        teamsRound.appendChild(chip);
+      });
+      // Winner pill at the match midpoint
+      const winnerMid = matchTop + MATCH_H/2;
+      const winnerTop = winnerMid - ph/2;
+      const fixtureId = `r32_m${fixtureOffset + pi*2 + mi}`;
+      const slot = buildSlotPill(pw, fixtureId, mirrored);
+      slot.style.position = 'absolute';
+      slot.style.top = winnerTop + 'px';
+      if (mirrored) slot.style.right = '0'; else slot.style.left = '0';
+      winnersRound.appendChild(slot);
+      winnerPositions.push({ slot, top: winnerTop, mid: winnerMid });
+    });
+  });
+  const total = (seedPairs.length - 1) * (R32_BLOCK_H + R32_LOOSE_GAP) + R32_BLOCK_H;
+  teamsRound.style.height = total + 'px';
+  winnersRound.style.height = total + 'px';
+  return winnerPositions;
+}
+
+/* ───────────────────────── Layout: derived rounds ───────────────────────── */
+function layoutDerivedRound(round, prevPositions, sizeKey, prefix, side) {
+  if (!round) return [];
+  round.innerHTML = '';
+  const { w, h } = SIZES[sizeKey];
+  const positions = [];
+  for (let i = 0; i < prevPositions.length / 2; i++) {
+    const a = prevPositions[i*2], b = prevPositions[i*2+1];
+    const midY = (a.mid + b.mid) / 2;
+    const top = midY - h/2;
+    const slot = buildSlotPill(w, `${prefix}_m${i+1}`, side === 'right');
+    slot.style.position = 'absolute';
+    slot.style.top = top + 'px';
+    if (side === 'right') slot.style.right = '0'; else slot.style.left = '0';
+    round.appendChild(slot);
+    positions.push({ slot, top, mid: midY });
+  }
+  // Size the round container to fit all slot positions
+  if (positions.length) {
+    const last = positions[positions.length - 1];
+    round.style.height = (last.top + h + 4) + 'px';
+  }
+  return positions;
+}
+
+/* ───────────────────────── Layout: centre (Final + 3rd) ───────────────────────── */
+function layoutCentre(round, sfL, sfR) {
+  if (!round || !sfL.length || !sfR.length) return;
+  round.innerHTML = '';
+  // Final = vertically-stacked pair: top pill = winner-of-SFL, bottom = SFR.
+  // The full stack is: [final top pill] [gap] [final bottom pill] [gap] [3rd pair] [label].
+  // We anchor the *vertical centre* of the Final pair at finalY (the SF midpoint).
+  const finalY = (sfL[0].mid + sfR[0].mid) / 2;
+  const finalPairHeight = SIZES.fnl.h * 2 + 6;   // two pills stacked + 6px gap
+  const stack = document.createElement('div');
+  stack.className = 'centre-stack';
+  stack.style.top = (finalY - finalPairHeight/2) + 'px';
+
+  const finalPair = document.createElement('div');
+  finalPair.className = 'final-pair';
+  // Top finalist comes from SFL (left side, normal silhouette).
+  // Bottom finalist comes from SFR (right side, mirrored silhouette).
+  const fa = buildSlotPill(SIZES.fnl.w, 'final_home', false);
+  const fb = buildSlotPill(SIZES.fnl.w, 'final_away', true);
+  finalPair.appendChild(fa); finalPair.appendChild(fb);
+
+  const thirdPair = document.createElement('div');
+  thirdPair.className = 'third-pair';
+  thirdPair.appendChild(buildSlotPill(SIZES.trd.w, 'third_home', false));
+  thirdPair.appendChild(buildSlotPill(SIZES.trd.w, 'third_away', true));
+  const thirdLbl = document.createElement('div'); thirdLbl.className = 'third-label'; thirdLbl.textContent = '3rd place';
+
+  stack.appendChild(finalPair);
+  stack.appendChild(thirdPair);
+  stack.appendChild(thirdLbl);
+  round.appendChild(stack);
+
+  // Match the bracket parent's height so column layout stays clean
+  round.style.height = round.parentElement.scrollHeight + 'px';
+}
+
+/* ───────────────────────── Rail ───────────────────────── */
+function mountRail(rail, groups, bracketHeight) {
+  if (!rail) return;
+  rail.innerHTML = '';
+  groups.forEach(id => rail.appendChild(buildGroupCard(id)));
+  if (bracketHeight) rail.style.minHeight = bracketHeight + 'px';
+}
+
+/* ───────────────────────── Connector lines ───────────────────────── */
+function drawLines(bracket) {
+  const svg = bracket.querySelector('.bracket-lines');
+  if (!svg) return;
+  // wait a tick for layout to settle
+  const bbox = bracket.getBoundingClientRect();
+  svg.setAttribute('viewBox', `0 0 ${bbox.width} ${bbox.height}`);
+  svg.innerHTML = '';
+  const ns = 'http://www.w3.org/2000/svg';
+  const addPath = (d) => {
+    const p = document.createElementNS(ns, 'path');
+    p.setAttribute('d', d);
+    svg.appendChild(p);
+  };
+
+  const rectOf = (s) => {
+    const r = s.getBoundingClientRect();
+    return {
+      left: r.left - bbox.left, right: r.right - bbox.left,
+      top: r.top - bbox.top, bottom: r.bottom - bbox.top,
+      midY: r.top - bbox.top + r.height/2,
+    };
+  };
+  // Build the bracket-flow sequence per side: R32 → R16 → QF → SF.
+  // Each entry is an array of slot rects in that round on that side.
+  const sideSeq = (side) => ['r32', 'r16', 'qf', 'sf'].map(kind => {
+    // The left-side round of `kind` is the first; the right-side round is the second.
+    const matches = [...bracket.querySelectorAll(`.round.${kind}`)];
+    const r = side === 'left' ? matches[0] : matches[matches.length - 1];
+    return r ? [...r.querySelectorAll('.slot')].map(rectOf) : [];
+  });
+  const leftSeq  = sideSeq('left');
+  const rightSeq = sideSeq('right');
+
+  // For each side, draw R32→R16, R16→QF, QF→SF using the correct
+  // outward-edge convention. On the left, lines go RIGHTWARD (out of the
+  // right edge of the source, into the left edge of the target). On the
+  // right, lines go LEFTWARD (out of the left edge, into the right edge).
+  function drawSide(seq, goingRight) {
+    for (let depth = 0; depth < seq.length - 1; depth++) {
+      const from = seq[depth], to = seq[depth+1];
+      for (let i = 0; i < to.length; i++) {
+        const a = from[i*2], b = from[i*2+1], t = to[i];
+        if (!a || !b || !t) continue;
+        const aOut = goingRight ? a.right : a.left;
+        const bOut = goingRight ? b.right : b.left;
+        const tIn  = goingRight ? t.left  : t.right;
+        const midX = (aOut + tIn) / 2;
+        addPath(`M ${aOut} ${a.midY} H ${midX}`);
+        addPath(`M ${bOut} ${b.midY} H ${midX}`);
+        addPath(`M ${midX} ${a.midY} V ${b.midY}`);
+        addPath(`M ${midX} ${t.midY} H ${tIn}`);
+      }
+    }
+  }
+  drawSide(leftSeq,  true);
+  drawSide(rightSeq, false);
+
+  // SF → Final connectors. Final pair is stacked vertically: top pill =
+  // winner-of-SFL, bottom pill = winner-of-SFR. Both SF slots sit at the
+  // bracket vertical midpoint, so the connector goes horizontally toward
+  // the centre, then *vertically* into the appropriate finalist edge.
+  const centreRound = bracket.querySelector('.round.centre');
+  const sfRounds = bracket.querySelectorAll('.round.sf');
+  const sfLRound = sfRounds[0];
+  const sfRRound = sfRounds[1];
+  if (centreRound && sfLRound) {
+    const sfL = sfLRound.querySelector('.slot');
+    const final = centreRound.querySelectorAll('.final-pair .slot');
+    if (sfL && final.length) {
+      const sRec = sfL.getBoundingClientRect();
+      const fRec = final[0].getBoundingClientRect();
+      const sfX = sRec.right - bbox.left;
+      const sfY = sRec.top - bbox.top + sRec.height/2;
+      const fLeft = fRec.left - bbox.left;
+      const fMidY = fRec.top - bbox.top + fRec.height/2;
+      const midX  = (sfX + fLeft) / 2;
+      addPath(`M ${sfX} ${sfY} H ${midX} V ${fMidY} H ${fLeft}`);
+    }
+  }
+  if (centreRound && sfRRound) {
+    const sfR = sfRRound.querySelector('.slot');
+    const final = centreRound.querySelectorAll('.final-pair .slot');
+    if (sfR && final.length === 2) {
+      const sRec = sfR.getBoundingClientRect();
+      const fRec = final[1].getBoundingClientRect();
+      const sfX = sRec.left - bbox.left;
+      const sfY = sRec.top - bbox.top + sRec.height/2;
+      const fRight = fRec.right - bbox.left;
+      const fMidY  = fRec.top - bbox.top + fRec.height/2;
+      const midX   = (sfX + fRight) / 2;
+      addPath(`M ${sfX} ${sfY} H ${midX} V ${fMidY} H ${fRight}`);
+    }
+  }
+}
+
+/* ───────────────────────── Mount: unfolded ───────────────────────── */
+function mountUnfolded(pane, prefix) {
+  const $ = sel => pane.querySelector(sel);
+  const r32L = layoutR32(
+    $(`[data-round="${prefix}r32teamsL"]`),
+    $(`[data-round="${prefix}r32L"]`),
+    SEEDS_L, 'left', 1
+  );
+  const r32R = layoutR32(
+    $(`[data-round="${prefix}r32teamsR"]`),
+    $(`[data-round="${prefix}r32R"]`),
+    SEEDS_R, 'right', 9
+  );
+  const r16L = layoutDerivedRound($(`[data-round="${prefix}r16L"]`), r32L, 'r16', 'r16', 'left');
+  const r16R = layoutDerivedRound($(`[data-round="${prefix}r16R"]`), r32R, 'r16', 'r16', 'right');
+  const qfL  = layoutDerivedRound($(`[data-round="${prefix}qfL"]`),  r16L, 'qf',  'qf',  'left');
+  const qfR  = layoutDerivedRound($(`[data-round="${prefix}qfR"]`),  r16R, 'qf',  'qf',  'right');
+  const sfL  = layoutDerivedRound($(`[data-round="${prefix}sfL"]`),  qfL,  'sf',  'sf',  'left');
+  const sfR  = layoutDerivedRound($(`[data-round="${prefix}sfR"]`),  qfR,  'sf',  'sf',  'right');
+  const centreSel = prefix === 'wizard-'
+    ? `[data-round="wizard-centre"]`
+    : `[data-round="centre"]`;
+  layoutCentre($(centreSel), sfL, sfR);
+
+  // Rails — size to bracket height
+  const bracket = $('[data-bracket]');
+  const bracketH = bracket.getBoundingClientRect().height;
+  const railLeft  = pane.querySelector(`[data-rail="${prefix === 'wizard-' ? 'wizard-left' : 'left'}"]`);
+  const railRight = pane.querySelector(`[data-rail="${prefix === 'wizard-' ? 'wizard-right' : 'right'}"]`);
+  mountRail(railLeft,  SIDE_A, bracketH);
+  mountRail(railRight, SIDE_B, bracketH);
+
+  requestAnimationFrame(() => drawLines(bracket));
+}
+
+/* ───────────────────────── Mount: folded (one side) ───────────────────────── */
+function mountFolded(pane, side, prefix) {
+  const $ = sel => pane.querySelector(sel);
+  const seeds = side === 'A' ? SEEDS_L : SEEDS_R;
+  const offset = side === 'A' ? 1 : 9;
+  // Side B folded is a mirror of Side A: the .stage uses flex-direction:
+  // row-reverse, so DOM-rightmost is screen-leftmost. We tell the layout
+  // helpers `side='right'` so chips, winner pills, and the SF→Final
+  // connectors all use the mirrored silhouette and right-edge positioning.
+  const flowSide = side === 'A' ? 'left' : 'right';
+  const r32 = layoutR32(
+    $(`[data-round="${prefix}-r32teams"]`),
+    $(`[data-round="${prefix}-r32"]`),
+    seeds, flowSide, offset
+  );
+  const r16 = layoutDerivedRound($(`[data-round="${prefix}-r16"]`), r32, 'r16', 'r16', flowSide);
+  const qf  = layoutDerivedRound($(`[data-round="${prefix}-qf"]`),  r16, 'qf',  'qf',  flowSide);
+  const sf  = layoutDerivedRound($(`[data-round="${prefix}-sf"]`),  qf,  'sf',  'sf',  flowSide);
+
+  // For folded, centre column is just the Final + 3rd, with one input (the SF on this side)
+  const centre = $(`[data-round="${prefix}-centre"]`);
+  if (centre) {
+    centre.innerHTML = '';
+    const finalY = sf[0]?.mid ?? 200;
+    const stack = document.createElement('div');
+    stack.className = 'centre-stack';
+    stack.style.top = (finalY - SIZES.fnl.h/2 - 12) + 'px';
+    const finalPair = document.createElement('div');
+    finalPair.className = 'final-pair';
+    // Folded view shows only one finalist (this side's) above a placeholder
+    // for the other. Both use the same silhouette as this side's flow.
+    const sideMirrored = flowSide === 'right';
+    const fa = buildSlotPill(SIZES.fnl.w, 'final_home', sideMirrored);
+    const fb = buildSlotPill(SIZES.fnl.w, 'final_away', sideMirrored);
+    finalPair.appendChild(fa); finalPair.appendChild(fb);
+    const thirdPair = document.createElement('div');
+    thirdPair.className = 'third-pair';
+    thirdPair.appendChild(buildSlotPill(SIZES.trd.w, null, sideMirrored));
+    thirdPair.appendChild(buildSlotPill(SIZES.trd.w, null, sideMirrored));
+    const thirdLbl = document.createElement('div'); thirdLbl.className = 'third-label'; thirdLbl.textContent = '3rd place';
+    stack.appendChild(finalPair);
+    stack.appendChild(thirdPair); stack.appendChild(thirdLbl);
+    centre.appendChild(stack);
+  }
+
+  const bracket = pane.querySelector('[data-bracket]');
+  const bracketH = bracket.getBoundingClientRect().height;
+  const rail = pane.querySelector(`[data-rail="${prefix}"]`);
+  mountRail(rail, side === 'A' ? SIDE_A : SIDE_B, bracketH);
+
+  requestAnimationFrame(() => drawLines(bracket));
+}
+
+/* ───────────────────────── Champion pills ───────────────────────── */
+function replaceWithPill(id, code, width, alt) {
+  const host = document.getElementById(id);
+  if (!host) return;
+  host.replaceWith(buildPill({ code, width, alt }));
+}
+replaceWithPill('home-pill', 'mx', 64, 'Mexico');
+replaceWithPill('away-pill', 'fr', 64, 'France');
+replaceWithPill('champion-pill', 'br', 96, 'Brazil');
+replaceWithPill('wizard-champion-pill', 'ar', 96, 'Argentina');
+
+/* ───────────────────────── Initial mount ───────────────────────── */
+mountUnfolded(document.querySelector('#standalone [data-view-pane="unfolded"]'), '');
+mountFolded(document.querySelector('#standalone [data-view-pane="folded"]'),    'A', 'folded');
+mountUnfolded(document.querySelector('#wizard    [data-view-pane="unfolded"]'), 'wizard-');
+mountFolded(document.querySelector('#wizard    [data-view-pane="folded"]'),    'A', 'wizard-folded');
+
+/* ───────────────────────── Toggles ───────────────────────── */
+function setView(rootId, view) {
+  const root = document.getElementById(rootId);
+  root.querySelectorAll('[data-view-pane]').forEach(p => p.classList.toggle('hide', p.dataset.viewPane !== view));
+  root.querySelectorAll(`[data-view-toggle="${rootId}"]`).forEach(b => b.setAttribute('aria-pressed', String(b.dataset.view === view)));
+  requestAnimationFrame(() => {
+    root.querySelectorAll('[data-view-pane]:not(.hide) .bracket').forEach(drawLines);
+  });
+}
+document.querySelectorAll('[data-view-toggle]').forEach(b =>
+  b.addEventListener('click', () => setView(b.dataset.viewToggle, b.dataset.view))
+);
+
+document.querySelectorAll('[data-side-tab]').forEach(btn => {
+  btn.addEventListener('click', () => {
+    const folded = btn.closest('.folded');
+    const pane = folded.parentElement;
+    folded.dataset.side = btn.dataset.sideTab;
+    folded.querySelectorAll('[data-side-tab]').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.sideTab === btn.dataset.sideTab)));
+    const prefix = folded.closest('#wizard') ? 'wizard-folded' : 'folded';
+    mountFolded(pane, btn.dataset.sideTab, prefix);
+  });
+});
+
+function closeAllGroups() { document.querySelectorAll('.group-card.expanded').forEach(c => c.classList.remove('expanded')); }
+document.addEventListener('click', (e) => {
+  if (e.target.matches('[data-close-group]')) { closeAllGroups(); return; }
+  if (!e.target.closest('.group-card')) closeAllGroups();
+  const card = e.target.closest('.group-card');
+  if (card && !card.classList.contains('expanded')) {
+    closeAllGroups();
+    card.classList.add('expanded');
+  }
+});
+
+function closeAllFixtureCards() { document.querySelectorAll('[data-fixture-card]').forEach(c => c.dataset.open = 'false'); }
+document.addEventListener('click', (e) => {
+  const target = e.target.closest('.slot');
+  if (target && target.dataset.fixture) {
+    closeAllFixtureCards();
+    const pane = target.closest('[data-view-pane]');
+    const card = pane?.querySelector('[data-fixture-card]');
+    if (card) { card.dataset.open = 'true'; card.scrollIntoView({ behavior:'smooth', block:'nearest' }); }
+  }
+  if (e.target.matches('[data-close]')) closeAllFixtureCards();
+});
+document.querySelectorAll('.pick-winner button').forEach(b => b.addEventListener('click', () => {
+  b.parentNode.querySelectorAll('button').forEach(x => x.setAttribute('aria-pressed','false'));
+  b.setAttribute('aria-pressed','true');
+}));
+
+let resizeRaf = 0;
+window.addEventListener('resize', () => {
+  cancelAnimationFrame(resizeRaf);
+  resizeRaf = requestAnimationFrame(() => {
+    document.querySelectorAll('[data-view-pane]:not(.hide) .bracket').forEach(drawLines);
+  });
+});
+
+setView('standalone', window.innerWidth >= 900 ? 'unfolded' : 'folded');
+setView('wizard', 'folded');
+</script>
+
+</body>
+</html>
