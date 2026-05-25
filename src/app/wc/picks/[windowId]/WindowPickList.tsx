@@ -384,7 +384,7 @@ function MatchPickRow({
             "flex flex-col items-center gap-1 min-w-[68px] px-1.5 py-1.5 rounded-lg transition-all duration-150 cursor-pointer",
             "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ps-amber/50",
             homeSelected
-              ? "bg-ps-amber/10"
+              ? "bg-ps-amber/10 ring-2 ring-ps-amber"
               : "hover:bg-ps-chip",
           ].join(" ")}
         >
@@ -436,7 +436,7 @@ function MatchPickRow({
               "shrink-0 px-2.5 py-1.5 rounded-lg text-xs font-medium transition-all duration-150",
               "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ps-amber/50",
               drawSelected
-                ? "bg-ps-amber/10 text-ps-amber"
+                ? "bg-ps-amber/10 text-ps-amber ring-2 ring-ps-amber"
                 : "text-ps-text-ter hover:bg-ps-chip hover:text-ps-text-sec",
             ].join(" ")}
           >
@@ -478,7 +478,7 @@ function MatchPickRow({
             "flex flex-col items-center gap-1 min-w-[68px] px-1.5 py-1.5 rounded-lg transition-all duration-150 cursor-pointer",
             "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ps-amber/50",
             awaySelected
-              ? "bg-ps-amber/10"
+              ? "bg-ps-amber/10 ring-2 ring-ps-amber"
               : "hover:bg-ps-chip",
           ].join(" ")}
         >

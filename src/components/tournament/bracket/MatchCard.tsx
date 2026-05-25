@@ -86,7 +86,7 @@ export default function MatchCard({
           aria-pressed={match.result === 'home_win'}
           className={`
             flex flex-col items-center gap-1 min-w-[68px] px-1.5 py-1.5 rounded-lg transition-all duration-150 cursor-pointer
-            ${match.result === 'home_win' ? `${selectedBgColor}` : 'hover:bg-ps-chip'}
+            ${match.result === 'home_win' ? `${selectedBgColor} ring-2 ring-ps-amber` : 'hover:bg-ps-chip'}
           `}
         >
           <CountryFlag shape="pill" name={match.home_team} size={24} />
@@ -131,7 +131,7 @@ export default function MatchCard({
             shrink-0 px-2.5 py-1.5 rounded-lg text-xs font-medium transition-all duration-150
             ${
               match.result === 'draw'
-                ? `${selectedBgColor} ${selectedTextColor}`
+                ? `${selectedBgColor} ${selectedTextColor} ring-2 ring-ps-amber`
                 : 'text-ps-text-ter hover:bg-ps-chip hover:text-ps-text-sec'
             }
           `}
@@ -164,7 +164,7 @@ export default function MatchCard({
           aria-pressed={match.result === 'away_win'}
           className={`
             flex flex-col items-center gap-1 min-w-[68px] px-1.5 py-1.5 rounded-lg transition-all duration-150 cursor-pointer
-            ${match.result === 'away_win' ? `${selectedBgColor}` : 'hover:bg-ps-chip'}
+            ${match.result === 'away_win' ? `${selectedBgColor} ring-2 ring-ps-amber` : 'hover:bg-ps-chip'}
           `}
         >
           <CountryFlag shape="pill" name={match.away_team} size={24} />
