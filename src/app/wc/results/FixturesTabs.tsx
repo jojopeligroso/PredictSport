@@ -64,6 +64,9 @@ export function FixturesTabs({ fixtures, resultsByExternalId, serverDateIso, pre
     [resultsByExternalId],
   );
 
+  // Smart default: on first client render, pick best non-empty tab
+  const tabInitRef = useRef(false);
+
   const buckets = useMemo(() => {
     const today: WcFixture[] = [];
     const upcoming: WcFixture[] = [];
@@ -93,6 +96,14 @@ export function FixturesTabs({ fixtures, resultsByExternalId, serverDateIso, pre
     results.sort((a, b) => b.kickoffUtc.localeCompare(a.kickoffUtc));
     return { today, upcoming, results };
   }, [fixtures, resultsByExternalId, todayIso, now]);
+
+  useEffect(() => {
+    if (tabInitRef.current) return;
+    tabInitRef.current = true;
+    if (buckets.today.length > 0) return;
+    if (buckets.upcoming.length > 0) { setTab("upcoming"); return; }
+    setTab("results");
+  }, [buckets]);
 
   const active = buckets[tab];
 
