@@ -56,6 +56,8 @@ export function FixturesTabs({ fixtures, resultsByExternalId, serverDateIso, pre
   }, []);
 
   const [tab, setTab] = useState<TabId>("today");
+  const hasPredictions = Object.keys(predictionsByExternalId).length > 0;
+  const [showPredictions, setShowPredictions] = useState(hasPredictions);
 
   const buckets = useMemo(() => {
     const today: WcFixture[] = [];
@@ -103,6 +105,34 @@ export function FixturesTabs({ fixtures, resultsByExternalId, serverDateIso, pre
         </TabButton>
       </div>
 
+      {hasPredictions && (
+        <div className="mt-3 flex items-center justify-between rounded-lg border border-ps-border bg-ps-surface px-3 py-2">
+          <span className="text-xs text-ps-text-sec">
+            {showPredictions ? "Your predictions are shown" : "Fixtures only"}
+          </span>
+          <button
+            type="button"
+            onClick={() => setShowPredictions((v) => !v)}
+            className="flex items-center gap-1.5 rounded-md px-2 py-1 text-[11px] font-semibold text-ps-text-sec transition-colors hover:bg-ps-chip hover:text-ps-text"
+          >
+            {showPredictions ? "Hide picks" : "Show picks"}
+            <span
+              className={[
+                "relative inline-flex h-4 w-7 items-center rounded-full transition-colors",
+                showPredictions ? "bg-ps-amber" : "bg-ps-border",
+              ].join(" ")}
+            >
+              <span
+                className={[
+                  "inline-block h-3 w-3 rounded-full bg-white transition-transform",
+                  showPredictions ? "translate-x-3.5" : "translate-x-0.5",
+                ].join(" ")}
+              />
+            </span>
+          </button>
+        </div>
+      )}
+
       <div className="mt-4 space-y-3">
         {active.length === 0 && (
           <p className="rounded-xl border border-ps-border bg-ps-surface px-4 py-8 text-center text-sm text-ps-text-sec">
@@ -118,7 +148,7 @@ export function FixturesTabs({ fixtures, resultsByExternalId, serverDateIso, pre
             key={f.externalId}
             fixture={f}
             result={resultsByExternalId[f.externalId]}
-            prediction={predictionsByExternalId[f.externalId]}
+            prediction={showPredictions ? predictionsByExternalId[f.externalId] : undefined}
           />
         ))}
       </div>
