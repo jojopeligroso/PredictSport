@@ -13,6 +13,7 @@ import type { PickColor } from "./bracket-types";
 import { WC2026_GROUPS, WC2026_KNOCKOUT_ROUNDS } from "@/lib/bracket/adapters/fifa-world-cup-2026";
 import { ChampionFlagFountain } from "./ChampionFlagFountain";
 import { CountryFlag } from "@/components/CountryFlag";
+import { FoldedBracket } from "./FoldedBracket";
 
 interface BracketReviewStepProps {
   groupRankings: Record<string, string[]>;
@@ -59,6 +60,17 @@ export default function BracketReviewStep({
           resubmitting right up until the day before kick-off.
         </p>
       </div>
+
+      <FoldedBracket
+        submission={{
+          bestThirdPicks: qualifyingThirds,
+          knockoutPicks,
+          champion,
+          thirdPlace,
+        }}
+        groupRankings={groupRankings}
+        matchups={allMatchups}
+      />
 
       {/* Champion hero */}
       {champion && (
