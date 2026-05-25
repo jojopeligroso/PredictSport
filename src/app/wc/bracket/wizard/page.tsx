@@ -2,6 +2,8 @@ import { createClient } from "@/lib/supabase/server";
 import { redirect, notFound } from "next/navigation";
 import Link from "next/link";
 import { BracketWizard } from "@/components/tournament/bracket/BracketWizard";
+import { WcBrandedTitle } from "@/components/wc/WcBrandedTitle";
+import { BracketVersionFooter } from "@/components/wc/BracketVersionFooter";
 import type { BracketSubmissionData } from "@/types/tournament";
 import { WC2026_GROUPS } from "@/lib/bracket/adapters/fifa-world-cup-2026";
 import { loadGroupDataAndEventMap } from "@/lib/tournament/bracket/adapters/predictions-to-group-data";
@@ -97,27 +99,16 @@ export default async function BracketWizardPage({
 
   return (
     <div className="mx-auto max-w-[480px] px-4 pt-5 pb-16">
-      <Link
-        href="/wc/bracket"
-        className="inline-flex items-center gap-1 text-xs font-medium text-ps-text-sec hover:text-ps-text"
-      >
-        <span aria-hidden>←</span> Back to brackets
-      </Link>
-      <div className="mt-3 flex items-baseline justify-between gap-2">
-        <h1 className="font-display text-xl font-extrabold leading-tight text-ps-text">
-          {classification.name}
-        </h1>
-        {existingSubmission && (
-          <span className="shrink-0 rounded-full bg-ps-chip px-2 py-0.5 font-mono text-[10px] font-bold uppercase tracking-widest text-ps-text-sec">
-            v{existingSubmission.version_number} · {existingSubmission.status}
-          </span>
-        )}
-      </div>
-      <p className="mt-1 text-xs text-ps-text-sec">
-        {isKnockout
-          ? "Pick the advancing team in each knockout match."
-          : "Predict every group + knockout match before kickoff."}
-      </p>
+      <WcBrandedTitle
+        title={classification.name}
+        subtitle={
+          isKnockout
+            ? "Pick the advancing team in each knockout match."
+            : "Predict every group + knockout match before kickoff."
+        }
+        backHref="/wc/bracket"
+        backLabel="Back to brackets"
+      />
 
       <div className="mt-5">
         <BracketWizard
@@ -131,6 +122,13 @@ export default async function BracketWizardPage({
           eventIdByMatchId={eventIdByMatchId}
         />
       </div>
+
+      {existingSubmission && (
+        <BracketVersionFooter
+          versionNumber={existingSubmission.version_number}
+          status={existingSubmission.status}
+        />
+      )}
     </div>
   );
 }

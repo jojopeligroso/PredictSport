@@ -3,6 +3,7 @@ import { redirect } from "next/navigation";
 import Link from "next/link";
 import type { BracketSubmissionData } from "@/types/tournament";
 import { FoldedBracket } from "@/components/tournament/bracket/FoldedBracket";
+import { WcBrandedTitle } from "@/components/wc/WcBrandedTitle";
 import { loadGroupDataAndEventMap } from "@/lib/tournament/bracket/adapters/predictions-to-group-data";
 import { groupDataToRankings } from "@/lib/tournament/bracket/group-ranking";
 import {
@@ -175,10 +176,10 @@ export default async function BracketPage() {
   }
   return (
     <div className="mx-auto max-w-[480px] px-4 pt-6 pb-16">
-      <h1 className="font-display text-2xl uppercase tracking-tight text-ps-text">Bracket Predictions</h1>
-      <p className="mt-1 text-sm text-ps-text-sec">
-        Predict the entire tournament bracket. One wrong pick and you&apos;re out.
-      </p>
+      <WcBrandedTitle
+        title="Bracket Predictions"
+        subtitle="Predict the entire tournament bracket. One wrong pick and you're out."
+      />
 
       {hasAnyProgress && posterData && (
         <div className="mt-6">

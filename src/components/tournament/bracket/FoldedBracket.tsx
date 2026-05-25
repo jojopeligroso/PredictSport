@@ -90,19 +90,8 @@ export function FoldedBracket({
 
   return (
     <div className="relative">
-      {/* FIFA WC 2026 mark — sits above the poster as the small top icon */}
-      <div className="mb-3 flex items-center justify-center">
-        {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img
-          src="/wc/fifa-wc2026-mark.svg"
-          alt="FIFA World Cup 2026"
-          width={120}
-          height={48}
-          loading="lazy"
-          className="h-10 w-auto opacity-90 dark:invert"
-        />
-      </div>
-
+      {/* FIFA WC 2026 mark is rendered by the page-level WcBrandedTitle —
+          see design/DESIGN-RULES.md § "WC Branded Title". */}
       <div
         ref={wrapperRef}
         tabIndex={0}

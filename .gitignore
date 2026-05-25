@@ -77,3 +77,4 @@ supabase/.temp/
 # scripts/extract-annex-c.ts. Re-download from FIFA if needed.
 FWC2026_regulations_EN.pdf
 annexes_FWC2026_regulations_EN.pdf
+mockups/
