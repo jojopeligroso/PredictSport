@@ -3,14 +3,8 @@ import { createClient } from "@/lib/supabase/server";
 import { UserMenu } from "@/components/UserMenu";
 import { MobileNav } from "@/components/MobileNav";
 import { BrandMark } from "@/components/BrandMark";
-
-const wcNavLinks = [
-  { href: "/wc/picks", label: "Picks" },
-  { href: "/wc/bracket", label: "Bracket" },
-  { href: "/wc/leaderboard", label: "Table" },
-  { href: "/wc/results", label: "Results" },
-  { href: "/wc/rules", label: "Rules" },
-] as const;
+import { WcNavLinks } from "@/components/wc/WcNavLinks";
+import { getWcBracketSnapshot } from "@/lib/tournament/bracket-snapshot";
 
 export default async function WorldCupLayout({
   children,
@@ -31,6 +25,14 @@ export default async function WorldCupLayout({
       .single();
     profile = data;
   }
+
+  // "Engaged" = user has started their bracket (any stage beyond not_started).
+  // Nav links are hidden on the /wc landing for visitors, first-timers, and
+  // users who haven't begun the bracket yet.
+  const bracket = authUser
+    ? await getWcBracketSnapshot(supabase, authUser.id)
+    : null;
+  const engaged = bracket != null && bracket.stage !== "not_started";
 
   const displayName =
     profile?.display_name ??
@@ -53,17 +55,7 @@ export default async function WorldCupLayout({
             </span>
           </Link>
 
-          <div className="hidden items-center gap-1 md:flex">
-            {wcNavLinks.map((link) => (
-              <Link
-                key={link.href}
-                href={link.href}
-                className="rounded-md px-3 py-1.5 text-sm font-medium text-ps-text-sec transition-colors hover:bg-ps-chip hover:text-ps-text"
-              >
-                {link.label}
-              </Link>
-            ))}
-          </div>
+          <WcNavLinks engaged={engaged} variant="desktop" />
 
           <div className="flex items-center gap-2">
             {authUser ? (
@@ -84,20 +76,7 @@ export default async function WorldCupLayout({
           </div>
         </div>
 
-        {/* Mobile tab bar */}
-        <div className="flex overflow-x-auto border-t border-ps-border md:hidden">
-          <div className="mx-auto flex max-w-3xl px-2">
-            {wcNavLinks.map((link) => (
-              <Link
-                key={link.href}
-                href={link.href}
-                className="shrink-0 px-3 py-2 text-xs font-semibold text-ps-text-sec transition-colors hover:text-ps-text"
-              >
-                {link.label}
-              </Link>
-            ))}
-          </div>
-        </div>
+        <WcNavLinks engaged={engaged} variant="mobile" />
       </nav>
 
       <div className="flex-1">{children}</div>
