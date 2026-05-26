@@ -1,8 +1,8 @@
 import type { Metadata } from "next";
 import { Inter, JetBrains_Mono, Instrument_Serif, Noto_Sans } from "next/font/google";
-import { headers } from "next/headers";
 import { NavBar } from "@/components/NavBar";
 import { Footer } from "@/components/Footer";
+import { GlobalChromeGuard } from "@/components/GlobalChromeGuard";
 import { PushPromptWrapper } from "@/components/PushPromptWrapper";
 import { ThemeProvider, themeInitScript } from "@/components/ThemeProvider";
 import { isWorldCupShell } from "@/lib/product-mode";
@@ -51,11 +51,6 @@ export default async function RootLayout({
   children: React.ReactNode;
 }>) {
   const shellMode = isWorldCupShell();
-  const pathname = (await headers()).get("x-pathname") ?? "";
-  // The /wc/* segment ships its own shell nav (and footer), so hide the global
-  // chrome there to avoid two stacked sportspredict. bars.
-  const inWorldCupShellRoute = pathname.startsWith("/wc");
-  const showGlobalChrome = !shellMode && !inWorldCupShellRoute;
 
   return (
     <html
@@ -70,11 +65,19 @@ export default async function RootLayout({
       </head>
       <body className="min-h-full flex flex-col bg-ps-bg text-ps-text">
         <ThemeProvider>
-          {showGlobalChrome && <NavBar />}
+          {!shellMode && (
+            <GlobalChromeGuard>
+              <NavBar />
+            </GlobalChromeGuard>
+          )}
           <main className="flex flex-1 flex-col">
             {children}
           </main>
-          {showGlobalChrome && <Footer />}
+          {!shellMode && (
+            <GlobalChromeGuard>
+              <Footer />
+            </GlobalChromeGuard>
+          )}
           <PushPromptWrapper />
         </ThemeProvider>
       </body>

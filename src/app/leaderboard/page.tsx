@@ -31,7 +31,7 @@ export default async function LeaderboardPage({ searchParams }: PageProps) {
   // Fetch competitions the user belongs to
   const { data: memberships } = await supabase
     .from("competition_members")
-    .select("competition_id, competitions(id, name, status, type)")
+    .select("competition_id, competitions(id, name, status, type, product_mode)")
     .eq("user_id", user.id);
 
   const competitions = (memberships ?? [])
@@ -41,8 +41,9 @@ export default async function LeaderboardPage({ searchParams }: PageProps) {
         name: string;
         status: string;
         type: string;
+        product_mode: string | null;
       } | null;
-      return comp ? { id: comp.id, name: comp.name, status: comp.status, type: comp.type } : null;
+      return comp ? { id: comp.id, name: comp.name, status: comp.status, type: comp.type, product_mode: comp.product_mode } : null;
     })
     .filter((c): c is NonNullable<typeof c> => c !== null && c.type !== "personal");
 
@@ -82,8 +83,11 @@ export default async function LeaderboardPage({ searchParams }: PageProps) {
 
   const selectedCompetition = competitions.find((c) => c.id === selectedId);
 
-  // Check if this competition has tournament classifications
-  const classifications = await getClassificationsForCompetition(supabase, selectedId);
+  // Only show tournament classification tabs for WC shell competitions — not standard ones
+  const isTournamentShell = selectedCompetition?.product_mode === "world_cup_2026_shell";
+  const classifications = isTournamentShell
+    ? await getClassificationsForCompetition(supabase, selectedId)
+    : [];
 
   if (classifications.length > 0) {
     return (
@@ -425,6 +429,7 @@ export default async function LeaderboardPage({ searchParams }: PageProps) {
           <h1 className="mt-0.5 font-display text-[32px] leading-none tracking-wider text-ps-text">
             THE TABLE
           </h1>
+          <p className="text-xs text-ps-text-ter font-mono">{memberList.length} players</p>
         </div>
         <CompetitionSelector
           competitions={competitions.map((c) => ({ id: c.id, name: c.name }))}

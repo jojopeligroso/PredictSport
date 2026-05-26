@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { CountryFlag } from "@/components/CountryFlag";
 import { HOST_CITIES, type HostCitySlug } from "@/lib/wc/host-cities";
 import type { WcFixture } from "@/lib/wc/fixtures";
@@ -14,6 +14,18 @@ export type FixtureResult = {
   isFinalised: boolean;
 };
 
+export type FixturePredictionData = {
+  eventId: string;
+  competitionId: string;
+  sport: string;
+  lockTime: string;
+  eventStatus: string;
+  winnerOptions: string[];   // e.g. ["Mexico", "Draw", "South Korea"]
+  hasExactScore: boolean;
+  currentWinner: string | null;
+  currentScore: { home: number; away: number } | null;
+};
+
 type TabId = "today" | "upcoming" | "results";
 
 interface Props {
@@ -22,9 +34,11 @@ interface Props {
   resultsByExternalId: Record<string, FixtureResult | undefined>;
   /** ISO date (YYYY-MM-DD) — defaults to server's date; client recalculates on mount. */
   serverDateIso: string;
+  /** Keyed by `WcFixture.externalId`. */
+  predictionsByExternalId?: Record<string, FixturePredictionData | undefined>;
 }
 
-export function FixturesTabs({ fixtures, resultsByExternalId, serverDateIso }: Props) {
+export function FixturesTabs({ fixtures, resultsByExternalId, serverDateIso, predictionsByExternalId = {} }: Props) {
   // Render server-side with the server's idea of "today", then re-derive on
   // mount from the browser. Avoids hydration mismatch on the timezone shift.
   const [todayIso, setTodayIso] = useState(serverDateIso);
@@ -42,6 +56,17 @@ export function FixturesTabs({ fixtures, resultsByExternalId, serverDateIso }: P
   }, []);
 
   const [tab, setTab] = useState<TabId>("today");
+  const hasPredictions = Object.keys(predictionsByExternalId).length > 0;
+  const [showPredictions, setShowPredictions] = useState(hasPredictions);
+  const [showCorrectness, setShowCorrectness] = useState(true);
+  const [biggerCards, setBiggerCards] = useState(false);
+  const hasResults = useMemo(
+    () => Object.values(resultsByExternalId).some((r) => r !== undefined),
+    [resultsByExternalId],
+  );
+
+  // Smart default: on first client render, pick best non-empty tab
+  const tabInitRef = useRef(false);
 
   const buckets = useMemo(() => {
     const today: WcFixture[] = [];
@@ -73,6 +98,14 @@ export function FixturesTabs({ fixtures, resultsByExternalId, serverDateIso }: P
     return { today, upcoming, results };
   }, [fixtures, resultsByExternalId, todayIso, now]);
 
+  useEffect(() => {
+    if (tabInitRef.current) return;
+    tabInitRef.current = true;
+    if (buckets.today.length > 0) return;
+    if (buckets.upcoming.length > 0) { setTab("upcoming"); return; }
+    setTab("results");
+  }, [buckets]);
+
   const active = buckets[tab];
 
   return (
@@ -87,6 +120,43 @@ export function FixturesTabs({ fixtures, resultsByExternalId, serverDateIso }: P
         <TabButton id="results" current={tab} onSelect={setTab} count={buckets.results.length}>
           Results
         </TabButton>
+      </div>
+
+      <div className="mt-3 space-y-0 rounded-lg border border-ps-border bg-ps-surface px-3 py-2">
+        <div className="flex items-center justify-between">
+          <span className="text-xs text-ps-text-sec">Bigger cards</span>
+          <ToggleSwitch
+            label={biggerCards ? "On" : "Off"}
+            checked={biggerCards}
+            onChange={() => setBiggerCards((v) => !v)}
+          />
+        </div>
+        {hasPredictions && (
+          <>
+            <div className="flex items-center justify-between border-t border-ps-border/50 pt-2 mt-2">
+              <span className="text-xs text-ps-text-sec">
+                {showPredictions ? "Your predictions are shown" : "Fixtures only"}
+              </span>
+              <ToggleSwitch
+                label={showPredictions ? "Hide picks" : "Show picks"}
+                checked={showPredictions}
+                onChange={() => setShowPredictions((v) => !v)}
+              />
+            </div>
+            {showPredictions && hasResults && (
+              <div className="flex items-center justify-between border-t border-ps-border/50 pt-2 mt-2">
+                <span className="text-xs text-ps-text-sec">
+                  Show correct / wrong
+                </span>
+                <ToggleSwitch
+                  label={showCorrectness ? "On" : "Off"}
+                  checked={showCorrectness}
+                  onChange={() => setShowCorrectness((v) => !v)}
+                />
+              </div>
+            )}
+          </>
+        )}
       </div>
 
       <div className="mt-4 space-y-3">
@@ -104,6 +174,9 @@ export function FixturesTabs({ fixtures, resultsByExternalId, serverDateIso }: P
             key={f.externalId}
             fixture={f}
             result={resultsByExternalId[f.externalId]}
+            prediction={showPredictions ? predictionsByExternalId[f.externalId] : undefined}
+            showCorrectness={showPredictions && showCorrectness}
+            large={biggerCards}
           />
         ))}
       </div>
@@ -151,15 +224,190 @@ function TabButton({
   );
 }
 
+function ToggleSwitch({
+  label,
+  checked,
+  onChange,
+}: {
+  label: string;
+  checked: boolean;
+  onChange: () => void;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onChange}
+      className="flex items-center gap-1.5 rounded-md px-2 py-1 text-[11px] font-semibold text-ps-text-sec transition-colors hover:bg-ps-chip hover:text-ps-text"
+    >
+      {label}
+      <span
+        className={[
+          "relative inline-flex h-4 w-7 items-center rounded-full transition-colors",
+          checked ? "bg-ps-amber" : "bg-ps-border",
+        ].join(" ")}
+      >
+        <span
+          className={[
+            "inline-block h-3 w-3 rounded-full bg-white transition-transform",
+            checked ? "translate-x-3.5" : "translate-x-0.5",
+          ].join(" ")}
+        />
+      </span>
+    </button>
+  );
+}
+
 function FixtureCard({
   fixture,
   result,
+  prediction,
+  showCorrectness,
+  large,
 }: {
   fixture: WcFixture;
   result: FixtureResult | undefined;
+  prediction: FixturePredictionData | undefined;
+  showCorrectness: boolean;
+  large: boolean;
 }) {
   const city = HOST_CITIES[fixture.city as HostCitySlug];
   const kickoff = new Date(fixture.kickoffUtc);
+
+  const isFinished = !!result && (result.homeScore !== null || result.winner !== null);
+  const isLocked = prediction
+    ? new Date(prediction.lockTime) <= new Date() || prediction.eventStatus !== "upcoming"
+    : true;
+  const canPredict = !!prediction && !isFinished && !isLocked;
+
+  // ── Prediction state ──
+  const [currentWinner, setCurrentWinner] = useState<string | null>(
+    prediction?.currentWinner ?? null,
+  );
+  const [homeScore, setHomeScore] = useState<string>(() => {
+    const s = prediction?.currentScore;
+    return s !== null && s !== undefined ? String(s.home) : "";
+  });
+  const [awayScore, setAwayScore] = useState<string>(() => {
+    const s = prediction?.currentScore;
+    return s !== null && s !== undefined ? String(s.away) : "";
+  });
+  const [error, setError] = useState<string | null>(null);
+
+  const awayInputRef = useRef<HTMLInputElement>(null);
+  const abortRef = useRef<AbortController | null>(null);
+
+  // Derive winner options — fallback to fixture team names if EPT has none
+  const winnerOptions = prediction?.winnerOptions?.length
+    ? prediction.winnerOptions
+    : [fixture.home, "Draw", fixture.away];
+  const drawOption = winnerOptions.find(
+    (opt) => opt !== fixture.home && opt !== fixture.away,
+  ) ?? "Draw";
+
+  const submitPrediction = useCallback(
+    async (
+      predictionType: string,
+      predictionData: Record<string, unknown>,
+      signal?: AbortSignal,
+    ) => {
+      if (!prediction) return;
+      const res = await fetch("/api/predictions", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          event_id: prediction.eventId,
+          competition_id: prediction.competitionId,
+          prediction_type: predictionType,
+          prediction_data: predictionData,
+        }),
+        signal,
+      });
+      if (!res.ok) {
+        const body = await res.json().catch(() => ({}));
+        throw new Error((body as { error?: string }).error ?? "Failed to save");
+      }
+    },
+    [prediction],
+  );
+
+  const handlePickWinner = useCallback(
+    (value: string) => {
+      if (!canPredict) return;
+      if (value === currentWinner) return;
+
+      const prev = currentWinner;
+      setCurrentWinner(value);
+      setError(null);
+
+      abortRef.current?.abort();
+      const controller = new AbortController();
+      abortRef.current = controller;
+
+      submitPrediction("winner", { value }, controller.signal).catch(
+        (err: unknown) => {
+          if (err instanceof Error && err.name === "AbortError") return;
+          setCurrentWinner(prev);
+          setError(err instanceof Error ? err.message : "Couldn't save");
+        },
+      );
+    },
+    [canPredict, currentWinner, submitPrediction],
+  );
+
+  const handleScoreBlur = useCallback(
+    (latestHome: string, latestAway: string) => {
+      if (!canPredict || !prediction?.hasExactScore) return;
+
+      const h = parseInt(latestHome, 10);
+      const a = parseInt(latestAway, 10);
+      if (latestHome === "" || latestAway === "" || isNaN(h) || isNaN(a) || h < 0 || a < 0) return;
+
+      // Derive and set winner atomically
+      const implied = h > a ? fixture.home : a > h ? fixture.away : drawOption;
+      if (implied !== currentWinner) {
+        handlePickWinner(implied);
+      }
+
+      submitPrediction("exact_score", { home: h, away: a }).catch(() => {
+        // Score save failed silently — winner was already set
+      });
+    },
+    [canPredict, prediction, fixture.home, fixture.away, drawOption, currentWinner, handlePickWinner, submitPrediction],
+  );
+
+  // ── Derived display state ──
+  const hasPrediction = currentWinner !== null || homeScore !== "" || awayScore !== "";
+  const homeSelected = currentWinner === fixture.home;
+  const awaySelected = currentWinner === fixture.away;
+  const drawSelected = currentWinner === drawOption;
+
+  // Ring color: green (correct), red (wrong), white (pending / correctness off)
+  let ringClass = "";
+  if (hasPrediction && prediction) {
+    if (isFinished && result && currentWinner) {
+      // Determine actual winner from result
+      const actualWinner =
+        result.homeScore !== null && result.awayScore !== null
+          ? result.homeScore > result.awayScore
+            ? fixture.home
+            : result.awayScore > result.homeScore
+              ? fixture.away
+              : drawOption
+          : result.winner ?? null;
+
+      if (showCorrectness && actualWinner) {
+        ringClass =
+          currentWinner === actualWinner
+            ? "ring-2 ring-ps-green"
+            : "ring-2 ring-ps-red";
+      } else {
+        ringClass = "ring-2 ring-white/30";
+      }
+    } else {
+      // Upcoming / pending — neutral ring
+      ringClass = "ring-2 ring-white/30";
+    }
+  }
 
   const cityTime = formatTime(kickoff, city.timezone);
   const cityDate = formatDateShort(kickoff, city.timezone);
@@ -167,64 +415,225 @@ function FixtureCard({
   const localTzAbbr = formatTzAbbr(kickoff);
   const sameClock = cityTime === localTime;
 
-  const isFinished = !!result && (result.homeScore !== null || result.winner !== null);
+  // Size tokens — default vs large
+  const flagSize = large ? 36 : 24;
+  const flagSizeRo = large ? 26 : 20;
+  const teamText = large ? "text-sm" : "text-xs";
+  const scoreSize = large ? "w-[40px] h-[38px] text-lg" : "w-[30px] h-[28px] text-sm";
+  const drawSize = large ? "px-3.5 py-2 text-sm" : "px-2.5 py-1.5 text-xs";
+  const teamPad = large ? "gap-1.5 px-2 py-2" : "gap-1 px-1.5 py-1.5";
+  const headerText = large ? "text-xs" : "text-[0.7rem]";
+  const stadiumText = large ? "text-[0.7rem]" : "text-[0.625rem]";
+  const bodyPad = large ? "px-5 pb-4 pt-3" : "px-4 pb-3 pt-2";
+  const headerPad = large ? "px-5 pt-4" : "px-4 pt-3";
+  const rowGap = large ? "gap-2" : "gap-1.5";
+  const timeText = large ? "text-sm" : "text-xs";
 
   return (
     <article
-      className="overflow-hidden rounded-xl text-white shadow-sm"
+      className={[
+        large ? "overflow-hidden rounded-2xl text-white shadow-sm transition-all"
+              : "overflow-hidden rounded-xl text-white shadow-sm transition-all",
+        ringClass,
+      ].join(" ")}
       style={{ backgroundColor: city.color }}
     >
-      <header className="flex items-center justify-between px-4 pt-3 text-[0.7rem] font-bold uppercase tracking-wide text-white/85">
+      {/* Header: stage + city/stadium */}
+      <header className={`flex items-center justify-between ${headerPad} ${headerText} font-bold uppercase tracking-wide text-white/85`}>
         <span>
           {fixture.stage === "group"
             ? `Group ${fixture.group} · MD${fixture.matchday}`
             : stageLabel(fixture.stage)}
         </span>
-        <span>{city.name}</span>
+        <span className="text-right">
+          <span className="block">{city.name}</span>
+          <span className={`block ${stadiumText} font-medium normal-case tracking-normal text-white/50`}>
+            {city.stadium}
+          </span>
+        </span>
       </header>
 
-      <div className="px-4 pb-3 pt-2">
-        <h3 className="flex flex-wrap items-center gap-1.5 text-base font-bold text-white">
-          <CountryFlag shape="pill" name={fixture.home} size={20} />
-          <span>{fixture.home}</span>
-          <span className="mx-0.5 text-white/70">v</span>
-          <CountryFlag shape="pill" name={fixture.away} size={20} />
-          <span>{fixture.away}</span>
-        </h3>
+      <div className={bodyPad}>
+        {/* ── Prediction row (upcoming + unlocked) ── */}
+        {canPredict && (
+          <>
+            <div className={`flex items-center justify-center ${rowGap}`}>
+              {/* Home team button */}
+              <button
+                type="button"
+                onClick={() => handlePickWinner(fixture.home)}
+                className={[
+                  `flex-1 min-w-0 flex flex-col items-center ${teamPad} rounded-lg transition-all duration-150 cursor-pointer`,
+                  homeSelected
+                    ? "bg-white/12 shadow-[inset_0_0_0_2px_rgba(255,255,255,0.5)]"
+                    : "hover:bg-white/8",
+                ].join(" ")}
+              >
+                <CountryFlag shape="pill" name={fixture.home} size={flagSize} />
+                <span
+                  className={[
+                    `max-w-full truncate ${teamText} font-semibold text-center leading-tight`,
+                    homeSelected ? "text-white" : "text-white/55",
+                  ].join(" ")}
+                >
+                  {fixture.home}
+                </span>
+              </button>
 
-        {isFinished && (
-          <div className="mt-2 inline-flex items-center gap-2 rounded-md bg-white/15 px-2.5 py-1 font-mono text-sm font-bold tabular-nums">
-            {result?.homeScore !== null && result?.awayScore !== null
-              ? `${result?.homeScore} – ${result?.awayScore}`
-              : (result?.winner ?? "Result")}
-            <span
-              className={[
-                "rounded-full px-1.5 py-px text-[0.65rem] uppercase tracking-wide",
-                result?.isFinalised ? "bg-ps-green/90 text-white" : "bg-ps-amber/90 text-white",
-              ].join(" ")}
-            >
-              {result?.isFinalised ? "Final" : "Provisional"}
-            </span>
-          </div>
+              {/* Home score input */}
+              {prediction?.hasExactScore && (
+                <input
+                  type="text"
+                  inputMode="numeric"
+                  maxLength={2}
+                  placeholder="–"
+                  value={homeScore}
+                  onChange={(e) => {
+                    const val = e.target.value.replace(/[^0-9]/g, "");
+                    setHomeScore(val);
+                    if (val !== "" && awayInputRef.current) {
+                      awayInputRef.current.focus();
+                    }
+                  }}
+                  onBlur={() => handleScoreBlur(homeScore, awayScore)}
+                  aria-label={`${fixture.home} score`}
+                  className={[
+                    `${scoreSize} rounded-full border text-center font-mono font-semibold text-white outline-none transition-all duration-150 shrink-0`,
+                    homeScore !== ""
+                      ? "bg-white/18 border-white/50"
+                      : "bg-white/8 border-white/25",
+                    "focus:border-white/60 focus:bg-white/15",
+                    "placeholder:text-white/30",
+                  ].join(" ")}
+                />
+              )}
+
+              {/* Draw button */}
+              <button
+                type="button"
+                onClick={() => handlePickWinner(drawOption)}
+                className={[
+                  `shrink-0 ${drawSize} rounded-lg font-medium transition-all duration-150 cursor-pointer`,
+                  drawSelected
+                    ? "bg-white/12 text-white shadow-[inset_0_0_0_2px_rgba(255,255,255,0.5)]"
+                    : "text-white/45 hover:bg-white/8 hover:text-white/65",
+                ].join(" ")}
+              >
+                draw
+              </button>
+
+              {/* Away score input */}
+              {prediction?.hasExactScore && (
+                <input
+                  ref={awayInputRef}
+                  type="text"
+                  inputMode="numeric"
+                  maxLength={2}
+                  placeholder="–"
+                  value={awayScore}
+                  onChange={(e) => {
+                    const val = e.target.value.replace(/[^0-9]/g, "");
+                    setAwayScore(val);
+                  }}
+                  onBlur={() => handleScoreBlur(homeScore, awayScore)}
+                  aria-label={`${fixture.away} score`}
+                  className={[
+                    `${scoreSize} rounded-full border text-center font-mono font-semibold text-white outline-none transition-all duration-150 shrink-0`,
+                    awayScore !== ""
+                      ? "bg-white/18 border-white/50"
+                      : "bg-white/8 border-white/25",
+                    "focus:border-white/60 focus:bg-white/15",
+                    "placeholder:text-white/30",
+                  ].join(" ")}
+                />
+              )}
+
+              {/* Away team button */}
+              <button
+                type="button"
+                onClick={() => handlePickWinner(fixture.away)}
+                className={[
+                  `flex-1 min-w-0 flex flex-col items-center ${teamPad} rounded-lg transition-all duration-150 cursor-pointer`,
+                  awaySelected
+                    ? "bg-white/12 shadow-[inset_0_0_0_2px_rgba(255,255,255,0.5)]"
+                    : "hover:bg-white/8",
+                ].join(" ")}
+              >
+                <CountryFlag shape="pill" name={fixture.away} size={flagSize} />
+                <span
+                  className={[
+                    `max-w-full truncate ${teamText} font-semibold text-center leading-tight`,
+                    awaySelected ? "text-white" : "text-white/55",
+                  ].join(" ")}
+                >
+                  {fixture.away}
+                </span>
+              </button>
+            </div>
+
+            {error && (
+              <p className="mt-1 text-center text-[10px] font-medium text-red-300">{error}</p>
+            )}
+          </>
         )}
 
-        <dl className="mt-2 grid grid-cols-2 gap-x-3 text-xs text-white/90">
-          <div>
-            <dt className="font-semibold uppercase tracking-wide text-white/70">In {city.name.split(" ")[0]}</dt>
-            <dd className="font-mono tabular-nums">
-              {cityTime}
-              <span className="ml-1 text-white/70">· {cityDate}</span>
-            </dd>
-          </div>
-          <div>
-            <dt className="font-semibold uppercase tracking-wide text-white/70">Your time</dt>
-            <dd className="font-mono tabular-nums">
-              {sameClock ? "Same" : `${localTime} ${localTzAbbr}`}
-            </dd>
-          </div>
-        </dl>
+        {/* ── Read-only teams + result (finished) ── */}
+        {isFinished && (
+          <>
+            <h3 className={`flex flex-wrap items-center gap-1.5 ${large ? "text-lg" : "text-base"} font-bold text-white`}>
+              <CountryFlag shape="pill" name={fixture.home} size={flagSizeRo} />
+              <span>{fixture.home}</span>
+              <span className="mx-0.5 text-white/70">v</span>
+              <CountryFlag shape="pill" name={fixture.away} size={flagSizeRo} />
+              <span>{fixture.away}</span>
+            </h3>
+            <div className={`mt-2 inline-flex items-center gap-2 rounded-md bg-white/15 px-2.5 py-1 font-mono ${large ? "text-base" : "text-sm"} font-bold tabular-nums`}>
+              {result?.homeScore !== null && result?.awayScore !== null
+                ? `${result?.homeScore} – ${result?.awayScore}`
+                : (result?.winner ?? "Result")}
+              <span
+                className={[
+                  "rounded-full px-1.5 py-px text-[0.65rem] uppercase tracking-wide",
+                  result?.isFinalised ? "bg-emerald-500/90 text-white" : "bg-amber-500/90 text-white",
+                ].join(" ")}
+              >
+                {result?.isFinalised ? "Final" : "Provisional"}
+              </span>
+            </div>
+          </>
+        )}
 
-        <p className="mt-2 text-[0.7rem] text-white/70">{city.stadium}</p>
+        {/* ── Read-only teams (upcoming but locked / no prediction context) ── */}
+        {!isFinished && !canPredict && (
+          <h3 className={`flex flex-wrap items-center gap-1.5 ${large ? "text-lg" : "text-base"} font-bold text-white`}>
+            <CountryFlag shape="pill" name={fixture.home} size={flagSizeRo} />
+            <span>{fixture.home}</span>
+            <span className="mx-0.5 text-white/70">v</span>
+            <CountryFlag shape="pill" name={fixture.away} size={flagSizeRo} />
+            <span>{fixture.away}</span>
+          </h3>
+        )}
+
+        {/* ── Time info (upcoming only) ── */}
+        {!isFinished && (
+          <dl className={`mt-2 grid grid-cols-2 gap-x-3 ${timeText} text-white/90`}>
+            <div>
+              <dt className="font-semibold uppercase tracking-wide text-white/70">
+                In {city.name.split(" ")[0]}
+              </dt>
+              <dd className="font-mono tabular-nums">
+                {cityTime}
+                <span className="ml-1 text-white/70">· {cityDate}</span>
+              </dd>
+            </div>
+            <div>
+              <dt className="font-semibold uppercase tracking-wide text-white/70">Your time</dt>
+              <dd className="font-mono tabular-nums">
+                {sameClock ? "Same" : `${localTime} ${localTzAbbr}`}
+              </dd>
+            </div>
+          </dl>
+        )}
       </div>
     </article>
   );

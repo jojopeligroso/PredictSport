@@ -1,15 +1,10 @@
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import { UserMenu } from "@/components/UserMenu";
+import { MobileNav } from "@/components/MobileNav";
 import { BrandMark } from "@/components/BrandMark";
-
-const wcNavLinks = [
-  { href: "/wc/picks", label: "Picks" },
-  { href: "/wc/bracket", label: "Bracket" },
-  { href: "/wc/leaderboard", label: "Table" },
-  { href: "/wc/results", label: "Results" },
-  { href: "/wc/rules", label: "Rules" },
-] as const;
+import { WcNavLinks } from "@/components/wc/WcNavLinks";
+import { getWcBracketSnapshot } from "@/lib/tournament/bracket-snapshot";
 
 export default async function WorldCupLayout({
   children,
@@ -21,15 +16,37 @@ export default async function WorldCupLayout({
     data: { user: authUser },
   } = await supabase.auth.getUser();
 
-  let profile: { display_name: string; avatar_url: string | null } | null = null;
+  let profile: { display_name: string; avatar_url: string | null; is_super_admin: boolean | null } | null = null;
   if (authUser) {
     const { data } = await supabase
       .from("users")
-      .select("display_name, avatar_url")
+      .select("display_name, avatar_url, is_super_admin")
       .eq("id", authUser.id)
       .single();
     profile = data;
   }
+
+  const isSuperAdmin = profile?.is_super_admin === true;
+
+  // "Engaged" = user has started their bracket (any stage beyond not_started).
+  // Nav links are hidden on the /wc landing for visitors, first-timers, and
+  // users who haven't begun the bracket yet.
+  let isAdmin = false;
+  const [bracket] = await Promise.all([
+    authUser ? getWcBracketSnapshot(supabase, authUser.id) : Promise.resolve(null),
+    authUser
+      ? supabase
+          .from("competition_members")
+          .select("competition_id")
+          .eq("user_id", authUser.id)
+          .in("role", ["admin", "co_admin"])
+          .limit(1)
+          .then(({ data }) => {
+            isAdmin = ((data ?? []).length > 0);
+          })
+      : Promise.resolve(),
+  ]);
+  const engaged = bracket != null && bracket.stage !== "not_started";
 
   const displayName =
     profile?.display_name ??
@@ -52,47 +69,39 @@ export default async function WorldCupLayout({
             </span>
           </Link>
 
-          <div className="hidden items-center gap-1 md:flex">
-            {wcNavLinks.map((link) => (
-              <Link
-                key={link.href}
-                href={link.href}
-                className="rounded-md px-3 py-1.5 text-sm font-medium text-ps-text-sec transition-colors hover:bg-ps-chip hover:text-ps-text"
-              >
-                {link.label}
-              </Link>
-            ))}
-          </div>
+          <WcNavLinks engaged={engaged} variant="desktop" isSuperAdmin={isSuperAdmin} />
 
-          {authUser ? (
-            <UserMenu displayName={displayName} avatarUrl={avatarUrl} />
-          ) : (
-            <Link
-              href="/login"
-              className="rounded-lg bg-ps-text px-3 py-1.5 text-sm font-semibold text-ps-bg"
-            >
-              Sign in
-            </Link>
-          )}
-        </div>
-
-        {/* Mobile tab bar */}
-        <div className="flex overflow-x-auto border-t border-ps-border md:hidden">
-          <div className="mx-auto flex max-w-3xl px-2">
-            {wcNavLinks.map((link) => (
+          <div className="flex items-center gap-2">
+            {authUser ? (
+              <UserMenu displayName={displayName} avatarUrl={avatarUrl} isAdmin={isAdmin || isSuperAdmin} />
+            ) : (
               <Link
-                key={link.href}
-                href={link.href}
-                className="shrink-0 px-3 py-2 text-xs font-semibold text-ps-text-sec transition-colors hover:text-ps-text"
+                href="/login"
+                className="hidden rounded-lg bg-ps-text px-3 py-1.5 text-sm font-semibold text-ps-bg md:block"
               >
-                {link.label}
+                Sign in
               </Link>
-            ))}
+            )}
+            <MobileNav
+              isLoggedIn={!!authUser}
+              displayName={displayName}
+              avatarUrl={avatarUrl}
+              isAdmin={isAdmin || isSuperAdmin}
+            />
           </div>
         </div>
+
+        <WcNavLinks engaged={engaged} variant="mobile" isSuperAdmin={isSuperAdmin} />
       </nav>
 
       <div className="flex-1">{children}</div>
+
+      {/* Footer brand mark — Section 21 */}
+      <footer className="flex justify-center py-8">
+        <Link href="/" className="opacity-30 transition-opacity hover:opacity-50">
+          <BrandMark className="h-6 w-auto" />
+        </Link>
+      </footer>
     </div>
   );
 }

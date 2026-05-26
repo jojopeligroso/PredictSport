@@ -4,20 +4,14 @@ import { useState } from "react";
 import Link from "next/link";
 import { LogoutButton } from "./LogoutButton";
 
-const publicNavLinks = [
-  { href: "/competitions/personal", label: "Predictions" },
-  { href: "/leaderboard", label: "Table" },
-  { href: "/competitions", label: "Competitions" },
-] as const;
-
 interface MobileNavProps {
   isLoggedIn: boolean;
   displayName: string;
   avatarUrl: string | null;
-  extraNavLinks?: { href: string; label: string }[];
+  isAdmin?: boolean;
 }
 
-export function MobileNav({ isLoggedIn, displayName, avatarUrl, extraNavLinks = [] }: MobileNavProps) {
+export function MobileNav({ isLoggedIn, displayName, avatarUrl, isAdmin }: MobileNavProps) {
   const [isOpen, setIsOpen] = useState(false);
 
   return (
@@ -65,30 +59,7 @@ export function MobileNav({ isLoggedIn, displayName, avatarUrl, extraNavLinks = 
       {/* Mobile menu panel */}
       {isOpen && (
         <div className="absolute left-0 right-0 top-12 z-50 animate-in fade-in slide-in-from-top-1 border-b border-ps-border bg-ps-surface duration-150 ease-out">
-          <div className="space-y-1 px-4 py-3">
-            {publicNavLinks.map((link) => (
-              <Link
-                key={link.href}
-                href={link.href}
-                onClick={() => setIsOpen(false)}
-                className="block rounded-md px-3 py-2 text-sm font-medium text-ps-text-sec transition-colors hover:bg-ps-chip hover:text-ps-text"
-              >
-                {link.label}
-              </Link>
-            ))}
-            {extraNavLinks.map((link) => (
-              <Link
-                key={link.href}
-                href={link.href}
-                onClick={() => setIsOpen(false)}
-                className="block rounded-md px-3 py-2 text-sm font-bold text-ps-amber transition-colors hover:bg-ps-chip"
-              >
-                {link.label}
-              </Link>
-            ))}
-          </div>
-
-          <div className="border-t border-ps-border px-4 py-3">
+          <div className="px-4 py-3">
             {isLoggedIn ? (
               <div className="space-y-2">
                 <div className="flex items-center gap-2 px-3 py-1">
@@ -115,6 +86,15 @@ export function MobileNav({ isLoggedIn, displayName, avatarUrl, extraNavLinks = 
                 >
                   Profile
                 </Link>
+                {isAdmin && (
+                  <Link
+                    href="/competitions"
+                    onClick={() => setIsOpen(false)}
+                    className="block rounded-md px-3 py-2 text-sm font-medium text-ps-text-sec transition-colors hover:bg-ps-chip hover:text-ps-text"
+                  >
+                    Manage
+                  </Link>
+                )}
                 <LogoutButton />
               </div>
             ) : (

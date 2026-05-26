@@ -106,16 +106,16 @@ const FULL_STEPS: Step[] = [
 ];
 const KO_STEPS: Step[] = ["r32", "r16", "qf", "sf", "final", "review"];
 
-const STEP_NUMBERS: Record<Step, { num: number; label: string }> = {
-  groups: { num: 1, label: "Groups" },
-  tiebreakers: { num: 2, label: "Tiebreakers" },
-  third_place: { num: 3, label: "Best thirds" },
-  r32: { num: 4, label: "Round of 32" },
-  r16: { num: 5, label: "Round of 16" },
-  qf: { num: 6, label: "Quarter-finals" },
-  sf: { num: 7, label: "Semi-finals" },
-  final: { num: 8, label: "Final" },
-  review: { num: 9, label: "Review" },
+const STEP_LABELS: Record<Step, string> = {
+  groups: "Groups",
+  tiebreakers: "Tiebreakers",
+  third_place: "Best thirds",
+  r32: "Round of 32",
+  r16: "Round of 16",
+  qf: "Quarter-finals",
+  sf: "Semi-finals",
+  final: "Final",
+  review: "Review",
 };
 
 // ---------------------------------------------------------------------------
@@ -142,6 +142,27 @@ export function BracketWizard({
   const [lastSavedAt, setLastSavedAt] = useState<number | null>(null);
   const [pickWriteError, setPickWriteError] = useState<string | null>(null);
 
+  // High-water mark: the furthest step the user has reached. Dots beyond
+  // this index are greyed out and not navigable.
+  const [highWaterMark, setHighWaterMark] = useState(() =>
+    pickResumeStepIndex(steps, existingData, initialGroups),
+  );
+
+  // Dirty flag for bracket data (knockout picks, best thirds, champion,
+  // third place). Group picks write per-tap to /api/predictions and don't
+  // need this flag. Saves only fire when dirty, preventing version inflation.
+  const isDirty = useRef(false);
+
+  // Stable ref to the latest saveDraft so navigation callbacks don't need
+  // saveDraft in their dependency arrays (avoids declaration-order issues).
+  const saveDraftRef = useRef<() => Promise<void>>(async () => {});
+
+  // Pending group-change confirmation dialog state. Stores the previous
+  // groups snapshot so we can revert on cancel.
+  const [pendingGroupConfirm, setPendingGroupConfirm] = useState<
+    GroupData[] | null
+  >(null);
+
   // Auto-clear pick errors after 6s so a stale banner doesn't sit forever on
   // a page the user has already moved past.
   useEffect(() => {
@@ -159,6 +180,7 @@ export function BracketWizard({
   >(existingData?.knockoutPicks ?? {});
   const [champion, setChampion] = useState(existingData?.champion ?? "");
   const [thirdPlace, setThirdPlace] = useState(existingData?.thirdPlace ?? "");
+  const [showResetConfirm, setShowResetConfirm] = useState(false);
 
   // Track the latest pick per (event_id, prediction_type) to detect stale
   // responses. If two taps race, we keep only the most recent one's effect.
@@ -185,12 +207,54 @@ export function BracketWizard({
     return resolveAllKnockoutMatchups(r32Matchups, knockoutPicks);
   }, [r32Matchups, knockoutPicks]);
 
-  const goPrev = () => setStepIndex((i) => Math.max(0, i - 1));
-  const goNext = () => setStepIndex((i) => Math.min(steps.length - 1, i + 1));
-  const goToStep = (step: Step) => {
-    const idx = steps.indexOf(step);
-    if (idx !== -1) setStepIndex(idx);
-  };
+  // -------------------------------------------------------------------------
+  // Navigation
+  // -------------------------------------------------------------------------
+
+  /** Navigate to any reachable step via dot click. Saves if dirty. */
+  const navigateToStep = useCallback(
+    (targetIndex: number) => {
+      if (targetIndex === stepIndex) return;
+      if (targetIndex < 0 || targetIndex >= steps.length) return;
+      if (targetIndex > highWaterMark) return;
+      if (isDirty.current) {
+        void saveDraftRef.current();
+      }
+      setStepIndex(targetIndex);
+    },
+    [stepIndex, steps.length, highWaterMark],
+  );
+
+  /**
+   * Called when a step auto-completes (all groups filled, tiebreakers
+   * resolved, etc.). On first pass, extends the high-water mark and
+   * auto-advances. On revisit, stays put.
+   */
+  const completeStep = useCallback(() => {
+    if (isDirty.current) {
+      void saveDraftRef.current();
+    }
+    if (stepIndex >= highWaterMark) {
+      const next = Math.min(stepIndex + 1, steps.length - 1);
+      setHighWaterMark(next);
+      setStepIndex(next);
+    }
+  }, [stepIndex, highWaterMark, steps.length]);
+
+  /**
+   * Called when the user explicitly clicks a "Continue" button (knockout
+   * and final steps). Always advances regardless of first-pass/revisit.
+   */
+  const continueToNext = useCallback(() => {
+    if (isDirty.current) {
+      void saveDraftRef.current();
+    }
+    const next = Math.min(stepIndex + 1, steps.length - 1);
+    if (next > highWaterMark) {
+      setHighWaterMark(next);
+    }
+    setStepIndex(next);
+  }, [stepIndex, highWaterMark, steps.length]);
 
   // -------------------------------------------------------------------------
   // Per-tap write to /api/predictions
@@ -238,17 +302,15 @@ export function BracketWizard({
     [competitionId],
   );
 
-  // Diff old vs new groups to discover which match changed. GroupStep replaces
-  // the whole array on every tap, so the parent does the diff once rather
-  // than threading a granular callback through.
-  const handleGroupsUpdate = useCallback(
-    (next: GroupData[]) => {
-      // Apply optimistic update immediately.
-      setGroups(next);
+  // -------------------------------------------------------------------------
+  // Group diff + write helpers
+  // -------------------------------------------------------------------------
 
-      // Find the changed match (at most one per tap in practice).
+  /** Diff two group snapshots and write changed picks to /api/predictions. */
+  const writeGroupDiffs = useCallback(
+    (prev: GroupData[], next: GroupData[]) => {
       for (let gi = 0; gi < next.length; gi++) {
-        const before = groups[gi];
+        const before = prev[gi];
         const after = next[gi];
         if (!before || !after) continue;
         for (let mi = 0; mi < after.matches.length; mi++) {
@@ -263,9 +325,6 @@ export function BracketWizard({
 
           const event_id = eventIdByMatchId[am.match_id];
           if (!event_id) {
-            // No event mapping — bracket template and seeded events disagree.
-            // Surface but don't block: the optimistic UI still works for the
-            // user, but the pick won't survive a reload.
             setPickWriteError(
               `No event found for ${am.match_id} — pick saved locally only`,
             );
@@ -284,7 +343,11 @@ export function BracketWizard({
                 event_id,
                 prediction_type: "winner",
                 prediction_data: {
-                  selection: selectionForResult(am.result, am.home_team, am.away_team),
+                  selection: selectionForResult(
+                    am.result,
+                    am.home_team,
+                    am.away_team,
+                  ),
                 },
               });
             }
@@ -310,8 +373,46 @@ export function BracketWizard({
         }
       }
     },
-    [groups, eventIdByMatchId, writePrediction],
+    [eventIdByMatchId, writePrediction],
   );
+
+  /**
+   * Handle group data updates from GroupStep / TiebreakersStep / ThirdPlaceStep.
+   *
+   * If the user has progressed past the current step (highWaterMark > stepIndex),
+   * we apply the change optimistically but hold the API write behind a
+   * confirmation dialog. Cancel reverts to the previous snapshot.
+   */
+  const handleGroupsUpdate = useCallback(
+    (next: GroupData[]) => {
+      const isPastStep = highWaterMark > stepIndex;
+
+      if (isPastStep) {
+        // Apply optimistically so the UI reflects the tap immediately.
+        // Store previous groups for potential revert.
+        setPendingGroupConfirm(groups);
+        setGroups(next);
+        return;
+      }
+
+      // Normal flow — apply and write immediately.
+      setGroups(next);
+      writeGroupDiffs(groups, next);
+    },
+    [groups, stepIndex, highWaterMark, writeGroupDiffs],
+  );
+
+  const confirmGroupChange = useCallback(() => {
+    if (!pendingGroupConfirm) return;
+    writeGroupDiffs(pendingGroupConfirm, groups);
+    setPendingGroupConfirm(null);
+  }, [pendingGroupConfirm, groups, writeGroupDiffs]);
+
+  const cancelGroupChange = useCallback(() => {
+    if (!pendingGroupConfirm) return;
+    setGroups(pendingGroupConfirm);
+    setPendingGroupConfirm(null);
+  }, [pendingGroupConfirm]);
 
   // -------------------------------------------------------------------------
   // Bracket-data save (no group fields)
@@ -346,6 +447,7 @@ export function BracketWizard({
         setSubmitError(err.error ?? "Failed to save draft");
       } else {
         setLastSavedAt(Date.now());
+        isDirty.current = false;
       }
     } catch {
       setSubmitError("Network error");
@@ -353,6 +455,11 @@ export function BracketWizard({
       setSaving(false);
     }
   }, [buildBracketData, classificationId, competitionId]);
+
+  // Keep the ref in sync so navigation callbacks always use the latest saveDraft.
+  useEffect(() => {
+    saveDraftRef.current = saveDraft;
+  }, [saveDraft]);
 
   const submitBracket = useCallback(async () => {
     setSaving(true);
@@ -399,9 +506,70 @@ export function BracketWizard({
       if (slotId === "final") {
         setChampion(winner);
       }
+      isDirty.current = true;
     },
     [setKnockoutPicks, setChampion, setThirdPlace],
   );
+
+  // True when there are any knockout picks worth resetting.
+  const hasKnockoutPicks =
+    Object.keys(knockoutPicks).length > 0 ||
+    bestThirdPicks.length > 0 ||
+    champion !== "" ||
+    thirdPlace !== "";
+
+  // -------------------------------------------------------------------------
+  // Bracket reset
+  // -------------------------------------------------------------------------
+
+  const resetBracket = useCallback(async () => {
+    setKnockoutPicks({});
+    setChampion("");
+    setThirdPlace("");
+    setBestThirdPicks([]);
+    isDirty.current = true;
+
+    // Compute where the wizard should resume given groups-only state.
+    // Pass undefined for existing data since bracket picks are now empty.
+    const resumeIdx = pickResumeStepIndex(steps, undefined, groups);
+    setHighWaterMark(resumeIdx);
+    setStepIndex(resumeIdx);
+    setShowResetConfirm(false);
+
+    // Persist the empty bracket to DB immediately.
+    // We can't call saveDraft() directly here because the state setters
+    // above haven't flushed yet. Build the payload inline instead.
+    setSaving(true);
+    setSubmitError(null);
+    try {
+      const res = await fetch("/api/tournament/bracket/submit", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          classificationId,
+          competitionId,
+          bracketData: {
+            bestThirdPicks: [],
+            knockoutPicks: {},
+            champion: "",
+            thirdPlace: undefined,
+          } satisfies BracketSubmissionData,
+          action: "save_draft",
+        }),
+      });
+      if (!res.ok) {
+        const err = await res.json();
+        setSubmitError(err.error ?? "Failed to save reset");
+      } else {
+        setLastSavedAt(Date.now());
+        isDirty.current = false;
+      }
+    } catch {
+      setSubmitError("Network error");
+    } finally {
+      setSaving(false);
+    }
+  }, [steps, groups, classificationId, competitionId]);
 
   // ----- Render submitted state -----
 
@@ -450,14 +618,35 @@ export function BracketWizard({
 
   return (
     <div className="space-y-4">
-      <StepHeader
-        step={currentStep}
-        stepCount={steps.length}
-        index={stepIndex}
+      <StepNav
+        steps={steps}
+        stepIndex={stepIndex}
+        highWaterMark={highWaterMark}
         saving={saving}
         lastSavedAt={lastSavedAt}
         onSaveDraft={saveDraft}
+        onNavigate={navigateToStep}
+        showReset={hasKnockoutPicks}
+        onReset={() => setShowResetConfirm(true)}
       />
+
+      {pendingGroupConfirm && (
+        <ConfirmDialog
+          message="Changing this may affect your knockout picks. Change anyway?"
+          onConfirm={confirmGroupChange}
+          onCancel={cancelGroupChange}
+        />
+      )}
+
+      {showResetConfirm && (
+        <ConfirmDialog
+          message="This will clear all knockout picks, champion, and third-place selections. Your group predictions will be kept."
+          onConfirm={resetBracket}
+          onCancel={() => setShowResetConfirm(false)}
+          confirmLabel="Reset"
+          destructive
+        />
+      )}
 
       {pickWriteError && (
         <div
@@ -480,10 +669,7 @@ export function BracketWizard({
         <GroupStep
           groups={groups}
           onUpdate={handleGroupsUpdate}
-          onAllGroupsComplete={() => {
-            void saveDraft();
-            goNext();
-          }}
+          onAllGroupsComplete={completeStep}
         />
       )}
 
@@ -491,10 +677,7 @@ export function BracketWizard({
         <TiebreakersStep
           groups={groups}
           onUpdateGroups={handleGroupsUpdate}
-          onComplete={() => {
-            void saveDraft();
-            goNext();
-          }}
+          onComplete={completeStep}
         />
       )}
 
@@ -504,8 +687,8 @@ export function BracketWizard({
           onUpdateGroups={handleGroupsUpdate}
           onComplete={(groupIds) => {
             setBestThirdPicks(groupIds);
-            void saveDraft();
-            goNext();
+            isDirty.current = true;
+            completeStep();
           }}
         />
       )}
@@ -516,18 +699,17 @@ export function BracketWizard({
         currentStep === "sf") && (
         <KnockoutStageStep
           roundKey={currentStep}
-          roundName={STEP_NUMBERS[currentStep].label}
+          roundName={STEP_LABELS[currentStep]}
           slotIds={slotIdsFor(currentStep)}
           matchups={allMatchups}
           picks={knockoutPicks}
           nextRoundName={
-            currentStep === "sf" ? "the Final" : STEP_NUMBERS[steps[stepIndex + 1]].label
+            currentStep === "sf"
+              ? "the Final"
+              : STEP_LABELS[steps[stepIndex + 1]]
           }
           onPick={pickKnockout}
-          onContinue={() => {
-            void saveDraft();
-            goNext();
-          }}
+          onContinue={continueToNext}
         />
       )}
 
@@ -546,12 +728,13 @@ export function BracketWizard({
           onChampionPick={(team) => {
             setChampion(team);
             setKnockoutPicks((prev) => ({ ...prev, final: { winner: team } }));
+            isDirty.current = true;
           }}
-          onThirdPlacePick={setThirdPlace}
-          onContinue={() => {
-            void saveDraft();
-            goNext();
+          onThirdPlacePick={(team) => {
+            setThirdPlace(team);
+            isDirty.current = true;
           }}
+          onContinue={continueToNext}
         />
       )}
 
@@ -563,7 +746,7 @@ export function BracketWizard({
           allMatchups={allMatchups}
           champion={champion}
           thirdPlace={thirdPlace}
-          onJumpToStep={(step) => goToStep(step)}
+          onJumpToStep={(step) => navigateToStep(steps.indexOf(step))}
         />
       )}
 
@@ -576,51 +759,102 @@ export function BracketWizard({
         </div>
       )}
 
-      <NavBar
-        stepIndex={stepIndex}
-        stepCount={steps.length}
-        isReview={currentStep === "review"}
-        saving={saving}
-        onPrev={goPrev}
-        onSubmit={submitBracket}
-      />
+      {currentStep === "review" && (
+        <div className="flex justify-end border-t border-ps-border pt-3">
+          <button
+            type="button"
+            onClick={submitBracket}
+            disabled={saving}
+            className="rounded-xl bg-ps-amber px-5 py-2.5 text-sm font-extrabold text-ps-bg transition-all hover:opacity-90 active:scale-[0.98] disabled:opacity-50"
+          >
+            {saving ? "Submitting..." : "Submit bracket"}
+          </button>
+        </div>
+      )}
     </div>
   );
 }
 
 // ---------------------------------------------------------------------------
-// Header
+// Step navigation dots
 // ---------------------------------------------------------------------------
 
-function StepHeader({
-  step,
-  stepCount,
-  index,
+function StepNav({
+  steps,
+  stepIndex,
+  highWaterMark,
   saving,
   lastSavedAt,
   onSaveDraft,
+  onNavigate,
+  showReset,
+  onReset,
 }: {
-  step: Step;
-  stepCount: number;
-  index: number;
+  steps: Step[];
+  stepIndex: number;
+  highWaterMark: number;
   saving: boolean;
   lastSavedAt: number | null;
   onSaveDraft: () => void;
+  onNavigate: (index: number) => void;
+  showReset: boolean;
+  onReset: () => void;
 }) {
-  const pct = ((index + 1) / stepCount) * 100;
+  const step = steps[stepIndex];
   return (
     <div className="space-y-2">
+      {/* Numbered dots — current + neighbors are large, rest are small */}
+      <div className="flex items-center justify-center gap-1.5">
+        {steps.map((s, i) => {
+          const isCurrent = i === stepIndex;
+          const isNeighbor = Math.abs(i - stepIndex) === 1;
+          const isReachable = i <= highWaterMark;
+          const isLarge = isCurrent || isNeighbor;
+
+          return (
+            <button
+              key={s}
+              type="button"
+              disabled={!isReachable || isCurrent}
+              onClick={() => onNavigate(i)}
+              className={[
+                "flex items-center justify-center rounded-full font-mono font-bold transition-all duration-200",
+                isLarge ? "h-8 w-8 text-xs" : "h-5 w-5 text-[9px]",
+                isCurrent
+                  ? "bg-ps-text text-ps-bg"
+                  : isReachable
+                    ? "bg-ps-chip text-ps-text-sec hover:bg-ps-text/20"
+                    : "bg-ps-chip/40 text-ps-text-ter/30",
+              ].join(" ")}
+              aria-label={`Step ${i + 1}: ${STEP_LABELS[s]}`}
+              aria-current={isCurrent ? "step" : undefined}
+            >
+              {i + 1}
+            </button>
+          );
+        })}
+      </div>
+
+      {/* Step label + save status */}
       <div className="flex items-center justify-between">
-        <div>
-          <p className="font-mono text-[10px] font-bold uppercase tracking-widest text-ps-text-ter">
-            Step {STEP_NUMBERS[step].num} of {stepCount}
-          </p>
-        </div>
+        <p className="font-mono text-[10px] font-bold uppercase tracking-widest text-ps-text-ter">
+          {STEP_LABELS[step]}
+        </p>
         <div className="flex items-center gap-2 text-[11px] text-ps-text-sec">
+          {showReset && (
+            <button
+              type="button"
+              onClick={onReset}
+              disabled={saving}
+              className="text-ps-text-ter hover:text-ps-text disabled:opacity-40"
+            >
+              Reset bracket
+            </button>
+          )}
           {saving ? (
-            <span className="animate-pulse">Saving…</span>
+            <span className="animate-pulse">Saving...</span>
           ) : lastSavedAt ? (
-            <span className="text-ps-green">✓ Saved</span>
+            <span className="text-ps-green">Saved</span>
           ) : null}
           <button
             type="button"
@@ -632,62 +866,52 @@ function StepHeader({
           </button>
         </div>
       </div>
-      <div className="h-1 w-full overflow-hidden rounded-full bg-ps-chip">
-        <div
-          className="h-full bg-ps-text transition-all duration-300"
-          style={{ width: `${pct}%` }}
-        />
-      </div>
     </div>
   );
 }
 
 // ---------------------------------------------------------------------------
-// Nav
+// Confirmation dialog
 // ---------------------------------------------------------------------------
 
-function NavBar({
-  stepIndex,
-  stepCount,
-  isReview,
-  saving,
-  onPrev,
-  onSubmit,
+function ConfirmDialog({
+  message,
+  onConfirm,
+  onCancel,
+  confirmLabel = "Change",
+  destructive = false,
 }: {
-  stepIndex: number;
-  stepCount: number;
-  isReview: boolean;
-  saving: boolean;
-  onPrev: () => void;
-  onSubmit: () => void;
+  message: string;
+  onConfirm: () => void;
+  onCancel: () => void;
+  confirmLabel?: string;
+  destructive?: boolean;
 }) {
   return (
-    <div className="flex items-center justify-between border-t border-ps-border pt-3">
-      <button
-        type="button"
-        onClick={onPrev}
-        disabled={stepIndex === 0}
-        className="rounded-md px-3 py-2 text-xs font-semibold text-ps-text-sec transition-colors hover:text-ps-text disabled:opacity-30"
-      >
-        ← Back
-      </button>
-
-      <span className="font-mono text-[10px] text-ps-text-ter">
-        {stepIndex + 1} / {stepCount}
-      </span>
-
-      {isReview ? (
-        <button
-          type="button"
-          onClick={onSubmit}
-          disabled={saving}
-          className="rounded-xl bg-ps-amber px-5 py-2.5 text-sm font-extrabold text-ps-bg transition-all hover:opacity-90 active:scale-[0.98] disabled:opacity-50"
-        >
-          {saving ? "Submitting…" : "Submit bracket 🏆"}
-        </button>
-      ) : (
-        <span className="w-[80px]" aria-hidden />
-      )}
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4">
+      <div className="w-full max-w-sm rounded-xl border border-ps-border bg-ps-bg p-5 shadow-xl">
+        <p className="text-sm text-ps-text">{message}</p>
+        <div className="mt-4 flex justify-end gap-3">
+          <button
+            type="button"
+            onClick={onCancel}
+            className="rounded-lg px-4 py-2 text-sm font-semibold text-ps-text-sec hover:bg-ps-chip"
+          >
+            Cancel
+          </button>
+          <button
+            type="button"
+            onClick={onConfirm}
+            className={
+              destructive
+                ? "rounded-lg bg-ps-red px-4 py-2 text-sm font-extrabold text-white hover:opacity-90"
+                : "rounded-lg bg-ps-amber px-4 py-2 text-sm font-extrabold text-ps-bg hover:opacity-90"
+            }
+          >
+            {confirmLabel}
+          </button>
+        </div>
+      </div>
     </div>
   );
 }
@@ -740,7 +964,8 @@ function pickResumeStepIndex(
   const sfDone = WC2026_KNOCKOUT_ROUNDS[3].slotIds.every(
     (s) => knockoutPicks[s]?.winner,
   );
-  const finalDone = Boolean(existing?.champion) && Boolean(existing?.thirdPlace);
+  const finalDone =
+    Boolean(existing?.champion) && Boolean(existing?.thirdPlace);
 
   let target: Step = "groups";
   if (groupsDone) target = "tiebreakers";

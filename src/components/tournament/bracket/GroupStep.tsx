@@ -84,7 +84,16 @@ export default function GroupStep({
 
   const handleScoreEntry = useCallback(
     (matchId: string, homeScore: number, awayScore: number) => {
-      updateMatch(matchId, { exact_score: { home_score: homeScore, away_score: awayScore } });
+      // Derive result from the score and update both atomically in a single
+      // updateMatch call. This avoids the stale-closure race that occurs when
+      // MatchCard fires onResultChange + onScoreEntry as two sequential calls
+      // against the same pre-update groups snapshot.
+      const inferred: MatchResult =
+        homeScore > awayScore ? 'home_win' : awayScore > homeScore ? 'away_win' : 'draw';
+      updateMatch(matchId, {
+        result: inferred,
+        exact_score: { home_score: homeScore, away_score: awayScore },
+      });
     },
     [updateMatch],
   );
@@ -138,7 +147,7 @@ export default function GroupStep({
           </p>
         </div>
         <p className="mt-1 text-xs text-ps-text-sec">
-          Tap to pick a winner or a draw. Live standings update below.
+          Pick every result. Exact scores are optional.
         </p>
       </div>
 
@@ -169,9 +178,7 @@ export default function GroupStep({
         }`}
       >
         {!currentGroupComplete ? (
-          `Pick ${6 - currentGroup.matches.filter((m) => m.result !== null).length} more match${
-            6 - currentGroup.matches.filter((m) => m.result !== null).length === 1 ? "" : "es"
-          }`
+          `${6 - currentGroup.matches.filter((m) => m.result !== null).length} left to call`
         ) : completedCount === groups.length ? (
           <span className="inline-flex items-center justify-center gap-2">
             Continue to tiebreakers
@@ -211,7 +218,7 @@ function GroupProgress({
   return (
     <div className="rounded-xl border border-ps-border bg-ps-surface p-3">
       <div className="flex items-center justify-between text-xs">
-        <span className="font-semibold text-ps-text">Group stage progress</span>
+        <span className="font-semibold text-ps-text">Groups</span>
         <span className="font-mono font-semibold text-ps-text-sec">
           {completed}/{total}
         </span>
@@ -240,8 +247,8 @@ function GroupOverviewStrip({
   pickColor: PickColor;
 }) {
   return (
-    <div className="-mx-1 overflow-x-auto px-1">
-      <div className="flex gap-1.5 pb-1">
+    <div className="px-1">
+      <div className="flex flex-wrap gap-1.5 pb-1">
         {groups.map((group, i) => {
           const complete = group.matches.every((m) => m.result !== null);
           const inProgress = !complete && group.matches.some((m) => m.result !== null);
@@ -285,7 +292,7 @@ function LiveStandingsTable({
   return (
     <div className="rounded-xl border border-ps-border bg-ps-surface p-3">
       <h3 className="mb-2 text-xs font-bold uppercase tracking-widest text-ps-text-ter">
-        Predicted standings
+        Your table
       </h3>
       <div className="overflow-hidden rounded-lg border border-ps-border">
         <table className="w-full text-xs">
@@ -338,7 +345,7 @@ function LiveStandingsTable({
         </table>
       </div>
       <p className="mt-2 text-[10px] text-ps-text-ter">
-        Top 2 qualify to R32 · 3rd enters best-thirds ranking
+        Top 2 through · 3rd plays for a lifeline
       </p>
     </div>
   );

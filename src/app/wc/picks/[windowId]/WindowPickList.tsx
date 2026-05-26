@@ -2,8 +2,8 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import { ExactScoreSection } from "@/components/ExactScoreSection";
 import { CountryFlag } from "@/components/CountryFlag";
+import { deriveWinnerFromScore } from "@/lib/score-format";
 import type {
   EventPredictionType,
   Prediction,
@@ -134,8 +134,22 @@ function MatchPickRow({
   const [winnerPred, setWinnerPred] = useState<Prediction | null>(
     initialWinner,
   );
-  const [scorePred, setScorePred] = useState<Prediction | null>(initialScore);
+  // scorePred is kept to initialise the score input values above; setScorePred
+  // syncs it after a successful save so a re-mount sees the latest values.
+  const [, setScorePred] = useState<Prediction | null>(initialScore);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
+
+  // Score input state — initialized from existing prediction if available.
+  const [homeScore, setHomeScore] = useState<string>(() => {
+    const val = initialScore?.prediction_data?.home;
+    return val !== undefined && val !== null ? String(val) : "";
+  });
+  const [awayScore, setAwayScore] = useState<string>(() => {
+    const val = initialScore?.prediction_data?.away;
+    return val !== undefined && val !== null ? String(val) : "";
+  });
+
+  const awayInputRef = useRef<HTMLInputElement>(null);
 
   // Abort the previous in-flight winner POST when a new tap arrives so the
   // latest tap is what gets persisted even if the earlier one was slow.
@@ -148,6 +162,12 @@ function MatchPickRow({
     if (opts && opts.length > 0) return opts;
     return away ? [home, "Draw", away] : [home];
   }, [winnerEpt, home, away]);
+
+  // Find the draw option from winnerOptions.
+  const drawOption = useMemo(
+    () => winnerOptions.find((opt) => slotOf(opt, home, away) === "draw") ?? "Draw",
+    [winnerOptions, home, away],
+  );
 
   const submitPrediction = useCallback(
     async (
@@ -245,7 +265,7 @@ function MatchPickRow({
           setWinnerPred(previousPred);
           if (!hadWinner) onWinnerLanded(event.id, false);
           setErrorMsg(
-            err instanceof Error ? err.message : "Couldn’t save that pick",
+            err instanceof Error ? err.message : "Couldn't save that pick",
           );
         });
     },
@@ -260,39 +280,59 @@ function MatchPickRow({
     ],
   );
 
-  // ExactScoreSection callbacks. It owns its own submit/clear/derivation state;
-  // we persist and mirror the result into local state.
-  const handleSubmitScore = useCallback(
-    async (data: {
-      eventId: string;
-      predictionType: PredictionType;
-      predictionData: Record<string, unknown>;
-    }) => {
-      const saved = await submitPrediction(
-        data.predictionType,
-        data.predictionData,
-      );
-      setScorePred(saved);
-      router.refresh();
-    },
-    [submitPrediction, router],
-  );
+  /**
+   * Submit the score prediction on blur when both inputs have valid values.
+   * Auto-infers and sets the winner if none is selected yet.
+   */
+  const handleScoreBlur = useCallback(
+    async (latestHome: string, latestAway: string) => {
+      if (!scoreEpt) return;
 
-  const handleUpdateWinner = useCallback(
-    async (data: {
-      eventId: string;
-      predictionType: PredictionType;
-      predictionData: Record<string, unknown>;
-    }) => {
-      const saved = await submitPrediction(
-        data.predictionType,
-        data.predictionData,
-      );
-      setWinnerPred(saved);
-      const hasWinner = winnerValue(saved ?? undefined) !== null;
-      onWinnerLanded(event.id, hasWinner);
+      const homeNum = parseInt(latestHome, 10);
+      const awayNum = parseInt(latestAway, 10);
+
+      if (
+        latestHome === "" ||
+        latestAway === "" ||
+        isNaN(homeNum) ||
+        isNaN(awayNum) ||
+        homeNum < 0 ||
+        awayNum < 0
+      ) {
+        return;
+      }
+
+      try {
+        const saved = await submitPrediction("exact_score", {
+          home: homeNum,
+          away: awayNum,
+        });
+        setScorePred(saved);
+        router.refresh();
+
+        // Score is source of truth — always align the winner to match it.
+        if (winnerEpt) {
+          const implied = deriveWinnerFromScore(
+            { home: homeNum, away: awayNum },
+            event.sport,
+            winnerOptions,
+          );
+          if (implied && implied !== currentWinner) handlePickWinner(implied);
+        }
+      } catch {
+        // Silently ignore score submission errors.
+      }
     },
-    [submitPrediction, onWinnerLanded, event.id],
+    [
+      scoreEpt,
+      submitPrediction,
+      router,
+      currentWinner,
+      winnerEpt,
+      winnerOptions,
+      event.sport,
+      handlePickWinner,
+    ],
   );
 
   if (isLocked) {
@@ -323,53 +363,136 @@ function MatchPickRow({
     );
   }
 
-  return (
-    <div className="rounded-lg border border-ps-border bg-ps-surface px-2 py-2">
-      <div className="grid grid-cols-3 gap-1.5">
-        {winnerOptions.map((opt) => {
-          const isSelected = currentWinner === opt;
-          const slot = slotOf(opt, home, away);
-          return (
-            <button
-              key={opt}
-              type="button"
-              onClick={() => handlePickWinner(opt)}
-              aria-pressed={isSelected}
-              className={[
-                "flex items-center justify-center gap-1.5 rounded-md px-2 py-2 text-center text-[13px] font-bold leading-tight transition-all duration-150",
-                "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ps-amber/50",
-                "motion-reduce:transition-none active:scale-[0.97]",
-                isSelected
-                  ? slot === "draw"
-                    ? "bg-ps-text text-ps-bg"
-                    : "bg-ps-amber text-ps-text"
-                  : "bg-ps-chip text-ps-text hover:bg-ps-chip/70",
-              ].join(" ")}
-            >
-              {slot !== "draw" && <CountryFlag shape="pill" name={opt} size={18} />}
-              <span className="truncate">{opt}</span>
-            </button>
-          );
-        })}
-      </div>
+  const homeSelected = currentWinner === home;
+  const awaySelected = currentWinner === away;
+  const drawSelected = currentWinner === drawOption;
 
-      {scoreEpt && (
-        <div className="mt-1.5">
-          <ExactScoreSection
-            eventId={event.id}
-            sport={event.sport}
-            homeTeam={home}
-            awayTeam={away}
-            ept={scoreEpt}
-            winnerOptions={winnerOptions}
-            currentWinnerPick={currentWinner}
-            existingScorePrediction={scorePred}
-            isLocked={isLocked}
-            onSubmitScore={handleSubmitScore}
-            onUpdateWinner={handleUpdateWinner}
+  return (
+    <div
+      className={[
+        "rounded-xl border p-3.5 transition-all duration-200 bg-ps-surface",
+        currentWinner ? "border-ps-amber/30" : "border-ps-border",
+      ].join(" ")}
+    >
+      <div className="flex items-center justify-center gap-1.5">
+        {/* Home team button */}
+        <button
+          type="button"
+          onClick={() => handlePickWinner(home)}
+          aria-pressed={homeSelected}
+          className={[
+            "flex-1 min-w-0 flex flex-col items-center gap-1 px-1.5 py-1.5 rounded-lg transition-all duration-150 cursor-pointer",
+            "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ps-amber/50",
+            homeSelected
+              ? "bg-ps-amber/10 ring-2 ring-ps-amber"
+              : "hover:bg-ps-chip",
+          ].join(" ")}
+        >
+          <CountryFlag shape="pill" name={home} size={24} />
+          <span
+            className={[
+              "max-w-full truncate text-xs font-semibold text-center leading-tight",
+              homeSelected ? "text-ps-amber" : "text-ps-text-ter",
+            ].join(" ")}
+          >
+            {home}
+          </span>
+        </button>
+
+        {/* Home score input */}
+        {scoreEpt && (
+          <input
+            type="text"
+            inputMode="numeric"
+            maxLength={2}
+            placeholder="–"
+            value={homeScore}
+            onChange={(e) => {
+              const val = e.target.value.replace(/[^0-9]/g, "");
+              setHomeScore(val);
+              if (val !== "" && awayInputRef.current) {
+                awayInputRef.current.focus();
+              }
+            }}
+            onBlur={() => handleScoreBlur(homeScore, awayScore)}
+            aria-label={`${home} score`}
+            className={[
+              "w-[30px] h-[28px] rounded-full border text-center font-mono text-sm font-semibold text-ps-text outline-none transition-all duration-150 shrink-0",
+              homeScore !== ""
+                ? "bg-white border-ps-amber"
+                : "bg-transparent border-ps-border",
+              "focus:border-ps-amber focus:bg-white",
+            ].join(" ")}
           />
-        </div>
-      )}
+        )}
+
+        {/* Draw button */}
+        {winnerOptions.some((opt) => slotOf(opt, home, away) === "draw") && (
+          <button
+            type="button"
+            onClick={() => handlePickWinner(drawOption)}
+            aria-pressed={drawSelected}
+            className={[
+              "shrink-0 px-2.5 py-1.5 rounded-lg text-xs font-medium transition-all duration-150",
+              "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ps-amber/50",
+              drawSelected
+                ? "bg-ps-amber/10 text-ps-amber ring-2 ring-ps-amber"
+                : "text-ps-text-ter hover:bg-ps-chip hover:text-ps-text-sec",
+            ].join(" ")}
+          >
+            draw
+          </button>
+        )}
+
+        {/* Away score input */}
+        {scoreEpt && (
+          <input
+            ref={awayInputRef}
+            type="text"
+            inputMode="numeric"
+            maxLength={2}
+            placeholder="–"
+            value={awayScore}
+            onChange={(e) => {
+              const val = e.target.value.replace(/[^0-9]/g, "");
+              setAwayScore(val);
+            }}
+            onBlur={() => handleScoreBlur(homeScore, awayScore)}
+            aria-label={`${away} score`}
+            className={[
+              "w-[30px] h-[28px] rounded-full border text-center font-mono text-sm font-semibold text-ps-text outline-none transition-all duration-150 shrink-0",
+              awayScore !== ""
+                ? "bg-white border-ps-amber"
+                : "bg-transparent border-ps-border",
+              "focus:border-ps-amber focus:bg-white",
+            ].join(" ")}
+          />
+        )}
+
+        {/* Away team button */}
+        <button
+          type="button"
+          onClick={() => handlePickWinner(away)}
+          aria-pressed={awaySelected}
+          className={[
+            "flex-1 min-w-0 flex flex-col items-center gap-1 px-1.5 py-1.5 rounded-lg transition-all duration-150 cursor-pointer",
+            "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ps-amber/50",
+            awaySelected
+              ? "bg-ps-amber/10 ring-2 ring-ps-amber"
+              : "hover:bg-ps-chip",
+          ].join(" ")}
+        >
+          <CountryFlag shape="pill" name={away} size={24} />
+          <span
+            className={[
+              "max-w-full truncate text-xs font-semibold text-center leading-tight",
+              awaySelected ? "text-ps-amber" : "text-ps-text-ter",
+            ].join(" ")}
+          >
+            {away}
+          </span>
+        </button>
+      </div>
 
       {errorMsg && (
         <p className="mt-1 text-[11px] font-medium text-ps-red">{errorMsg}</p>

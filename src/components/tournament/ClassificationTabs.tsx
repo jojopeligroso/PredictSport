@@ -34,8 +34,9 @@ export function ClassificationTabs({
   inviteCode?: string | null;
   kickoffIso?: string | null;
 }) {
+  const visibleClassifications = classifications.filter((c) => c.status !== "draft");
   const [activeId, setActiveId] = useState<string>(
-    classifications[0]?.id ?? ""
+    visibleClassifications[0]?.id ?? ""
   );
   const [standings, setStandings] = useState<StandingRow[]>([]);
   const [loading, setLoading] = useState(true);
@@ -71,7 +72,7 @@ export function ClassificationTabs({
 
   const isLoading = loading || loadedId !== activeId;
 
-  if (classifications.length === 0) {
+  if (visibleClassifications.length === 0) {
     return (
       <p className="py-8 text-center text-sm text-ps-text-sec">
         No classifications configured yet.
@@ -79,13 +80,13 @@ export function ClassificationTabs({
     );
   }
 
-  const active = classifications.find((c) => c.id === activeId);
+  const active = visibleClassifications.find((c) => c.id === activeId);
 
   return (
-    <div>
+    <div className="flex flex-1 flex-col">
       {/* Tab bar */}
       <div className="flex gap-1 overflow-x-auto rounded-lg bg-ps-bg p-1">
-        {classifications.map((cls) => (
+        {visibleClassifications.map((cls) => (
           <button
             key={cls.id}
             onClick={() => { setActiveId(cls.id); setLoading(true); }}
@@ -101,17 +102,19 @@ export function ClassificationTabs({
       </div>
 
       {/* Standings */}
-      <div className="mt-4">
+      <div className="mt-4 flex flex-1 flex-col">
         {isLoading ? (
           <div className="flex justify-center py-12">
             <div className="h-5 w-5 animate-spin rounded-full border-2 border-ps-text-ter border-t-ps-text" />
           </div>
         ) : standings.length === 0 ? (
-          <EmptyStandings
-            isDraft={active?.status === "draft"}
-            inviteCode={inviteCode ?? null}
-            kickoffIso={kickoffIso ?? null}
-          />
+          <div className="flex flex-1 items-center justify-center pb-[10%]">
+            <EmptyStandings
+              isDraft={active?.status === "draft"}
+              inviteCode={inviteCode ?? null}
+              kickoffIso={kickoffIso ?? null}
+            />
+          </div>
         ) : (
           <StandingsTable
             standings={standings}
@@ -285,7 +288,7 @@ function EmptyStandings({
       : "Standings will appear here once results land.";
 
   return (
-    <div className="rounded-xl border border-ps-border bg-ps-surface px-4 py-6">
+    <div className="w-full rounded-xl border border-ps-border bg-ps-surface px-4 py-6">
       <p className="text-center text-sm text-ps-text-sec">{headline}</p>
       {inviteCode && (
         <div className="mt-5 border-t border-ps-border pt-5">

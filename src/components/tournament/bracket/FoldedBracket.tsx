@@ -189,7 +189,16 @@ export function FoldedBracket({
       </div>
 
       {/* Champion seam — visible always */}
-      <ChampionSeam champion={submission.champion} thirdPlace={submission.thirdPlace} />
+      <ChampionSeam
+        champion={submission.champion}
+        runnerUp={
+          submission.champion
+            ? [submission.knockoutPicks?.sf_m1?.winner, submission.knockoutPicks?.sf_m2?.winner]
+                .find((t) => t && t !== submission.champion)
+            : undefined
+        }
+        thirdPlace={submission.thirdPlace}
+      />
 
       {/* Hint */}
       <p className="mt-2 text-center font-mono text-[10px] uppercase tracking-widest text-ps-text-ter">
@@ -398,12 +407,14 @@ function BracketColumn({
 
 function ChampionSeam({
   champion,
+  runnerUp,
   thirdPlace,
 }: {
   champion: string | undefined;
+  runnerUp: string | undefined;
   thirdPlace: string | undefined;
 }) {
-  if (!champion && !thirdPlace) return null;
+  if (!champion && !runnerUp && !thirdPlace) return null;
   return (
     <div className="mt-3 rounded-xl border-2 border-ps-amber/40 bg-gradient-to-br from-ps-amber/10 to-ps-amber/5 px-4 py-3 text-center">
       <p className="font-mono text-[10px] font-bold uppercase tracking-widest text-ps-amber">
@@ -417,6 +428,11 @@ function ChampionSeam({
       ) : (
         <p className="mt-1 font-display text-lg font-extrabold text-ps-text-ter">
           Champion TBD
+        </p>
+      )}
+      {runnerUp && (
+        <p className="mt-1 font-mono text-[10px] text-ps-text-sec">
+          Runner-up: <span className="font-semibold text-ps-text">{runnerUp}</span>
         </p>
       )}
       {thirdPlace && (

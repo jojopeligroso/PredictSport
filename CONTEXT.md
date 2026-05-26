@@ -115,16 +115,58 @@ A participant's aggregate prediction accuracy across all their competitions (gro
 
 ## Super Administrator
 
-A platform-level role responsible for canonical tournament truth: confirming official fixture results, finalising windows/stages, maintaining tournament templates. Operates across all Prediction Games that share a tournament. Desktop-primary user. See ADR 0005.
+A platform-level role responsible for canonical tournament truth: confirming official fixture results, finalising windows/stages, maintaining tournament templates. Operates across all Prediction Games that share a tournament. Terminal-primary user — the surface can be extremely utilitarian (CLI-like). See ADR 0005.
 
 ---
 
 ## Competition Admin
 
-The owner of a single Prediction Game. Manages invites, copy, and preset selection for their own game; cannot confirm official results or alter fixtures (those are [[Super Administrator]] actions). Mobile-first user — typically picks from a small set of presets rather than authoring rounds from scratch.
+The owner of a single Prediction Game. Their surface is deliberately minimal: league settings and member management across two dedicated pages. Cannot confirm official results, alter fixtures, or edit round/event structure (those are [[Super Administrator]] actions). Mobile-first, non-technical user — picks from presets, never authors from scratch.
+
+---
+
+## Global Classification
+
+A platform-wide leaderboard across all users on the /wc surface, regardless of which private league they belong to. Same scores as league standings, just a wider ranking pool. Only activates once the platform exceeds 2,000 users to avoid a sparse leaderboard. Users who have opted out of visibility appear anonymised. Phase 2 — deferred.
+
+---
+
+## Privacy Mode
+
+The access control setting for a competition. Three modes: **Open** (discoverable, instant join), **Link-only** (need the invite link, link = instant join), **Approval** (need the invite link, admin approves from queue). No email gating in any mode — the link is the invitation. Email allowlists deferred to phase 2 as an optional layer on top of Approval mode.
+
+---
+
+## Treasurer
+
+A distinct member role within a competition, nominated by the [[Competition Admin]]. Responsible for tracking entry fee payments. Can mark members as paid/unpaid but has no other admin powers. Admin can hold the treasurer role themselves. Only available for competitions with 96 or fewer members. Phase 2 — deferred.
 
 ---
 
 ## Preset
 
 A pre-built, ready-to-use bundle of rounds, events, and prediction-type configuration that a [[Competition Admin]] selects to set up their Prediction Game without authoring anything from scratch. Presets are authored by the [[Super Administrator]] and intentionally limited in variation.
+
+---
+
+## Dashboard State
+
+A UI-level concept, never stored in the database. Computed from the user's auth session, bracket submission status, and [[Classification]] membership statuses to determine which dashboard layout the `/wc` surface shows. The states are: `visitor`, `bracket`, `format`, `overall`, and `archive`. No table, no column — a pure function of existing data.
+
+---
+
+## Stage
+
+A phase of the tournament after which Format elimination occurs. During the group stage, all three matchdays form a single stage — elimination happens after Matchday 3, not after each matchday. During knockouts, each round is its own stage (Round of 32, Round of 16, Quarter-finals, Semi-finals, Final). The Final stage includes the third-place match — one prediction window, two fixtures. User-facing label is always lowercase "stage" with no qualifier. "Sporting Stage" is not used.
+
+---
+
+## Matchday
+
+User-facing label for a prediction window during the World Cup group stage. Maps to a `rounds` row in the database. "Matchday 1", "Matchday 2", "Matchday 3". During knockout stages, the user-facing label switches to the stage name: "Round of 32", "Round of 16", "Quarter-finals", "Semi-finals", "Final". The spec/admin term "Prediction Window" and the DB term "Round" are never shown to users on the `/wc` surface. Outside the WC surface, "Round" is the default user-facing label.
+
+---
+
+## The Cut
+
+The R32 Classification, renamed. Measures how many of the 32 knockout-stage teams the user correctly predicted from their Full Bracket group stage picks. Not path-sensitive — only checks whether each team made the knockouts, regardless of position. Short label: "The Cut". Full title: "Who Made the Cut". No question mark.

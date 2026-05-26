@@ -24,9 +24,6 @@ const CARD_BG: React.CSSProperties = {
     "linear-gradient(160deg, rgba(28,22,16,0.80) 0%, rgba(8,8,8,0.84) 100%)",
 };
 
-const INNER_BLOCK_CLASSES =
-  "rounded-xl border border-white/[0.08] bg-white/[0.05]";
-
 export default async function WorldCupLanding() {
   const supabase = await createClient();
   const {
@@ -87,7 +84,7 @@ export default async function WorldCupLanding() {
     >
       <main className="mx-auto flex max-w-[480px] flex-col gap-6 px-4 pt-[35px] pb-[39px]">
 
-        {/* Card 1 — wordmark + countdown */}
+        {/* Card 1 — wordmark + tagline + hook + countdown */}
         <section className={CARD_BASE} style={CARD_BG}>
           <div className="text-center">
             <h1 className="font-display text-[32px] leading-none uppercase tracking-tight">
@@ -98,8 +95,12 @@ export default async function WorldCupLanding() {
             </p>
           </div>
 
+          <p className="mt-5 text-center font-display text-xl font-extrabold leading-snug">
+            Predict every match. Survive the cut. Outlast everyone. Win.
+          </p>
+
           {daysUntil > 0 && (
-            <div className="mt-[18px] flex justify-center">
+            <div className="mt-5 flex justify-center">
               <div
                 className="rounded-[10px] border border-white/10 bg-white/[0.06] px-[22px] py-3 text-center font-mono"
                 style={{ borderBottom: "2px solid #4ade80" }}
@@ -115,7 +116,30 @@ export default async function WorldCupLanding() {
           )}
         </section>
 
-        {/* Card 2 — Primary CTA, state-driven (signed-out / in-progress / done) */}
+        {/* Card 2 — Four narrative beats */}
+        <section className={CARD_BASE} style={CARD_BG}>
+          <NarrativeBeat
+            title="Predict every match."
+            body="Winner and exact score across all 104 fixtures. Group stage through the final."
+          />
+          <NarrativeBeat
+            title="Survive the cut."
+            body="Prediction groups of four. Bottom drops after each stage. Miss the cut and you’re out."
+          />
+          <NarrativeBeat
+            title="Outlast everyone."
+            body="Overall points. Bracket picks. Multiple ways to win — or claw your way back."
+            dashed
+          />
+          <NarrativeBeat
+            title="Win."
+            body="Top of the table when the dust settles. Bragging rights included."
+            accent
+            last
+          />
+        </section>
+
+        {/* Card 3 — Primary CTA, state-driven, with rules link */}
         <section className={CARD_BASE} style={CARD_BG}>
           {user && bracket && !bracketDone ? (
             <div className="flex flex-col items-center gap-4">
@@ -179,43 +203,15 @@ export default async function WorldCupLanding() {
               </Link>
             </div>
           )}
-        </section>
 
-        {/* Card 3 — Three ways to play */}
-        <section className={CARD_BASE} style={CARD_BG}>
-          <h2 className="text-center text-[10px] font-bold uppercase tracking-[0.25em] text-white/55">
-            Three ways to play
-          </h2>
-          <div className="mt-4 grid grid-cols-2 gap-2.5">
-            <ClassificationCard
-              title="Bracket"
-              description="Pick every group and knockout result before kickoff."
-            />
-            <ClassificationCard
-              title="Format"
-              description="Prediction groups of 4. Bottom drops each stage."
-            />
-            <ClassificationCard
-              title="Overall"
-              description="Every match, every point. Cumulative from start to finish."
-              span
-            />
+          <div className="mt-4 flex justify-center">
+            <Link
+              href="/wc/rules"
+              className="text-xs text-white/55 underline-offset-2 hover:text-white/80 hover:underline"
+            >
+              Simple scoring. Full rules →
+            </Link>
           </div>
-        </section>
-
-        {/* Card 4 — Scoring */}
-        <section className={CARD_BASE} style={CARD_BG}>
-          <h2 className="text-center text-[10px] font-bold uppercase tracking-[0.25em] text-white/55">
-            Scoring
-          </h2>
-          <div className="mt-4 flex flex-col gap-2">
-            <ScoringRow points={2} label="Correct match outcome" />
-            <ScoringRow points={3} label="Exact score bonus" />
-            <ScoringRow points={1} label="Correct advancing team (knockout)" />
-          </div>
-          <p className="mt-3.5 text-center text-[10px] text-white/55">
-            Group matches: max 5pts &middot; Knockout: max 6pts
-          </p>
         </section>
 
         {/* Brand sign-off — Oracle Dot at the very end, small + compact */}
@@ -228,21 +224,43 @@ export default async function WorldCupLanding() {
   );
 }
 
-function ClassificationCard({
+function NarrativeBeat({
   title,
-  description,
-  span,
+  body,
+  dashed,
+  accent,
+  last,
 }: {
   title: string;
-  description: string;
-  span?: boolean;
+  body: string;
+  dashed?: boolean;
+  accent?: boolean;
+  last?: boolean;
 }) {
+  // Each beat sits between two border rules; the dashed variant lets two
+  // adjacent beats bleed into each other (Outlast → Win on master). The first
+  // beat skips the top border so it doesn't double up with the card edge.
   return (
-    <div className={`${INNER_BLOCK_CLASSES} p-3.5 ${span ? "col-span-2" : ""}`}>
-      <h3 className="text-[13px] font-extrabold text-[#fefdf7]">{title}</h3>
-      <p className="mt-1 text-[11px] leading-snug text-white/65">
-        {description}
-      </p>
+    <div
+      className={[
+        "py-5",
+        dashed
+          ? "border-t border-dashed border-white/15"
+          : "border-t border-white/15",
+        last ? "pb-0" : "",
+        "first:border-t-0 first:pt-0",
+      ]
+        .filter(Boolean)
+        .join(" ")}
+    >
+      <h2
+        className={`font-display font-extrabold ${
+          accent ? "text-2xl text-ps-amber" : "text-lg text-[#fefdf7]"
+        }`}
+      >
+        {title}
+      </h2>
+      <p className="mt-1.5 text-sm leading-relaxed text-white/70">{body}</p>
     </div>
   );
 }
@@ -264,17 +282,6 @@ function BracketProgressMeter({ snapshot }: { snapshot: BracketSnapshot }) {
           style={{ width: `${snapshot.pct}%` }}
         />
       </div>
-    </div>
-  );
-}
-
-function ScoringRow({ points, label }: { points: number; label: string }) {
-  return (
-    <div className="flex items-center gap-3 rounded-lg bg-white/[0.05] px-3.5 py-3">
-      <span className="font-mono text-lg font-extrabold text-ps-amber">
-        {points}
-      </span>
-      <span className="text-[13px] text-[#fefdf7]">{label}</span>
     </div>
   );
 }
