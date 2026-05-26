@@ -1,7 +1,7 @@
 /**
  * Group-ranking adapter — W/D/L GroupData → FIFA-ranked groupRankings
  *
- * The W/D/L bracket wizard (`GroupResultsStepV2` + `TiebreakerResolutionPage`)
+ * The W/D/L bracket wizard (`GroupResultsStepV2` + `ThirdPlaceStep`)
  * captures, per group match, a `result` (home_win / draw / away_win) and — only
  * for matches involving teams left tied on points — an `exact_score`. It never
  * resolves those into a 1st/2nd/3rd/4th finish order.

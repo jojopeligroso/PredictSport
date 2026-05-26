@@ -7,7 +7,7 @@
  * - Uses new MatchCard component with team name buttons
  * - "Continue" button instead of "Save & Next Group"
  * - No inline tiebreaker warnings
- * - Navigates to separate TiebreakerResolutionPage when needed
+ * - Tiebreaker resolution handled inline by ThirdPlaceStep
  * - Cleaner, more compact design
  *
  * Features:
