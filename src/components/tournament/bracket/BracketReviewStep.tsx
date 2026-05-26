@@ -86,6 +86,15 @@ export default function BracketReviewStep({
           <p className="mt-2 font-display text-3xl font-extrabold text-ps-text">
             {champion}
           </p>
+          {(() => {
+            const ru = [knockoutPicks?.sf_m1?.winner, knockoutPicks?.sf_m2?.winner]
+              .find((t) => t && t !== champion);
+            return ru ? (
+              <p className="mt-2 font-mono text-[11px] text-ps-text-sec">
+                Runner-up: <span className="font-semibold text-ps-text">{ru}</span>
+              </p>
+            ) : null;
+          })()}
           {thirdPlace && (
             <p className="mt-2 font-mono text-[11px] text-ps-text-sec">
               3rd place: <span className="font-semibold text-ps-text">{thirdPlace}</span>

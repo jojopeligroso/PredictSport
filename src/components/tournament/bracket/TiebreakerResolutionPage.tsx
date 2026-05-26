@@ -219,7 +219,7 @@ function TiebreakerMatchCard({ match, onScoreEntry }: TiebreakerMatchCardProps) 
           min="0"
           value={homeScore}
           onChange={(e) => setHomeScore(e.target.value)}
-          placeholder="0"
+          placeholder=""
           className="w-16 rounded border border-ps-border bg-ps-surface px-2 py-2 text-center font-mono text-sm"
         />
         <span className="text-sm text-ps-text-ter">-</span>
@@ -228,7 +228,7 @@ function TiebreakerMatchCard({ match, onScoreEntry }: TiebreakerMatchCardProps) 
           min="0"
           value={awayScore}
           onChange={(e) => setAwayScore(e.target.value)}
-          placeholder="0"
+          placeholder=""
           className="w-16 rounded border border-ps-border bg-ps-surface px-2 py-2 text-center font-mono text-sm"
         />
         <button

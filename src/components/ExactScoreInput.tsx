@@ -214,7 +214,7 @@ export function ExactScoreInput({
       <input
         type="text"
         inputMode="numeric"
-        placeholder="0"
+        placeholder=""
         value={score.home}
         onChange={handleNumChange((v) => {
           onChange({ ...score, home: v === "" ? "" : Number(v) });
@@ -226,7 +226,7 @@ export function ExactScoreInput({
       <input
         type="text"
         inputMode="numeric"
-        placeholder="0"
+        placeholder=""
         value={score.away}
         onChange={handleNumChange((v) => {
           onChange({ ...score, away: v === "" ? "" : Number(v) });

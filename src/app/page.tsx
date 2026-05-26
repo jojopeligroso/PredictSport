@@ -72,7 +72,7 @@ function LandingPage() {
       <section className="w-full max-w-md border-t border-ps-border pt-10 pb-14">
         <div className="rounded-2xl border border-ps-border bg-ps-surface p-6">
           <p className="text-sm font-medium leading-relaxed text-ps-text">
-            For friend groups, not sportsbooks.{" "}
+            For friend groups.{" "}
             <span className="text-ps-text-sec">
               Just the cold, crisp satisfaction of being right.
             </span>
