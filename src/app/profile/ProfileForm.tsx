@@ -126,6 +126,35 @@ const THEME_OPTIONS: ReadonlyArray<{ value: ThemePref; label: string }> = [
   { value: "system", label: "System" },
 ];
 
+function BiggerCardsToggle() {
+  const [bigger, setBigger] = useState(() => {
+    if (typeof window === "undefined") return false;
+    return localStorage.getItem("ps-bigger-cards") === "true";
+  });
+
+  function handleChange(checked: boolean) {
+    setBigger(checked);
+    localStorage.setItem("ps-bigger-cards", String(checked));
+  }
+
+  return (
+    <section className="rounded-xl border border-ps-border bg-ps-surface p-6">
+      <h2 className="mb-1 text-xs font-semibold uppercase tracking-widest text-ps-text-sec">
+        Display
+      </h2>
+      <div className="divide-y divide-ps-border">
+        <Toggle
+          id="bigger_cards"
+          checked={bigger}
+          onChange={handleChange}
+          label="Bigger cards"
+          description="Use larger fixture cards on the World Cup results page"
+        />
+      </div>
+    </section>
+  );
+}
+
 function AppearanceSection() {
   const { theme, setTheme } = useTheme();
   return (
@@ -382,6 +411,9 @@ export function ProfileForm({ user }: { user: User }) {
                 />
               </div>
             </section>
+
+            {/* Display */}
+            <BiggerCardsToggle />
 
             {/* Predictions */}
             <section className="rounded-xl border border-ps-border bg-ps-surface p-6">

@@ -59,7 +59,10 @@ export function FixturesTabs({ fixtures, resultsByExternalId, serverDateIso, pre
   const hasPredictions = Object.keys(predictionsByExternalId).length > 0;
   const [showPredictions, setShowPredictions] = useState(hasPredictions);
   const [showCorrectness, setShowCorrectness] = useState(true);
-  const [biggerCards, setBiggerCards] = useState(false);
+  const [biggerCards, setBiggerCards] = useState(() => {
+    if (typeof window === "undefined") return false;
+    return localStorage.getItem("ps-bigger-cards") === "true";
+  });
   const hasResults = useMemo(
     () => Object.values(resultsByExternalId).some((r) => r !== undefined),
     [resultsByExternalId],
@@ -122,42 +125,32 @@ export function FixturesTabs({ fixtures, resultsByExternalId, serverDateIso, pre
         </TabButton>
       </div>
 
-      <div className="mt-3 space-y-0 rounded-lg border border-ps-border bg-ps-surface px-3 py-2">
-        <div className="flex items-center justify-between">
-          <span className="text-xs text-ps-text-sec">Bigger cards</span>
-          <ToggleSwitch
-            label={biggerCards ? "On" : "Off"}
-            checked={biggerCards}
-            onChange={() => setBiggerCards((v) => !v)}
-          />
-        </div>
-        {hasPredictions && (
-          <>
+      {hasPredictions && (
+        <div className="mt-3 space-y-0 rounded-lg border border-ps-border bg-ps-surface px-3 py-2">
+          <div className="flex items-center justify-between">
+            <span className="text-xs text-ps-text-sec">
+              {showPredictions ? "Your predictions are shown" : "Fixtures only"}
+            </span>
+            <ToggleSwitch
+              label={showPredictions ? "Hide picks" : "Show picks"}
+              checked={showPredictions}
+              onChange={() => setShowPredictions((v) => !v)}
+            />
+          </div>
+          {showPredictions && hasResults && (
             <div className="flex items-center justify-between border-t border-ps-border/50 pt-2 mt-2">
               <span className="text-xs text-ps-text-sec">
-                {showPredictions ? "Your predictions are shown" : "Fixtures only"}
+                Show correct / wrong
               </span>
               <ToggleSwitch
-                label={showPredictions ? "Hide picks" : "Show picks"}
-                checked={showPredictions}
-                onChange={() => setShowPredictions((v) => !v)}
+                label={showCorrectness ? "On" : "Off"}
+                checked={showCorrectness}
+                onChange={() => setShowCorrectness((v) => !v)}
               />
             </div>
-            {showPredictions && hasResults && (
-              <div className="flex items-center justify-between border-t border-ps-border/50 pt-2 mt-2">
-                <span className="text-xs text-ps-text-sec">
-                  Show correct / wrong
-                </span>
-                <ToggleSwitch
-                  label={showCorrectness ? "On" : "Off"}
-                  checked={showCorrectness}
-                  onChange={() => setShowCorrectness((v) => !v)}
-                />
-              </div>
-            )}
-          </>
-        )}
-      </div>
+          )}
+        </div>
+      )}
 
       <div className="mt-4 space-y-3">
         {active.length === 0 && (
@@ -381,7 +374,7 @@ function FixtureCard({
   const awaySelected = currentWinner === fixture.away;
   const drawSelected = currentWinner === drawOption;
 
-  // Ring color: green (correct), red (wrong), white (pending / correctness off)
+  // Ring color: green (correct), red (wrong), amber (pending / correctness off)
   let ringClass = "";
   if (hasPrediction && prediction) {
     if (isFinished && result && currentWinner) {
@@ -401,11 +394,11 @@ function FixtureCard({
             ? "ring-2 ring-ps-green"
             : "ring-2 ring-ps-red";
       } else {
-        ringClass = "ring-2 ring-white/30";
+        ringClass = "ring-2 ring-ps-amber/50";
       }
     } else {
-      // Upcoming / pending — neutral ring
-      ringClass = "ring-2 ring-white/30";
+      // Upcoming / pending — amber ring
+      ringClass = "ring-2 ring-ps-amber/50";
     }
   }
 
@@ -465,7 +458,7 @@ function FixtureCard({
                 className={[
                   `flex-1 min-w-0 flex flex-col items-center ${teamPad} rounded-lg transition-all duration-150 cursor-pointer`,
                   homeSelected
-                    ? "bg-white/12 shadow-[inset_0_0_0_2px_rgba(255,255,255,0.5)]"
+                    ? "bg-white/12 shadow-[inset_0_0_0_2px_rgba(245,158,11,0.7)]"
                     : "hover:bg-white/8",
                 ].join(" ")}
               >
@@ -500,9 +493,9 @@ function FixtureCard({
                   className={[
                     `${scoreSize} rounded-full border text-center font-mono font-semibold text-white outline-none transition-all duration-150 shrink-0`,
                     homeScore !== ""
-                      ? "bg-white/18 border-white/50"
+                      ? "bg-white/18 border-ps-amber/70"
                       : "bg-white/8 border-white/25",
-                    "focus:border-white/60 focus:bg-white/15",
+                    "focus:border-ps-amber/80 focus:bg-white/15",
                     "placeholder:text-white/30",
                   ].join(" ")}
                 />
@@ -515,7 +508,7 @@ function FixtureCard({
                 className={[
                   `shrink-0 ${drawSize} rounded-lg font-medium transition-all duration-150 cursor-pointer`,
                   drawSelected
-                    ? "bg-white/12 text-white shadow-[inset_0_0_0_2px_rgba(255,255,255,0.5)]"
+                    ? "bg-white/12 text-white shadow-[inset_0_0_0_2px_rgba(245,158,11,0.7)]"
                     : "text-white/45 hover:bg-white/8 hover:text-white/65",
                 ].join(" ")}
               >
@@ -540,9 +533,9 @@ function FixtureCard({
                   className={[
                     `${scoreSize} rounded-full border text-center font-mono font-semibold text-white outline-none transition-all duration-150 shrink-0`,
                     awayScore !== ""
-                      ? "bg-white/18 border-white/50"
+                      ? "bg-white/18 border-ps-amber/70"
                       : "bg-white/8 border-white/25",
-                    "focus:border-white/60 focus:bg-white/15",
+                    "focus:border-ps-amber/80 focus:bg-white/15",
                     "placeholder:text-white/30",
                   ].join(" ")}
                 />
@@ -555,7 +548,7 @@ function FixtureCard({
                 className={[
                   `flex-1 min-w-0 flex flex-col items-center ${teamPad} rounded-lg transition-all duration-150 cursor-pointer`,
                   awaySelected
-                    ? "bg-white/12 shadow-[inset_0_0_0_2px_rgba(255,255,255,0.5)]"
+                    ? "bg-white/12 shadow-[inset_0_0_0_2px_rgba(245,158,11,0.7)]"
                     : "hover:bg-white/8",
                 ].join(" ")}
               >

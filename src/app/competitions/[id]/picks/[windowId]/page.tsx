@@ -120,11 +120,13 @@ export default async function WindowPicksPage({
         }) => {
           const eventPreds = predictionsByEvent.get(event.id) ?? [];
           const eventLocked = new Date(event.lock_time) <= new Date() || event.status !== "upcoming";
+          const hasEventPreds = eventPreds.length > 0;
 
           return (
             <div
               key={event.id}
-              className="rounded-xl border border-ps-border bg-ps-surface p-4"
+              className="rounded-xl border bg-ps-surface p-4"
+              style={hasEventPreds ? { borderColor: 'var(--ps-amber)', borderWidth: '2px' } : { borderColor: 'var(--ps-border)' }}
             >
               <div className="flex items-start justify-between">
                 <div>

@@ -818,10 +818,13 @@ function EventCard({
         : "var(--ps-red)"
       : null;
 
+  const cardAccentColor = resultAccentColor
+    ?? (hasPredictions ? "var(--ps-amber)" : null);
+
   return (
     <div
       className="overflow-hidden rounded-[14px] border border-ps-border bg-ps-surface"
-      style={resultAccentColor ? { borderColor: resultAccentColor, borderWidth: '2px' } : undefined}
+      style={cardAccentColor ? { borderColor: cardAccentColor, borderWidth: '2px' } : undefined}
     >
       {/* Sport colour bar */}
       <SportBar sport={sportKey} height={3} />
