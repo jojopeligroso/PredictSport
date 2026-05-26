@@ -87,12 +87,17 @@ export default function ThirdPlaceStep({
       </div>
 
       {!allResolved && (
-        <div className="rounded-xl border-2 border-ps-amber/40 bg-ps-amber/5 p-3 text-xs text-ps-text">
-          <span className="font-bold text-ps-amber">Cut-line tie.</span>{" "}
-          {blockedTies.size === 1 ? "One team sits" : `${blockedTies.size} teams sit`}{" "}
-          on the same points across the top-8 boundary. Tap{" "}
-          <span className="font-bold">&ldquo;Add scores&rdquo;</span> below to enter
-          their match scores so FIFA goal difference and goals scored can rank them.
+        <div className="rounded-xl border-2 border-ps-amber/40 bg-ps-amber/5 p-4 text-ps-text">
+          <p className="text-sm font-bold text-ps-amber">Cut-line tie</p>
+          <p className="mt-1.5 text-base font-medium leading-snug text-ps-text">
+            These teams are tied on points at the qualification boundary.
+            Enter the exact scores from their group stage matches to break
+            the tie using goal difference and goals scored.
+          </p>
+          <p className="mt-1.5 text-xs text-ps-text-sec">
+            Tap <span className="font-bold">&ldquo;Add scores&rdquo;</span>{" "}
+            next to each team below to enter their three match scores.
+          </p>
         </div>
       )}
 
@@ -242,9 +247,12 @@ function ThirdPlaceRow({
         </div>
 
         {expanded && blocked && (
-          <div className="mt-3 space-y-2 rounded-lg border border-ps-amber/30 bg-ps-bg p-2.5">
-            <p className="text-[11px] font-semibold text-ps-text">
-              Enter scores for {team.team_name}&apos;s three group matches:
+          <div className="mt-3 space-y-2.5 rounded-lg border border-ps-amber/30 bg-ps-bg p-3">
+            <p className="text-sm font-semibold text-ps-text">
+              Enter scores for {team.team_name}&apos;s three group matches
+            </p>
+            <p className="text-xs text-ps-text-sec">
+              Each score must match your W/D/L prediction for that match.
             </p>
             {team.matches.map((m) => (
               <ScoreEntryRow
@@ -310,17 +318,17 @@ function ScoreEntryRow({
 
   return (
     <div className="rounded-md bg-ps-surface p-2">
-      <p className="flex items-center gap-1 text-[11px] font-semibold text-ps-text">
-        <CountryFlag shape="pill" name={match.home_team} size={14} />
+      <p className="flex items-center gap-1.5 text-xs font-semibold text-ps-text">
+        <CountryFlag shape="pill" name={match.home_team} size={16} />
         <span>{match.home_team}</span>
         <span className="text-ps-text-ter">vs</span>
-        <CountryFlag shape="pill" name={match.away_team} size={14} />
+        <CountryFlag shape="pill" name={match.away_team} size={16} />
         <span>{match.away_team}</span>
-        <span className="ml-1 rounded bg-ps-chip px-1.5 py-0.5 font-mono text-[10px] text-ps-text-sec">
+        <span className="ml-1 rounded bg-ps-chip px-1.5 py-0.5 font-mono text-[11px] text-ps-text-sec">
           {resultLabel}
         </span>
       </p>
-      <div className="mt-1.5 flex items-center gap-1.5">
+      <div className="mt-2 flex items-center gap-2">
         <input
           type="number"
           inputMode="numeric"
@@ -338,10 +346,10 @@ function ScoreEntryRow({
             }
           }}
           placeholder="0"
-          className="w-12 rounded border border-ps-border bg-ps-bg px-1.5 py-1 text-center font-mono text-sm"
+          className="w-14 rounded border border-ps-border bg-ps-bg px-2 py-1.5 text-center font-mono text-base"
           aria-label={`${match.home_team} score`}
         />
-        <span className="text-xs text-ps-text-ter">–</span>
+        <span className="text-sm text-ps-text-ter">–</span>
         <input
           ref={awayRef}
           type="number"
@@ -350,7 +358,7 @@ function ScoreEntryRow({
           value={away}
           onChange={(e) => setAway(e.target.value)}
           placeholder="0"
-          className="w-12 rounded border border-ps-border bg-ps-bg px-1.5 py-1 text-center font-mono text-sm"
+          className="w-14 rounded border border-ps-border bg-ps-bg px-2 py-1.5 text-center font-mono text-base"
           aria-label={`${match.away_team} score`}
         />
         <button
@@ -396,8 +404,19 @@ function extractThirdPlaceTeams(groups: GroupData[]): ThirdPlaceCandidate[] {
     const teamMatches = group.matches.filter(
       (m) => m.home_team === third.name || m.away_team === third.name,
     );
-    const hasAllScores = teamMatches.every((m) => m.exact_score !== undefined);
+    const hasAllScores = teamMatches.every(
+      (m) =>
+        m.exact_score !== undefined &&
+        typeof m.exact_score.home_score === "number" &&
+        typeof m.exact_score.away_score === "number" &&
+        !isNaN(m.exact_score.home_score) &&
+        !isNaN(m.exact_score.away_score),
+    );
 
+    // When not all scores are present, zero GD/GF to prevent stale
+    // synthesised values from the ranking engine leaking into the sort.
+    // This ensures partially-scored teams don't get a false ranking
+    // advantage from 1-0 / 0-1 synthetic scores.
     candidates.push({
       team_name: third.name,
       group_id: group.group_id,
