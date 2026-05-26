@@ -180,6 +180,7 @@ export function BracketWizard({
   >(existingData?.knockoutPicks ?? {});
   const [champion, setChampion] = useState(existingData?.champion ?? "");
   const [thirdPlace, setThirdPlace] = useState(existingData?.thirdPlace ?? "");
+  const [showResetConfirm, setShowResetConfirm] = useState(false);
 
   // Track the latest pick per (event_id, prediction_type) to detect stale
   // responses. If two taps race, we keep only the most recent one's effect.
@@ -510,6 +511,66 @@ export function BracketWizard({
     [setKnockoutPicks, setChampion, setThirdPlace],
   );
 
+  // True when there are any knockout picks worth resetting.
+  const hasKnockoutPicks =
+    Object.keys(knockoutPicks).length > 0 ||
+    bestThirdPicks.length > 0 ||
+    champion !== "" ||
+    thirdPlace !== "";
+
+  // -------------------------------------------------------------------------
+  // Bracket reset
+  // -------------------------------------------------------------------------
+
+  const resetBracket = useCallback(async () => {
+    setKnockoutPicks({});
+    setChampion("");
+    setThirdPlace("");
+    setBestThirdPicks([]);
+    isDirty.current = true;
+
+    // Compute where the wizard should resume given groups-only state.
+    // Pass undefined for existing data since bracket picks are now empty.
+    const resumeIdx = pickResumeStepIndex(steps, undefined, groups);
+    setHighWaterMark(resumeIdx);
+    setStepIndex(resumeIdx);
+    setShowResetConfirm(false);
+
+    // Persist the empty bracket to DB immediately.
+    // We can't call saveDraft() directly here because the state setters
+    // above haven't flushed yet. Build the payload inline instead.
+    setSaving(true);
+    setSubmitError(null);
+    try {
+      const res = await fetch("/api/tournament/bracket/submit", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          classificationId,
+          competitionId,
+          bracketData: {
+            bestThirdPicks: [],
+            knockoutPicks: {},
+            champion: "",
+            thirdPlace: undefined,
+          } satisfies BracketSubmissionData,
+          action: "save_draft",
+        }),
+      });
+      if (!res.ok) {
+        const err = await res.json();
+        setSubmitError(err.error ?? "Failed to save reset");
+      } else {
+        setLastSavedAt(Date.now());
+        isDirty.current = false;
+      }
+    } catch {
+      setSubmitError("Network error");
+    } finally {
+      setSaving(false);
+    }
+  }, [steps, groups, classificationId, competitionId]);
+
   // ----- Render submitted state -----
 
   if (submitted) {
@@ -565,6 +626,8 @@ export function BracketWizard({
         lastSavedAt={lastSavedAt}
         onSaveDraft={saveDraft}
         onNavigate={navigateToStep}
+        showReset={hasKnockoutPicks}
+        onReset={() => setShowResetConfirm(true)}
       />
 
       {pendingGroupConfirm && (
@@ -572,6 +635,16 @@ export function BracketWizard({
           message="Changing this may affect your knockout picks. Change anyway?"
           onConfirm={confirmGroupChange}
           onCancel={cancelGroupChange}
+        />
+      )}
+
+      {showResetConfirm && (
+        <ConfirmDialog
+          message="This will clear all knockout picks, champion, and third-place selections. Your group predictions will be kept."
+          onConfirm={resetBracket}
+          onCancel={() => setShowResetConfirm(false)}
+          confirmLabel="Reset"
+          destructive
         />
       )}
 
@@ -714,6 +787,8 @@ function StepNav({
   lastSavedAt,
   onSaveDraft,
   onNavigate,
+  showReset,
+  onReset,
 }: {
   steps: Step[];
   stepIndex: number;
@@ -722,6 +797,8 @@ function StepNav({
   lastSavedAt: number | null;
   onSaveDraft: () => void;
   onNavigate: (index: number) => void;
+  showReset: boolean;
+  onReset: () => void;
 }) {
   const step = steps[stepIndex];
   return (
@@ -764,6 +841,16 @@ function StepNav({
           {STEP_LABELS[step]}
         </p>
         <div className="flex items-center gap-2 text-[11px] text-ps-text-sec">
+          {showReset && (
+            <button
+              type="button"
+              onClick={onReset}
+              disabled={saving}
+              className="text-ps-text-ter hover:text-ps-text disabled:opacity-40"
+            >
+              Reset bracket
+            </button>
+          )}
           {saving ? (
             <span className="animate-pulse">Saving...</span>
           ) : lastSavedAt ? (
@@ -791,10 +878,14 @@ function ConfirmDialog({
   message,
   onConfirm,
   onCancel,
+  confirmLabel = "Change",
+  destructive = false,
 }: {
   message: string;
   onConfirm: () => void;
   onCancel: () => void;
+  confirmLabel?: string;
+  destructive?: boolean;
 }) {
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4">
@@ -811,9 +902,13 @@ function ConfirmDialog({
           <button
             type="button"
             onClick={onConfirm}
-            className="rounded-lg bg-ps-amber px-4 py-2 text-sm font-extrabold text-ps-bg hover:opacity-90"
+            className={
+              destructive
+                ? "rounded-lg bg-ps-red px-4 py-2 text-sm font-extrabold text-white hover:opacity-90"
+                : "rounded-lg bg-ps-amber px-4 py-2 text-sm font-extrabold text-ps-bg hover:opacity-90"
+            }
           >
-            Change
+            {confirmLabel}
           </button>
         </div>
       </div>
