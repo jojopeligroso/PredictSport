@@ -104,25 +104,32 @@ export default function WcRulesPage() {
             <ul className="space-y-3">
               <ClassificationItem
                 name="Overall"
-                description="Cumulative points across every prediction window."
+                description="Every point you earn across every prediction window counts towards one running total. Whoever has the most points when the final whistle blows wins. The purest test — consistency over the whole tournament."
               />
               <ClassificationItem
                 name="Format"
-                description="Prediction groups of four. Bottom drops each stage. Points reset per stage."
+                description="Players are drawn into groups of four. After each stage of matches, points reset and the bottom-placed player in each group is eliminated. New groups are drawn from the survivors and it starts again. Last player standing wins."
               />
               <ClassificationItem
                 name="Full Bracket"
-                description="Pre-tournament picks for every group and knockout result. Locked at kickoff."
+                description="Before a ball is kicked, predict every group finishing order and the entire knockout bracket — from the Round of 32 right through to the final. Everything locks at the first whistle. As results come in, each correct pick earns points. Most points from your locked bracket wins."
               />
               <ClassificationItem
                 name="KO Bracket"
-                description="Knockout stage bracket. Opens after the group stage."
-              />
-              <ClassificationItem
-                name="The Cut"
-                description="How many of the 32 knockout teams you correctly predicted from your bracket."
+                description="Once the group stage is done, a second bracket opens with the real 32 qualified teams. Predict every knockout match from the Round of 32 to the final. Same scoring as the Full Bracket, but with the advantage of knowing who actually made it through."
               />
             </ul>
+
+            <div className="mt-4 rounded-md border border-dashed border-ps-border px-3 py-2.5">
+              <p className="text-xs font-semibold text-ps-text-sec">
+                Bonus: The Cut
+              </p>
+              <p className="mt-0.5 text-xs leading-relaxed text-ps-text-sec">
+                How many of the 32 knockout teams did your Full Bracket get
+                right? A fun stat pulled automatically from your picks — not a
+                separate competition, just bragging rights.
+              </p>
+            </div>
           </div>
         </details>
 
