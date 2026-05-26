@@ -32,7 +32,7 @@ export async function NavBar() {
 
   return (
     <nav className="relative bg-ps-bg">
-      <div className="mx-auto grid h-12 w-full max-w-3xl grid-cols-[1fr_auto_1fr] items-center px-4 sm:px-6">
+      <div className="mx-auto grid h-12 w-full max-w-md grid-cols-[1fr_auto_1fr] items-center px-4">
         {/* Left spacer */}
         <div />
 
