@@ -68,21 +68,29 @@ export default async function WorldCupLanding() {
   const daysUntil = Math.max(0, Math.ceil(diffMs / (1000 * 60 * 60 * 24)));
 
   return (
-    // The whole landing surface is a dark canvas with the FIFA hero painted
-    // across it as a fixed CSS background. The cards float on top. Scoped to
-    // this wrapper only — the `/wc/*` layout (nav, wc-theme) is untouched.
-    <div
-      className="-mt-[1px] min-h-screen bg-[#0a0a0a]"
-      style={{
-        backgroundImage: "url('/wc/hero-fifa-2026.png')",
-        backgroundRepeat: "no-repeat",
-        backgroundPosition: "center top",
-        backgroundSize: "145% auto",
-        backgroundAttachment: "fixed",
-        backgroundColor: "#0a0a0a",
-      }}
-    >
-      <main className="mx-auto flex max-w-[480px] flex-col gap-6 px-4 pt-[35px] pb-[39px]">
+    // The whole landing surface is a dark canvas with the FIFA hero pinned
+    // behind it as a fixed-positioned element. We can't use
+    // `background-attachment: fixed` because iOS Safari silently ignores it
+    // (and most mobile browsers fall back to `scroll`) — a fixed positioned
+    // element with z-index 0 is the equivalent that mobile compositors will
+    // honour. Scoped to this wrapper only; the `/wc/*` layout is untouched.
+    <div className="relative -mt-[1px] min-h-screen overflow-hidden bg-[#0a0a0a]">
+      {/* Fixed hero layer — same sizing as before (145% width, center top),
+          but as a real element so iOS Safari paints it pinned to the viewport
+          while the main column scrolls over it. */}
+      <div
+        aria-hidden
+        className="pointer-events-none fixed inset-0 z-0"
+        style={{
+          backgroundImage: "url('/wc/hero-fifa-2026.png')",
+          backgroundRepeat: "no-repeat",
+          backgroundPosition: "center top",
+          backgroundSize: "145% auto",
+          backgroundColor: "#0a0a0a",
+        }}
+      />
+
+      <main className="relative z-10 mx-auto flex max-w-[480px] flex-col gap-6 px-4 pt-[35px] pb-[39px]">
 
         {/* Card 1 — wordmark + tagline + hook + countdown */}
         <section className={CARD_BASE} style={CARD_BG}>
