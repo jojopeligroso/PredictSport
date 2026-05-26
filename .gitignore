@@ -78,3 +78,12 @@ supabase/.temp/
 FWC2026_regulations_EN.pdf
 annexes_FWC2026_regulations_EN.pdf
 mockups/
+# Exception: shipped /wc landing mockups committed as design alternatives.
+# Have to un-ignore each parent dir before file-level rules can take effect.
+!design/mockups/
+!design/mockups/wc-landing/
+design/mockups/wc-landing/*
+!design/mockups/wc-landing/README.md
+!design/mockups/wc-landing/bg-3a-ink-sharper.html
+!design/mockups/wc-landing/bg-3b-ink-warm.html
+!design/mockups/wc-landing/bg-3c-ink-edge.html
