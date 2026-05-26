@@ -1,0 +1,240 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>/wc landing — bg 3c: ink, edge-darkened gradient</title>
+<style>
+  :root {
+    --ps-amber: #f59e0b;
+    --mx-green: #006847;
+    --paper: #fefdf7;
+    --ink: #0a0a0a;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; min-height: 100%; }
+  html { background: #0a0a0a; }
+
+  /* Hero is the page background — bigger than BG 3 (130% width). Lets the
+     trophy and FIFA wordmark dominate the field behind the cards. Anchored
+     to center top so the trophy stays in frame. */
+  body {
+    background:
+      url('/home/eoin/Work/PredictSport/public/wc/hero-fifa-2026.png') center top / 130% auto no-repeat fixed,
+      #0a0a0a;
+    color: var(--paper);
+    font-family: 'Inter', system-ui, -apple-system, Segoe UI, sans-serif;
+  }
+
+  .doc-bar {
+    position: fixed; top: 0; left: 0; right: 0; z-index: 50;
+    display: flex; align-items: center; gap: 14px;
+    padding: 10px 16px;
+    background: rgba(10,10,10,0.85);
+    backdrop-filter: blur(8px);
+    color: #ddd;
+    font: 700 11px/1 system-ui; letter-spacing: 0.10em; text-transform: uppercase;
+  }
+  .doc-bar .tag { padding: 4px 8px; border-radius: 999px; background: #222; color: #f59e0b; }
+  .doc-bar .links { margin-left: auto; display: flex; gap: 12px; font-weight: 600; }
+  .doc-bar a { color: #aaa; text-decoration: none; }
+  .doc-bar a:hover { color: #fff; }
+
+  .shell {
+    max-width: 480px;
+    margin: 0 auto;
+    /* Extra top padding so the hero's trophy reads above the first card */
+    padding: 35px 16px 60px;
+    min-height: 100vh;
+    display: flex; flex-direction: column;
+    gap: 24px;
+  }
+
+  /* Ink card — gradient 3: edge vignette. Card centre is lighter (more
+     hero shows through) and the corners are darker (frames the type).
+     Reads like a backlit panel. Same 10px blur. */
+  .card {
+    background:
+      radial-gradient(140% 100% at 50% 50%, rgba(20,18,18,0.62) 0%, rgba(6,6,6,0.88) 100%);
+    color: var(--paper);
+    border: 1px solid rgba(255,255,255,0.12);
+    border-radius: 16px;
+    padding: 22px 20px;
+    backdrop-filter: blur(5.6px) saturate(1.05);
+    -webkit-backdrop-filter: blur(5.6px) saturate(1.05);
+    box-shadow:
+      0 20px 44px -18px rgba(0,0,0,0.7),
+      inset 0 1px 0 rgba(255,255,255,0.08);
+  }
+
+  /* Card 1 — wordmark + countdown */
+  .hero-card { text-align: center; }
+  .wordmark h1 {
+    margin: 0;
+    font: 800 32px/1 system-ui;
+    letter-spacing: -0.01em;
+    text-transform: uppercase;
+    color: var(--paper);
+  }
+  .wordmark h1 .yr { color: var(--ps-amber); }
+  .wordmark .tagline {
+    margin: 8px 0 0;
+    font: italic 400 18px/1.2 'Instrument Serif', Georgia, serif;
+    color: rgba(254,253,247,0.7);
+  }
+  .countdown-row { display: flex; justify-content: center; margin-top: 18px; }
+  .countdown {
+    padding: 12px 22px;
+    border-radius: 10px;
+    background: rgba(255,255,255,0.06);
+    border: 1px solid rgba(255,255,255,0.10);
+    border-bottom: 2px solid #4ade80;
+    font-family: 'JetBrains Mono', ui-monospace, monospace;
+    text-align: center;
+  }
+  .countdown .n { display: block; color: var(--ps-amber); font-weight: 800; font-size: 26px; line-height: 1; }
+  .countdown .l { display: block; margin-top: 4px; font-size: 10px; letter-spacing: 0.20em; text-transform: uppercase; color: rgba(254,253,247,0.55); }
+
+  /* Card 2 — CTA */
+  .cta-card { text-align: center; }
+  .cta {
+    display: block; width: 100%; max-width: 320px;
+    margin: 0 auto;
+    padding: 16px 24px;
+    border-radius: 12px;
+    background: linear-gradient(135deg, #d4af37, #b8941f);
+    color: #0a0f0a;
+    text-align: center;
+    font: 700 16px/1 system-ui;
+    text-decoration: none;
+    box-shadow: 0 8px 22px -8px rgba(245,158,11,0.55), inset 0 1px 0 rgba(255,255,255,0.5);
+  }
+
+  /* Card 3 — five ways */
+  .ways-card h2 {
+    margin: 0 0 16px;
+    text-align: center;
+    font: 700 10px/1 system-ui;
+    letter-spacing: 0.25em;
+    text-transform: uppercase;
+    color: rgba(254,253,247,0.55);
+  }
+  .ways { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  .way {
+    padding: 14px;
+    border-radius: 10px;
+    background: rgba(255,255,255,0.05);
+    border: 1px solid rgba(255,255,255,0.08);
+  }
+  .way h3 { margin: 0; font-size: 13px; font-weight: 800; color: var(--paper); }
+  .way p { margin: 4px 0 0; font-size: 11px; line-height: 1.4; color: rgba(254,253,247,0.65); }
+  .way.span { grid-column: 1 / -1; }
+
+  /* Card 4 — scoring */
+  .score-card h2 {
+    margin: 0 0 16px;
+    text-align: center;
+    font: 700 10px/1 system-ui;
+    letter-spacing: 0.25em;
+    text-transform: uppercase;
+    color: rgba(254,253,247,0.55);
+  }
+  .scoring { display: flex; flex-direction: column; gap: 8px; }
+  .score {
+    display: flex; align-items: center; gap: 12px;
+    padding: 12px 14px;
+    background: rgba(255,255,255,0.05);
+    border-radius: 8px;
+  }
+  .score .pts { font: 800 18px/1 'JetBrains Mono', ui-monospace, monospace; color: var(--ps-amber); }
+  .score .lbl { font-size: 13px; color: var(--paper); }
+  .score-card .footnote {
+    margin: 14px 0 0; text-align: center; font-size: 10px;
+    color: rgba(254,253,247,0.55);
+  }
+
+  .annot {
+    position: fixed; right: 18px; top: 60px;
+    width: 280px;
+    padding: 14px 16px;
+    background: rgba(10,10,10,0.92);
+    color: #f1ece2;
+    border-radius: 12px;
+    font: 500 12px/1.45 system-ui;
+    box-shadow: 0 12px 30px -10px rgba(0,0,0,0.45);
+    z-index: 40;
+  }
+  .annot h3 { margin: 0 0 6px; font-size: 12px; letter-spacing: 0.10em; text-transform: uppercase; color: var(--ps-amber); }
+  .annot p { margin: 0 0 8px; color: rgba(241,236,226,0.85); }
+  .annot p:last-child { margin: 0; }
+  @media (max-width: 1100px) { .annot { display: none; } }
+</style>
+</head>
+<body>
+
+<div class="doc-bar">
+  <span class="tag">BG 3c</span>
+  <span>Ink · gradient 3: edge-darkened vignette · blur 10px</span>
+  <div class="links">
+    <a href="bg-3a-ink-sharper.html">→ 3a sharper</a>
+    <a href="bg-3b-ink-warm.html">→ 3b warm</a>
+  </div>
+</div>
+
+<aside class="annot">
+  <h3>BG 3c · Ink, edge-darkened</h3>
+  <p>Same base as 3a (blur 10px, hero 130%, no brand trio / Viva / cities).</p>
+  <p>Gradient: radial vignette — card centres are lighter (more hero peeking through), corners darken to deep ink. Reads like a backlit panel; the hero glows through the middle of each card.</p>
+</aside>
+
+<main class="shell">
+
+  <section class="card hero-card">
+    <div class="wordmark">
+      <h1>World Cup <span class="yr">2026</span></h1>
+      <p class="tagline">48 teams. Your call.</p>
+    </div>
+    <div class="countdown-row">
+      <div class="countdown">
+        <span class="n">17</span>
+        <span class="l">days to kickoff</span>
+      </div>
+    </div>
+  </section>
+
+  <section class="card cta-card">
+    <a class="cta" href="#">Make your picks</a>
+  </section>
+
+  <section class="card ways-card">
+    <h2>Three ways to play</h2>
+    <div class="ways">
+      <div class="way"><h3>Bracket</h3><p>Pick every group and knockout result before kickoff.</p></div>
+      <div class="way"><h3>Format</h3><p>Prediction groups of 4. Bottom drops each stage.</p></div>
+      <div class="way span"><h3>Overall</h3><p>Every match, every point. Cumulative from start to finish.</p></div>
+    </div>
+  </section>
+
+  <section class="card score-card">
+    <h2>Scoring</h2>
+    <div class="scoring">
+      <div class="score"><span class="pts">2</span><span class="lbl">Correct match outcome</span></div>
+      <div class="score"><span class="pts">3</span><span class="lbl">Exact score bonus</span></div>
+      <div class="score"><span class="pts">1</span><span class="lbl">Correct advancing team (knockout)</span></div>
+    </div>
+    <p class="footnote">Group matches: max 5pts · Knockout: max 6pts</p>
+  </section>
+
+  <!-- Oracle Dot brand mark — sign-off at the very end, small + compact -->
+  <footer style="display:flex; justify-content:center; padding:20px 0 8px; opacity:0.6;">
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48" fill="none" width="36" height="36" aria-hidden="true">
+      <circle cx="24" cy="24" r="23" fill="#fefdf7" />
+      <circle cx="22" cy="27" r="9" fill="#f59e0b" />
+      <circle cx="28" cy="21" r="3" fill="#0a0a0a" />
+    </svg>
+  </footer>
+
+</main>
+
+</body>
+</html>
