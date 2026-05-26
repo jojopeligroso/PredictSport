@@ -3,7 +3,6 @@ import { createClient } from "@/lib/supabase/server";
 import { BrandMark } from "@/components/BrandMark";
 import JoinCompetitionCard from "@/components/JoinCompetitionCard";
 import { OrDivider } from "@/components/OrDivider";
-import { PersonalPredictionsLink } from "@/components/PersonalPredictionsLink";
 import { computePickCounts, findActiveRound } from "@/lib/dashboard-helpers";
 
 export const dynamic = "force-dynamic";
@@ -119,6 +118,8 @@ interface CompetitionRow {
     id: string;
     name: string;
     status: string;
+    tournament_id: string | null;
+    type: string | null;
   } | null;
 }
 
@@ -130,20 +131,61 @@ interface RoundRow {
   status: string;
 }
 
+// ── Icons ───────────────────────────────────────────────────────────────────
+
+function CrosshairIcon() {
+  return (
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+      <circle cx="12" cy="12" r="10" /><circle cx="12" cy="12" r="6" /><circle cx="12" cy="12" r="2" />
+      <line x1="12" y1="2" x2="12" y2="4" /><line x1="12" y1="20" x2="12" y2="22" />
+      <line x1="2" y1="12" x2="4" y2="12" /><line x1="20" y1="12" x2="22" y2="12" />
+    </svg>
+  );
+}
+
+function PodiumIcon() {
+  return (
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <rect x="4" y="10" width="5" height="11" rx="1" /><rect x="10" y="3" width="5" height="18" rx="1" /><rect x="16" y="7" width="5" height="14" rx="1" />
+    </svg>
+  );
+}
+
+function UserCircleIcon() {
+  return (
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <circle cx="12" cy="12" r="10" /><circle cx="12" cy="10" r="3" />
+      <path d="M6.168 18.849A4 4 0 0110 16h4a4 4 0 013.834 2.855" />
+    </svg>
+  );
+}
+
+// ── Dashboard ───────────────────────────────────────────────────────────────
+
 async function Dashboard({ userId }: { userId: string }) {
   const supabase = await createClient();
+
+  // Fetch user profile for avatar
+  const { data: profile } = await supabase
+    .from("profiles")
+    .select("display_name")
+    .eq("id", userId)
+    .maybeSingle();
+
+  const displayName = profile?.display_name ?? "You";
+  const initial = displayName.charAt(0).toUpperCase();
 
   // Fetch competitions
   const { data: memberships } = await supabase
     .from("competition_members")
-    .select("competition_id, role, competitions(id, name, status)")
+    .select("competition_id, role, competitions(id, name, status, tournament_id, type)")
     .eq("user_id", userId);
 
   const comps = ((memberships ?? []) as unknown as CompetitionRow[])
     .map((m) => m.competitions)
     .filter((c): c is NonNullable<typeof c> => c !== null && c.status === "active");
 
-  // Check for visible WC competition
+  // Check for visible WC competition (for non-members)
   const { data: wcComp } = await supabase
     .from("competitions")
     .select("id, name")
@@ -152,7 +194,12 @@ async function Dashboard({ userId }: { userId: string }) {
     .limit(1)
     .maybeSingle();
 
-  const showWcCard = !!wcComp;
+  // Split: WC hero vs secondary cards
+  const wcUserComp = comps.find((c) => c.tournament_id === WC2026_TOURNAMENT_ID);
+  const otherComps = comps.filter(
+    (c) => c.tournament_id !== WC2026_TOURNAMENT_ID && c.type !== "personal",
+  );
+  const showWcPromo = !!wcComp && !wcUserComp;
 
   // Fetch active rounds for all competitions
   const compIds = comps.map((c) => c.id);
@@ -167,20 +214,28 @@ async function Dashboard({ userId }: { userId: string }) {
     rounds = (data ?? []) as RoundRow[];
   }
 
-  // Fetch event counts and user's pick counts per round
+  // Fetch event counts, pick counts, and deadlines
   const roundIds = rounds.map((r) => r.id);
-  let eventCounts: Record<string, number> = {};
+  const eventCounts: Record<string, number> = {};
   let pickCounts: Record<string, number> = {};
+  const roundDeadlines: Record<string, string> = {};
 
   if (roundIds.length > 0) {
     const { data: events } = await supabase
       .from("events")
-      .select("id, round_id")
+      .select("id, round_id, lock_time")
       .in("round_id", roundIds);
 
     const evts = events ?? [];
     for (const e of evts) {
-      if (e.round_id) eventCounts[e.round_id] = (eventCounts[e.round_id] ?? 0) + 1;
+      if (e.round_id) {
+        eventCounts[e.round_id] = (eventCounts[e.round_id] ?? 0) + 1;
+        if (e.lock_time) {
+          if (!roundDeadlines[e.round_id] || e.lock_time < roundDeadlines[e.round_id]) {
+            roundDeadlines[e.round_id] = e.lock_time;
+          }
+        }
+      }
     }
 
     const eventIds = evts.map((e) => e.id);
@@ -191,58 +246,164 @@ async function Dashboard({ userId }: { userId: string }) {
         .eq("user_id", userId)
         .in("event_id", eventIds);
 
-      // Dedupe by event_id per round — a single event can hold multiple
-      // prediction rows (winner + exact_score for group fixtures), but the
-      // card shows "matches picked", not "rows written".
-      const predsTyped = (preds ?? []) as unknown as Array<{ event_id: string; events: { round_id: string | null } }>;
+      const predsTyped = (preds ?? []) as unknown as Array<{
+        event_id: string;
+        events: { round_id: string | null };
+      }>;
       pickCounts = computePickCounts(predsTyped);
     }
   }
 
+  // Hero card data (WC or first comp with active round)
+  const heroComp = wcUserComp ?? null;
+  const heroRound = heroComp ? findActiveRound(rounds, heroComp.id) : null;
+  const heroEvtCount = heroRound ? (eventCounts[heroRound.id] ?? 0) : 0;
+  const heroPickCount = heroRound ? (pickCounts[heroRound.id] ?? 0) : 0;
+  const heroDeadline = heroRound ? roundDeadlines[heroRound.id] : null;
+  const heroProgress = heroEvtCount > 0 ? heroPickCount / heroEvtCount : 0;
+  const RING_C = 263.89; // 2πr where r=42
+  const ringOffset = RING_C * (1 - heroProgress);
+  const heroHref = wcUserComp ? "/wc" : "/predictions";
+
+  let daysLeft: number | null = null;
+  let deadlineLabel = "";
+  if (heroDeadline) {
+    const d = new Date(heroDeadline);
+    const now = new Date();
+    daysLeft = Math.max(0, Math.ceil((d.getTime() - now.getTime()) / 86_400_000));
+    deadlineLabel =
+      d.toLocaleDateString("en-IE", { weekday: "short", day: "numeric", month: "short" }) +
+      " \u00b7 " +
+      d.toLocaleTimeString("en-IE", { hour: "2-digit", minute: "2-digit", hour12: false });
+  }
+
   return (
     <div className="mx-auto max-w-[480px] px-4 py-6">
-      {/* Greeting */}
-      <div className="flex items-center gap-3 mb-6">
-        <BrandMark className="h-9 w-auto shrink-0" />
-        <h1 className="text-lg font-extrabold text-ps-text">Home</h1>
+      {/* ── Wordmark + avatar ──────────────────────────────────── */}
+      <div className="flex items-center justify-between px-1 pb-2">
+        <span className="text-[17px] font-extrabold leading-none tracking-tight">
+          <span className="text-ps-text">sports</span>
+          <span className="text-ps-amber">predict.</span>
+        </span>
+        <div className="flex h-[34px] w-[34px] items-center justify-center rounded-full bg-ps-text text-sm font-extrabold text-ps-amber">
+          {initial}
+        </div>
       </div>
 
-      {/* World Cup 2026 promo card */}
-      {showWcCard && (
+      {/* ── Hero card (WC member) ──────────────────────────────── */}
+      {heroComp && heroRound ? (
+        <Link
+          href={heroHref}
+          className="mt-2 block rounded-3xl p-6 pb-5 transition-all active:scale-[0.98]"
+          style={{
+            background: "#0a0f0a",
+            color: "#f1ece2",
+            backgroundImage:
+              "radial-gradient(ellipse at 70% 20%, rgba(212,175,55,0.08) 0%, transparent 60%), radial-gradient(ellipse at 20% 80%, rgba(10,168,109,0.05) 0%, transparent 50%)",
+          }}
+        >
+          <p
+            className="text-[10px] font-bold uppercase tracking-[0.18em]"
+            style={{ color: "rgba(212,175,55,0.6)" }}
+          >
+            Now open &mdash; make your move
+          </p>
+          <p className="mt-1 text-[13px] font-semibold" style={{ color: "rgba(255,255,255,0.55)" }}>
+            <span style={{ color: "rgba(255,255,255,0.85)" }}>{heroComp.name}</span>
+          </p>
+
+          <div className="mt-5 flex items-center gap-5">
+            {/* Progress ring */}
+            <div className="relative h-24 w-24 shrink-0">
+              <svg viewBox="0 0 96 96" className="h-24 w-24" style={{ transform: "rotate(-90deg)" }}>
+                <circle cx="48" cy="48" r="42" fill="none" stroke="rgba(212,175,55,0.15)" strokeWidth="5" />
+                <circle
+                  cx="48"
+                  cy="48"
+                  r="42"
+                  fill="none"
+                  stroke="#d4af37"
+                  strokeWidth="5"
+                  strokeLinecap="round"
+                  strokeDasharray={RING_C}
+                  strokeDashoffset={ringOffset}
+                  style={{ transition: "stroke-dashoffset 0.6s ease" }}
+                />
+              </svg>
+              <div className="absolute inset-0 flex flex-col items-center justify-center">
+                <span className="font-mono text-[22px] font-bold leading-none" style={{ color: "#d4af37" }}>
+                  {heroPickCount}
+                </span>
+                <span
+                  className="mt-0.5 font-mono text-[11px] font-medium leading-none"
+                  style={{ color: "rgba(212,175,55,0.5)" }}
+                >
+                  /{heroEvtCount}
+                </span>
+              </div>
+            </div>
+
+            <div className="flex-1">
+              <h2 className="text-[22px] font-extrabold leading-tight text-white">
+                {heroRound.name ?? `Round ${heroRound.round_number}`}
+              </h2>
+              <p className="mt-1 text-[13px] font-semibold" style={{ color: "rgba(255,255,255,0.45)" }}>
+                {heroPickCount} of {heroEvtCount} picks made
+              </p>
+              {daysLeft !== null && (
+                <div
+                  className="mt-3 inline-flex items-center gap-1.5 rounded-full px-2.5 py-1"
+                  style={{ background: "rgba(212,175,55,0.1)", border: "1px solid rgba(212,175,55,0.2)" }}
+                >
+                  <span className="h-1.5 w-1.5 animate-pulse rounded-full" style={{ background: "#d4af37" }} />
+                  <span className="font-mono text-xs font-semibold" style={{ color: "#d4af37" }}>
+                    {daysLeft} {daysLeft === 1 ? "day" : "days"} left
+                  </span>
+                </div>
+              )}
+            </div>
+          </div>
+
+          <div
+            className="mt-5 rounded-[14px] py-3.5 text-center text-[15px] font-extrabold"
+            style={{ background: "#f59e0b", color: "#0a0f0a", boxShadow: "0 4px 16px rgba(212,175,55,0.35)" }}
+          >
+            Make your picks &rarr;
+          </div>
+          {deadlineLabel && (
+            <p className="mt-2 text-center text-[11px] font-medium" style={{ color: "rgba(255,255,255,0.35)" }}>
+              Deadline: {deadlineLabel}
+            </p>
+          )}
+        </Link>
+      ) : showWcPromo ? (
+        /* WC promo for non-members */
         <Link
           href="/wc"
-          className="mb-4 block rounded-2xl p-5 transition-all active:scale-[0.98]"
+          className="mt-2 block rounded-3xl p-6 transition-all active:scale-[0.98]"
           style={{ background: "#0a0f0a", color: "#f1ece2" }}
         >
-          <div className="flex items-center justify-between">
-            <div>
-              <p
-                className="text-[10px] font-bold uppercase tracking-widest"
-                style={{ color: "#006847" }}
-              >
-                World Cup
-              </p>
-              <h2 className="mt-1 text-lg font-extrabold">Make your picks</h2>
-              <p className="mt-1 text-xs" style={{ color: "#a8a090" }}>
-                48 teams. 5 ways to play. Free entry.
-              </p>
-            </div>
-            <span
-              className="text-3xl font-extrabold"
-              style={{ color: "#d4af37" }}
-            >
-              26
-            </span>
-          </div>
+          <p className="text-[10px] font-bold uppercase tracking-widest" style={{ color: "#006847" }}>
+            World Cup 2026
+          </p>
+          <h2 className="mt-1 text-lg font-extrabold">Make your picks</h2>
+          <p className="mt-1 text-xs" style={{ color: "#a8a090" }}>
+            48 teams. 5 ways to play. Free entry.
+          </p>
+          <span
+            className="mt-3 inline-block rounded-lg px-4 py-2 text-sm font-semibold"
+            style={{ background: "#d4af37", color: "#0a0f0a" }}
+          >
+            Get started
+          </span>
         </Link>
-      )}
+      ) : null}
 
+      {/* ── Empty state ────────────────────────────────────────── */}
       {comps.length === 0 ? (
-        <div className="space-y-3">
+        <div className="mt-4 space-y-3">
           <div className="rounded-2xl border border-dashed border-ps-border bg-ps-surface p-6 text-center">
-            <p className="text-sm font-medium text-ps-text-sec">
-              No active competitions yet.
-            </p>
+            <p className="text-sm font-medium text-ps-text-sec">No active competitions yet.</p>
             <p className="mt-2 text-xs text-ps-text-ter">
               Start your own, or join one with an invite link below.
             </p>
@@ -257,8 +418,44 @@ async function Dashboard({ userId }: { userId: string }) {
           <JoinCompetitionCard />
         </div>
       ) : (
-        <div className="space-y-4">
-          {comps.map((comp) => {
+        /* ── Secondary cards ─────────────────────────────────── */
+        <div className="mt-3.5 flex flex-col gap-2.5">
+          {/* Personal Predictions */}
+          <Link
+            href="/competitions/personal"
+            className="flex items-center gap-3 rounded-2xl border border-ps-border bg-ps-surface p-3.5 transition-all duration-150 active:scale-[0.98]"
+          >
+            <div className="flex h-9 w-9 items-center justify-center rounded-[10px] text-[#c48a12]" style={{ background: "rgba(245,158,11,0.08)" }}>
+              <CrosshairIcon />
+            </div>
+            <div className="min-w-0 flex-1">
+              <div className="text-[13px] font-bold text-ps-text">Personal Predictions</div>
+              <div className="mt-0.5 text-[11px] font-medium text-ps-text-ter">Your private pick tracker</div>
+            </div>
+            <span className="rounded-full bg-ps-chip px-2 py-0.5 text-[10px] font-bold text-ps-text-ter">
+              Open &rarr;
+            </span>
+          </Link>
+
+          {/* Leaderboard */}
+          <Link
+            href="/leaderboard"
+            className="flex items-center gap-3 rounded-2xl border border-ps-border bg-ps-surface p-3.5 transition-all duration-150 active:scale-[0.98]"
+          >
+            <div className="flex h-9 w-9 items-center justify-center rounded-[10px] text-[#c48a12]" style={{ background: "rgba(245,158,11,0.08)" }}>
+              <PodiumIcon />
+            </div>
+            <div className="min-w-0 flex-1">
+              <div className="text-[13px] font-bold text-ps-text">Leaderboard</div>
+              <div className="mt-0.5 text-[11px] font-medium text-ps-text-ter">See how you stack up</div>
+            </div>
+            <span className="rounded-full bg-ps-chip px-2 py-0.5 text-[10px] font-bold text-ps-text-ter">
+              View &rarr;
+            </span>
+          </Link>
+
+          {/* Other competitions */}
+          {otherComps.map((comp) => {
             const activeRound = findActiveRound(rounds, comp.id);
             const evtCount = activeRound ? (eventCounts[activeRound.id] ?? 0) : 0;
             const pickCount = activeRound ? (pickCounts[activeRound.id] ?? 0) : 0;
@@ -267,73 +464,41 @@ async function Dashboard({ userId }: { userId: string }) {
               <Link
                 key={comp.id}
                 href={`/predictions?competition=${comp.id}`}
-                className="block rounded-2xl border border-ps-border bg-ps-surface p-4 transition-all duration-150 active:scale-[0.98]"
+                className="flex items-center gap-3 rounded-2xl border border-ps-border bg-ps-surface p-3.5 transition-all duration-150 active:scale-[0.98]"
               >
-                {/* Competition name */}
-                <h2 className="text-base font-extrabold text-ps-text">
-                  {comp.name}
-                </h2>
-
-                {/* Active round */}
+                <div className="flex h-9 w-9 items-center justify-center rounded-[10px] text-[#c48a12]" style={{ background: "rgba(245,158,11,0.08)" }}>
+                  <UserCircleIcon />
+                </div>
+                <div className="min-w-0 flex-1">
+                  <div className="text-[13px] font-bold text-ps-text">{comp.name}</div>
+                  <div className="mt-0.5 text-[11px] font-medium text-ps-text-ter">
+                    {activeRound
+                      ? (activeRound.name ?? `Round ${activeRound.round_number}`)
+                      : "No active round"}
+                  </div>
+                </div>
                 {activeRound ? (
-                  <div className="mt-2 flex items-center justify-between">
-                    <span className="text-xs font-semibold text-ps-amber-deep">
-                      {activeRound.name ?? `Round ${activeRound.round_number}`}
-                      {activeRound.status === "locked" && " — locked"}
-                    </span>
-                    <span
-                      className={`font-mono text-xs font-semibold ${
-                        evtCount > 0 && pickCount >= evtCount
-                          ? "text-ps-green"
-                          : pickCount > 0
-                            ? "text-ps-amber-deep"
-                            : "text-ps-text-ter"
-                      }`}
-                    >
-                      {pickCount}/{evtCount} picked
-                    </span>
-                  </div>
+                  <span
+                    className={`rounded-full px-2 py-0.5 font-mono text-[10px] font-bold ${
+                      evtCount > 0 && pickCount >= evtCount
+                        ? "bg-[rgba(10,168,109,0.1)] text-ps-green"
+                        : pickCount > 0
+                          ? "bg-[rgba(245,158,11,0.1)] text-ps-amber-deep"
+                          : "bg-ps-chip text-ps-text-ter"
+                    }`}
+                  >
+                    {pickCount}/{evtCount}
+                  </span>
                 ) : (
-                  <p className="mt-2 text-xs text-ps-text-ter">
-                    No active round
-                  </p>
-                )}
-
-                {/* Pick progress bar */}
-                {activeRound && evtCount > 0 && (
-                  <div className="mt-2 h-1.5 w-full rounded-full bg-ps-chip">
-                    <div
-                      className="h-full rounded-full"
-                      style={{
-                        width: `${Math.round((pickCount / evtCount) * 100)}%`,
-                        background: "linear-gradient(90deg, var(--ps-amber), var(--ps-amber-deep))",
-                        transition: "width 0.4s ease",
-                      }}
-                    />
-                  </div>
+                  <span className="rounded-full bg-[rgba(245,158,11,0.1)] px-2 py-0.5 text-[10px] font-bold text-[#b8741f]">
+                    Idle
+                  </span>
                 )}
               </Link>
             );
           })}
         </div>
       )}
-
-      {/* Quick links */}
-      <div className="mt-6 flex gap-3">
-        <Link
-          href="/predictions"
-          className="flex-1 rounded-xl bg-ps-text py-3 text-center text-sm font-semibold text-ps-bg transition-all duration-150 hover:opacity-90 active:scale-[0.97]"
-        >
-          Predictions
-        </Link>
-        <Link
-          href="/leaderboard"
-          className="flex-1 rounded-xl border border-ps-border bg-ps-surface py-3 text-center text-sm font-semibold text-ps-text transition-all duration-150 active:scale-[0.97]"
-        >
-          Leaderboard
-        </Link>
-      </div>
-      <PersonalPredictionsLink className="mt-3" />
     </div>
   );
 }
