@@ -1,15 +1,31 @@
-import Image from "next/image";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import { OracleDot } from "@/components/OracleDot";
-import { UmpireLogo } from "@/components/UmpireLogo";
-import { BubbleCall } from "@/components/BubbleCall";
 import {
   getWcBracketSnapshot,
   type BracketSnapshot,
 } from "@/lib/tournament/bracket-snapshot";
 
 export const dynamic = "force-dynamic";
+
+// Ink-on-poster card surface. The hero PNG paints the whole page behind these
+// cards as a fixed CSS background (see the wrapper below). All colors here are
+// intentionally literal so the surface stays dark even if a future `wc-theme`
+// light variant flips the ps-* tokens to cream.
+const CARD_BASE =
+  "rounded-2xl border border-white/10 p-5 text-[#fefdf7] " +
+  "shadow-[0_20px_44px_-18px_rgba(0,0,0,0.7),inset_0_1px_0_rgba(255,255,255,0.08)] " +
+  "backdrop-blur-[5.6px] backdrop-saturate-[1.05]";
+
+// Warm amber bloom in the top-left corner of each card, fading into deep ink.
+const CARD_BG: React.CSSProperties = {
+  backgroundImage:
+    "radial-gradient(120% 80% at 0% 0%, rgba(245,158,11,0.10) 0%, rgba(245,158,11,0) 55%), " +
+    "linear-gradient(160deg, rgba(28,22,16,0.80) 0%, rgba(8,8,8,0.84) 100%)",
+};
+
+const INNER_BLOCK_CLASSES =
+  "rounded-xl border border-white/[0.08] bg-white/[0.05]";
 
 export default async function WorldCupLanding() {
   const supabase = await createClient();
@@ -55,185 +71,159 @@ export default async function WorldCupLanding() {
   const daysUntil = Math.max(0, Math.ceil(diffMs / (1000 * 60 * 60 * 24)));
 
   return (
-    <div className="flex flex-1 flex-col items-center px-4">
-      {/* Full-bleed hero banner — negative margin breaks out of the page's px-4 */}
-      <div className="-mx-4 w-screen max-w-none">
-        <Image
-          src="/wc/hero-fifa-2026.png"
-          alt="FIFA World Cup 2026"
-          width={1024}
-          height={577}
-          priority
-          sizes="100vw"
-          className="h-auto w-full"
-        />
-      </div>
+    // The whole landing surface is a dark canvas with the FIFA hero painted
+    // across it as a fixed CSS background. The cards float on top. Scoped to
+    // this wrapper only — the `/wc/*` layout (nav, wc-theme) is untouched.
+    <div
+      className="-mt-[1px] min-h-screen bg-[#0a0a0a]"
+      style={{
+        backgroundImage: "url('/wc/hero-fifa-2026.png')",
+        backgroundRepeat: "no-repeat",
+        backgroundPosition: "center top",
+        backgroundSize: "145% auto",
+        backgroundAttachment: "fixed",
+        backgroundColor: "#0a0a0a",
+      }}
+    >
+      <main className="mx-auto flex max-w-[480px] flex-col gap-6 px-4 pt-[35px] pb-[39px]">
 
-      {/* Hero */}
-      <section className="flex w-full max-w-md flex-col items-center gap-5 pt-10 pb-8 text-center md:pt-16">
-        {/* All 3 brand marks */}
-        <div className="flex items-center gap-4">
-          <OracleDot className="h-8 w-auto opacity-70" />
-          <UmpireLogo className="h-10 w-auto opacity-70" flagColor="#006847" />
-          <BubbleCall className="h-8 w-auto opacity-70" />
-        </div>
-
-        {/* Wordmark */}
-        <div>
-          <h1 className="font-display text-3xl uppercase tracking-tight text-ps-text md:text-4xl">
-            World Cup{" "}
-            <span className="text-ps-amber">2026</span>
-          </h1>
-          <p className="mt-2 font-serif text-lg italic text-ps-text-sec">
-            48 teams. Your call.
-          </p>
-          <p
-            className="mt-1.5 font-mono text-[10px] font-bold uppercase tracking-[0.25em]"
-            style={{ color: "#006847" }}
-          >
-            Viva Mexico
-          </p>
-        </div>
-
-        {/* Countdown */}
-        {daysUntil > 0 && (
-          <div
-            className="rounded-xl border border-ps-border bg-ps-surface px-6 py-4"
-            style={{ borderBottom: "2px solid #006847" }}
-          >
-            <p className="font-mono text-3xl font-bold text-ps-amber">
-              {daysUntil}
-            </p>
-            <p className="text-[10px] font-semibold uppercase tracking-widest text-ps-text-ter">
-              days to kickoff
+        {/* Card 1 — wordmark + countdown */}
+        <section className={CARD_BASE} style={CARD_BG}>
+          <div className="text-center">
+            <h1 className="font-display text-[32px] leading-none uppercase tracking-tight">
+              World Cup <span className="text-ps-amber">2026</span>
+            </h1>
+            <p className="mt-2 font-serif text-lg italic text-white/70">
+              48 teams. 104 matches. 1 winner. Your call.
             </p>
           </div>
-        )}
 
-        {/* Primary CTA, in priority order:
-         *
-         * 1. Bracket not yet submitted (not_started / in_progress /
-         *    ready_to_submit) — bracket IS the primary action. Tiebreakers
-         *    and best-thirds-ranking can only be captured there, and users
-         *    who don't finish the bracket have skipped the onboarding
-         *    contract. "Skip ahead to matchday picks" stays visible as a
-         *    demoted escape hatch.
-         * 2. Bracket submitted OR locked — bracket is done (sealed or
-         *    editable-until-lock); matchday picks become the hero. The
-         *    secondary "Review / View your bracket" button stays visible
-         *    (not hidden) but is clearly subordinate. Submitted gets
-         *    "Review" so users know they can still revise; locked gets
-         *    "View".
-         * 3. Signed-out / no bracket snapshot — "Join the game" → /wc/join,
-         *    the idempotent enrolment door.
-         */}
-        {user && bracket && !bracketDone ? (
-          <>
-            <Link
-              href={`/wc/bracket/wizard?classificationId=${bracket.classificationId}`}
-              className="w-full max-w-xs rounded-xl px-6 py-4 text-center text-base font-semibold transition-all hover:opacity-90 active:scale-[0.97]"
-              style={{
-                background: "linear-gradient(135deg, #d4af37, #b8941f)",
-                color: "#0a0f0a",
-              }}
-            >
-              {bracket.copy.dashboardPrimaryCta}
-            </Link>
-            <BracketProgressMeter snapshot={bracket} />
-            <Link
-              href={picksHref}
-              className="text-sm font-semibold text-ps-text-sec underline-offset-2 hover:text-ps-text hover:underline"
-            >
-              Or skip ahead to matchday picks →
-            </Link>
-          </>
-        ) : user && bracketDone && bracket ? (
-          <>
-            <Link
-              href={picksHref}
-              className="w-full max-w-xs rounded-xl px-6 py-4 text-center text-base font-semibold transition-all hover:opacity-90 active:scale-[0.97]"
-              style={{
-                background: "linear-gradient(135deg, #d4af37, #b8941f)",
-                color: "#0a0f0a",
-              }}
-            >
-              Make your picks
-            </Link>
-            <Link
-              href={`/wc/bracket/wizard?classificationId=${bracket.classificationId}`}
-              className="inline-flex items-center gap-1.5 rounded-lg border border-ps-border bg-ps-surface px-4 py-2 text-xs font-semibold text-ps-text-sec transition-colors hover:border-ps-green/40 hover:text-ps-text"
-            >
-              <span className="font-mono text-[10px] font-bold uppercase tracking-widest text-ps-green">
-                {bracket.stage === "locked" ? "Locked" : "Submitted"}
-              </span>
-              {bracket.copy.dashboardSecondaryCta} →
-            </Link>
-          </>
-        ) : (
-          <>
-            <Link
-              href={picksHref}
-              className="w-full max-w-xs rounded-xl px-6 py-4 text-center text-base font-semibold transition-all hover:opacity-90 active:scale-[0.97]"
-              style={{
-                background: "linear-gradient(135deg, #d4af37, #b8941f)",
-                color: "#0a0f0a",
-              }}
-            >
-              {user ? "Make your picks" : "Join the game"}
-            </Link>
-          </>
-        )}
-      </section>
+          {daysUntil > 0 && (
+            <div className="mt-[18px] flex justify-center">
+              <div
+                className="rounded-[10px] border border-white/10 bg-white/[0.06] px-[22px] py-3 text-center font-mono"
+                style={{ borderBottom: "2px solid #4ade80" }}
+              >
+                <p className="text-[26px] font-extrabold leading-none text-ps-amber">
+                  {daysUntil}
+                </p>
+                <p className="mt-1 text-[10px] font-semibold uppercase tracking-[0.20em] text-white/55">
+                  days to kickoff
+                </p>
+              </div>
+            </div>
+          )}
+        </section>
 
-      {/* Host cities */}
-      <p className="text-[10px] font-medium tracking-widest text-ps-text-ter uppercase">
-        Mexico City &middot; Guadalajara &middot; Monterrey
-      </p>
+        {/* Card 2 — Primary CTA, state-driven (signed-out / in-progress / done) */}
+        <section className={CARD_BASE} style={CARD_BG}>
+          {user && bracket && !bracketDone ? (
+            <div className="flex flex-col items-center gap-4">
+              <Link
+                href={`/wc/bracket/wizard?classificationId=${bracket.classificationId}`}
+                className="block w-full max-w-[320px] rounded-xl px-6 py-4 text-center text-base font-semibold transition-all hover:opacity-90 active:scale-[0.97]"
+                style={{
+                  background: "linear-gradient(135deg, #d4af37, #b8941f)",
+                  color: "#0a0f0a",
+                  boxShadow:
+                    "0 8px 22px -8px rgba(245,158,11,0.55), inset 0 1px 0 rgba(255,255,255,0.5)",
+                }}
+              >
+                {bracket.copy.dashboardPrimaryCta}
+              </Link>
+              <BracketProgressMeter snapshot={bracket} />
+              <Link
+                href={picksHref}
+                className="text-sm font-semibold text-white/70 underline-offset-2 hover:text-white hover:underline"
+              >
+                Or skip ahead to matchday picks →
+              </Link>
+            </div>
+          ) : user && bracketDone && bracket ? (
+            <div className="flex flex-col items-center gap-4">
+              <Link
+                href={picksHref}
+                className="block w-full max-w-[320px] rounded-xl px-6 py-4 text-center text-base font-semibold transition-all hover:opacity-90 active:scale-[0.97]"
+                style={{
+                  background: "linear-gradient(135deg, #d4af37, #b8941f)",
+                  color: "#0a0f0a",
+                  boxShadow:
+                    "0 8px 22px -8px rgba(245,158,11,0.55), inset 0 1px 0 rgba(255,255,255,0.5)",
+                }}
+              >
+                Make your picks
+              </Link>
+              <Link
+                href={`/wc/bracket/wizard?classificationId=${bracket.classificationId}`}
+                className="inline-flex items-center gap-1.5 rounded-lg border border-white/15 bg-white/5 px-4 py-2 text-xs font-semibold text-white/70 transition-colors hover:border-white/30 hover:text-white"
+              >
+                <span className="font-mono text-[10px] font-bold uppercase tracking-widest text-emerald-400">
+                  {bracket.stage === "locked" ? "Locked" : "Submitted"}
+                </span>
+                {bracket.copy.dashboardSecondaryCta} →
+              </Link>
+            </div>
+          ) : (
+            <div className="flex justify-center">
+              <Link
+                href={picksHref}
+                className="block w-full max-w-[320px] rounded-xl px-6 py-4 text-center text-base font-semibold transition-all hover:opacity-90 active:scale-[0.97]"
+                style={{
+                  background: "linear-gradient(135deg, #d4af37, #b8941f)",
+                  color: "#0a0f0a",
+                  boxShadow:
+                    "0 8px 22px -8px rgba(245,158,11,0.55), inset 0 1px 0 rgba(255,255,255,0.5)",
+                }}
+              >
+                {user ? "Make your picks" : "Join the game"}
+              </Link>
+            </div>
+          )}
+        </section>
 
-      {/* Four ways to play */}
-      <section className="w-full max-w-md border-t border-ps-border pt-8 pb-8 mt-6">
-        <h2 className="text-center text-[10px] font-bold uppercase tracking-widest text-ps-text-ter">
-          Five ways to play
-        </h2>
-        <div className="mt-6 grid grid-cols-2 gap-3">
-          <ClassificationCard
-            title="Overall"
-            description="Every match, every point. Cumulative from start to finish."
-          />
-          <ClassificationCard
-            title="Format"
-            description="Prediction groups of 4. Bottom drops each stage."
-          />
-          <ClassificationCard
-            title="Full Bracket"
-            description="Pick every group and knockout result before kickoff."
-          />
-          <ClassificationCard
-            title="KO Bracket"
-            description="Bracket picks from R32. Opens after the group stage."
-          />
-          <ClassificationCard
-            title="Stage Pick"
-            description="Predict outcomes at a knockout stage. Lock before kickoff."
-            span
-          />
-        </div>
-      </section>
+        {/* Card 3 — Three ways to play */}
+        <section className={CARD_BASE} style={CARD_BG}>
+          <h2 className="text-center text-[10px] font-bold uppercase tracking-[0.25em] text-white/55">
+            Three ways to play
+          </h2>
+          <div className="mt-4 grid grid-cols-2 gap-2.5">
+            <ClassificationCard
+              title="Bracket"
+              description="Pick every group and knockout result before kickoff."
+            />
+            <ClassificationCard
+              title="Format"
+              description="Prediction groups of 4. Bottom drops each stage."
+            />
+            <ClassificationCard
+              title="Overall"
+              description="Every match, every point. Cumulative from start to finish."
+              span
+            />
+          </div>
+        </section>
 
-      {/* Scoring */}
-      <section className="w-full max-w-md border-t border-ps-border pt-8 pb-14">
-        <h2 className="text-center text-[10px] font-bold uppercase tracking-widest text-ps-text-ter">
-          Scoring
-        </h2>
-        <div className="mt-6 space-y-3">
-          <ScoringRow points={2} label="Correct match outcome" />
-          <ScoringRow points={3} label="Exact score bonus" />
-          <ScoringRow points={1} label="Correct advancing team (knockout)" />
-        </div>
-        <p className="mt-4 text-center text-[10px] text-ps-text-ter">
-          Group matches: max 5pts &middot; Knockout: max 6pts
-        </p>
-      </section>
+        {/* Card 4 — Scoring */}
+        <section className={CARD_BASE} style={CARD_BG}>
+          <h2 className="text-center text-[10px] font-bold uppercase tracking-[0.25em] text-white/55">
+            Scoring
+          </h2>
+          <div className="mt-4 flex flex-col gap-2">
+            <ScoringRow points={2} label="Correct match outcome" />
+            <ScoringRow points={3} label="Exact score bonus" />
+            <ScoringRow points={1} label="Correct advancing team (knockout)" />
+          </div>
+          <p className="mt-3.5 text-center text-[10px] text-white/55">
+            Group matches: max 5pts &middot; Knockout: max 6pts
+          </p>
+        </section>
+
+        {/* Brand sign-off — Oracle Dot at the very end, small + compact */}
+        <footer className="flex justify-center pt-5 pb-2 opacity-60">
+          <OracleDot className="h-9 w-auto" />
+        </footer>
+
+      </main>
     </div>
   );
 }
@@ -248,13 +238,9 @@ function ClassificationCard({
   span?: boolean;
 }) {
   return (
-    <div
-      className={`rounded-xl border border-ps-border bg-ps-surface p-4 transition-colors hover:border-ps-border-strong ${
-        span ? "col-span-2" : ""
-      }`}
-    >
-      <h3 className="text-sm font-bold text-ps-text">{title}</h3>
-      <p className="mt-1 text-xs leading-relaxed text-ps-text-sec">
+    <div className={`${INNER_BLOCK_CLASSES} p-3.5 ${span ? "col-span-2" : ""}`}>
+      <h3 className="text-[13px] font-extrabold text-[#fefdf7]">{title}</h3>
+      <p className="mt-1 text-[11px] leading-snug text-white/65">
         {description}
       </p>
     </div>
@@ -265,14 +251,14 @@ function BracketProgressMeter({ snapshot }: { snapshot: BracketSnapshot }) {
   return (
     <div className="w-full max-w-xs">
       <div className="flex items-baseline justify-between">
-        <span className="font-mono text-[10px] font-bold uppercase tracking-widest text-ps-text-ter">
+        <span className="font-mono text-[10px] font-bold uppercase tracking-widest text-white/55">
           {snapshot.label}
         </span>
-        <span className="font-mono text-[10px] font-bold text-ps-text-sec">
+        <span className="font-mono text-[10px] font-bold text-white/70">
           {snapshot.pct}%
         </span>
       </div>
-      <div className="mt-1 h-1.5 w-full overflow-hidden rounded-full bg-ps-chip">
+      <div className="mt-1 h-1.5 w-full overflow-hidden rounded-full bg-white/10">
         <div
           className="h-full bg-ps-amber transition-all duration-300"
           style={{ width: `${snapshot.pct}%` }}
@@ -284,9 +270,11 @@ function BracketProgressMeter({ snapshot }: { snapshot: BracketSnapshot }) {
 
 function ScoringRow({ points, label }: { points: number; label: string }) {
   return (
-    <div className="flex items-center gap-3 rounded-lg bg-ps-surface px-4 py-3">
-      <span className="font-mono text-lg font-bold text-ps-amber">{points}</span>
-      <span className="text-sm text-ps-text">{label}</span>
+    <div className="flex items-center gap-3 rounded-lg bg-white/[0.05] px-3.5 py-3">
+      <span className="font-mono text-lg font-extrabold text-ps-amber">
+        {points}
+      </span>
+      <span className="text-[13px] text-[#fefdf7]">{label}</span>
     </div>
   );
 }
