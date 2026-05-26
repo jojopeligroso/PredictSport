@@ -429,6 +429,7 @@ export default async function LeaderboardPage({ searchParams }: PageProps) {
           <h1 className="mt-0.5 font-display text-[32px] leading-none tracking-wider text-ps-text">
             THE TABLE
           </h1>
+          <p className="text-xs text-ps-text-ter font-mono">{memberList.length} players</p>
         </div>
         <CompetitionSelector
           competitions={competitions.map((c) => ({ id: c.id, name: c.name }))}

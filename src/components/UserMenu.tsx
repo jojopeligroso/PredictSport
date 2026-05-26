@@ -14,9 +14,10 @@ const THEME_LABEL: Record<ThemePref, string> = {
 interface UserMenuProps {
   displayName: string;
   avatarUrl: string | null;
+  isAdmin?: boolean;
 }
 
-export function UserMenu({ displayName, avatarUrl }: UserMenuProps) {
+export function UserMenu({ displayName, avatarUrl, isAdmin }: UserMenuProps) {
   const [isOpen, setIsOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
   const { theme, cycleTheme } = useTheme();
@@ -92,6 +93,15 @@ export function UserMenu({ displayName, avatarUrl }: UserMenuProps) {
             >
               Settings
             </Link>
+            {isAdmin && (
+              <Link
+                href="/competitions"
+                className="block rounded-md px-2 py-1.5 text-sm text-ps-text-sec transition-colors hover:bg-ps-chip hover:text-ps-text"
+                onClick={() => setIsOpen(false)}
+              >
+                Manage competitions
+              </Link>
+            )}
             <button
               type="button"
               onClick={cycleTheme}

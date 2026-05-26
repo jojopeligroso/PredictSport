@@ -11,16 +11,28 @@ export async function NavBar() {
   } = await supabase.auth.getUser();
 
   // Fetch the user profile from the users table for display_name and avatar
-  let profile: { display_name: string; avatar_url: string | null } | null =
+  let profile: { display_name: string; avatar_url: string | null; is_super_admin: boolean | null } | null =
     null;
+  let isAdmin = false;
   if (authUser) {
-    const profileRes = await supabase
-      .from("users")
-      .select("display_name, avatar_url")
-      .eq("id", authUser.id)
-      .single();
+    const [profileRes, adminRes] = await Promise.all([
+      supabase
+        .from("users")
+        .select("display_name, avatar_url, is_super_admin")
+        .eq("id", authUser.id)
+        .single(),
+      supabase
+        .from("competition_members")
+        .select("competition_id")
+        .eq("user_id", authUser.id)
+        .in("role", ["admin", "co_admin"])
+        .limit(1),
+    ]);
     profile = profileRes.data;
+    isAdmin = ((adminRes.data ?? []).length > 0);
   }
+
+  const isSuperAdmin = profile?.is_super_admin === true;
 
   const displayName =
     profile?.display_name ??
@@ -49,7 +61,7 @@ export async function NavBar() {
           {/* Desktop auth */}
           <div className="hidden md:block">
             {authUser ? (
-              <UserMenu displayName={displayName} avatarUrl={avatarUrl} />
+              <UserMenu displayName={displayName} avatarUrl={avatarUrl} isAdmin={isAdmin || isSuperAdmin} />
             ) : (
               <Link
                 href="/login"
@@ -65,6 +77,7 @@ export async function NavBar() {
             isLoggedIn={!!authUser}
             displayName={displayName}
             avatarUrl={avatarUrl}
+            isAdmin={isAdmin || isSuperAdmin}
           />
         </div>
       </div>
