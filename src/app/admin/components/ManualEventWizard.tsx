@@ -17,6 +17,7 @@ import type { PredictionType } from "@/types/database";
 
 interface ManualEventWizardProps {
   competitionId: string;
+  roundId?: string;
   lockDefaultMinutes: number;
   onSuccess: () => void;
   onCancel: () => void;
@@ -445,6 +446,7 @@ function AutocompleteInput({
 
 export function ManualEventWizard({
   competitionId,
+  roundId,
   lockDefaultMinutes,
   onSuccess,
   onCancel,
@@ -630,6 +632,7 @@ export function ManualEventWizard({
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           competition_id: competitionId,
+          round_id: roundId ?? undefined,
           event_name: finalEventName,
           sport: selectedSport,
           start_time: startISO,

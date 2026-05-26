@@ -24,6 +24,8 @@ interface CorrectionEvent {
 interface CorrectionFlowProps {
   finalisations: Finalisation[];
   events: CorrectionEvent[];
+  windowNames?: Record<string, string>;
+  stageNames?: Record<string, string>;
 }
 
 type Step = 1 | 2 | 3 | 4;
@@ -102,7 +104,7 @@ const STEP_LABELS: Record<Step, string> = {
   4: "Review and confirm",
 };
 
-export function CorrectionFlow({ finalisations, events }: CorrectionFlowProps) {
+export function CorrectionFlow({ finalisations, events, windowNames, stageNames }: CorrectionFlowProps) {
   const [step, setStep] = useState<Step>(1);
   const [selectedFinalisationId, setSelectedFinalisationId] = useState<string>("");
   const [selectedEventId, setSelectedEventId] = useState<string>("");
@@ -269,8 +271,8 @@ export function CorrectionFlow({ finalisations, events }: CorrectionFlowProps) {
                   {finalisedFinalisations.map((f) => (
                     <option key={f.id} value={f.id}>
                       {f.finalisation_type === "window"
-                        ? `Window — ${f.prediction_window_id?.slice(0, 8) ?? f.id.slice(0, 8)}`
-                        : `Stage — ${f.sporting_stage_id?.slice(0, 8) ?? f.id.slice(0, 8)}`}{" "}
+                        ? `Window — ${windowNames?.[f.prediction_window_id ?? ""] ?? f.prediction_window_id?.slice(0, 8) ?? f.id.slice(0, 8)}`
+                        : `Stage — ${stageNames?.[f.sporting_stage_id ?? ""] ?? f.sporting_stage_id?.slice(0, 8) ?? f.id.slice(0, 8)}`}{" "}
                       (finalised {formatFinalisedAt(f.finalised_at)})
                     </option>
                   ))}

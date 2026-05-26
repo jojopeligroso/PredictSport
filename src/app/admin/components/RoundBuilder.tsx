@@ -28,6 +28,7 @@ interface RoundBuilderProps {
   competitionId: string;
   nextRoundNumber: number;
   scoringRules: Record<string, unknown>;
+  lockDefaultMinutes?: number;
   onSuccess: () => void;
   onCancel: () => void;
 }
@@ -865,6 +866,7 @@ interface Step3Props {
   nextRoundNumber: number;
   fixtureConfigs: FixtureConfig[];
   scoringRules: Record<string, unknown>;
+  lockDefaultMinutes?: number;
   onBack: () => void;
   onSuccess: () => void;
 }
@@ -873,6 +875,7 @@ function Step3Review({
   competitionId,
   nextRoundNumber,
   fixtureConfigs,
+  lockDefaultMinutes,
   onBack,
   onSuccess,
 }: Step3Props) {
@@ -900,7 +903,7 @@ function Step3Review({
 
     try {
       const events = fixtureConfigs.map((fc) => {
-        const lockTime = subtractMinutes(fc.fixture.startTime, 5);
+        const lockTime = subtractMinutes(fc.fixture.startTime, lockDefaultMinutes ?? 5);
         return {
           event_name:
             fc.fixture.homeTeam && fc.fixture.awayTeam
@@ -1090,6 +1093,7 @@ export function RoundBuilder({
   competitionId,
   nextRoundNumber,
   scoringRules,
+  lockDefaultMinutes,
   onSuccess,
   onCancel,
 }: RoundBuilderProps) {
@@ -1182,6 +1186,7 @@ export function RoundBuilder({
           nextRoundNumber={nextRoundNumber}
           fixtureConfigs={fixtureConfigs}
           scoringRules={scoringRules}
+          lockDefaultMinutes={lockDefaultMinutes}
           onBack={() => setStep(1)}
           onSuccess={onSuccess}
         />

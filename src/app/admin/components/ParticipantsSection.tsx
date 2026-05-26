@@ -10,6 +10,7 @@ interface ParticipantsSectionProps {
   members: (CompetitionMember & { user?: { display_name: string; email: string } })[];
   inviteTokens: InviteToken[];
   currentUserId: string;
+  userRole?: "admin" | "co_admin" | "participant";
 }
 
 export function ParticipantsSection({
@@ -17,8 +18,10 @@ export function ParticipantsSection({
   members,
   inviteTokens,
   currentUserId,
+  userRole,
 }: ParticipantsSectionProps) {
   const router = useRouter();
+  const isAdmin = userRole === "admin" || userRole === "co_admin";
   const [updatingMemberId, setUpdatingMemberId] = useState<string | null>(null);
   const [isGeneratingInvite, setIsGeneratingInvite] = useState(false);
   const [inviteError, setInviteError] = useState<string | null>(null);
@@ -163,7 +166,7 @@ export function ParticipantsSection({
               }`}
             >
               <button
-                onClick={() => setEditingCalloutId(isEditing ? null : member.user_id)}
+                onClick={() => isAdmin && setEditingCalloutId(isEditing ? null : member.user_id)}
                 className="flex w-full items-center gap-2.5 p-3 text-left"
               >
                 <Avatar initials={initials} color="#f59e0b" size={34} />
@@ -190,14 +193,14 @@ export function ParticipantsSection({
                     </p>
                   )}
                 </div>
-                {!isEditing && (
+                {isAdmin && !isEditing && (
                   <svg width="8" height="14" viewBox="0 0 8 14" fill="none" className="shrink-0 text-ps-text-ter">
                     <path d="M1 1l6 6-6 6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
                   </svg>
                 )}
               </button>
 
-              {isEditing && (
+              {isAdmin && isEditing && (
                 <div className="px-3 pb-4">
                   <p
                     className="mb-1.5 text-ps-text-sec"
@@ -288,13 +291,15 @@ export function ParticipantsSection({
           <h4 className="text-base font-semibold text-ps-text">
             Invite Links
           </h4>
-          <button
-            onClick={handleGenerateInvite}
-            disabled={isGeneratingInvite}
-            className="rounded-xl bg-gradient-to-r from-[#f59e0b] to-[#d97706] px-3 py-1.5 text-sm font-medium text-[#1a1208] transition-opacity hover:opacity-90 disabled:opacity-50"
-          >
-            {isGeneratingInvite ? "Generating..." : "Generate Invite Link"}
-          </button>
+          {isAdmin && (
+            <button
+              onClick={handleGenerateInvite}
+              disabled={isGeneratingInvite}
+              className="rounded-xl bg-gradient-to-r from-[#f59e0b] to-[#d97706] px-3 py-1.5 text-sm font-medium text-[#1a1208] transition-opacity hover:opacity-90 disabled:opacity-50"
+            >
+              {isGeneratingInvite ? "Generating..." : "Generate Invite Link"}
+            </button>
+          )}
         </div>
 
         {inviteError && (

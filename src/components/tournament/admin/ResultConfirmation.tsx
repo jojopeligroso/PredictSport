@@ -1,9 +1,7 @@
 "use client";
 
 import { useState } from "react";
-
-// Usage:
-// <ResultConfirmation events={events} roundName="Round 1" />
+import { useRouter } from "next/navigation";
 
 interface Event {
   id: string;
@@ -13,15 +11,24 @@ interface Event {
   result_data: Record<string, unknown> | null;
   result_confirmed: boolean;
   round_id: string | null;
+  sport: string;
+  external_event_id: string | null;
+}
+
+interface WindowData {
+  id: string;
+  name: string;
+  status: string;
+  events: Event[];
 }
 
 interface ResultConfirmationProps {
-  events: Event[];
-  roundName: string;
+  windows: WindowData[];
 }
 
 type ConfirmingState = Record<string, boolean>;
 type ErrorState = Record<string, string>;
+type FetchingState = Record<string, boolean>;
 
 function formatStartTime(iso: string): string {
   const d = new Date(iso);
@@ -34,10 +41,10 @@ function formatStartTime(iso: string): string {
 }
 
 function formatResultData(data: Record<string, unknown> | null): string {
-  if (!data) return "—";
+  if (!data) return "\u2014";
   const { home_score, away_score, winner } = data as Record<string, unknown>;
   if (home_score !== undefined && away_score !== undefined) {
-    return `${home_score} – ${away_score}`;
+    return `${home_score} \u2013 ${away_score}`;
   }
   if (winner !== undefined) {
     return String(winner);
@@ -67,6 +74,13 @@ function StatusBadge({ status }: { status: string }) {
       </span>
     );
   }
+  if (status === "cancelled") {
+    return (
+      <span className="rounded-full bg-ps-red/15 px-2 py-0.5 text-xs font-semibold text-ps-red">
+        Cancelled
+      </span>
+    );
+  }
   return (
     <span className="rounded-full bg-ps-chip px-2 py-0.5 text-xs font-semibold text-ps-text-ter">
       {status}
@@ -74,19 +88,61 @@ function StatusBadge({ status }: { status: string }) {
   );
 }
 
-export function ResultConfirmation({ events, roundName }: ResultConfirmationProps) {
+export function ResultConfirmation({ windows }: ResultConfirmationProps) {
+  const router = useRouter();
+
+  // Default to first locked window, fall back to first window
+  const defaultWindowId =
+    windows.find((w) => w.status === "locked")?.id ?? windows[0]?.id ?? "";
+  const [selectedWindowId, setSelectedWindowId] = useState(defaultWindowId);
+
+  const selectedWindow = windows.find((w) => w.id === selectedWindowId);
+  const events = selectedWindow?.events ?? [];
+
   const [confirming, setConfirming] = useState<ConfirmingState>({});
   const [errors, setErrors] = useState<ErrorState>({});
+  const [fetching, setFetching] = useState<FetchingState>({});
+  const [localResultData, setLocalResultData] = useState<
+    Record<string, Record<string, unknown>>
+  >({});
+  const [localStatuses, setLocalStatuses] = useState<Record<string, string>>({});
   const [confirmedIds, setConfirmedIds] = useState<Set<string>>(() => {
-    return new Set(events.filter((e) => e.result_confirmed).map((e) => e.id));
+    const allConfirmed = windows.flatMap((w) =>
+      w.events.filter((e) => e.result_confirmed).map((e) => e.id)
+    );
+    return new Set(allConfirmed);
   });
 
-  const confirmedCount = confirmedIds.size;
+  // Manual entry state per event
+  const [manualEntryOpen, setManualEntryOpen] = useState<Record<string, boolean>>(
+    {}
+  );
+  const [manualHomeScore, setManualHomeScore] = useState<Record<string, string>>(
+    {}
+  );
+  const [manualAwayScore, setManualAwayScore] = useState<Record<string, string>>(
+    {}
+  );
+  const [manualWinner, setManualWinner] = useState<Record<string, string>>({});
+
+  const confirmedCount = events.filter(
+    (e) => confirmedIds.has(e.id) || e.result_confirmed
+  ).length;
   const totalCount = events.length;
-  const progressPct = totalCount > 0 ? Math.round((confirmedCount / totalCount) * 100) : 0;
+  const progressPct =
+    totalCount > 0 ? Math.round((confirmedCount / totalCount) * 100) : 0;
+
+  function getEventResultData(event: Event): Record<string, unknown> | null {
+    return localResultData[event.id] ?? event.result_data;
+  }
+
+  function getEventStatus(event: Event): string {
+    return localStatuses[event.id] ?? event.status;
+  }
 
   async function handleConfirm(event: Event) {
-    if (!event.result_data) return;
+    const resultData = getEventResultData(event);
+    if (!resultData) return;
 
     setConfirming((prev) => ({ ...prev, [event.id]: true }));
     setErrors((prev) => {
@@ -99,7 +155,7 @@ export function ResultConfirmation({ events, roundName }: ResultConfirmationProp
       const res = await fetch("/api/tournament/confirm-result", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ event_id: event.id, result_data: event.result_data }),
+        body: JSON.stringify({ event_id: event.id, result_data: resultData }),
       });
 
       if (!res.ok) {
@@ -108,6 +164,15 @@ export function ResultConfirmation({ events, roundName }: ResultConfirmationProp
       }
 
       setConfirmedIds((prev) => new Set([...prev, event.id]));
+
+      // Check if all events in this window are now confirmed
+      const newConfirmedCount = events.filter(
+        (e) => e.id === event.id || confirmedIds.has(e.id) || e.result_confirmed
+      ).length;
+      if (newConfirmedCount === totalCount) {
+        // All confirmed — refresh the page so FinalisationPanel updates
+        router.refresh();
+      }
     } catch (err) {
       setErrors((prev) => ({
         ...prev,
@@ -118,12 +183,138 @@ export function ResultConfirmation({ events, roundName }: ResultConfirmationProp
     }
   }
 
+  async function handleFetchResult(event: Event) {
+    if (!event.external_event_id) return;
+
+    setFetching((prev) => ({ ...prev, [event.id]: true }));
+    setErrors((prev) => {
+      const next = { ...prev };
+      delete next[event.id];
+      return next;
+    });
+
+    try {
+      const res = await fetch("/api/sports/fetch-result", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          sport: event.sport,
+          externalEventId: event.external_event_id,
+          eventId: event.id,
+        }),
+      });
+
+      if (!res.ok) {
+        const body = (await res.json().catch(() => ({}))) as { error?: string };
+        throw new Error(body.error ?? `Request failed with status ${res.status}`);
+      }
+
+      const data = (await res.json()) as {
+        result: Record<string, unknown> | null;
+        manual: boolean;
+      };
+
+      if (data.manual || !data.result) {
+        setErrors((prev) => ({
+          ...prev,
+          [event.id]: "No result from providers. Use manual entry.",
+        }));
+      } else {
+        // Update local state with fetched result
+        setLocalResultData((prev) => ({
+          ...prev,
+          [event.id]: data.result!,
+        }));
+        setLocalStatuses((prev) => ({
+          ...prev,
+          [event.id]: "resulted",
+        }));
+      }
+    } catch (err) {
+      setErrors((prev) => ({
+        ...prev,
+        [event.id]: err instanceof Error ? err.message : "Something went wrong",
+      }));
+    } finally {
+      setFetching((prev) => ({ ...prev, [event.id]: false }));
+    }
+  }
+
+  function handleManualSubmit(event: Event) {
+    const home = manualHomeScore[event.id];
+    const away = manualAwayScore[event.id];
+    const win = manualWinner[event.id];
+
+    if (home === undefined && away === undefined && !win) return;
+
+    const resultData: Record<string, unknown> = {};
+    if (home !== undefined && home !== "") resultData.home_score = Number(home);
+    if (away !== undefined && away !== "") resultData.away_score = Number(away);
+    if (win) resultData.winner = win;
+
+    // Derive winner from scores if not explicitly set
+    if (
+      resultData.home_score !== undefined &&
+      resultData.away_score !== undefined &&
+      !resultData.winner
+    ) {
+      const h = resultData.home_score as number;
+      const a = resultData.away_score as number;
+      // Extract team names from event_name (format: "Team A vs Team B")
+      const parts = event.event_name.split(/\s+(?:vs?\.?|v)\s+/i);
+      if (parts.length === 2) {
+        if (h > a) resultData.winner = parts[0].trim();
+        else if (a > h) resultData.winner = parts[1].trim();
+        else resultData.winner = "draw";
+      }
+    }
+
+    setLocalResultData((prev) => ({
+      ...prev,
+      [event.id]: resultData,
+    }));
+    setLocalStatuses((prev) => ({
+      ...prev,
+      [event.id]: "resulted",
+    }));
+    setManualEntryOpen((prev) => ({
+      ...prev,
+      [event.id]: false,
+    }));
+  }
+
   return (
     <div className="w-full max-w-[480px]">
+      {/* Window selector */}
+      {windows.length > 1 && (
+        <div className="mb-4">
+          <label
+            htmlFor="window-select"
+            className="mb-1 block text-xs font-semibold text-ps-text-sec"
+          >
+            Select round
+          </label>
+          <select
+            id="window-select"
+            value={selectedWindowId}
+            onChange={(e) => setSelectedWindowId(e.target.value)}
+            className="w-full rounded-lg border border-ps-border bg-ps-bg px-3 py-2 text-sm text-ps-text focus:border-ps-amber focus:outline-none focus:ring-1 focus:ring-ps-amber"
+          >
+            {windows.map((w) => (
+              <option key={w.id} value={w.id}>
+                {w.name} ({w.status})
+              </option>
+            ))}
+          </select>
+        </div>
+      )}
+
       {/* Header */}
       <div className="mb-4 flex items-center justify-between">
         <div>
-          <h2 className="text-base font-bold text-ps-text">{roundName}</h2>
+          <h2 className="text-base font-bold text-ps-text">
+            {selectedWindow?.name ?? "No window selected"}
+          </h2>
           <p className="mt-0.5 text-xs text-ps-text-sec">
             {confirmedCount}/{totalCount} results confirmed
           </p>
@@ -154,12 +345,23 @@ export function ResultConfirmation({ events, roundName }: ResultConfirmationProp
       ) : (
         <div className="divide-y divide-ps-border rounded-xl border border-ps-border bg-ps-surface">
           {events.map((event) => {
-            const isConfirmed = confirmedIds.has(event.id);
+            const isConfirmed =
+              confirmedIds.has(event.id) || event.result_confirmed;
             const isConfirming = confirming[event.id] ?? false;
+            const isFetching = fetching[event.id] ?? false;
+            const resultData = getEventResultData(event);
+            const eventStatus = getEventStatus(event);
             const canConfirm =
-              event.status === "resulted" &&
               !isConfirmed &&
-              event.result_data !== null;
+              resultData !== null &&
+              (eventStatus === "resulted" || eventStatus === "locked");
+            const canFetchResult =
+              !isConfirmed &&
+              resultData === null &&
+              event.external_event_id !== null &&
+              eventStatus !== "cancelled" &&
+              eventStatus !== "upcoming";
+            const isManualOpen = manualEntryOpen[event.id] ?? false;
             const errorMsg = errors[event.id];
 
             return (
@@ -173,15 +375,17 @@ export function ResultConfirmation({ events, roundName }: ResultConfirmationProp
                       {formatStartTime(event.start_time)}
                     </p>
                   </div>
-                  <StatusBadge status={event.status} />
+                  <StatusBadge status={eventStatus} />
                 </div>
 
                 {/* Result row */}
                 <div className="mt-2 flex items-center justify-between">
                   <span className="font-mono text-sm text-ps-text-sec">
-                    {event.status === "resulted" || isConfirmed
-                      ? formatResultData(event.result_data)
-                      : "Awaiting result"}
+                    {resultData
+                      ? formatResultData(resultData)
+                      : eventStatus === "resulted" || isConfirmed
+                        ? formatResultData(event.result_data)
+                        : "Awaiting result"}
                   </span>
 
                   {isConfirmed ? (
@@ -223,6 +427,114 @@ export function ResultConfirmation({ events, roundName }: ResultConfirmationProp
                     </button>
                   ) : null}
                 </div>
+
+                {/* Action buttons for events without result data */}
+                {!isConfirmed && !resultData && eventStatus !== "cancelled" && eventStatus !== "upcoming" && (
+                  <div className="mt-2 flex items-center gap-2">
+                    {canFetchResult && (
+                      <button
+                        onClick={() => handleFetchResult(event)}
+                        disabled={isFetching}
+                        className="flex items-center gap-1.5 rounded-lg border border-ps-border bg-ps-bg px-3 py-1.5 text-xs font-semibold text-ps-text transition-opacity hover:border-ps-amber disabled:opacity-50"
+                      >
+                        {isFetching ? (
+                          <>
+                            <span
+                              aria-hidden="true"
+                              className="h-3 w-3 animate-spin rounded-full border-2 border-ps-amber/30 border-t-ps-amber"
+                            />
+                            Fetching...
+                          </>
+                        ) : (
+                          "Fetch Result"
+                        )}
+                      </button>
+                    )}
+                    <button
+                      onClick={() =>
+                        setManualEntryOpen((prev) => ({
+                          ...prev,
+                          [event.id]: !prev[event.id],
+                        }))
+                      }
+                      className="rounded-lg border border-ps-border bg-ps-bg px-3 py-1.5 text-xs font-semibold text-ps-text-sec transition-opacity hover:border-ps-amber hover:text-ps-text"
+                    >
+                      {isManualOpen ? "Cancel" : "Manual Entry"}
+                    </button>
+                  </div>
+                )}
+
+                {/* Manual entry form */}
+                {isManualOpen && !isConfirmed && (
+                  <div className="mt-3 space-y-2 rounded-lg border border-ps-border bg-ps-chip p-3">
+                    <div className="flex gap-2">
+                      <div className="flex-1">
+                        <label className="mb-0.5 block text-xs text-ps-text-sec">
+                          Home
+                        </label>
+                        <input
+                          type="text"
+                          inputMode="numeric"
+                          value={manualHomeScore[event.id] ?? ""}
+                          onChange={(e) =>
+                            setManualHomeScore((prev) => ({
+                              ...prev,
+                              [event.id]: e.target.value,
+                            }))
+                          }
+                          placeholder="0"
+                          className="w-full rounded-lg border border-ps-border bg-ps-bg px-2 py-1.5 font-mono text-sm text-ps-text placeholder:text-ps-text-ter focus:border-ps-amber focus:outline-none focus:ring-1 focus:ring-ps-amber"
+                        />
+                      </div>
+                      <div className="flex-1">
+                        <label className="mb-0.5 block text-xs text-ps-text-sec">
+                          Away
+                        </label>
+                        <input
+                          type="text"
+                          inputMode="numeric"
+                          value={manualAwayScore[event.id] ?? ""}
+                          onChange={(e) =>
+                            setManualAwayScore((prev) => ({
+                              ...prev,
+                              [event.id]: e.target.value,
+                            }))
+                          }
+                          placeholder="0"
+                          className="w-full rounded-lg border border-ps-border bg-ps-bg px-2 py-1.5 font-mono text-sm text-ps-text placeholder:text-ps-text-ter focus:border-ps-amber focus:outline-none focus:ring-1 focus:ring-ps-amber"
+                        />
+                      </div>
+                    </div>
+                    <div>
+                      <label className="mb-0.5 block text-xs text-ps-text-sec">
+                        Winner (optional if scores set)
+                      </label>
+                      <input
+                        type="text"
+                        value={manualWinner[event.id] ?? ""}
+                        onChange={(e) =>
+                          setManualWinner((prev) => ({
+                            ...prev,
+                            [event.id]: e.target.value,
+                          }))
+                        }
+                        placeholder="Team name or draw"
+                        className="w-full rounded-lg border border-ps-border bg-ps-bg px-2 py-1.5 text-sm text-ps-text placeholder:text-ps-text-ter focus:border-ps-amber focus:outline-none focus:ring-1 focus:ring-ps-amber"
+                      />
+                    </div>
+                    <button
+                      onClick={() => handleManualSubmit(event)}
+                      disabled={
+                        !manualHomeScore[event.id] &&
+                        !manualAwayScore[event.id] &&
+                        !manualWinner[event.id]
+                      }
+                      className="w-full rounded-lg bg-ps-amber px-3 py-1.5 text-xs font-semibold text-white transition-opacity disabled:cursor-not-allowed disabled:opacity-40"
+                    >
+                      Set Result
+                    </button>
+                  </div>
+                )}
 
                 {errorMsg && (
                   <p

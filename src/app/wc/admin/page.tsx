@@ -58,7 +58,7 @@ export default async function AdminPage() {
     (windows ?? []).map(async (w: { id: string; name: string; status: string; round_number: number }) => {
       const { data: events } = await supabase
         .from("events")
-        .select("id, event_name, start_time, status, result_data, result_confirmed, round_id")
+        .select("id, event_name, start_time, status, result_data, result_confirmed, round_id, sport, external_event_id")
         .eq("round_id", w.id)
         .order("start_time", { ascending: true });
 
@@ -113,9 +113,21 @@ export default async function AdminPage() {
   // All events for corrections
   const allEvents = windowData.flatMap((w) => w.events);
 
-  // Selected window for result confirmation (default to first locked window)
-  const firstLockedWindow = windowData.find((w) => w.status === "locked");
-  const confirmationEvents = firstLockedWindow?.events ?? [];
+  // Windows that have events worth showing in result confirmation
+  // (locked or resulted windows with at least one event)
+  const confirmableWindows = windowData.filter(
+    (w) => (w.status === "locked" || w.status === "scored") && w.totalEvents > 0
+  );
+
+  // Build name maps for CorrectionFlow
+  const windowNameMap: Record<string, string> = {};
+  for (const w of windowData) {
+    windowNameMap[w.id] = w.name;
+  }
+  const stageNameMap: Record<string, string> = {};
+  for (const s of stageData) {
+    stageNameMap[s.id] = s.name;
+  }
 
   return (
     <div className="mx-auto max-w-[480px] px-4 pt-6 pb-16">
@@ -137,15 +149,39 @@ export default async function AdminPage() {
       </div>
 
       {/* Result Confirmation */}
-      {confirmationEvents.length > 0 && (
+      {confirmableWindows.length > 0 && (
         <div className="mt-6">
           <h2 className="text-sm font-bold uppercase tracking-widest text-ps-text-ter">
             Confirm Results
           </h2>
           <div className="mt-3">
             <ResultConfirmation
-              events={confirmationEvents}
-              roundName={firstLockedWindow?.name ?? ""}
+              windows={confirmableWindows.map((w) => ({
+                id: w.id,
+                name: w.name,
+                status: w.status,
+                events: w.events.map((e: {
+                  id: string;
+                  event_name: string;
+                  start_time: string;
+                  status: string;
+                  result_data: Record<string, unknown> | null;
+                  result_confirmed: boolean;
+                  round_id: string | null;
+                  sport: string;
+                  external_event_id: string | null;
+                }) => ({
+                  id: e.id,
+                  event_name: e.event_name,
+                  start_time: e.start_time,
+                  status: e.status,
+                  result_data: e.result_data,
+                  result_confirmed: e.result_confirmed,
+                  round_id: e.round_id,
+                  sport: e.sport,
+                  external_event_id: e.external_event_id,
+                })),
+              }))}
             />
           </div>
         </div>
@@ -203,6 +239,8 @@ export default async function AdminPage() {
                 result_data: e.result_data,
                 result_confirmed: e.result_confirmed,
               }))}
+              windowNames={windowNameMap}
+              stageNames={stageNameMap}
             />
           </div>
         </div>

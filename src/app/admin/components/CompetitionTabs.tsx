@@ -1,11 +1,14 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import { EventsSection } from "./EventsSection";
 import { ParticipantsSection } from "./ParticipantsSection";
 import { NominationsSection } from "./NominationsSection";
 import { NominateSection } from "./NominateSection";
 import { SettingsSection } from "./SettingsSection";
+import { ResultPanel } from "./ResultPanel";
+import { RoundBuilder } from "./RoundBuilder";
 import type { Competition, Event, CompetitionMember, EventNomination, InviteToken, EventPredictionType, Round } from "@/types/database";
 import { PredictionWindowSelector } from "@/components/tournament/PredictionWindowSelector";
 import { FinalisationPanel } from "@/components/tournament/admin/FinalisationPanel";
@@ -51,6 +54,7 @@ export function CompetitionTabs({
   const isAdmin = userRole === "admin" || userRole === "co_admin";
   const defaultTab: Tab = isAdmin ? "Confirm Results" : "Events";
   const [activeTab, setActiveTab] = useState<Tab>(defaultTab);
+  const router = useRouter();
 
   const pendingNominationCount = (nominations ?? []).filter(
     (n) => n.status === "pending"
@@ -110,19 +114,78 @@ export function CompetitionTabs({
 
       {/* Tab content */}
       <div className="mt-6">
-        {(activeTab === "Events" || activeTab === "Confirm Results" || activeTab === "Add Event") && (
+        {activeTab === "Events" && (
           <EventsSection
             competition={competition}
             events={events}
             rounds={rounds}
+            userRole={userRole}
           />
         )}
+        {activeTab === "Confirm Results" && (
+          <div>
+            <h3 className="text-lg font-semibold text-ps-text mb-4">Confirm Results</h3>
+            {(() => {
+              const toConfirm = (events ?? []).filter(
+                (e) => e.result_data && !e.result_confirmed && e.status !== "cancelled"
+              );
+              if (toConfirm.length === 0) {
+                return (
+                  <p className="py-8 text-center text-sm text-ps-text-sec">
+                    No results awaiting confirmation.
+                  </p>
+                );
+              }
+              return (
+                <div className="space-y-4">
+                  {toConfirm.map((event) => (
+                    <div key={event.id} className="rounded-2xl border border-ps-border bg-ps-surface p-4">
+                      <div className="mb-3">
+                        <h4 className="font-medium text-ps-text">{event.event_name}</h4>
+                        <p className="mt-0.5 text-xs text-ps-text-ter capitalize">
+                          {event.sport.replace(/_/g, " ")} &middot; {new Date(event.start_time).toLocaleString()}
+                        </p>
+                        {event.result_data && (
+                          <pre className="mt-2 rounded-xl bg-ps-chip px-3 py-2 text-xs text-ps-text-sec overflow-x-auto">
+                            {JSON.stringify(event.result_data, null, 2)}
+                          </pre>
+                        )}
+                      </div>
+                      <ResultPanel
+                        event={event}
+                        competitionId={competition.id}
+                        onConfirmed={() => router.refresh()}
+                      />
+                    </div>
+                  ))}
+                </div>
+              );
+            })()}
+          </div>
+        )}
+        {activeTab === "Add Event" && (() => {
+          const nextRoundNumber =
+            rounds.length > 0
+              ? Math.max(...rounds.map((r) => r.round_number)) + 1
+              : 1;
+          return (
+            <RoundBuilder
+              competitionId={competition.id}
+              nextRoundNumber={nextRoundNumber}
+              scoringRules={competition.scoring_rules as Record<string, unknown>}
+              lockDefaultMinutes={competition.lock_default_minutes}
+              onSuccess={() => router.refresh()}
+              onCancel={() => setActiveTab("Events")}
+            />
+          );
+        })()}
         {activeTab === "Members" && (
           <ParticipantsSection
             competition={competition}
             members={members}
             inviteTokens={inviteTokens}
             currentUserId={currentUserId}
+            userRole={userRole}
           />
         )}
         {activeTab === "Nominations" && (
@@ -179,7 +242,7 @@ export function CompetitionTabs({
           </p>
         )}
         {activeTab === "Settings" && (
-          <SettingsSection competition={competition} />
+          <SettingsSection competition={competition} userRole={userRole} />
         )}
       </div>
     </div>

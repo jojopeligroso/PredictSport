@@ -52,7 +52,7 @@ const VALID_SPORTS = [
 
 const VALID_PREDICTION_TYPES: PredictionType[] = [
   "winner", "top_n", "final_standings", "head_to_head", "margin",
-  "over_under", "handicap", "yes_no", "progression",
+  "over_under", "handicap", "yes_no", "progression", "exact_score",
 ];
 
 const VALID_STATUSES: EventStatus[] = [
@@ -555,9 +555,12 @@ export async function DELETE(request: Request) {
   }
 
   // Verify admin access
-  const adminError = await verifyCompetitionAdmin(supabase, user.id, competition_id);
-  if (adminError) {
-    return NextResponse.json({ error: adminError }, { status: 403 });
+  const member = await verifyCompetitionAdmin(supabase, user.id, competition_id);
+  if (!member) {
+    return NextResponse.json(
+      { error: "You are not an admin of this competition" },
+      { status: 403 }
+    );
   }
 
   // Verify the event belongs to this competition

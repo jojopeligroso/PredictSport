@@ -18,6 +18,7 @@ interface EventsSectionProps {
   competition: Competition;
   events: EventWithPredictionTypes[];
   rounds: Round[];
+  userRole?: "admin" | "co_admin" | "participant";
 }
 
 // ── Chevron icon ──────────────────────────────────────────────────────────────
@@ -45,6 +46,7 @@ interface EventCardProps {
   competitionId: string;
   expandedEventId: string | null;
   updatingStatus: string | null;
+  isAdmin?: boolean;
   onStatusChange: (eventId: string, newStatus: string) => Promise<void>;
   onDelete: (event: EventWithPredictionTypes) => Promise<void>;
   onClone: (event: EventWithPredictionTypes) => Promise<void>;
@@ -58,6 +60,7 @@ function EventCard({
   competitionId,
   expandedEventId,
   updatingStatus,
+  isAdmin = true,
   onStatusChange,
   onDelete,
   onClone,
@@ -100,7 +103,7 @@ function EventCard({
 
         <div className="flex flex-wrap items-center gap-2 shrink-0">
           {/* Fetch Result button for linked events */}
-          {event.external_event_id &&
+          {isAdmin && event.external_event_id &&
             !event.result_confirmed &&
             event.status !== "cancelled" && (
               <button
@@ -112,7 +115,7 @@ function EventCard({
             )}
 
           {/* Status change actions */}
-          {event.status === "upcoming" && (
+          {isAdmin && event.status === "upcoming" && (
             <div className="flex gap-1">
               <button
                 onClick={() => onStatusChange(event.id, "postponed")}
@@ -132,7 +135,7 @@ function EventCard({
           )}
 
           {/* Reintroduce postponed events */}
-          {event.status === "postponed" && (
+          {isAdmin && event.status === "postponed" && (
             <div className="flex gap-1">
               <button
                 onClick={() => onStatusChange(event.id, "upcoming")}
@@ -152,7 +155,7 @@ function EventCard({
           )}
 
           {/* Reinstate cancelled events */}
-          {event.status === "cancelled" && !event.result_confirmed && (
+          {isAdmin && event.status === "cancelled" && !event.result_confirmed && (
             <button
               onClick={() => onStatusChange(event.id, "upcoming")}
               disabled={updatingStatus === event.id}
@@ -162,8 +165,8 @@ function EventCard({
             </button>
           )}
 
-          {/* Expand to show result panel */}
-          {(event.status === "resulted" ||
+          {/* Expand to show result panel — admin only */}
+          {isAdmin && (event.status === "resulted" ||
             event.status === "locked" ||
             event.result_data) && (
             <button
@@ -175,17 +178,19 @@ function EventCard({
           )}
 
           {/* Duplicate event */}
-          <button
-            onClick={() => onClone(event)}
-            disabled={updatingStatus === event.id}
-            className="rounded-xl border border-ps-border-strong px-2.5 py-1 text-xs font-medium text-ps-text-sec transition-colors hover:bg-ps-chip hover:text-ps-text disabled:opacity-50"
-            title="Duplicate event"
-          >
-            Duplicate
-          </button>
+          {isAdmin && (
+            <button
+              onClick={() => onClone(event)}
+              disabled={updatingStatus === event.id}
+              className="rounded-xl border border-ps-border-strong px-2.5 py-1 text-xs font-medium text-ps-text-sec transition-colors hover:bg-ps-chip hover:text-ps-text disabled:opacity-50"
+              title="Duplicate event"
+            >
+              Duplicate
+            </button>
+          )}
 
           {/* Delete event */}
-          {!event.result_confirmed && (
+          {isAdmin && !event.result_confirmed && (
             <button
               onClick={() => onDelete(event)}
               disabled={updatingStatus === event.id}
@@ -221,6 +226,7 @@ interface RoundSectionProps {
   expandedEventId: string | null;
   updatingStatus: string | null;
   updatingRound: string | null;
+  userRole?: "admin" | "co_admin" | "participant";
   onToggleRound: (roundId: string) => void;
   onStatusChange: (eventId: string, newStatus: string) => Promise<void>;
   onDeleteEvent: (event: EventWithPredictionTypes) => Promise<void>;
@@ -240,6 +246,7 @@ function RoundSection({
   expandedEventId,
   updatingStatus,
   updatingRound,
+  userRole,
   onToggleRound,
   onStatusChange,
   onDeleteEvent,
@@ -254,6 +261,7 @@ function RoundSection({
   const [showBulkCreator, setShowBulkCreator] = useState(false);
   const router = useRouter();
 
+  const isAdmin = userRole !== "participant";
   const isUngrouped = round === null;
   const sectionId = isUngrouped ? "ungrouped" : round.id;
   const isUpdating = !isUngrouped && updatingRound === round.id;
@@ -300,7 +308,7 @@ function RoundSection({
       {isOpen && (
         <div className="border-t border-ps-border px-4 pb-4 pt-3">
           {/* Round admin actions */}
-          {!isUngrouped && (
+          {!isUngrouped && isAdmin && (
             <div className="mb-3 flex flex-wrap items-center gap-2">
               {round.status === "draft" && (
                 <button
@@ -353,6 +361,7 @@ function RoundSection({
                   competitionId={competition.id}
                   expandedEventId={expandedEventId}
                   updatingStatus={updatingStatus}
+                  isAdmin={isAdmin}
                   onStatusChange={onStatusChange}
                   onDelete={onDeleteEvent}
                   onClone={onCloneEvent}
@@ -365,11 +374,12 @@ function RoundSection({
           )}
 
           {/* Add event within round */}
-          {!isUngrouped && (
+          {!isUngrouped && isAdmin && (
             <div className="mt-3">
               {showWizard ? (
                 <ManualEventWizard
                   competitionId={competition.id}
+                  roundId={round?.id}
                   lockDefaultMinutes={competition.lock_default_minutes}
                   onSuccess={() => {
                     setShowWizard(false);
@@ -413,8 +423,9 @@ function RoundSection({
 }
 
 // ── EventsSection (root) ──────────────────────────────────────────────────────
-export function EventsSection({ competition, events, rounds }: EventsSectionProps) {
+export function EventsSection({ competition, events, rounds, userRole }: EventsSectionProps) {
   const router = useRouter();
+  const isAdminUser = userRole !== "participant";
   const [expandedEventId, setExpandedEventId] = useState<string | null>(null);
   const [updatingStatus, setUpdatingStatus] = useState<string | null>(null);
   const [updatingRound, setUpdatingRound] = useState<string | null>(null);
@@ -455,7 +466,12 @@ export function EventsSection({ competition, events, rounds }: EventsSectionProp
           status: newStatus,
         }),
       });
-      if (res.ok) router.refresh();
+      if (res.ok) {
+        router.refresh();
+      } else {
+        const data = await res.json();
+        alert(data.error ?? "Failed to update event status");
+      }
     } finally {
       setUpdatingStatus(null);
     }
@@ -627,12 +643,14 @@ export function EventsSection({ competition, events, rounds }: EventsSectionProp
       {/* Section header */}
       <div className="flex items-center justify-between mb-4">
         <h3 className="text-lg font-semibold text-ps-text">Events</h3>
-        <button
-          onClick={handleCreateRound}
-          className="rounded-xl bg-gradient-to-r from-[#f59e0b] to-[#d97706] px-3 py-1.5 text-sm font-medium text-[#1a1208] transition-opacity hover:opacity-90"
-        >
-          New Round
-        </button>
+        {isAdminUser && (
+          <button
+            onClick={handleCreateRound}
+            className="rounded-xl bg-gradient-to-r from-[#f59e0b] to-[#d97706] px-3 py-1.5 text-sm font-medium text-[#1a1208] transition-opacity hover:opacity-90"
+          >
+            New Round
+          </button>
+        )}
       </div>
 
       {/* Events awaiting results */}
@@ -659,6 +677,7 @@ export function EventsSection({ competition, events, rounds }: EventsSectionProp
             competitionId={competition.id}
             nextRoundNumber={nextRoundNumber}
             scoringRules={competition.scoring_rules as Record<string, unknown>}
+            lockDefaultMinutes={competition.lock_default_minutes}
             onSuccess={() => {
               setShowRoundBuilder(false);
               router.refresh();
@@ -688,6 +707,7 @@ export function EventsSection({ competition, events, rounds }: EventsSectionProp
               expandedEventId={expandedEventId}
               updatingStatus={updatingStatus}
               updatingRound={updatingRound}
+              userRole={userRole}
               onToggleRound={toggleRound}
               onStatusChange={handleStatusChange}
               onDeleteEvent={handleDeleteEvent}
@@ -715,6 +735,7 @@ export function EventsSection({ competition, events, rounds }: EventsSectionProp
               expandedEventId={expandedEventId}
               updatingStatus={updatingStatus}
               updatingRound={updatingRound}
+              userRole={userRole}
               onToggleRound={toggleRound}
               onStatusChange={handleStatusChange}
               onDeleteEvent={handleDeleteEvent}

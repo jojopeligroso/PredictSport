@@ -94,7 +94,7 @@ export function EventsAwaitingResults({
         overdue_hours,
       };
     })
-    .sort((a, b) => a.overdue_hours - b.overdue_hours);
+    .sort((a, b) => b.overdue_hours - a.overdue_hours);
 
   if (filtered.length === 0) return null;
 

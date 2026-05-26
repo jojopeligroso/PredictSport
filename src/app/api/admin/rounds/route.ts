@@ -43,7 +43,7 @@ const VALID_SPORTS = [
 
 const VALID_PREDICTION_TYPES: PredictionType[] = [
   "winner", "top_n", "final_standings", "head_to_head", "margin",
-  "over_under", "handicap", "yes_no", "progression",
+  "over_under", "handicap", "yes_no", "progression", "exact_score",
 ];
 
 const VALID_ROUND_STATUSES: RoundStatus[] = [
