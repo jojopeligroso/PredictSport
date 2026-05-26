@@ -182,8 +182,8 @@ async function Dashboard({ userId }: { userId: string }) {
     .eq("user_id", userId);
 
   const comps = ((memberships ?? []) as unknown as CompetitionRow[])
-    .map((m) => m.competitions)
-    .filter((c): c is NonNullable<typeof c> => c !== null && c.status === "active");
+    .map((m) => m.competitions ? { ...m.competitions, role: m.role } : null)
+    .filter((c): c is NonNullable<typeof c> & { role: string } => c !== null && c.status === "active");
 
   // Check for visible WC competition (for non-members)
   const { data: wcComp } = await supabase
@@ -204,14 +204,24 @@ async function Dashboard({ userId }: { userId: string }) {
   // Fetch active rounds for all competitions
   const compIds = comps.map((c) => c.id);
   let rounds: RoundRow[] = [];
+  const memberCounts: Record<string, number> = {};
   if (compIds.length > 0) {
-    const { data } = await supabase
-      .from("rounds")
-      .select("id, competition_id, name, round_number, status")
-      .in("competition_id", compIds)
-      .in("status", ["open", "locked"])
-      .order("round_number", { ascending: true });
-    rounds = (data ?? []) as RoundRow[];
+    const [roundsRes, membersRes] = await Promise.all([
+      supabase
+        .from("rounds")
+        .select("id, competition_id, name, round_number, status")
+        .in("competition_id", compIds)
+        .in("status", ["open", "locked"])
+        .order("round_number", { ascending: true }),
+      supabase
+        .from("competition_members")
+        .select("competition_id")
+        .in("competition_id", compIds),
+    ]);
+    rounds = (roundsRes.data ?? []) as RoundRow[];
+    for (const m of membersRes.data ?? []) {
+      memberCounts[m.competition_id] = (memberCounts[m.competition_id] ?? 0) + 1;
+    }
   }
 
   // Fetch event counts, pick counts, and deadlines
@@ -310,6 +320,11 @@ async function Dashboard({ userId }: { userId: string }) {
           </p>
           <p className="mt-1 text-[13px] font-semibold" style={{ color: "rgba(255,255,255,0.55)" }}>
             <span style={{ color: "rgba(255,255,255,0.85)" }}>{heroComp.name}</span>
+            {memberCounts[heroComp.id] ? (
+              <span className="ml-2 font-mono text-xs" style={{ color: "rgba(255,255,255,0.35)" }}>
+                {memberCounts[heroComp.id]} players
+              </span>
+            ) : null}
           </p>
 
           <div className="mt-5 flex items-center gap-5">
@@ -459,6 +474,8 @@ async function Dashboard({ userId }: { userId: string }) {
             const activeRound = findActiveRound(rounds, comp.id);
             const evtCount = activeRound ? (eventCounts[activeRound.id] ?? 0) : 0;
             const pickCount = activeRound ? (pickCounts[activeRound.id] ?? 0) : 0;
+            const count = memberCounts[comp.id] ?? 0;
+            const isCompAdmin = comp.role === "admin" || comp.role === "co_admin";
 
             return (
               <Link
@@ -470,11 +487,34 @@ async function Dashboard({ userId }: { userId: string }) {
                   <UserCircleIcon />
                 </div>
                 <div className="min-w-0 flex-1">
-                  <div className="text-[13px] font-bold text-ps-text">{comp.name}</div>
-                  <div className="mt-0.5 text-[11px] font-medium text-ps-text-ter">
-                    {activeRound
-                      ? (activeRound.name ?? `Round ${activeRound.round_number}`)
-                      : "No active round"}
+                  <div className="flex items-center gap-1.5">
+                    <span className="text-[13px] font-bold text-ps-text">{comp.name}</span>
+                    {isCompAdmin && (
+                      <Link
+                        href={`/competitions/${comp.id}`}
+                        onClick={(e) => e.stopPropagation()}
+                        className="text-ps-text-ter hover:text-ps-text transition-colors"
+                        aria-label={`Manage ${comp.name}`}
+                      >
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                          <path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z" />
+                          <circle cx="12" cy="12" r="3" />
+                        </svg>
+                      </Link>
+                    )}
+                  </div>
+                  <div className="mt-0.5 flex items-center gap-1.5 text-[11px] font-medium text-ps-text-ter">
+                    <span>
+                      {activeRound
+                        ? (activeRound.name ?? `Round ${activeRound.round_number}`)
+                        : "No active round"}
+                    </span>
+                    {count > 0 && (
+                      <>
+                        <span>&middot;</span>
+                        <span className="font-mono text-xs">{count} players</span>
+                      </>
+                    )}
                   </div>
                 </div>
                 {activeRound ? (
