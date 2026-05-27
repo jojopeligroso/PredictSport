@@ -1,3 +1,4 @@
+import { redirect } from "next/navigation";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import { BrandMark } from "@/components/BrandMark";
@@ -6,6 +7,9 @@ import { OrDivider } from "@/components/OrDivider";
 import { computePickCounts, findActiveRound } from "@/lib/dashboard-helpers";
 
 export const dynamic = "force-dynamic";
+
+// Temporary WC 2026 redirect — remove after tournament
+const WC_REDIRECT_ENABLED = true;
 
 const WC2026_TOURNAMENT_ID = "a0000000-0000-0000-0000-000000000026";
 
@@ -546,6 +550,8 @@ async function Dashboard({ userId }: { userId: string }) {
 // ── Page entry point ────────────────────────────────────────────────────────
 
 export default async function Home() {
+  if (WC_REDIRECT_ENABLED) redirect("/wc");
+
   const supabase = await createClient();
   const {
     data: { user },
