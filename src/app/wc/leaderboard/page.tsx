@@ -47,12 +47,16 @@ export default async function LeaderboardPage() {
     .select("id", { count: "exact", head: true })
     .eq("competition_id", competition.id);
 
-  // Get classifications
-  const { data: classifications } = await supabase
+  // Get classifications — exclude bracket types (accessed via More menu)
+  const { data: classificationsRaw } = await supabase
     .from("classifications")
     .select("id, classification_key, name, classification_type, status")
     .eq("competition_id", competition.id)
     .order("created_at", { ascending: true });
+
+  const classifications = (classificationsRaw ?? []).filter(
+    (c) => c.classification_key !== "full_bracket" && c.classification_key !== "knockout_bracket"
+  );
 
   return (
     <div className="mx-auto flex min-h-[calc(100dvh-3.5rem)] max-w-[480px] flex-col px-4 pt-6 pb-16">

@@ -4,14 +4,20 @@ import { useState } from "react";
 import Link from "next/link";
 import { LogoutButton } from "./LogoutButton";
 
+interface MobileNavLink {
+  href: string;
+  label: string;
+}
+
 interface MobileNavProps {
   isLoggedIn: boolean;
   displayName: string;
   avatarUrl: string | null;
   isAdmin?: boolean;
+  extraLinks?: MobileNavLink[];
 }
 
-export function MobileNav({ isLoggedIn, displayName, avatarUrl, isAdmin }: MobileNavProps) {
+export function MobileNav({ isLoggedIn, displayName, avatarUrl, isAdmin, extraLinks }: MobileNavProps) {
   const [isOpen, setIsOpen] = useState(false);
 
   return (
@@ -95,6 +101,16 @@ export function MobileNav({ isLoggedIn, displayName, avatarUrl, isAdmin }: Mobil
                     Manage
                   </Link>
                 )}
+                {extraLinks?.map((link) => (
+                  <Link
+                    key={link.href}
+                    href={link.href}
+                    onClick={() => setIsOpen(false)}
+                    className="block rounded-md px-3 py-2 text-sm font-medium text-ps-text-sec transition-colors hover:bg-ps-chip hover:text-ps-text"
+                  >
+                    {link.label}
+                  </Link>
+                ))}
                 <LogoutButton />
               </div>
             ) : (

@@ -126,6 +126,7 @@ export default async function WorldCupLayout({
               displayName={displayName}
               avatarUrl={avatarUrl}
               isAdmin={isAdmin || isWcAdmin}
+              extraLinks={[{ href: "/wc/bracket", label: "Bracket prediction" }]}
             />
           </div>
         </div>
