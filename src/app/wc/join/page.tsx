@@ -2,7 +2,7 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { enrollEntrant } from "@/lib/tournament/classification-engine";
-import { isJoinsClosed, WC_JOINS_CLOSE_AT } from "@/lib/wc/join-cutoff";
+import { WC_JOINS_CLOSE_AT } from "@/lib/wc/join-cutoff";
 
 export const dynamic = "force-dynamic";
 
@@ -42,7 +42,7 @@ export default async function JoinPage({
   // Find the active WC competition
   const { data: competition } = await supabase
     .from("competitions")
-    .select("id, joins_locked_at")
+    .select("id, entry_closes_at")
     .eq("product_mode", "world_cup_2026_shell")
     .eq("status", "active")
     .limit(1)
@@ -68,12 +68,14 @@ export default async function JoinPage({
     .maybeSingle();
 
   // Soft cutoff: applies only to *new* joiners. Existing members pass through.
-  // Both the constant deadline and the per-competition override column are
-  // checked — either being true means joins are closed for this visit.
-  const cutoffReachedByConstant = isJoinsClosed(new Date());
-  const cutoffSetOnRow = Boolean(competition.joins_locked_at);
-  if (!existing && (cutoffReachedByConstant || cutoffSetOnRow)) {
-    return <JoinsClosedPanel closedAt={competition.joins_locked_at ?? WC_JOINS_CLOSE_AT} />;
+  // Source of truth is the declarative `entry_closes_at` column on the
+  // competition row (seeded by migration 20260527000000 for the WC). If the
+  // row is missing the column for any reason, we fall back to the constant
+  // WC_JOINS_CLOSE_AT to keep the gate safe.
+  const cutoffIso = competition.entry_closes_at ?? WC_JOINS_CLOSE_AT;
+  const cutoffReached = new Date() >= new Date(cutoffIso);
+  if (!existing && cutoffReached) {
+    return <JoinsClosedPanel closedAt={cutoffIso} />;
   }
 
   if (!existing) {

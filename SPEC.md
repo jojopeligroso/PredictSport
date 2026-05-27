@@ -712,7 +712,7 @@ Product modes: `predictsport_full` (default), `world_cup_2026_shell`, `world_cup
 ### 16.10 Entry Rules
 
 - Parent World Cup Prediction Game remains joinable until **72 hours after the first MD1 kickoff** (2026-06-14 19:00 UTC for WC 2026). See [ADR 0014](./docs/adr/0014-wc-landing-picks-first.md) for rationale.
-- The cutoff is persisted on `competitions.joins_locked_at` (timestamptz, nullable). Default NULL = joins open. The daily results cron flips it to `now()` once the constant has passed. Super Admin can override the column directly in Supabase for early/late cutoffs without a deploy.
+- The cutoff is persisted **declaratively** on the existing `competitions.entry_closes_at` column (timestamptz, nullable; added by migration `20260521600000`). For WC competitions this is seeded to the soft cutoff instant by migration `20260527000000`. Super Admin can override the value directly in Supabase for early/late cutoffs without a deploy.
 - After the cutoff, no new Entrants may join. `/wc/join` renders a "Joins closed" panel for non-members; existing members always pass through.
 - Late joiners during the soft 72h window can submit predictions for any match that hasn't yet locked. `lock_time` enforcement on `/api/predictions` server-side rejects submissions for already-locked matches, so they auto-forfeit those.
 - Late joiners during the soft window are included in the elimination curve entrant count if joining before PW1 lock; if joining after PW1 lock but before the 72h soft cutoff, the curve is immutable and they are slotted into the smallest existing group.

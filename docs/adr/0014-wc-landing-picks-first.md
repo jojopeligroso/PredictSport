@@ -23,7 +23,7 @@ Six binding decisions:
 
 4. **Bracket demoted to a `More` dropdown.** `Bracket` is removed from the top-level `WcNavLinks` (Picks · Bracket · Table · Results · Rules). A new `WcMoreMenu` component sits in the trailing nav slot. Inside, `Bracket prediction` carries an `Advanced — not for casuals` warning sub-label. The `/wc/bracket` route stays fully functional.
 
-5. **Soft 3-day join cutoff overrides SPEC.md §16.10.** The parent WC game remains joinable for 72h after the first MD1 kickoff (Thu 11 Jun 19:00 UTC → Sun 14 Jun 19:00 UTC). After that, no new entrants. Late joiners during the soft window can pick remaining matches but auto-forfeit any already-locked match (lock_time enforcement on `/api/predictions` already handles this server-side). The cutoff is persisted on a new `competitions.joins_locked_at` column flipped by the existing daily results cron.
+5. **Soft 3-day join cutoff overrides SPEC.md §16.10.** The parent WC game remains joinable for 72h after the first MD1 kickoff (Thu 11 Jun 19:00 UTC → Sun 14 Jun 19:00 UTC). After that, no new entrants. Late joiners during the soft window can pick remaining matches but auto-forfeit any already-locked match (lock_time enforcement on `/api/predictions` already handles this server-side). The cutoff is persisted **declaratively** on the existing `competitions.entry_closes_at` column (added by migration `20260521600000`). For the WC competition this is seeded to `2026-06-14T19:00:00Z` by migration `20260527000000`. `/api/tournament/enroll` and `/wc/join` both check this column server-side. No cron job is required — the deadline is declarative on the row, not observed.
 
 6. **Anonymous and non-member visitors see a blurred preview.** `/wc` renders for everyone. For anon/non-members the sections container applies `filter: blur(6px) saturate(0.7)` with `pointer-events: none`, and a tap-to-unblur `Join now` overlay routes to `/wc/join`. Hero, calendar pills, progress strip, and toggle remain crisp — the format is communicated without giving away picks behind a paywall.
 
@@ -39,8 +39,8 @@ Six binding decisions:
 - SPEC.md §16.10 updated in lockstep. The "Superseded Decisions" table gets one new row.
 - Bracket usage drops sharply (the point — it's still there for the keen). Bracket conversion funnel needs separate tracking if we care.
 - Late joiners during the soft window will see some matches locked on entry. `/api/predictions` rejects submissions for those events; we render them as read-only on the landing.
-- Super Admin can edit `competitions.joins_locked_at` directly in Supabase for one-off overrides (early close, post-mortem extension). No admin UI work needed in this PR series.
-- One Vercel Hobby cron slot remains free — the cutoff flip is embedded in the existing daily results cron, not a new schedule.
+- Super Admin can edit `competitions.entry_closes_at` directly in Supabase for one-off overrides (early close, post-mortem extension). No admin UI work needed in this PR series.
+- No new cron schedule is required. The cutoff is declarative on the competition row; both `/api/tournament/enroll` and `/wc/join` already perform server-side checks at request time. The existing daily `/api/results/cron` is unchanged. Vercel Hobby cron usage remains at 1 of 2.
 - Pending proposal `docs/DESIGN-WC-UNIFIED-PREDICTIONS.md` is implicitly resolved: the picks-first landing IS the unified surface. The proposal doc should be marked resolved as part of the landing PR.
 
 ## Supersedes

@@ -6,13 +6,21 @@
  * submit picks for matches that haven't yet locked, but auto-forfeit any
  * already-locked match.
  *
- * The cutoff lives on `competitions.joins_locked_at` (nullable timestamptz).
- * The daily results cron flips this column to now() once we pass
- * WC_JOINS_CLOSE_AT. Super Admin can override the value directly in Supabase
- * for early/late cutoff handling without a deploy.
+ * The cutoff is persisted **declaratively** on `competitions.entry_closes_at`
+ * (the existing column added by migration 20260521600000). For the WC
+ * competition this is seeded to WC_JOINS_CLOSE_AT. /api/tournament/enroll
+ * already enforces `entry_closes_at` server-side, and /wc/join performs the
+ * same check before creating a competition_members row.
  *
- * /wc/join reads both the column and this constant on every visit and gates
- * new enrollments accordingly. Existing members always pass through.
+ * This file exports:
+ *   - WC_FIRST_KICKOFF_UTC, WC_JOINS_CLOSE_AT — the source-of-truth instants
+ *     used to seed the column and drive UI banner timing.
+ *   - joinCutoffWarningState(now) — UI state machine for banner / "!" pill.
+ *   - isJoinsClosed(now) — pure compare against the constant (useful when
+ *     the row's entry_closes_at is null, e.g. dev / test).
+ *
+ * No cron job is required — the deadline is declarative on the row, not
+ * observed.
  */
 
 /** First MD1 kickoff: Mexico v South Africa, Mexico City (kickoff in UTC). */
