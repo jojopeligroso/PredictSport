@@ -1,8 +1,8 @@
 "use client";
 
 import Link from "next/link";
-import { useRouter, useSearchParams } from "next/navigation";
-import { useRef, useMemo, useSyncExternalStore } from "react";
+import { useSearchParams } from "next/navigation";
+import { useState, useRef, useMemo, useSyncExternalStore } from "react";
 import { WindowPickList, type WindowEvent } from "@/app/wc/picks/[windowId]/WindowPickList";
 import type { WcFixture } from "@/lib/wc/fixtures";
 import type { Prediction } from "@/types/database";
@@ -46,17 +46,19 @@ interface Md1PicksLandingProps {
 }
 
 export function Md1PicksLanding(props: Md1PicksLandingProps) {
-  const router = useRouter();
   const searchParams = useSearchParams();
-  const viewParam = searchParams.get("view");
-  const view: ViewMode = viewParam === "group" ? "group" : "date";
+  const [view, setView] = useState<ViewMode>(
+    () => (searchParams.get("view") === "group" ? "group" : "date"),
+  );
 
   const handleViewChange = (next: ViewMode) => {
+    setView(next);
+    // Sync URL for shareability without triggering a server round-trip
     const params = new URLSearchParams(searchParams.toString());
     if (next === "date") params.delete("view");
     else params.set("view", next);
     const qs = params.toString();
-    router.replace(qs ? `/wc?${qs}` : "/wc", { scroll: false });
+    window.history.replaceState(null, "", qs ? `/wc?${qs}` : "/wc");
   };
 
   // The picks UI is only interactive for members. Anon + non-member visitors
