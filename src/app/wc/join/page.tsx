@@ -42,7 +42,7 @@ export default async function JoinPage({
   // Find the active WC competition
   const { data: competition } = await supabase
     .from("competitions")
-    .select("id, entry_closes_at")
+    .select("id, entry_closes_at, max_entrants")
     .eq("product_mode", "world_cup_2026_shell")
     .eq("status", "active")
     .limit(1)
@@ -59,7 +59,7 @@ export default async function JoinPage({
     );
   }
 
-  // Check if already enrolled as competition member
+  // Check if already enrolled
   const { data: existing } = await supabase
     .from("competition_members")
     .select("id")
@@ -67,31 +67,48 @@ export default async function JoinPage({
     .eq("user_id", user.id)
     .maybeSingle();
 
-  // Soft cutoff: applies only to *new* joiners. Existing members pass through.
-  // Source of truth is the declarative `entry_closes_at` column on the
-  // competition row (seeded by migration 20260527000000 for the WC). If the
-  // row is missing the column for any reason, we fall back to the constant
-  // WC_JOINS_CLOSE_AT to keep the gate safe.
+  if (existing) {
+    // Already enrolled — ensure classification memberships are up to date, then redirect
+    await enrollEntrant(supabase, competition.id, user.id);
+    redirect(destination);
+  }
+
+  // Soft cutoff: applies only to *new* joiners. Existing members pass through above.
   const cutoffIso = competition.entry_closes_at ?? WC_JOINS_CLOSE_AT;
   const cutoffReached = new Date() >= new Date(cutoffIso);
-  if (!existing && cutoffReached) {
+  if (cutoffReached) {
     return <JoinsClosedPanel closedAt={cutoffIso} />;
   }
 
-  if (!existing) {
-    // Create competition membership
-    await supabase
-      .from("competition_members")
-      .insert({
-        competition_id: competition.id,
-        user_id: user.id,
-        role: "participant",
-      });
+  // Check entrant cap
+  const { count: memberCount } = await supabase
+    .from("competition_members")
+    .select("id", { count: "exact", head: true })
+    .eq("competition_id", competition.id);
+
+  if (competition.max_entrants && (memberCount ?? 0) >= competition.max_entrants) {
+    return (
+      <div className="mx-auto max-w-[480px] px-4 pt-16 text-center">
+        <h1 className="font-display text-2xl uppercase tracking-tight text-ps-text">
+          Competition Full
+        </h1>
+        <p className="mt-2 text-sm text-ps-text-sec">
+          This competition has reached its maximum of {competition.max_entrants} entrants.
+        </p>
+      </div>
+    );
   }
 
-  // Enroll in all active classifications (idempotent — handles duplicates)
-  await enrollEntrant(supabase, competition.id, user.id);
+  // Auto-enroll and redirect
+  await supabase
+    .from("competition_members")
+    .insert({
+      competition_id: competition.id,
+      user_id: user.id,
+      role: "participant",
+    });
 
+  await enrollEntrant(supabase, competition.id, user.id);
   redirect(destination);
 }
 

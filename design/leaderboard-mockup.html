@@ -1,0 +1,485 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Leaderboard — Pre-Kickoff (Format Default)</title>
+<style>
+  /* ── Design tokens (light mode) ── */
+  :root {
+    --ps-bg: #efe9de;
+    --ps-bg-alt: #e7dfd0;
+    --ps-surface: #ffffff;
+    --ps-border: rgba(40, 30, 20, 0.10);
+    --ps-border-strong: rgba(40, 30, 20, 0.18);
+    --ps-text: #191512;
+    --ps-text-sec: #5e554a;
+    --ps-text-ter: #8b8275;
+    --ps-amber: #f59e0b;
+    --ps-amber-deep: #d97706;
+    --ps-green: #0aa86d;
+    --ps-red: #e23d4f;
+    --ps-chip: rgba(40, 30, 20, 0.06);
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    font-family: Inter, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    background: var(--ps-bg);
+    color: var(--ps-text);
+    display: flex;
+    justify-content: center;
+    min-height: 100vh;
+    padding: 0;
+  }
+
+  .phone-frame {
+    width: 390px;
+    min-height: 844px;
+    background: var(--ps-bg);
+    position: relative;
+    overflow-y: auto;
+  }
+
+  /* ── Nav bar ── */
+  .nav {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 10px 16px;
+    border-bottom: 1px solid var(--ps-border);
+    background: var(--ps-bg);
+    position: sticky;
+    top: 0;
+    z-index: 10;
+  }
+  .wordmark {
+    font-weight: 800;
+    font-size: 16px;
+    letter-spacing: -0.5px;
+  }
+  .wordmark .predict { color: var(--ps-amber); }
+  .nav-links {
+    display: flex;
+    gap: 4px;
+  }
+  .nav-link {
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--ps-text-sec);
+    text-decoration: none;
+    padding: 6px 10px;
+    border-radius: 6px;
+    transition: all 0.15s;
+  }
+  .nav-link:hover { background: var(--ps-chip); color: var(--ps-text); }
+  .nav-link.active { background: var(--ps-surface); color: var(--ps-text); box-shadow: 0 1px 2px rgba(0,0,0,0.06); }
+  .avatar {
+    width: 28px; height: 28px;
+    border-radius: 50%;
+    background: var(--ps-amber);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 11px; font-weight: 700; color: #1a1208;
+  }
+
+  /* ── Page content ── */
+  .page {
+    padding: 24px 16px 64px;
+    max-width: 480px;
+    margin: 0 auto;
+  }
+
+  h1 {
+    font-weight: 800;
+    font-size: 24px;
+    text-transform: uppercase;
+    letter-spacing: -0.5px;
+    color: var(--ps-text);
+  }
+
+  /* ── Tab bar ── */
+  .tab-bar {
+    display: flex;
+    gap: 4px;
+    background: var(--ps-bg);
+    border-radius: 8px;
+    padding: 4px;
+    margin-top: 16px;
+    overflow-x: auto;
+  }
+  .tab {
+    white-space: nowrap;
+    border-radius: 6px;
+    padding: 6px 12px;
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--ps-text-sec);
+    cursor: pointer;
+    border: none;
+    background: transparent;
+    transition: all 0.15s;
+  }
+  .tab:hover { color: var(--ps-text); }
+  .tab.active {
+    background: var(--ps-surface);
+    color: var(--ps-text);
+    box-shadow: 0 1px 2px rgba(0,0,0,0.06);
+  }
+
+  /* ── Entrant counter ── */
+  .entrant-counter {
+    margin-top: 12px;
+    text-align: center;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12px;
+    color: var(--ps-text-ter);
+  }
+  .entrant-counter.warning {
+    font-family: Inter, sans-serif;
+    font-weight: 500;
+    color: var(--ps-amber);
+  }
+
+  /* ── Rules card ── */
+  .rules-card {
+    margin-top: 16px;
+    border: 1px solid var(--ps-border);
+    border-radius: 12px;
+    background: var(--ps-surface);
+    padding: 16px;
+  }
+  .rules-card h3 {
+    font-size: 14px;
+    font-weight: 700;
+    color: var(--ps-text);
+  }
+  .rules-card .tagline {
+    margin-top: 4px;
+    font-family: 'Instrument Serif', Georgia, serif;
+    font-style: italic;
+    font-size: 12px;
+    color: var(--ps-text-sec);
+  }
+  .scoring-table {
+    margin-top: 12px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+  .scoring-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+  .scoring-row .label {
+    font-size: 12px;
+    color: var(--ps-text-sec);
+  }
+  .scoring-row .points {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12px;
+    font-weight: 700;
+    color: var(--ps-text);
+  }
+  .rules-card .explanation {
+    margin-top: 16px;
+    font-size: 12px;
+    line-height: 1.6;
+    color: var(--ps-text-sec);
+  }
+  .rules-card .explanation + .explanation {
+    margin-top: 8px;
+  }
+
+  /* ── Empty standings ── */
+  .empty-standings {
+    margin-top: 16px;
+    border: 1px solid var(--ps-border);
+    border-radius: 12px;
+    background: var(--ps-surface);
+    padding: 16px 16px 24px;
+    text-align: center;
+  }
+  .empty-standings .headline {
+    font-size: 14px;
+    color: var(--ps-text-sec);
+  }
+  .empty-standings .divider {
+    margin-top: 20px;
+    border-top: 1px solid var(--ps-border);
+    padding-top: 20px;
+  }
+  .empty-standings .invite-prompt {
+    font-size: 12px;
+    color: var(--ps-text-ter);
+  }
+  .invite-code-btn {
+    margin-top: 12px;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    border: 1px solid var(--ps-border);
+    border-radius: 8px;
+    background: var(--ps-bg);
+    padding: 8px 16px;
+    cursor: pointer;
+    transition: border-color 0.15s;
+  }
+  .invite-code-btn:hover { border-color: rgba(245, 158, 11, 0.4); }
+  .invite-code-btn .code {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 16px;
+    font-weight: 700;
+    letter-spacing: 1px;
+    color: var(--ps-text);
+  }
+  .invite-code-btn .copy-label {
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--ps-text-ter);
+  }
+
+  /* ── Mobile tab bar (bottom) ── */
+  .mobile-tabs {
+    position: fixed;
+    bottom: 0;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 390px;
+    display: flex;
+    justify-content: space-around;
+    background: var(--ps-bg);
+    border-top: 1px solid var(--ps-border);
+    padding: 8px 0 20px;
+    z-index: 10;
+  }
+  .mobile-tab {
+    font-size: 10px;
+    font-weight: 600;
+    color: var(--ps-text-sec);
+    text-align: center;
+    text-decoration: none;
+    padding: 4px 12px;
+  }
+  .mobile-tab.active { color: var(--ps-text); }
+
+  /* ── Tab switch demo ── */
+  .view { display: none; }
+  .view.active { display: block; }
+
+  /* ── Separator ── */
+  .section-label {
+    margin-top: 32px;
+    padding: 8px 0;
+    text-align: center;
+    font-size: 10px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 2px;
+    color: var(--ps-text-ter);
+    border-top: 1px dashed var(--ps-border);
+  }
+</style>
+</head>
+<body>
+
+<div class="phone-frame">
+  <!-- Nav -->
+  <nav class="nav">
+    <span class="wordmark">sports<span class="predict">predict.</span></span>
+    <div class="nav-links">
+      <a class="nav-link" href="#">Picks</a>
+      <a class="nav-link active" href="#">Table</a>
+      <a class="nav-link" href="#">Fixtures</a>
+      <a class="nav-link" href="#">Rules</a>
+    </div>
+    <div class="avatar">E</div>
+  </nav>
+
+  <div class="page">
+    <h1>Leaderboard</h1>
+
+    <!-- ═══════════════════════════════════ -->
+    <!-- STATE 1: Pre-kickoff, below minimum -->
+    <!-- ═══════════════════════════════════ -->
+
+    <div class="section-label" style="margin-top:16px">State 1: Pre-kickoff, below minimum (3 of 8)</div>
+
+    <!-- Tab bar -->
+    <div class="tab-bar">
+      <button class="tab active">Format</button>
+      <button class="tab">Overall</button>
+      <button class="tab">Bracket</button>
+    </div>
+
+    <!-- Counter: below min -->
+    <div class="entrant-counter warning">
+      3 of 8 minimum required for the competition to begin
+    </div>
+
+    <!-- Rules: Format -->
+    <div class="rules-card">
+      <h3>How Format works</h3>
+      <div class="scoring-table">
+        <div class="scoring-row">
+          <span class="label">Correct match outcome</span>
+          <span class="points">2 pts</span>
+        </div>
+        <div class="scoring-row">
+          <span class="label">Exact score bonus</span>
+          <span class="points">+3 pts</span>
+        </div>
+        <div class="scoring-row">
+          <span class="label">Correct advancing team (knockout)</span>
+          <span class="points">1 pt</span>
+        </div>
+      </div>
+      <p class="explanation">
+        Players are drawn into groups of four. After each prediction window,
+        the bottom player in each group is eliminated. New groups are drawn
+        from the survivors. Last player standing wins.
+      </p>
+      <p class="explanation">
+        Points reset each window. Only your performance in the current round
+        matters for survival.
+      </p>
+    </div>
+
+    <!-- Empty standings -->
+    <div class="empty-standings">
+      <p class="headline">Standings open when results land. Kickoff in 15 days.</p>
+      <div class="divider">
+        <p class="invite-prompt">Bring a rival before kickoff.</p>
+        <div style="display:flex;justify-content:center">
+          <button class="invite-code-btn">
+            <span class="code">dc00300ebc98</span>
+            <span class="copy-label">Copy</span>
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ═══════════════════════════════════ -->
+    <!-- STATE 2: Pre-kickoff, above minimum -->
+    <!-- ═══════════════════════════════════ -->
+
+    <div class="section-label">State 2: Pre-kickoff, above minimum (23 / 48)</div>
+
+    <div class="tab-bar">
+      <button class="tab active">Format</button>
+      <button class="tab">Overall</button>
+      <button class="tab">Bracket</button>
+    </div>
+
+    <div class="entrant-counter">
+      23 / 48 entrants
+    </div>
+
+    <div class="rules-card">
+      <h3>How Format works</h3>
+      <div class="scoring-table">
+        <div class="scoring-row">
+          <span class="label">Correct match outcome</span>
+          <span class="points">2 pts</span>
+        </div>
+        <div class="scoring-row">
+          <span class="label">Exact score bonus</span>
+          <span class="points">+3 pts</span>
+        </div>
+        <div class="scoring-row">
+          <span class="label">Correct advancing team (knockout)</span>
+          <span class="points">1 pt</span>
+        </div>
+      </div>
+      <p class="explanation">
+        Players are drawn into groups of four. After each prediction window,
+        the bottom player in each group is eliminated. New groups are drawn
+        from the survivors. Last player standing wins.
+      </p>
+      <p class="explanation">
+        Points reset each window. Only your performance in the current round
+        matters for survival.
+      </p>
+    </div>
+
+    <div class="empty-standings">
+      <p class="headline">Standings open when results land. Kickoff in 15 days.</p>
+      <div class="divider">
+        <p class="invite-prompt">Bring a rival before kickoff.</p>
+        <div style="display:flex;justify-content:center">
+          <button class="invite-code-btn">
+            <span class="code">dc00300ebc98</span>
+            <span class="copy-label">Copy</span>
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ═══════════════════════════════════ -->
+    <!-- STATE 3: Overall tab (pre-kickoff)  -->
+    <!-- ═══════════════════════════════════ -->
+
+    <div class="section-label">State 3: Overall tab selected (pre-kickoff)</div>
+
+    <div class="tab-bar">
+      <button class="tab">Format</button>
+      <button class="tab active">Overall</button>
+      <button class="tab">Bracket</button>
+    </div>
+
+    <div class="entrant-counter">
+      23 / 48 entrants
+    </div>
+
+    <div class="rules-card">
+      <h3>How Overall works</h3>
+      <p class="tagline">Even if you're out, you're in.</p>
+      <div class="scoring-table">
+        <div class="scoring-row">
+          <span class="label">Correct match outcome</span>
+          <span class="points">2 pts</span>
+        </div>
+        <div class="scoring-row">
+          <span class="label">Exact score bonus</span>
+          <span class="points">+3 pts</span>
+        </div>
+        <div class="scoring-row">
+          <span class="label">Correct advancing team (knockout)</span>
+          <span class="points">1 pt</span>
+        </div>
+      </div>
+      <p class="explanation">
+        Every point counts across the whole tournament. No elimination, no
+        resets. Eliminated from the Format? Your Overall score keeps ticking.
+        Consistency wins.
+      </p>
+    </div>
+
+    <div class="empty-standings">
+      <p class="headline">Standings open when results land. Kickoff in 15 days.</p>
+      <div class="divider">
+        <p class="invite-prompt">Bring a rival before kickoff.</p>
+        <div style="display:flex;justify-content:center">
+          <button class="invite-code-btn">
+            <span class="code">dc00300ebc98</span>
+            <span class="copy-label">Copy</span>
+          </button>
+        </div>
+      </div>
+    </div>
+
+  </div><!-- .page -->
+
+  <!-- Mobile bottom tabs -->
+  <div class="mobile-tabs">
+    <a class="mobile-tab" href="#">Picks</a>
+    <a class="mobile-tab active" href="#">Table</a>
+    <a class="mobile-tab" href="#">Fixtures</a>
+    <a class="mobile-tab" href="#">Rules</a>
+  </div>
+
+</div><!-- .phone-frame -->
+
+</body>
+</html>

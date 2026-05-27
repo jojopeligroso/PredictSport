@@ -26,14 +26,20 @@ export default async function WorldCupLayout({
     profile = data;
   }
 
-  const isSuperAdmin = profile?.is_super_admin === true;
-
   // "Engaged" = user has started their bracket (any stage beyond not_started).
   // Nav links are hidden on the /wc landing for visitors, first-timers, and
   // users who haven't begun the bracket yet.
   let isAdmin = false;
-  const [bracket] = await Promise.all([
+  let isWcAdmin = false;
+  const [bracket, wcComp] = await Promise.all([
     authUser ? getWcBracketSnapshot(supabase, authUser.id) : Promise.resolve(null),
+    supabase
+      .from("competitions")
+      .select("id")
+      .eq("product_mode", "world_cup_2026_shell")
+      .limit(1)
+      .maybeSingle()
+      .then(({ data }) => data),
     authUser
       ? supabase
           .from("competition_members")
@@ -46,6 +52,21 @@ export default async function WorldCupLayout({
           })
       : Promise.resolve(),
   ]);
+
+  // WC admin: check membership of the specific WC competition
+  if (authUser && wcComp?.id) {
+    const { data: wcMembership } = await supabase
+      .from("competition_members")
+      .select("role")
+      .eq("competition_id", wcComp.id)
+      .eq("user_id", authUser.id)
+      .in("role", ["admin", "co_admin"])
+      .maybeSingle();
+    isWcAdmin = !!wcMembership;
+  } else if (authUser && !wcComp) {
+    // No WC competition yet — super admin can access to create one
+    isWcAdmin = profile?.is_super_admin === true;
+  }
   const engaged = bracket != null && bracket.stage !== "not_started";
 
   const displayName =
@@ -69,11 +90,11 @@ export default async function WorldCupLayout({
             </span>
           </Link>
 
-          <WcNavLinks engaged={engaged} variant="desktop" isSuperAdmin={isSuperAdmin} />
+          <WcNavLinks engaged={engaged} variant="desktop" isWcAdmin={isWcAdmin} />
 
           <div className="flex items-center gap-2">
             {authUser ? (
-              <UserMenu displayName={displayName} avatarUrl={avatarUrl} isAdmin={isAdmin || isSuperAdmin} />
+              <UserMenu displayName={displayName} avatarUrl={avatarUrl} isAdmin={isAdmin || isWcAdmin} />
             ) : (
               <Link
                 href="/login"
@@ -86,12 +107,12 @@ export default async function WorldCupLayout({
               isLoggedIn={!!authUser}
               displayName={displayName}
               avatarUrl={avatarUrl}
-              isAdmin={isAdmin || isSuperAdmin}
+              isAdmin={isAdmin || isWcAdmin}
             />
           </div>
         </div>
 
-        <WcNavLinks engaged={engaged} variant="mobile" isSuperAdmin={isSuperAdmin} />
+        <WcNavLinks engaged={engaged} variant="mobile" isWcAdmin={isWcAdmin} />
       </nav>
 
       <div className="flex-1">{children}</div>

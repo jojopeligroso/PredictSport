@@ -21,27 +21,58 @@ interface StandingRow {
   eliminated?: boolean;
 }
 
+interface MyGroupData {
+  status: "draw_pending" | "drawn" | "no_classification";
+  drawAt?: string | null;
+  group?: {
+    name: string;
+    groupNumber: number;
+    members: Array<{
+      user_id: string;
+      display_name: string;
+      points: number;
+      predictions_made: number;
+      predictions_total: number;
+      is_self: boolean;
+      status: string;
+    }>;
+  } | null;
+  totalMembers?: number;
+}
+
 export function ClassificationTabs({
   classifications,
   competitionId,
   currentUserId,
   inviteCode,
   kickoffIso,
+  memberCount,
+  maxEntrants,
+  minEntrants,
+  currentDisplayName,
 }: {
   classifications: Classification[];
   competitionId: string;
   currentUserId: string;
   inviteCode?: string | null;
   kickoffIso?: string | null;
+  memberCount?: number;
+  maxEntrants?: number | null;
+  minEntrants?: number | null;
+  currentDisplayName?: string;
 }) {
   const visibleClassifications = classifications.filter((c) => c.status !== "draft");
+  const formatClassification = visibleClassifications.find(
+    (c) => c.classification_key === "format"
+  );
   const [activeId, setActiveId] = useState<string>(
-    visibleClassifications[0]?.id ?? ""
+    formatClassification?.id ?? visibleClassifications[0]?.id ?? ""
   );
   const [standings, setStandings] = useState<StandingRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [loadedId, setLoadedId] = useState<string>("");
   const [selfVisibility, setSelfVisibility] = useState<"public" | "private">("public");
+  const [groupData, setGroupData] = useState<MyGroupData | null>(null);
 
   useEffect(() => {
     if (!activeId) return;
@@ -69,6 +100,29 @@ export function ClassificationTabs({
 
     return () => { cancelled = true; };
   }, [activeId, competitionId]);
+
+  // Fetch group data when format tab is active
+  useEffect(() => {
+    const active = visibleClassifications.find((c) => c.id === activeId);
+    if (active?.classification_key !== "format") {
+      setGroupData(null);
+      return;
+    }
+
+    let cancelled = false;
+    fetch(
+      `/api/tournament/my-group?classificationId=${activeId}&competitionId=${competitionId}`
+    )
+      .then((res) => res.json())
+      .then((data) => {
+        if (!cancelled) setGroupData(data);
+      })
+      .catch(() => {
+        if (!cancelled) setGroupData(null);
+      });
+
+    return () => { cancelled = true; };
+  }, [activeId, competitionId, visibleClassifications]);
 
   const isLoading = loading || loadedId !== activeId;
 
@@ -100,6 +154,38 @@ export function ClassificationTabs({
           </button>
         ))}
       </div>
+
+      {/* Entrant counter */}
+      {memberCount !== undefined && (
+        <EntrantCounter
+          count={memberCount}
+          max={maxEntrants ?? null}
+          min={minEntrants ?? null}
+        />
+      )}
+
+      {/* Pre-kickoff rules */}
+      {kickoffIso && new Date(kickoffIso).getTime() > Date.now() && active && (
+        <ClassificationRulesPreview classificationKey={active.classification_key} />
+      )}
+
+      {/* Preview cards (pre-kickoff) */}
+      {kickoffIso && new Date(kickoffIso).getTime() > Date.now() && active && (
+        <>
+          {active.classification_key === "format" && (
+            <FormatGroupCard
+              groupData={groupData}
+              displayName={currentDisplayName ?? "You"}
+            />
+          )}
+          {active.classification_key === "overall" && (
+            <OverallPreviewCard
+              displayName={currentDisplayName ?? "You"}
+              totalMembers={memberCount ?? 0}
+            />
+          )}
+        </>
+      )}
 
       {/* Standings */}
       <div className="mt-4 flex flex-1 flex-col">
@@ -355,6 +441,293 @@ function InviteCodeBlock({ code }: { code: string }) {
       )}
     </div>
   );
+}
+
+function EntrantCounter({
+  count,
+  max,
+  min,
+}: {
+  count: number;
+  max: number | null;
+  min: number | null;
+}) {
+  const belowMin = min !== null && count < min;
+
+  return (
+    <div className="mt-3">
+      {belowMin ? (
+        <p className="text-center text-xs font-medium text-ps-amber">
+          {count} of {min} minimum required for the competition to begin
+        </p>
+      ) : max ? (
+        <p className="text-center font-mono text-xs text-ps-text-ter">
+          {count} / {max} entrants
+        </p>
+      ) : (
+        <p className="text-center font-mono text-xs text-ps-text-ter">
+          {count} entrant{count !== 1 ? "s" : ""}
+        </p>
+      )}
+    </div>
+  );
+}
+
+function ClassificationRulesPreview({
+  classificationKey,
+}: {
+  classificationKey: string;
+}) {
+  if (classificationKey === "format") {
+    return (
+      <div className="mt-4 rounded-xl border border-ps-border bg-ps-surface p-4">
+        <h3 className="text-sm font-bold text-ps-text">How Format works</h3>
+        <div className="mt-3 space-y-2">
+          <ScoringRow label="Correct match outcome" points="2 pts" />
+          <ScoringRow label="Exact score bonus" points="+3 pts" />
+          <ScoringRow label="Correct advancing team (knockout)" points="1 pt" />
+        </div>
+        <p className="mt-4 text-xs leading-relaxed text-ps-text-sec">
+          Players are drawn into groups of four. After each prediction window,
+          the bottom player in each group is eliminated. New groups are drawn
+          from the survivors. Last player standing wins.
+        </p>
+        <p className="mt-2 text-xs leading-relaxed text-ps-text-sec">
+          Points reset each window. Only your performance in the current round
+          matters for survival.
+        </p>
+        <p className="mt-2 text-xs leading-relaxed text-ps-text-sec">
+          Groups are drawn 24 hours before the first match of each stage.
+        </p>
+      </div>
+    );
+  }
+
+  if (classificationKey === "overall") {
+    return (
+      <div className="mt-4 rounded-xl border border-ps-border bg-ps-surface p-4">
+        <h3 className="text-sm font-bold text-ps-text">How Overall works</h3>
+        <p className="mt-1 font-serif text-xs italic text-ps-text-sec">
+          Even if you're out, you're in.
+        </p>
+        <div className="mt-3 space-y-2">
+          <ScoringRow label="Correct match outcome" points="2 pts" />
+          <ScoringRow label="Exact score bonus" points="+3 pts" />
+          <ScoringRow label="Correct advancing team (knockout)" points="1 pt" />
+        </div>
+        <p className="mt-4 text-xs leading-relaxed text-ps-text-sec">
+          Every point counts across the whole tournament. No elimination, no
+          resets. Eliminated from the Format? Your Overall score keeps ticking.
+          Consistency wins.
+        </p>
+      </div>
+    );
+  }
+
+  if (classificationKey === "full_bracket") {
+    return (
+      <div className="mt-4 rounded-xl border border-ps-border bg-ps-surface p-4">
+        <h3 className="text-sm font-bold text-ps-text">How the Bracket works</h3>
+        <p className="mt-2 text-xs leading-relaxed text-ps-text-sec">
+          Predict the outcome of every group and every knockout tie before the
+          tournament starts. As results come in, incorrect predictions are
+          knocked out. Players with the most surviving picks lead the table.
+        </p>
+      </div>
+    );
+  }
+
+  if (classificationKey === "knockout_bracket") {
+    return (
+      <div className="mt-4 rounded-xl border border-ps-border bg-ps-surface p-4">
+        <h3 className="text-sm font-bold text-ps-text">How the KO Bracket works</h3>
+        <p className="mt-2 text-xs leading-relaxed text-ps-text-sec">
+          Once the group stage is finalised, predict every knockout tie from the
+          Round of 32 to the Final. Same rules as the Full Bracket, but with
+          the advantage of knowing who actually qualified.
+        </p>
+      </div>
+    );
+  }
+
+  return null;
+}
+
+function ScoringRow({ label, points }: { label: string; points: string }) {
+  return (
+    <div className="flex items-center justify-between">
+      <span className="text-xs text-ps-text-sec">{label}</span>
+      <span className="font-mono text-xs font-bold text-ps-text">{points}</span>
+    </div>
+  );
+}
+
+// ============================================================
+// Preview cards
+// ============================================================
+
+const BLURRED_NAMES = [
+  "████████████",
+  "██████████",
+  "████████████████",
+  "██████████████",
+  "████████████",
+  "██████████████████",
+  "████████████",
+  "██████████",
+  "████████████████",
+  "██████████████",
+  "████████████",
+];
+
+function FormatGroupCard({
+  groupData,
+  displayName,
+}: {
+  groupData: MyGroupData | null;
+  displayName: string;
+}) {
+  if (!groupData) return null;
+
+  if (groupData.status === "draw_pending") {
+    return (
+      <div className="mt-4 rounded-xl border border-ps-border bg-ps-surface p-4">
+        <div className="flex items-center justify-between">
+          <h3 className="text-sm font-bold text-ps-text">Your Group</h3>
+          {groupData.drawAt && <DrawCountdown drawAt={groupData.drawAt} />}
+        </div>
+        <div className="mt-3 divide-y divide-ps-border rounded-lg border border-ps-border">
+          {/* User's row */}
+          <div className="flex items-center px-3 py-2.5 bg-ps-amber/5">
+            <span className="flex-1 text-sm font-semibold text-ps-text">{displayName}</span>
+            <span className="w-12 text-center font-mono text-xs text-ps-text-ter">&mdash;</span>
+            <span className="w-14 text-right font-mono text-xs font-bold text-ps-text">0 pts</span>
+          </div>
+          {/* Blurred placeholders */}
+          {[0, 1, 2].map((i) => (
+            <div key={i} className="flex items-center px-3 py-2.5">
+              <span className="flex-1 text-sm text-ps-text-ter select-none blur-[5px]">
+                {BLURRED_NAMES[i]}
+              </span>
+              <span className="w-12 text-center font-mono text-xs text-ps-text-ter">&mdash;</span>
+              <span className="w-14 text-right font-mono text-xs text-ps-text-ter">0 pts</span>
+            </div>
+          ))}
+        </div>
+      </div>
+    );
+  }
+
+  if (groupData.status === "drawn" && groupData.group) {
+    const { group } = groupData;
+    return (
+      <div className="mt-4 rounded-xl border border-ps-border bg-ps-surface p-4">
+        <h3 className="text-sm font-bold text-ps-text">{group.name}</h3>
+        <div className="mt-3 divide-y divide-ps-border rounded-lg border border-ps-border">
+          {group.members.map((m) => (
+            <div
+              key={m.user_id}
+              className={`flex items-center px-3 py-2.5 ${m.is_self ? "bg-ps-amber/5" : ""}`}
+            >
+              <span className={`flex-1 text-sm ${m.is_self ? "font-semibold text-ps-text" : "text-ps-text"}`}>
+                {m.display_name}
+                {m.is_self && (
+                  <span className="ml-1.5 rounded bg-ps-amber/20 px-1 py-0.5 text-[10px] font-bold text-ps-amber">
+                    YOU
+                  </span>
+                )}
+              </span>
+              <span className="w-12 text-center font-mono text-xs text-ps-text-ter">
+                {m.predictions_made}/{m.predictions_total}
+              </span>
+              <span className="w-14 text-right font-mono text-xs font-bold text-ps-text">
+                {m.points} pts
+              </span>
+            </div>
+          ))}
+        </div>
+      </div>
+    );
+  }
+
+  return null;
+}
+
+function OverallPreviewCard({
+  displayName,
+  totalMembers,
+}: {
+  displayName: string;
+  totalMembers: number;
+}) {
+  return (
+    <div className="mt-4 rounded-xl border border-ps-border bg-ps-surface p-4">
+      <h3 className="text-sm font-bold text-ps-text">Your Position</h3>
+      <div className="mt-3 divide-y divide-ps-border rounded-lg border border-ps-border">
+        {/* 5 blurred rows above */}
+        {[0, 1, 2, 3, 4].map((i) => (
+          <div key={`above-${i}`} className="flex items-center px-3 py-2">
+            <span className="w-6 text-center font-mono text-[10px] text-ps-text-ter">{i + 1}</span>
+            <span className="flex-1 pl-2 text-xs text-ps-text-ter select-none blur-[5px]">
+              {BLURRED_NAMES[i]}
+            </span>
+            <span className="w-12 text-right font-mono text-[10px] text-ps-text-ter">0 pts</span>
+          </div>
+        ))}
+        {/* User's row */}
+        <div className="flex items-center px-3 py-2.5 bg-ps-amber/5">
+          <span className="w-6 text-center font-mono text-[10px] font-bold text-ps-text-ter">6</span>
+          <span className="flex-1 pl-2 text-xs font-semibold text-ps-text">
+            {displayName}
+            <span className="ml-1.5 rounded bg-ps-amber/20 px-1 py-0.5 text-[10px] font-bold text-ps-amber">
+              YOU
+            </span>
+          </span>
+          <span className="w-12 text-right font-mono text-xs font-bold text-ps-text">0 pts</span>
+        </div>
+        {/* 6 blurred rows below */}
+        {[5, 6, 7, 8, 9, 10].map((i) => (
+          <div key={`below-${i}`} className="flex items-center px-3 py-2">
+            <span className="w-6 text-center font-mono text-[10px] text-ps-text-ter">{i + 2}</span>
+            <span className="flex-1 pl-2 text-xs text-ps-text-ter select-none blur-[5px]">
+              {BLURRED_NAMES[i]}
+            </span>
+            <span className="w-12 text-right font-mono text-[10px] text-ps-text-ter">0 pts</span>
+          </div>
+        ))}
+      </div>
+      <p className="mt-3 text-center font-mono text-xs text-ps-text-ter">
+        {totalMembers} entrant{totalMembers !== 1 ? "s" : ""} competing
+      </p>
+    </div>
+  );
+}
+
+function DrawCountdown({ drawAt }: { drawAt: string }) {
+  const [label, setLabel] = useState(() => formatCountdown(drawAt));
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setLabel(formatCountdown(drawAt));
+    }, 60_000);
+    return () => clearInterval(interval);
+  }, [drawAt]);
+
+  return (
+    <span className="text-[11px] font-medium text-ps-amber">{label}</span>
+  );
+}
+
+function formatCountdown(iso: string): string {
+  const diff = new Date(iso).getTime() - Date.now();
+  if (diff <= 0) return "Drawing groups...";
+  const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+  const hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+  const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+
+  if (days > 0) return `Groups drawn in ${days}d ${hours}h`;
+  if (hours > 0) return `Groups drawn in ${hours}h ${minutes}m`;
+  return `Groups drawn in ${minutes}m`;
 }
 
 function daysFromNow(iso: string): number {
