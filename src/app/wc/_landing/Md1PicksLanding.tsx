@@ -256,24 +256,54 @@ function Sections({
 
 function PreviewOverlay({ isAuthenticated }: { isAuthenticated: boolean }) {
   return (
-    <div className="pointer-events-none absolute inset-0 flex items-start justify-center pt-12">
-      <div className="pointer-events-auto mx-4 max-w-[360px] rounded-2xl border border-ps-border bg-ps-surface px-5 py-5 text-center shadow-lg">
-        <p className="font-mono text-[10px] font-bold uppercase tracking-[0.18em] text-ps-amber-deep">
-          Preview
-        </p>
-        <h2 className="mt-1.5 font-display text-lg font-extrabold uppercase tracking-tight text-ps-text">
-          Join the game to pick
-        </h2>
-        <p className="mt-1.5 text-xs text-ps-text-sec">
-          Twenty-four openers, a bracket if you want it, leaderboard bragging
-          rights. Joins close 3 days after kickoff.
-        </p>
+    <div className="pointer-events-none absolute inset-0 flex items-start justify-center pt-6">
+      <div className="mx-4 flex max-w-[360px] flex-col gap-3">
+        {/* Rules summary card */}
         <Link
-          href={isAuthenticated ? "/wc/join" : "/login?next=/wc/join"}
-          className="mt-4 inline-block w-full rounded-xl bg-ps-text px-4 py-3 text-sm font-semibold text-ps-bg transition-colors hover:bg-ps-text/90"
+          href="/wc/rules"
+          className="pointer-events-auto block rounded-2xl border border-ps-border bg-ps-surface px-5 py-4 shadow-lg transition-colors hover:border-ps-amber/40"
         >
-          {isAuthenticated ? "Join now" : "Sign in to join"}
+          <p className="font-mono text-[10px] font-bold uppercase tracking-[0.18em] text-ps-amber-deep">
+            How it works
+          </p>
+          <ul className="mt-2 space-y-1.5 text-xs text-ps-text-sec">
+            <li className="flex items-start gap-2">
+              <span className="mt-px font-mono font-bold text-ps-amber">1</span>
+              <span>Pick who wins each match</span>
+            </li>
+            <li className="flex items-start gap-2">
+              <span className="mt-px font-mono font-bold text-ps-amber">2</span>
+              <span>Guess the exact score for bonus points</span>
+            </li>
+            <li className="flex items-start gap-2">
+              <span className="mt-px font-mono font-bold text-ps-amber">3</span>
+              <span>Climb the leaderboard</span>
+            </li>
+          </ul>
+          <p className="mt-2.5 text-[11px] font-semibold text-ps-amber-deep">
+            Read the full rules →
+          </p>
         </Link>
+
+        {/* Join card */}
+        <div className="pointer-events-auto rounded-2xl border border-ps-border bg-ps-surface px-5 py-5 text-center shadow-lg">
+          <p className="font-mono text-[10px] font-bold uppercase tracking-[0.18em] text-ps-amber-deep">
+            Preview
+          </p>
+          <h2 className="mt-1.5 font-display text-lg font-extrabold uppercase tracking-tight text-ps-text">
+            Join the game to pick
+          </h2>
+          <p className="mt-1.5 text-xs text-ps-text-sec">
+            Twenty-four openers, a bracket if you want it, leaderboard bragging
+            rights. Joins close 3 days after kickoff.
+          </p>
+          <Link
+            href={isAuthenticated ? "/wc/join" : "/login?next=/wc/join"}
+            className="mt-4 inline-block w-full rounded-xl bg-ps-text px-4 py-3 text-sm font-semibold text-ps-bg transition-colors hover:bg-ps-text/90"
+          >
+            {isAuthenticated ? "Join now" : "Sign in to join"}
+          </Link>
+        </div>
       </div>
     </div>
   );

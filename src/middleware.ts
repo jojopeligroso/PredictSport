@@ -4,29 +4,31 @@ import { updateSession } from "@/lib/supabase/proxy";
 const SHELL_MODE =
   process.env.NEXT_PUBLIC_PRODUCT_MODE === "world_cup_2026_shell";
 
-/** Routes that shell mode redirects to /wc */
-const SHELL_REDIRECTS = [
-  "/competitions",
-  "/competitions/personal",
-  "/competitions/new",
-  "/predictions",
+/** Routes that are allowed in shell mode — everything else redirects to /wc. */
+const SHELL_ALLOWED = [
+  "/wc",
+  "/login",
+  "/auth",
+  "/profile",
+  "/terms",
+  "/privacy",
+  "/telegram",
+  "/api",
 ];
 
 export async function middleware(request: NextRequest) {
-  // Shell mode: redirect generic routes to /wc
+  // Shell mode: redirect everything except allowed routes to /wc
   if (SHELL_MODE) {
     const { pathname } = request.nextUrl;
 
-    // Redirect root to /wc landing
     if (pathname === "/") {
       return NextResponse.redirect(new URL("/wc", request.url));
     }
 
-    if (
-      SHELL_REDIRECTS.some(
-        (p) => pathname === p || pathname.startsWith(p + "/")
-      )
-    ) {
+    const allowed = SHELL_ALLOWED.some(
+      (p) => pathname === p || pathname.startsWith(p + "/"),
+    );
+    if (!allowed) {
       return NextResponse.redirect(new URL("/wc", request.url));
     }
   }
