@@ -35,7 +35,7 @@ export async function POST(request: NextRequest) {
   // Verify competition exists and is accepting entries
   const { data: competition, error: compError } = await supabase
     .from("competitions")
-    .select("id, status, entry_closes_at")
+    .select("id, status, entry_closes_at, max_entrants")
     .eq("id", competitionId)
     .single();
 
@@ -56,6 +56,21 @@ export async function POST(request: NextRequest) {
       { error: "Entry deadline has passed" },
       { status: 403 }
     );
+  }
+
+  // Check entrant cap
+  if (competition.max_entrants) {
+    const { count } = await supabase
+      .from("competition_members")
+      .select("id", { count: "exact", head: true })
+      .eq("competition_id", competitionId);
+
+    if ((count ?? 0) >= competition.max_entrants) {
+      return NextResponse.json(
+        { error: "Competition is full" },
+        { status: 403 }
+      );
+    }
   }
 
   // Check if already a member

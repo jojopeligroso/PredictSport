@@ -1,17 +1,14 @@
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { enrollEntrant } from "@/lib/tournament/classification-engine";
+import { JoinFlow } from "@/components/wc/JoinFlow";
 
 export const dynamic = "force-dynamic";
 
 /**
  * /wc/join — Entry flow for World Cup prediction game.
- * If not logged in → redirect to login.
- * If logged in → auto-enroll in the WC competition → redirect onward.
- *
- * Accepts an optional `?next=` param so other WC pages (e.g. a pick window)
- * can route a non-member here for idempotent enrollment and get them back.
- * `next` is validated to an internal /wc path to avoid an open redirect.
+ * Shows display name confirmation before enrolling.
+ * Enforces max_entrants cap.
  */
 export default async function JoinPage({
   searchParams,
@@ -34,7 +31,7 @@ export default async function JoinPage({
   // Find the active WC competition
   const { data: competition } = await supabase
     .from("competitions")
-    .select("id")
+    .select("id, max_entrants, min_entrants")
     .eq("product_mode", "world_cup_2026_shell")
     .eq("status", "active")
     .limit(1)
@@ -51,7 +48,7 @@ export default async function JoinPage({
     );
   }
 
-  // Check if already enrolled as competition member
+  // Check if already enrolled
   const { data: existing } = await supabase
     .from("competition_members")
     .select("id")
@@ -59,19 +56,45 @@ export default async function JoinPage({
     .eq("user_id", user.id)
     .maybeSingle();
 
-  if (!existing) {
-    // Create competition membership
-    await supabase
-      .from("competition_members")
-      .insert({
-        competition_id: competition.id,
-        user_id: user.id,
-        role: "participant",
-      });
+  if (existing) {
+    // Already enrolled — ensure classification memberships are up to date, then redirect
+    await enrollEntrant(supabase, competition.id, user.id);
+    redirect(destination);
   }
 
-  // Enroll in all active classifications (idempotent — handles duplicates)
-  await enrollEntrant(supabase, competition.id, user.id);
+  // Check entrant cap
+  const { count: memberCount } = await supabase
+    .from("competition_members")
+    .select("id", { count: "exact", head: true })
+    .eq("competition_id", competition.id);
 
-  redirect(destination);
+  if (competition.max_entrants && (memberCount ?? 0) >= competition.max_entrants) {
+    return (
+      <div className="mx-auto max-w-[480px] px-4 pt-16 text-center">
+        <h1 className="font-display text-2xl uppercase tracking-tight text-ps-text">
+          Competition Full
+        </h1>
+        <p className="mt-2 text-sm text-ps-text-sec">
+          This competition has reached its maximum of {competition.max_entrants} entrants.
+        </p>
+      </div>
+    );
+  }
+
+  // Fetch user profile for display name
+  const { data: profile } = await supabase
+    .from("users")
+    .select("display_name")
+    .eq("id", user.id)
+    .single();
+
+  return (
+    <JoinFlow
+      competitionId={competition.id}
+      destination={destination}
+      currentDisplayName={profile?.display_name ?? ""}
+      maxEntrants={competition.max_entrants}
+      currentCount={memberCount ?? 0}
+    />
+  );
 }

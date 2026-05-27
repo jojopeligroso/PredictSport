@@ -27,16 +27,25 @@ export function ClassificationTabs({
   currentUserId,
   inviteCode,
   kickoffIso,
+  memberCount,
+  maxEntrants,
+  minEntrants,
 }: {
   classifications: Classification[];
   competitionId: string;
   currentUserId: string;
   inviteCode?: string | null;
   kickoffIso?: string | null;
+  memberCount?: number;
+  maxEntrants?: number | null;
+  minEntrants?: number | null;
 }) {
   const visibleClassifications = classifications.filter((c) => c.status !== "draft");
+  const formatClassification = visibleClassifications.find(
+    (c) => c.classification_key === "format"
+  );
   const [activeId, setActiveId] = useState<string>(
-    visibleClassifications[0]?.id ?? ""
+    formatClassification?.id ?? visibleClassifications[0]?.id ?? ""
   );
   const [standings, setStandings] = useState<StandingRow[]>([]);
   const [loading, setLoading] = useState(true);
@@ -100,6 +109,20 @@ export function ClassificationTabs({
           </button>
         ))}
       </div>
+
+      {/* Entrant counter */}
+      {memberCount !== undefined && (
+        <EntrantCounter
+          count={memberCount}
+          max={maxEntrants ?? null}
+          min={minEntrants ?? null}
+        />
+      )}
+
+      {/* Pre-kickoff rules */}
+      {kickoffIso && new Date(kickoffIso).getTime() > Date.now() && active && (
+        <ClassificationRulesPreview classificationKey={active.classification_key} />
+      )}
 
       {/* Standings */}
       <div className="mt-4 flex flex-1 flex-col">
@@ -353,6 +376,122 @@ function InviteCodeBlock({ code }: { code: string }) {
           Couldn&apos;t copy — long-press the code instead.
         </p>
       )}
+    </div>
+  );
+}
+
+function EntrantCounter({
+  count,
+  max,
+  min,
+}: {
+  count: number;
+  max: number | null;
+  min: number | null;
+}) {
+  const belowMin = min !== null && count < min;
+
+  return (
+    <div className="mt-3">
+      {belowMin ? (
+        <p className="text-center text-xs font-medium text-ps-amber">
+          {count} of {min} minimum required for the competition to begin
+        </p>
+      ) : max ? (
+        <p className="text-center font-mono text-xs text-ps-text-ter">
+          {count} / {max} entrants
+        </p>
+      ) : (
+        <p className="text-center font-mono text-xs text-ps-text-ter">
+          {count} entrant{count !== 1 ? "s" : ""}
+        </p>
+      )}
+    </div>
+  );
+}
+
+function ClassificationRulesPreview({
+  classificationKey,
+}: {
+  classificationKey: string;
+}) {
+  if (classificationKey === "format") {
+    return (
+      <div className="mt-4 rounded-xl border border-ps-border bg-ps-surface p-4">
+        <h3 className="text-sm font-bold text-ps-text">How Format works</h3>
+        <div className="mt-3 space-y-2">
+          <ScoringRow label="Correct match outcome" points="2 pts" />
+          <ScoringRow label="Exact score bonus" points="+3 pts" />
+          <ScoringRow label="Correct advancing team (knockout)" points="1 pt" />
+        </div>
+        <p className="mt-4 text-xs leading-relaxed text-ps-text-sec">
+          Players are drawn into groups of four. After each prediction window,
+          the bottom player in each group is eliminated. New groups are drawn
+          from the survivors. Last player standing wins.
+        </p>
+        <p className="mt-2 text-xs leading-relaxed text-ps-text-sec">
+          Points reset each window. Only your performance in the current round
+          matters for survival.
+        </p>
+      </div>
+    );
+  }
+
+  if (classificationKey === "overall") {
+    return (
+      <div className="mt-4 rounded-xl border border-ps-border bg-ps-surface p-4">
+        <h3 className="text-sm font-bold text-ps-text">How Overall works</h3>
+        <p className="mt-1 font-serif text-xs italic text-ps-text-sec">
+          Even if you're out, you're in.
+        </p>
+        <div className="mt-3 space-y-2">
+          <ScoringRow label="Correct match outcome" points="2 pts" />
+          <ScoringRow label="Exact score bonus" points="+3 pts" />
+          <ScoringRow label="Correct advancing team (knockout)" points="1 pt" />
+        </div>
+        <p className="mt-4 text-xs leading-relaxed text-ps-text-sec">
+          Every point counts across the whole tournament. No elimination, no
+          resets. Eliminated from the Format? Your Overall score keeps ticking.
+          Consistency wins.
+        </p>
+      </div>
+    );
+  }
+
+  if (classificationKey === "full_bracket") {
+    return (
+      <div className="mt-4 rounded-xl border border-ps-border bg-ps-surface p-4">
+        <h3 className="text-sm font-bold text-ps-text">How the Bracket works</h3>
+        <p className="mt-2 text-xs leading-relaxed text-ps-text-sec">
+          Predict the outcome of every group and every knockout tie before the
+          tournament starts. As results come in, incorrect predictions are
+          knocked out. Players with the most surviving picks lead the table.
+        </p>
+      </div>
+    );
+  }
+
+  if (classificationKey === "knockout_bracket") {
+    return (
+      <div className="mt-4 rounded-xl border border-ps-border bg-ps-surface p-4">
+        <h3 className="text-sm font-bold text-ps-text">How the KO Bracket works</h3>
+        <p className="mt-2 text-xs leading-relaxed text-ps-text-sec">
+          Once the group stage is finalised, predict every knockout tie from the
+          Round of 32 to the Final. Same rules as the Full Bracket, but with
+          the advantage of knowing who actually qualified.
+        </p>
+      </div>
+    );
+  }
+
+  return null;
+}
+
+function ScoringRow({ label, points }: { label: string; points: string }) {
+  return (
+    <div className="flex items-center justify-between">
+      <span className="text-xs text-ps-text-sec">{label}</span>
+      <span className="font-mono text-xs font-bold text-ps-text">{points}</span>
     </div>
   );
 }

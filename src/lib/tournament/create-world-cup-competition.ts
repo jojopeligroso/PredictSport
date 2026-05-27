@@ -38,6 +38,8 @@ interface CreateWCOptions {
   name: string;
   visibility: "public" | "private";
   entrantCount: number; // 8-96, validated by generateEliminationCurve
+  maxEntrants?: number; // Hard cap on membership. Null = unlimited.
+  minEntrants?: number; // Minimum to proceed. Null = no minimum.
   enabledClassifications?: string[]; // e.g. ["overall","format","full_bracket","knockout_bracket"]; omit for all
 }
 
@@ -68,6 +70,8 @@ export async function createWorldCupCompetition(
       lock_default_minutes: 30,
       allow_nominations: false,
       allow_prediction_updates: true,
+      max_entrants: options.maxEntrants ?? null,
+      min_entrants: options.minEntrants ?? null,
       created_by: userId,
     })
     .select()

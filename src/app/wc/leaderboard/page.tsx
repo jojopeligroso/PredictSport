@@ -20,7 +20,7 @@ export default async function LeaderboardPage() {
   // Find the WC competition
   const { data: competition } = await supabase
     .from("competitions")
-    .select("id, invite_code")
+    .select("id, invite_code, max_entrants, min_entrants")
     .eq("product_mode", "world_cup_2026_shell")
     .in("status", ["active", "draft", "completed"])
     .limit(1)
@@ -33,6 +33,12 @@ export default async function LeaderboardPage() {
       </div>
     );
   }
+
+  // Get member count
+  const { count: memberCount } = await supabase
+    .from("competition_members")
+    .select("id", { count: "exact", head: true })
+    .eq("competition_id", competition.id);
 
   // Get classifications
   const { data: classifications } = await supabase
@@ -51,6 +57,9 @@ export default async function LeaderboardPage() {
           currentUserId={user.id}
           inviteCode={competition.invite_code ?? null}
           kickoffIso="2026-06-11T15:00:00Z"
+          memberCount={memberCount ?? 0}
+          maxEntrants={competition.max_entrants ?? null}
+          minEntrants={competition.min_entrants ?? null}
         />
       </div>
     </div>

@@ -65,6 +65,8 @@ export async function POST(request: Request) {
       name: body.name.trim(),
       visibility: body.visibility,
       entrantCount: 12, // Default estimate — curve recalculated at PW1 lock
+      maxEntrants: 48,
+      minEntrants: 8,
       enabledClassifications: body.enabledClassifications,
     });
 

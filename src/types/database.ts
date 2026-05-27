@@ -54,6 +54,8 @@ export interface Competition {
   entry_closes_at: string | null;
   entry_close_trigger: string | null;
   hidden_at: string | null;
+  max_entrants: number | null;
+  min_entrants: number | null;
   created_at: string;
 }
 
