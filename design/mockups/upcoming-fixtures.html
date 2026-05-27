@@ -1,0 +1,361 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Mockup — Upcoming Fixtures (faithful snapshot, orange outline only)</title>
+  <style>
+    /* ── Tokens lifted verbatim from src/app/globals.css ─────────────── */
+    :root {
+      --ps-bg: #efe9de;
+      --ps-bg-alt: #e7dfd0;
+      --ps-surface: #ffffff;
+      --ps-border: rgba(40, 30, 20, 0.10);
+      --ps-text: #191512;
+      --ps-text-sec: #5e554a;
+      --ps-text-ter: #8b8275;
+      --ps-amber: #f59e0b;
+      --ps-amber-deep: #d97706;
+      --ps-amber-soft: rgba(245, 158, 11, 0.12);
+      --ps-chip: rgba(40, 30, 20, 0.04);
+    }
+    .wc-theme {
+      --ps-bg: #0a0f0a;
+      --ps-bg-alt: #0d140d;
+      --ps-surface: #1a231a;
+      --ps-text: #f1ece2;
+      --ps-text-sec: #a8a090;
+      --ps-text-ter: #706858;
+      --ps-amber: #d4af37;
+      --ps-amber-deep: #b8941f;
+      --ps-amber-soft: rgba(212, 175, 55, 0.12);
+      --ps-border: rgba(212, 175, 55, 0.10);
+      --ps-chip: rgba(212, 175, 55, 0.06);
+    }
+    /* Light WC theme to match the screenshot (cream bg, dark text). */
+    html[data-theme="light"] .wc-theme {
+      --ps-bg: #efe9de;
+      --ps-bg-alt: #e7dfd0;
+      --ps-surface: #ffffff;
+      --ps-text: #0a0f0a;
+      --ps-text-sec: #4a5a4a;
+      --ps-text-ter: #7a8a7a;
+      --ps-amber: #b8941f;
+      --ps-amber-deep: #8a6e10;
+      --ps-amber-soft: rgba(184, 148, 31, 0.14);
+      --ps-border: rgba(0, 104, 71, 0.18);
+      --ps-chip: rgba(0, 104, 71, 0.06);
+    }
+
+    *, *::before, *::after { box-sizing: border-box; }
+    body { margin: 0; background: var(--ps-bg); color: var(--ps-text);
+      font-family: "Inter", system-ui, -apple-system, "Segoe UI", sans-serif;
+      -webkit-font-smoothing: antialiased;
+      font-feature-settings: "tnum";
+    }
+    p, h1, h2, h3 { margin: 0; text-wrap: pretty; }
+
+    /* ── WC layout shell — replicates src/app/wc/layout.tsx ──────────── */
+    .wc-strip { height: 4px; background: #006847; }
+    .wc-nav { background: var(--ps-bg); border-top: 2px solid #006847; border-bottom: 1px solid var(--ps-border); }
+    .wc-nav-inner { max-width: 768px; margin: 0 auto; padding: 0 16px;
+      display: flex; align-items: center; justify-content: space-between; height: 48px; }
+    .wc-brand { display: inline-flex; align-items: center; gap: 6px;
+      font-weight: 800; font-size: 1.1rem; letter-spacing: -0.01em; color: var(--ps-text); }
+    .wc-brand .dot { width: 18px; height: 18px; border-radius: 999px;
+      background: var(--ps-text); display: inline-grid; place-items: center; }
+    .wc-brand .dot::after { content: ""; width: 8px; height: 8px; border-radius: 999px; background: var(--ps-amber); }
+    .wc-brand .accent { color: var(--ps-amber); }
+    .wc-nav-links { display: none; gap: 4px; }
+    @media (min-width: 768px) { .wc-nav-links { display: flex; } }
+    .wc-nav-links a { padding: 6px 12px; border-radius: 8px; font-size: 14px; font-weight: 500;
+      color: var(--ps-text-sec); text-decoration: none; }
+    .wc-nav-links a:hover { background: var(--ps-chip); color: var(--ps-text); }
+    .wc-mobile-tabs { display: flex; overflow-x: auto; border-top: 1px solid var(--ps-border); }
+    @media (min-width: 768px) { .wc-mobile-tabs { display: none; } }
+    .wc-mobile-tabs-inner { max-width: 768px; margin: 0 auto; padding: 0 8px; display: flex; }
+    .wc-mobile-tabs a { padding: 8px 12px; font-size: 12px; font-weight: 600;
+      color: var(--ps-text-sec); text-decoration: none; white-space: nowrap; }
+    .user-chip { width: 28px; height: 28px; border-radius: 999px; background: var(--ps-amber);
+      display: grid; place-items: center; font-weight: 700; color: #191512; font-size: 12px; }
+
+    /* ── Page — replicates src/app/wc/results/page.tsx ───────────────── */
+    .page { max-width: 480px; margin: 0 auto; padding: 24px 16px 64px; }
+    .page > h1 { font-size: 1.5rem; line-height: 2rem; font-weight: 800;
+      text-transform: uppercase; letter-spacing: -0.025em; color: var(--ps-text); }
+    .page > p.intro { margin-top: 4px; color: var(--ps-text-sec); font-size: 0.875rem; line-height: 1.25rem; }
+
+    /* ── Tabs — replicates FixturesTabs.tsx tablist ──────────────────── */
+    .tabs { margin-top: 16px; display: flex; gap: 4px;
+      background: var(--ps-surface); border: 1px solid var(--ps-border);
+      border-radius: 8px; padding: 4px; }
+    .tab { flex: 1; border: 0; background: transparent;
+      padding: 8px 12px; border-radius: 6px;
+      font: inherit; font-size: 14px; font-weight: 600;
+      color: var(--ps-text-sec); cursor: pointer;
+      display: inline-flex; align-items: center; justify-content: center; }
+    .tab.is-active { background: var(--ps-text); color: var(--ps-bg); }
+    .tab .count { margin-left: 6px; display: inline-grid; place-items: center;
+      min-width: 1.25rem; padding: 0 4px; border-radius: 999px;
+      background: rgba(40,30,20,0.18); color: var(--ps-text-sec);
+      font-family: ui-monospace, "JetBrains Mono", monospace;
+      font-size: 0.7rem; font-variant-numeric: tabular-nums; }
+    .tab.is-active .count { background: rgba(239,233,222,0.2); color: var(--ps-bg); }
+
+    /* ── Hide-picks header row — kept exactly as before ──────────────── */
+    .picks-row { display: flex; align-items: center; justify-content: space-between;
+      margin-top: 16px; padding: 12px 16px; border-radius: 12px;
+      background: var(--ps-surface); border: 1px solid var(--ps-border);
+      font-size: 14px; color: var(--ps-text); }
+    .switch { position: relative; width: 44px; height: 24px; }
+    .switch input { position: absolute; opacity: 0; inset: 0; margin: 0; cursor: pointer; }
+    .switch .track { display: block; width: 100%; height: 100%; border-radius: 999px;
+      background: var(--ps-surface); border: 1px solid var(--ps-border); transition: background 200ms; }
+    .switch input:checked ~ .track { background: var(--ps-amber-deep); border-color: var(--ps-amber-deep); }
+    .switch .thumb { position: absolute; top: 2px; left: 2px; width: 20px; height: 20px;
+      border-radius: 999px; background: var(--ps-bg);
+      box-shadow: 0 1px 2px rgba(0,0,0,0.2); transition: transform 200ms; }
+    .switch input:checked ~ .thumb { transform: translateX(20px); }
+    .picks-row .right { display: flex; align-items: center; gap: 12px; color: var(--ps-amber); font-weight: 600; }
+
+    /* ── Fixture card — verbatim from FixtureCard in FixturesTabs.tsx ── */
+    .cards { margin-top: 16px; display: flex; flex-direction: column; gap: 12px; }
+    .fcard { overflow: hidden; border-radius: 12px; color: #ffffff;
+      box-shadow: 0 1px 2px rgba(0,0,0,0.05); }
+    .fcard-head { display: flex; align-items: center; justify-content: space-between;
+      padding: 12px 16px 0;
+      font-size: 0.7rem; font-weight: 700; letter-spacing: 0.025em; text-transform: uppercase;
+      color: rgba(255,255,255,0.85); }
+    .fcard-body { padding: 8px 16px 12px; }
+    .fcard h3 { display: flex; flex-wrap: wrap; align-items: center; gap: 6px;
+      font-size: 1rem; line-height: 1.5rem; font-weight: 700; color: #fff; }
+    .fcard h3 .v { color: rgba(255,255,255,0.7); margin: 0 2px; }
+    .fcard dl { margin-top: 8px; display: grid; grid-template-columns: 1fr 1fr; column-gap: 12px;
+      font-size: 0.75rem; color: rgba(255,255,255,0.9); }
+    .fcard dl > div { min-width: 0; }
+    .fcard dt { font-weight: 600; text-transform: uppercase; letter-spacing: 0.025em;
+      color: rgba(255,255,255,0.7); }
+    .fcard dd { margin: 0; font-family: ui-monospace, "JetBrains Mono", monospace; font-variant-numeric: tabular-nums; }
+    .fcard dd .sep { margin-left: 4px; color: rgba(255,255,255,0.7); }
+    .fcard .venue { margin-top: 8px; font-size: 0.7rem; color: rgba(255,255,255,0.7); }
+
+    /* ── Country pill flag — same silhouette/clip-path as CountryFlag ─ */
+    .flag-pill {
+      --w: 20px;
+      --h: 15px;    /* 20 * 3/4 */
+      --r: 7px;     /* round(20 * 0.35) */
+      --b: 1px;     /* max(1, round(20 * 0.025)) */
+      display: inline-block; position: relative;
+      width: var(--w); height: var(--h); flex-shrink: 0;
+      background: #fff; /* white outer = visible hairline */
+      clip-path: path('M 0 0 L 13 0 A 7 7 0 0 1 20 7 L 20 15 L 7 15 A 7 7 0 0 1 0 8 Z');
+      filter: drop-shadow(0 1px 2px rgba(0,0,0,0.25));
+    }
+    .flag-pill > .inner {
+      position: absolute; top: var(--b); left: var(--b);
+      width: calc(var(--w) - var(--b)*2); height: calc(var(--h) - var(--b)*2);
+      clip-path: path('M 0 0 L 12 0 A 6 6 0 0 1 18 6 L 18 13 L 6 13 A 6 6 0 0 1 0 7 Z');
+      overflow: hidden;
+    }
+    .flag-pill img {
+      position: absolute; inset: 0; width: 100%; height: 100%;
+      object-fit: cover; filter: saturate(0.88) brightness(0.96);
+    }
+
+    /* ──────────────────────────────────────────────────────────────────
+       THE ONLY STYLISTIC CHANGE — selection outline.
+       Application accent (ps-amber). Where the host surface is amber-tinted
+       (selected on amber card, or on a yellow-leaning fixture card colour),
+       an inner 2px white ring separates the orange ring from the orange bg.
+       ────────────────────────────────────────────────────────────────── */
+    .ps-selected {
+      box-shadow:
+        0 0 0 2px var(--ps-amber),
+        0 1px 2px rgba(0,0,0,0.15);
+    }
+    .ps-selected[data-on-amber="true"] {
+      box-shadow:
+        inset 0 0 0 2px #fff,
+        0 0 0 2px var(--ps-amber),
+        0 1px 2px rgba(0,0,0,0.15);
+    }
+    /* When the card itself is the selected unit (the article is the pick), */
+    /* we apply the outline around the article. Same edge-case logic.       */
+    .fcard.ps-selected, .fcard.ps-selected[data-on-amber="true"] { border-radius: 12px; }
+
+    /* Tiny pick-tag — used to demonstrate the outline inside a card without changing layout */
+    .pick-tag {
+      display: inline-flex; align-items: center; gap: 6px;
+      margin-top: 8px;
+      padding: 3px 10px;
+      border-radius: 999px;
+      background: rgba(255,255,255,0.15);
+      color: #fff;
+      font-size: 0.7rem;
+      font-weight: 600;
+    }
+    .pick-tag .label { text-transform: uppercase; letter-spacing: 0.04em;
+      color: rgba(255,255,255,0.75); font-size: 0.65rem; }
+
+    /* Note for the reviewer — annotation only, not part of the real UI */
+    .note { margin: 20px 0 0; padding: 12px 14px;
+      font-size: 12px; color: var(--ps-text-sec); line-height: 1.5;
+      background: var(--ps-surface); border: 1px solid var(--ps-border); border-radius: 10px; }
+    .note strong { color: var(--ps-text); }
+  </style>
+</head>
+<body>
+
+  <div class="wc-theme" data-theme="light" style="min-height:100vh;">
+    <!-- ↓↓↓ WC layout shell (verbatim from src/app/wc/layout.tsx) ↓↓↓ -->
+    <div class="wc-strip"></div>
+    <nav class="wc-nav">
+      <div class="wc-nav-inner">
+        <a class="wc-brand" href="#">
+          <span class="dot" aria-hidden="true"></span>
+          sports<span class="accent">predict.</span>
+        </a>
+        <div class="wc-nav-links">
+          <a href="#">Picks</a><a href="#">Bracket</a><a href="#">Table</a>
+          <a href="#">Results</a><a href="#">Rules</a>
+        </div>
+        <div class="user-chip">E</div>
+      </div>
+      <div class="wc-mobile-tabs">
+        <div class="wc-mobile-tabs-inner">
+          <a href="#">Picks</a><a href="#">Bracket</a><a href="#">Table</a>
+          <a href="#">Results</a><a href="#">Rules</a>
+        </div>
+      </div>
+    </nav>
+
+    <!-- ↓↓↓ /wc/results page (verbatim from src/app/wc/results/page.tsx + FixturesTabs.tsx) ↓↓↓ -->
+    <div class="page">
+      <h1>Fixtures &amp; Results</h1>
+      <p class="intro">48 teams. 104 matches. 1 winner. Your call.</p>
+
+      <div class="tabs" role="tablist">
+        <button class="tab" role="tab">Today<span class="count">0</span></button>
+        <button class="tab is-active" role="tab" aria-selected="true">Upcoming<span class="count">104</span></button>
+        <button class="tab" role="tab">Results<span class="count">0</span></button>
+      </div>
+
+      <!-- Hide-picks row — kept (Bigger cards has moved to global settings, so it's not here). -->
+      <div class="picks-row">
+        <span>Your predictions are shown</span>
+        <span class="right">
+          Hide picks
+          <label class="switch">
+            <input type="checkbox" checked aria-label="Hide picks" />
+            <span class="track" aria-hidden="true"></span>
+            <span class="thumb" aria-hidden="true"></span>
+          </label>
+        </span>
+      </div>
+
+      <div class="cards">
+
+        <!-- Mexico vs South Africa — Mexico City #8C4DFC (purple). User has picked Mexico.
+             Card colour is purple → plain orange outline, no white separator needed. -->
+        <article class="fcard ps-selected" style="background:#8C4DFC;">
+          <header class="fcard-head">
+            <span>Group A · MD1</span>
+            <span>Mexico City</span>
+          </header>
+          <div class="fcard-body">
+            <h3>
+              <span class="flag-pill"><span class="inner"><img alt="" src="https://flagcdn.com/mx.svg"></span></span>
+              <span>Mexico</span>
+              <span class="v">v</span>
+              <span class="flag-pill"><span class="inner"><img alt="" src="https://flagcdn.com/za.svg"></span></span>
+              <span>South Africa</span>
+            </h3>
+            <dl>
+              <div>
+                <dt>In Mexico</dt>
+                <dd>13:00<span class="sep">· Thu, 11 Jun</span></dd>
+              </div>
+              <div>
+                <dt>Your time</dt>
+                <dd>20:00 GMT+1</dd>
+              </div>
+            </dl>
+            <p class="venue">Estadio Azteca</p>
+            <span class="pick-tag"><span class="label">Your pick</span> Mexico</span>
+          </div>
+        </article>
+
+        <!-- South Korea vs Czechia — Guadalajara #DA2363 (magenta). No pick → no outline. -->
+        <article class="fcard" style="background:#DA2363;">
+          <header class="fcard-head">
+            <span>Group A · MD1</span>
+            <span>Guadalajara</span>
+          </header>
+          <div class="fcard-body">
+            <h3>
+              <span class="flag-pill"><span class="inner"><img alt="" src="https://flagcdn.com/kr.svg"></span></span>
+              <span>South Korea</span>
+              <span class="v">v</span>
+              <span class="flag-pill"><span class="inner"><img alt="" src="https://flagcdn.com/cz.svg"></span></span>
+              <span>Czechia</span>
+            </h3>
+            <dl>
+              <div>
+                <dt>In Guadalajara</dt>
+                <dd>16:00<span class="sep">· Thu, 11 Jun</span></dd>
+              </div>
+              <div>
+                <dt>Your time</dt>
+                <dd>23:00 GMT+1</dd>
+              </div>
+            </dl>
+            <p class="venue">Estadio Akron</p>
+          </div>
+        </article>
+
+        <!-- Edge case 1: an existing WC host city that is *yellow-leaning* — Atlanta #00B5C8 is teal,
+             so the edge case fires when we ever surface picks on an amber-tinted card. Below: a faked
+             scenario where the user is shown a saved pick on a yellow card. THIS is where the
+             white separator ring kicks in. -->
+        <article class="fcard ps-selected" data-on-amber="true" style="background:#F5C518;">
+          <header class="fcard-head" style="color:rgba(25,21,18,0.7);">
+            <span>Group K · MD2</span>
+            <span>Toronto</span>
+          </header>
+          <div class="fcard-body">
+            <h3 style="color:#191512;">
+              <span class="flag-pill"><span class="inner"><img alt="" src="https://flagcdn.com/fr.svg"></span></span>
+              <span>France</span>
+              <span class="v" style="color:rgba(25,21,18,0.55);">v</span>
+              <span class="flag-pill"><span class="inner"><img alt="" src="https://flagcdn.com/pt.svg"></span></span>
+              <span>Portugal</span>
+            </h3>
+            <dl style="color:rgba(25,21,18,0.85);">
+              <div>
+                <dt style="color:rgba(25,21,18,0.6);">In Toronto</dt>
+                <dd>20:00<span class="sep" style="color:rgba(25,21,18,0.6);">· Sat, 20 Jun</span></dd>
+              </div>
+              <div>
+                <dt style="color:rgba(25,21,18,0.6);">Your time</dt>
+                <dd>01:00 GMT+1</dd>
+              </div>
+            </dl>
+            <p class="venue" style="color:rgba(25,21,18,0.6);">BMO Field</p>
+            <span class="pick-tag" style="background:rgba(25,21,18,0.12); color:#191512;">
+              <span class="label" style="color:rgba(25,21,18,0.65);">Your pick</span> France
+            </span>
+          </div>
+        </article>
+
+      </div>
+
+      <p class="note">
+        <strong>Only stylistic change vs. the live page:</strong> selection outline now uses the application accent (orange).
+        On orange / yellow card backgrounds a 2px white inner ring is added as a separator so the outline still reads.
+        The <em>Bigger cards</em> toggle has moved to <strong>Profile → Settings</strong> and is not part of this page.
+      </p>
+    </div>
+  </div>
+
+</body>
+</html>

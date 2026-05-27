@@ -1,0 +1,227 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>WC Picks-First Redesign — C-series</title>
+  <style>
+    *,*::before,*::after { box-sizing: border-box; }
+    html, body { margin: 0; padding: 0; }
+    body {
+      font-family: "Inter", system-ui, -apple-system, "Segoe UI", sans-serif;
+      background: #efe9de;
+      color: #191512;
+      padding: 40px 24px;
+      min-height: 100vh;
+      -webkit-font-smoothing: antialiased;
+    }
+    .wrap { max-width: 880px; margin: 0 auto; }
+    h1 {
+      font-size: 28px;
+      font-weight: 800;
+      letter-spacing: -0.02em;
+      margin: 0 0 4px;
+    }
+    h1 .amber { color: #d97706; }
+    .lede {
+      color: #5e554a;
+      font-style: italic;
+      font-family: "Instrument Serif", Georgia, serif;
+      font-size: 17px;
+      margin: 0 0 32px;
+    }
+    .premise {
+      background: #fff;
+      border: 1px solid rgba(40,30,20,0.10);
+      border-radius: 12px;
+      padding: 16px 20px;
+      margin-bottom: 32px;
+      font-size: 14px;
+      line-height: 1.55;
+      color: #5e554a;
+    }
+    .premise strong { color: #191512; }
+    .premise code {
+      background: rgba(40,30,20,0.06);
+      padding: 1px 5px;
+      border-radius: 3px;
+      font-size: 12px;
+    }
+    .matrix {
+      display: grid;
+      gap: 14px;
+      grid-template-columns: 1fr;
+    }
+    @media (min-width: 720px) {
+      .matrix { grid-template-columns: 1fr 1fr; }
+    }
+    .card {
+      background: #fff;
+      border: 1px solid rgba(40,30,20,0.10);
+      border-radius: 12px;
+      padding: 20px;
+      text-decoration: none;
+      color: inherit;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      transition: transform 0.15s, box-shadow 0.15s;
+    }
+    .card:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 24px -8px rgba(0,0,0,0.15);
+    }
+    .card .vnum {
+      font-family: ui-monospace, "JetBrains Mono", monospace;
+      font-size: 11px; font-weight: 800;
+      letter-spacing: 0.15em;
+      color: #d97706;
+      text-transform: uppercase;
+    }
+    .card h2 {
+      font-size: 17px;
+      font-weight: 800;
+      letter-spacing: -0.01em;
+      margin: 0;
+    }
+    .card p {
+      margin: 0;
+      font-size: 13px;
+      line-height: 1.45;
+      color: #5e554a;
+    }
+    .card .axes {
+      display: flex; gap: 6px; flex-wrap: wrap;
+      margin-top: 4px;
+    }
+    .card .axes span {
+      font-family: ui-monospace, "JetBrains Mono", monospace;
+      font-size: 10px; font-weight: 700;
+      letter-spacing: 0.10em;
+      text-transform: uppercase;
+      padding: 3px 8px;
+      border-radius: 4px;
+      background: rgba(40,30,20,0.06);
+      color: #5e554a;
+    }
+    .card .axes span.color-grp { background: #C0392B; color: #fff; }
+    .card .axes span.color-city { background: #2497F1; color: #fff; }
+    .swatches {
+      display: flex; gap: 3px;
+      margin-top: 8px;
+    }
+    .swatches span {
+      width: 14px; height: 14px; border-radius: 3px; display: block;
+      border: 1px solid rgba(0,0,0,0.1);
+    }
+    .footer {
+      margin-top: 32px;
+      font-size: 12px;
+      color: #8b8275;
+      font-style: italic;
+    }
+    .footer a { color: #8b8275; }
+    h3 {
+      margin: 32px 0 12px;
+      font-size: 14px;
+      font-weight: 800;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: #5e554a;
+    }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <h1>WC <span class="amber">picks-first</span> redesign — C-series</h1>
+    <p class="lede">Stripped FixtureCard, port of /wc/results. Four variants. 2×2 matrix: sectioning × palette.</p>
+
+    <div class="premise">
+      <strong>Anchor:</strong> live <code>/wc/results</code> FixtureCard, ported verbatim and stripped of metadata (no venue, no in-city/your-time grid). Kept: group · MD badge, kickoff time, date, home / draw / away pick triple, exact-score inputs.<br><br>
+      <strong>Selection treatment:</strong> amber inset outline on selected team / draw button; amber border on filled score input; amber halo around any card with a saved prediction.<br><br>
+      <strong>Variables:</strong> two axes give a 2×2 grid.<br>
+      &nbsp;&nbsp;• <em>Sectioning</em> — by calendar date (chronological) <strong>vs</strong> by group letter (tournament structure).<br>
+      &nbsp;&nbsp;• <em>Palette</em> — proposed 12-hue group accent <strong>vs</strong> existing host-city palette from <code>src/lib/wc/host-cities.ts</code>.<br><br>
+      <strong>3-day join cutoff banner</strong> is shown on every variant — that's the cron task (#6) made visible.
+    </div>
+
+    <h3>By Date</h3>
+    <div class="matrix">
+      <a class="card" href="c1-date-by-group.html">
+        <div class="vnum">C1</div>
+        <h2>Date sections · group-accent</h2>
+        <p>Sections grouped by calendar date (Thu 11 → Thu 18 Jun). Each card's background is the group's accent colour. Chronological reading, group identity via colour.</p>
+        <div class="axes">
+          <span>By date</span>
+          <span class="color-grp">Group palette</span>
+        </div>
+        <div class="swatches">
+          <span style="background:#C0392B" title="A"></span>
+          <span style="background:#2C5282" title="B"></span>
+          <span style="background:#2F855A" title="C"></span>
+          <span style="background:#B7791F" title="D"></span>
+          <span style="background:#6B46C1" title="E"></span>
+          <span style="background:#C53078" title="F"></span>
+          <span style="background:#285E61" title="G"></span>
+          <span style="background:#C05621" title="H"></span>
+          <span style="background:#2B6CB0" title="I"></span>
+          <span style="background:#744210" title="J"></span>
+          <span style="background:#4A5568" title="K"></span>
+          <span style="background:#97266D" title="L"></span>
+        </div>
+      </a>
+      <a class="card" href="c2-date-by-city.html">
+        <div class="vnum">C2</div>
+        <h2>Date sections · host-city</h2>
+        <p>Same chronological sectioning as C1. Card backgrounds use the existing host-city palette — what <code>/wc/results</code> ships today. Lowest visual divergence; continuity with current product.</p>
+        <div class="axes">
+          <span>By date</span>
+          <span class="color-city">City palette (live)</span>
+        </div>
+        <div class="swatches">
+          <span style="background:#00B5C8" title="Atlanta"></span>
+          <span style="background:#218521" title="Boston"></span>
+          <span style="background:#2497F1" title="Houston"></span>
+          <span style="background:#FB2350" title="Kansas City"></span>
+          <span style="background:#FF6F66" title="LA"></span>
+          <span style="background:#EE6FA6" title="Miami"></span>
+          <span style="background:#11154A" title="NYC/NJ"></span>
+          <span style="background:#1F3CAB" title="Philly"></span>
+          <span style="background:#E0421A" title="SF Bay"></span>
+          <span style="background:#3D4EFF" title="Toronto"></span>
+          <span style="background:#DA2363" title="Guadalajara"></span>
+          <span style="background:#8C4DFC" title="Mexico City"></span>
+        </div>
+      </a>
+    </div>
+
+    <h3>By Group</h3>
+    <div class="matrix">
+      <a class="card" href="c3-group-by-group.html">
+        <div class="vnum">C3</div>
+        <h2>Group sections · group-accent</h2>
+        <p>Sections stacked by group A → L. Card surface = group accent. Reads as 12 tournament rituals ("here's your Group A double-pick") rather than as a calendar. Strongest group identity.</p>
+        <div class="axes">
+          <span>By group</span>
+          <span class="color-grp">Group palette</span>
+        </div>
+      </a>
+      <a class="card" href="c4-group-by-city.html">
+        <div class="vnum">C4</div>
+        <h2>Group sections · host-city</h2>
+        <p>Sections by group, but card surfaces stay on the host-city palette (live <code>/wc/results</code>). Group identity sits in the section header swatch. Smallest visual change — only the IA shifts.</p>
+        <div class="axes">
+          <span>By group</span>
+          <span class="color-city">City palette (live)</span>
+        </div>
+      </a>
+    </div>
+
+    <p class="footer">
+      Best viewed at iPhone 14 width (390px) — DevTools device mode helps.<br>
+      All four share <a href="shared.css">shared.css</a> — the FixtureCard CSS is identical across them. Only the section headings and the <code>data-grp</code>/<code>data-city</code> attribute on cards differ.<br>
+      Previous v1–v3 mockups moved to <a href="_archive/">_archive/</a>.
+    </p>
+  </div>
+</body>
+</html>

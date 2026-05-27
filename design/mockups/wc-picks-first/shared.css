@@ -1,0 +1,399 @@
+/* ────────────────────────────────────────────────────────────────────────
+   shared.css — stripped FixtureCard mockups for /wc/picks redesign.
+
+   The card body is a pixel-faithful port of src/app/wc/results/FixturesTabs.tsx
+   FixtureCard, with the metadata grid (city/your time/stadium) removed.
+   What remains:
+     • Header — "Group X · MD1" left, kickoff time + date right
+     • Body  — Home pill | home score | DRAW | away score | Away pill
+     • Outline — amber on selected pick + amber on filled score input
+
+   This file is shared by all four variants (C1–C4). The variant-specific
+   bits are only:
+     (a) the background colour resolver (.fcard[data-grp=…] vs .fcard[data-city=…])
+     (b) the section heading scheme (date headers vs group headers)
+   ──────────────────────────────────────────────────────────────────────── */
+
+/* Tokens lifted verbatim from src/app/globals.css — light/cream variant. */
+:root {
+  --ps-bg: #efe9de;
+  --ps-bg-alt: #e7dfd0;
+  --ps-surface: #ffffff;
+  --ps-border: rgba(40, 30, 20, 0.10);
+  --ps-text: #191512;
+  --ps-text-sec: #5e554a;
+  --ps-text-ter: #8b8275;
+  --ps-amber: #f59e0b;
+  --ps-amber-deep: #d97706;
+  --ps-amber-soft: rgba(245, 158, 11, 0.12);
+  --ps-green: #0aa86d;
+  --ps-red: #e23d4f;
+  --ps-chip: rgba(40, 30, 20, 0.04);
+  --wc-green: #006847;
+}
+
+*, *::before, *::after { box-sizing: border-box; }
+html, body { margin: 0; padding: 0; }
+body {
+  font-family: "Inter", system-ui, -apple-system, "Segoe UI", sans-serif;
+  -webkit-font-smoothing: antialiased;
+  font-feature-settings: "tnum";
+  background: var(--ps-bg);
+  color: var(--ps-text);
+  min-height: 100vh;
+}
+p, h1, h2, h3 { margin: 0; text-wrap: pretty; }
+
+/* ── WC layout shell (verbatim from src/app/wc/layout.tsx) ─────────────── */
+.wc-strip { height: 4px; background: var(--wc-green); }
+.wc-nav { background: var(--ps-bg); border-bottom: 1px solid var(--ps-border); }
+.wc-nav-inner {
+  max-width: 480px; margin: 0 auto; padding: 0 16px;
+  display: flex; align-items: center; justify-content: space-between; height: 48px;
+}
+.wc-brand {
+  display: inline-flex; align-items: center; gap: 6px;
+  font-weight: 800; font-size: 1rem; letter-spacing: -0.01em;
+  color: var(--ps-text); text-decoration: none;
+}
+.wc-brand .dot {
+  width: 18px; height: 18px; border-radius: 999px;
+  background: var(--ps-text); display: inline-grid; place-items: center;
+}
+.wc-brand .dot::after { content: ""; width: 8px; height: 8px; border-radius: 999px; background: var(--ps-amber); }
+.wc-brand .accent { color: var(--ps-amber); }
+.user-chip {
+  width: 28px; height: 28px; border-radius: 999px; background: var(--ps-amber);
+  display: grid; place-items: center; font-weight: 700; color: #191512; font-size: 12px;
+}
+
+/* ── Title block ──────────────────────────────────────────────────────── */
+.page-head {
+  max-width: 480px; margin: 0 auto;
+  padding: 20px 16px 8px;
+}
+.page-head h1 {
+  font-size: 20px; line-height: 1.2;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: -0.025em;
+  color: var(--ps-text);
+}
+.page-head h1 .accent { color: var(--ps-amber-deep); }
+.page-head .lede {
+  margin-top: 4px;
+  font-family: "Instrument Serif", Georgia, serif;
+  font-style: italic;
+  font-size: 14px;
+  color: var(--ps-text-sec);
+}
+
+/* Progress strip */
+.progress-strip {
+  max-width: 480px; margin: 12px auto 0;
+  padding: 0 16px;
+}
+.progress-strip .inner {
+  display: flex; align-items: center; gap: 12px;
+  padding: 12px 14px;
+  background: var(--ps-surface);
+  border: 1px solid var(--ps-border);
+  border-radius: 10px;
+}
+.progress-strip .label {
+  font-family: ui-monospace, "JetBrains Mono", monospace;
+  font-size: 10px; font-weight: 700; letter-spacing: 0.12em;
+  text-transform: uppercase; color: var(--ps-text-ter);
+}
+.progress-strip .count {
+  margin-left: auto;
+  font-family: ui-monospace, "JetBrains Mono", monospace;
+  font-size: 13px; font-weight: 800; color: var(--ps-text);
+}
+.progress-strip .count .of { color: var(--ps-text-ter); font-weight: 600; }
+.progress-strip .bar {
+  flex: 1; min-width: 60px;
+  height: 4px; border-radius: 999px;
+  background: var(--ps-bg-alt); overflow: hidden;
+}
+.progress-strip .bar > div {
+  height: 100%; width: 12.5%;
+  background: var(--ps-amber);
+  border-radius: 999px;
+}
+
+/* Join cutoff banner — communicates the 3-day window rule */
+.cutoff {
+  max-width: 480px; margin: 12px auto 0;
+  padding: 0 16px;
+}
+.cutoff .inner {
+  display: flex; gap: 10px;
+  padding: 10px 12px;
+  border-left: 3px solid var(--ps-amber);
+  background: var(--ps-amber-soft);
+  border-radius: 6px;
+  font-size: 12px;
+  color: var(--ps-text-sec);
+  line-height: 1.45;
+}
+.cutoff .inner strong { color: var(--ps-text); }
+
+/* ── Page container ───────────────────────────────────────────────────── */
+.page {
+  max-width: 480px; margin: 0 auto;
+  padding: 16px 16px 64px;
+}
+
+/* ── Section heading (variant decides date vs group) ──────────────────── */
+.section {
+  margin-top: 18px;
+}
+.section:first-of-type { margin-top: 4px; }
+.section-head {
+  display: flex; align-items: baseline; gap: 12px;
+  padding: 8px 0 10px;
+  margin-bottom: 10px;
+  border-bottom: 1px solid var(--ps-border);
+}
+.section-head .label {
+  font-family: ui-monospace, "JetBrains Mono", monospace;
+  font-size: 11px; font-weight: 800;
+  letter-spacing: 0.12em; text-transform: uppercase;
+  color: var(--ps-text);
+}
+.section-head .sub {
+  font-family: ui-monospace, "JetBrains Mono", monospace;
+  font-size: 11px; color: var(--ps-text-ter);
+}
+.section-head .picked {
+  margin-left: auto;
+  font-family: ui-monospace, "JetBrains Mono", monospace;
+  font-size: 11px; color: var(--ps-text-ter);
+}
+.section-head .picked.done { color: var(--ps-green); font-weight: 700; }
+
+/* Group-headed variants get a little colour swatch */
+.section-head .grp-swatch {
+  width: 14px; height: 14px; border-radius: 4px;
+  border: 1px solid rgba(0,0,0,0.15);
+  flex-shrink: 0;
+  align-self: center;
+}
+
+/* ── Cards stack ──────────────────────────────────────────────────────── */
+.cards { display: flex; flex-direction: column; gap: 12px; }
+
+/* ── FixtureCard — pixel-port of FixturesTabs FixtureCard, stripped ──── */
+.fcard {
+  overflow: hidden;
+  border-radius: 12px;
+  color: #fff;
+  box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+  transition: box-shadow 0.15s;
+}
+/* Amber ring when the user has predicted (matches FixtureCard's ringClass: ring-2 ring-ps-amber/50) */
+.fcard.has-pick {
+  box-shadow: 0 0 0 2px rgba(245,158,11,0.5), 0 1px 2px rgba(0,0,0,0.15);
+}
+/* Edge case from upcoming-fixtures.html: when card bg is amber/yellow, add inner white separator */
+.fcard.has-pick[data-on-amber="true"] {
+  box-shadow:
+    inset 0 0 0 2px #fff,
+    0 0 0 2px var(--ps-amber),
+    0 1px 2px rgba(0,0,0,0.15);
+}
+
+.fcard-head {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 12px 16px 0;
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.025em;
+  text-transform: uppercase;
+  color: rgba(255,255,255,0.85);
+}
+.fcard-head .right {
+  text-align: right;
+  font-family: ui-monospace, "JetBrains Mono", monospace;
+  font-weight: 700;
+}
+.fcard-head .right .date {
+  display: block;
+  color: rgba(255,255,255,0.65);
+  font-family: ui-monospace, "JetBrains Mono", monospace;
+  font-size: 0.65rem;
+  font-weight: 600;
+  margin-top: 1px;
+  text-transform: none;
+  letter-spacing: 0.02em;
+}
+
+/* Pick row — direct port of FixtureCard's prediction row */
+.fcard-body {
+  padding: 10px 12px 14px;
+}
+.pick-row {
+  display: flex; align-items: center; gap: 6px;
+  justify-content: center;
+}
+.team-btn {
+  flex: 1; min-width: 0;
+  display: flex; flex-direction: column; align-items: center;
+  gap: 4px;
+  padding: 6px;
+  border-radius: 8px;
+  background: transparent;
+  border: 0;
+  cursor: pointer;
+  font: inherit;
+  transition: background 0.15s, box-shadow 0.15s;
+}
+.team-btn:hover { background: rgba(255,255,255,0.08); }
+.team-btn.selected {
+  background: rgba(255,255,255,0.12);
+  box-shadow: inset 0 0 0 2px rgba(245,158,11,0.7);
+}
+.team-btn .team-name {
+  max-width: 100%;
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-align: center;
+  line-height: 1.1;
+  color: rgba(255,255,255,0.55);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.team-btn.selected .team-name { color: #fff; }
+
+/* Score input — port of FixtureCard score input */
+.score-input {
+  width: 30px; height: 28px;
+  border-radius: 999px;
+  border: 1px solid rgba(255,255,255,0.25);
+  background: rgba(255,255,255,0.08);
+  text-align: center;
+  font-family: ui-monospace, "JetBrains Mono", monospace;
+  font-weight: 600;
+  font-size: 0.875rem;
+  color: #fff;
+  flex-shrink: 0;
+  outline: none;
+  transition: all 0.15s;
+}
+.score-input::placeholder { color: rgba(255,255,255,0.30); }
+.score-input.filled {
+  background: rgba(255,255,255,0.18);
+  border-color: rgba(245,158,11,0.85);
+  box-shadow: 0 0 0 1px rgba(245,158,11,0.5);
+}
+
+/* Draw button */
+.draw-btn {
+  flex-shrink: 0;
+  padding: 6px 10px;
+  border-radius: 8px;
+  background: transparent;
+  border: 0;
+  cursor: pointer;
+  font-family: inherit;
+  font-size: 0.7rem;
+  font-weight: 500;
+  color: rgba(255,255,255,0.45);
+  text-transform: lowercase;
+  transition: background 0.15s, color 0.15s;
+}
+.draw-btn:hover { background: rgba(255,255,255,0.08); color: rgba(255,255,255,0.7); }
+.draw-btn.selected {
+  background: rgba(255,255,255,0.12);
+  color: #fff;
+  box-shadow: inset 0 0 0 2px rgba(245,158,11,0.7);
+}
+
+/* Flag pill — verbatim from upcoming-fixtures.html, 24px size */
+.flag-pill {
+  --w: 24px;
+  --h: 18px;
+  --b: 1px;
+  display: inline-block; position: relative;
+  width: var(--w); height: var(--h); flex-shrink: 0;
+  background: #fff;
+  clip-path: path('M 0 0 L 16 0 A 8 8 0 0 1 24 8 L 24 18 L 8 18 A 8 8 0 0 1 0 9 Z');
+  filter: drop-shadow(0 1px 2px rgba(0,0,0,0.25));
+}
+.flag-pill .inner {
+  position: absolute; top: var(--b); left: var(--b);
+  width: calc(var(--w) - var(--b)*2); height: calc(var(--h) - var(--b)*2);
+  clip-path: path('M 0 0 L 15 0 A 7.5 7.5 0 0 1 22 7.5 L 22 16 L 7 16 A 7.5 7.5 0 0 1 0 8 Z');
+  overflow: hidden;
+}
+.flag-pill img {
+  position: absolute; inset: 0; width: 100%; height: 100%;
+  object-fit: cover;
+  filter: saturate(0.88) brightness(0.96);
+}
+
+/* ── Variant palettes ─────────────────────────────────────────────────── */
+
+/* HOST CITY palette (verbatim from src/lib/wc/host-cities.ts) */
+.fcard[data-city="atlanta"]              { background: #00B5C8; }
+.fcard[data-city="boston"]               { background: #218521; }
+.fcard[data-city="dallas"]               { background: #0E5C66; }
+.fcard[data-city="houston"]              { background: #2497F1; }
+.fcard[data-city="kansas-city"]          { background: #FB2350; }
+.fcard[data-city="los-angeles"]          { background: #FF6F66; }
+.fcard[data-city="miami"]                { background: #EE6FA6; }
+.fcard[data-city="new-york-new-jersey"]  { background: #11154A; }
+.fcard[data-city="philadelphia"]         { background: #1F3CAB; }
+.fcard[data-city="san-francisco-bay-area"] { background: #E0421A; }
+.fcard[data-city="seattle"]              { background: #97961B; }
+.fcard[data-city="toronto"]              { background: #3D4EFF; }
+.fcard[data-city="vancouver"]            { background: #04382B; }
+.fcard[data-city="guadalajara"]          { background: #DA2363; }
+.fcard[data-city="mexico-city"]          { background: #8C4DFC; }
+.fcard[data-city="monterrey"]            { background: #1AB89C; }
+
+/* GROUP palette — net new. 12 hues sampled to feel like siblings of the
+   host-city set: rich, saturated, AA against white. Tuned so adjacent groups
+   in the alphabet aren't visually adjacent in hue (no two near-neighbours
+   share a hue family). */
+.fcard[data-grp="A"] { background: #C0392B; }  /* red       */
+.fcard[data-grp="B"] { background: #2C5282; }  /* deep blue */
+.fcard[data-grp="C"] { background: #2F855A; }  /* forest    */
+.fcard[data-grp="D"] { background: #B7791F; }  /* mustard   */
+.fcard[data-grp="E"] { background: #6B46C1; }  /* violet    */
+.fcard[data-grp="F"] { background: #C53078; }  /* magenta   */
+.fcard[data-grp="G"] { background: #285E61; }  /* teal      */
+.fcard[data-grp="H"] { background: #C05621; }  /* burnt     */
+.fcard[data-grp="I"] { background: #2B6CB0; }  /* azure     */
+.fcard[data-grp="J"] { background: #744210; }  /* umber     */
+.fcard[data-grp="K"] { background: #4A5568; }  /* slate     */
+.fcard[data-grp="L"] { background: #97266D; }  /* fuchsia   */
+
+/* Group swatch chips for the section header */
+.grp-swatch[data-grp="A"] { background: #C0392B; }
+.grp-swatch[data-grp="B"] { background: #2C5282; }
+.grp-swatch[data-grp="C"] { background: #2F855A; }
+.grp-swatch[data-grp="D"] { background: #B7791F; }
+.grp-swatch[data-grp="E"] { background: #6B46C1; }
+.grp-swatch[data-grp="F"] { background: #C53078; }
+.grp-swatch[data-grp="G"] { background: #285E61; }
+.grp-swatch[data-grp="H"] { background: #C05621; }
+.grp-swatch[data-grp="I"] { background: #2B6CB0; }
+.grp-swatch[data-grp="J"] { background: #744210; }
+.grp-swatch[data-grp="K"] { background: #4A5568; }
+.grp-swatch[data-grp="L"] { background: #97266D; }
+
+/* Note tile at the bottom of each variant */
+.note {
+  max-width: 480px; margin: 24px auto 0;
+  padding: 12px 16px;
+  background: var(--ps-surface);
+  border: 1px solid var(--ps-border);
+  border-radius: 10px;
+  font-size: 12px;
+  color: var(--ps-text-sec);
+  line-height: 1.55;
+}
+.note strong { color: var(--ps-text); }
