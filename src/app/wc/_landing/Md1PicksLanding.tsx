@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
-import { useMemo, useSyncExternalStore } from "react";
+import { useRef, useMemo, useSyncExternalStore } from "react";
 import { WindowPickList, type WindowEvent } from "@/app/wc/picks/[windowId]/WindowPickList";
 import type { WcFixture } from "@/lib/wc/fixtures";
 import type { Prediction } from "@/types/database";
@@ -286,17 +286,18 @@ function PreviewOverlay({ isAuthenticated }: { isAuthenticated: boolean }) {
  * re-subscribe to time changes, so this is effectively a one-shot mount
  * snapshot via React's hydration-safe primitive.
  */
-let cachedNow: Date | null = null;
-
 function useNowAfterMount(): Date | null {
+  const nowRef = useRef<Date | null>(null);
   return useSyncExternalStore(
     // No-op subscribe — we never trigger updates. The return signal that
     // matters is the client-snapshot fn returning a stable Date once mounted.
     () => () => {},
-    // Cache the snapshot so successive renders see the same Date object.
-    // Returning `new Date()` directly causes Maximum-update-depth: React
-    // would see a different reference every render and re-schedule forever.
-    () => (cachedNow ??= new Date()),
+    // Cache the snapshot in a ref so successive renders see the same Date
+    // object. Returning `new Date()` directly causes Maximum-update-depth:
+    // React would see a different reference every render and re-schedule
+    // forever. A ref (not module-level) ensures the value is scoped to
+    // this component instance, so navigating away and back gets a fresh Date.
+    () => (nowRef.current ??= new Date()),
     // Server snapshot — null guarantees hydration matches.
     () => null,
   );
