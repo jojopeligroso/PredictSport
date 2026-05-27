@@ -139,6 +139,7 @@ type SurfaceTheme = {
   errorText: string;
   lockedReadOnly: string;
   lockedText: string;
+  lockedPickedText: string;
   lockedMutedText: string;
 };
 
@@ -177,6 +178,7 @@ const COMPACT_THEME: SurfaceTheme = {
   lockedReadOnly:
     "rounded-lg border border-ps-border bg-ps-surface px-3 py-2",
   lockedText: "text-sm font-semibold text-ps-text",
+  lockedPickedText: "font-semibold text-ps-text",
   lockedMutedText: "text-ps-text-ter",
 };
 
@@ -222,6 +224,7 @@ const CARD_THEME: SurfaceTheme = {
   // dim the body slightly so it reads as locked vs interactive.
   lockedReadOnly: "px-1 py-0.5 opacity-90",
   lockedText: "text-sm font-semibold text-white",
+  lockedPickedText: "font-semibold text-white",
   lockedMutedText: "text-white/55",
 };
 
@@ -518,7 +521,7 @@ function MatchPickRow({
             className={`mt-1 text-xs ${useCardSurface ? "text-white/75" : "text-ps-text-sec"}`}
           >
             Picked:{" "}
-            <span className={theme.lockedText.replace(/text-sm /, "")}>
+            <span className={theme.lockedPickedText}>
               {currentWinner}
             </span>
           </p>
