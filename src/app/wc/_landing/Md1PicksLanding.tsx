@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
-import { useState, useRef, useMemo, useSyncExternalStore } from "react";
+import { useEffect, useState, useRef, useMemo, useSyncExternalStore } from "react";
 import { WindowPickList, type WindowEvent } from "@/app/wc/picks/[windowId]/WindowPickList";
 import type { WcFixture } from "@/lib/wc/fixtures";
 import type { Prediction } from "@/types/database";
@@ -13,7 +13,6 @@ import {
 } from "@/lib/wc/join-cutoff";
 import {
   computeDayStatus,
-  formatLockCountdown,
   getDailyLockTimes,
   type DayPredictionStatus,
 } from "@/lib/wc/daily-lock";
@@ -261,16 +260,13 @@ function Sections({
     <div className="mx-auto w-full max-w-[480px] px-4">
       {sections.map((s) => {
         const status = s.status ?? "upcoming";
-        const showCountdown =
+        const eligible =
           now &&
           s.lockTime &&
           status !== "complete" &&
           countdownsShown < 2 &&
           new Date(s.lockTime).getTime() > now.getTime();
-        const countdown = showCountdown
-          ? formatLockCountdown(s.lockTime!, now!)
-          : null;
-        if (countdown) countdownsShown++;
+        if (eligible) countdownsShown++;
 
         return (
           <section key={s.domId} id={s.domId} className="mt-5 scroll-mt-20">
@@ -292,25 +288,18 @@ function Sections({
                     Exact score needed
                   </span>
                 )}
-                {/* Countdown + optional group info */}
-                {countdown && (
+                {/* Live dd:hh:mm:ss countdown + optional group info */}
+                {eligible && s.lockTime && (
                   <span className="flex items-center gap-1">
-                    <span
-                      className={`font-mono text-[10px] font-semibold ${
-                        status === "urgent"
-                          ? "text-ps-red"
-                          : "text-ps-text-ter"
-                      }`}
-                      role="timer"
-                      aria-live="polite"
-                    >
-                      {countdown}
-                    </span>
+                    <SectionCountdown
+                      lockTime={s.lockTime}
+                      urgent={status === "urgent"}
+                    />
                     {s.isGroupSection && <GroupCountdownInfo />}
                   </span>
                 )}
                 {/* Match count */}
-                {s.sub && !countdown && status !== "partial" && (
+                {!eligible && status !== "partial" && s.sub && (
                   <span className="font-mono text-[11px] text-ps-text-ter">
                     {s.sub}
                   </span>
@@ -533,6 +522,46 @@ function bucketByGroup(
       isGroupSection: true,
     };
   });
+}
+
+/** Live dd:hh:mm:ss countdown for section headings. */
+function SectionCountdown({ lockTime, urgent }: { lockTime: string; urgent: boolean }) {
+  const [text, setText] = useState<string | null>(() => fmtDdHhMmSs(lockTime));
+
+  useEffect(() => {
+    const tick = () => {
+      const next = fmtDdHhMmSs(lockTime);
+      setText(next);
+      if (!next) clearInterval(id);
+    };
+    const id = setInterval(tick, 1000);
+    return () => clearInterval(id);
+  }, [lockTime]);
+
+  if (!text) return null;
+
+  return (
+    <span
+      className={`font-mono text-[10px] font-semibold tabular-nums ${
+        urgent ? "text-ps-red" : "text-ps-text-ter"
+      }`}
+      role="timer"
+      aria-live="off"
+    >
+      {text}
+    </span>
+  );
+}
+
+function fmtDdHhMmSs(lockTime: string): string | null {
+  const diff = new Date(lockTime).getTime() - Date.now();
+  if (diff <= 0) return null;
+  const d = Math.floor(diff / 86400000);
+  const h = Math.floor((diff % 86400000) / 3600000);
+  const m = Math.floor((diff % 3600000) / 60000);
+  const s = Math.floor((diff % 60000) / 1000);
+  const pad = (n: number) => String(n).padStart(2, "0");
+  return `${pad(d)}:${pad(h)}:${pad(m)}:${pad(s)}`;
 }
 
 /** Info button for group-view countdowns — explains what the countdown refers to. */
