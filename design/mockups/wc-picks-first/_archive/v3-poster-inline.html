@@ -1,0 +1,584 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Mockup V3 — Poster hero + inline rows (aggressive)</title>
+  <style>
+    /* Tokens — dark canvas like V1, but a single uninterrupted picking column instead
+       of a marketing card stack. The landing IS the picker. */
+    :root {
+      --ps-amber: #f59e0b;
+      --ps-amber-deep: #d97706;
+      --ps-green: #0aa86d;
+      --ps-red: #e23d4f;
+      --wc-green: #006847;
+    }
+    *,*::before,*::after { box-sizing: border-box; }
+    html, body { margin: 0; padding: 0; }
+    body {
+      font-family: "Inter", system-ui, -apple-system, "Segoe UI", sans-serif;
+      -webkit-font-smoothing: antialiased;
+      font-feature-settings: "tnum";
+      background: #0a0a0a;
+      color: #fefdf7;
+      min-height: 100vh;
+    }
+    p, h1, h2, h3 { margin: 0; text-wrap: pretty; }
+
+    .poster-bg {
+      position: fixed; inset: 0; z-index: 0;
+      background-image: url('/wc/hero-fifa-2026.png');
+      background-repeat: no-repeat;
+      background-position: center top;
+      background-size: 145% auto;
+      background-color: #0a0a0a;
+      pointer-events: none;
+    }
+    .poster-bg::after {
+      content: ""; position: absolute; inset: 0;
+      background:
+        linear-gradient(180deg,
+          rgba(10,10,10,0.20) 0%,
+          rgba(10,10,10,0.55) 40%,
+          rgba(10,10,10,0.92) 85%,
+          #0a0a0a 100%
+        );
+    }
+
+    /* Nav (compact, single dropdown) */
+    .wc-strip { height: 4px; background: var(--wc-green); position: relative; z-index: 10; }
+    .wc-nav {
+      position: relative; z-index: 10;
+      background: rgba(10,10,10,0.4); backdrop-filter: blur(10px);
+      border-bottom: 1px solid rgba(255,255,255,0.06);
+    }
+    .wc-nav-inner {
+      max-width: 480px; margin: 0 auto; padding: 0 16px;
+      display: flex; align-items: center; justify-content: space-between; height: 44px;
+    }
+    .wc-brand {
+      display: inline-flex; align-items: center; gap: 6px;
+      font-weight: 800; font-size: 0.95rem; letter-spacing: -0.01em;
+      color: #fefdf7; text-decoration: none;
+    }
+    .wc-brand .dot {
+      width: 16px; height: 16px; border-radius: 999px;
+      background: #fefdf7; display: inline-grid; place-items: center;
+    }
+    .wc-brand .dot::after { content: ""; width: 7px; height: 7px; border-radius: 999px; background: var(--ps-amber); }
+    .wc-brand .accent { color: var(--ps-amber); }
+    .nav-right { display: flex; align-items: center; gap: 8px; }
+    .menu-btn {
+      background: transparent; border: 0; color: rgba(255,255,255,0.85);
+      font: inherit; padding: 4px 8px; cursor: pointer; font-size: 13px;
+    }
+    .user-chip {
+      width: 26px; height: 26px; border-radius: 999px; background: var(--ps-amber);
+      display: grid; place-items: center; font-weight: 700; color: #191512; font-size: 11px;
+    }
+    .menu-wrap { position: relative; }
+    .menu-panel {
+      position: absolute; right: 0; top: calc(100% + 6px);
+      width: 280px;
+      background: rgba(18,16,14,0.97);
+      border: 1px solid rgba(255,255,255,0.10);
+      border-radius: 12px;
+      padding: 8px;
+      box-shadow: 0 24px 48px -16px rgba(0,0,0,0.6);
+    }
+    .menu-panel a {
+      display: block; padding: 10px 12px; border-radius: 8px;
+      color: #fefdf7; text-decoration: none;
+      font-size: 14px; font-weight: 600;
+    }
+    .menu-panel a:hover { background: rgba(255,255,255,0.06); }
+    .menu-panel .warn {
+      font-family: ui-monospace, "JetBrains Mono", monospace;
+      font-size: 10px; font-weight: 700; letter-spacing: 0.10em;
+      text-transform: uppercase; color: var(--ps-amber); margin-top: 2px;
+    }
+    .menu-panel .sub {
+      font-size: 12px; font-weight: 500;
+      color: rgba(255,255,255,0.6); margin-top: 2px;
+    }
+    .menu-panel hr { border: 0; border-top: 1px solid rgba(255,255,255,0.08); margin: 6px 4px; }
+
+    main {
+      position: relative; z-index: 5;
+      max-width: 480px; margin: 0 auto;
+      padding: 0 16px 64px;
+    }
+
+    /* HERO — poster moment is shorter, leads straight into picking */
+    .hero {
+      padding: 32px 4px 24px;
+      text-align: center;
+    }
+    .hero .eyebrow {
+      font-family: ui-monospace, "JetBrains Mono", monospace;
+      font-size: 11px; font-weight: 800;
+      letter-spacing: 0.20em; text-transform: uppercase;
+      color: var(--ps-amber);
+    }
+    .hero h1 {
+      margin-top: 10px;
+      font-size: 48px; line-height: 0.9;
+      font-weight: 900;
+      text-transform: uppercase;
+      letter-spacing: -0.03em;
+    }
+    .hero h1 .accent { color: var(--ps-amber); }
+    .hero .tag {
+      margin-top: 12px;
+      font-family: "Instrument Serif", Georgia, serif;
+      font-style: italic;
+      font-size: 17px;
+      color: rgba(255,255,255,0.7);
+    }
+
+    /* Countdown row + progress combined */
+    .meta-row {
+      margin-top: 24px;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+    }
+    .meta-tile {
+      padding: 12px;
+      border-radius: 12px;
+      background: rgba(255,255,255,0.04);
+      border: 1px solid rgba(255,255,255,0.08);
+      backdrop-filter: blur(8px);
+      text-align: left;
+    }
+    .meta-tile .lbl {
+      font-family: ui-monospace, "JetBrains Mono", monospace;
+      font-size: 10px; font-weight: 700; letter-spacing: 0.12em;
+      text-transform: uppercase; color: rgba(255,255,255,0.55);
+    }
+    .meta-tile .val {
+      margin-top: 4px;
+      font-family: ui-monospace, "JetBrains Mono", monospace;
+      font-size: 20px; font-weight: 800;
+      color: #fefdf7;
+    }
+    .meta-tile .val .of {
+      font-size: 13px; color: rgba(255,255,255,0.5); font-weight: 600;
+    }
+    .meta-tile.urgent .val { color: var(--ps-amber); }
+    .meta-tile .bar {
+      margin-top: 8px; height: 4px; border-radius: 999px;
+      background: rgba(255,255,255,0.08);
+    }
+    .meta-tile .bar > div {
+      height: 100%; width: 12.5%;
+      background: var(--ps-amber); border-radius: 999px;
+    }
+
+    /* Picking section header */
+    .pick-section-head {
+      margin: 28px 0 12px;
+      padding-bottom: 10px;
+      border-bottom: 1px solid rgba(255,255,255,0.10);
+      display: flex; align-items: baseline; justify-content: space-between;
+    }
+    .pick-section-head h2 {
+      font-size: 13px; font-weight: 800;
+      text-transform: uppercase;
+      letter-spacing: 0.12em;
+      color: #fefdf7;
+    }
+    .pick-section-head .filter {
+      font-family: ui-monospace, "JetBrains Mono", monospace;
+      font-size: 11px; color: rgba(255,255,255,0.55);
+    }
+
+    /* Compact inline match row — the landing is the picker */
+    .day-block { margin-bottom: 18px; }
+    .day-block .day-label {
+      font-family: ui-monospace, "JetBrains Mono", monospace;
+      font-size: 10px; font-weight: 800;
+      letter-spacing: 0.15em; text-transform: uppercase;
+      color: var(--ps-amber);
+      margin-bottom: 8px;
+    }
+    .day-block .day-label .of-date {
+      color: rgba(255,255,255,0.45);
+      font-weight: 600;
+      margin-left: 8px;
+    }
+    .row {
+      display: grid;
+      grid-template-columns: auto 1fr;
+      gap: 10px;
+      padding: 12px 0;
+      border-bottom: 1px solid rgba(255,255,255,0.06);
+    }
+    .row:last-child { border-bottom: 0; }
+    .row .left {
+      display: flex; flex-direction: column; align-items: center; gap: 4px;
+      width: 48px; padding-top: 4px;
+    }
+    .row .grp {
+      font-family: ui-monospace, "JetBrains Mono", monospace;
+      font-size: 11px; font-weight: 800;
+      color: var(--ps-amber);
+      letter-spacing: 0.08em;
+    }
+    .row .ko {
+      font-family: ui-monospace, "JetBrains Mono", monospace;
+      font-size: 10px; color: rgba(255,255,255,0.5);
+    }
+    .row .pick-triple {
+      display: grid;
+      grid-template-columns: 1fr 56px 1fr;
+      gap: 6px;
+    }
+    .pick-btn {
+      display: flex; align-items: center; justify-content: center;
+      gap: 6px;
+      padding: 10px 6px;
+      border-radius: 10px;
+      background: rgba(255,255,255,0.05);
+      border: 1px solid rgba(255,255,255,0.08);
+      font-family: inherit;
+      font-size: 12px; font-weight: 700;
+      color: #fefdf7;
+      cursor: pointer;
+      min-width: 0;
+    }
+    .pick-btn:hover { background: rgba(255,255,255,0.08); }
+    .pick-btn.selected {
+      background: rgba(245,158,11,0.18);
+      border-color: var(--ps-amber);
+      box-shadow: inset 0 0 0 1px var(--ps-amber);
+      color: #fefdf7;
+    }
+    .pick-btn .name {
+      overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+      min-width: 0; flex: 1;
+    }
+    .pick-btn.draw {
+      color: rgba(255,255,255,0.6);
+      font-family: ui-monospace, "JetBrains Mono", monospace;
+      font-size: 10px; letter-spacing: 0.10em;
+      text-transform: uppercase;
+    }
+    .pick-btn.draw.selected { color: var(--ps-amber); }
+    .flag-pill {
+      --w: 16px; --h: 12px; --b: 1px;
+      display: inline-block; position: relative;
+      width: var(--w); height: var(--h); flex-shrink: 0;
+      background: #fff;
+      clip-path: path('M 0 0 L 10 0 A 5 5 0 0 1 16 5 L 16 12 L 6 12 A 5 5 0 0 1 0 6 Z');
+    }
+    .flag-pill .inner {
+      position: absolute; top: var(--b); left: var(--b);
+      width: calc(var(--w) - var(--b)*2); height: calc(var(--h) - var(--b)*2);
+      clip-path: path('M 0 0 L 9 0 A 4.5 4.5 0 0 1 14 4.5 L 14 10 L 5 10 A 4.5 4.5 0 0 1 0 5.5 Z');
+      overflow: hidden;
+    }
+    .flag-pill img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+
+    /* "Saved" tick + score chip */
+    .row .extras {
+      display: flex; justify-content: space-between; align-items: center;
+      margin-top: 6px;
+      padding: 0 4px;
+    }
+    .row .extras .saved {
+      font-family: ui-monospace, "JetBrains Mono", monospace;
+      font-size: 10px; font-weight: 700;
+      color: var(--ps-green);
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+    }
+    .row .extras a {
+      font-size: 11px; color: rgba(255,255,255,0.55);
+      text-decoration: none;
+    }
+    .row .extras a.has {
+      color: var(--ps-amber);
+      font-family: ui-monospace, "JetBrains Mono", monospace;
+    }
+
+    /* Sticky bottom bar */
+    .sticky-bar {
+      position: sticky; bottom: 0;
+      margin: 24px -16px 0;
+      padding: 14px 16px;
+      background: linear-gradient(180deg, rgba(10,10,10,0.6), rgba(10,10,10,0.95));
+      backdrop-filter: blur(12px);
+      border-top: 1px solid rgba(255,255,255,0.08);
+      display: flex; align-items: center; gap: 12px;
+    }
+    .sticky-bar .left { flex: 1; min-width: 0; }
+    .sticky-bar .left .lbl {
+      font-family: ui-monospace, "JetBrains Mono", monospace;
+      font-size: 10px; font-weight: 700; letter-spacing: 0.12em;
+      text-transform: uppercase; color: rgba(255,255,255,0.55);
+    }
+    .sticky-bar .left .count {
+      font-size: 18px; font-weight: 800; color: var(--ps-amber);
+      font-family: ui-monospace, "JetBrains Mono", monospace;
+    }
+    .sticky-bar .left .count .of { color: rgba(255,255,255,0.5); font-weight: 600; font-size: 13px; }
+    .sticky-bar a {
+      display: inline-block;
+      padding: 12px 18px;
+      border-radius: 10px;
+      background: var(--ps-amber);
+      color: #0a0f0a;
+      font-weight: 800; font-size: 14px;
+      text-decoration: none;
+      flex-shrink: 0;
+    }
+
+    .note {
+      margin: 32px auto 0;
+      padding: 12px 16px;
+      max-width: 480px;
+      font-size: 12px; color: rgba(255,255,255,0.55);
+      font-style: italic;
+    }
+  </style>
+</head>
+<body>
+  <div class="poster-bg" aria-hidden="true"></div>
+
+  <div class="wc-strip"></div>
+  <nav class="wc-nav">
+    <div class="wc-nav-inner">
+      <a class="wc-brand" href="#">
+        <span class="dot" aria-hidden="true"></span>
+        sports<span class="accent">predict.</span>
+      </a>
+      <div class="nav-right">
+        <div class="menu-wrap">
+          <button class="menu-btn" aria-haspopup="menu" aria-expanded="true">⋯</button>
+          <div class="menu-panel" role="menu">
+            <a href="#"><div>Table</div><div class="sub">Leaderboard</div></a>
+            <a href="#"><div>Results</div><div class="sub">Fixtures &amp; outcomes</div></a>
+            <a href="#"><div>Rules</div><div class="sub">How scoring works</div></a>
+            <hr />
+            <a href="#">
+              <div>Bracket prediction</div>
+              <div class="warn">Advanced — not for casuals</div>
+              <div class="sub">Predict the whole knockout. Skip unless you want it.</div>
+            </a>
+          </div>
+        </div>
+        <div class="user-chip">E</div>
+      </div>
+    </div>
+  </nav>
+
+  <main>
+    <section class="hero">
+      <p class="eyebrow">FIFA World Cup 26 · Group stage</p>
+      <h1>Pick<br><span class="accent">Round 1</span></h1>
+      <p class="tag">Twenty-four openers. One winner per match. Get them in.</p>
+
+      <div class="meta-row">
+        <div class="meta-tile urgent">
+          <div class="lbl">Kickoff in</div>
+          <div class="val">14d 3h</div>
+        </div>
+        <div class="meta-tile">
+          <div class="lbl">Picked</div>
+          <div class="val">3<span class="of"> / 24</span></div>
+          <div class="bar"><div></div></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- The picker IS the page -->
+    <div class="pick-section-head">
+      <h2>All openers</h2>
+      <span class="filter">12 groups · 8 days</span>
+    </div>
+
+    <!-- Thursday 11 June -->
+    <div class="day-block">
+      <div class="day-label">Thu 11 Jun<span class="of-date">opening match</span></div>
+      <div class="row">
+        <div class="left">
+          <span class="grp">A</span>
+          <span class="ko">20:00</span>
+        </div>
+        <div>
+          <div class="pick-triple">
+            <button class="pick-btn selected">
+              <span class="flag-pill"><span class="inner"><img alt="" src="https://flagcdn.com/mx.svg"></span></span>
+              <span class="name">Mexico</span>
+            </button>
+            <button class="pick-btn draw">Draw</button>
+            <button class="pick-btn">
+              <span class="flag-pill"><span class="inner"><img alt="" src="https://flagcdn.com/za.svg"></span></span>
+              <span class="name">S. Africa</span>
+            </button>
+          </div>
+          <div class="extras">
+            <span class="saved">✓ saved</span>
+            <a href="#" class="has">2–1</a>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Friday 12 June -->
+    <div class="day-block">
+      <div class="day-label">Fri 12 Jun</div>
+      <div class="row">
+        <div class="left">
+          <span class="grp">A</span>
+          <span class="ko">03:00</span>
+        </div>
+        <div>
+          <div class="pick-triple">
+            <button class="pick-btn">
+              <span class="flag-pill"><span class="inner"><img alt="" src="https://flagcdn.com/kr.svg"></span></span>
+              <span class="name">S. Korea</span>
+            </button>
+            <button class="pick-btn draw selected">Draw</button>
+            <button class="pick-btn">
+              <span class="flag-pill"><span class="inner"><img alt="" src="https://flagcdn.com/cz.svg"></span></span>
+              <span class="name">Czechia</span>
+            </button>
+          </div>
+          <div class="extras">
+            <span class="saved">✓ saved</span>
+            <a href="#">+ score</a>
+          </div>
+        </div>
+      </div>
+      <div class="row">
+        <div class="left">
+          <span class="grp">B</span>
+          <span class="ko">20:00</span>
+        </div>
+        <div>
+          <div class="pick-triple">
+            <button class="pick-btn selected">
+              <span class="flag-pill"><span class="inner"><img alt="" src="https://flagcdn.com/ca.svg"></span></span>
+              <span class="name">Canada</span>
+            </button>
+            <button class="pick-btn draw">Draw</button>
+            <button class="pick-btn">
+              <span class="flag-pill"><span class="inner"><img alt="" src="https://flagcdn.com/ba.svg"></span></span>
+              <span class="name">Bosnia</span>
+            </button>
+          </div>
+          <div class="extras">
+            <span class="saved">✓ saved</span>
+            <a href="#" class="has">1–0</a>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Saturday 13 June -->
+    <div class="day-block">
+      <div class="day-label">Sat 13 Jun</div>
+      <div class="row">
+        <div class="left">
+          <span class="grp">D</span>
+          <span class="ko">02:00</span>
+        </div>
+        <div>
+          <div class="pick-triple">
+            <button class="pick-btn">
+              <span class="flag-pill"><span class="inner"><img alt="" src="https://flagcdn.com/us.svg"></span></span>
+              <span class="name">USA</span>
+            </button>
+            <button class="pick-btn draw">Draw</button>
+            <button class="pick-btn">
+              <span class="flag-pill"><span class="inner"><img alt="" src="https://flagcdn.com/py.svg"></span></span>
+              <span class="name">Paraguay</span>
+            </button>
+          </div>
+        </div>
+      </div>
+      <div class="row">
+        <div class="left">
+          <span class="grp">B</span>
+          <span class="ko">20:00</span>
+        </div>
+        <div>
+          <div class="pick-triple">
+            <button class="pick-btn">
+              <span class="flag-pill"><span class="inner"><img alt="" src="https://flagcdn.com/qa.svg"></span></span>
+              <span class="name">Qatar</span>
+            </button>
+            <button class="pick-btn draw">Draw</button>
+            <button class="pick-btn">
+              <span class="flag-pill"><span class="inner"><img alt="" src="https://flagcdn.com/ch.svg"></span></span>
+              <span class="name">Switz.</span>
+            </button>
+          </div>
+        </div>
+      </div>
+      <div class="row">
+        <div class="left">
+          <span class="grp">C</span>
+          <span class="ko">23:00</span>
+        </div>
+        <div>
+          <div class="pick-triple">
+            <button class="pick-btn">
+              <span class="flag-pill"><span class="inner"><img alt="" src="https://flagcdn.com/br.svg"></span></span>
+              <span class="name">Brazil</span>
+            </button>
+            <button class="pick-btn draw">Draw</button>
+            <button class="pick-btn">
+              <span class="flag-pill"><span class="inner"><img alt="" src="https://flagcdn.com/ma.svg"></span></span>
+              <span class="name">Morocco</span>
+            </button>
+          </div>
+        </div>
+      </div>
+      <div class="row">
+        <div class="left">
+          <span class="grp">C</span>
+          <span class="ko">02:00</span>
+        </div>
+        <div>
+          <div class="pick-triple">
+            <button class="pick-btn">
+              <span class="flag-pill"><span class="inner"><img alt="" src="https://flagcdn.com/ht.svg"></span></span>
+              <span class="name">Haiti</span>
+            </button>
+            <button class="pick-btn draw">Draw</button>
+            <button class="pick-btn">
+              <span class="flag-pill"><span class="inner"><img alt="" src="https://flagcdn.com/gb-sct.svg"></span></span>
+              <span class="name">Scotland</span>
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Sunday 14 June (collapsed visual hint) -->
+    <div class="day-block">
+      <div class="day-label">Sun 14 Jun<span class="of-date">+ 4 more days</span></div>
+      <div style="opacity:0.4; text-align:center; padding: 20px 0; font-size: 13px; color: rgba(255,255,255,0.6);">
+        17 more matches across Sun → Thu. Keep going.
+      </div>
+    </div>
+
+    <!-- Sticky bottom progress + jump-to-next -->
+    <div class="sticky-bar">
+      <div class="left">
+        <div class="lbl">MD1 progress</div>
+        <div class="count">3<span class="of"> / 24</span></div>
+      </div>
+      <a href="#">Next unpicked →</a>
+    </div>
+  </main>
+
+  <p class="note">
+    V3 — most aggressive interpretation. The landing IS the picker. Poster shrinks to a short hero with countdown + progress, then dumps the user straight into a compact one-screen-per-match-row pick list. No "go to picks" step — every tap saves. Sticky bottom bar keeps progress + "next unpicked" always visible. Bracket only in the ⋯ dropdown.
+  </p>
+</body>
+</html>

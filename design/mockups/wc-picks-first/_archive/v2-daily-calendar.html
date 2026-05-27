@@ -1,0 +1,602 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Mockup V2 — Daily calendar, light theme</title>
+  <style>
+    /* Tokens — light WC theme, cream surface (matches the project's primary aesthetic
+       from globals.css). This variant moves /wc OFF the ink-on-poster and onto the
+       brand's default cream — argument: picks are an everyday workflow, not a poster moment. */
+    :root {
+      --ps-bg: #efe9de;
+      --ps-bg-alt: #e7dfd0;
+      --ps-surface: #ffffff;
+      --ps-border: rgba(40, 30, 20, 0.10);
+      --ps-text: #191512;
+      --ps-text-sec: #5e554a;
+      --ps-text-ter: #8b8275;
+      --ps-amber: #f59e0b;
+      --ps-amber-deep: #d97706;
+      --ps-amber-soft: rgba(245, 158, 11, 0.12);
+      --ps-green: #0aa86d;
+      --ps-red: #e23d4f;
+      --ps-chip: rgba(40, 30, 20, 0.04);
+      --wc-green: #006847;
+    }
+    *,*::before,*::after { box-sizing: border-box; }
+    html, body { margin: 0; padding: 0; }
+    body {
+      font-family: "Inter", system-ui, -apple-system, "Segoe UI", sans-serif;
+      -webkit-font-smoothing: antialiased;
+      font-feature-settings: "tnum";
+      background: var(--ps-bg);
+      color: var(--ps-text);
+      min-height: 100vh;
+    }
+    p, h1, h2, h3 { margin: 0; text-wrap: pretty; }
+
+    /* WC nav shell — same as existing layout */
+    .wc-strip { height: 4px; background: var(--wc-green); }
+    .wc-nav {
+      background: var(--ps-bg);
+      border-bottom: 1px solid var(--ps-border);
+    }
+    .wc-nav-inner {
+      max-width: 480px; margin: 0 auto; padding: 0 16px;
+      display: flex; align-items: center; justify-content: space-between; height: 48px;
+    }
+    .wc-brand {
+      display: inline-flex; align-items: center; gap: 6px;
+      font-weight: 800; font-size: 1rem; letter-spacing: -0.01em;
+      color: var(--ps-text); text-decoration: none;
+    }
+    .wc-brand .dot {
+      width: 18px; height: 18px; border-radius: 999px;
+      background: var(--ps-text); display: inline-grid; place-items: center;
+    }
+    .wc-brand .dot::after { content: ""; width: 8px; height: 8px; border-radius: 999px; background: var(--ps-amber); }
+    .wc-brand .accent { color: var(--ps-amber); }
+    .nav-right { display: flex; align-items: center; gap: 8px; }
+    .menu-btn {
+      background: transparent; border: 0;
+      color: var(--ps-text-sec);
+      font: inherit; padding: 6px 8px; cursor: pointer; font-size: 14px;
+    }
+    .user-chip {
+      width: 28px; height: 28px; border-radius: 999px; background: var(--ps-amber);
+      display: grid; place-items: center; font-weight: 700; color: #191512; font-size: 12px;
+    }
+    .menu-wrap { position: relative; }
+    .menu-panel {
+      position: absolute; right: 0; top: calc(100% + 8px);
+      width: 280px;
+      background: var(--ps-surface);
+      border: 1px solid var(--ps-border);
+      border-radius: 12px;
+      padding: 8px;
+      box-shadow: 0 24px 48px -16px rgba(0,0,0,0.15);
+      z-index: 20;
+    }
+    .menu-panel a {
+      display: block; padding: 10px 12px; border-radius: 8px;
+      color: var(--ps-text); text-decoration: none;
+      font-size: 14px; font-weight: 600;
+    }
+    .menu-panel a:hover { background: var(--ps-chip); }
+    .menu-panel .warn {
+      font-family: ui-monospace, "JetBrains Mono", monospace;
+      font-size: 10px; font-weight: 700; letter-spacing: 0.10em;
+      text-transform: uppercase; color: var(--ps-amber-deep); margin-top: 2px;
+    }
+    .menu-panel .sub {
+      font-size: 12px; font-weight: 500;
+      color: var(--ps-text-ter); margin-top: 2px;
+    }
+    .menu-panel hr { border: 0; border-top: 1px solid var(--ps-border); margin: 6px 4px; }
+
+    /* WC branded title block (from WcBrandedTitle component) */
+    .wc-title-block { display: flex; gap: 12px; align-items: flex-start; padding: 24px 16px 12px; }
+    .wc-title-block .mark {
+      width: 44px; height: 44px; flex-shrink: 0;
+      border-radius: 8px;
+      background: linear-gradient(135deg, var(--wc-green) 0%, #00513a 100%);
+      display: grid; place-items: center;
+      color: #fff; font-weight: 800; font-size: 18px;
+      font-family: "Inter", sans-serif;
+      letter-spacing: -0.02em;
+    }
+    .wc-title-block .text { flex: 1; min-width: 0; margin-top: -4px; }
+    .wc-title-block h1 {
+      font-size: 24px; line-height: 1.1;
+      font-weight: 800;
+      text-transform: uppercase; letter-spacing: -0.025em;
+    }
+    .wc-title-block h1 .accent { color: var(--ps-amber-deep); }
+    .wc-title-block .tag {
+      margin-top: 4px;
+      font-family: "Instrument Serif", Georgia, serif;
+      font-style: italic; font-size: 15px;
+      color: var(--ps-text-sec);
+    }
+
+    main {
+      max-width: 480px; margin: 0 auto;
+      padding: 0 16px 64px;
+    }
+
+    /* Progress strip — single line, full bleed, calm */
+    .strip {
+      margin-top: 8px;
+      padding: 14px 16px;
+      background: var(--ps-surface);
+      border: 1px solid var(--ps-border);
+      border-radius: 12px;
+      display: flex; align-items: center; gap: 14px;
+    }
+    .strip .meter {
+      flex: 1; min-width: 0;
+    }
+    .strip .meter .head {
+      display: flex; justify-content: space-between; align-items: baseline;
+    }
+    .strip .meter .label {
+      font-family: ui-monospace, "JetBrains Mono", monospace;
+      font-size: 10px; font-weight: 700; letter-spacing: 0.12em;
+      text-transform: uppercase; color: var(--ps-text-ter);
+    }
+    .strip .meter .count {
+      font-family: ui-monospace, "JetBrains Mono", monospace;
+      font-size: 13px; font-weight: 800; color: var(--ps-text);
+    }
+    .strip .meter .count .of { color: var(--ps-text-ter); font-weight: 600; font-size: 11px; }
+    .strip .meter .bar {
+      margin-top: 6px; height: 4px; border-radius: 999px;
+      background: var(--ps-bg-alt); overflow: hidden;
+    }
+    .strip .meter .bar > div {
+      height: 100%; width: 12.5%;
+      background: var(--ps-amber); border-radius: 999px;
+    }
+    .strip .deadline {
+      font-family: ui-monospace, "JetBrains Mono", monospace;
+      font-size: 11px; color: var(--ps-text-sec); text-align: right;
+      white-space: nowrap;
+    }
+    .strip .deadline .urgent { color: var(--ps-amber-deep); font-weight: 700; }
+
+    /* CTA — single primary action */
+    .cta {
+      display: block; margin-top: 14px;
+      text-decoration: none;
+      padding: 14px 20px;
+      border-radius: 12px;
+      text-align: center;
+      font-weight: 700; font-size: 15px;
+      color: #fff;
+      background: linear-gradient(135deg, var(--wc-green) 0%, #00513a 100%);
+      box-shadow: 0 4px 12px -4px rgba(0,104,71,0.4);
+    }
+    .cta.ghost {
+      background: transparent;
+      color: var(--ps-text-sec);
+      border: 1px solid var(--ps-border);
+      box-shadow: none;
+      font-weight: 600;
+    }
+
+    /* Day section — calendar layout */
+    .day {
+      margin-top: 24px;
+    }
+    .day-head {
+      display: flex; align-items: baseline; gap: 12px;
+      padding-bottom: 10px;
+      margin-bottom: 8px;
+      border-bottom: 1px solid var(--ps-border);
+    }
+    .day-head .date-block {
+      display: flex; align-items: baseline; gap: 8px;
+    }
+    .day-head .dow {
+      font-family: ui-monospace, "JetBrains Mono", monospace;
+      font-size: 10px; font-weight: 800; letter-spacing: 0.12em;
+      text-transform: uppercase; color: var(--ps-text-ter);
+    }
+    .day-head .day-num {
+      font-size: 22px; font-weight: 800;
+      letter-spacing: -0.02em; color: var(--ps-text);
+    }
+    .day-head .month {
+      font-size: 13px; font-weight: 600; color: var(--ps-text-sec);
+      text-transform: uppercase; letter-spacing: 0.04em;
+    }
+    .day-head .picked {
+      margin-left: auto;
+      font-family: ui-monospace, "JetBrains Mono", monospace;
+      font-size: 11px; color: var(--ps-text-ter);
+    }
+    .day-head .picked.done { color: var(--ps-green); font-weight: 700; }
+
+    /* Today highlight */
+    .day.today .day-head {
+      border-bottom-color: var(--ps-amber);
+    }
+    .day.today .day-num { color: var(--ps-amber-deep); }
+
+    /* Match card — inline pick triple */
+    .match {
+      background: var(--ps-surface);
+      border: 1px solid var(--ps-border);
+      border-radius: 12px;
+      padding: 12px;
+      margin-bottom: 8px;
+    }
+    .match-head {
+      display: flex; align-items: center; gap: 8px;
+      margin-bottom: 10px;
+    }
+    .match-head .grp {
+      font-family: ui-monospace, "JetBrains Mono", monospace;
+      font-size: 10px; font-weight: 800;
+      padding: 2px 6px; border-radius: 4px;
+      background: var(--ps-amber-soft);
+      color: var(--ps-amber-deep);
+      letter-spacing: 0.08em;
+    }
+    .match-head .ko {
+      font-family: ui-monospace, "JetBrains Mono", monospace;
+      font-size: 11px; color: var(--ps-text-sec); font-weight: 600;
+    }
+    .match-head .city {
+      margin-left: auto;
+      font-size: 11px; color: var(--ps-text-ter);
+    }
+    .match-teams {
+      display: grid;
+      grid-template-columns: 1fr auto 1fr;
+      gap: 8px;
+      align-items: center;
+    }
+    .team-btn {
+      display: flex; align-items: center; justify-content: center;
+      gap: 6px;
+      padding: 10px 8px;
+      border-radius: 10px;
+      background: var(--ps-chip);
+      border: 1px solid transparent;
+      cursor: pointer;
+      font-family: inherit;
+      font-size: 13px; font-weight: 700;
+      color: var(--ps-text);
+      transition: all 0.15s;
+    }
+    .team-btn:hover { background: var(--ps-bg-alt); }
+    .team-btn.selected {
+      background: var(--ps-amber-soft);
+      border-color: var(--ps-amber);
+      box-shadow: inset 0 0 0 1px var(--ps-amber);
+    }
+    .team-btn .name { text-align: center; line-height: 1.1; }
+    .flag-pill {
+      --w: 18px; --h: 13.5px; --r: 6px; --b: 1px;
+      display: inline-block; position: relative;
+      width: var(--w); height: var(--h); flex-shrink: 0;
+      background: #fff;
+      clip-path: path('M 0 0 L 11 0 A 6 6 0 0 1 18 6 L 18 13.5 L 7 13.5 A 6 6 0 0 1 0 7 Z');
+      filter: drop-shadow(0 1px 1px rgba(0,0,0,0.15));
+    }
+    .flag-pill .inner {
+      position: absolute; top: var(--b); left: var(--b);
+      width: calc(var(--w) - var(--b)*2); height: calc(var(--h) - var(--b)*2);
+      clip-path: path('M 0 0 L 10 0 A 5 5 0 0 1 16 5 L 16 11.5 L 6 11.5 A 5 5 0 0 1 0 6.5 Z');
+      overflow: hidden;
+    }
+    .flag-pill img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; filter: saturate(0.88) brightness(0.96); }
+
+    .draw-btn {
+      padding: 10px 12px;
+      border-radius: 10px;
+      background: var(--ps-chip);
+      border: 1px solid transparent;
+      font-family: ui-monospace, "JetBrains Mono", monospace;
+      font-size: 11px; font-weight: 800;
+      color: var(--ps-text-sec);
+      letter-spacing: 0.08em;
+      cursor: pointer;
+    }
+    .draw-btn.selected {
+      background: var(--ps-amber-soft);
+      border-color: var(--ps-amber);
+      color: var(--ps-amber-deep);
+    }
+
+    .score-line {
+      margin-top: 8px;
+      display: flex; justify-content: flex-end;
+    }
+    .score-line a {
+      font-size: 11px;
+      color: var(--ps-text-sec);
+      text-decoration: none;
+      font-weight: 600;
+    }
+    .score-line a:hover { color: var(--ps-text); }
+    .score-line a.has {
+      color: var(--ps-amber-deep);
+      font-family: ui-monospace, "JetBrains Mono", monospace;
+    }
+
+    /* Bottom CTAs / footer */
+    .footer-ctas {
+      margin-top: 32px;
+      padding-top: 24px;
+      border-top: 1px solid var(--ps-border);
+    }
+    .footer-link {
+      display: flex; align-items: center; gap: 12px;
+      padding: 14px 16px;
+      border: 1px solid var(--ps-border);
+      border-radius: 12px;
+      background: var(--ps-surface);
+      color: var(--ps-text);
+      text-decoration: none;
+      margin-bottom: 8px;
+    }
+    .footer-link .icon {
+      width: 32px; height: 32px; flex-shrink: 0;
+      border-radius: 8px;
+      background: var(--ps-amber-soft);
+      display: grid; place-items: center;
+      color: var(--ps-amber-deep);
+      font-size: 16px; font-weight: 800;
+    }
+    .footer-link .body { flex: 1; min-width: 0; }
+    .footer-link .body .ttl { font-size: 13px; font-weight: 700; }
+    .footer-link .body .warn {
+      font-family: ui-monospace, "JetBrains Mono", monospace;
+      font-size: 10px; font-weight: 700;
+      letter-spacing: 0.10em; text-transform: uppercase;
+      color: var(--ps-amber-deep); margin-top: 1px;
+    }
+    .footer-link .body .desc { font-size: 11px; color: var(--ps-text-ter); margin-top: 2px; }
+    .footer-link .go { color: var(--ps-text-ter); font-size: 18px; }
+
+    .note {
+      max-width: 480px; margin: 24px auto 0; padding: 12px 16px;
+      font-size: 12px; color: var(--ps-text-sec);
+      font-style: italic;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="wc-strip"></div>
+  <nav class="wc-nav">
+    <div class="wc-nav-inner">
+      <a class="wc-brand" href="#">
+        <span class="dot" aria-hidden="true"></span>
+        sports<span class="accent">predict.</span>
+      </a>
+      <div class="nav-right">
+        <div class="menu-wrap">
+          <button class="menu-btn" aria-haspopup="menu" aria-expanded="true">Menu ▾</button>
+          <div class="menu-panel" role="menu">
+            <a href="#"><div>Make picks</div><div class="sub">Group stage · MD1</div></a>
+            <a href="#"><div>Table</div><div class="sub">Leaderboard</div></a>
+            <a href="#"><div>Results</div><div class="sub">Fixtures &amp; outcomes</div></a>
+            <a href="#"><div>Rules</div><div class="sub">How scoring works</div></a>
+            <hr />
+            <a href="#">
+              <div>Bracket prediction</div>
+              <div class="warn">Advanced — not for casuals</div>
+              <div class="sub">Predict the full knockout. Skip unless you want it.</div>
+            </a>
+          </div>
+        </div>
+        <div class="user-chip">E</div>
+      </div>
+    </div>
+  </nav>
+
+  <div class="wc-title-block">
+    <div class="mark">26</div>
+    <div class="text">
+      <h1>Round&nbsp;1 <span class="accent">picks</span></h1>
+      <p class="tag">Eight days. Twenty-four matches. Don't miss any.</p>
+    </div>
+  </div>
+
+  <main>
+    <div class="strip">
+      <div class="meter">
+        <div class="head">
+          <span class="label">MD1 progress</span>
+          <span class="count">3<span class="of"> / 24</span></span>
+        </div>
+        <div class="bar"><div></div></div>
+      </div>
+      <div class="deadline">
+        <div>First kickoff</div>
+        <div class="urgent">in 14d 3h</div>
+      </div>
+    </div>
+
+    <a href="#" class="cta">Pick next match →</a>
+
+    <!-- Thursday 11 June — opener -->
+    <div class="day today">
+      <div class="day-head">
+        <div class="date-block">
+          <span class="dow">Thu</span>
+          <span class="day-num">11</span>
+          <span class="month">Jun</span>
+        </div>
+        <span class="picked done">✓ all picked</span>
+      </div>
+      <div class="match">
+        <div class="match-head">
+          <span class="grp">GROUP A</span>
+          <span class="ko">20:00</span>
+          <span class="city">Mexico City · Estadio Azteca</span>
+        </div>
+        <div class="match-teams">
+          <button class="team-btn selected">
+            <span class="flag-pill"><span class="inner"><img alt="" src="https://flagcdn.com/mx.svg"></span></span>
+            <span class="name">Mexico</span>
+          </button>
+          <button class="draw-btn">Draw</button>
+          <button class="team-btn">
+            <span class="flag-pill"><span class="inner"><img alt="" src="https://flagcdn.com/za.svg"></span></span>
+            <span class="name">S. Africa</span>
+          </button>
+        </div>
+        <div class="score-line"><a href="#" class="has">2–1</a></div>
+      </div>
+    </div>
+
+    <!-- Friday 12 June -->
+    <div class="day">
+      <div class="day-head">
+        <div class="date-block">
+          <span class="dow">Fri</span>
+          <span class="day-num">12</span>
+          <span class="month">Jun</span>
+        </div>
+        <span class="picked done">✓ all picked</span>
+      </div>
+      <div class="match">
+        <div class="match-head">
+          <span class="grp">GROUP A</span>
+          <span class="ko">03:00</span>
+          <span class="city">Guadalajara</span>
+        </div>
+        <div class="match-teams">
+          <button class="team-btn">
+            <span class="flag-pill"><span class="inner"><img alt="" src="https://flagcdn.com/kr.svg"></span></span>
+            <span class="name">S. Korea</span>
+          </button>
+          <button class="draw-btn selected">Draw</button>
+          <button class="team-btn">
+            <span class="flag-pill"><span class="inner"><img alt="" src="https://flagcdn.com/cz.svg"></span></span>
+            <span class="name">Czechia</span>
+          </button>
+        </div>
+        <div class="score-line"><a href="#">Add exact score…</a></div>
+      </div>
+      <div class="match">
+        <div class="match-head">
+          <span class="grp">GROUP B</span>
+          <span class="ko">20:00</span>
+          <span class="city">Toronto · BMO Field</span>
+        </div>
+        <div class="match-teams">
+          <button class="team-btn selected">
+            <span class="flag-pill"><span class="inner"><img alt="" src="https://flagcdn.com/ca.svg"></span></span>
+            <span class="name">Canada</span>
+          </button>
+          <button class="draw-btn">Draw</button>
+          <button class="team-btn">
+            <span class="flag-pill"><span class="inner"><img alt="" src="https://flagcdn.com/ba.svg"></span></span>
+            <span class="name">Bosnia &amp; H.</span>
+          </button>
+        </div>
+        <div class="score-line"><a href="#" class="has">1–0</a></div>
+      </div>
+    </div>
+
+    <!-- Saturday 13 June -->
+    <div class="day">
+      <div class="day-head">
+        <div class="date-block">
+          <span class="dow">Sat</span>
+          <span class="day-num">13</span>
+          <span class="month">Jun</span>
+        </div>
+        <span class="picked">0 / 4</span>
+      </div>
+      <div class="match">
+        <div class="match-head">
+          <span class="grp">GROUP D</span>
+          <span class="ko">02:00</span>
+          <span class="city">Los Angeles</span>
+        </div>
+        <div class="match-teams">
+          <button class="team-btn">
+            <span class="flag-pill"><span class="inner"><img alt="" src="https://flagcdn.com/us.svg"></span></span>
+            <span class="name">USA</span>
+          </button>
+          <button class="draw-btn">Draw</button>
+          <button class="team-btn">
+            <span class="flag-pill"><span class="inner"><img alt="" src="https://flagcdn.com/py.svg"></span></span>
+            <span class="name">Paraguay</span>
+          </button>
+        </div>
+        <div class="score-line"><a href="#">Add exact score…</a></div>
+      </div>
+      <div class="match">
+        <div class="match-head">
+          <span class="grp">GROUP B</span>
+          <span class="ko">20:00</span>
+          <span class="city">San Francisco Bay</span>
+        </div>
+        <div class="match-teams">
+          <button class="team-btn">
+            <span class="flag-pill"><span class="inner"><img alt="" src="https://flagcdn.com/qa.svg"></span></span>
+            <span class="name">Qatar</span>
+          </button>
+          <button class="draw-btn">Draw</button>
+          <button class="team-btn">
+            <span class="flag-pill"><span class="inner"><img alt="" src="https://flagcdn.com/ch.svg"></span></span>
+            <span class="name">Switzerland</span>
+          </button>
+        </div>
+        <div class="score-line"><a href="#">Add exact score…</a></div>
+      </div>
+      <div class="match">
+        <div class="match-head">
+          <span class="grp">GROUP C</span>
+          <span class="ko">23:00</span>
+          <span class="city">New York / NJ</span>
+        </div>
+        <div class="match-teams">
+          <button class="team-btn">
+            <span class="flag-pill"><span class="inner"><img alt="" src="https://flagcdn.com/br.svg"></span></span>
+            <span class="name">Brazil</span>
+          </button>
+          <button class="draw-btn">Draw</button>
+          <button class="team-btn">
+            <span class="flag-pill"><span class="inner"><img alt="" src="https://flagcdn.com/ma.svg"></span></span>
+            <span class="name">Morocco</span>
+          </button>
+        </div>
+        <div class="score-line"><a href="#">Add exact score…</a></div>
+      </div>
+    </div>
+
+    <div class="footer-ctas">
+      <a href="#" class="footer-link">
+        <span class="icon">+</span>
+        <div class="body">
+          <div class="ttl">5 more days of MD1</div>
+          <div class="desc">Sun 14 → Thu 18 Jun · 17 matches to pick</div>
+        </div>
+        <span class="go">›</span>
+      </a>
+      <a href="#" class="footer-link">
+        <span class="icon">◇</span>
+        <div class="body">
+          <div class="warn">Advanced</div>
+          <div class="ttl">Predict the whole bracket</div>
+          <div class="desc">7 knockout rounds. Optional. Not for casuals.</div>
+        </div>
+        <span class="go">›</span>
+      </a>
+    </div>
+  </main>
+
+  <p class="note">
+    V2 — light/cream theme. Picks happen inline on the landing — Home/Draw/Away triple-tap per match, exact score as a quiet link. Calendar grouping by day mirrors how the tournament actually unfolds. Bracket lives only in the dropdown menu and as a single quiet card at the foot of the page.
+  </p>
+</body>
+</html>

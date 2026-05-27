@@ -1,0 +1,554 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Mockup V1 — Picks-first, ink-on-poster (continuity)</title>
+  <style>
+    /* Tokens lifted from src/app/globals.css and existing upcoming-fixtures.html.
+       Surfaces are explicit (literal hex) on the dark poster — must stay dark
+       regardless of theme flip. */
+    :root {
+      --ps-bg: #efe9de;
+      --ps-bg-alt: #e7dfd0;
+      --ps-surface: #ffffff;
+      --ps-border: rgba(40, 30, 20, 0.10);
+      --ps-text: #191512;
+      --ps-text-sec: #5e554a;
+      --ps-amber: #f59e0b;
+      --ps-amber-deep: #d97706;
+      --ps-green: #0aa86d;
+      --ps-red: #e23d4f;
+    }
+    *,*::before,*::after { box-sizing: border-box; }
+    html, body { margin: 0; padding: 0; }
+    body {
+      font-family: "Inter", system-ui, -apple-system, "Segoe UI", sans-serif;
+      -webkit-font-smoothing: antialiased;
+      font-feature-settings: "tnum";
+      background: #0a0a0a;
+      color: #fefdf7;
+      min-height: 100vh;
+    }
+    p, h1, h2, h3 { margin: 0; text-wrap: pretty; }
+
+    /* Fixed poster background (matches src/app/wc/page.tsx) */
+    .poster-bg {
+      position: fixed; inset: 0; z-index: 0;
+      background-image: url('/wc/hero-fifa-2026.png');
+      background-repeat: no-repeat;
+      background-position: center top;
+      background-size: 145% auto;
+      background-color: #0a0a0a;
+      pointer-events: none;
+    }
+    .poster-bg::after {
+      content: ""; position: absolute; inset: 0;
+      background: linear-gradient(180deg, rgba(10,10,10,0.55) 0%, rgba(10,10,10,0.85) 70%, #0a0a0a 100%);
+    }
+
+    /* Top green stripe + nav (verbatim from existing layout) */
+    .wc-strip { height: 4px; background: #006847; position: relative; z-index: 10; }
+    .wc-nav {
+      position: relative; z-index: 10;
+      background: rgba(10,10,10,0.6); backdrop-filter: blur(8px);
+      border-bottom: 1px solid rgba(255,255,255,0.08);
+    }
+    .wc-nav-inner {
+      max-width: 480px; margin: 0 auto; padding: 0 16px;
+      display: flex; align-items: center; justify-content: space-between; height: 48px;
+    }
+    .wc-brand {
+      display: inline-flex; align-items: center; gap: 6px;
+      font-weight: 800; font-size: 1rem; letter-spacing: -0.01em;
+      color: #fefdf7; text-decoration: none;
+    }
+    .wc-brand .dot {
+      width: 18px; height: 18px; border-radius: 999px;
+      background: #fefdf7; display: inline-grid; place-items: center;
+    }
+    .wc-brand .dot::after { content: ""; width: 8px; height: 8px; border-radius: 999px; background: var(--ps-amber); }
+    .wc-brand .accent { color: var(--ps-amber); }
+    .nav-right { display: flex; align-items: center; gap: 8px; }
+    .menu-btn {
+      background: transparent; border: 0; color: rgba(255,255,255,0.85);
+      font: inherit; padding: 6px 8px; cursor: pointer; font-size: 14px;
+    }
+    .user-chip {
+      width: 28px; height: 28px; border-radius: 999px; background: var(--ps-amber);
+      display: grid; place-items: center; font-weight: 700; color: #191512; font-size: 12px;
+    }
+
+    /* Dropdown menu (the new bracket home) */
+    .menu-wrap { position: relative; }
+    .menu-panel {
+      position: absolute; right: 0; top: calc(100% + 8px);
+      width: 280px;
+      background: rgba(18,16,14,0.96);
+      border: 1px solid rgba(255,255,255,0.10);
+      border-radius: 12px;
+      padding: 8px;
+      box-shadow: 0 24px 48px -16px rgba(0,0,0,0.6);
+    }
+    .menu-panel a {
+      display: block;
+      padding: 10px 12px;
+      border-radius: 8px;
+      color: #fefdf7;
+      text-decoration: none;
+      font-size: 14px;
+      font-weight: 600;
+    }
+    .menu-panel a:hover { background: rgba(255,255,255,0.06); }
+    .menu-panel .warn {
+      font-family: ui-monospace, "JetBrains Mono", monospace;
+      font-size: 10px;
+      font-weight: 700;
+      letter-spacing: 0.10em;
+      text-transform: uppercase;
+      color: var(--ps-amber);
+      margin-top: 2px;
+    }
+    .menu-panel .sub {
+      font-size: 12px;
+      font-weight: 500;
+      color: rgba(255,255,255,0.6);
+      margin-top: 2px;
+    }
+    .menu-panel hr {
+      border: 0;
+      border-top: 1px solid rgba(255,255,255,0.08);
+      margin: 6px 4px;
+    }
+
+    /* Card surface (matches src/app/wc/page.tsx) */
+    .card {
+      position: relative; z-index: 5;
+      border-radius: 16px;
+      border: 1px solid rgba(255,255,255,0.10);
+      padding: 20px;
+      color: #fefdf7;
+      box-shadow: 0 20px 44px -18px rgba(0,0,0,0.7), inset 0 1px 0 rgba(255,255,255,0.08);
+      backdrop-filter: blur(5.6px) saturate(1.05);
+      background-image:
+        radial-gradient(120% 80% at 0% 0%, rgba(245,158,11,0.10) 0%, rgba(245,158,11,0) 55%),
+        linear-gradient(160deg, rgba(28,22,16,0.80) 0%, rgba(8,8,8,0.84) 100%);
+    }
+
+    main {
+      position: relative; z-index: 5;
+      max-width: 480px; margin: 0 auto;
+      padding: 24px 16px 48px;
+      display: flex; flex-direction: column; gap: 16px;
+    }
+
+    /* HERO PICKS CARD — the new headline */
+    .hero h1 {
+      font-family: "Inter", sans-serif;
+      font-weight: 800;
+      font-size: 32px;
+      line-height: 1;
+      text-transform: uppercase;
+      letter-spacing: -0.025em;
+      text-align: center;
+    }
+    .hero h1 .accent { color: var(--ps-amber); }
+    .hero .tagline {
+      margin-top: 8px;
+      text-align: center;
+      font-family: "Instrument Serif", "Georgia", serif;
+      font-style: italic;
+      font-size: 17px;
+      color: rgba(255,255,255,0.7);
+    }
+    .hero .lead {
+      margin-top: 20px;
+      text-align: center;
+      font-weight: 800;
+      font-size: 18px;
+      line-height: 1.3;
+    }
+
+    /* Progress meter */
+    .progress {
+      margin-top: 18px;
+      padding: 14px 16px;
+      border-radius: 12px;
+      background: rgba(255,255,255,0.04);
+      border: 1px solid rgba(255,255,255,0.08);
+    }
+    .progress-head {
+      display: flex; justify-content: space-between; align-items: baseline;
+    }
+    .progress-head .label {
+      font-family: ui-monospace, "JetBrains Mono", monospace;
+      font-size: 10px; font-weight: 700; letter-spacing: 0.15em;
+      text-transform: uppercase; color: rgba(255,255,255,0.55);
+    }
+    .progress-head .count {
+      font-family: ui-monospace, "JetBrains Mono", monospace;
+      font-size: 18px; font-weight: 800;
+      color: var(--ps-amber);
+    }
+    .progress-head .count .of {
+      font-size: 12px; color: rgba(255,255,255,0.5); font-weight: 600;
+    }
+    .progress-bar {
+      margin-top: 8px; height: 6px; border-radius: 999px;
+      background: rgba(255,255,255,0.10); overflow: hidden;
+    }
+    .progress-bar > div {
+      height: 100%;
+      width: 12.5%;  /* 3 / 24 */
+      background: var(--ps-amber);
+      border-radius: 999px;
+    }
+    .hero-cta {
+      margin-top: 18px;
+      display: block;
+      text-decoration: none;
+      text-align: center;
+      padding: 16px 24px;
+      border-radius: 12px;
+      font-weight: 700; font-size: 16px;
+      color: #0a0f0a;
+      background: linear-gradient(135deg, #d4af37, #b8941f);
+      box-shadow: 0 8px 22px -8px rgba(245,158,11,0.55), inset 0 1px 0 rgba(255,255,255,0.5);
+    }
+    .hero-sub {
+      margin-top: 12px;
+      text-align: center;
+      font-size: 12px;
+      color: rgba(255,255,255,0.55);
+    }
+    .hero-sub a { color: rgba(255,255,255,0.75); text-decoration: underline; text-underline-offset: 2px; }
+
+    /* MD1 PREVIEW CARDS (date-grouped, glance only — tap takes you to /wc/picks) */
+    .preview h2 {
+      font-family: "Inter", sans-serif;
+      font-weight: 800;
+      font-size: 16px;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      color: rgba(255,255,255,0.85);
+    }
+    .preview .sub {
+      margin-top: 4px;
+      font-size: 13px;
+      color: rgba(255,255,255,0.55);
+    }
+    .day {
+      margin-top: 18px;
+    }
+    .day:first-of-type { margin-top: 14px; }
+    .day-head {
+      display: flex; align-items: baseline; gap: 10px;
+      padding-bottom: 8px;
+      border-bottom: 1px dashed rgba(255,255,255,0.15);
+    }
+    .day-head .date {
+      font-family: ui-monospace, "JetBrains Mono", monospace;
+      font-size: 11px; font-weight: 800;
+      letter-spacing: 0.10em;
+      text-transform: uppercase;
+      color: var(--ps-amber);
+    }
+    .day-head .count {
+      font-size: 11px;
+      color: rgba(255,255,255,0.5);
+    }
+    .day-head .picked {
+      margin-left: auto;
+      font-family: ui-monospace, "JetBrains Mono", monospace;
+      font-size: 11px;
+      color: rgba(255,255,255,0.55);
+    }
+    .day-head .picked.done {
+      color: var(--ps-green);
+    }
+    .match-row {
+      display: flex; align-items: center; gap: 10px;
+      padding: 10px 0;
+      border-bottom: 1px solid rgba(255,255,255,0.06);
+    }
+    .match-row:last-child { border-bottom: 0; }
+    .grp {
+      width: 22px; height: 22px; flex-shrink: 0;
+      border-radius: 6px;
+      background: rgba(245,158,11,0.12);
+      border: 1px solid rgba(245,158,11,0.3);
+      color: var(--ps-amber);
+      display: grid; place-items: center;
+      font-family: ui-monospace, "JetBrains Mono", monospace;
+      font-size: 11px; font-weight: 800;
+    }
+    .teams {
+      flex: 1; min-width: 0;
+      font-size: 14px; font-weight: 600;
+    }
+    .teams .v {
+      color: rgba(255,255,255,0.4);
+      font-weight: 500;
+      margin: 0 4px;
+    }
+    .ko {
+      font-family: ui-monospace, "JetBrains Mono", monospace;
+      font-size: 11px; color: rgba(255,255,255,0.5);
+      white-space: nowrap;
+    }
+    .pick-marker {
+      width: 8px; height: 8px; border-radius: 999px;
+      background: var(--ps-amber);
+      flex-shrink: 0;
+    }
+    .pick-marker.unpicked {
+      background: transparent;
+      border: 1px solid rgba(255,255,255,0.18);
+    }
+
+    /* Quietly: bracket is acknowledged but not promoted */
+    .quiet-card {
+      padding: 14px 16px;
+      display: flex; align-items: center; gap: 12px;
+    }
+    .quiet-card .icon {
+      width: 32px; height: 32px; flex-shrink: 0;
+      border-radius: 8px;
+      background: rgba(212,175,55,0.10);
+      border: 1px solid rgba(212,175,55,0.25);
+      display: grid; place-items: center;
+      font-size: 16px;
+      color: var(--ps-amber);
+    }
+    .quiet-card .body { flex: 1; min-width: 0; }
+    .quiet-card .body .ttl {
+      font-size: 13px; font-weight: 700;
+      color: #fefdf7;
+    }
+    .quiet-card .body .desc {
+      margin-top: 2px;
+      font-size: 11px; color: rgba(255,255,255,0.55);
+    }
+    .quiet-card .body .warn {
+      font-family: ui-monospace, "JetBrains Mono", monospace;
+      font-size: 10px;
+      font-weight: 700;
+      letter-spacing: 0.10em;
+      text-transform: uppercase;
+      color: var(--ps-amber);
+    }
+    .quiet-card .go {
+      font-size: 18px; color: rgba(255,255,255,0.4);
+    }
+
+    .note {
+      position: relative; z-index: 5;
+      max-width: 480px; margin: 0 auto;
+      padding: 8px 16px 48px;
+      font-size: 12px; color: rgba(255,255,255,0.55);
+      font-style: italic;
+    }
+  </style>
+</head>
+<body>
+  <div class="poster-bg" aria-hidden="true"></div>
+
+  <!-- Nav: bracket no longer in primary links; lives in the right-hand menu -->
+  <div class="wc-strip"></div>
+  <nav class="wc-nav">
+    <div class="wc-nav-inner">
+      <a class="wc-brand" href="#">
+        <span class="dot" aria-hidden="true"></span>
+        sports<span class="accent">predict.</span>
+      </a>
+      <div class="nav-right">
+        <div class="menu-wrap">
+          <button class="menu-btn" aria-haspopup="menu" aria-expanded="true">Menu ▾</button>
+          <div class="menu-panel" role="menu">
+            <a href="#"><div>Make picks</div><div class="sub">Group stage · Matchday 1</div></a>
+            <a href="#"><div>Table</div><div class="sub">Leaderboard</div></a>
+            <a href="#"><div>Results</div><div class="sub">Fixtures &amp; outcomes</div></a>
+            <a href="#"><div>Rules</div><div class="sub">How scoring works</div></a>
+            <hr />
+            <a href="#">
+              <div>Bracket prediction</div>
+              <div class="warn">Advanced — not for casuals</div>
+              <div class="sub">Predict the whole knockout. 7 rounds, 16 picks.</div>
+            </a>
+          </div>
+        </div>
+        <div class="user-chip">E</div>
+      </div>
+    </div>
+  </nav>
+
+  <main>
+    <!-- HERO: picks are the headline -->
+    <section class="card hero">
+      <h1>Matchday <span class="accent">1</span></h1>
+      <p class="tagline">The tournament opens. 24 matches. Get them in.</p>
+
+      <p class="lead">Pick a winner in every Round 1 game. Lock in before kickoff.</p>
+
+      <div class="progress" role="status">
+        <div class="progress-head">
+          <span class="label">Your MD1 picks</span>
+          <span class="count">3<span class="of"> / 24</span></span>
+        </div>
+        <div class="progress-bar" aria-hidden="true"><div></div></div>
+      </div>
+
+      <a class="hero-cta" href="#">Continue picking →</a>
+      <p class="hero-sub">Earn points whether you call the winner, the score, or both. <a href="#">How scoring works</a></p>
+    </section>
+
+    <!-- MD1 GLANCE: date-grouped preview, tap → /wc/picks/[md1] -->
+    <section class="card preview">
+      <h2>Round 1 schedule</h2>
+      <p class="sub">12 groups · 24 openers · Jun 11 → Jun 18</p>
+
+      <!-- Day 1: Thu 11 Jun -->
+      <div class="day">
+        <div class="day-head">
+          <span class="date">Thu 11 Jun</span>
+          <span class="count">1 match</span>
+          <span class="picked done">1 / 1 picked</span>
+        </div>
+        <div class="match-row">
+          <span class="grp">A</span>
+          <span class="teams">Mexico <span class="v">v</span> South Africa</span>
+          <span class="ko">20:00</span>
+          <span class="pick-marker" title="Picked"></span>
+        </div>
+      </div>
+
+      <!-- Day 2: Fri 12 Jun -->
+      <div class="day">
+        <div class="day-head">
+          <span class="date">Fri 12 Jun</span>
+          <span class="count">2 matches</span>
+          <span class="picked done">2 / 2 picked</span>
+        </div>
+        <div class="match-row">
+          <span class="grp">A</span>
+          <span class="teams">South Korea <span class="v">v</span> Czechia</span>
+          <span class="ko">03:00</span>
+          <span class="pick-marker"></span>
+        </div>
+        <div class="match-row">
+          <span class="grp">B</span>
+          <span class="teams">Canada <span class="v">v</span> Bosnia &amp; H.</span>
+          <span class="ko">20:00</span>
+          <span class="pick-marker"></span>
+        </div>
+      </div>
+
+      <!-- Day 3: Sat 13 Jun -->
+      <div class="day">
+        <div class="day-head">
+          <span class="date">Sat 13 Jun</span>
+          <span class="count">4 matches</span>
+          <span class="picked">0 / 4 picked</span>
+        </div>
+        <div class="match-row">
+          <span class="grp">D</span>
+          <span class="teams">USA <span class="v">v</span> Paraguay</span>
+          <span class="ko">02:00</span>
+          <span class="pick-marker unpicked"></span>
+        </div>
+        <div class="match-row">
+          <span class="grp">B</span>
+          <span class="teams">Qatar <span class="v">v</span> Switzerland</span>
+          <span class="ko">20:00</span>
+          <span class="pick-marker unpicked"></span>
+        </div>
+        <div class="match-row">
+          <span class="grp">C</span>
+          <span class="teams">Brazil <span class="v">v</span> Morocco</span>
+          <span class="ko">23:00</span>
+          <span class="pick-marker unpicked"></span>
+        </div>
+        <div class="match-row">
+          <span class="grp">C</span>
+          <span class="teams">Haiti <span class="v">v</span> Scotland</span>
+          <span class="ko">02:00</span>
+          <span class="pick-marker unpicked"></span>
+        </div>
+      </div>
+
+      <!-- Day 4: Sun 14 Jun -->
+      <div class="day">
+        <div class="day-head">
+          <span class="date">Sun 14 Jun</span>
+          <span class="count">6 matches</span>
+          <span class="picked">0 / 6 picked</span>
+        </div>
+        <div class="match-row">
+          <span class="grp">E</span>
+          <span class="teams">Germany <span class="v">v</span> Curacao</span>
+          <span class="ko">18:00</span>
+          <span class="pick-marker unpicked"></span>
+        </div>
+        <div class="match-row">
+          <span class="grp">F</span>
+          <span class="teams">Netherlands <span class="v">v</span> Japan</span>
+          <span class="ko">21:00</span>
+          <span class="pick-marker unpicked"></span>
+        </div>
+        <div class="match-row">
+          <span class="grp">E</span>
+          <span class="teams">Ivory Coast <span class="v">v</span> Ecuador</span>
+          <span class="ko">00:00</span>
+          <span class="pick-marker unpicked"></span>
+        </div>
+        <div class="match-row">
+          <span class="grp">D</span>
+          <span class="teams">Australia <span class="v">v</span> Turkiye</span>
+          <span class="ko">05:00</span>
+          <span class="pick-marker unpicked"></span>
+        </div>
+        <div class="match-row" style="opacity:0.6">
+          <span class="grp">F</span>
+          <span class="teams">Sweden <span class="v">v</span> Tunisia</span>
+          <span class="ko">03:00</span>
+          <span class="pick-marker unpicked"></span>
+        </div>
+        <div class="match-row" style="opacity:0.4">
+          <span class="grp">G</span>
+          <span class="teams">…and 1 more</span>
+          <span class="ko"></span>
+          <span class="pick-marker unpicked"></span>
+        </div>
+      </div>
+
+      <!-- + 4 more days, collapsed -->
+      <div class="day">
+        <div class="day-head">
+          <span class="date">Mon 15 → Thu 18 Jun</span>
+          <span class="count">11 more matches</span>
+          <span class="picked">0 / 11 picked</span>
+        </div>
+      </div>
+
+      <a class="hero-cta" href="#" style="margin-top:18px;">Pick the rest →</a>
+    </section>
+
+    <!-- Bracket exists, but quiet -->
+    <a href="#" style="text-decoration:none; color:inherit;">
+      <section class="card quiet-card">
+        <div class="icon">◇</div>
+        <div class="body">
+          <div class="warn">Advanced</div>
+          <div class="ttl">Predict the whole bracket</div>
+          <div class="desc">7 knockout rounds, 16 picks. Optional. Not for casuals.</div>
+        </div>
+        <div class="go">›</div>
+      </section>
+    </a>
+  </main>
+
+  <p class="note">
+    V1 — keeps the ink-on-poster aesthetic for continuity. Hero card becomes the picks card with live progress. Bracket demoted to a quiet card at the bottom and to the menu dropdown with an "Advanced — not for casuals" warning. WcNavLinks (Picks/Bracket/Table/Results/Rules) collapse into a single "Menu" dropdown.
+  </p>
+</body>
+</html>

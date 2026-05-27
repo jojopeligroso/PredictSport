@@ -1,14 +1,25 @@
+import Link from "next/link";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { enrollEntrant } from "@/lib/tournament/classification-engine";
-import { JoinFlow } from "@/components/wc/JoinFlow";
+import { WC_JOINS_CLOSE_AT } from "@/lib/wc/join-cutoff";
 
 export const dynamic = "force-dynamic";
 
 /**
  * /wc/join — Entry flow for World Cup prediction game.
- * Shows display name confirmation before enrolling.
- * Enforces max_entrants cap.
+ *
+ * If not logged in → redirect to login.
+ * If logged in + soft cutoff passed + not yet a member → render "Joins closed".
+ * If logged in → auto-enroll in the WC competition → redirect onward.
+ *
+ * Accepts an optional `?next=` param so other WC pages (e.g. a pick window)
+ * can route a non-member here for idempotent enrollment and get them back.
+ * `next` is validated to an internal /wc path to avoid an open redirect.
+ *
+ * Soft cutoff per ADR 0014: joins close 72h after first MD1 kickoff. Existing
+ * members always pass through, even after cutoff (re-visits should not be
+ * gated). New visitors after the cutoff see a closed panel.
  */
 export default async function JoinPage({
   searchParams,
@@ -31,7 +42,7 @@ export default async function JoinPage({
   // Find the active WC competition
   const { data: competition } = await supabase
     .from("competitions")
-    .select("id, max_entrants, min_entrants")
+    .select("id, entry_closes_at, max_entrants")
     .eq("product_mode", "world_cup_2026_shell")
     .eq("status", "active")
     .limit(1)
@@ -62,6 +73,13 @@ export default async function JoinPage({
     redirect(destination);
   }
 
+  // Soft cutoff: applies only to *new* joiners. Existing members pass through above.
+  const cutoffIso = competition.entry_closes_at ?? WC_JOINS_CLOSE_AT;
+  const cutoffReached = new Date() >= new Date(cutoffIso);
+  if (cutoffReached) {
+    return <JoinsClosedPanel closedAt={cutoffIso} />;
+  }
+
   // Check entrant cap
   const { count: memberCount } = await supabase
     .from("competition_members")
@@ -81,20 +99,56 @@ export default async function JoinPage({
     );
   }
 
-  // Fetch user profile for display name
-  const { data: profile } = await supabase
-    .from("users")
-    .select("display_name")
-    .eq("id", user.id)
-    .single();
+  // Auto-enroll and redirect
+  await supabase
+    .from("competition_members")
+    .insert({
+      competition_id: competition.id,
+      user_id: user.id,
+      role: "participant",
+    });
+
+  await enrollEntrant(supabase, competition.id, user.id);
+  redirect(destination);
+}
+
+function JoinsClosedPanel({ closedAt }: { closedAt: string }) {
+  // Cheeky per design/DESIGN-RULES.md personality. No corporate apology tone.
+  const closedDate = new Date(closedAt);
+  const dateLabel = new Intl.DateTimeFormat("en-GB", {
+    weekday: "long",
+    day: "numeric",
+    month: "long",
+    timeZone: "UTC",
+  }).format(closedDate);
 
   return (
-    <JoinFlow
-      competitionId={competition.id}
-      destination={destination}
-      currentDisplayName={profile?.display_name ?? ""}
-      maxEntrants={competition.max_entrants}
-      currentCount={memberCount ?? 0}
-    />
+    <div className="mx-auto max-w-[480px] px-4 pt-16 text-center">
+      <p className="font-mono text-[10px] font-bold uppercase tracking-[0.18em] text-ps-amber-deep">
+        Joins closed
+      </p>
+      <h1 className="mt-3 font-display text-3xl font-extrabold uppercase tracking-tight text-ps-text">
+        You&apos;re a day late.
+      </h1>
+      <p className="mt-3 text-sm text-ps-text-sec">
+        The door shut on <span className="font-semibold text-ps-text">{dateLabel}</span>,
+        three days after the tournament kicked off. No new picks from this point — but
+        you&apos;re very welcome to watch the carnage unfold.
+      </p>
+      <div className="mt-8 flex flex-col items-center gap-3">
+        <Link
+          href="/wc"
+          className="block w-full max-w-[260px] rounded-xl bg-ps-text px-6 py-3.5 text-center text-sm font-semibold text-ps-bg transition-colors hover:bg-ps-text/90"
+        >
+          Watch the leaderboard
+        </Link>
+        <Link
+          href="/wc/results"
+          className="text-xs text-ps-text-sec underline-offset-2 hover:text-ps-text hover:underline"
+        >
+          See the fixtures & results →
+        </Link>
+      </div>
+    </div>
   );
 }
