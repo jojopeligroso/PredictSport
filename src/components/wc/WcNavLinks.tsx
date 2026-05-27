@@ -7,7 +7,7 @@ import { WcMoreMenu } from "./WcMoreMenu";
 const wcNavLinks = [
   { href: "/wc/picks", label: "Picks" },
   { href: "/wc/leaderboard", label: "Table" },
-  { href: "/wc/results", label: "Results" },
+  { href: "/wc/results", label: "Fixtures & Results" },
   { href: "/wc/rules", label: "Rules" },
 ] as const;
 
@@ -45,43 +45,23 @@ export function WcNavLinks({
             {link.label}
           </Link>
         ))}
-        {isWcAdmin && (
-          <Link
-            href="/wc/admin"
-            className="rounded-md px-3 py-1.5 text-sm font-medium text-ps-text-sec transition-colors hover:bg-ps-chip hover:text-ps-text"
-          >
-            Admin
-          </Link>
-        )}
-        <WcMoreMenu variant="desktop" />
+        <WcMoreMenu variant="desktop" isWcAdmin={isWcAdmin} />
       </div>
     );
   }
 
   return (
-    <div className="flex border-t border-ps-border md:hidden">
-      <div className="flex-1 overflow-x-auto">
-        <div className="mx-auto flex max-w-3xl px-2">
-          {wcNavLinks.map((link) => (
-            <Link
-              key={link.href}
-              href={link.href}
-              className="shrink-0 px-3 py-2 text-xs font-semibold text-ps-text-sec transition-colors hover:text-ps-text"
-            >
-              {link.label}
-            </Link>
-          ))}
-          {isWcAdmin && (
-            <Link
-              href="/wc/admin"
-              className="shrink-0 px-3 py-2 text-xs font-semibold text-ps-text-sec transition-colors hover:text-ps-text"
-            >
-              Admin
-            </Link>
-          )}
-        </div>
-      </div>
-      <WcMoreMenu variant="mobile" />
+    <div className="flex justify-center border-t border-ps-border px-2 md:hidden">
+      {wcNavLinks.map((link) => (
+        <Link
+          key={link.href}
+          href={link.href}
+          className="shrink-0 px-3 py-2 text-xs font-semibold text-ps-text-sec transition-colors hover:text-ps-text"
+        >
+          {link.label}
+        </Link>
+      ))}
+      <WcMoreMenu variant="mobile" isWcAdmin={isWcAdmin} />
     </div>
   );
 }
