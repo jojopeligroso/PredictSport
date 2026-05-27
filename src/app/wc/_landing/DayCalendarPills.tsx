@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import { CHROME_PALETTE } from "./brand-palette";
 import { computeDayStatus, type DayPredictionStatus } from "@/lib/wc/daily-lock";
 
@@ -123,19 +124,7 @@ export function DayCalendarPills({
               className="relative flex shrink-0 flex-col items-center text-center"
             >
               {/* Badge above pill: day-before-close warning */}
-              {isDayBefore && (
-                <span
-                  className="mb-1 inline-flex h-4 w-4 items-center justify-center rounded-full text-[10px] font-extrabold leading-none"
-                  style={{
-                    background: CHROME_PALETTE.warning,
-                    color: "#191512",
-                    boxShadow: "0 1px 2px rgba(0,0,0,0.18)",
-                  }}
-                  aria-hidden="true"
-                >
-                  !
-                </span>
-              )}
+              {isDayBefore && <JoinCutoffBadge />}
               {!isDayBefore && <span className="mb-1 h-4" aria-hidden="true" />}
 
               {/* Pill */}
@@ -201,4 +190,55 @@ function PillStatusIndicator({ status }: { status: DayPredictionStatus }) {
     default:
       return <span className="mt-1 h-3.5" aria-hidden="true" />;
   }
+}
+
+/** Yellow ! badge above the day-before-joins-close pill. Tap to see message. */
+function JoinCutoffBadge() {
+  const [open, setOpen] = useState(false);
+
+  return (
+    <span className="relative mb-1">
+      <button
+        type="button"
+        onClick={(e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          setOpen((v) => !v);
+        }}
+        className="inline-flex h-4 w-4 items-center justify-center rounded-full text-[10px] font-extrabold leading-none"
+        style={{
+          background: CHROME_PALETTE.warning,
+          color: "#191512",
+          boxShadow: "0 1px 2px rgba(0,0,0,0.18)",
+        }}
+        aria-label="Join deadline info"
+        aria-expanded={open}
+      >
+        !
+      </button>
+      {open && (
+        <span className="absolute left-1/2 top-full z-20 mt-1.5 w-56 -translate-x-1/2 rounded-lg border border-ps-border bg-ps-surface p-3 text-left shadow-lg">
+          <span className="block text-[11px] font-semibold text-ps-text">
+            Joins close soon
+          </span>
+          <span className="mt-1 block text-[11px] leading-snug text-ps-text-sec">
+            After this day, new players can no longer join. Share the link with
+            friends before it&rsquo;s too late.
+          </span>
+          <button
+            type="button"
+            onClick={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              navigator.clipboard?.writeText(window.location.origin + "/wc/join");
+              setOpen(false);
+            }}
+            className="mt-2 w-full rounded-lg bg-ps-text px-3 py-2 text-[11px] font-semibold text-ps-bg transition-colors hover:bg-ps-text/90"
+          >
+            Copy invite link
+          </button>
+        </span>
+      )}
+    </span>
+  );
 }
