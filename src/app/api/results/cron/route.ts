@@ -6,6 +6,7 @@ import {
   type AutoResultStatus,
 } from "@/lib/sports/auto-result";
 import { sendPushToUser } from "@/lib/push/send";
+import { isJoinsClosed } from "@/lib/wc/join-cutoff";
 
 /**
  * GET /api/results/cron
@@ -154,6 +155,37 @@ export async function GET(request: Request) {
     }
   }
 
+  // ── WC soft join cutoff (ADR 0014, SPEC.md §16.10) ───────────────────────
+  // Once now() >= WC_JOINS_CLOSE_AT, flip joins_locked_at on any WC competition
+  // where it's still null. Idempotent — only writes the first time across the
+  // boundary. Embedded here to preserve Vercel Hobby's 2-cron-per-day cap
+  // (predictsport-vercel-cron-limit memory).
+  let wcCompetitionsLocked = 0;
+  if (isJoinsClosed(now)) {
+    const { data: openWcCompetitions } = await supabase
+      .from("competitions")
+      .select("id")
+      .eq("product_mode", "world_cup_2026_shell")
+      .is("joins_locked_at", null);
+
+    for (const comp of openWcCompetitions ?? []) {
+      const { error: lockErr } = await supabase
+        .from("competitions")
+        .update({ joins_locked_at: now.toISOString() })
+        .eq("id", comp.id)
+        .is("joins_locked_at", null);
+      if (lockErr) {
+        console.error(
+          `[results-cron] failed to lock WC joins for competition ${comp.id}:`,
+          lockErr.message,
+        );
+      } else {
+        wcCompetitionsLocked++;
+        console.log(`[results-cron] WC joins locked for competition ${comp.id}`);
+      }
+    }
+  }
+
   return NextResponse.json({
     ok: true,
     checked_at: now.toISOString(),
@@ -164,5 +196,6 @@ export async function GET(request: Request) {
     skipped: counts.skipped,
     errors: counts.error,
     manual_alerts_sent: manualAlertsSent,
+    wc_competitions_locked: wcCompetitionsLocked,
   });
 }

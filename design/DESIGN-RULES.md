@@ -73,3 +73,31 @@ The icon is a *page-level brand stamp*, scoped to the title moment. Once the eye
 ## Personality
 
 "Confident, cheeky, craftsman-warm" — pub-chalkboard vibe. Culturally inferred, never explicit. Avoid slot-machine gradients, shiny chrome, AI-cliché orbs, and big-sportsbook green.
+
+## WC Chrome vs Card Palettes (ADR 0014)
+
+The WC product uses **two separate palettes** with explicit, non-overlapping responsibilities. Don't blur them.
+
+### Card surfaces — host-city palette (locked)
+
+- **Where:** Every fixture card surface under `/wc/**` (results, picks landing, etc.) takes its background colour from `src/lib/wc/host-cities.ts` via the `fixture.city` field.
+- **Why:** Already shipped on `/wc/results`. Aligned with FIFA's host-city brand framework. White is always the foreground.
+- **Don't:** Introduce a per-group accent palette for cards. The host-city palette already covers the 16 surface colours we need; layering a second card palette fragments the visual system. Group identity is communicated via the `Group X · MDn` label in the header, not via card colour.
+
+### Chrome — 16-swatch brand palette (`design/brand-palette.md`)
+
+- **Where:** WC chrome elements only — day-calendar pills, the by-date/by-group toggle, the `!` cutoff marker, hero accent flashes, any other non-card UI under `/wc/**`.
+- **Source:** User-supplied palette image, hex codes documented in `design/brand-palette.md`. Save the source PNG at `design/brand-palette.png` when convenient.
+- **Why:** The host-city palette already saturates the page with 16 distinct hues. If chrome also drew from that palette, the page would feel monotonous and chrome would compete visually with cards. The brand palette is the counterpoint: bold, primary-leaning, slightly different vibe.
+- **Don't:** Use brand-palette hexes on fixture cards. Don't use host-city hexes for chrome. The split is the whole point.
+
+### The `✓` accent and amber selection treatment
+
+The amber selection token (`#f59e0b`, `ps-amber`) is separate from both palettes — it's the project-wide selection signal. Use it for:
+
+- The inset outline on a selected pick (`shadow-[inset_0_0_0_2px_rgba(245,158,11,0.7)]`)
+- The filled-state border on a saved score input
+- The card-level halo around any fixture with a saved prediction
+- The tiny `✓` accent below a calendar pill when every match that day has both a winner and an exact-score saved
+
+Do not replace amber selection with brand-palette colours.

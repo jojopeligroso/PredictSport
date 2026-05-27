@@ -711,11 +711,12 @@ Product modes: `predictsport_full` (default), `world_cup_2026_shell`, `world_cup
 
 ### 16.10 Entry Rules
 
-- Parent World Cup Prediction Game remains joinable until Prediction Window 1 locks (not finalisation).
-- After PW1 lock, no new Entrants may join.
-- Admin may choose to disallow late joining entirely when configuring the competition.
-- Entrants joining after PW1 locks receive zero points for missed Fixtures.
-- Late joiners before PW1 lock are included in the elimination curve entrant count. After PW1 lock, the curve is immutable and late joiners are slotted into the smallest existing group.
+- Parent World Cup Prediction Game remains joinable until **72 hours after the first MD1 kickoff** (2026-06-14 19:00 UTC for WC 2026). See [ADR 0014](./docs/adr/0014-wc-landing-picks-first.md) for rationale.
+- The cutoff is persisted on `competitions.joins_locked_at` (timestamptz, nullable). Default NULL = joins open. The daily results cron flips it to `now()` once the constant has passed. Super Admin can override the column directly in Supabase for early/late cutoffs without a deploy.
+- After the cutoff, no new Entrants may join. `/wc/join` renders a "Joins closed" panel for non-members; existing members always pass through.
+- Late joiners during the soft 72h window can submit predictions for any match that hasn't yet locked. `lock_time` enforcement on `/api/predictions` server-side rejects submissions for already-locked matches, so they auto-forfeit those.
+- Late joiners during the soft window are included in the elimination curve entrant count if joining before PW1 lock; if joining after PW1 lock but before the 72h soft cutoff, the curve is immutable and they are slotted into the smallest existing group.
+- Entrants receive zero points for any Fixture whose `lock_time` was already in the past at the moment of their join.
 - Scored participation requires authentication (Google OAuth or email magic link).
 
 ### 16.11 Roles and Authority
@@ -748,6 +749,7 @@ The following are explicitly deferred and must not be assumed or implied:
 | Three concurrent Classifications | Five: Overall, Format, Full Bracket, Knockout Bracket, Pre-Tournament Stage Pick |
 | Format final always has exactly 2 Entrants | Finalist count is band-derived: 2/3/4 (see 16.8) |
 | New Entrants join until final Group Stage window locks | Parent game closes at PW1 lock |
+| Parent game closes at PW1 lock | Parent game closes 72h after first MD1 kickoff (soft cutoff); see ADR 0014 |
 | 9 Prediction Windows (Third-Place and Final separate) | 8 Prediction Windows (PW8 = Third-Place + Final bundled) |
 | Elimination curves deferred (ADR 0008) | **Resolved** — formula-based generation from any count 8-96 |
 | Knockout-only game as separate duplicated backend | Clarification required; must not duplicate canonical data (ADR 0009) |
