@@ -28,12 +28,15 @@ export default async function WorldCupLayout({
 
   const isSuperAdmin = profile?.is_super_admin === true;
 
-  // "Engaged" = user has started their bracket (any stage beyond not_started).
-  // Nav links are hidden on the /wc landing for visitors, first-timers, and
-  // users who haven't begun the bracket yet.
+  // "Engaged" = user has either started their bracket OR joined the WC
+  // competition. With the picks-first /wc landing (ADR 0014), joining the
+  // competition is the meaningful signal that the user wants the full nav —
+  // they no longer need to touch the bracket to be considered engaged.
   let isAdmin = false;
+  let isWcMember = false;
   const [bracket] = await Promise.all([
     authUser ? getWcBracketSnapshot(supabase, authUser.id) : Promise.resolve(null),
+    // Admin/co-admin check across any competition (unchanged from before).
     authUser
       ? supabase
           .from("competition_members")
@@ -45,8 +48,22 @@ export default async function WorldCupLayout({
             isAdmin = ((data ?? []).length > 0);
           })
       : Promise.resolve(),
+    // WC membership check — drives engaged on the new picks-first landing.
+    authUser
+      ? supabase
+          .from("competition_members")
+          .select("competition_id, competitions!inner(product_mode)")
+          .eq("user_id", authUser.id)
+          .eq("competitions.product_mode", "world_cup_2026_shell")
+          .limit(1)
+          .then(({ data }) => {
+            isWcMember = ((data ?? []).length > 0);
+          })
+      : Promise.resolve(),
   ]);
-  const engaged = bracket != null && bracket.stage !== "not_started";
+  const bracketStarted =
+    bracket != null && bracket.stage !== "not_started";
+  const engaged = bracketStarted || isWcMember;
 
   const displayName =
     profile?.display_name ??
