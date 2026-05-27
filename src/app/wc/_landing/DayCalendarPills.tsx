@@ -1,6 +1,7 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import { CHROME_PALETTE } from "./brand-palette";
 import { computeDayStatus, type DayPredictionStatus } from "@/lib/wc/daily-lock";
 
@@ -195,10 +196,41 @@ function PillStatusIndicator({ status }: { status: DayPredictionStatus }) {
 /** Yellow ! badge above the day-before-joins-close pill. Tap to see message. */
 function JoinCutoffBadge() {
   const [open, setOpen] = useState(false);
+  const btnRef = useRef<HTMLButtonElement>(null);
+  const popoverRef = useRef<HTMLDivElement>(null);
+  const [pos, setPos] = useState({ top: 0, left: 0 });
+
+  // Position the portal popover below the button.
+  useEffect(() => {
+    if (!open || !btnRef.current) return;
+    const rect = btnRef.current.getBoundingClientRect();
+    setPos({
+      top: rect.bottom + 6 + window.scrollY,
+      left: Math.max(12, rect.left + rect.width / 2 - 112 + window.scrollX),
+    });
+  }, [open]);
+
+  // Close on outside click.
+  useEffect(() => {
+    if (!open) return;
+    const handler = (e: MouseEvent) => {
+      if (
+        popoverRef.current &&
+        !popoverRef.current.contains(e.target as Node) &&
+        btnRef.current &&
+        !btnRef.current.contains(e.target as Node)
+      ) {
+        setOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
+  }, [open]);
 
   return (
-    <span className="relative mb-1">
+    <span className="mb-1">
       <button
+        ref={btnRef}
         type="button"
         onClick={(e) => {
           e.preventDefault();
@@ -216,29 +248,35 @@ function JoinCutoffBadge() {
       >
         !
       </button>
-      {open && (
-        <span className="absolute left-1/2 top-full z-20 mt-1.5 w-56 -translate-x-1/2 rounded-lg border border-ps-border bg-ps-surface p-3 text-left shadow-lg">
-          <span className="block text-[11px] font-semibold text-ps-text">
-            Joins close soon
-          </span>
-          <span className="mt-1 block text-[11px] leading-snug text-ps-text-sec">
-            After this day, new players can no longer join. Share the link with
-            friends before it&rsquo;s too late.
-          </span>
-          <button
-            type="button"
-            onClick={(e) => {
-              e.preventDefault();
-              e.stopPropagation();
-              navigator.clipboard?.writeText(window.location.origin + "/wc/join");
-              setOpen(false);
-            }}
-            className="mt-2 w-full rounded-lg bg-ps-text px-3 py-2 text-[11px] font-semibold text-ps-bg transition-colors hover:bg-ps-text/90"
+      {open &&
+        createPortal(
+          <div
+            ref={popoverRef}
+            className="fixed z-50 w-56 rounded-lg border border-ps-border bg-ps-surface p-3 text-left shadow-lg"
+            style={{ top: `${pos.top}px`, left: `${pos.left}px`, position: "absolute" }}
           >
-            Copy invite link
-          </button>
-        </span>
-      )}
+            <p className="text-[11px] font-semibold text-ps-text">
+              Joins close soon
+            </p>
+            <p className="mt-1 text-[11px] leading-snug text-ps-text-sec">
+              After this day, new players can no longer join. Share the link
+              with friends before it&rsquo;s too late.
+            </p>
+            <button
+              type="button"
+              onClick={() => {
+                navigator.clipboard?.writeText(
+                  window.location.origin + "/wc/join",
+                );
+                setOpen(false);
+              }}
+              className="mt-2 w-full rounded-lg bg-ps-text px-3 py-2 text-[11px] font-semibold text-ps-bg transition-colors hover:bg-ps-text/90"
+            >
+              Copy invite link
+            </button>
+          </div>,
+          document.body,
+        )}
     </span>
   );
 }
