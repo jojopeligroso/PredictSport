@@ -45,7 +45,7 @@ export async function POST(request: Request) {
     );
   }
 
-  let body: { name: string; visibility: "public" | "private"; enabledClassifications?: string[] };
+  let body: { name: string; visibility: "public" | "private"; enabledClassifications?: string[]; groupDrawHoursBefore?: number };
   try {
     body = await request.json();
   } catch {
@@ -67,6 +67,7 @@ export async function POST(request: Request) {
       entrantCount: 12, // Default estimate — curve recalculated at PW1 lock
       maxEntrants: 48,
       minEntrants: 8,
+      groupDrawHoursBefore: body.groupDrawHoursBefore ?? 24,
       enabledClassifications: body.enabledClassifications,
     });
 

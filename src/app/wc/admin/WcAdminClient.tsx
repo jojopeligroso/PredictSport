@@ -96,6 +96,7 @@ function CreateForm() {
     "full_bracket",
     "knockout_bracket",
   ]);
+  const [groupDrawHours, setGroupDrawHours] = useState(24);
   const [creating, setCreating] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -119,6 +120,7 @@ function CreateForm() {
           name: name.trim(),
           visibility,
           enabledClassifications: selectedClassifications,
+          groupDrawHoursBefore: groupDrawHours,
         }),
       });
 
@@ -215,6 +217,26 @@ function CreateForm() {
             })}
           </div>
         </fieldset>
+
+        {/* Group draw timing */}
+        {selectedClassifications.includes("format") && (
+          <label className="mt-4 block">
+            <span className="text-xs font-bold uppercase tracking-wider text-ps-text-ter">
+              Draw groups (hours before first match)
+            </span>
+            <input
+              type="number"
+              value={groupDrawHours}
+              onChange={(e) => setGroupDrawHours(Math.max(1, Number(e.target.value) || 24))}
+              min={1}
+              max={168}
+              className="mt-1 block w-full rounded-lg border border-ps-border bg-ps-bg px-3 py-2 text-sm text-ps-text outline-none focus:border-ps-amber"
+            />
+            <p className="mt-1 text-[11px] text-ps-text-ter">
+              Groups are drawn automatically this many hours before the first match of each stage.
+            </p>
+          </label>
+        )}
 
         {error && (
           <p className="mt-3 text-sm font-medium text-ps-red">{error}</p>

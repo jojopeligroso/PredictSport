@@ -34,6 +34,13 @@ export default async function LeaderboardPage() {
     );
   }
 
+  // Get user display name
+  const { data: profile } = await supabase
+    .from("users")
+    .select("display_name")
+    .eq("id", user.id)
+    .single();
+
   // Get member count
   const { count: memberCount } = await supabase
     .from("competition_members")
@@ -60,6 +67,7 @@ export default async function LeaderboardPage() {
           memberCount={memberCount ?? 0}
           maxEntrants={competition.max_entrants ?? null}
           minEntrants={competition.min_entrants ?? null}
+          currentDisplayName={profile?.display_name ?? "You"}
         />
       </div>
     </div>

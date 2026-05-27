@@ -40,6 +40,7 @@ interface CreateWCOptions {
   entrantCount: number; // 8-96, validated by generateEliminationCurve
   maxEntrants?: number; // Hard cap on membership. Null = unlimited.
   minEntrants?: number; // Minimum to proceed. Null = no minimum.
+  groupDrawHoursBefore?: number; // Hours before first event to draw groups. Default 24.
   enabledClassifications?: string[]; // e.g. ["overall","format","full_bracket","knockout_bracket"]; omit for all
 }
 
@@ -117,6 +118,7 @@ export async function createWorldCupCompetition(
       },
       config: {
         group_size: 4,
+        group_draw_hours_before: options.groupDrawHoursBefore ?? 24,
         elimination_curve: {
           entrantCount: options.entrantCount,
           locked: false,
