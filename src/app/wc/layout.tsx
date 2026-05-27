@@ -5,6 +5,7 @@ import { MobileNav } from "@/components/MobileNav";
 import { BrandMark } from "@/components/BrandMark";
 import { WcNavLinks } from "@/components/wc/WcNavLinks";
 import { getWcBracketSnapshot } from "@/lib/tournament/bracket-snapshot";
+import { DisplayNameModal } from "@/components/DisplayNameModal";
 
 export default async function WorldCupLayout({
   children,
@@ -88,12 +89,15 @@ export default async function WorldCupLayout({
   const engaged = bracketStarted || isWcMember;
 
   const displayName =
-    profile?.display_name ??
-    authUser?.user_metadata?.full_name ??
-    authUser?.email ??
+    profile?.display_name ||
+    authUser?.user_metadata?.full_name ||
+    authUser?.email ||
     "User";
   const avatarUrl =
     profile?.avatar_url ?? authUser?.user_metadata?.avatar_url ?? null;
+
+  const needsDisplayName = !!authUser && !profile?.display_name;
+  const suggestedName = authUser?.user_metadata?.full_name ?? authUser?.email?.split("@")[0] ?? "";
 
   return (
     <div className="wc-theme min-h-screen bg-ps-bg">
@@ -134,6 +138,7 @@ export default async function WorldCupLayout({
         <WcNavLinks engaged={engaged} variant="mobile" isWcAdmin={isWcAdmin} />
       </nav>
 
+      {needsDisplayName && <DisplayNameModal suggestedName={suggestedName} />}
       <div className="flex-1">{children}</div>
 
       {/* Footer brand mark — Section 21 */}

@@ -101,7 +101,7 @@ export default async function EventDetailPage({ params }: PageProps) {
       members={(members ?? []).map((m) => ({
         user_id: m.user_id,
         display_name:
-          (m.users as unknown as { display_name: string } | null)?.display_name ?? "Unknown",
+          (m.users as unknown as { display_name: string } | null)?.display_name || "Unknown",
         callout_label: m.callout_label,
       }))}
       reactions={reactions}

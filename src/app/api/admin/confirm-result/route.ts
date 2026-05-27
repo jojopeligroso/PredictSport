@@ -215,7 +215,7 @@ async function notifyResultsToGroup(
 
   const topScorers = [...pointsByUser.entries()]
     .map(([id, points]) => ({
-      name: users?.find((u) => u.id === id)?.display_name ?? "Unknown",
+      name: users?.find((u) => u.id === id)?.display_name || "Unknown",
       points,
     }))
     .sort((a, b) => b.points - a.points);

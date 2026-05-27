@@ -186,7 +186,7 @@ export default async function AdminPage() {
       user_id: m.user_id,
       role: m.role as "admin" | "co_admin" | "participant",
       joined_at: m.joined_at,
-      display_name: u?.display_name ?? "Unknown",
+      display_name: u?.display_name || "Unknown",
       email: u?.email ?? "",
     };
   });

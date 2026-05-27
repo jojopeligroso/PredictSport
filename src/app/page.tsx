@@ -176,7 +176,7 @@ async function Dashboard({ userId }: { userId: string }) {
     .eq("id", userId)
     .maybeSingle();
 
-  const displayName = profile?.display_name ?? "You";
+  const displayName = profile?.display_name || "You";
   const initial = displayName.charAt(0).toUpperCase();
 
   // Fetch competitions

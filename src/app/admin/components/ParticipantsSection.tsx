@@ -31,7 +31,7 @@ export function ParticipantsSection({
     () => {
       const drafts: Record<string, string> = {};
       for (const m of members ?? []) {
-        drafts[m.user_id] = m.callout_label ?? `${m.user?.display_name ?? "Unknown"} reckons...`;
+        drafts[m.user_id] = m.callout_label ?? `${m.user?.display_name || "Unknown"} reckons...`;
       }
       return drafts;
     }
@@ -155,7 +155,7 @@ export function ParticipantsSection({
           const isCreator = member.user_id === competition.created_by;
           const isSelf = member.user_id === currentUserId;
           const isEditing = editingCalloutId === member.user_id;
-          const displayName = member.user?.display_name ?? "Unknown";
+          const displayName = member.user?.display_name || "Unknown";
           const initials = displayName.slice(0, 2).toUpperCase();
 
           return (

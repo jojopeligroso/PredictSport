@@ -248,7 +248,7 @@ export async function computeStandings(
     } | null;
 
     const userId = userObj?.id ?? m.user_id;
-    const displayName = userObj?.display_name ?? "Unknown";
+    const displayName = userObj?.display_name || "Unknown";
     const avatarUrl = userObj?.avatar_url ?? null;
 
     const preds = resultedPredsByUser.get(userId) ?? [];

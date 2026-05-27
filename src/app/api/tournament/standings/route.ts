@@ -110,7 +110,7 @@ export async function GET(request: NextRequest) {
       .map(([userId, points], idx) => ({
         rank: idx + 1,
         user_id: userId,
-        display_name: nameMap.get(userId) ?? "Unknown",
+        display_name: nameMap.get(userId) || "Unknown",
         points,
         status: memberships.find((m: { user_id: string }) => m.user_id === userId)?.status ?? "active",
         eliminated: memberships.find((m: { user_id: string }) => m.user_id === userId)?.status === "eliminated",

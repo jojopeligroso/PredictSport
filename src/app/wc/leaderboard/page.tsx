@@ -71,7 +71,7 @@ export default async function LeaderboardPage() {
           memberCount={memberCount ?? 0}
           maxEntrants={competition.max_entrants ?? null}
           minEntrants={competition.min_entrants ?? null}
-          currentDisplayName={profile?.display_name ?? "You"}
+          currentDisplayName={profile?.display_name || "You"}
         />
       </div>
     </div>

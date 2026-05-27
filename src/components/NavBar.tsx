@@ -3,6 +3,7 @@ import { createClient } from "@/lib/supabase/server";
 import { UserMenu } from "./UserMenu";
 import { MobileNav } from "./MobileNav";
 import { BrandMark } from "./BrandMark";
+import { DisplayNameModal } from "./DisplayNameModal";
 
 export async function NavBar() {
   const supabase = await createClient();
@@ -35,14 +36,18 @@ export async function NavBar() {
   const isSuperAdmin = profile?.is_super_admin === true;
 
   const displayName =
-    profile?.display_name ??
-    authUser?.user_metadata?.full_name ??
-    authUser?.email ??
+    profile?.display_name ||
+    authUser?.user_metadata?.full_name ||
+    authUser?.email ||
     "User";
   const avatarUrl =
     profile?.avatar_url ?? authUser?.user_metadata?.avatar_url ?? null;
 
+  const needsDisplayName = !!authUser && !profile?.display_name;
+  const suggestedName = authUser?.user_metadata?.full_name ?? authUser?.email?.split("@")[0] ?? "";
+
   return (
+    <>
     <nav className="relative bg-ps-bg">
       <div className="mx-auto grid h-12 w-full max-w-md grid-cols-[1fr_auto_1fr] items-center px-4">
         {/* Left spacer */}
@@ -82,5 +87,7 @@ export async function NavBar() {
         </div>
       </div>
     </nav>
+    {needsDisplayName && <DisplayNameModal suggestedName={suggestedName} />}
+    </>
   );
 }

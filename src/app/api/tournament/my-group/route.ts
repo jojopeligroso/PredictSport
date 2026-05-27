@@ -186,7 +186,7 @@ export async function GET(request: NextRequest) {
 
   const nameMap = new Map<string, string>();
   for (const u of users ?? []) {
-    nameMap.set(u.id, u.display_name ?? "Unknown");
+    nameMap.set(u.id, u.display_name || "Unknown");
   }
 
   // Fetch prediction counts for this round

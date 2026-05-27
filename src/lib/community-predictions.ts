@@ -38,7 +38,7 @@ export async function getCommunityPredictions(
     const userObj = p.users as unknown as { display_name: string } | null;
     groups[pickValue].users.push({
       user_id: p.user_id,
-      display_name: userObj?.display_name ?? "Unknown",
+      display_name: userObj?.display_name || "Unknown",
     });
   }
 

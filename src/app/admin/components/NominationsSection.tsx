@@ -143,7 +143,7 @@ export function NominationsSection({
                         </span>
                       )}
                       <span>
-                        By: {nom.nominator?.display_name ?? "Unknown"}
+                        By: {nom.nominator?.display_name || "Unknown"}
                       </span>
                     </div>
                   </div>
