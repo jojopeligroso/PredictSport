@@ -22,11 +22,11 @@ const wcNavLinks = [
 export function WcNavLinks({
   engaged,
   variant,
-  isSuperAdmin,
+  isWcAdmin,
 }: {
   engaged: boolean;
   variant: "desktop" | "mobile";
-  isSuperAdmin?: boolean;
+  isWcAdmin?: boolean;
 }) {
   const pathname = usePathname();
   const isLanding = pathname === "/wc";
@@ -45,7 +45,7 @@ export function WcNavLinks({
             {link.label}
           </Link>
         ))}
-        {isSuperAdmin && (
+        {isWcAdmin && (
           <Link
             href="/wc/admin"
             className="rounded-md px-3 py-1.5 text-sm font-medium text-ps-text-sec transition-colors hover:bg-ps-chip hover:text-ps-text"
@@ -69,7 +69,7 @@ export function WcNavLinks({
             {link.label}
           </Link>
         ))}
-        {isSuperAdmin && (
+        {isWcAdmin && (
           <Link
             href="/wc/admin"
             className="shrink-0 px-3 py-2 text-xs font-semibold text-ps-text-sec transition-colors hover:text-ps-text"

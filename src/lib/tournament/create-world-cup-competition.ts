@@ -38,6 +38,7 @@ interface CreateWCOptions {
   name: string;
   visibility: "public" | "private";
   entrantCount: number; // 8-96, validated by generateEliminationCurve
+  enabledClassifications?: string[]; // e.g. ["overall","format","full_bracket","knockout_bracket"]; omit for all
 }
 
 /**
@@ -78,8 +79,8 @@ export async function createWorldCupCompetition(
 
   const competitionId = competition.id;
 
-  // 2. Create 4 classifications
-  const classificationRows = [
+  // 2. Create classifications (optionally filtered by enabledClassifications)
+  const allClassificationRows = [
     {
       competition_id: competitionId,
       classification_key: "overall",
@@ -147,6 +148,15 @@ export async function createWorldCupCompetition(
     },
   ];
 
+  // Filter to only enabled classifications if specified (always include "overall")
+  const classificationRows = options.enabledClassifications
+    ? allClassificationRows.filter(
+        (r) =>
+          r.classification_key === "overall" ||
+          options.enabledClassifications!.includes(r.classification_key)
+      )
+    : allClassificationRows;
+
   const { data: classifications, error: classError } = await supabase
     .from("classifications")
     .insert(classificationRows)
@@ -185,7 +195,7 @@ export async function createWorldCupCompetition(
     throw new Error(`Failed to add admin member: ${memberError.message}`);
   }
 
-  // 5. Enroll admin in all 4 classifications
+  // 5. Enroll admin in all created classifications
   const membershipRows = classifications.map((c: Classification) => ({
     classification_id: c.id,
     competition_id: competitionId,
