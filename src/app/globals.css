@@ -36,6 +36,8 @@
   --ps-red-soft: rgba(226, 61, 79, 0.14);
   --ps-blue: #3b82f6;
   --ps-violet: #8b5cf6;
+  --ps-purple: #a020f0;
+  --ps-purple-soft: rgba(160, 32, 240, 0.14);
 
   /* Sport pills — unified warm tones (no per-sport hues) */
 }
@@ -103,6 +105,8 @@ html[data-theme="dark"] {
   --color-ps-red-soft: var(--ps-red-soft);
   --color-ps-blue: var(--ps-blue);
   --color-ps-violet: var(--ps-violet);
+  --color-ps-purple: var(--ps-purple);
+  --color-ps-purple-soft: var(--ps-purple-soft);
 }
 
 /* ── Display font utility — always Inter 800 ────────────────────────────── */

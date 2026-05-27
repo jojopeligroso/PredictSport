@@ -95,11 +95,11 @@ export default async function WcRulesPage() {
         <ul className="mt-3 space-y-2">
           <ClassificationItem
             name="Overall"
-            description="Total points across the entire tournament. Most points wins."
+            description="Total points across the entire tournament. Most points wins. Daily prediction windows lock 10 minutes before the first match of that day."
           />
           <ClassificationItem
             name="Format"
-            description="Groups of 4. After each stage, bottom player is eliminated and groups are redrawn. Last one standing wins."
+            description="Groups of 4. After each stage, bottom player is eliminated and groups are redrawn. Last one standing wins. Same daily lock rule applies — each day locks before its earliest kickoff."
           />
           <ClassificationItem
             name="Full Bracket"
@@ -110,6 +110,28 @@ export default async function WcRulesPage() {
             description="After groups finish, predict every knockout match from the Round of 32 to the final."
           />
         </ul>
+      </section>
+
+      {/* Prediction windows */}
+      <section className="mt-8">
+        <h2 className="font-display text-base font-extrabold text-ps-text">
+          Daily prediction windows
+        </h2>
+        <p className="mt-2 text-sm leading-relaxed text-ps-text-sec">
+          Each daily prediction window locks 10 minutes before the first match
+          of that day. If several matches are played on the same day, the full
+          day&rsquo;s predictions lock before the earliest kickoff.
+        </p>
+        <p className="mt-2 text-sm leading-relaxed text-ps-text-sec">
+          You can submit predictions for future days in advance.
+          Outcome-only predictions are saved, but you still need to add exact
+          scores to fully complete that day&rsquo;s predictions. Once a window
+          is locked, predictions can no longer be changed.
+        </p>
+        <p className="mt-2 text-sm leading-relaxed text-ps-text-sec">
+          Events inside the same tournament stage may lock on different days
+          and at different times.
+        </p>
       </section>
 
       {/* Tiebreakers */}

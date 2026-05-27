@@ -65,7 +65,7 @@ const supabase = createClient(SUPABASE_URL, SERVICE_ROLE_KEY, {
 // --- constants -------------------------------------------------------------
 
 const WC2026_TOURNAMENT_ID = "a0000000-0000-0000-0000-000000000026";
-const LOCK_OFFSET_MIN = 30; // competition lock_default_minutes
+const LOCK_OFFSET_MIN = 10; // daily window locks 10min before first kickoff
 const POINTS_WINNER = 2; // competition scoring_rules.group_match_outcome
 const POINTS_EXACT = 3; // competition scoring_rules.exact_score_bonus
 
@@ -116,10 +116,27 @@ async function main() {
     );
   }
 
-  // 3. Build event rows.
+  // 3. Pre-compute daily lock times: all events on the same UTC date
+  //    share one lock time = earliest kickoff that day − 10 minutes.
+  const fixturesByUtcDate = new Map<string, Date[]>();
+  for (const f of WC2026_GROUP_FIXTURES) {
+    const start = new Date(f.kickoffUtc);
+    const iso = start.toISOString().slice(0, 10);
+    const list = fixturesByUtcDate.get(iso) ?? [];
+    list.push(start);
+    fixturesByUtcDate.set(iso, list);
+  }
+  const dailyLockByDate = new Map<string, Date>();
+  for (const [iso, starts] of fixturesByUtcDate) {
+    const earliest = starts.reduce((a, b) => (a < b ? a : b));
+    dailyLockByDate.set(iso, new Date(earliest.getTime() - LOCK_OFFSET_MIN * 60_000));
+  }
+
+  // 4. Build event rows using daily lock times.
   const eventRows = WC2026_GROUP_FIXTURES.map((f) => {
     const start = new Date(f.kickoffUtc);
-    const lock = new Date(start.getTime() - LOCK_OFFSET_MIN * 60_000);
+    const iso = start.toISOString().slice(0, 10);
+    const lock = dailyLockByDate.get(iso)!;
     return {
       fixture: f,
       row: {
@@ -150,7 +167,7 @@ async function main() {
     return;
   }
 
-  // 4. Insert/update events. Done explicitly rather than via upsert() because
+  // 5. Insert/update events. Done explicitly rather than via upsert() because
   //    the uniqueness guard on (competition_id, external_event_id) is a PARTIAL
   //    index (WHERE external_event_id IS NOT NULL); onConflict against partial
   //    indexes is unreliable. Explicit select-then-insert/update is idempotent
@@ -190,7 +207,7 @@ async function main() {
   }
   if (toUpdate.length > 0) console.log(`Updated ${toUpdate.length} existing events.`);
 
-  // 5. Upsert event_prediction_types: winner + exact_score per event.
+  // 6. Upsert event_prediction_types: winner + exact_score per event.
   const eptRows: Array<{
     event_id: string;
     prediction_type: string;

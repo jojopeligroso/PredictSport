@@ -98,13 +98,15 @@ export async function getWindowsToLock(
   const toLock: Pick<Round, "id" | "name">[] = [];
 
   for (const round of openRounds) {
-    // Find the earliest non-cancelled/postponed event lock_time in this round
-    const { data: earliest, error: eventError } = await supabase
+    // Find the LATEST non-cancelled/postponed event lock_time in this round.
+    // The round only locks when ALL its events have passed their lock_time,
+    // so users can still predict later days within the same matchday round.
+    const { data: latest, error: eventError } = await supabase
       .from("events")
       .select("lock_time")
       .eq("round_id", round.id)
       .not("status", "in", '("cancelled","postponed")')
-      .order("lock_time", { ascending: true })
+      .order("lock_time", { ascending: false })
       .limit(1)
       .maybeSingle();
 
@@ -113,7 +115,7 @@ export async function getWindowsToLock(
         `Failed to fetch events for round ${round.id}: ${eventError.message}`
       );
 
-    if (earliest?.lock_time && earliest.lock_time <= now) {
+    if (latest?.lock_time && latest.lock_time <= now) {
       toLock.push({ id: round.id, name: round.name });
     }
   }

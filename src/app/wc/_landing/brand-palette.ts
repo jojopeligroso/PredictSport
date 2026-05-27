@@ -17,6 +17,8 @@ export const CHROME_PALETTE = {
   heroAccent: "#e63946",
   /** Royal blue `#1e6cff` — ViewToggle active-segment underline. Cool counterpoint to amber selection. */
   toggleActive: "#1e6cff",
+  /** Bright purple `#a020f0` — attention accent for action-required states (e.g. missing exact score). Maximally distinct from amber completion accent. */
+  attention: "#a020f0",
   /** Aqua `#5eead4` — reserved for future use (e.g. "saved" pulse). Not currently consumed. */
   ok: "#5eead4",
 } as const;

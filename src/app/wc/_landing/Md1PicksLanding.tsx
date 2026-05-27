@@ -11,9 +11,16 @@ import {
   dayBeforeCloseUtcDate,
   joinCutoffWarningState,
 } from "@/lib/wc/join-cutoff";
+import {
+  computeDayStatus,
+  formatLockCountdown,
+  getDailyLockTimes,
+  type DayPredictionStatus,
+} from "@/lib/wc/daily-lock";
 import { DayCalendarPills, type DayBucket } from "./DayCalendarPills";
 import { JoinCutoffBanner } from "./JoinCutoffBanner";
 import { ViewToggle, type ViewMode } from "./ViewToggle";
+import { CHROME_PALETTE } from "./brand-palette";
 
 /**
  * Md1PicksLanding — client root for the picks-first /wc landing.
@@ -109,17 +116,28 @@ export function Md1PicksLanding(props: Md1PicksLandingProps) {
   // `event.id`, so re-bucketing parents does not unmount rows — optimistic
   // pick state survives the toggle.
   const sections = useMemo(() => {
-    if (view === "group") return bucketByGroup(props.events, props.fixtureByEventId);
-    return bucketByDate(props.events);
-  }, [view, props.events, props.fixtureByEventId]);
+    if (view === "group")
+      return bucketByGroup(props.events, props.fixtureByEventId, props.predictions, now);
+    return bucketByDate(props.events, props.predictions, now);
+  }, [view, props.events, props.fixtureByEventId, props.predictions, now]);
 
   return (
     <div className="pb-16">
-      {/* Hero */}
+      {/* Hero — 3-part Group Stage header */}
       <header className="mx-auto mt-5 w-full max-w-[480px] px-4">
-        <p className="font-mono text-[10px] font-bold uppercase tracking-[0.18em] text-ps-amber-deep">
-          Round 1 · Group stage
-        </p>
+        <div className="flex items-baseline gap-2">
+          <p className="font-mono text-[10px] font-bold uppercase tracking-[0.18em] text-ps-amber-deep">
+            Round 1
+          </p>
+          <span className="font-mono text-[10px] text-ps-text-ter">·</span>
+          <p className="font-mono text-[10px] font-bold uppercase tracking-[0.18em] text-ps-text-ter">
+            Group Stage
+          </p>
+          <span className="font-mono text-[10px] text-ps-text-ter">·</span>
+          <p className="font-mono text-[10px] font-bold uppercase tracking-[0.18em] text-ps-text-sec">
+            Matchday 1
+          </p>
+        </div>
         <h1 className="mt-1.5 font-display text-2xl font-extrabold uppercase tracking-tight text-ps-text">
           Pick the winners
         </h1>
@@ -152,11 +170,12 @@ export function Md1PicksLanding(props: Md1PicksLandingProps) {
         </div>
       </div>
 
-      {/* 8-day calendar pills */}
+      {/* 8-day calendar pills with month labels */}
       <DayCalendarPills
         days={dayBuckets}
         dayBeforeCloseIso={dayBeforeCloseIso}
         todayIso={todayIso}
+        now={now}
       />
 
       {/* Soft cutoff banner */}
@@ -181,6 +200,7 @@ export function Md1PicksLanding(props: Md1PicksLandingProps) {
             predictions={props.predictions}
             fixtureByEventId={props.fixtureByEventId}
             windowLocked={props.windowLocked || previewMode}
+            now={now}
           />
         </div>
 
@@ -202,6 +222,12 @@ interface Section {
   /** Optional sub-text under the heading. */
   sub?: string;
   events: WindowEvent[];
+  /** Lock time for this section's countdown. */
+  lockTime?: string;
+  /** Prediction status for this section. */
+  status?: DayPredictionStatus;
+  /** True if this is a group-view section (countdown needs info explainer). */
+  isGroupSection?: boolean;
 }
 
 function Sections({
@@ -210,12 +236,14 @@ function Sections({
   predictions,
   fixtureByEventId,
   windowLocked,
+  now,
 }: {
   sections: Section[];
   competitionId: string;
   predictions: Prediction[];
   fixtureByEventId: Map<string, WcFixture>;
   windowLocked: boolean;
+  now: Date | null;
 }) {
   if (sections.length === 0) {
     return (
@@ -224,32 +252,113 @@ function Sections({
       </p>
     );
   }
+
+  // Max 2 countdowns visible on a page. Show for the first 2 non-complete
+  // sections that have a lock time in the future.
+  let countdownsShown = 0;
+
   return (
     <div className="mx-auto w-full max-w-[480px] px-4">
-      {sections.map((s) => (
-        <section key={s.domId} id={s.domId} className="mt-5 scroll-mt-20">
-          <div className="mb-2 flex items-baseline justify-between gap-3 border-b border-ps-border pb-1.5">
-            <h2 className="font-mono text-[11px] font-extrabold uppercase tracking-[0.12em] text-ps-text">
-              {s.heading}
-            </h2>
-            {s.sub && (
-              <span className="font-mono text-[11px] text-ps-text-ter">
-                {s.sub}
-              </span>
-            )}
-          </div>
-          <WindowPickList
-            competitionId={competitionId}
-            events={s.events}
-            predictions={predictions}
-            windowLocked={windowLocked}
-            surface="card"
-            fixtureByEventId={fixtureByEventId}
-          />
-        </section>
-      ))}
+      {sections.map((s) => {
+        const status = s.status ?? "upcoming";
+        const showCountdown =
+          now &&
+          s.lockTime &&
+          status !== "complete" &&
+          countdownsShown < 2 &&
+          new Date(s.lockTime).getTime() > now.getTime();
+        const countdown = showCountdown
+          ? formatLockCountdown(s.lockTime!, now!)
+          : null;
+        if (countdown) countdownsShown++;
+
+        return (
+          <section key={s.domId} id={s.domId} className="mt-5 scroll-mt-20">
+            <div className="mb-2 flex items-center justify-between gap-2 border-b border-ps-border pb-1.5">
+              <div className="flex items-center gap-2">
+                {/* Status icon beside heading */}
+                <SectionStatusIcon status={status} />
+                <h2 className="font-mono text-[11px] font-extrabold uppercase tracking-[0.12em] text-ps-text">
+                  {s.heading}
+                </h2>
+              </div>
+              <div className="flex items-center gap-2">
+                {/* Partial: "Exact score needed" label */}
+                {status === "partial" && (
+                  <span
+                    className="font-mono text-[9px] font-semibold uppercase tracking-wide"
+                    style={{ color: CHROME_PALETTE.attention }}
+                  >
+                    Exact score needed
+                  </span>
+                )}
+                {/* Countdown + optional group info */}
+                {countdown && (
+                  <span className="flex items-center gap-1">
+                    <span
+                      className={`font-mono text-[10px] font-semibold ${
+                        status === "urgent"
+                          ? "text-ps-red"
+                          : "text-ps-text-ter"
+                      }`}
+                      role="timer"
+                      aria-live="polite"
+                    >
+                      {countdown}
+                    </span>
+                    {s.isGroupSection && <GroupCountdownInfo />}
+                  </span>
+                )}
+                {/* Match count */}
+                {s.sub && !countdown && status !== "partial" && (
+                  <span className="font-mono text-[11px] text-ps-text-ter">
+                    {s.sub}
+                  </span>
+                )}
+              </div>
+            </div>
+            <WindowPickList
+              competitionId={competitionId}
+              events={s.events}
+              predictions={predictions}
+              windowLocked={windowLocked}
+              surface="card"
+              fixtureByEventId={fixtureByEventId}
+            />
+          </section>
+        );
+      })}
     </div>
   );
+}
+
+/** Status icon beside section heading — same semantics as pill indicators. */
+function SectionStatusIcon({ status }: { status: DayPredictionStatus }) {
+  switch (status) {
+    case "complete":
+      return (
+        <span className="inline-flex h-4 w-4 items-center justify-center rounded-full bg-ps-green text-[9px] font-extrabold leading-none text-white">
+          ✓
+        </span>
+      );
+    case "partial":
+      return (
+        <span
+          className="inline-flex h-4 w-4 items-center justify-center rounded-full text-[10px] font-extrabold leading-none text-white"
+          style={{ background: CHROME_PALETTE.attention }}
+        >
+          !
+        </span>
+      );
+    case "urgent":
+      return (
+        <span className="inline-flex h-4 w-4 items-center justify-center rounded-full bg-ps-red text-[9px] font-extrabold leading-none text-white">
+          ✗
+        </span>
+      );
+    default:
+      return null;
+  }
 }
 
 // ── Preview overlay ─────────────────────────────────────────────────────────
@@ -342,7 +451,11 @@ function utcDateIso(d: Date): string {
   return `${y}-${m}-${day}`;
 }
 
-function bucketByDate(events: WindowEvent[]): Section[] {
+function bucketByDate(
+  events: WindowEvent[],
+  predictions: Prediction[],
+  now: Date | null,
+): Section[] {
   const buckets = new Map<string, WindowEvent[]>();
   for (const e of events) {
     const iso = utcDateIso(new Date(e.start_time));
@@ -350,23 +463,33 @@ function bucketByDate(events: WindowEvent[]): Section[] {
     list.push(e);
     buckets.set(iso, list);
   }
-  // Sort sections by date.
+
+  const dailyLocks = getDailyLockTimes(events);
+  const { winnerByEvent, scoreByEvent } = buildPredictionMaps(predictions);
+
   const sorted = Array.from(buckets.entries()).sort(([a], [b]) =>
     a.localeCompare(b),
   );
   return sorted.map(([iso, list]) => {
-    const d = new Date(iso + "T12:00:00Z"); // midday UTC to dodge locale edge cases
+    const d = new Date(iso + "T12:00:00Z");
     const heading = new Intl.DateTimeFormat("en-GB", {
       weekday: "short",
       day: "numeric",
       month: "short",
       timeZone: "UTC",
     }).format(d);
+    const lockTime = dailyLocks.get(iso) ?? list[0]?.lock_time;
+    const { fullyComplete, hasAnyOutcome } = countSectionCompletion(list, winnerByEvent, scoreByEvent);
+    const status = now && lockTime
+      ? computeDayStatus({ totalEvents: list.length, fullyComplete, hasAnyOutcome, lockTime, now })
+      : undefined;
     return {
       domId: `date-${iso}`,
       heading,
       sub: `${list.length} ${list.length === 1 ? "match" : "matches"}`,
       events: list,
+      lockTime,
+      status,
     };
   });
 }
@@ -374,6 +497,8 @@ function bucketByDate(events: WindowEvent[]): Section[] {
 function bucketByGroup(
   events: WindowEvent[],
   fixtureByEventId: Map<string, WcFixture>,
+  predictions: Prediction[],
+  now: Date | null,
 ): Section[] {
   const buckets = new Map<string, WindowEvent[]>();
   for (const e of events) {
@@ -383,22 +508,95 @@ function bucketByGroup(
     list.push(e);
     buckets.set(key, list);
   }
+
+  const { winnerByEvent, scoreByEvent } = buildPredictionMaps(predictions);
+
   const sorted = Array.from(buckets.entries()).sort(([a], [b]) =>
     a.localeCompare(b),
   );
-  return sorted.map(([letter, list]) => ({
-    domId: `group-${letter}`,
-    heading: letter === "?" ? "Unmatched" : `Group ${letter}`,
-    sub: `${list.length} ${list.length === 1 ? "match" : "matches"}`,
-    events: list,
-  }));
+  return sorted.map(([letter, list]) => {
+    // For group view, countdown refers to the earliest visible match's daily lock.
+    const earliestLock = list
+      .map((e) => e.lock_time)
+      .sort()[0];
+    const { fullyComplete, hasAnyOutcome } = countSectionCompletion(list, winnerByEvent, scoreByEvent);
+    const status = now && earliestLock
+      ? computeDayStatus({ totalEvents: list.length, fullyComplete, hasAnyOutcome, lockTime: earliestLock, now })
+      : undefined;
+    return {
+      domId: `group-${letter}`,
+      heading: letter === "?" ? "Unmatched" : `Group ${letter}`,
+      sub: `${list.length} ${list.length === 1 ? "match" : "matches"}`,
+      events: list,
+      lockTime: earliestLock,
+      status,
+      isGroupSection: true,
+    };
+  });
+}
+
+/** Info button for group-view countdowns — explains what the countdown refers to. */
+function GroupCountdownInfo() {
+  const [open, setOpen] = useState(false);
+  return (
+    <span className="relative">
+      <button
+        type="button"
+        onClick={() => setOpen((v) => !v)}
+        onKeyDown={(e) => e.key === "Escape" && setOpen(false)}
+        className="inline-flex h-4 w-4 items-center justify-center rounded-full bg-ps-chip text-[9px] font-bold text-ps-text-ter hover:bg-ps-border"
+        aria-label="Countdown info"
+        aria-expanded={open}
+      >
+        ?
+      </button>
+      {open && (
+        <span className="absolute right-0 top-full z-10 mt-1 w-52 rounded-lg border border-ps-border bg-ps-surface p-2.5 text-[11px] leading-snug text-ps-text-sec shadow-lg">
+          This countdown refers to the earliest match shown in this group section.
+        </span>
+      )}
+    </span>
+  );
+}
+
+/** Shared prediction lookup maps — avoids duplicate iteration. */
+function buildPredictionMaps(predictions: Prediction[]) {
+  const winnerByEvent = new Map<string, boolean>();
+  const scoreByEvent = new Map<string, boolean>();
+  for (const p of predictions) {
+    if (p.prediction_type === "winner") {
+      const v = p.prediction_data?.value ?? p.prediction_data?.selection;
+      if (v) winnerByEvent.set(p.event_id, true);
+    } else if (p.prediction_type === "exact_score") {
+      const data = p.prediction_data ?? {};
+      if (data.home !== undefined && data.away !== undefined) {
+        scoreByEvent.set(p.event_id, true);
+      }
+    }
+  }
+  return { winnerByEvent, scoreByEvent };
+}
+
+/** Count completion for a section's events. */
+function countSectionCompletion(
+  events: WindowEvent[],
+  winnerByEvent: Map<string, boolean>,
+  scoreByEvent: Map<string, boolean>,
+) {
+  let fullyComplete = 0;
+  let hasAnyOutcome = false;
+  for (const e of events) {
+    if (winnerByEvent.get(e.id)) hasAnyOutcome = true;
+    if (winnerByEvent.get(e.id) && scoreByEvent.get(e.id)) fullyComplete++;
+  }
+  return { fullyComplete, hasAnyOutcome };
 }
 
 function buildDayBuckets(
   events: WindowEvent[],
   predictions: Prediction[],
 ): DayBucket[] {
-  // Group event IDs by UTC date.
+  // Group events by UTC date.
   const dateToEvents = new Map<string, WindowEvent[]>();
   for (const e of events) {
     const iso = utcDateIso(new Date(e.start_time));
@@ -406,6 +604,9 @@ function buildDayBuckets(
     list.push(e);
     dateToEvents.set(iso, list);
   }
+
+  // Daily lock times from event lock_time (already set to daily model in DB).
+  const dailyLocks = getDailyLockTimes(events);
 
   // Precompute "fully picked" per event id.
   const winnerByEvent = new Map<string, boolean>();
@@ -427,7 +628,9 @@ function buildDayBuckets(
   for (const iso of sortedDates) {
     const list = dateToEvents.get(iso) ?? [];
     let fullyComplete = 0;
+    let anyOutcome = false;
     for (const e of list) {
+      if (winnerByEvent.get(e.id)) anyOutcome = true;
       if (winnerByEvent.get(e.id) && scoreByEvent.get(e.id)) fullyComplete++;
     }
     const d = new Date(iso + "T12:00:00Z");
@@ -435,12 +638,23 @@ function buildDayBuckets(
       weekday: "short",
       timeZone: "UTC",
     }).format(d);
+    const month = new Intl.DateTimeFormat("en-GB", {
+      month: "long",
+      timeZone: "UTC",
+    }).format(d);
+
+    // Lock time: from the daily lock map, or fall back to earliest event's own lock_time.
+    const lockTime = dailyLocks.get(iso) ?? list[0]?.lock_time ?? iso + "T00:00:00Z";
+
     buckets.push({
       iso,
       weekday,
       dayNum: d.getUTCDate(),
       totalCount: list.length,
       fullyComplete,
+      hasAnyOutcome: anyOutcome,
+      lockTime,
+      month,
     });
   }
   return buckets;
