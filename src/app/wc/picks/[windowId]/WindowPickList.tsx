@@ -540,7 +540,7 @@ function MatchPickRow({
               ? `Group ${fixture.group} · MD${fixture.matchday}`
               : event.event_name
           }
-          headerRight={formatHeaderRight(fixture.kickoffUtc)}
+          headerRight={formatHeaderRight(fixture.kickoffUtc, event.lock_time)}
           hasPick={currentWinner !== null}
         >
           <div className={theme.lockedReadOnly}>{lockedBody}</div>
@@ -647,7 +647,7 @@ function MatchPickRow({
             ? `Group ${fixture.group} · MD${fixture.matchday}`
             : event.event_name
         }
-        headerRight={formatHeaderRight(fixture.kickoffUtc)}
+        headerRight={formatHeaderRight(fixture.kickoffUtc, event.lock_time)}
         hasPick={currentWinner !== null}
       >
         {interactiveBody}
@@ -664,11 +664,9 @@ function MatchPickRow({
 
 /**
  * Header right-side content for the card surface — kickoff time on top,
- * weekday + date below in a quieter shade. All in UTC by design; the user's
- * local-time conversion is intentionally NOT shown here (that lives on
- * /wc/results which is the canonical fixture-detail surface).
+ * weekday + date below, and a live countdown to lock time.
  */
-function formatHeaderRight(kickoffUtc: string): ReactNode {
+function formatHeaderRight(kickoffUtc: string, lockTime: string): ReactNode {
   const d = new Date(kickoffUtc);
   const time = new Intl.DateTimeFormat("en-GB", {
     hour: "2-digit",
@@ -688,8 +686,52 @@ function formatHeaderRight(kickoffUtc: string): ReactNode {
       <span className="block text-[0.65rem] font-medium text-white/55">
         {date}
       </span>
+      <CardCountdown lockTime={lockTime} />
     </>
   );
+}
+
+/**
+ * Live-ticking dd:hh:mm:ss countdown to lock time on each match card.
+ * Returns null after lock (no stale "00:00:00:00" display).
+ */
+function CardCountdown({ lockTime }: { lockTime: string }) {
+  const [remaining, setRemaining] = useState<string | null>(() =>
+    formatDdHhMmSs(lockTime),
+  );
+
+  useEffect(() => {
+    const tick = () => {
+      const next = formatDdHhMmSs(lockTime);
+      setRemaining(next);
+      if (!next) clearInterval(id);
+    };
+    const id = setInterval(tick, 1000);
+    return () => clearInterval(id);
+  }, [lockTime]);
+
+  if (!remaining) return null;
+
+  return (
+    <span
+      className="mt-0.5 block font-mono text-[0.6rem] font-semibold tabular-nums text-white/70"
+      role="timer"
+      aria-live="off"
+    >
+      {remaining}
+    </span>
+  );
+}
+
+function formatDdHhMmSs(lockTime: string): string | null {
+  const diff = new Date(lockTime).getTime() - Date.now();
+  if (diff <= 0) return null;
+  const d = Math.floor(diff / (86400000));
+  const h = Math.floor((diff % 86400000) / 3600000);
+  const m = Math.floor((diff % 3600000) / 60000);
+  const s = Math.floor((diff % 60000) / 1000);
+  const pad = (n: number) => String(n).padStart(2, "0");
+  return `${pad(d)}:${pad(h)}:${pad(m)}:${pad(s)}`;
 }
 
 // ── List ─────────────────────────────────────────────────────────────────────
