@@ -1,9 +1,11 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { useRouter } from "next/navigation";
 import { CountryFlag } from "@/components/CountryFlag";
+import { FixtureCardSurface } from "@/components/wc/FixtureCardSurface";
 import { deriveWinnerFromScore } from "@/lib/score-format";
+import type { WcFixture } from "@/lib/wc/fixtures";
 import type {
   EventPredictionType,
   Prediction,
@@ -43,6 +45,22 @@ export interface WindowEvent {
   event_prediction_types: EventPredictionType[];
 }
 
+/**
+ * Visual surface for each pick row.
+ *
+ *  - "compact" (default): the existing cream/ink card used on
+ *    /wc/picks/[windowId]. Pixel-identical to the pre-PR2 behaviour.
+ *  - "card": host-city-coloured surface (FixtureCardSurface) with amber-on-
+ *    color button treatment. Used by the picks-first /wc landing (PR3).
+ *
+ * The "card" surface requires per-event fixture metadata (city, group,
+ * matchday, kickoffUtc). Pass it via `fixtureByEventId` keyed by
+ * `event.id`. If the lookup misses for a given event in card mode, that row
+ * falls back to the compact surface (defensive — the landing should always
+ * populate this map for MD1 events).
+ */
+export type PickSurface = "compact" | "card";
+
 interface WindowPickListProps {
   competitionId: string;
   events: WindowEvent[];
@@ -55,6 +73,13 @@ interface WindowPickListProps {
   windowLocked: boolean;
   /** Fires the first time the user lands a pick that makes all matches picked. */
   onWindowComplete?: () => void;
+  /** Visual surface. Defaults to "compact" — the existing /wc/picks behaviour. */
+  surface?: PickSurface;
+  /**
+   * Required for surface="card": map of `event.id` → WcFixture so the row can
+   * resolve city colour, group letter, matchday, and kickoff timestamp.
+   */
+  fixtureByEventId?: Map<string, WcFixture>;
 }
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
@@ -93,12 +118,124 @@ function slotOf(label: string, home: string, away: string): Slot {
 
 // ── Single match row ─────────────────────────────────────────────────────────
 
+/**
+ * Class-string buckets per surface. Keeps the JSX free of inline branches and
+ * makes it trivial to verify both paths render the right tokens.
+ *
+ * Card surface mirrors FixturesTabs.FixtureCard (lines 458–500): inset amber
+ * outline on selected buttons against the host-city colour; white-tinted
+ * backgrounds for score inputs that bind to amber when filled.
+ *
+ * Compact surface preserves the existing /wc/picks/[windowId] behaviour
+ * verbatim — bg-ps-amber/10 + ring-ps-amber on cream.
+ */
+type SurfaceTheme = {
+  /** Class string applied to the outer compact wrapper. Unused for card surface. */
+  outerWrapper: (hasPick: boolean) => string;
+  teamButton: (selected: boolean) => string;
+  teamLabel: (selected: boolean) => string;
+  drawButton: (selected: boolean) => string;
+  scoreInput: (filled: boolean) => string;
+  errorText: string;
+  lockedReadOnly: string;
+  lockedText: string;
+  lockedPickedText: string;
+  lockedMutedText: string;
+};
+
+const COMPACT_THEME: SurfaceTheme = {
+  outerWrapper: (hasPick) =>
+    [
+      "rounded-xl border p-3.5 transition-all duration-200 bg-ps-surface",
+      hasPick ? "border-ps-amber/30" : "border-ps-border",
+    ].join(" "),
+  teamButton: (selected) =>
+    [
+      "flex-1 min-w-0 flex flex-col items-center gap-1 px-1.5 py-1.5 rounded-lg transition-all duration-150 cursor-pointer",
+      "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ps-amber/50",
+      selected ? "bg-ps-amber/10 ring-2 ring-ps-amber" : "hover:bg-ps-chip",
+    ].join(" "),
+  teamLabel: (selected) =>
+    [
+      "max-w-full truncate text-xs font-semibold text-center leading-tight",
+      selected ? "text-ps-amber" : "text-ps-text-ter",
+    ].join(" "),
+  drawButton: (selected) =>
+    [
+      "shrink-0 px-2.5 py-1.5 rounded-lg text-xs font-medium transition-all duration-150",
+      "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ps-amber/50",
+      selected
+        ? "bg-ps-amber/10 text-ps-amber ring-2 ring-ps-amber"
+        : "text-ps-text-ter hover:bg-ps-chip hover:text-ps-text-sec",
+    ].join(" "),
+  scoreInput: (filled) =>
+    [
+      "w-[30px] h-[28px] rounded-full border text-center font-mono text-sm font-semibold text-ps-text outline-none transition-all duration-150 shrink-0",
+      filled ? "bg-white border-ps-amber" : "bg-transparent border-ps-border",
+      "focus:border-ps-amber focus:bg-white",
+    ].join(" "),
+  errorText: "mt-1 text-[11px] font-medium text-ps-red",
+  lockedReadOnly:
+    "rounded-lg border border-ps-border bg-ps-surface px-3 py-2",
+  lockedText: "text-sm font-semibold text-ps-text",
+  lockedPickedText: "font-semibold text-ps-text",
+  lockedMutedText: "text-ps-text-ter",
+};
+
+/**
+ * Card-surface theme — used inside a FixtureCardSurface, so the parent supplies
+ * the host-city background. All buttons sit on translucent white tints; the
+ * selected state uses an inset amber outline that reads against any host-city
+ * hue (lifted verbatim from FixturesTabs.FixtureCard line 461).
+ */
+const CARD_THEME: SurfaceTheme = {
+  // Card surface uses FixtureCardSurface as the outer wrapper, so this is
+  // unused — we still define a no-op to keep the type uniform.
+  outerWrapper: () => "",
+  teamButton: (selected) =>
+    [
+      "flex-1 min-w-0 flex flex-col items-center gap-1 px-1.5 py-1.5 rounded-lg transition-all duration-150 cursor-pointer",
+      "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ps-amber/50",
+      selected
+        ? "bg-white/12 shadow-[inset_0_0_0_2px_rgba(245,158,11,0.7)]"
+        : "hover:bg-white/10",
+    ].join(" "),
+  teamLabel: (selected) =>
+    [
+      "max-w-full truncate text-xs font-semibold text-center leading-tight",
+      selected ? "text-white" : "text-white/55",
+    ].join(" "),
+  drawButton: (selected) =>
+    [
+      "shrink-0 px-2.5 py-1.5 rounded-lg text-xs font-medium transition-all duration-150",
+      "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ps-amber/50",
+      selected
+        ? "bg-white/12 text-white shadow-[inset_0_0_0_2px_rgba(245,158,11,0.7)]"
+        : "text-white/45 hover:bg-white/10 hover:text-white/65",
+    ].join(" "),
+  scoreInput: (filled) =>
+    [
+      "w-[30px] h-[28px] rounded-full border text-center font-mono text-sm font-semibold text-white outline-none transition-all duration-150 shrink-0 placeholder:text-white/30",
+      filled ? "bg-white/18 border-ps-amber/70" : "bg-white/8 border-white/25",
+      "focus:border-ps-amber/80 focus:bg-white/15",
+    ].join(" "),
+  errorText: "mt-1 text-[11px] font-medium text-red-200",
+  // Card surface read-only state stays on the host-city background. We still
+  // dim the body slightly so it reads as locked vs interactive.
+  lockedReadOnly: "px-1 py-0.5 opacity-90",
+  lockedText: "text-sm font-semibold text-white",
+  lockedPickedText: "font-semibold text-white",
+  lockedMutedText: "text-white/55",
+};
+
 function MatchPickRow({
   competitionId,
   event,
   initialPredictions,
   windowLocked,
   onWinnerLanded,
+  surface = "compact",
+  fixture,
 }: {
   competitionId: string;
   event: WindowEvent;
@@ -106,8 +243,29 @@ function MatchPickRow({
   windowLocked: boolean;
   /** Fired AFTER the optimistic state has a non-null winner. */
   onWinnerLanded: (eventId: string, hasWinner: boolean) => void;
+  /** Visual surface — see SurfaceTheme above. */
+  surface?: PickSurface;
+  /** Required when surface="card" — supplies city, group, matchday, kickoff. */
+  fixture?: WcFixture;
 }) {
   const router = useRouter();
+
+  // Resolve card-surface mode. If surface="card" was requested but no fixture
+  // metadata was supplied, fall back to compact — better to degrade gracefully
+  // than throw, but log so the caller can fix it.
+  const useCardSurface = surface === "card" && fixture !== undefined;
+  if (
+    surface === "card" &&
+    !fixture &&
+    typeof console !== "undefined" &&
+    typeof process !== "undefined" &&
+    process.env.NODE_ENV !== "production"
+  ) {
+    console.warn(
+      `[WindowPickList] surface="card" requested for event ${event.id} but no fixture metadata supplied; falling back to compact.`,
+    );
+  }
+  const theme = useCardSurface ? CARD_THEME : COMPACT_THEME;
 
   const winnerEpt = event.event_prediction_types.find(
     (e) => e.prediction_type === "winner",
@@ -335,68 +493,81 @@ function MatchPickRow({
     ],
   );
 
+  // ── Read-only locked branch ──────────────────────────────────────────────
   if (isLocked) {
-    // Read-only compact row. No buttons, just the locked pick.
-    return (
-      <div className="rounded-lg border border-ps-border bg-ps-surface px-3 py-2">
+    const lockedBody = (
+      <>
         <div className="flex items-center justify-between gap-2">
-          <span className="flex items-center gap-1.5 text-sm font-semibold text-ps-text">
+          <span className={`flex items-center gap-1.5 ${theme.lockedText}`}>
             <CountryFlag shape="pill" name={home} size={18} />
             {home}
-            <span className="mx-1 text-ps-text-ter">v</span>
+            <span className={`mx-1 ${theme.lockedMutedText}`}>v</span>
             <CountryFlag shape="pill" name={away} size={18} />
             {away}
           </span>
-          <span className="rounded-full bg-ps-chip px-2 py-0.5 text-[10px] font-semibold uppercase text-ps-text-sec">
-            {event.result_confirmed ? "Resulted" : "Locked"}
-          </span>
+          {/* The status chip uses different background contrast per surface. */}
+          {useCardSurface ? (
+            <span className="rounded-full bg-white/15 px-2 py-0.5 text-[10px] font-semibold uppercase text-white/85">
+              {event.result_confirmed ? "Resulted" : "Locked"}
+            </span>
+          ) : (
+            <span className="rounded-full bg-ps-chip px-2 py-0.5 text-[10px] font-semibold uppercase text-ps-text-sec">
+              {event.result_confirmed ? "Resulted" : "Locked"}
+            </span>
+          )}
         </div>
         {currentWinner ? (
-          <p className="mt-1 text-xs text-ps-text-sec">
+          <p
+            className={`mt-1 text-xs ${useCardSurface ? "text-white/75" : "text-ps-text-sec"}`}
+          >
             Picked:{" "}
-            <span className="font-semibold text-ps-text">{currentWinner}</span>
+            <span className={theme.lockedPickedText}>
+              {currentWinner}
+            </span>
           </p>
         ) : (
-          <p className="mt-1 text-xs text-ps-text-ter">No pick</p>
+          <p className={`mt-1 text-xs ${theme.lockedMutedText}`}>No pick</p>
         )}
-      </div>
+      </>
     );
+
+    if (useCardSurface && fixture) {
+      return (
+        <FixtureCardSurface
+          city={fixture.city}
+          headerLeft={
+            fixture.group && fixture.matchday
+              ? `Group ${fixture.group} · MD${fixture.matchday}`
+              : event.event_name
+          }
+          headerRight={formatHeaderRight(fixture.kickoffUtc)}
+          hasPick={currentWinner !== null}
+        >
+          <div className={theme.lockedReadOnly}>{lockedBody}</div>
+        </FixtureCardSurface>
+      );
+    }
+
+    return <div className={theme.lockedReadOnly}>{lockedBody}</div>;
   }
 
+  // ── Interactive branch ──────────────────────────────────────────────────
   const homeSelected = currentWinner === home;
   const awaySelected = currentWinner === away;
   const drawSelected = currentWinner === drawOption;
 
-  return (
-    <div
-      className={[
-        "rounded-xl border p-3.5 transition-all duration-200 bg-ps-surface",
-        currentWinner ? "border-ps-amber/30" : "border-ps-border",
-      ].join(" ")}
-    >
+  const interactiveBody = (
+    <>
       <div className="flex items-center justify-center gap-1.5">
         {/* Home team button */}
         <button
           type="button"
           onClick={() => handlePickWinner(home)}
           aria-pressed={homeSelected}
-          className={[
-            "flex-1 min-w-0 flex flex-col items-center gap-1 px-1.5 py-1.5 rounded-lg transition-all duration-150 cursor-pointer",
-            "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ps-amber/50",
-            homeSelected
-              ? "bg-ps-amber/10 ring-2 ring-ps-amber"
-              : "hover:bg-ps-chip",
-          ].join(" ")}
+          className={theme.teamButton(homeSelected)}
         >
           <CountryFlag shape="pill" name={home} size={24} />
-          <span
-            className={[
-              "max-w-full truncate text-xs font-semibold text-center leading-tight",
-              homeSelected ? "text-ps-amber" : "text-ps-text-ter",
-            ].join(" ")}
-          >
-            {home}
-          </span>
+          <span className={theme.teamLabel(homeSelected)}>{home}</span>
         </button>
 
         {/* Home score input */}
@@ -416,13 +587,7 @@ function MatchPickRow({
             }}
             onBlur={() => handleScoreBlur(homeScore, awayScore)}
             aria-label={`${home} score`}
-            className={[
-              "w-[30px] h-[28px] rounded-full border text-center font-mono text-sm font-semibold text-ps-text outline-none transition-all duration-150 shrink-0",
-              homeScore !== ""
-                ? "bg-white border-ps-amber"
-                : "bg-transparent border-ps-border",
-              "focus:border-ps-amber focus:bg-white",
-            ].join(" ")}
+            className={theme.scoreInput(homeScore !== "")}
           />
         )}
 
@@ -432,13 +597,7 @@ function MatchPickRow({
             type="button"
             onClick={() => handlePickWinner(drawOption)}
             aria-pressed={drawSelected}
-            className={[
-              "shrink-0 px-2.5 py-1.5 rounded-lg text-xs font-medium transition-all duration-150",
-              "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ps-amber/50",
-              drawSelected
-                ? "bg-ps-amber/10 text-ps-amber ring-2 ring-ps-amber"
-                : "text-ps-text-ter hover:bg-ps-chip hover:text-ps-text-sec",
-            ].join(" ")}
+            className={theme.drawButton(drawSelected)}
           >
             draw
           </button>
@@ -459,13 +618,7 @@ function MatchPickRow({
             }}
             onBlur={() => handleScoreBlur(homeScore, awayScore)}
             aria-label={`${away} score`}
-            className={[
-              "w-[30px] h-[28px] rounded-full border text-center font-mono text-sm font-semibold text-ps-text outline-none transition-all duration-150 shrink-0",
-              awayScore !== ""
-                ? "bg-white border-ps-amber"
-                : "bg-transparent border-ps-border",
-              "focus:border-ps-amber focus:bg-white",
-            ].join(" ")}
+            className={theme.scoreInput(awayScore !== "")}
           />
         )}
 
@@ -474,30 +627,68 @@ function MatchPickRow({
           type="button"
           onClick={() => handlePickWinner(away)}
           aria-pressed={awaySelected}
-          className={[
-            "flex-1 min-w-0 flex flex-col items-center gap-1 px-1.5 py-1.5 rounded-lg transition-all duration-150 cursor-pointer",
-            "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ps-amber/50",
-            awaySelected
-              ? "bg-ps-amber/10 ring-2 ring-ps-amber"
-              : "hover:bg-ps-chip",
-          ].join(" ")}
+          className={theme.teamButton(awaySelected)}
         >
           <CountryFlag shape="pill" name={away} size={24} />
-          <span
-            className={[
-              "max-w-full truncate text-xs font-semibold text-center leading-tight",
-              awaySelected ? "text-ps-amber" : "text-ps-text-ter",
-            ].join(" ")}
-          >
-            {away}
-          </span>
+          <span className={theme.teamLabel(awaySelected)}>{away}</span>
         </button>
       </div>
 
-      {errorMsg && (
-        <p className="mt-1 text-[11px] font-medium text-ps-red">{errorMsg}</p>
-      )}
+      {errorMsg && <p className={theme.errorText}>{errorMsg}</p>}
+    </>
+  );
+
+  if (useCardSurface && fixture) {
+    return (
+      <FixtureCardSurface
+        city={fixture.city}
+        headerLeft={
+          fixture.group && fixture.matchday
+            ? `Group ${fixture.group} · MD${fixture.matchday}`
+            : event.event_name
+        }
+        headerRight={formatHeaderRight(fixture.kickoffUtc)}
+        hasPick={currentWinner !== null}
+      >
+        {interactiveBody}
+      </FixtureCardSurface>
+    );
+  }
+
+  return (
+    <div className={theme.outerWrapper(currentWinner !== null)}>
+      {interactiveBody}
     </div>
+  );
+}
+
+/**
+ * Header right-side content for the card surface — kickoff time on top,
+ * weekday + date below in a quieter shade. All in UTC by design; the user's
+ * local-time conversion is intentionally NOT shown here (that lives on
+ * /wc/results which is the canonical fixture-detail surface).
+ */
+function formatHeaderRight(kickoffUtc: string): ReactNode {
+  const d = new Date(kickoffUtc);
+  const time = new Intl.DateTimeFormat("en-GB", {
+    hour: "2-digit",
+    minute: "2-digit",
+    hour12: false,
+    timeZone: "UTC",
+  }).format(d);
+  const date = new Intl.DateTimeFormat("en-GB", {
+    weekday: "short",
+    day: "numeric",
+    month: "short",
+    timeZone: "UTC",
+  }).format(d);
+  return (
+    <>
+      <span className="block">{time}</span>
+      <span className="block text-[0.65rem] font-medium text-white/55">
+        {date}
+      </span>
+    </>
   );
 }
 
@@ -509,6 +700,8 @@ export function WindowPickList({
   predictions,
   windowLocked,
   onWindowComplete,
+  surface = "compact",
+  fixtureByEventId,
 }: WindowPickListProps) {
   const predsByEvent = useMemo(() => {
     const map = new Map<string, Prediction[]>();
@@ -599,8 +792,12 @@ export function WindowPickList({
     );
   }
 
+  // Card surface uses a slightly larger gap so each card's halo breathes;
+  // compact keeps the existing tight stack.
+  const stackGap = surface === "card" ? "space-y-3" : "space-y-2";
+
   return (
-    <div className="space-y-2">
+    <div className={stackGap}>
       {events.map((event) => (
         <MatchPickRow
           key={event.id}
@@ -609,6 +806,8 @@ export function WindowPickList({
           initialPredictions={predsByEvent.get(event.id) ?? []}
           windowLocked={windowLocked}
           onWinnerLanded={handleWinnerLanded}
+          surface={surface}
+          fixture={fixtureByEventId?.get(event.id)}
         />
       ))}
     </div>
