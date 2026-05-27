@@ -164,6 +164,16 @@ export function ClassificationTabs({
         />
       )}
 
+      {/* Format draw countdown — top */}
+      {active?.classification_key === "format" &&
+        groupData?.status === "draw_pending" &&
+        groupData.drawAt && (
+          <FormatDrawBanner
+            drawAt={groupData.drawAt}
+            label="Format groups drawn in"
+          />
+        )}
+
       {/* Pre-kickoff rules */}
       {kickoffIso && new Date(kickoffIso).getTime() > Date.now() && active && (
         <ClassificationRulesPreview classificationKey={active.classification_key} />
@@ -228,6 +238,44 @@ export function ClassificationTabs({
           />
         )}
       </div>
+
+      {/* Format draw countdown — bottom */}
+      {active?.classification_key === "format" &&
+        groupData?.status === "draw_pending" &&
+        groupData.drawAt && (
+          <FormatDrawBanner
+            drawAt={groupData.drawAt}
+            label="You'll know your group in"
+          />
+        )}
+    </div>
+  );
+}
+
+function FormatDrawBanner({
+  drawAt,
+  label,
+}: {
+  drawAt: string;
+  label: string;
+}) {
+  const [countdown, setCountdown] = useState(() => formatCountdown(drawAt));
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setCountdown(formatCountdown(drawAt));
+    }, 60_000);
+    return () => clearInterval(interval);
+  }, [drawAt]);
+
+  return (
+    <div className="mt-3 rounded-xl border border-ps-amber/20 bg-ps-amber/5 px-4 py-3 text-center">
+      <p className="font-mono text-[10px] font-bold uppercase tracking-[0.12em] text-ps-amber-deep">
+        {label}
+      </p>
+      <p className="mt-1 font-mono text-base font-bold text-ps-text">
+        {countdown}
+      </p>
     </div>
   );
 }
