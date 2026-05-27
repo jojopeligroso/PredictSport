@@ -5,9 +5,14 @@ import { finaliseWindow } from "@/lib/tournament/finalisation";
 export const dynamic = "force-dynamic";
 
 /**
- * Auto-finalise cron — runs every 5 minutes.
- * Finds completed but unfinalised prediction windows and auto-finalises them
- * if the next dependent window locks within 15 minutes.
+ * GET /api/tournament/cron/auto-finalise
+ *
+ * Scheduled EVERY 5 MIN by Supabase pg_cron (job `wc-auto-finalise`,
+ * see migration 20260528000100). Finds completed but unfinalised
+ * prediction windows and auto-finalises them if the next dependent
+ * window locks within 15 minutes.
+ *
+ * SECURITY: Protected by CRON_SECRET (Vault secret `cron_secret`).
  */
 
 function getServiceClient() {

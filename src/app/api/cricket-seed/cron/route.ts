@@ -21,12 +21,17 @@ interface ESPNEvent {
 /**
  * GET /api/cricket-seed/cron
  *
- * Called daily by Vercel Cron. Seeds upcoming cricket fixtures from all active
- * ESPN/Cricinfo leagues into the sporting_events pool table. The FixturePool
- * provider serves these in fixture searches, giving multi-week visibility
- * without relying on ESPN's broken date-range behaviour for cricket.
+ * MANUAL TRIGGER ONLY (not scheduled). Seeds upcoming cricket fixtures
+ * from all active ESPN/Cricinfo leagues into the sporting_events pool
+ * table. The FixturePool provider serves these in fixture searches,
+ * giving multi-week visibility without relying on ESPN's broken
+ * date-range behaviour for cricket.
  *
- * SECURITY: Protected by CRON_SECRET — Vercel sets Authorization automatically.
+ * Schedule via pg_cron when the first cricket competition ships. The
+ * pattern is the same as wc-lock-windows et al — see migration
+ * 20260528000100 for the helper + Vault usage.
+ *
+ * SECURITY: Protected by CRON_SECRET (Vault secret `cron_secret`).
  */
 export async function GET(request: Request) {
   const authHeader = request.headers.get("authorization");
