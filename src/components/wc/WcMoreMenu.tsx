@@ -34,7 +34,7 @@ export function WcMoreMenu({ variant }: WcMoreMenuProps) {
       className={
         variant === "desktop"
           ? "absolute right-0 top-full z-50 mt-1 w-64 rounded-lg border border-ps-border bg-ps-surface py-1 shadow-[0_4px_16px_rgba(25,21,18,0.12)]"
-          : "absolute bottom-full left-1/2 z-50 mb-1 w-64 -translate-x-1/2 rounded-lg border border-ps-border bg-ps-surface py-1 shadow-[0_-4px_16px_rgba(25,21,18,0.12)]"
+          : "absolute bottom-full right-0 z-50 mb-1 w-64 rounded-lg border border-ps-border bg-ps-surface py-1 shadow-[0_-4px_16px_rgba(25,21,18,0.12)]"
       }
     >
       <Link
