@@ -252,10 +252,6 @@ function Sections({
     );
   }
 
-  // Max 2 countdowns visible on a page. Show for the first 2 non-complete
-  // sections that have a lock time in the future.
-  let countdownsShown = 0;
-
   return (
     <div className="mx-auto w-full max-w-[480px] px-4">
       {sections.map((s) => {
@@ -264,9 +260,7 @@ function Sections({
           now &&
           s.lockTime &&
           status !== "complete" &&
-          countdownsShown < 2 &&
           new Date(s.lockTime).getTime() > now.getTime();
-        if (eligible) countdownsShown++;
 
         return (
           <section key={s.domId} id={s.domId} className="mt-5 scroll-mt-20">
