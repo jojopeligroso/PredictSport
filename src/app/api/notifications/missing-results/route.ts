@@ -5,9 +5,12 @@ import { sendPushToUser } from "@/lib/push/send";
 /**
  * GET /api/notifications/missing-results
  *
- * Daily cron (10am). Finds events past start_time with no confirmed result
- * and sends push notifications to competition admins reminding them to
- * enter results.
+ * Scheduled DAILY at 10:00 UTC by Supabase pg_cron (job
+ * `wc-missing-results-daily`, see migration 20260528000100). Finds events
+ * past start_time with no confirmed result and pushes admins to enter
+ * results manually (for sports without provider coverage).
+ *
+ * SECURITY: Protected by CRON_SECRET (Vault secret `cron_secret`).
  */
 
 function getServiceClient() {

@@ -10,12 +10,15 @@ import { sendPushToUser } from "@/lib/push/send";
 /**
  * GET /api/results/cron
  *
- * Called hourly by Vercel Cron. Polls for locked events that need
- * auto-result resolution and scores predictions when a final result
- * is found from the sports provider chain.
+ * Scheduled DAILY at 06:30 UTC (07:30 BST / 06:30 GMT) by Vercel Cron
+ * (see vercel.json). Polls for locked events that need auto-result
+ * resolution and scores predictions when a final result is found from
+ * the sports provider chain. Also flips WC competitions' entry_closes_at
+ * once the soft cutoff passes.
  *
- * SECURITY: Protected by CRON_SECRET -- Vercel sets the Authorization
- * header automatically for cron invocations.
+ * SECURITY: Protected by CRON_SECRET — Vercel sets the Authorization
+ * header automatically for cron invocations. Same secret is mirrored
+ * into Supabase Vault (`cron_secret`) for the pg_cron jobs.
  */
 
 function getServiceClient() {

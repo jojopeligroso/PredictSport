@@ -7,11 +7,12 @@ import { sendPushToAll } from "@/lib/push/send";
 /**
  * GET /api/notifications/cron
  *
- * Called hourly by Vercel Cron. Checks for events locking soon
- * and sends reminder notifications to linked Telegram groups.
+ * Scheduled HOURLY at :00 by Supabase pg_cron (job `wc-notifications-hourly`,
+ * see migration 20260528000100). Checks for events locking soon and sends
+ * reminder notifications to linked Telegram groups + push subscribers.
  *
- * SECURITY: Protected by CRON_SECRET — Vercel sets the Authorization
- * header automatically for cron invocations.
+ * SECURITY: Protected by CRON_SECRET. Stored in Supabase Vault as secret
+ * `cron_secret` (for pg_cron) AND in Vercel project env (kept in sync).
  */
 
 function getServiceClient() {

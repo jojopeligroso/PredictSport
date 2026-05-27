@@ -10,12 +10,12 @@ export const dynamic = "force-dynamic";
 /**
  * GET /api/tournament/cron/lock-windows
  *
- * Called every 5 minutes by Vercel Cron. For each tournament competition
+ * Scheduled EVERY 5 MIN by Supabase pg_cron (job `wc-lock-windows`,
+ * see migration 20260528000100). For each tournament competition
  * (tournament_id IS NOT NULL, status active or draft), finds open rounds
  * whose earliest event lock_time <= now and sets them to 'locked'.
  *
- * SECURITY: Protected by CRON_SECRET -- Vercel sets the Authorization
- * header automatically for cron invocations.
+ * SECURITY: Protected by CRON_SECRET (Vault secret `cron_secret`).
  */
 
 function getServiceClient() {
