@@ -2,10 +2,10 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { WcMoreMenu } from "./WcMoreMenu";
 
 const wcNavLinks = [
   { href: "/wc/picks", label: "Picks" },
-  { href: "/wc/bracket", label: "Bracket" },
   { href: "/wc/leaderboard", label: "Table" },
   { href: "/wc/results", label: "Results" },
   { href: "/wc/rules", label: "Rules" },
@@ -53,6 +53,7 @@ export function WcNavLinks({
             Admin
           </Link>
         )}
+        <WcMoreMenu variant="desktop" />
       </div>
     );
   }
@@ -77,6 +78,7 @@ export function WcNavLinks({
             Admin
           </Link>
         )}
+        <WcMoreMenu variant="mobile" />
       </div>
     </div>
   );
