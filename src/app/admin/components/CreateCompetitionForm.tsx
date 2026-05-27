@@ -625,6 +625,37 @@ export function CreateCompetitionForm({ alwaysOpen = false }: CreateCompetitionF
     </div>
   ) : null;
 
+  // Template creation — one API call creates competition + rounds + events
+  const [templateCreating, setTemplateCreating] = useState(false);
+
+  async function createFromTemplate(template: string, templateName: string) {
+    setTemplateCreating(true);
+    setError(null);
+    try {
+      const res = await fetch("/api/admin/competitions/template", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ template, name: name.trim() || templateName }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        setError(data.error ?? "Failed to create from template.");
+        return;
+      }
+      setCompetitionId(data.competition.id);
+      setInviteCode(data.competition.invite_code ?? null);
+      setName(data.competition.name);
+      setRoundCreated(true);
+      setFixtureCount(data.events);
+      setRoundName("Group Matchday 1");
+      setStep(5);
+    } catch {
+      setError("Couldn't connect. Please try again.");
+    } finally {
+      setTemplateCreating(false);
+    }
+  }
+
   // ── Step 1: Name + Type ───────────────────────────────────────────────────────
 
   if (step === 1) {
@@ -641,6 +672,35 @@ export function CreateCompetitionForm({ alwaysOpen = false }: CreateCompetitionF
             else setIsOpen(false);
           }}
         />
+
+        {/* Template shortcut */}
+        <div className="mb-6">
+          <div className="text-[10px] font-extrabold tracking-widest uppercase text-ps-text-ter mb-2">
+            Quick start
+          </div>
+          <button
+            type="button"
+            disabled={templateCreating}
+            onClick={() => createFromTemplate("world_cup_2026", "World Cup 2026")}
+            className="w-full rounded-xl border-2 border-dashed border-ps-amber/50 bg-ps-amber/5 p-4 text-left transition-all hover:border-ps-amber hover:bg-ps-amber/10 disabled:opacity-60"
+          >
+            <div className="flex items-center gap-3">
+              <span className="text-2xl">🏆</span>
+              <div className="flex-1">
+                <div className="text-sm font-extrabold text-ps-text">
+                  {templateCreating ? "Setting up..." : "World Cup 2026"}
+                </div>
+                <div className="mt-0.5 text-xs text-ps-text-sec">
+                  72 group matches, 8 rounds, daily lock windows, exact score
+                  bonuses. Ready to play.
+                </div>
+              </div>
+            </div>
+          </button>
+          <div className="mt-2 text-center text-[10px] text-ps-text-ter">
+            or build your own below
+          </div>
+        </div>
 
         <div className="space-y-5">
           <div>
