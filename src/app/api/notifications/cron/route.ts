@@ -22,6 +22,16 @@ function getServiceClient() {
   return createClient(url, key);
 }
 
+// Render lock lead time for push body. Sub-hour locks rounded to whole h
+// said "~1h" even when 25 minutes remained; this falls back to "Xm" under
+// an hour and "Xh" above, mirroring the Telegram phrasing in notify.ts.
+function formatLeadTime(lockTime: Date, now: Date): string {
+  const minutes = Math.max(1, Math.round((lockTime.getTime() - now.getTime()) / 60_000));
+  if (minutes < 60) return `${minutes}m`;
+  if (minutes < 90) return "1h";
+  return `${Math.round(minutes / 60)}h`;
+}
+
 export async function GET(request: Request) {
   // Verify cron secret — Vercel sends this automatically for cron jobs
   const authHeader = request.headers.get("authorization");
@@ -77,14 +87,11 @@ export async function GET(request: Request) {
   // ── Web Push notifications for deadline reminders ──────────────────
   for (const event of events ?? []) {
     const lockTime = new Date(event.lock_time);
-    const hoursLeft = Math.round(
-      (lockTime.getTime() - now.getTime()) / (1000 * 60 * 60)
-    );
     try {
       await sendPushToAll(
         {
           title: "Predictions closing soon",
-          body: `${event.event_name} locks in ~${hoursLeft}h — submit your picks!`,
+          body: `${event.event_name} locks in ~${formatLeadTime(lockTime, now)} — submit your picks!`,
           url: `/predictions/${event.id}`,
           tag: `deadline-${event.id}`,
         },
