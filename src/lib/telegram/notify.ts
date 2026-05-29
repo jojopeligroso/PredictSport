@@ -27,7 +27,8 @@ export async function notifyDeadline(
   chatId: number | string,
   eventName: string,
   hoursLeft: number,
-  appUrl: string
+  appUrl: string,
+  targetPath: string = "/predictions"
 ) {
   const timeText =
     hoursLeft < 1
@@ -38,7 +39,7 @@ export async function notifyDeadline(
 
   const keyboard = new InlineKeyboard().url(
     "Make Predictions",
-    `${appUrl}/predictions`
+    `${appUrl}${targetPath}`
   );
 
   await sendTelegramMessage(
