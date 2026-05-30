@@ -30,6 +30,13 @@ function getServiceClient() {
 
 const WC_PRODUCT_MODE = "world_cup_2026_shell";
 
+function formatLeadTime(lockTime: Date, now: Date): string {
+  const minutes = Math.max(1, Math.round((lockTime.getTime() - now.getTime()) / 60_000));
+  if (minutes < 60) return `${minutes}m`;
+  if (minutes < 90) return "1h";
+  return `${Math.round(minutes / 60)}h`;
+}
+
 export async function GET(request: Request) {
   // Verify cron secret — Vercel sends this automatically for cron jobs
   const authHeader = request.headers.get("authorization");
@@ -124,10 +131,7 @@ export async function GET(request: Request) {
     if (userIds.length === 0) continue;
 
     const lockTime = new Date(event.lock_time);
-    const hoursLeft = Math.max(
-      1,
-      Math.round((lockTime.getTime() - now.getTime()) / (1000 * 60 * 60))
-    );
+    const leadTime = formatLeadTime(lockTime, now);
     const isWc = event.competitions?.product_mode === WC_PRODUCT_MODE;
     const url = isWc ? "/wc" : `/predictions/${event.id}`;
 
@@ -137,7 +141,7 @@ export async function GET(request: Request) {
           userId,
           {
             title: "Predictions closing soon",
-            body: `${event.event_name} locks in ~${hoursLeft}h — submit your picks!`,
+            body: `${event.event_name} locks in ~${leadTime} — submit your picks!`,
             url,
             tag: `deadline-${event.id}`,
           },
