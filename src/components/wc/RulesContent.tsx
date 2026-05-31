@@ -34,11 +34,11 @@ export function RulesContent({
       </p>
 
       {/* How it works */}
-      <div className="mb-10">
+      <div className="mb-10 text-center">
         <p className="font-mono text-[10px] uppercase tracking-[0.18em] text-ps-amber-deep">
           How it works
         </p>
-        <div className="mt-3 flex flex-col items-center gap-3">
+        <div className="mx-auto mt-3 flex w-fit flex-col gap-3">
           <HowItWorksStep n={1}>Pick the winner of each match</HowItWorksStep>
           <HowItWorksStep n={2}>
             Guess the exact score for bonus points
