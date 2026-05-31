@@ -135,14 +135,7 @@ function getPickValue(prediction: Prediction | undefined): string | null {
   return null;
 }
 
-function getInitials(name: string): string {
-  return name
-    .split(" ")
-    .map((w) => w[0])
-    .join("")
-    .toUpperCase()
-    .slice(0, 2);
-}
+import { getInitials } from "@/lib/display-name";
 
 // Palette for community pick rows
 const PICK_COLORS = [

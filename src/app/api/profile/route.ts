@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
+import { validateDisplayName } from "@/lib/display-name";
 
 interface ProfileUpdateBody {
   display_name?: string;
@@ -27,11 +28,9 @@ export async function PATCH(request: NextRequest) {
   // Validate display_name
   if (body.display_name !== undefined) {
     const name = body.display_name.trim();
-    if (name.length < 1 || name.length > 50) {
-      return NextResponse.json(
-        { error: "Display name must be 1-50 characters" },
-        { status: 400 }
-      );
+    const error = validateDisplayName(name);
+    if (error) {
+      return NextResponse.json({ error }, { status: 400 });
     }
     body.display_name = name;
   }

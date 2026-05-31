@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { validateDisplayName, DISPLAY_NAME_MAX } from "@/lib/display-name";
 
 interface JoinFlowProps {
   competitionId: string;
@@ -23,7 +24,7 @@ export function JoinFlow({
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const nameValid = displayName.trim().length >= 1 && displayName.trim().length <= 50;
+  const nameValid = !validateDisplayName(displayName);
 
   const handleJoin = async () => {
     if (!nameValid) return;
@@ -98,9 +99,9 @@ export function JoinFlow({
           placeholder="e.g. Malo"
         />
 
-        {displayName.trim().length > 50 && (
+        {displayName.trim().length > DISPLAY_NAME_MAX && (
           <p className="mt-1.5 text-xs font-medium text-ps-red">
-            50 characters max
+            {DISPLAY_NAME_MAX} characters max
           </p>
         )}
 

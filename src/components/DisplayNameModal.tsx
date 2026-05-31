@@ -2,6 +2,7 @@
 
 import { useState, useRef, useEffect } from "react";
 import { useRouter } from "next/navigation";
+import { validateDisplayName, DISPLAY_NAME_MAX } from "@/lib/display-name";
 
 interface DisplayNameModalProps {
   suggestedName: string;
@@ -27,12 +28,9 @@ export function DisplayNameModal({ suggestedName }: DisplayNameModalProps) {
     e.preventDefault();
     const trimmed = name.trim();
 
-    if (trimmed.length < 1) {
-      setError("You need a name for the leaderboard.");
-      return;
-    }
-    if (trimmed.length > 50) {
-      setError("50 characters max.");
+    const validationError = validateDisplayName(trimmed);
+    if (validationError) {
+      setError(validationError);
       return;
     }
 
@@ -107,7 +105,7 @@ export function DisplayNameModal({ suggestedName }: DisplayNameModalProps) {
               if (error) setError("");
             }}
             placeholder="e.g. Gerry Ramos"
-            maxLength={50}
+            maxLength={DISPLAY_NAME_MAX}
             autoComplete="off"
             className={[
               "w-full rounded-lg border bg-ps-bg px-3 py-2.5 text-sm text-ps-text",

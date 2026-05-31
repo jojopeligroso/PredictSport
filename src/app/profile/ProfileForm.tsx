@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import type { User } from "@/types/database";
 import { useTheme, type ThemePref } from "@/components/ThemeProvider";
+import { validateDisplayName, DISPLAY_NAME_MAX } from "@/lib/display-name";
 
 const SPORT_OPTIONS = [
   "Soccer", "GAA", "Rugby", "US Sports", "Motorsport", "Tennis", "Cricket", "Other",
@@ -227,9 +228,7 @@ export function ProfileForm({ user }: { user: User }) {
   }
 
   const isDirty = !statesEqual(form, initial);
-  const nameValid =
-    form.display_name.trim().length >= 1 &&
-    form.display_name.trim().length <= 50;
+  const nameValid = !validateDisplayName(form.display_name);
   const canSave = isDirty && nameValid && !submitting;
 
   function setNotifPref(
@@ -335,9 +334,9 @@ export function ProfileForm({ user }: { user: User }) {
                 placeholder="Your display name"
                 className="w-full rounded-xl border border-ps-border bg-ps-surface p-3 text-sm text-ps-text placeholder:text-ps-text-ter focus:border-ps-text-sec focus:outline-none"
               />
-              {form.display_name.trim().length > 50 && (
+              {form.display_name.trim().length > DISPLAY_NAME_MAX && (
                 <p className="mt-2 text-xs text-ps-red" role="alert">
-                  Display name must be 50 characters or fewer.
+                  Display name must be {DISPLAY_NAME_MAX} characters or fewer.
                 </p>
               )}
             </section>
