@@ -80,6 +80,8 @@ interface WindowPickListProps {
    * resolve city colour, group letter, matchday, and kickoff timestamp.
    */
   fixtureByEventId?: Map<string, WcFixture>;
+  /** Show a live countdown in each card header. Used in group view where there's no per-section countdown. */
+  showCardCountdown?: boolean;
 }
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
@@ -236,6 +238,7 @@ function MatchPickRow({
   onWinnerLanded,
   surface = "compact",
   fixture,
+  showCardCountdown,
 }: {
   competitionId: string;
   event: WindowEvent;
@@ -247,6 +250,8 @@ function MatchPickRow({
   surface?: PickSurface;
   /** Required when surface="card" — supplies city, group, matchday, kickoff. */
   fixture?: WcFixture;
+  /** Show countdown in card header (group view only). */
+  showCardCountdown?: boolean;
 }) {
   const router = useRouter();
 
@@ -540,7 +545,7 @@ function MatchPickRow({
               ? `Group ${fixture.group} · MD${fixture.matchday}`
               : event.event_name
           }
-          headerRight={formatHeaderRight(fixture.kickoffUtc)}
+          headerRight={formatHeaderRight(fixture.kickoffUtc, showCardCountdown ? event.lock_time : undefined)}
           hasPick={currentWinner !== null}
         >
           <div className={theme.lockedReadOnly}>{lockedBody}</div>
@@ -651,7 +656,7 @@ function MatchPickRow({
             ? `Group ${fixture.group} · MD${fixture.matchday}`
             : event.event_name
         }
-        headerRight={formatHeaderRight(fixture.kickoffUtc)}
+        headerRight={formatHeaderRight(fixture.kickoffUtc, showCardCountdown ? event.lock_time : undefined)}
         hasPick={currentWinner !== null}
       >
         {interactiveBody}
@@ -672,7 +677,7 @@ function MatchPickRow({
  * local-time conversion is intentionally NOT shown here (that lives on
  * /wc/results which is the canonical fixture-detail surface).
  */
-function formatHeaderRight(kickoffUtc: string): ReactNode {
+function formatHeaderRight(kickoffUtc: string, lockTime?: string): ReactNode {
   const d = new Date(kickoffUtc);
   const time = new Intl.DateTimeFormat("en-GB", {
     hour: "2-digit",
@@ -692,8 +697,46 @@ function formatHeaderRight(kickoffUtc: string): ReactNode {
       <span className="block text-[0.65rem] font-medium text-white/55">
         {date}
       </span>
+      {lockTime && <CardCountdown lockTime={lockTime} />}
     </>
   );
+}
+
+function CardCountdown({ lockTime }: { lockTime: string }) {
+  const [text, setText] = useState<string | null>(() => fmtCardDdHhMmSs(lockTime));
+
+  useEffect(() => {
+    const tick = () => {
+      const next = fmtCardDdHhMmSs(lockTime);
+      setText(next);
+      if (!next) clearInterval(id);
+    };
+    const id = setInterval(tick, 1000);
+    return () => clearInterval(id);
+  }, [lockTime]);
+
+  if (!text) return null;
+
+  return (
+    <span
+      className="mt-0.5 block font-mono text-[0.6rem] font-semibold tabular-nums text-white/70"
+      role="timer"
+      aria-live="off"
+    >
+      {text}
+    </span>
+  );
+}
+
+function fmtCardDdHhMmSs(lockTime: string): string | null {
+  const diff = new Date(lockTime).getTime() - Date.now();
+  if (diff <= 0) return null;
+  const dd = Math.floor(diff / 86400000);
+  const hh = Math.floor((diff % 86400000) / 3600000);
+  const mm = Math.floor((diff % 3600000) / 60000);
+  const ss = Math.floor((diff % 60000) / 1000);
+  const pad = (n: number) => String(n).padStart(2, "0");
+  return `${pad(dd)}:${pad(hh)}:${pad(mm)}:${pad(ss)}`;
 }
 
 // ── List ─────────────────────────────────────────────────────────────────────
@@ -706,6 +749,7 @@ export function WindowPickList({
   onWindowComplete,
   surface = "compact",
   fixtureByEventId,
+  showCardCountdown,
 }: WindowPickListProps) {
   const predsByEvent = useMemo(() => {
     const map = new Map<string, Prediction[]>();
@@ -812,6 +856,7 @@ export function WindowPickList({
           onWinnerLanded={handleWinnerLanded}
           surface={surface}
           fixture={fixtureByEventId?.get(event.id)}
+          showCardCountdown={showCardCountdown}
         />
       ))}
     </div>

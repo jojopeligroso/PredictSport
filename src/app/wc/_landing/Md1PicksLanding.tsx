@@ -319,6 +319,7 @@ function Sections({
               windowLocked={windowLocked}
               surface="card"
               fixtureByEventId={fixtureByEventId}
+              showCardCountdown={s.isGroupSection}
             />
           </section>
         );
