@@ -124,25 +124,37 @@ export function Md1PicksLanding(props: Md1PicksLandingProps) {
     <div className="pb-16">
       {/* Hero — 3-part Group Stage header */}
       <header className="mx-auto mt-5 w-full max-w-[480px] px-4">
-        <div className="flex items-baseline gap-2">
-          <p className="font-mono text-[10px] font-bold uppercase tracking-[0.18em] text-ps-amber-deep">
-            Round 1
-          </p>
-          <span className="font-mono text-[10px] text-ps-text-ter">·</span>
-          <p className="font-mono text-[10px] font-bold uppercase tracking-[0.18em] text-ps-text-ter">
-            Group Stage
-          </p>
-          <span className="font-mono text-[10px] text-ps-text-ter">·</span>
-          <p className="font-mono text-[10px] font-bold uppercase tracking-[0.18em] text-ps-text-sec">
-            Matchday 1
-          </p>
+        <div className="flex items-start gap-3">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src="/wc/fifa-wc2026-mark.svg"
+            alt="FIFA World Cup 2026"
+            width={44}
+            height={44}
+            className="h-11 w-auto shrink-0"
+          />
+          <div className="-mt-1 flex-1">
+            <div className="flex items-baseline gap-2">
+              <p className="font-mono text-[10px] font-bold uppercase tracking-[0.18em] text-ps-amber-deep">
+                Round 1
+              </p>
+              <span className="font-mono text-[10px] text-ps-text-ter">·</span>
+              <p className="font-mono text-[10px] font-bold uppercase tracking-[0.18em] text-ps-text-ter">
+                Group Stage
+              </p>
+              <span className="font-mono text-[10px] text-ps-text-ter">·</span>
+              <p className="font-mono text-[10px] font-bold uppercase tracking-[0.18em] text-ps-text-sec">
+                Matchday 1
+              </p>
+            </div>
+            <h1 className="mt-1.5 font-display text-2xl font-extrabold uppercase tracking-tight text-ps-text">
+              Pick the winners
+            </h1>
+            <p className="mt-1.5 font-serif text-sm italic text-ps-text-sec">
+              Twenty-four openers. Eight days. One winner per match.
+            </p>
+          </div>
         </div>
-        <h1 className="mt-1.5 font-display text-2xl font-extrabold uppercase tracking-tight text-ps-text">
-          Pick the winners
-        </h1>
-        <p className="mt-1.5 font-serif text-sm italic text-ps-text-sec">
-          Twenty-four openers. Eight days. One winner per match.
-        </p>
       </header>
 
       {/* Progress strip */}
@@ -351,14 +363,11 @@ function PreviewOverlay({ isAuthenticated }: { isAuthenticated: boolean }) {
     <div className="pointer-events-none absolute inset-0 flex items-start justify-center pt-6">
       <div className="mx-4 flex max-w-[360px] flex-col gap-3">
         {/* Rules summary card */}
-        <Link
-          href="/wc/rules"
-          className="pointer-events-auto block rounded-2xl border border-ps-border bg-ps-surface px-5 py-4 shadow-lg transition-colors hover:border-ps-amber/40"
-        >
+        <div className="rounded-2xl border border-ps-border bg-ps-surface px-5 py-4 text-center shadow-lg">
           <p className="font-mono text-[10px] font-bold uppercase tracking-[0.18em] text-ps-amber-deep">
             How it works
           </p>
-          <ul className="mt-2 space-y-1.5 text-xs text-ps-text-sec">
+          <ul className="mt-2 flex flex-col items-center space-y-1.5 text-xs text-ps-text-sec">
             <li className="flex items-start gap-2">
               <span className="mt-px font-mono font-bold text-ps-amber">1</span>
               <span>Pick who wins each match</span>
@@ -372,17 +381,17 @@ function PreviewOverlay({ isAuthenticated }: { isAuthenticated: boolean }) {
               <span>Climb the leaderboard</span>
             </li>
           </ul>
-          <p className="mt-2.5 text-[11px] font-semibold text-ps-amber-deep">
+          <Link
+            href="/wc/rules"
+            className="pointer-events-auto mt-2.5 inline-block text-[11px] font-semibold text-ps-amber-deep"
+          >
             Read the full rules →
-          </p>
-        </Link>
+          </Link>
+        </div>
 
         {/* Join card */}
         <div className="pointer-events-auto rounded-2xl border border-ps-border bg-ps-surface px-5 py-5 text-center shadow-lg">
-          <p className="font-mono text-[10px] font-bold uppercase tracking-[0.18em] text-ps-amber-deep">
-            Preview
-          </p>
-          <h2 className="mt-1.5 font-display text-lg font-extrabold uppercase tracking-tight text-ps-text">
+          <h2 className="font-display text-lg font-extrabold uppercase tracking-tight text-ps-text">
             Join the game to pick
           </h2>
           <p className="mt-1.5 text-xs text-ps-text-sec">
@@ -391,9 +400,15 @@ function PreviewOverlay({ isAuthenticated }: { isAuthenticated: boolean }) {
           </p>
           <Link
             href={isAuthenticated ? "/wc/join" : "/login?next=/wc/join"}
-            className="mt-4 inline-block w-full rounded-xl bg-ps-text px-4 py-3 text-sm font-semibold text-ps-bg transition-colors hover:bg-ps-text/90"
+            className="mt-4 block w-full rounded-xl bg-ps-amber px-4 py-3 text-sm font-semibold text-ps-bg"
           >
-            {isAuthenticated ? "Join now" : "Sign in to join"}
+            Join with a code
+          </Link>
+          <Link
+            href={isAuthenticated ? "/wc/create" : "/login?next=/wc/create"}
+            className="mt-2 block w-full rounded-xl border border-ps-border px-4 py-3 text-sm font-semibold text-ps-text hover:border-ps-amber/40"
+          >
+            Create your own
           </Link>
         </div>
       </div>
