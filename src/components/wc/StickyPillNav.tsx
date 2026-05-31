@@ -40,6 +40,9 @@ export function StickyPillNav() {
     setActive(id);
     const top = el.getBoundingClientRect().top + window.scrollY - 60;
     window.scrollTo({ top, behavior: "smooth" });
+    if (id === "format") {
+      window.dispatchEvent(new Event("format-dots-flash"));
+    }
     setTimeout(() => {
       scrollingRef.current = false;
     }, 800);

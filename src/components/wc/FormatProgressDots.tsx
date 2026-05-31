@@ -11,8 +11,16 @@ const SUB_SECTIONS = [
 
 export function FormatProgressDots() {
   const [visible, setVisible] = useState(false);
+  const [showTooltips, setShowTooltips] = useState(false);
   const [activeSub, setActiveSub] = useState("format-groups");
   const scrollingRef = useRef(false);
+  const tooltipTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  function flashTooltips() {
+    setShowTooltips(true);
+    if (tooltipTimerRef.current) clearTimeout(tooltipTimerRef.current);
+    tooltipTimerRef.current = setTimeout(() => setShowTooltips(false), 1300);
+  }
 
   // Show/hide dots based on Format section visibility
   useEffect(() => {
@@ -22,7 +30,13 @@ export function FormatProgressDots() {
     const observer = new IntersectionObserver(
       (entries) => {
         for (const entry of entries) {
-          setVisible(entry.isIntersecting);
+          if (entry.isIntersecting) {
+            setVisible(true);
+            flashTooltips();
+          } else {
+            setVisible(false);
+            setShowTooltips(false);
+          }
         }
       },
       { rootMargin: "-56px 0px -10% 0px", threshold: 0 },
@@ -30,6 +44,18 @@ export function FormatProgressDots() {
 
     observer.observe(formatEl);
     return () => observer.disconnect();
+  }, []);
+
+  // Listen for Format pill click to re-flash tooltips
+  useEffect(() => {
+    function onFlash() {
+      flashTooltips();
+    }
+    window.addEventListener("format-dots-flash", onFlash);
+    return () => {
+      window.removeEventListener("format-dots-flash", onFlash);
+      if (tooltipTimerRef.current) clearTimeout(tooltipTimerRef.current);
+    };
   }, []);
 
   // Track active sub-section
@@ -87,7 +113,7 @@ export function FormatProgressDots() {
               : "bg-ps-text-ter/40 hover:bg-ps-text-ter/70"
           }`}
         >
-          <span className="pointer-events-none absolute right-[calc(100%+10px)] top-1/2 -translate-y-1/2 whitespace-nowrap rounded-md border border-ps-border bg-ps-surface px-2 py-1 text-[10px] font-semibold text-ps-text opacity-0 shadow-sm transition-opacity group-hover:opacity-100">
+          <span className={`pointer-events-none absolute right-[calc(100%+10px)] top-1/2 -translate-y-1/2 whitespace-nowrap rounded-md border border-ps-border bg-ps-surface px-2 py-1 text-[10px] font-semibold text-ps-text shadow-sm transition-opacity duration-150 ${showTooltips ? "opacity-100" : "opacity-0"}`}>
             {label}
           </span>
         </button>
