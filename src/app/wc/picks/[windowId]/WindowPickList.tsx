@@ -540,7 +540,7 @@ function MatchPickRow({
               ? `Group ${fixture.group} · MD${fixture.matchday}`
               : event.event_name
           }
-          headerRight={formatHeaderRight(fixture.kickoffUtc, event.lock_time, true)}
+          headerRight={formatHeaderRight(fixture.kickoffUtc)}
           hasPick={currentWinner !== null}
         >
           <div className={theme.lockedReadOnly}>{lockedBody}</div>
@@ -566,7 +566,7 @@ function MatchPickRow({
           aria-pressed={homeSelected}
           className={theme.teamButton(homeSelected)}
         >
-          <CountryFlag shape="pill" name={home} size={24} />
+          <CountryFlag shape="pill" name={home} size={29} />
           <span className={theme.teamLabel(homeSelected)}>{home}</span>
         </button>
 
@@ -629,7 +629,7 @@ function MatchPickRow({
           aria-pressed={awaySelected}
           className={theme.teamButton(awaySelected)}
         >
-          <CountryFlag shape="pill" name={away} size={24} />
+          <CountryFlag shape="pill" name={away} size={29} />
           <span className={theme.teamLabel(awaySelected)}>{away}</span>
         </button>
       </div>
@@ -651,7 +651,7 @@ function MatchPickRow({
             ? `Group ${fixture.group} · MD${fixture.matchday}`
             : event.event_name
         }
-        headerRight={formatHeaderRight(fixture.kickoffUtc, event.lock_time, hasExactScore)}
+        headerRight={formatHeaderRight(fixture.kickoffUtc)}
         hasPick={currentWinner !== null}
       >
         {interactiveBody}
@@ -672,7 +672,7 @@ function MatchPickRow({
  * local-time conversion is intentionally NOT shown here (that lives on
  * /wc/results which is the canonical fixture-detail surface).
  */
-function formatHeaderRight(kickoffUtc: string, lockTime: string, hasExactScore: boolean): ReactNode {
+function formatHeaderRight(kickoffUtc: string): ReactNode {
   const d = new Date(kickoffUtc);
   const time = new Intl.DateTimeFormat("en-GB", {
     hour: "2-digit",
@@ -692,47 +692,8 @@ function formatHeaderRight(kickoffUtc: string, lockTime: string, hasExactScore: 
       <span className="block text-[0.65rem] font-medium text-white/55">
         {date}
       </span>
-      {!hasExactScore && <CardCountdown lockTime={lockTime} />}
     </>
   );
-}
-
-/** Live dd:hh:mm:ss countdown on cards missing an exact score. */
-function CardCountdown({ lockTime }: { lockTime: string }) {
-  const [text, setText] = useState<string | null>(() => fmtCardDdHhMmSs(lockTime));
-
-  useEffect(() => {
-    const tick = () => {
-      const next = fmtCardDdHhMmSs(lockTime);
-      setText(next);
-      if (!next) clearInterval(id);
-    };
-    const id = setInterval(tick, 1000);
-    return () => clearInterval(id);
-  }, [lockTime]);
-
-  if (!text) return null;
-
-  return (
-    <span
-      className="mt-0.5 block font-mono text-[0.6rem] font-semibold tabular-nums text-white/70"
-      role="timer"
-      aria-live="off"
-    >
-      {text}
-    </span>
-  );
-}
-
-function fmtCardDdHhMmSs(lockTime: string): string | null {
-  const diff = new Date(lockTime).getTime() - Date.now();
-  if (diff <= 0) return null;
-  const dd = Math.floor(diff / 86400000);
-  const hh = Math.floor((diff % 86400000) / 3600000);
-  const mm = Math.floor((diff % 3600000) / 60000);
-  const ss = Math.floor((diff % 60000) / 1000);
-  const pad = (n: number) => String(n).padStart(2, "0");
-  return `${pad(dd)}:${pad(hh)}:${pad(mm)}:${pad(ss)}`;
 }
 
 // ── List ─────────────────────────────────────────────────────────────────────
