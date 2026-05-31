@@ -40,7 +40,7 @@ export interface WcFixture {
 
 function fromGroup(f: WCGroupFixture): WcFixture {
   return {
-    externalId: `wc2026-grp-${f.group}-md${f.matchday}-${f.matchInGroup}`,
+    externalId: `manual:wc2026-grp-${f.group}-md${f.matchday}-${f.matchInGroup}`,
     stage: "group",
     group: f.group,
     matchday: f.matchday,
