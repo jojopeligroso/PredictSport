@@ -126,12 +126,12 @@ const GROUP_A_SPEC = { groupId: "A", name: "Group A", teams: GROUP_A_TEAMS };
 // 6 events for Group A's round-robin in declaration order:
 // (Mex,SKor) (Mex,SAfr) (Mex,Cze) (SKor,SAfr) (SKor,Cze) (SAfr,Cze)
 const GROUP_A_EVENTS: FakeEvent[] = [
-  { id: "e-A-1", competition_id: COMP, external_event_id: "wc2026-grp-A-md1-1", event_name: "Mexico vs South Korea" },
-  { id: "e-A-2", competition_id: COMP, external_event_id: "wc2026-grp-A-md2-1", event_name: "Mexico vs South Africa" },
-  { id: "e-A-3", competition_id: COMP, external_event_id: "wc2026-grp-A-md3-1", event_name: "Mexico vs Czechia" },
-  { id: "e-A-4", competition_id: COMP, external_event_id: "wc2026-grp-A-md1-2", event_name: "South Korea vs South Africa" },
-  { id: "e-A-5", competition_id: COMP, external_event_id: "wc2026-grp-A-md2-2", event_name: "South Korea vs Czechia" },
-  { id: "e-A-6", competition_id: COMP, external_event_id: "wc2026-grp-A-md3-2", event_name: "South Africa vs Czechia" },
+  { id: "e-A-1", competition_id: COMP, external_event_id: "manual:wc2026-grp-A-md1-1", event_name: "Mexico vs South Korea" },
+  { id: "e-A-2", competition_id: COMP, external_event_id: "manual:wc2026-grp-A-md2-1", event_name: "Mexico vs South Africa" },
+  { id: "e-A-3", competition_id: COMP, external_event_id: "manual:wc2026-grp-A-md3-1", event_name: "Mexico vs Czechia" },
+  { id: "e-A-4", competition_id: COMP, external_event_id: "manual:wc2026-grp-A-md1-2", event_name: "South Korea vs South Africa" },
+  { id: "e-A-5", competition_id: COMP, external_event_id: "manual:wc2026-grp-A-md2-2", event_name: "South Korea vs Czechia" },
+  { id: "e-A-6", competition_id: COMP, external_event_id: "manual:wc2026-grp-A-md3-2", event_name: "South Africa vs Czechia" },
 ];
 
 // ---------------------------------------------------------------------------
@@ -261,12 +261,12 @@ async function run() {
   // Test 6: legacy "Group A: X vs Y" event name format is still tolerated
   {
     const legacyEvents: FakeEvent[] = [
-      { id: "e-A-1", competition_id: COMP, external_event_id: "wc2026-grp-A-md1-1", event_name: "Group A: Mexico vs South Korea" },
-      { id: "e-A-2", competition_id: COMP, external_event_id: "wc2026-grp-A-md2-1", event_name: "Group A: Mexico vs South Africa" },
-      { id: "e-A-3", competition_id: COMP, external_event_id: "wc2026-grp-A-md3-1", event_name: "Group A: Mexico vs Czechia" },
-      { id: "e-A-4", competition_id: COMP, external_event_id: "wc2026-grp-A-md1-2", event_name: "Group A: South Korea vs South Africa" },
-      { id: "e-A-5", competition_id: COMP, external_event_id: "wc2026-grp-A-md2-2", event_name: "Group A: South Korea vs Czechia" },
-      { id: "e-A-6", competition_id: COMP, external_event_id: "wc2026-grp-A-md3-2", event_name: "Group A: South Africa vs Czechia" },
+      { id: "e-A-1", competition_id: COMP, external_event_id: "manual:wc2026-grp-A-md1-1", event_name: "Group A: Mexico vs South Korea" },
+      { id: "e-A-2", competition_id: COMP, external_event_id: "manual:wc2026-grp-A-md2-1", event_name: "Group A: Mexico vs South Africa" },
+      { id: "e-A-3", competition_id: COMP, external_event_id: "manual:wc2026-grp-A-md3-1", event_name: "Group A: Mexico vs Czechia" },
+      { id: "e-A-4", competition_id: COMP, external_event_id: "manual:wc2026-grp-A-md1-2", event_name: "Group A: South Korea vs South Africa" },
+      { id: "e-A-5", competition_id: COMP, external_event_id: "manual:wc2026-grp-A-md2-2", event_name: "Group A: South Korea vs Czechia" },
+      { id: "e-A-6", competition_id: COMP, external_event_id: "manual:wc2026-grp-A-md3-2", event_name: "Group A: South Africa vs Czechia" },
     ];
     const predictions: FakePrediction[] = [
       { event_id: "e-A-1", user_id: USER, prediction_type: "winner", prediction_data: { selection: "Mexico" } },

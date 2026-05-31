@@ -216,13 +216,13 @@ async function loadGroupEventsBySignature(
     .from("events")
     .select("id, external_event_id, event_name")
     .eq("competition_id", competitionId)
-    .like("external_event_id", "wc2026-grp-%");
+    .like("external_event_id", "manual:wc2026-grp-%");
 
   if (error || !data) return map;
 
   for (const row of data as EventRow[]) {
     // Group letter from the external id (authoritative).
-    const idMatch = row.external_event_id?.match(/^wc2026-grp-([A-L])-/i);
+    const idMatch = row.external_event_id?.match(/^manual:wc2026-grp-([A-L])-/i);
     if (!idMatch) continue;
     const group = idMatch[1].toUpperCase();
 

@@ -112,7 +112,7 @@ export default async function BracketPage() {
     .eq("user_id", user.id)
     .eq("prediction_type", "winner")
     .eq("events.competition_id", competition.id)
-    .like("events.external_event_id", "wc2026-grp-%");
+    .like("events.external_event_id", "manual:wc2026-grp-%");
 
   const submissionMap = new Map(
     (submissions ?? []).map(

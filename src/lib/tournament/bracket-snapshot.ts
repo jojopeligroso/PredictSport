@@ -78,7 +78,7 @@ export async function getWcBracketSnapshot(
     .eq("user_id", userId)
     .eq("prediction_type", "winner")
     .eq("events.competition_id", competition.id)
-    .like("events.external_event_id", "wc2026-grp-%");
+    .like("events.external_event_id", "manual:wc2026-grp-%");
 
   const data = submission?.bracket_data as BracketSubmissionData | null;
   const progress = bracketProgress(data, groupPicksCount ?? 0);

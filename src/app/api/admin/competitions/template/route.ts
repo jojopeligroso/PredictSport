@@ -126,7 +126,7 @@ export async function POST(request: Request) {
       start_time: start.toISOString(),
       lock_time: lockTime.toISOString(),
       status: "upcoming",
-      external_event_id: `wc2026-grp-${f.group}-md${f.matchday}-${f.matchInGroup}`,
+      external_event_id: `manual:wc2026-grp-${f.group}-md${f.matchday}-${f.matchInGroup}`,
       provider_league: "FIFA World Cup 2026",
     };
   });
@@ -157,7 +157,7 @@ export async function POST(request: Request) {
   }> = [];
 
   for (const f of WC2026_GROUP_FIXTURES) {
-    const extId = `wc2026-grp-${f.group}-md${f.matchday}-${f.matchInGroup}`;
+    const extId = `manual:wc2026-grp-${f.group}-md${f.matchday}-${f.matchInGroup}`;
     const eventId = idByExternal.get(extId);
     if (!eventId) continue;
 
