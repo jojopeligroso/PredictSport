@@ -147,8 +147,8 @@ async function main() {
         start_time: start.toISOString(),
         lock_time: lock.toISOString(),
         status: "upcoming",
-        external_event_id: `wc2026-grp-${f.group}-md${f.matchday}-${f.matchInGroup}`,
-        provider_league: "FIFA World Cup 2026",
+        external_event_id: `manual:wc2026-grp-${f.group}-md${f.matchday}-${f.matchInGroup}`,
+        provider_league: "soccer/fifa.world",
       },
     };
   });
@@ -227,7 +227,7 @@ async function main() {
       points: POINTS_WINNER,
       partial_points: 0,
       // config.options drives the A/B selection buttons (CLAUDE.md checklist).
-      config: { options: [e.fixture.home, e.fixture.away] },
+      config: { options: [e.fixture.home, "Draw", e.fixture.away] },
     });
     eptRows.push({
       event_id: eventId,
