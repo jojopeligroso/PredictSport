@@ -1,8 +1,8 @@
 /**
  * /wc/rules — How the World Cup prediction game works.
  *
- * Server component. Handles auth, passes isMember and isAuthenticated
- * to the RulesContent client component which owns tabs and all rendering.
+ * Server component. Handles auth + first lock time query,
+ * passes props to the RulesContent client component.
  */
 import { Metadata } from "next";
 import { createClient } from "@/lib/supabase/server";
@@ -34,6 +34,38 @@ export default async function WcRulesPage() {
     isMember = (data ?? []).length > 0;
   }
 
+  // Get earliest lock_time across WC matchday 1
+  let firstLockTime: string | null = null;
+  const { data: wcComp } = await supabase
+    .from("competitions")
+    .select("id")
+    .eq("product_mode", "world_cup_2026_shell")
+    .in("status", ["active", "draft"])
+    .limit(1)
+    .maybeSingle();
+
+  if (wcComp) {
+    const { data: md1Round } = await supabase
+      .from("rounds")
+      .select("id")
+      .eq("competition_id", wcComp.id)
+      .eq("round_number", 1)
+      .limit(1)
+      .maybeSingle();
+
+    if (md1Round) {
+      const { data: firstEvent } = await supabase
+        .from("events")
+        .select("lock_time")
+        .eq("round_id", md1Round.id)
+        .order("start_time", { ascending: true })
+        .limit(1)
+        .maybeSingle();
+
+      firstLockTime = firstEvent?.lock_time ?? null;
+    }
+  }
+
   return (
     <div className="mx-auto max-w-[480px] px-4 pt-6 pb-16">
       <WcBrandedTitle
@@ -43,7 +75,11 @@ export default async function WcRulesPage() {
         backLabel="Back to World Cup"
         className="mb-8"
       />
-      <RulesContent isMember={isMember} isAuthenticated={!!user} />
+      <RulesContent
+        isMember={isMember}
+        isAuthenticated={!!user}
+        firstLockTime={firstLockTime}
+      />
     </div>
   );
 }

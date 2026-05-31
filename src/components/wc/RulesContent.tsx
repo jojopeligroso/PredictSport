@@ -1,97 +1,60 @@
 "use client";
 
 /**
- * RulesContent — client component for /wc/rules.
- * Receives isMember and isAuthenticated from the server component.
- * Renders Overview / Deep Dive tabs.
+ * RulesContent — single-scroll rules page for /wc/rules.
+ * Sticky pill nav tracks sections: Points, Format, Picks, Ties.
+ * Contextual floating dots appear for Format sub-sections.
  */
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
+import { StickyPillNav } from "./StickyPillNav";
+import { FormatProgressDots } from "./FormatProgressDots";
 
 interface RulesContentProps {
   isMember: boolean;
   isAuthenticated: boolean;
+  firstLockTime: string | null;
 }
 
-export function RulesContent({ isMember, isAuthenticated }: RulesContentProps) {
-  const [tab, setTab] = useState<"overview" | "deep-dive">("overview");
-
-  return (
-    <>
-      {/* Tab bar */}
-      <div className="mb-6 flex gap-1 rounded-lg bg-ps-bg p-1">
-        <button
-          onClick={() => setTab("overview")}
-          className={`flex-1 rounded-md px-3 py-1.5 text-xs font-semibold transition-colors ${
-            tab === "overview"
-              ? "bg-ps-surface text-ps-text shadow-sm"
-              : "text-ps-text-sec hover:text-ps-text"
-          }`}
-        >
-          Overview
-        </button>
-        <button
-          onClick={() => setTab("deep-dive")}
-          className={`flex-1 rounded-md px-3 py-1.5 text-xs font-semibold transition-colors ${
-            tab === "deep-dive"
-              ? "bg-ps-surface text-ps-text shadow-sm"
-              : "text-ps-text-sec hover:text-ps-text"
-          }`}
-        >
-          Deep Dive
-        </button>
-      </div>
-
-      {tab === "overview" ? (
-        <OverviewTab isMember={isMember} isAuthenticated={isAuthenticated} />
-      ) : (
-        <DeepDiveTab isMember={isMember} isAuthenticated={isAuthenticated} />
-      )}
-    </>
-  );
-}
-
-// ============================================================
-// Overview Tab
-// ============================================================
-
-function OverviewTab({
+export function RulesContent({
   isMember,
   isAuthenticated,
-}: {
-  isMember: boolean;
-  isAuthenticated: boolean;
-}) {
+  firstLockTime,
+}: RulesContentProps) {
   return (
-    <div className="space-y-8">
+    <>
+      <StickyPillNav />
+      <FormatProgressDots />
+
       {/* Intro */}
-      <p className="font-serif text-sm italic leading-relaxed text-ps-text-sec">
+      <p className="mb-10 font-serif text-sm italic leading-relaxed text-ps-text-sec">
         A prediction game built as an homage to the World Cup&rsquo;s own format
         &mdash; groups, knockouts, and a final.
       </p>
 
       {/* How it works */}
-      <section>
+      <div className="mb-10">
         <p className="font-mono text-[10px] uppercase tracking-[0.18em] text-ps-amber-deep">
           How it works
         </p>
         <div className="mt-3 flex flex-col items-center gap-3">
           <HowItWorksStep n={1}>Pick the winner of each match</HowItWorksStep>
-          <HowItWorksStep n={2}>Guess the exact score for bonus points</HowItWorksStep>
+          <HowItWorksStep n={2}>
+            Guess the exact score for bonus points
+          </HowItWorksStep>
           <HowItWorksStep n={3}>Climb the leaderboard</HowItWorksStep>
         </div>
-      </section>
+      </div>
 
-      {/* Points */}
-      <section>
-        <h2 className="font-display text-base font-extrabold text-ps-text">Points</h2>
-        <PointsTable />
-      </section>
-
-      {/* Ways to win */}
-      <section>
+      {/* ── POINTS ───────────────────────────────────────────── */}
+      <section id="points" className="mb-10">
         <h2 className="font-display text-base font-extrabold text-ps-text">
+          Points
+        </h2>
+        <PointsTable />
+
+        <h2 className="mt-6 font-display text-base font-extrabold text-ps-text">
           Ways to win
         </h2>
         <ul className="mt-3 space-y-2">
@@ -101,7 +64,7 @@ function OverviewTab({
           />
           <ClassificationCard
             name="Format"
-            description="Survivor-style elimination that mirrors the World Cup itself. Groups, knockouts, last one standing. See the Deep Dive for the full breakdown."
+            description="Survivor-style elimination that mirrors the World Cup itself. Groups, knockouts, last one standing. See the Format section below for the full breakdown."
           />
           <ClassificationCard
             name="Full Bracket"
@@ -114,42 +77,8 @@ function OverviewTab({
         </ul>
       </section>
 
-      {/* Predictions */}
-      <section>
-        <h2 className="font-display text-base font-extrabold text-ps-text">
-          Your picks
-        </h2>
-        <p className="mt-2 text-sm leading-relaxed text-ps-text-sec">
-          Each day&rsquo;s matches lock 10 minutes before the first kickoff of
-          that day. Changed your mind? No problem &mdash; update your picks as
-          many times as you like before the day locks.
-        </p>
-        <p className="mt-2 text-sm leading-relaxed text-ps-text-sec">
-          You can submit picks for future days in advance.
-        </p>
-      </section>
-
-      {/* Join CTA */}
-      {!isMember && <JoinCta isAuthenticated={isAuthenticated} />}
-    </div>
-  );
-}
-
-// ============================================================
-// Deep Dive Tab
-// ============================================================
-
-function DeepDiveTab({
-  isMember,
-  isAuthenticated,
-}: {
-  isMember: boolean;
-  isAuthenticated: boolean;
-}) {
-  return (
-    <div className="space-y-10">
-      {/* Format — Survivor */}
-      <section>
+      {/* ── FORMAT ───────────────────────────────────────────── */}
+      <section id="format" className="mb-10">
         <h2 className="font-display text-base font-extrabold text-ps-text">
           Format &mdash; Survivor
         </h2>
@@ -164,13 +93,13 @@ function DeepDiveTab({
           only your current performance matters.
         </p>
         <p className="mt-2 text-sm leading-relaxed text-ps-text-sec">
-          With 48 players, the elimination curve mirrors the World Cup itself:
-          a third cut after groups, then halved at each knockout round. With
-          fewer players, the curve is adjusted to keep every round competitive.
+          With 48 players, the elimination curve mirrors the World Cup itself.
+          With fewer players, the curve is adjusted to keep every round
+          competitive.
         </p>
 
-        {/* Group Stage */}
-        <div className="mt-6">
+        {/* ── Group Stage ── */}
+        <div id="format-groups" className="mt-6">
           <h3 className="font-display text-sm font-extrabold text-ps-text">
             Group Stage (Matchdays 1&ndash;3)
           </h3>
@@ -182,7 +111,7 @@ function DeepDiveTab({
             After MD3, the cut works like the real World Cup:
           </p>
 
-          {/* Group A illustration */}
+          {/* Group A card */}
           <div className="mt-3 overflow-hidden rounded-xl border border-ps-border bg-ps-surface">
             <div className="border-b border-ps-border px-4 py-2.5">
               <p className="text-sm font-bold text-ps-text">Group A</p>
@@ -190,7 +119,7 @@ function DeepDiveTab({
                 1 of 12 groups &middot; 48 players
               </p>
             </div>
-            {/* Row 1 */}
+            {/* Row 1 — Manning */}
             <div className="flex items-center border-b border-ps-border px-4 py-2.5">
               <span className="w-6 text-center font-mono text-xs font-bold text-ps-text-ter">
                 1
@@ -209,10 +138,7 @@ function DeepDiveTab({
                 2
               </span>
               <span className="flex-1 pl-2 text-sm font-semibold text-ps-text">
-                You{" "}
-                <span className="ml-1 rounded bg-ps-amber/20 px-1 py-0.5 text-[10px] font-bold text-ps-amber">
-                  YOU
-                </span>
+                You
               </span>
               <span className="mr-2 rounded bg-ps-green/15 px-1.5 py-0.5 text-[10px] font-bold text-ps-green">
                 SAFE
@@ -221,24 +147,38 @@ function DeepDiveTab({
                 11 pts
               </span>
             </div>
-            {/* Amber dashed divider */}
-            <div className="border-t border-dashed border-ps-amber/50" />
-            {/* Row 3 — Danger zone */}
-            <div className="flex items-center border-b border-ps-border bg-ps-amber/[0.08] px-4 py-2.5">
+            {/* DANGER ZONE banner */}
+            <div className="border-l-[3px] border-l-ps-amber bg-ps-amber/[0.15] px-4 py-2">
+              <p className="font-mono text-[10px] font-bold uppercase tracking-[0.12em] text-ps-amber">
+                Danger Zone
+              </p>
+              <p className="mt-0.5 text-[10px] text-ps-text-sec">
+                Only the best 3rd-place finishers survive
+              </p>
+            </div>
+            {/* Row 3 — Bohanna (AT RISK) */}
+            <div className="flex items-center border-b border-ps-border border-l-[2px] border-l-ps-amber/50 bg-ps-amber/[0.12] px-4 py-2.5">
               <span className="w-6 text-center font-mono text-xs font-bold text-ps-text-ter">
                 3
               </span>
               <span className="flex-1 pl-2 text-sm text-ps-text">Bohanna</span>
-              <span className="mr-2 rounded bg-ps-amber/20 px-1.5 py-0.5 text-[10px] font-bold text-ps-amber">
-                ?
+              <span className="mr-2 rounded bg-ps-amber/25 px-2 py-0.5 text-[10px] font-bold text-ps-amber">
+                AT RISK
               </span>
               <span className="w-14 text-right font-mono text-xs font-bold text-ps-text">
                 7 pts
               </span>
             </div>
-            {/* Red dashed divider */}
-            <div className="border-t border-dashed border-ps-red/50" />
-            {/* Row 4 — Eliminated */}
+            {/* ELIMINATED banner */}
+            <div className="border-l-[3px] border-l-ps-red bg-ps-red/[0.08] px-4 py-2">
+              <p className="font-mono text-[10px] font-bold uppercase tracking-[0.12em] text-ps-red">
+                Eliminated
+              </p>
+              <p className="mt-0.5 text-[10px] text-ps-text-sec">
+                4th place is always cut
+              </p>
+            </div>
+            {/* Row 4 — Scrooch (OUT) */}
             <div className="flex items-center bg-ps-red/5 px-4 py-2.5 opacity-50">
               <span className="w-6 text-center font-mono text-xs font-bold text-ps-text-ter">
                 4
@@ -255,13 +195,15 @@ function DeepDiveTab({
 
           {/* How the cut works */}
           <div className="mt-3 rounded-lg bg-ps-chip px-3.5 py-3">
-            <p className="text-sm font-semibold text-ps-text">How the cut works</p>
+            <p className="text-sm font-semibold text-ps-text">
+              How the cut works
+            </p>
             <ul className="mt-2 space-y-1.5 text-xs leading-relaxed text-ps-text-sec">
               <li>
                 <span className="font-semibold text-ps-green">Top 2</span> in
                 each group qualify automatically.
               </li>
-              <li>
+              <li className="-mx-1.5 rounded-md bg-ps-amber/[0.08] px-2.5 py-2 text-[13px]">
                 <span className="font-semibold text-ps-amber">3rd place</span>{" "}
                 is the danger zone. Your points are compared against every other
                 3rd-place finisher across all groups. Only the best thirds
@@ -276,8 +218,8 @@ function DeepDiveTab({
           </div>
         </div>
 
-        {/* Knockout Rounds */}
-        <div className="mt-6">
+        {/* ── Knockout Rounds ── */}
+        <div id="format-knockouts" className="mt-6">
           <h3 className="font-display text-sm font-extrabold text-ps-text">
             Knockout Rounds
           </h3>
@@ -286,7 +228,7 @@ function DeepDiveTab({
             eliminated. Repeat until only the finalists remain.
           </p>
 
-          {/* R32 illustration */}
+          {/* R32 card */}
           <div className="mt-3 overflow-hidden rounded-xl border border-ps-border bg-ps-surface">
             <div className="border-b border-ps-border px-4 py-2.5">
               <p className="text-sm font-bold text-ps-text">Round of 32</p>
@@ -325,10 +267,7 @@ function DeepDiveTab({
                 14
               </span>
               <span className="flex-1 pl-2 text-sm font-semibold text-ps-text">
-                You{" "}
-                <span className="ml-1 rounded bg-ps-amber/20 px-1 py-0.5 text-[10px] font-bold text-ps-amber">
-                  YOU
-                </span>
+                You
               </span>
               <span className="w-14 text-right font-mono text-xs font-bold text-ps-text">
                 &mdash;
@@ -357,28 +296,12 @@ function DeepDiveTab({
                 <span className="text-[10px] text-ps-text-ter/40 line-through">
                   Scrooch
                 </span>
-                {[
-                  "██████",
-                  "██████",
-                  "██████",
-                  "██████",
-                  "██████",
-                  "██████",
-                  "██████",
-                  "██████",
-                  "██████",
-                  "██████",
-                  "██████",
-                  "██████",
-                  "██████",
-                  "██████",
-                  "██████",
-                ].map((n, i) => (
+                {Array.from({ length: 15 }, (_, i) => (
                   <span
                     key={i}
                     className="select-none text-[10px] text-ps-text-ter/30 blur-[3px]"
                   >
-                    {n}
+                    ██████
                   </span>
                 ))}
               </div>
@@ -390,8 +313,8 @@ function DeepDiveTab({
           </p>
         </div>
 
-        {/* Final */}
-        <div className="mt-6">
+        {/* ── Final ── */}
+        <div id="format-final" className="mt-6">
           <h3 className="font-display text-sm font-extrabold text-ps-text">
             Final
           </h3>
@@ -401,8 +324,8 @@ function DeepDiveTab({
           </p>
         </div>
 
-        {/* Elimination Curves */}
-        <div className="mt-6">
+        {/* ── How the field narrows ── */}
+        <div id="format-narrowing" className="mt-6">
           <h3 className="font-display text-sm font-extrabold text-ps-text">
             How the field narrows
           </h3>
@@ -439,135 +362,19 @@ function DeepDiveTab({
                 </tr>
               </thead>
               <tbody className="divide-y divide-ps-border">
-                <tr className="bg-ps-amber/5">
-                  <td className="px-3 py-2 font-mono font-bold text-ps-amber">
-                    48
-                  </td>
-                  <td className="px-2 py-2 text-center font-mono text-ps-text">
-                    32
-                  </td>
-                  <td className="px-2 py-2 text-center font-mono text-ps-text">
-                    16
-                  </td>
-                  <td className="px-2 py-2 text-center font-mono text-ps-text">
-                    8
-                  </td>
-                  <td className="px-2 py-2 text-center font-mono text-ps-text">
-                    4
-                  </td>
-                  <td className="px-2 py-2 text-center font-mono text-ps-text">
-                    2
-                  </td>
-                  <td className="px-2 py-2 text-center font-mono text-ps-text">
-                    1
-                  </td>
-                </tr>
-                <tr>
-                  <td className="px-3 py-2 font-mono font-bold text-ps-text-sec">
-                    24
-                  </td>
-                  <td className="px-2 py-2 text-center font-mono text-ps-text-sec">
-                    16
-                  </td>
-                  <td className="px-2 py-2 text-center font-mono text-ps-text-sec">
-                    8
-                  </td>
-                  <td className="px-2 py-2 text-center font-mono text-ps-text-sec">
-                    4
-                  </td>
-                  <td className="px-2 py-2 text-center font-mono text-ps-text-sec">
-                    3
-                  </td>
-                  <td className="px-2 py-2 text-center font-mono text-ps-text-sec">
-                    2
-                  </td>
-                  <td className="px-2 py-2 text-center font-mono text-ps-text-sec">
-                    1
-                  </td>
-                </tr>
-                <tr>
-                  <td className="px-3 py-2 font-mono font-bold text-ps-text-sec">
-                    16
-                  </td>
-                  <td className="px-2 py-2 text-center font-mono text-ps-text-sec">
-                    11
-                  </td>
-                  <td className="px-2 py-2 text-center font-mono text-ps-text-sec">
-                    6
-                  </td>
-                  <td className="px-2 py-2 text-center font-mono text-ps-text-sec">
-                    4
-                  </td>
-                  <td className="px-2 py-2 text-center font-mono text-ps-text-sec">
-                    3
-                  </td>
-                  <td className="px-2 py-2 text-center font-mono text-ps-text-sec">
-                    2
-                  </td>
-                  <td className="px-2 py-2 text-center font-mono text-ps-text-sec">
-                    1
-                  </td>
-                </tr>
-                <tr>
-                  <td className="px-3 py-2 font-mono font-bold text-ps-text-sec">
-                    12
-                  </td>
-                  <td className="px-2 py-2 text-center font-mono text-ps-text-sec">
-                    8
-                  </td>
-                  <td className="px-2 py-2 text-center font-mono text-ps-text-sec">
-                    5
-                  </td>
-                  <td className="px-2 py-2 text-center font-mono text-ps-text-sec">
-                    4
-                  </td>
-                  <td className="px-2 py-2 text-center font-mono text-ps-text-sec">
-                    3
-                  </td>
-                  <td className="px-2 py-2 text-center font-mono text-ps-text-sec">
-                    2
-                  </td>
-                  <td className="px-2 py-2 text-center font-mono text-ps-text-sec">
-                    1
-                  </td>
-                </tr>
-                <tr>
-                  <td className="px-3 py-2 font-mono font-bold text-ps-text-sec">
-                    8
-                  </td>
-                  <td className="px-2 py-2 text-center font-mono text-ps-text-sec">
-                    6
-                  </td>
-                  <td className="px-2 py-2 text-center font-mono text-ps-text-sec">
-                    5
-                  </td>
-                  <td className="px-2 py-2 text-center font-mono text-ps-text-sec">
-                    4
-                  </td>
-                  <td className="px-2 py-2 text-center font-mono text-ps-text-sec">
-                    3
-                  </td>
-                  <td className="px-2 py-2 text-center font-mono text-ps-text-sec">
-                    2
-                  </td>
-                  <td className="px-2 py-2 text-center font-mono text-ps-text-sec">
-                    1
-                  </td>
-                </tr>
+                <EliminationRow values={[48, 32, 16, 8, 4, 2, 1]} highlighted />
+                <EliminationRow values={[24, 16, 8, 4, 3, 2, 1]} />
+                <EliminationRow values={[16, 11, 6, 4, 3, 2, 1]} />
+                <EliminationRow values={[12, 8, 5, 4, 3, 2, 1]} />
+                <EliminationRow values={[8, 6, 5, 4, 3, 2, 1]} />
               </tbody>
             </table>
           </div>
         </div>
       </section>
 
-      {/* Detailed Points */}
-      <section>
-        <h2 className="font-display text-base font-extrabold text-ps-text">Points</h2>
-        <PointsTable />
-      </section>
-
-      {/* Daily Prediction Windows */}
-      <section>
+      {/* ── PICKS ────────────────────────────────────────────── */}
+      <section id="picks" className="mb-10">
         <h2 className="font-display text-base font-extrabold text-ps-text">
           When do picks lock?
         </h2>
@@ -597,33 +404,34 @@ function DeepDiveTab({
         </details>
       </section>
 
-      {/* Tiebreakers */}
-      <section>
+      {/* ── TIES ─────────────────────────────────────────────── */}
+      <section id="ties" className="mb-10">
         <h2 className="font-display text-base font-extrabold text-ps-text">
           Tiebreakers
         </h2>
         <p className="mt-2 text-sm leading-relaxed text-ps-text-sec">
           Same points?{" "}
-          <strong className="text-ps-text">H2H goal diff</strong>
-          {" "}&rarr;{" "}
-          <strong className="text-ps-text">H2H goals</strong>
-          {" "}&rarr;{" "}
-          <strong className="text-ps-text">overall goal diff</strong>
-          {" "}&rarr;{" "}
-          <strong className="text-ps-text">overall goals</strong>
-          {" "}&rarr;{" "}
+          <strong className="text-ps-text">H2H goal diff</strong> &rarr;{" "}
+          <strong className="text-ps-text">H2H goals</strong> &rarr;{" "}
+          <strong className="text-ps-text">overall goal diff</strong> &rarr;{" "}
+          <strong className="text-ps-text">overall goals</strong> &rarr;{" "}
           <strong className="text-ps-text">coin flip</strong>
         </p>
       </section>
 
-      {/* Join CTA */}
-      {!isMember && <JoinCta isAuthenticated={isAuthenticated} />}
-    </div>
+      {/* ── CTA ──────────────────────────────────────────────── */}
+      {!isMember && (
+        <JoinCta
+          isAuthenticated={isAuthenticated}
+          firstLockTime={firstLockTime}
+        />
+      )}
+    </>
   );
 }
 
 // ============================================================
-// Shared sub-components
+// Sub-components
 // ============================================================
 
 function HowItWorksStep({
@@ -656,8 +464,8 @@ function PointsTable() {
       <div className="border-t border-ps-border px-4 py-2.5">
         <p className="text-xs text-ps-text-sec">
           Max per group match:{" "}
-          <span className="font-mono font-bold text-ps-text">5 pts</span>.
-          Max per knockout match:{" "}
+          <span className="font-mono font-bold text-ps-text">5 pts</span>. Max
+          per knockout match:{" "}
           <span className="font-mono font-bold text-ps-text">6 pts</span>.
         </p>
       </div>
@@ -693,15 +501,52 @@ function ClassificationCard({
   );
 }
 
-function JoinCta({ isAuthenticated }: { isAuthenticated: boolean }) {
+function EliminationRow({
+  values,
+  highlighted,
+}: {
+  values: number[];
+  highlighted?: boolean;
+}) {
+  return (
+    <tr className={highlighted ? "bg-ps-amber/5" : ""}>
+      {values.map((v, i) => (
+        <td
+          key={i}
+          className={`px-2 py-2 font-mono ${
+            i === 0
+              ? `px-3 text-left font-bold ${highlighted ? "text-ps-amber" : "text-ps-text-sec"}`
+              : `text-center ${highlighted ? "text-ps-text" : "text-ps-text-sec"}`
+          }`}
+        >
+          {v}
+        </td>
+      ))}
+    </tr>
+  );
+}
+
+function JoinCta({
+  isAuthenticated,
+  firstLockTime,
+}: {
+  isAuthenticated: boolean;
+  firstLockTime: string | null;
+}) {
   return (
     <div className="rounded-xl border border-ps-border bg-ps-surface px-5 py-5 text-center">
       <h2 className="font-display text-lg font-extrabold text-ps-text">
         Ready to play?
       </h2>
-      <p className="mt-1.5 text-xs text-ps-text-sec">
-        Joins close 3 days after kickoff.
-      </p>
+      <div className="mt-1.5">
+        {firstLockTime ? (
+          <LockCountdown lockTime={firstLockTime} />
+        ) : (
+          <p className="text-xs text-ps-text-sec">
+            Joins close 3 days after kickoff.
+          </p>
+        )}
+      </div>
       <div className="mt-4 flex flex-col gap-2">
         <Link
           href={isAuthenticated ? "/wc/join" : "/login?next=/wc/join"}
@@ -717,5 +562,49 @@ function JoinCta({ isAuthenticated }: { isAuthenticated: boolean }) {
         </Link>
       </div>
     </div>
+  );
+}
+
+function LockCountdown({ lockTime }: { lockTime: string }) {
+  const [display, setDisplay] = useState<string | null>(null);
+  const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
+  useEffect(() => {
+    function tick() {
+      const diff = new Date(lockTime).getTime() - Date.now();
+      if (diff <= 0) {
+        setDisplay(null);
+        if (intervalRef.current) clearInterval(intervalRef.current);
+        return;
+      }
+      const d = Math.floor(diff / 86_400_000);
+      const h = Math.floor((diff % 86_400_000) / 3_600_000);
+      const m = Math.floor((diff % 3_600_000) / 60_000);
+      const s = Math.floor((diff % 60_000) / 1_000);
+      setDisplay(
+        `${d}d ${String(h).padStart(2, "0")}h ${String(m).padStart(2, "0")}m ${String(s).padStart(2, "0")}s`,
+      );
+    }
+
+    tick();
+    intervalRef.current = setInterval(tick, 1000);
+    return () => {
+      if (intervalRef.current) clearInterval(intervalRef.current);
+    };
+  }, [lockTime]);
+
+  if (display === null) {
+    return (
+      <p className="text-xs text-ps-text-sec">
+        Joins close 3 days after kickoff.
+      </p>
+    );
+  }
+
+  return (
+    <p className="text-xs text-ps-text-sec">
+      Picks lock in{" "}
+      <span className="font-mono font-bold text-ps-text">{display}</span>
+    </p>
   );
 }
