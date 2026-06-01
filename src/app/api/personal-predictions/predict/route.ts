@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { getOrCreatePersonalCompetition } from "@/lib/personal-competition";
+import { requireDisplayName } from "@/lib/require-display-name";
 
 interface PredictBody {
   event_id: string;
@@ -24,6 +25,9 @@ export async function POST(request: Request) {
   if (!user) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
+
+  const nameGuard = await requireDisplayName(supabase, user.id);
+  if (nameGuard) return nameGuard;
 
   let body: PredictBody;
   try {

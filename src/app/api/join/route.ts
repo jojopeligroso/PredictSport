@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { enrollEntrant } from "@/lib/tournament/classification-engine";
+import { requireDisplayName } from "@/lib/require-display-name";
 
 export async function POST(request: NextRequest) {
   const supabase = await createClient();
@@ -16,6 +17,9 @@ export async function POST(request: NextRequest) {
       { status: 401 }
     );
   }
+
+  const nameGuard = await requireDisplayName(supabase, user.id);
+  if (nameGuard) return nameGuard;
 
   // 2. Parse body
   let body: { token?: string };

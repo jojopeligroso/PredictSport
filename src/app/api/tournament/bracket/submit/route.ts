@@ -6,6 +6,7 @@ import {
 } from "@/lib/bracket/adapters/fifa-world-cup-2026";
 import { loadGroupDataFromPredictions } from "@/lib/tournament/bracket/adapters/predictions-to-group-data";
 import { groupDataToRankings } from "@/lib/tournament/bracket/group-ranking";
+import { requireDisplayName } from "@/lib/require-display-name";
 import type { BracketSubmissionData } from "@/types/tournament";
 
 export async function POST(request: Request) {
@@ -17,6 +18,9 @@ export async function POST(request: Request) {
   if (!user) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
+
+  const nameGuard = await requireDisplayName(supabase, user.id);
+  if (nameGuard) return nameGuard;
 
   const body = await request.json();
   const {

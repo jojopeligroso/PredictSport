@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { verifyCompetitionAdmin } from "@/lib/admin";
+import { requireDisplayName } from "@/lib/require-display-name";
 
 /**
  * POST /api/admin/activate-ko-classifications
@@ -24,6 +25,9 @@ export async function POST(request: Request) {
   if (!user) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
+
+  const nameGuard = await requireDisplayName(supabase, user.id);
+  if (nameGuard) return nameGuard;
 
   let body: { competition_id: string };
   try {

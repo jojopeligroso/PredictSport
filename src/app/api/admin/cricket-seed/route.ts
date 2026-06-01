@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { createClient as createServiceClient } from "@supabase/supabase-js";
 import { ACTIVE_CRICKET_LEAGUES, ALL_CRICKET_LEAGUES } from "@/lib/sports/cricket-leagues";
+import { requireDisplayName } from "@/lib/require-display-name";
 import type { CricketLeague } from "@/lib/sports/cricket-leagues";
 
 const ESPN_BASE = "https://site.api.espn.com/apis/site/v2/sports/cricket";
@@ -44,6 +45,9 @@ export async function POST(request: Request) {
   if (!user) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
+
+  const nameGuard = await requireDisplayName(supabase, user.id);
+  if (nameGuard) return nameGuard;
 
   const body = await request.json().catch(() => ({})) as {
     leagueIds?: string[];

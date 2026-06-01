@@ -202,6 +202,15 @@ function readTabFromHash(): Tab {
   return window.location.hash === "#settings" ? "settings" : "profile";
 }
 
+const COOLDOWN_DAYS = 7;
+
+function nameChangeLockedUntil(updatedAt: string | null): Date | null {
+  if (!updatedAt) return null;
+  const d = new Date(updatedAt);
+  d.setDate(d.getDate() + COOLDOWN_DAYS);
+  return d > new Date() ? d : null;
+}
+
 export function ProfileForm({ user }: { user: User }) {
   const initial = stateFromUser(user);
   const [form, setForm] = useState<FormState>(initial);
@@ -211,6 +220,7 @@ export function ProfileForm({ user }: { user: User }) {
     message: string;
   } | null>(null);
   const [tab, setTab] = useState<Tab>("profile");
+  const nameLockDate = nameChangeLockedUntil(user.display_name_updated_at);
 
   useEffect(() => {
     setTab(readTabFromHash());
@@ -320,24 +330,50 @@ export function ProfileForm({ user }: { user: User }) {
               <label htmlFor="display_name" className="sr-only">
                 Display name
               </label>
-              <input
-                id="display_name"
-                type="text"
-                required
-                minLength={1}
-                maxLength={50}
-                value={form.display_name}
-                onChange={(e) => {
-                  setForm((prev) => ({ ...prev, display_name: e.target.value }));
-                  setFeedback(null);
-                }}
-                placeholder="Your display name"
-                className="w-full rounded-xl border border-ps-border bg-ps-surface p-3 text-sm text-ps-text placeholder:text-ps-text-ter focus:border-ps-text-sec focus:outline-none"
-              />
-              {form.display_name.trim().length > DISPLAY_NAME_MAX && (
-                <p className="mt-2 text-xs text-ps-red" role="alert">
-                  Display name must be {DISPLAY_NAME_MAX} characters or fewer.
-                </p>
+              {nameLockDate ? (
+                <>
+                  <input
+                    id="display_name"
+                    type="text"
+                    disabled
+                    value={form.display_name}
+                    className="w-full rounded-xl border border-ps-border bg-ps-chip p-3 text-sm text-ps-text-sec cursor-not-allowed"
+                  />
+                  <p className="mt-2 text-xs text-ps-text-ter">
+                    You can change your name again on{" "}
+                    {nameLockDate.toLocaleDateString(undefined, {
+                      month: "short",
+                      day: "numeric",
+                      year: "numeric",
+                    })}
+                  </p>
+                </>
+              ) : (
+                <>
+                  <input
+                    id="display_name"
+                    type="text"
+                    required
+                    minLength={1}
+                    maxLength={50}
+                    value={form.display_name}
+                    onChange={(e) => {
+                      setForm((prev) => ({
+                        ...prev,
+                        display_name: e.target.value,
+                      }));
+                      setFeedback(null);
+                    }}
+                    placeholder="Your display name"
+                    className="w-full rounded-xl border border-ps-border bg-ps-surface p-3 text-sm text-ps-text placeholder:text-ps-text-ter focus:border-ps-text-sec focus:outline-none"
+                  />
+                  {form.display_name.trim().length > DISPLAY_NAME_MAX && (
+                    <p className="mt-2 text-xs text-ps-red" role="alert">
+                      Display name must be {DISPLAY_NAME_MAX} characters or
+                      fewer.
+                    </p>
+                  )}
+                </>
               )}
             </section>
 

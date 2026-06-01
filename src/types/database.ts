@@ -32,6 +32,7 @@ export interface User {
   telegram_id: number | null;
   telegram_username: string | null;
   favourite_team: { sport: string; team_name: string; provider_id: string | null } | null;
+  display_name_updated_at: string | null;
   created_at: string;
 }
 

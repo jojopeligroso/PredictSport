@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { verifyCompetitionAdmin } from "@/lib/admin";
+import { requireDisplayName } from "@/lib/require-display-name";
 import type { UserRole } from "@/types/database";
 
 interface UpdateMemberBody {
@@ -26,6 +27,9 @@ export async function PATCH(request: Request) {
   if (!user) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
+
+  const nameGuard = await requireDisplayName(supabase, user.id);
+  if (nameGuard) return nameGuard;
 
   let body: UpdateMemberBody;
   try {
@@ -129,6 +133,9 @@ export async function DELETE(request: Request) {
   if (!user) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
+
+  const nameGuardDelete = await requireDisplayName(supabase, user.id);
+  if (nameGuardDelete) return nameGuardDelete;
 
   let body: DeleteMemberBody;
   try {

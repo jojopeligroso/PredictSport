@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { verifyCompetitionAdmin } from "@/lib/admin";
+import { requireDisplayName } from "@/lib/require-display-name";
 import type { PredictionType, RoundStatus } from "@/types/database";
 
 interface PredictionTypeInput {
@@ -146,6 +147,9 @@ export async function POST(request: Request) {
   if (!user) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
+
+  const nameGuard = await requireDisplayName(supabase, user.id);
+  if (nameGuard) return nameGuard;
 
   let body: CreateRoundBody;
   try {
@@ -336,6 +340,9 @@ export async function PATCH(request: Request) {
   if (!user) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
+
+  const nameGuardPatch = await requireDisplayName(supabase, user.id);
+  if (nameGuardPatch) return nameGuardPatch;
 
   let body: UpdateRoundBody;
   try {

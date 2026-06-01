@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { finaliseWindow, finaliseStage } from "@/lib/tournament/finalisation";
+import { requireDisplayName } from "@/lib/require-display-name";
 
 /**
  * POST /api/tournament/finalise
@@ -16,6 +17,9 @@ export async function POST(request: NextRequest) {
   if (!user) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
+
+  const nameGuard = await requireDisplayName(supabase, user.id);
+  if (nameGuard) return nameGuard;
 
   let body: { type: "window" | "stage"; id: string };
   try {

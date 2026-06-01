@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
+import { requireDisplayName } from "@/lib/require-display-name";
 
 interface ReactionRequestBody {
   prediction_id?: string;
@@ -19,6 +20,9 @@ export async function POST(request: NextRequest) {
       { status: 401 }
     );
   }
+
+  const nameGuard = await requireDisplayName(supabase, user.id);
+  if (nameGuard) return nameGuard;
 
   let body: ReactionRequestBody;
   try {

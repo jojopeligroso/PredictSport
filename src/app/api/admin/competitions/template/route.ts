@@ -5,6 +5,7 @@ import {
   WC2026_GROUP_FIXTURES,
   computeWC2026DailyLockTimes,
 } from "@/lib/wc/wc2026-template";
+import { requireDisplayName } from "@/lib/require-display-name";
 
 export const dynamic = "force-dynamic";
 
@@ -23,6 +24,9 @@ export async function POST(request: Request) {
   if (!user) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
+
+  const nameGuard = await requireDisplayName(supabase, user.id);
+  if (nameGuard) return nameGuard;
 
   let body: { template: string; name?: string };
   try {

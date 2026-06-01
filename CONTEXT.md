@@ -167,6 +167,12 @@ User-facing label for a prediction window during the World Cup group stage. Maps
 
 ---
 
+## Display Name
+
+The user-chosen name shown on leaderboards, standings, and to other participants. One per user. Required before any write action (predictions, competition joins, admin actions). Super-admins are exempt from the requirement. Setting a display name for the first time and the first change are free; all subsequent changes are subject to a 7-day cooldown.
+
+---
+
 ## The Cut
 
 The R32 Classification, renamed. Measures how many of the 32 knockout-stage teams the user correctly predicted from their Full Bracket group stage picks. Not path-sensitive — only checks whether each team made the knockouts, regardless of position. Short label: "The Cut". Full title: "Who Made the Cut". No question mark.
