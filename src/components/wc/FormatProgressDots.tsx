@@ -95,7 +95,7 @@ export function FormatProgressDots() {
     <nav
       aria-label="Format sub-sections"
       aria-hidden={!visible}
-      className={`fixed top-1/2 z-40 flex -translate-y-1/2 flex-col items-center gap-2 transition-opacity duration-150 ${
+      className={`fixed top-1/2 z-40 flex -translate-y-1/2 flex-col items-center gap-5 transition-opacity duration-150 ${
         visible ? "opacity-100" : "pointer-events-none opacity-0"
       }`}
       style={{ right: "max(6px, calc(50vw - 240px))" }}
@@ -113,7 +113,7 @@ export function FormatProgressDots() {
               : "bg-ps-text-ter/40 hover:bg-ps-text-ter/70"
           }`}
         >
-          <span className={`pointer-events-none absolute right-[calc(100%+10px)] top-1/2 -translate-y-1/2 whitespace-nowrap rounded-md border border-ps-border bg-ps-surface px-2 py-1 text-[10px] font-semibold text-ps-text shadow-sm transition-opacity duration-150 ${showTooltips && activeSub === id ? "opacity-100" : "opacity-0"}`}>
+          <span className={`pointer-events-none absolute right-[calc(100%+10px)] top-1/2 -translate-y-1/2 whitespace-nowrap rounded-md border border-ps-border bg-ps-surface px-2 py-1 text-[10px] font-semibold text-ps-text shadow-sm transition-opacity duration-150 ${showTooltips ? "opacity-100" : "opacity-0"}`}>
             {label}
           </span>
         </button>
