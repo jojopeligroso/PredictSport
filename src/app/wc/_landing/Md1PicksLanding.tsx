@@ -368,7 +368,7 @@ function PreviewOverlay({ isAuthenticated }: { isAuthenticated: boolean }) {
           <p className="font-mono text-[10px] font-bold uppercase tracking-[0.18em] text-ps-amber-deep">
             How it works
           </p>
-          <ul className="mt-2 flex flex-col items-center space-y-1.5 text-xs text-ps-text-sec">
+          <ul className="mx-auto mt-2 flex w-fit flex-col space-y-1.5 text-xs text-ps-text-sec">
             <li className="flex items-start gap-2">
               <span className="mt-px font-mono font-bold text-ps-amber">1</span>
               <span>Pick who wins each match</span>
@@ -384,9 +384,9 @@ function PreviewOverlay({ isAuthenticated }: { isAuthenticated: boolean }) {
           </ul>
           <Link
             href="/wc/rules"
-            className="pointer-events-auto mt-2.5 inline-block text-[11px] font-semibold text-ps-amber-deep"
+            className="pointer-events-auto mt-3 inline-block w-full rounded-xl border border-ps-border px-4 py-2.5 text-sm font-semibold text-ps-text transition-colors hover:bg-ps-surface"
           >
-            Read the full rules →
+            Read the full rules
           </Link>
         </div>
 
