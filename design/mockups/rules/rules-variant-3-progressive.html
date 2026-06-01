@@ -1,0 +1,1213 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Rules — World Cup 2026 Prediction</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    :root {
+      --bg: #efe9de;
+      --surface: #f5f0e8;
+      --ink: #191512;
+      --ink-secondary: #191512aa;
+      --ink-tertiary: #19151266;
+      --amber: #f59e0b;
+      --amber-deep: #d97706;
+      --green: #0aa86d;
+      --red: #e23d4f;
+      --border: #19151215;
+      --chip-bg: #19151208;
+      --font-body: 'Inter', sans-serif;
+      --font-mono: 'JetBrains Mono', monospace;
+    }
+
+    html {
+      background: var(--bg);
+      color: var(--ink);
+      font-family: var(--font-body);
+      -webkit-font-smoothing: antialiased;
+    }
+
+    body {
+      min-height: 100vh;
+      padding: 40px 16px 64px;
+    }
+
+    .page {
+      max-width: 480px;
+      margin: 0 auto;
+    }
+
+    /* ── Header ── */
+    .header {
+      margin-bottom: 8px;
+    }
+
+    .header-label {
+      font-size: 11px;
+      font-weight: 600;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: var(--amber-deep);
+      margin-bottom: 6px;
+    }
+
+    .header-title {
+      font-size: 32px;
+      font-weight: 800;
+      line-height: 1.1;
+      color: var(--ink);
+      letter-spacing: -0.02em;
+    }
+
+    .header-sub {
+      margin-top: 4px;
+      font-size: 14px;
+      color: var(--ink-secondary);
+      font-weight: 400;
+    }
+
+    /* ── Intro ── */
+    .intro {
+      margin: 24px 0 28px;
+    }
+
+    .intro p {
+      font-family: Georgia, 'Times New Roman', serif;
+      font-style: italic;
+      font-size: 15px;
+      line-height: 1.65;
+      color: var(--ink-secondary);
+    }
+
+    /* ── How it works ── */
+    .how-section {
+      margin-bottom: 28px;
+    }
+
+    .section-label {
+      font-size: 11px;
+      font-weight: 600;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--ink-tertiary);
+      margin-bottom: 14px;
+    }
+
+    .steps {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .step {
+      display: flex;
+      align-items: flex-start;
+      gap: 12px;
+    }
+
+    .step-num {
+      flex-shrink: 0;
+      width: 28px;
+      height: 28px;
+      border-radius: 50%;
+      background: var(--amber);
+      color: #fff;
+      font-size: 12px;
+      font-weight: 700;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin-top: 1px;
+    }
+
+    .step-content {
+      flex: 1;
+    }
+
+    .step-title {
+      font-size: 13px;
+      font-weight: 700;
+      color: var(--ink);
+      margin-bottom: 2px;
+    }
+
+    .step-desc {
+      font-size: 12px;
+      color: var(--ink-secondary);
+      line-height: 1.5;
+    }
+
+    /* ── Cards ── */
+    .cards {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      margin-bottom: 28px;
+    }
+
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      overflow: hidden;
+    }
+
+    .card-inner {
+      padding: 16px 20px;
+    }
+
+    .card-header {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 8px;
+      margin-bottom: 6px;
+    }
+
+    .card-title {
+      font-size: 14px;
+      font-weight: 700;
+      color: var(--ink);
+      line-height: 1.3;
+    }
+
+    .card-tag {
+      flex-shrink: 0;
+      font-size: 10px;
+      font-weight: 600;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--amber-deep);
+      background: #f59e0b18;
+      border: 1px solid #f59e0b30;
+      border-radius: 4px;
+      padding: 2px 6px;
+      margin-top: 1px;
+    }
+
+    .card-summary {
+      font-size: 13px;
+      color: var(--ink-secondary);
+      line-height: 1.5;
+    }
+
+    .card-toggle {
+      display: flex;
+      justify-content: flex-end;
+      margin-top: 10px;
+    }
+
+    .toggle-btn {
+      background: none;
+      border: none;
+      cursor: pointer;
+      font-family: var(--font-body);
+      font-size: 11px;
+      font-weight: 600;
+      color: var(--amber-deep);
+      padding: 0;
+      line-height: 1;
+      transition: opacity 0.15s;
+    }
+
+    .toggle-btn:hover {
+      opacity: 0.7;
+    }
+
+    /* Expanded content */
+    .card-expanded {
+      max-height: 0;
+      overflow: hidden;
+      transition: max-height 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    .card-expanded.open {
+      max-height: 3000px;
+    }
+
+    .card-expanded-inner {
+      border-top: 1px dashed #19151220;
+      padding: 16px 20px;
+    }
+
+    /* ── Format card (hero) ── */
+    .card-format {
+      border-left: 3px solid var(--amber);
+    }
+
+    .card-format .card-inner {
+      padding-left: 17px;
+    }
+
+    .card-format .card-expanded-inner {
+      padding-left: 17px;
+    }
+
+    /* ── Points table ── */
+    .points-table-wrap {
+      background: var(--chip-bg);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      overflow: hidden;
+      margin-bottom: 10px;
+    }
+
+    .points-table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+
+    .points-table th {
+      font-size: 10px;
+      font-weight: 600;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--ink-tertiary);
+      background: var(--chip-bg);
+      padding: 8px 12px;
+      text-align: left;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .points-table td {
+      font-size: 12px;
+      color: var(--ink-secondary);
+      padding: 9px 12px;
+      border-bottom: 1px solid var(--border);
+      vertical-align: top;
+    }
+
+    .points-table tr:last-child td {
+      border-bottom: none;
+    }
+
+    .points-table td:last-child {
+      font-family: var(--font-mono);
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--amber-deep);
+      text-align: right;
+      white-space: nowrap;
+    }
+
+    .points-footer {
+      font-size: 11px;
+      color: var(--ink-tertiary);
+      font-style: italic;
+      margin-top: 8px;
+    }
+
+    /* ── Group illustration ── */
+    .group-label {
+      font-size: 10px;
+      font-weight: 600;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--ink-tertiary);
+      margin-bottom: 8px;
+    }
+
+    .group-card {
+      background: var(--chip-bg);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      overflow: hidden;
+      margin-bottom: 12px;
+    }
+
+    .group-card-header {
+      padding: 8px 12px;
+      background: #19151210;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .group-card-header span {
+      font-size: 11px;
+      font-weight: 600;
+      color: var(--ink-secondary);
+    }
+
+    .group-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 9px 12px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .group-row:last-child {
+      border-bottom: none;
+    }
+
+    .group-row.dimmed {
+      opacity: 0.5;
+    }
+
+    .group-rank {
+      font-family: var(--font-mono);
+      font-size: 11px;
+      font-weight: 500;
+      color: var(--ink-tertiary);
+      width: 16px;
+      flex-shrink: 0;
+    }
+
+    .group-name {
+      font-size: 12px;
+      font-weight: 500;
+      color: var(--ink);
+      flex: 1;
+    }
+
+    .group-pts {
+      font-family: var(--font-mono);
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--ink-secondary);
+      margin-right: 4px;
+    }
+
+    .badge {
+      font-size: 9px;
+      font-weight: 700;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      padding: 2px 5px;
+      border-radius: 4px;
+    }
+
+    .badge-safe {
+      background: #0aa86d18;
+      color: var(--green);
+      border: 1px solid #0aa86d30;
+    }
+
+    .badge-you {
+      background: #f59e0b22;
+      color: var(--amber-deep);
+      border: 1px solid #f59e0b40;
+    }
+
+    .badge-out {
+      background: #e23d4f18;
+      color: var(--red);
+      border: 1px solid #e23d4f30;
+    }
+
+    .badge-q {
+      background: #f59e0b18;
+      color: var(--amber-deep);
+      border: 1px solid #f59e0b30;
+    }
+
+    .group-divider {
+      display: flex;
+      align-items: center;
+      padding: 4px 12px;
+      gap: 6px;
+      background: #19151206;
+    }
+
+    .group-divider-line {
+      flex: 1;
+      height: 1px;
+      border-top: 1px dashed #f59e0b40;
+    }
+
+    .group-divider-label {
+      font-size: 9px;
+      font-weight: 600;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+    }
+
+    .group-divider.amber .group-divider-label {
+      color: var(--amber);
+    }
+
+    .group-divider.red .group-divider-line {
+      border-color: #e23d4f40;
+    }
+
+    .group-divider.red .group-divider-label {
+      color: var(--red);
+    }
+
+    /* ── Cut explanation ── */
+    .cut-box {
+      background: var(--chip-bg);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 12px;
+      margin-bottom: 12px;
+    }
+
+    .cut-box-title {
+      font-size: 11px;
+      font-weight: 600;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--ink-tertiary);
+      margin-bottom: 8px;
+    }
+
+    .cut-row {
+      display: flex;
+      align-items: baseline;
+      gap: 8px;
+      margin-bottom: 5px;
+    }
+
+    .cut-row:last-child {
+      margin-bottom: 0;
+    }
+
+    .cut-dot {
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      flex-shrink: 0;
+      margin-bottom: 1px;
+    }
+
+    .cut-dot.green { background: var(--green); }
+    .cut-dot.amber { background: var(--amber); }
+    .cut-dot.red { background: var(--red); }
+
+    .cut-text {
+      font-size: 12px;
+      color: var(--ink-secondary);
+      line-height: 1.4;
+    }
+
+    .cut-note {
+      font-size: 11px;
+      color: var(--ink-tertiary);
+      font-style: italic;
+    }
+
+    /* ── Knockout round ── */
+    .ko-section {
+      margin-bottom: 12px;
+    }
+
+    .ko-label {
+      font-size: 11px;
+      font-weight: 600;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--ink-tertiary);
+      margin-bottom: 8px;
+    }
+
+    .ko-strip {
+      background: var(--chip-bg);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 10px 12px;
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 4px;
+      margin-bottom: 8px;
+    }
+
+    .ko-rank {
+      font-family: var(--font-mono);
+      font-size: 11px;
+      color: var(--ink-tertiary);
+      background: var(--chip-bg);
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      padding: 2px 5px;
+    }
+
+    .ko-rank.you {
+      background: #f59e0b22;
+      color: var(--amber-deep);
+      border-color: #f59e0b40;
+      font-weight: 600;
+    }
+
+    .ko-rank.out {
+      background: #e23d4f10;
+      color: var(--red);
+      border-color: #e23d4f25;
+      text-decoration: line-through;
+    }
+
+    .ko-sep {
+      font-size: 11px;
+      color: var(--ink-tertiary);
+    }
+
+    /* ── Elimination curve table ── */
+    .elim-table-wrap {
+      background: var(--chip-bg);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      overflow: hidden;
+      margin-bottom: 12px;
+    }
+
+    .elim-table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+
+    .elim-table th {
+      font-size: 10px;
+      font-weight: 600;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--ink-tertiary);
+      padding: 8px 12px;
+      text-align: left;
+      border-bottom: 1px solid var(--border);
+      background: var(--chip-bg);
+    }
+
+    .elim-table td {
+      font-size: 12px;
+      color: var(--ink-secondary);
+      padding: 8px 12px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .elim-table tr:last-child td {
+      border-bottom: none;
+    }
+
+    .elim-table td:nth-child(2),
+    .elim-table td:nth-child(3) {
+      font-family: var(--font-mono);
+      font-size: 11px;
+    }
+
+    .elim-table td:nth-child(2) { color: var(--green); }
+    .elim-table td:nth-child(3) { color: var(--red); }
+
+    /* ── Expand section headers ── */
+    .expand-section {
+      margin-bottom: 14px;
+    }
+
+    .expand-section:last-child {
+      margin-bottom: 0;
+    }
+
+    .expand-section-title {
+      font-size: 12px;
+      font-weight: 700;
+      color: var(--ink);
+      margin-bottom: 6px;
+    }
+
+    .expand-body {
+      font-size: 12px;
+      color: var(--ink-secondary);
+      line-height: 1.6;
+    }
+
+    /* ── Other classifications ── */
+    .classifications-list {
+      display: flex;
+      flex-direction: column;
+      gap: 0;
+    }
+
+    .classif-row {
+      display: flex;
+      align-items: flex-start;
+      gap: 10px;
+      padding: 10px 0;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .classif-row:last-child {
+      border-bottom: none;
+      padding-bottom: 0;
+    }
+
+    .classif-row:first-child {
+      padding-top: 0;
+    }
+
+    .classif-icon {
+      width: 28px;
+      height: 28px;
+      border-radius: 6px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 13px;
+      flex-shrink: 0;
+      margin-top: 1px;
+    }
+
+    .classif-icon.globe { background: #0aa86d15; }
+    .classif-icon.bracket { background: #f59e0b15; }
+    .classif-icon.ko { background: #5b8df615; }
+
+    .classif-title {
+      font-size: 13px;
+      font-weight: 700;
+      color: var(--ink);
+      margin-bottom: 2px;
+    }
+
+    .classif-desc {
+      font-size: 12px;
+      color: var(--ink-secondary);
+      line-height: 1.45;
+    }
+
+    /* ── Tiebreakers ── */
+    .tiebreaker-section {
+      margin-bottom: 28px;
+    }
+
+    .tiebreaker-chain {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 6px;
+      margin-top: 10px;
+    }
+
+    .tb-item {
+      font-size: 12px;
+      color: var(--ink-secondary);
+      background: var(--chip-bg);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 4px 8px;
+      line-height: 1.3;
+    }
+
+    .tb-item.coin {
+      color: var(--amber-deep);
+      background: #f59e0b10;
+      border-color: #f59e0b25;
+    }
+
+    .tb-arrow {
+      color: var(--ink-tertiary);
+      font-size: 11px;
+      flex-shrink: 0;
+    }
+
+    /* ── CTA ── */
+    .cta-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 24px 20px;
+      text-align: center;
+    }
+
+    .cta-title {
+      font-size: 18px;
+      font-weight: 800;
+      color: var(--ink);
+      letter-spacing: -0.01em;
+      margin-bottom: 4px;
+    }
+
+    .cta-sub {
+      font-size: 13px;
+      color: var(--ink-secondary);
+      margin-bottom: 20px;
+      line-height: 1.4;
+    }
+
+    .cta-buttons {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .btn-primary {
+      display: block;
+      width: 100%;
+      padding: 13px 16px;
+      border-radius: 8px;
+      background: var(--amber);
+      color: #fff;
+      font-family: var(--font-body);
+      font-size: 14px;
+      font-weight: 700;
+      text-align: center;
+      border: none;
+      cursor: pointer;
+      letter-spacing: -0.01em;
+      transition: background 0.15s;
+    }
+
+    .btn-primary:hover {
+      background: var(--amber-deep);
+    }
+
+    .btn-secondary {
+      display: block;
+      width: 100%;
+      padding: 12px 16px;
+      border-radius: 8px;
+      background: transparent;
+      color: var(--ink-secondary);
+      font-family: var(--font-body);
+      font-size: 13px;
+      font-weight: 600;
+      text-align: center;
+      border: 1px solid var(--border);
+      cursor: pointer;
+      transition: border-color 0.15s, color 0.15s;
+    }
+
+    .btn-secondary:hover {
+      border-color: var(--ink-tertiary);
+      color: var(--ink);
+    }
+
+    /* ── Utility ── */
+    .mono {
+      font-family: var(--font-mono);
+    }
+
+    .text-green { color: var(--green); }
+    .text-red { color: var(--red); }
+    .text-amber { color: var(--amber-deep); }
+
+    .spacer-sm { height: 8px; }
+    .spacer { height: 14px; }
+
+    /* ── Reset points note ── */
+    .reset-note {
+      display: flex;
+      align-items: flex-start;
+      gap: 8px;
+      background: #f59e0b0a;
+      border: 1px solid #f59e0b25;
+      border-radius: 8px;
+      padding: 10px 12px;
+      margin-top: 10px;
+    }
+
+    .reset-note-icon {
+      font-size: 13px;
+      flex-shrink: 0;
+      margin-top: 1px;
+    }
+
+    .reset-note-text {
+      font-size: 12px;
+      color: var(--ink-secondary);
+      line-height: 1.5;
+    }
+
+    .reset-note-text strong {
+      color: var(--amber-deep);
+      font-weight: 600;
+    }
+  </style>
+</head>
+<body>
+  <div class="page">
+
+    <!-- Header -->
+    <div class="header">
+      <div class="header-label">World Cup 2026</div>
+      <h1 class="header-title">Rules</h1>
+      <p class="header-sub">Everything you need to know.</p>
+    </div>
+
+    <!-- Intro -->
+    <div class="intro">
+      <p>A prediction game built as an homage to the World Cup's own format — groups, knockouts, and a final.</p>
+    </div>
+
+    <!-- How it works -->
+    <div class="how-section">
+      <div class="section-label">How it works</div>
+      <div class="steps">
+        <div class="step">
+          <div class="step-num">1</div>
+          <div class="step-content">
+            <div class="step-title">Predict every match</div>
+            <div class="step-desc">Pick the winner — or exact score for bonus points — before each day's matches lock.</div>
+          </div>
+        </div>
+        <div class="step">
+          <div class="step-num">2</div>
+          <div class="step-content">
+            <div class="step-title">Survive the group stage</div>
+            <div class="step-desc">You're placed in a group of 4. Bottom player after 48 group games is eliminated. Reset. Repeat.</div>
+          </div>
+        </div>
+        <div class="step">
+          <div class="step-num">3</div>
+          <div class="step-content">
+            <div class="step-title">Make it to the final</div>
+            <div class="step-desc">Survivor rounds mirror the World Cup's own bracket. Last one standing wins.</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Cards -->
+    <div class="cards">
+
+      <!-- Card: Points -->
+      <div class="card">
+        <div class="card-inner">
+          <div class="card-header">
+            <div class="card-title">Points</div>
+          </div>
+          <div class="card-summary">2 pts for correct winner. +3 bonus for exact score. +1 for correct knockout advance.</div>
+          <div class="card-toggle">
+            <button class="toggle-btn" onclick="toggleCard(this)" aria-expanded="false">Show more ↓</button>
+          </div>
+        </div>
+        <div class="card-expanded">
+          <div class="card-expanded-inner">
+            <div class="expand-section">
+              <div class="expand-section-title">Match predictions</div>
+              <div class="points-table-wrap">
+                <table class="points-table">
+                  <thead>
+                    <tr>
+                      <th>Prediction</th>
+                      <th style="text-align:right">Points</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr>
+                      <td>Correct match winner (or draw)</td>
+                      <td>+2</td>
+                    </tr>
+                    <tr>
+                      <td>Exact final score</td>
+                      <td>+3 bonus</td>
+                    </tr>
+                    <tr>
+                      <td>Correct team to advance (knockout)</td>
+                      <td>+1</td>
+                    </tr>
+                    <tr>
+                      <td>Incorrect winner prediction</td>
+                      <td>0</td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+              <p class="points-footer">Maximum per knockout match: 6 pts (2 + 3 + 1).</p>
+            </div>
+            <div class="expand-section">
+              <div class="expand-section-title">Knockout rounds</div>
+              <div class="expand-body">
+                In knockout matches you also predict which team advances. This is separate from the match result — a team can win on penalties and still be your "correct" advance pick.
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Card: Format (hero) -->
+      <div class="card card-format">
+        <div class="card-inner">
+          <div class="card-header">
+            <div class="card-title">Format — Survivor</div>
+            <div class="card-tag">Main game</div>
+          </div>
+          <div class="card-summary">Survivor-style elimination. You're placed in a group. After each stage, bottom players are eliminated. Points reset. Last one standing wins.</div>
+          <div class="card-toggle">
+            <button class="toggle-btn" onclick="toggleCard(this)" aria-expanded="false">Show more ↓</button>
+          </div>
+        </div>
+        <div class="card-expanded">
+          <div class="card-expanded-inner">
+
+            <div class="expand-section">
+              <div class="expand-section-title">Group Stage</div>
+              <div class="expand-body">All players enter the tournament split into groups of 4. Each group runs for the duration of the World Cup Group Stage (48 matches). Points accumulate from every match you predict.</div>
+              <div class="spacer"></div>
+              <div class="group-label">Group A &nbsp;·&nbsp; 1 of 12 groups &nbsp;·&nbsp; 48 players</div>
+              <div class="group-card">
+                <div class="group-card-header">
+                  <span>After 48 group stage matches</span>
+                </div>
+                <div class="group-row">
+                  <span class="group-rank">#1</span>
+                  <span class="group-name">Manning</span>
+                  <span class="group-pts mono">14 pts</span>
+                  <span class="badge badge-safe">Safe</span>
+                </div>
+                <div class="group-divider amber">
+                  <div class="group-divider-line"></div>
+                  <div class="group-divider-label">Qualify</div>
+                  <div class="group-divider-line"></div>
+                </div>
+                <div class="group-row">
+                  <span class="group-rank">#2</span>
+                  <span class="group-name">You</span>
+                  <span class="group-pts mono">11 pts</span>
+                  <span class="badge badge-you" style="margin-right:4px">You</span>
+                  <span class="badge badge-safe">Safe</span>
+                </div>
+                <div class="group-divider amber">
+                  <div class="group-divider-line"></div>
+                  <div class="group-divider-label">Danger zone</div>
+                  <div class="group-divider-line"></div>
+                </div>
+                <div class="group-row">
+                  <span class="group-rank">#3</span>
+                  <span class="group-name">Bohanna</span>
+                  <span class="group-pts mono">7 pts</span>
+                  <span class="badge badge-q">?</span>
+                </div>
+                <div class="group-divider red">
+                  <div class="group-divider-line"></div>
+                  <div class="group-divider-label">Eliminated</div>
+                  <div class="group-divider-line"></div>
+                </div>
+                <div class="group-row dimmed">
+                  <span class="group-rank">#4</span>
+                  <span class="group-name">Scrooch</span>
+                  <span class="group-pts mono">3 pts</span>
+                  <span class="badge badge-out">Out</span>
+                </div>
+              </div>
+
+              <div class="cut-box">
+                <div class="cut-box-title">How the cut works</div>
+                <div class="cut-row">
+                  <div class="cut-dot green"></div>
+                  <div class="cut-text">Top 2 — <strong style="color:var(--green)">safe</strong>, advance to Round of 32</div>
+                </div>
+                <div class="cut-row">
+                  <div class="cut-dot amber"></div>
+                  <div class="cut-text">3rd place — <strong style="color:var(--amber-deep)">danger zone</strong> &nbsp;<span class="cut-note">8 of 12 thirds qualify based on points</span></div>
+                </div>
+                <div class="cut-row">
+                  <div class="cut-dot red"></div>
+                  <div class="cut-text">4th place — <strong style="color:var(--red)">eliminated</strong></div>
+                </div>
+              </div>
+
+              <div class="reset-note">
+                <div class="reset-note-icon">&#8635;</div>
+                <div class="reset-note-text"><strong>Points reset to zero</strong> at the start of every new round. Each stage is a clean slate.</div>
+              </div>
+            </div>
+
+            <div class="expand-section">
+              <div class="expand-section-title">Knockout Rounds</div>
+              <div class="expand-body">Survivors are pooled and ranked by total group stage points. They're then slotted into the R32 bracket. Each round, the bottom players are cut.</div>
+              <div class="spacer"></div>
+              <div class="ko-label">Round of 32 · player ranking</div>
+              <div class="ko-strip">
+                <span class="ko-rank">#1</span>
+                <span class="ko-sep">·</span>
+                <span class="ko-rank">#2</span>
+                <span class="ko-sep">·</span>
+                <span class="ko-rank">...</span>
+                <span class="ko-sep">·</span>
+                <span class="ko-rank you">#14 You</span>
+                <span class="ko-sep">·</span>
+                <span class="ko-rank">...</span>
+                <span class="ko-sep">·</span>
+                <span class="ko-rank">#31</span>
+                <span class="ko-sep">·</span>
+                <span class="ko-rank">#32</span>
+              </div>
+              <div class="ko-strip" style="margin-bottom:12px">
+                <span style="font-size:11px;color:var(--ink-tertiary);flex:1">Eliminated after R32:</span>
+                <span class="ko-rank out">Scrooch</span>
+                <span class="ko-rank out">+15 others</span>
+              </div>
+
+              <div class="elim-table-wrap">
+                <table class="elim-table">
+                  <thead>
+                    <tr>
+                      <th>Round</th>
+                      <th>Survive</th>
+                      <th>Eliminated</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr>
+                      <td>Group Stage</td>
+                      <td>32</td>
+                      <td>16+</td>
+                    </tr>
+                    <tr>
+                      <td>Round of 32</td>
+                      <td>16</td>
+                      <td>16</td>
+                    </tr>
+                    <tr>
+                      <td>Round of 16</td>
+                      <td>8</td>
+                      <td>8</td>
+                    </tr>
+                    <tr>
+                      <td>Quarter-finals</td>
+                      <td>4</td>
+                      <td>4</td>
+                    </tr>
+                    <tr>
+                      <td>Semi-finals</td>
+                      <td>2</td>
+                      <td>2</td>
+                    </tr>
+                    <tr>
+                      <td>Final</td>
+                      <td>1 — Winner</td>
+                      <td>1</td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+
+              <div class="expand-body">The Final pits the last 2 survivors head-to-head across the World Cup Final match. Most points from that single match wins the tournament.</div>
+            </div>
+
+          </div>
+        </div>
+      </div>
+
+      <!-- Card: Other classifications -->
+      <div class="card">
+        <div class="card-inner">
+          <div class="card-header">
+            <div class="card-title">Other classifications</div>
+          </div>
+          <div class="card-summary">Three parallel competitions run alongside Survivor — Overall, Full Bracket, and KO Bracket.</div>
+          <div class="card-toggle">
+            <button class="toggle-btn" onclick="toggleCard(this)" aria-expanded="false">Show more ↓</button>
+          </div>
+        </div>
+        <div class="card-expanded">
+          <div class="card-expanded-inner">
+            <div class="classifications-list">
+              <div class="classif-row">
+                <div class="classif-icon globe">&#127758;</div>
+                <div>
+                  <div class="classif-title">Overall</div>
+                  <div class="classif-desc">Most cumulative points across every match of the entire tournament. No eliminations — everyone plays to the final whistle.</div>
+                </div>
+              </div>
+              <div class="classif-row">
+                <div class="classif-icon bracket">&#9638;</div>
+                <div>
+                  <div class="classif-title">Full Bracket</div>
+                  <div class="classif-desc">Predict every result — all 104 matches — before the tournament kicks off. Locked at first kickoff, no changes.</div>
+                </div>
+              </div>
+              <div class="classif-row">
+                <div class="classif-icon ko">&#9654;</div>
+                <div>
+                  <div class="classif-title">KO Bracket</div>
+                  <div class="classif-desc">Predict every knockout round result after the group stage concludes. Locks at the R16 first match.</div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Card: Your picks -->
+      <div class="card">
+        <div class="card-inner">
+          <div class="card-header">
+            <div class="card-title">Your picks</div>
+          </div>
+          <div class="card-summary">Each day's matches lock 10 minutes before first kickoff. Change your mind freely before the lock.</div>
+          <div class="card-toggle">
+            <button class="toggle-btn" onclick="toggleCard(this)" aria-expanded="false">Show more ↓</button>
+          </div>
+        </div>
+        <div class="card-expanded">
+          <div class="card-expanded-inner">
+            <div class="expand-section">
+              <div class="expand-section-title">Outcome-only predictions</div>
+              <div class="expand-body">You predict the result of the match — winner or draw — and optionally the exact score. You do not predict individual goalscorers, cards, or other in-match events.</div>
+            </div>
+            <div class="expand-section">
+              <div class="expand-section-title">Daily lock</div>
+              <div class="expand-body">All matches on a given calendar day lock together, 10 minutes before the earliest kickoff. If there are 3 matches on a day and the first starts at 3pm, all 3 lock at 2:50pm. You can edit any pick up until then.</div>
+            </div>
+            <div class="expand-section">
+              <div class="expand-section-title">Advance picks</div>
+              <div class="expand-body">You can submit picks days in advance — no need to log in on matchday. Any pick you've saved before the daily lock counts. Unpicked matches score zero.</div>
+            </div>
+            <div class="expand-section" style="margin-bottom:0">
+              <div class="expand-section-title">Knockout advance picks</div>
+              <div class="expand-body">In knockout rounds, locks are per-match rather than per-day, as matches are spread across multiple days. Each individual match locks 10 minutes before its own kickoff.</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+    <!-- /cards -->
+
+    <!-- Tiebreakers -->
+    <div class="tiebreaker-section">
+      <div class="section-label">Tiebreakers</div>
+      <div style="font-size:12px;color:var(--ink-secondary);line-height:1.5;margin-bottom:10px">Same points? The following sequence resolves ties in order:</div>
+      <div class="tiebreaker-chain">
+        <div class="tb-item">H2H goal diff</div>
+        <div class="tb-arrow">&#8594;</div>
+        <div class="tb-item">H2H goals</div>
+        <div class="tb-arrow">&#8594;</div>
+        <div class="tb-item">Overall goal diff</div>
+        <div class="tb-arrow">&#8594;</div>
+        <div class="tb-item">Overall goals</div>
+        <div class="tb-arrow">&#8594;</div>
+        <div class="tb-item coin">Coin flip</div>
+      </div>
+    </div>
+
+    <!-- CTA -->
+    <div class="cta-card">
+      <div class="cta-title">Ready to play?</div>
+      <div class="cta-sub">Join your group before the tournament kicks off.</div>
+      <div class="cta-buttons">
+        <button class="btn-primary">Create a competition</button>
+        <button class="btn-secondary">Join with a code</button>
+      </div>
+    </div>
+
+  </div>
+
+  <script>
+    function toggleCard(btn) {
+      const card = btn.closest('.card');
+      const expanded = card.querySelector('.card-expanded');
+      const isOpen = expanded.classList.contains('open');
+
+      if (isOpen) {
+        expanded.classList.remove('open');
+        btn.textContent = 'Show more \u2193';
+        btn.setAttribute('aria-expanded', 'false');
+      } else {
+        expanded.classList.add('open');
+        btn.textContent = 'Show less \u2191';
+        btn.setAttribute('aria-expanded', 'true');
+      }
+    }
+  </script>
+</body>
+</html>

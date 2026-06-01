@@ -1,0 +1,1037 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Rules — WC 2026 Prediction Game</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
+  <style>
+    *, *::before, *::after {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    :root {
+      --bg: #efe9de;
+      --surface: #f5f0e8;
+      --text-primary: #191512;
+      --text-secondary: #191512aa;
+      --text-tertiary: #19151266;
+      --amber: #f59e0b;
+      --amber-deep: #d97706;
+      --green: #0aa86d;
+      --red: #e23d4f;
+      --border: #19151215;
+      --chip-bg: #19151208;
+    }
+
+    body {
+      background: var(--bg);
+      color: var(--text-primary);
+      font-family: 'Inter', sans-serif;
+      font-size: 15px;
+      line-height: 1.6;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    .page {
+      max-width: 480px;
+      margin: 0 auto;
+      padding: 0 16px 64px;
+    }
+
+    /* ── Section label ── */
+    .section-label {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 10px;
+      font-weight: 500;
+      text-transform: uppercase;
+      letter-spacing: 0.12em;
+      color: var(--amber-deep);
+      margin-bottom: 8px;
+    }
+
+    /* ── Header ── */
+    .header {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      padding: 40px 0 24px;
+      border-bottom: 1px solid var(--border);
+      margin-bottom: 28px;
+    }
+
+    .header-left h1 {
+      font-size: 32px;
+      font-weight: 800;
+      letter-spacing: -0.02em;
+      line-height: 1.1;
+      color: var(--text-primary);
+    }
+
+    .header-left p {
+      font-size: 14px;
+      color: var(--text-secondary);
+      margin-top: 4px;
+    }
+
+    .toggle-all {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 11px;
+      font-weight: 600;
+      color: var(--amber-deep);
+      background: none;
+      border: none;
+      cursor: pointer;
+      padding: 4px 0;
+      white-space: nowrap;
+      margin-top: 6px;
+      text-decoration: underline;
+      text-underline-offset: 3px;
+      text-decoration-color: var(--amber-deep);
+      opacity: 0.85;
+      transition: opacity 0.15s;
+      flex-shrink: 0;
+      margin-left: 16px;
+    }
+
+    .toggle-all:hover {
+      opacity: 1;
+    }
+
+    /* ── Intro ── */
+    .intro {
+      margin-bottom: 36px;
+    }
+
+    .intro p {
+      font-style: italic;
+      font-size: 15px;
+      color: var(--text-secondary);
+      line-height: 1.7;
+      border-left: 2px solid var(--amber);
+      padding-left: 14px;
+    }
+
+    /* ── How it works ── */
+    .how-section {
+      margin-bottom: 36px;
+    }
+
+    .steps {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      margin-top: 12px;
+    }
+
+    .step {
+      display: flex;
+      align-items: flex-start;
+      gap: 14px;
+    }
+
+    .step-num {
+      flex-shrink: 0;
+      width: 28px;
+      height: 28px;
+      background: var(--amber);
+      color: white;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 12px;
+      font-weight: 600;
+      margin-top: 1px;
+    }
+
+    .step-text {
+      font-size: 14px;
+      color: var(--text-primary);
+      line-height: 1.5;
+      padding-top: 5px;
+    }
+
+    /* ── Points table ── */
+    .points-section {
+      margin-bottom: 36px;
+    }
+
+    .points-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      overflow: hidden;
+      margin-top: 12px;
+    }
+
+    .points-table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+
+    .points-table tr {
+      border-bottom: 1px solid var(--border);
+    }
+
+    .points-table tr:last-child {
+      border-bottom: none;
+    }
+
+    .points-table td {
+      padding: 12px 16px;
+      font-size: 14px;
+      color: var(--text-primary);
+      line-height: 1.4;
+    }
+
+    .points-table td:last-child {
+      text-align: right;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--amber-deep);
+      white-space: nowrap;
+      padding-left: 8px;
+    }
+
+    .points-footer {
+      padding: 10px 16px;
+      background: var(--chip-bg);
+      border-top: 1px solid var(--border);
+      font-size: 12px;
+      color: var(--text-tertiary);
+      font-family: 'JetBrains Mono', monospace;
+      line-height: 1.5;
+    }
+
+    /* ── Ways to win ── */
+    .ways-section {
+      margin-bottom: 36px;
+    }
+
+    .ways-grid {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      margin-top: 12px;
+    }
+
+    .way-card {
+      background: var(--chip-bg);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 14px 16px;
+    }
+
+    .way-card-header {
+      display: flex;
+      align-items: baseline;
+      gap: 8px;
+      margin-bottom: 4px;
+    }
+
+    .way-title {
+      font-size: 14px;
+      font-weight: 700;
+      color: var(--text-primary);
+    }
+
+    .way-body {
+      font-size: 13px;
+      color: var(--text-secondary);
+      line-height: 1.5;
+    }
+
+    /* ── Accordion (details/summary) ── */
+    details {
+      margin-top: 10px;
+    }
+
+    details summary {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--amber-deep);
+      cursor: pointer;
+      list-style: none;
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      user-select: none;
+      transition: opacity 0.15s;
+    }
+
+    details summary::-webkit-details-marker {
+      display: none;
+    }
+
+    details summary::after {
+      content: '↓';
+      font-size: 11px;
+      transition: transform 0.2s;
+      display: inline-block;
+    }
+
+    details[open] summary::after {
+      transform: rotate(180deg);
+    }
+
+    details summary:hover {
+      opacity: 0.8;
+    }
+
+    .accordion-content {
+      margin-top: 14px;
+      animation: accordionIn 0.2s ease;
+    }
+
+    @keyframes accordionIn {
+      from { opacity: 0; transform: translateY(-4px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    /* ── Format deep dive ── */
+    .group-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      overflow: hidden;
+    }
+
+    .group-card-header {
+      padding: 10px 14px;
+      border-bottom: 1px solid var(--border);
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 11px;
+      font-weight: 600;
+      color: var(--text-secondary);
+      background: var(--chip-bg);
+      letter-spacing: 0.05em;
+    }
+
+    .group-rows {
+      display: flex;
+      flex-direction: column;
+    }
+
+    .group-row {
+      display: flex;
+      align-items: center;
+      padding: 9px 14px;
+      gap: 10px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .group-row:last-child {
+      border-bottom: none;
+    }
+
+    .group-row.dimmed {
+      opacity: 0.45;
+    }
+
+    .group-rank {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 11px;
+      font-weight: 600;
+      color: var(--text-tertiary);
+      width: 16px;
+      flex-shrink: 0;
+    }
+
+    .group-name {
+      flex: 1;
+      font-size: 13px;
+      font-weight: 500;
+      color: var(--text-primary);
+    }
+
+    .group-pts {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--text-secondary);
+    }
+
+    .badge {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 10px;
+      font-weight: 600;
+      padding: 2px 7px;
+      border-radius: 4px;
+      letter-spacing: 0.04em;
+      white-space: nowrap;
+    }
+
+    .badge-safe {
+      background: rgba(10, 168, 109, 0.12);
+      color: var(--green);
+    }
+
+    .badge-you {
+      background: var(--amber);
+      color: white;
+    }
+
+    .badge-danger {
+      background: rgba(245, 158, 11, 0.12);
+      color: var(--amber-deep);
+    }
+
+    .badge-out {
+      background: rgba(226, 61, 79, 0.12);
+      color: var(--red);
+    }
+
+    .group-divider {
+      padding: 5px 14px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .group-divider-line {
+      flex: 1;
+      height: 1px;
+      border-top: 1.5px dashed;
+    }
+
+    .group-divider-line.amber { border-color: var(--amber); }
+    .group-divider-line.red { border-color: var(--red); }
+
+    .group-divider-label {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 10px;
+      font-weight: 500;
+      letter-spacing: 0.06em;
+      white-space: nowrap;
+    }
+
+    .group-divider-label.amber { color: var(--amber-deep); }
+    .group-divider-label.red { color: var(--red); }
+
+    .cut-box {
+      margin-top: 12px;
+      background: var(--chip-bg);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 12px 14px;
+    }
+
+    .cut-box-title {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 10px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      color: var(--text-tertiary);
+      margin-bottom: 8px;
+    }
+
+    .cut-row {
+      display: flex;
+      align-items: flex-start;
+      gap: 10px;
+      font-size: 12px;
+      color: var(--text-secondary);
+      line-height: 1.45;
+      margin-bottom: 5px;
+    }
+
+    .cut-row:last-child {
+      margin-bottom: 0;
+    }
+
+    .cut-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      flex-shrink: 0;
+      margin-top: 4px;
+    }
+
+    .cut-dot.green { background: var(--green); }
+    .cut-dot.amber { background: var(--amber); }
+    .cut-dot.red { background: var(--red); }
+
+    .knockout-section {
+      margin-top: 16px;
+    }
+
+    .knockout-section p {
+      font-size: 13px;
+      color: var(--text-secondary);
+      line-height: 1.6;
+      margin-bottom: 12px;
+    }
+
+    .r32-strip {
+      display: flex;
+      align-items: center;
+      gap: 3px;
+      flex-wrap: wrap;
+      margin-bottom: 12px;
+    }
+
+    .r32-pill {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 10px;
+      font-weight: 500;
+      padding: 3px 7px;
+      border-radius: 4px;
+      background: var(--chip-bg);
+      border: 1px solid var(--border);
+      color: var(--text-secondary);
+    }
+
+    .r32-pill.you {
+      background: var(--amber);
+      border-color: var(--amber);
+      color: white;
+    }
+
+    .r32-pill.eliminated {
+      text-decoration: line-through;
+      opacity: 0.45;
+    }
+
+    .r32-ellipsis {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 10px;
+      color: var(--text-tertiary);
+      padding: 0 2px;
+    }
+
+    .elim-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 8px;
+    }
+
+    .elim-table th {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 10px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: var(--text-tertiary);
+      text-align: left;
+      padding: 5px 8px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .elim-table th:last-child {
+      text-align: right;
+    }
+
+    .elim-table td {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 11px;
+      color: var(--text-secondary);
+      padding: 6px 8px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .elim-table td:last-child {
+      text-align: right;
+      color: var(--red);
+      font-weight: 600;
+    }
+
+    .elim-table tr:last-child td {
+      border-bottom: none;
+    }
+
+    .elim-table td.stage-name {
+      color: var(--text-primary);
+      font-weight: 500;
+    }
+
+    /* ── Picks section ── */
+    .picks-section {
+      margin-bottom: 36px;
+    }
+
+    .picks-body {
+      font-size: 14px;
+      color: var(--text-secondary);
+      line-height: 1.6;
+      margin-top: 8px;
+    }
+
+    .picks-detail-content p {
+      font-size: 13px;
+      color: var(--text-secondary);
+      line-height: 1.6;
+      margin-bottom: 8px;
+    }
+
+    .picks-detail-content p:last-child {
+      margin-bottom: 0;
+    }
+
+    /* ── Tiebreakers ── */
+    .tb-section {
+      margin-bottom: 36px;
+    }
+
+    .tb-lead {
+      font-size: 14px;
+      color: var(--text-secondary);
+      margin-bottom: 12px;
+      margin-top: 8px;
+    }
+
+    .tb-chain {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .tb-item {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 11px;
+      font-weight: 500;
+      background: var(--chip-bg);
+      border: 1px solid var(--border);
+      border-radius: 5px;
+      padding: 4px 9px;
+      color: var(--text-secondary);
+      line-height: 1.3;
+    }
+
+    .tb-arrow {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 12px;
+      color: var(--text-tertiary);
+    }
+
+    /* ── CTA ── */
+    .cta-section {
+      margin-top: 12px;
+    }
+
+    .cta-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 28px 20px;
+      text-align: center;
+    }
+
+    .cta-card h2 {
+      font-size: 20px;
+      font-weight: 800;
+      letter-spacing: -0.02em;
+      color: var(--text-primary);
+      margin-bottom: 6px;
+    }
+
+    .cta-card p {
+      font-size: 13px;
+      color: var(--text-secondary);
+      margin-bottom: 20px;
+    }
+
+    .cta-buttons {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .btn-primary {
+      display: block;
+      width: 100%;
+      padding: 13px 20px;
+      background: var(--amber);
+      color: white;
+      font-family: 'Inter', sans-serif;
+      font-size: 14px;
+      font-weight: 700;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      letter-spacing: -0.01em;
+      transition: background 0.15s;
+    }
+
+    .btn-primary:hover {
+      background: var(--amber-deep);
+    }
+
+    .btn-outline {
+      display: block;
+      width: 100%;
+      padding: 12px 20px;
+      background: transparent;
+      color: var(--text-primary);
+      font-family: 'Inter', sans-serif;
+      font-size: 14px;
+      font-weight: 600;
+      border: 1px solid #19151230;
+      border-radius: 8px;
+      cursor: pointer;
+      letter-spacing: -0.01em;
+      transition: border-color 0.15s, background 0.15s;
+    }
+
+    .btn-outline:hover {
+      background: var(--chip-bg);
+      border-color: #19151255;
+    }
+
+    /* ── Dividers between sections ── */
+    .section-divider {
+      height: 1px;
+      background: var(--border);
+      margin: 0 0 32px;
+    }
+
+    /* ── Bonus badge on points table ── */
+    .pts-bonus {
+      font-size: 11px;
+      color: var(--text-tertiary);
+      display: block;
+      margin-top: 1px;
+    }
+  </style>
+</head>
+<body>
+  <div class="page">
+
+    <!-- ── Header ── -->
+    <header class="header">
+      <div class="header-left">
+        <h1>Rules</h1>
+        <p>Everything you need to know.</p>
+      </div>
+      <button class="toggle-all" id="toggleAll" onclick="toggleAllDetails()">Show all details</button>
+    </header>
+
+    <!-- ── Intro ── -->
+    <section class="intro">
+      <p>A prediction game built as an homage to the World Cup's own format — groups, knockouts, and a final.</p>
+    </section>
+
+    <!-- ── How it works ── -->
+    <section class="how-section">
+      <div class="section-label">How it works</div>
+      <div class="steps">
+        <div class="step">
+          <div class="step-num">1</div>
+          <div class="step-text">Pick the winner of each match</div>
+        </div>
+        <div class="step">
+          <div class="step-num">2</div>
+          <div class="step-text">Guess the exact score for bonus points</div>
+        </div>
+        <div class="step">
+          <div class="step-num">3</div>
+          <div class="step-text">Climb the leaderboard</div>
+        </div>
+      </div>
+    </section>
+
+    <div class="section-divider"></div>
+
+    <!-- ── Points ── -->
+    <section class="points-section">
+      <div class="section-label">Points</div>
+      <div class="points-card">
+        <table class="points-table">
+          <tbody>
+            <tr>
+              <td>Correct winner (or draw)</td>
+              <td>2 pts</td>
+            </tr>
+            <tr>
+              <td>
+                Exact score bonus
+                <span class="pts-bonus">Requires correct outcome</span>
+              </td>
+              <td>+3 pts</td>
+            </tr>
+            <tr>
+              <td>Correct team advances (knockout)</td>
+              <td>1 pt</td>
+            </tr>
+          </tbody>
+        </table>
+        <div class="points-footer">
+          Max per group match: 5 pts &nbsp;·&nbsp; Max per knockout match: 6 pts
+        </div>
+      </div>
+    </section>
+
+    <div class="section-divider"></div>
+
+    <!-- ── Ways to win ── -->
+    <section class="ways-section">
+      <div class="section-label">Ways to win</div>
+      <div class="ways-grid">
+
+        <!-- Overall -->
+        <div class="way-card">
+          <div class="way-card-header">
+            <span class="way-title">Overall</span>
+          </div>
+          <div class="way-body">Total points across the whole tournament. Every correct pick counts.</div>
+        </div>
+
+        <!-- Format -->
+        <div class="way-card">
+          <div class="way-card-header">
+            <span class="way-title">Format</span>
+          </div>
+          <div class="way-body">Survivor-style elimination that mirrors the World Cup itself.</div>
+          <details id="format-detail">
+            <summary>How Format works</summary>
+            <div class="accordion-content">
+
+              <!-- Group A illustration -->
+              <div class="group-card">
+                <div class="group-card-header">Group A &nbsp;·&nbsp; 1 of 12 groups &nbsp;·&nbsp; 48 players</div>
+                <div class="group-rows">
+                  <div class="group-row">
+                    <span class="group-rank">#1</span>
+                    <span class="group-name">Manning</span>
+                    <span class="group-pts">14 pts</span>
+                    <span class="badge badge-safe">SAFE</span>
+                  </div>
+                  <div class="group-row">
+                    <span class="group-rank">#2</span>
+                    <span class="group-name">You <span class="badge badge-you" style="font-size:9px;padding:1px 5px;vertical-align:middle;margin-left:4px;">YOU</span></span>
+                    <span class="group-pts">11 pts</span>
+                    <span class="badge badge-safe">SAFE</span>
+                  </div>
+                  <div class="group-divider">
+                    <div class="group-divider-line amber"></div>
+                    <span class="group-divider-label amber">Danger zone</span>
+                    <div class="group-divider-line amber"></div>
+                  </div>
+                  <div class="group-row">
+                    <span class="group-rank">#3</span>
+                    <span class="group-name">Bohanna</span>
+                    <span class="group-pts">7 pts</span>
+                    <span class="badge badge-danger">?</span>
+                  </div>
+                  <div class="group-divider">
+                    <div class="group-divider-line red"></div>
+                    <span class="group-divider-label red">Eliminated</span>
+                    <div class="group-divider-line red"></div>
+                  </div>
+                  <div class="group-row dimmed">
+                    <span class="group-rank">#4</span>
+                    <span class="group-name">Scrooch</span>
+                    <span class="group-pts">3 pts</span>
+                    <span class="badge badge-out">OUT</span>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Cut box -->
+              <div class="cut-box">
+                <div class="cut-box-title">How the cut works</div>
+                <div class="cut-row">
+                  <div class="cut-dot green"></div>
+                  <span><strong>Top 2</strong> in each group auto-qualify for the knockout round.</span>
+                </div>
+                <div class="cut-row">
+                  <div class="cut-dot amber"></div>
+                  <span><strong>3rd place</strong> enters the danger zone — the 12 third-place finishers are ranked across all groups. Best 8 of 12 advance.</span>
+                </div>
+                <div class="cut-row">
+                  <div class="cut-dot red"></div>
+                  <span><strong>4th place</strong> is always eliminated, regardless of points.</span>
+                </div>
+              </div>
+
+              <!-- Knockout section -->
+              <div class="knockout-section">
+                <p>Points reset at the start of each knockout round. You compete purely on picks within that stage.</p>
+
+                <!-- R32 strip -->
+                <div class="r32-strip">
+                  <span class="r32-pill">#1</span>
+                  <span class="r32-pill">#2</span>
+                  <span class="r32-ellipsis">···</span>
+                  <span class="r32-pill you">#14 You</span>
+                  <span class="r32-ellipsis">···</span>
+                  <span class="r32-pill">#32</span>
+                  <span class="r32-ellipsis">|</span>
+                  <span class="r32-pill eliminated">Scrooch</span>
+                </div>
+
+                <!-- Elimination curve -->
+                <table class="elim-table">
+                  <thead>
+                    <tr>
+                      <th>Stage</th>
+                      <th>Start</th>
+                      <th>Advance</th>
+                      <th>Eliminated</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr>
+                      <td class="stage-name">Groups</td>
+                      <td>48</td>
+                      <td>32</td>
+                      <td>16</td>
+                    </tr>
+                    <tr>
+                      <td class="stage-name">R32</td>
+                      <td>32</td>
+                      <td>16</td>
+                      <td>16</td>
+                    </tr>
+                    <tr>
+                      <td class="stage-name">R16</td>
+                      <td>16</td>
+                      <td>8</td>
+                      <td>8</td>
+                    </tr>
+                    <tr>
+                      <td class="stage-name">QF</td>
+                      <td>8</td>
+                      <td>4</td>
+                      <td>4</td>
+                    </tr>
+                    <tr>
+                      <td class="stage-name">SF</td>
+                      <td>4</td>
+                      <td>2</td>
+                      <td>2</td>
+                    </tr>
+                    <tr>
+                      <td class="stage-name">Final</td>
+                      <td>2</td>
+                      <td>1</td>
+                      <td>1</td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </details>
+        </div>
+
+        <!-- Full Bracket -->
+        <div class="way-card">
+          <div class="way-card-header">
+            <span class="way-title">Full Bracket</span>
+          </div>
+          <div class="way-body">Predict every result before kickoff. Locks at first whistle.</div>
+        </div>
+
+        <!-- KO Bracket -->
+        <div class="way-card">
+          <div class="way-card-header">
+            <span class="way-title">KO Bracket</span>
+          </div>
+          <div class="way-body">Predict every knockout match from R32 to Final.</div>
+        </div>
+
+      </div>
+    </section>
+
+    <div class="section-divider"></div>
+
+    <!-- ── Your picks ── -->
+    <section class="picks-section">
+      <div class="section-label">Your picks</div>
+      <p class="picks-body">Picks lock 10 minutes before the first match of each day. Change your mind as many times as you like until the window closes.</p>
+
+      <details id="picks-detail">
+        <summary>More detail</summary>
+        <div class="accordion-content">
+          <div class="picks-detail-content">
+            <p>You only predict the <strong>outcome</strong> — who wins (or draw) — and optionally the exact scoreline for the bonus. You never pick margins or goal scorers.</p>
+            <p>Group stage matches lock together at 10 min before the earliest kickoff that day. Knockout matches each have their own lock time.</p>
+            <p>If you miss the lock window your pick is recorded as a blank — no points, no penalty. A blank on outcome means no score bonus either.</p>
+          </div>
+        </div>
+      </details>
+    </section>
+
+    <div class="section-divider"></div>
+
+    <!-- ── Tiebreakers ── -->
+    <section class="tb-section">
+      <div class="section-label">Tiebreakers</div>
+      <p class="tb-lead">Same points? We go down the chain:</p>
+      <div class="tb-chain">
+        <span class="tb-item">H2H goal diff</span>
+        <span class="tb-arrow">→</span>
+        <span class="tb-item">H2H goals</span>
+        <span class="tb-arrow">→</span>
+        <span class="tb-item">Overall goal diff</span>
+        <span class="tb-arrow">→</span>
+        <span class="tb-item">Overall goals</span>
+        <span class="tb-arrow">→</span>
+        <span class="tb-item">Coin flip</span>
+      </div>
+    </section>
+
+    <div class="section-divider"></div>
+
+    <!-- ── CTA ── -->
+    <section class="cta-section">
+      <div class="cta-card">
+        <h2>Ready to play?</h2>
+        <p>Join an existing group or set up your own competition.</p>
+        <div class="cta-buttons">
+          <button class="btn-primary">Join with a code</button>
+          <button class="btn-outline">Create your own</button>
+        </div>
+      </div>
+    </section>
+
+  </div>
+
+  <script>
+    var allOpen = false;
+
+    function toggleAllDetails() {
+      var detailsEls = document.querySelectorAll('details');
+      var btn = document.getElementById('toggleAll');
+
+      allOpen = !allOpen;
+
+      detailsEls.forEach(function(el) {
+        if (allOpen) {
+          el.setAttribute('open', '');
+        } else {
+          el.removeAttribute('open');
+        }
+      });
+
+      btn.textContent = allOpen ? 'Collapse details' : 'Show all details';
+    }
+
+    // Keep toggle button label in sync when accordions are opened individually
+    document.querySelectorAll('details').forEach(function(el) {
+      el.addEventListener('toggle', function() {
+        var detailsEls = document.querySelectorAll('details');
+        var openCount = 0;
+        detailsEls.forEach(function(d) { if (d.open) openCount++; });
+        var btn = document.getElementById('toggleAll');
+        if (openCount === detailsEls.length) {
+          allOpen = true;
+          btn.textContent = 'Collapse details';
+        } else {
+          allOpen = false;
+          btn.textContent = 'Show all details';
+        }
+      });
+    });
+  </script>
+</body>
+</html>

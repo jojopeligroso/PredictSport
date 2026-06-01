@@ -1,0 +1,372 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Amber Outline Mockup — WC Fixture Cards</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --ps-bg: #efe9de;
+    --ps-surface: #ffffff;
+    --ps-border: rgba(40, 30, 20, 0.10);
+    --ps-text: #191512;
+    --ps-text-sec: #5e554a;
+    --ps-amber: #f59e0b;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    background: var(--ps-bg);
+    font-family: 'Inter', system-ui, sans-serif;
+    color: var(--ps-text);
+    display: flex;
+    justify-content: center;
+    padding: 16px;
+  }
+  .wrapper {
+    width: 100%;
+    max-width: 450px;
+  }
+
+  /* ── Toggle bar ─────────────────────────────────────── */
+  .toggle-bar {
+    background: var(--ps-surface);
+    border: 1px solid var(--ps-border);
+    border-radius: 8px;
+    padding: 10px 12px;
+    margin-bottom: 10px;
+  }
+  .toggle-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+  .toggle-row + .toggle-row {
+    border-top: 1px solid rgba(40,30,20,0.05);
+    margin-top: 8px;
+    padding-top: 8px;
+  }
+  .toggle-label { font-size: 12px; color: var(--ps-text-sec); }
+  .toggle-switch {
+    display: flex; align-items: center; gap: 6px;
+    font-size: 11px; font-weight: 600; color: var(--ps-text-sec);
+    cursor: pointer; background: none; border: none;
+    padding: 4px 8px; border-radius: 6px;
+  }
+  .toggle-track {
+    position: relative; width: 28px; height: 16px; border-radius: 999px;
+  }
+  .toggle-track.off { background: var(--ps-border); }
+  .toggle-track.on { background: var(--ps-amber); }
+  .toggle-knob {
+    position: absolute; top: 2px; width: 12px; height: 12px;
+    border-radius: 999px; background: white;
+  }
+  .toggle-track.off .toggle-knob { left: 2px; }
+  .toggle-track.on .toggle-knob { left: 14px; }
+
+  /* ── Card ────────────────────────────────────────────── */
+  .card {
+    overflow: hidden; border-radius: 12px; color: white;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+    margin-bottom: 10px;
+  }
+  /* BEFORE: white ring around card with predictions */
+  .card.ring-white { box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.30); }
+  /* AFTER: amber ring around card with predictions */
+  .card.ring-amber { box-shadow: 0 0 0 2px rgba(245, 158, 11, 0.50); }
+
+  .card-header {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 12px 16px 0;
+    font-size: 0.7rem; font-weight: 700; text-transform: uppercase;
+    letter-spacing: 0.04em; color: rgba(255,255,255,0.85);
+  }
+  .city-info { text-align: right; }
+  .city-name { display: block; }
+  .stadium {
+    display: block; font-size: 0.625rem; font-weight: 500;
+    text-transform: none; letter-spacing: 0; color: rgba(255,255,255,0.50);
+  }
+  .card-body { padding: 8px 16px 12px; }
+
+  /* ── Pick row ───────────────────────────────────────── */
+  .pick-row {
+    display: flex; align-items: center; justify-content: center; gap: 6px;
+  }
+  .team-btn {
+    flex: 1; min-width: 0;
+    display: flex; flex-direction: column; align-items: center;
+    gap: 4px; padding: 6px; border-radius: 8px;
+    cursor: pointer; border: none; background: transparent;
+  }
+  /* BEFORE: white inset border on selected team */
+  .team-btn.sel-white {
+    background: rgba(255,255,255,0.12);
+    box-shadow: inset 0 0 0 2px rgba(255,255,255,0.5);
+  }
+  /* AFTER: amber inset border on selected team */
+  .team-btn.sel-amber {
+    background: rgba(255,255,255,0.12);
+    box-shadow: inset 0 0 0 2px rgba(245, 158, 11, 0.7);
+  }
+  .flag {
+    width: 24px; height: 24px; border-radius: 6px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 18px; line-height: 1;
+  }
+  .name {
+    font-size: 12px; font-weight: 600; text-align: center;
+    color: rgba(255,255,255,0.55);
+    max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  }
+  .name.active { color: white; }
+
+  /* Score circles */
+  .score-circle {
+    width: 30px; height: 28px; border-radius: 999px;
+    display: inline-flex; align-items: center; justify-content: center;
+    font-family: 'JetBrains Mono', monospace; font-size: 14px; font-weight: 600;
+    color: white; flex-shrink: 0;
+  }
+  /* BEFORE: white border on filled score */
+  .score-circle.fill-white {
+    background: rgba(255,255,255,0.18);
+    border: 1px solid rgba(255,255,255,0.50);
+  }
+  /* AFTER: amber border on filled score */
+  .score-circle.fill-amber {
+    background: rgba(255,255,255,0.18);
+    border: 1px solid rgba(245, 158, 11, 0.70);
+  }
+  .score-circle.empty {
+    background: rgba(255,255,255,0.08);
+    border: 1px solid rgba(255,255,255,0.25);
+  }
+
+  /* Draw button */
+  .draw-btn {
+    flex-shrink: 0; padding: 6px 10px; border-radius: 8px;
+    font-size: 12px; font-weight: 500; border: none; cursor: pointer;
+    color: rgba(255,255,255,0.45); background: transparent;
+  }
+  /* BEFORE: white inset on selected draw */
+  .draw-btn.sel-white {
+    background: rgba(255,255,255,0.12); color: white;
+    box-shadow: inset 0 0 0 2px rgba(255,255,255,0.5);
+  }
+  /* AFTER: amber inset on selected draw */
+  .draw-btn.sel-amber {
+    background: rgba(255,255,255,0.12); color: white;
+    box-shadow: inset 0 0 0 2px rgba(245, 158, 11, 0.7);
+  }
+
+  /* ── Time row ───────────────────────────────────────── */
+  .time-row {
+    display: grid; grid-template-columns: 1fr 1fr; gap: 12px;
+    margin-top: 8px; font-size: 12px; color: rgba(255,255,255,0.90);
+  }
+  .time-row dt {
+    font-size: 10px; font-weight: 600; text-transform: uppercase;
+    letter-spacing: 0.04em; color: rgba(255,255,255,0.70);
+  }
+  .time-row dd {
+    font-family: 'JetBrains Mono', monospace; font-variant-numeric: tabular-nums;
+  }
+  .dim { color: rgba(255,255,255,0.70); }
+
+  /* ── Section labels ─────────────────────────────────── */
+  .section-label {
+    text-align: center; font-size: 13px; font-weight: 800;
+    text-transform: uppercase; letter-spacing: 0.06em;
+    color: var(--ps-text-sec); margin: 24px 0 12px;
+    padding-top: 20px; border-top: 2px dashed rgba(40,30,20,0.12);
+  }
+  .section-label:first-of-type { border-top: none; margin-top: 8px; padding-top: 0; }
+</style>
+</head>
+<body>
+<div class="wrapper">
+
+  <!-- ═══ BEFORE ══════════════════════════════════════════ -->
+  <div class="section-label">Before — white outline</div>
+
+  <div class="toggle-bar">
+    <div class="toggle-row">
+      <span class="toggle-label">Bigger cards</span>
+      <button class="toggle-switch">Off <span class="toggle-track off"><span class="toggle-knob"></span></span></button>
+    </div>
+    <div class="toggle-row">
+      <span class="toggle-label">Your predictions are shown</span>
+      <button class="toggle-switch">Hide picks <span class="toggle-track on"><span class="toggle-knob"></span></span></button>
+    </div>
+  </div>
+
+  <!-- Mexico City — Mexico selected, 2-0 -->
+  <article class="card ring-white" style="background-color:#8C4DFC;">
+    <header class="card-header">
+      <span>Group A &middot; MD1</span>
+      <span class="city-info"><span class="city-name">Mexico City</span><span class="stadium">Estadio Azteca</span></span>
+    </header>
+    <div class="card-body">
+      <div class="pick-row">
+        <button class="team-btn sel-white">
+          <span class="flag">🇲🇽</span><span class="name active">Mexico</span>
+        </button>
+        <span class="score-circle fill-white">2</span>
+        <span class="draw-btn">draw</span>
+        <span class="score-circle fill-white">0</span>
+        <button class="team-btn">
+          <span class="flag">🇿🇦</span><span class="name">South Africa</span>
+        </button>
+      </div>
+      <dl class="time-row">
+        <div><dt>In Mexico</dt><dd>13:00 <span class="dim">&middot; Thu 11 Jun</span></dd></div>
+        <div><dt>Your time</dt><dd>20:00 GMT+1</dd></div>
+      </dl>
+    </div>
+  </article>
+
+  <!-- Guadalajara — draw selected, 2-2 -->
+  <article class="card ring-white" style="background-color:#DA2363;">
+    <header class="card-header">
+      <span>Group A &middot; MD1</span>
+      <span class="city-info"><span class="city-name">Guadalajara</span><span class="stadium">Estadio Akron</span></span>
+    </header>
+    <div class="card-body">
+      <div class="pick-row">
+        <button class="team-btn">
+          <span class="flag">🇰🇷</span><span class="name">South Korea</span>
+        </button>
+        <span class="score-circle fill-white">2</span>
+        <span class="draw-btn sel-white">draw</span>
+        <span class="score-circle fill-white">2</span>
+        <button class="team-btn">
+          <span class="flag">🇨🇿</span><span class="name">Czechia</span>
+        </button>
+      </div>
+      <dl class="time-row">
+        <div><dt>In Guadalajara</dt><dd>20:00 <span class="dim">&middot; Thu 11 Jun</span></dd></div>
+        <div><dt>Your time</dt><dd>03:00 GMT+1</dd></div>
+      </dl>
+    </div>
+  </article>
+
+  <!-- Toronto — Bosnia selected, 1-2 -->
+  <article class="card ring-white" style="background-color:#3D4EFF;">
+    <header class="card-header">
+      <span>Group B &middot; MD1</span>
+      <span class="city-info"><span class="city-name">Toronto</span><span class="stadium">BMO Field</span></span>
+    </header>
+    <div class="card-body">
+      <div class="pick-row">
+        <button class="team-btn">
+          <span class="flag">🇨🇦</span><span class="name">Canada</span>
+        </button>
+        <span class="score-circle fill-white">1</span>
+        <span class="draw-btn">draw</span>
+        <span class="score-circle fill-white">2</span>
+        <button class="team-btn sel-white">
+          <span class="flag">🇧🇦</span><span class="name active">Bosnia &amp; Herzegovina</span>
+        </button>
+      </div>
+      <dl class="time-row">
+        <div><dt>In Toronto</dt><dd>15:00 <span class="dim">&middot; Fri 12 Jun</span></dd></div>
+        <div><dt>Your time</dt><dd>20:00 GMT+1</dd></div>
+      </dl>
+    </div>
+  </article>
+
+  <!-- ═══ AFTER ═══════════════════════════════════════════ -->
+  <div class="section-label">After — amber outline (#f59e0b)</div>
+
+  <div class="toggle-bar">
+    <div class="toggle-row">
+      <span class="toggle-label">Bigger cards</span>
+      <button class="toggle-switch">Off <span class="toggle-track off"><span class="toggle-knob"></span></span></button>
+    </div>
+    <div class="toggle-row">
+      <span class="toggle-label">Your predictions are shown</span>
+      <button class="toggle-switch">Hide picks <span class="toggle-track on"><span class="toggle-knob"></span></span></button>
+    </div>
+  </div>
+
+  <!-- Mexico City — Mexico selected, 2-0 (AMBER) -->
+  <article class="card ring-amber" style="background-color:#8C4DFC;">
+    <header class="card-header">
+      <span>Group A &middot; MD1</span>
+      <span class="city-info"><span class="city-name">Mexico City</span><span class="stadium">Estadio Azteca</span></span>
+    </header>
+    <div class="card-body">
+      <div class="pick-row">
+        <button class="team-btn sel-amber">
+          <span class="flag">🇲🇽</span><span class="name active">Mexico</span>
+        </button>
+        <span class="score-circle fill-amber">2</span>
+        <span class="draw-btn">draw</span>
+        <span class="score-circle fill-amber">0</span>
+        <button class="team-btn">
+          <span class="flag">🇿🇦</span><span class="name">South Africa</span>
+        </button>
+      </div>
+      <dl class="time-row">
+        <div><dt>In Mexico</dt><dd>13:00 <span class="dim">&middot; Thu 11 Jun</span></dd></div>
+        <div><dt>Your time</dt><dd>20:00 GMT+1</dd></div>
+      </dl>
+    </div>
+  </article>
+
+  <!-- Guadalajara — draw selected, 2-2 (AMBER) -->
+  <article class="card ring-amber" style="background-color:#DA2363;">
+    <header class="card-header">
+      <span>Group A &middot; MD1</span>
+      <span class="city-info"><span class="city-name">Guadalajara</span><span class="stadium">Estadio Akron</span></span>
+    </header>
+    <div class="card-body">
+      <div class="pick-row">
+        <button class="team-btn">
+          <span class="flag">🇰🇷</span><span class="name">South Korea</span>
+        </button>
+        <span class="score-circle fill-amber">2</span>
+        <span class="draw-btn sel-amber">draw</span>
+        <span class="score-circle fill-amber">2</span>
+        <button class="team-btn">
+          <span class="flag">🇨🇿</span><span class="name">Czechia</span>
+        </button>
+      </div>
+      <dl class="time-row">
+        <div><dt>In Guadalajara</dt><dd>20:00 <span class="dim">&middot; Thu 11 Jun</span></dd></div>
+        <div><dt>Your time</dt><dd>03:00 GMT+1</dd></div>
+      </dl>
+    </div>
+  </article>
+
+  <!-- Toronto — Bosnia selected, 1-2 (AMBER) -->
+  <article class="card ring-amber" style="background-color:#3D4EFF;">
+    <header class="card-header">
+      <span>Group B &middot; MD1</span>
+      <span class="city-info"><span class="city-name">Toronto</span><span class="stadium">BMO Field</span></span>
+    </header>
+    <div class="card-body">
+      <div class="pick-row">
+        <button class="team-btn">
+          <span class="flag">🇨🇦</span><span class="name">Canada</span>
+        </button>
+        <span class="score-circle fill-amber">1</span>
+        <span class="draw-btn">draw</span>
+        <span class="score-circle fill-amber">2</span>
+        <button class="team-btn sel-amber">
+          <span class="flag">🇧🇦</span><span class="name active">Bosnia &amp; Herzegovina</span>
+        </button>
+      </div>
+      <dl class="time-row">
+        <div><dt>In Toronto</dt><dd>15:00 <span class="dim">&middot; Fri 12 Jun</span></dd></div>
+        <div><dt>Your time</dt><dd>20:00 GMT+1</dd></div>
+      </dl>
+    </div>
+  </article>
+
+</div>
+</body>
+</html>

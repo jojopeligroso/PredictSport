@@ -1,6 +1,26 @@
 # SportsPredict Design System
 
-Brand identity explorations created May 2026. Everything here is prototype-stage -- nothing is confirmed or final. Use as reference and starting point, not as locked-down spec.
+Brand identity and UI mockups. See `CLAUDE.md` "Design System" for active palette, typography, and component tokens.
+
+## Folder Structure
+
+```
+design/
+  brand/              Brand identity exports (Figma, May 2026 — settled)
+  wc/
+    logos/             WC26 official marks + sportspredict WC lockups
+    host-cities/       16 city badge PNGs + colors.md
+    poster/            Bracket poster (HTML + README)
+  mockups/
+    rules/             Rules page iterations (14 variants, dark + light)
+    picks/             Fixture cards, match picker, colour explorations
+    leaderboard/       Leaderboard card + screenshot mockups
+    wc-dashboard/      WC landing, dashboard redesign, social CTA
+    wc-landing/        Landing page explorations
+    wc-picks-first/    Picks-first flow explorations
+    upcoming-fixtures.html
+  archive/             Dead first-pass iterations (pre-May 10)
+```
 
 ## Brand Brief
 
@@ -24,75 +44,29 @@ Brand identity explorations created May 2026. Everything here is prototype-stage
 | Right   | `#0aa86d` | Correct prediction, success states, GAA  |
 | Wrong   | `#e23d4f` | Incorrect prediction, error states       |
 
-## Typography
-
-| Weight          | Font            | Usage                    |
-|-----------------|-----------------|--------------------------|
-| 800 (ExtraBold) | Inter            | Wordmark, headlines      |
-| 600 (SemiBold)  | Inter            | Display & UI labels      |
-| 500 (Medium)    | Inter            | Body text                |
-| Mono            | JetBrains Mono   | Metadata, scores, stats  |
-
-Wordmark: `sportspredict.` -- Inter 800, lowercase, tight tracking. "sports" in ink, "predict." in amber.
-
 ## Three Brand Marks
 
-All three marks are explorations. The app rotates between them for visual variety.
-
 ### A. Oracle Dot (primary, ~60%)
-Ink circle with amber dot and white highlight. Reads as a confident "called shot". Works standalone at small sizes. Used as default/lead icon.
-- See: `B _ Oracle dot.png`, `Oracle dot.png`
+Ink circle with amber dot and white highlight. "Called shot."
+- See: `brand/B _ Oracle dot.png`, `brand/Oracle dot.png`
 
 ### B. GAA Umpire (~30%, always for GAA events)
-Outlined umpire raising a green flag ("goal!" signal). Green flag (`#0aa86d`) is the only filled element. Native to hurling/football fans; reads as "calling it" to everyone else.
-- See: `Outlined umpire _ primary.png`, `Outline _mark only_.png`, `App icon _ three grounds.png`
+Outlined umpire with green flag. Native to GAA fans.
+- See: `brand/Outlined umpire _ primary.png`, `brand/Outline _mark only_.png`
 
 ### C. Bubble Call (~10%)
-Ink speech bubble with amber checkmark. "The banter brand" -- a tick in a chat bubble.
-- See: `F _ Bubble call.png`
-
-## Logo Lockups
-
-| File | Description |
-|------|-------------|
-| `Primary lockup` | Horizontal Oracle Dot + wordmark |
-| `Stacked lockup` | Oracle Dot above wordmark (square contexts) |
-| `B _ Oracle dot` | Oracle Dot lockup (confirmed direction) |
-| `Friendly Inter` | Wordmark only, Inter font |
-| `Editorial serif` | Wordmark, editorial serif style |
-| `F _ Bubble call` | Bubble Call + wordmark lockup |
-| `Outlined umpire _ primary` | Umpire + wordmark lockup |
-| `Monochrome (single ink)` | All ink, 1-colour print safe |
-| `On ink` | Inverted for dark backgrounds |
-
-## App Icon Explorations
-
-| File | Description |
-|------|-------------|
-| `App icon _ three grounds` | Umpire on cream/ink/green backgrounds |
-| `Oracle dot` (in branding/) | Oracle Dot as app icon |
-
-## Mockups
-
-| File | Description |
-|------|-------------|
-| `Oracle _ splash _ app` | Splash + header wireframe with Oracle Dot |
-| `Bubble _ splash _ app` | Splash + header wireframe with Bubble Call |
-| `In context` | In-context app render |
-| `Brief` | Design brief summary card |
+Ink speech bubble with amber checkmark. "The banter brand."
+- See: `brand/F _ Bubble call.png`
 
 ## Reference Documents
 
 | File | Description |
 |------|-------------|
 | [`PredictSport-Design-Brief.pdf`](PredictSport-Design-Brief.pdf) | Full design brief (PDF) |
-| [`DESIGN-BRIEF-ROUND-BUILDER.md`](DESIGN-BRIEF-ROUND-BUILDER.md) | Round builder UI design spec |
-| [`../docs/Wexford FC Prediction Quiz Round 7.pdf`](../docs/Wexford%20FC%20Prediction%20Quiz%20Round%207.pdf) | Original paper prediction sheet |
-
-## Archive
-
-`archive/` contains the first-pass organisation of assets (pre-May 10 re-download). Superseded by current top-level files.
+| [`brand-palette.md`](brand-palette.md) | Extended palette reference |
+| [`../docs/DESIGN-BRIEF-ROUND-BUILDER.md`](../docs/DESIGN-BRIEF-ROUND-BUILDER.md) | Round builder UI design spec |
+| [`../docs/DESIGN-RULES.md`](../docs/DESIGN-RULES.md) | Rules page design spec |
 
 ## HTML Source Files
 
-Each `.png` has a corresponding `.html` -- original editable source from the design tool.
+Each `.png` in `brand/` has a corresponding `.html` — original editable source from the design tool.

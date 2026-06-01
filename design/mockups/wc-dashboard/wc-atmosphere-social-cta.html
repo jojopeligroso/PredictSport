@@ -1,0 +1,636 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>WC Atmosphere + Social CTA — Design Prototype</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600;700&family=Instrument+Serif:ital@1&display=swap" rel="stylesheet" />
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            'ps-bg':       '#efe9de',
+            'ps-text':     '#191512',
+            'ps-text-sec': '#6b6358',
+            'ps-text-ter': '#9a9187',
+            'ps-amber':    '#f59e0b',
+            'ps-amber-deep': '#d97706',
+            'ps-green':    '#0aa86d',
+            'ps-red':      '#e23d4f',
+            'ps-chip':     '#e2dcd2',
+            'ps-border':   '#d6d0c6',
+            'ps-surface':  '#f5f0e8',
+          },
+          fontFamily: {
+            display: ['Inter', 'system-ui', 'sans-serif'],
+            body:    ['Inter', 'system-ui', 'sans-serif'],
+            mono:    ['JetBrains Mono', 'monospace'],
+            serif:   ['Instrument Serif', 'Georgia', 'serif'],
+          },
+        },
+      },
+    };
+  </script>
+  <style>
+    body { font-family: 'Inter', system-ui, sans-serif; }
+    .font-display { font-family: 'Inter', system-ui, sans-serif; font-weight: 800; }
+    .font-mono { font-family: 'JetBrains Mono', monospace; }
+    .font-serif { font-family: 'Instrument Serif', Georgia, serif; }
+
+    /* WC 2026 rainbow gradient — derived from official branding palette */
+    .wc-gradient {
+      background: linear-gradient(
+        90deg,
+        #1976D2 0%,
+        #00897B 15%,
+        #2E7D32 30%,
+        #F9A825 45%,
+        #EF6C00 60%,
+        #D81B60 75%,
+        #7B1FA2 90%,
+        #1976D2 100%
+      );
+    }
+
+    /* Subtle animated shimmer for the gradient strip */
+    @keyframes wc-shimmer {
+      0% { background-position: 0% 50%; }
+      100% { background-position: 200% 50%; }
+    }
+    .wc-gradient-animated {
+      background: linear-gradient(
+        90deg,
+        #1976D2, #00897B, #2E7D32, #F9A825, #EF6C00, #D81B60, #7B1FA2, #1976D2,
+        #00897B, #2E7D32, #F9A825, #EF6C00, #D81B60, #7B1FA2, #1976D2
+      );
+      background-size: 200% 100%;
+      animation: wc-shimmer 20s linear infinite;
+    }
+
+    /* Annotation labels */
+    .annotation {
+      position: absolute;
+      right: -12px;
+      transform: translateX(100%);
+      background: #1976D2;
+      color: white;
+      font-size: 11px;
+      font-weight: 600;
+      padding: 3px 8px;
+      border-radius: 4px;
+      white-space: nowrap;
+      pointer-events: none;
+      z-index: 50;
+    }
+    .annotation::before {
+      content: '';
+      position: absolute;
+      left: -4px;
+      top: 50%;
+      transform: translateY(-50%);
+      border: 4px solid transparent;
+      border-right-color: #1976D2;
+    }
+
+    /* Toggle annotations */
+    .annotations-hidden .annotation { display: none; }
+
+    /* Device frame */
+    .device-frame {
+      width: 390px;
+      border-radius: 40px;
+      border: 8px solid #191512;
+      overflow: hidden;
+      box-shadow: 0 25px 60px rgba(0,0,0,0.3);
+    }
+
+    /* Social CTA card gradient border */
+    .social-card-border {
+      background: linear-gradient(135deg, #f59e0b 0%, #d97706 50%, #0aa86d 100%);
+      padding: 2px;
+      border-radius: 14px;
+    }
+
+    /* WhatsApp green */
+    .wa-green { background: #25D366; }
+  </style>
+</head>
+<body class="bg-neutral-100 min-h-screen">
+
+  <!-- Page header with toggle -->
+  <div class="max-w-5xl mx-auto px-6 pt-8 pb-4">
+    <h1 class="text-2xl font-extrabold text-neutral-900">WC Atmosphere + Social CTA</h1>
+    <p class="mt-1 text-sm text-neutral-500">
+      Redesigned picks page experience. Mobile-first (390px). Three changes: navbar atmosphere, social invite CTA, tournament context strip.
+    </p>
+    <button
+      onclick="document.getElementById('proto').classList.toggle('annotations-hidden')"
+      class="mt-3 rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-700 transition-colors"
+    >
+      Toggle annotations
+    </button>
+  </div>
+
+  <!-- Main prototype area — two devices side by side -->
+  <div id="proto" class="max-w-5xl mx-auto px-6 pb-16">
+
+    <div class="flex flex-wrap gap-12 justify-center items-start mt-8">
+
+      <!-- ============================================ -->
+      <!-- CURRENT: What the picks page looks like now  -->
+      <!-- ============================================ -->
+      <div>
+        <h2 class="text-center text-sm font-bold text-neutral-400 uppercase tracking-widest mb-4">Current</h2>
+        <div class="device-frame bg-ps-bg relative">
+          <!-- Green accent line (current) -->
+          <div class="h-1 w-full" style="background: #006847;"></div>
+
+          <!-- Current navbar -->
+          <nav class="bg-ps-bg border-b border-ps-border" style="border-top: 2px solid #006847;">
+            <div class="flex h-12 items-center justify-between px-4">
+              <div class="flex items-center gap-1.5">
+                <!-- Oracle dot -->
+                <svg width="24" height="24" viewBox="0 0 100 100" fill="none">
+                  <circle cx="50" cy="50" r="46" fill="#191512"/>
+                  <circle cx="58" cy="46" r="14" fill="#f59e0b"/>
+                  <circle cx="54" cy="38" r="5" fill="white" opacity="0.7"/>
+                </svg>
+                <span class="text-[1.1rem] font-extrabold lowercase tracking-tight text-ps-text">
+                  sports<span class="text-ps-amber">predict.</span>
+                </span>
+              </div>
+              <!-- Hamburger -->
+              <button class="p-2">
+                <svg width="20" height="20" viewBox="0 0 20 20" fill="#191512">
+                  <path d="M3 5h14M3 10h14M3 15h14" stroke="#191512" stroke-width="1.5" stroke-linecap="round"/>
+                </svg>
+              </button>
+            </div>
+            <!-- Mobile tab bar -->
+            <div class="flex overflow-x-auto border-t border-ps-border">
+              <div class="mx-auto flex px-2">
+                <a class="shrink-0 px-3 py-2 text-xs font-semibold text-ps-amber">Picks</a>
+                <a class="shrink-0 px-3 py-2 text-xs font-semibold text-ps-text-sec">Bracket</a>
+                <a class="shrink-0 px-3 py-2 text-xs font-semibold text-ps-text-sec">Table</a>
+                <a class="shrink-0 px-3 py-2 text-xs font-semibold text-ps-text-sec">Results</a>
+                <a class="shrink-0 px-3 py-2 text-xs font-semibold text-ps-text-sec">Rules</a>
+              </div>
+            </div>
+          </nav>
+
+          <!-- Current picks page -->
+          <div class="px-4 pt-6 pb-16">
+            <h1 class="font-display text-2xl uppercase tracking-tight text-ps-text">Your Picks</h1>
+            <p class="mt-1 text-sm text-ps-text-sec">Select a matchday to make your predictions.</p>
+
+            <!-- Bracket card -->
+            <div class="mt-5 rounded-xl border-2 border-ps-amber/40 bg-ps-amber/5 p-4">
+              <div class="flex items-baseline justify-between">
+                <span class="font-mono text-[10px] font-bold uppercase tracking-widest text-ps-amber-deep">Your bracket</span>
+                <span class="font-mono text-[10px] font-bold text-ps-amber-deep">100%</span>
+              </div>
+              <p class="mt-1 text-base font-extrabold text-ps-text">Review & submit your bracket</p>
+              <p class="mt-0.5 text-xs text-ps-text-sec">All picks made — confirm them before kickoff.</p>
+              <div class="mt-3 h-1.5 w-full overflow-hidden rounded-full bg-ps-chip">
+                <div class="h-full bg-ps-amber" style="width: 100%;"></div>
+              </div>
+              <p class="mt-2 text-xs font-semibold text-ps-amber-deep">Review & submit →</p>
+            </div>
+
+            <!-- Matchday cards -->
+            <div class="mt-6 space-y-3">
+              <!-- Group Matchday 1 -->
+              <div class="rounded-xl border border-ps-border bg-ps-bg p-4 border-ps-amber/30">
+                <div class="flex items-start justify-between">
+                  <div>
+                    <p class="text-base font-extrabold text-ps-text">Group Matchday 1</p>
+                    <p class="font-mono text-xs text-ps-text-ter">24 fixtures</p>
+                  </div>
+                  <span class="rounded-full bg-ps-green/10 px-2.5 py-0.5 text-xs font-bold text-ps-green">Open</span>
+                </div>
+                <p class="mt-2 text-xs text-ps-text-sec">Locks in 16d 17h</p>
+                <div class="mt-2 flex gap-2">
+                  <span class="rounded-full bg-ps-green/15 px-2.5 py-0.5 text-[10px] font-bold text-ps-green">OUTCOMES 24/24</span>
+                  <span class="rounded-full bg-ps-chip px-2.5 py-0.5 text-[10px] font-bold text-ps-text-sec">SCORES 13/24</span>
+                </div>
+              </div>
+
+              <!-- Group Matchday 2 -->
+              <div class="rounded-xl border border-ps-border bg-ps-bg p-4 border-ps-amber/30">
+                <div class="flex items-start justify-between">
+                  <div>
+                    <p class="text-base font-extrabold text-ps-text">Group Matchday 2</p>
+                    <p class="font-mono text-xs text-ps-text-ter">24 fixtures</p>
+                  </div>
+                  <span class="rounded-full bg-ps-green/10 px-2.5 py-0.5 text-xs font-bold text-ps-green">Open</span>
+                </div>
+                <p class="mt-2 text-xs text-ps-text-sec">Locks in 23d 14h</p>
+                <div class="mt-2 flex gap-2">
+                  <span class="rounded-full bg-ps-green/15 px-2.5 py-0.5 text-[10px] font-bold text-ps-green">OUTCOMES 24/24</span>
+                  <span class="rounded-full bg-ps-chip px-2.5 py-0.5 text-[10px] font-bold text-ps-text-sec">SCORES 16/24</span>
+                </div>
+              </div>
+
+              <!-- Group Matchday 3 -->
+              <div class="rounded-xl border border-ps-border bg-ps-bg p-4">
+                <div class="flex items-start justify-between">
+                  <div>
+                    <p class="text-base font-extrabold text-ps-text">Group Matchday 3</p>
+                    <p class="font-mono text-xs text-ps-text-ter">24 fixtures</p>
+                  </div>
+                  <span class="rounded-full bg-ps-green/10 px-2.5 py-0.5 text-xs font-bold text-ps-green">Open</span>
+                </div>
+                <p class="mt-2 text-xs text-ps-text-sec">Locks in 29d 17h</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ============================================ -->
+      <!-- PROPOSED: Redesigned with WC atmosphere      -->
+      <!-- ============================================ -->
+      <div>
+        <h2 class="text-center text-sm font-bold text-neutral-400 uppercase tracking-widest mb-4">Proposed</h2>
+        <div class="device-frame bg-ps-bg relative">
+
+          <!-- CHANGE 1: WC rainbow gradient strip replaces solid green -->
+          <div class="relative">
+            <div class="wc-gradient-animated h-[5px] w-full"></div>
+            <span class="annotation" style="top: -2px;">WC gradient strip replaces green</span>
+          </div>
+
+          <!-- Redesigned navbar -->
+          <nav class="bg-ps-bg border-b border-ps-border">
+            <div class="flex h-12 items-center justify-between px-4">
+              <div class="flex items-center gap-1.5">
+                <!-- Oracle dot -->
+                <svg width="24" height="24" viewBox="0 0 100 100" fill="none">
+                  <circle cx="50" cy="50" r="46" fill="#191512"/>
+                  <circle cx="58" cy="46" r="14" fill="#f59e0b"/>
+                  <circle cx="54" cy="38" r="5" fill="white" opacity="0.7"/>
+                </svg>
+                <span class="text-[1.1rem] font-extrabold lowercase tracking-tight text-ps-text">
+                  sports<span class="text-ps-amber">predict.</span>
+                </span>
+              </div>
+
+              <div class="flex items-center gap-3">
+                <!-- CHANGE: Invite icon button (always visible) -->
+                <div class="relative">
+                  <button class="relative flex items-center justify-center rounded-full bg-ps-chip p-1.5 transition hover:bg-ps-border">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#191512" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                      <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/>
+                      <circle cx="9" cy="7" r="4"/>
+                      <line x1="19" y1="8" x2="19" y2="14"/>
+                      <line x1="22" y1="11" x2="16" y2="11"/>
+                    </svg>
+                    <!-- Notification dot -->
+                    <span class="absolute -top-0.5 -right-0.5 h-2.5 w-2.5 rounded-full bg-ps-amber border-2 border-ps-bg"></span>
+                  </button>
+                  <span class="annotation" style="top: 0;">Persistent invite button</span>
+                </div>
+
+                <!-- Hamburger -->
+                <button class="p-2">
+                  <svg width="20" height="20" viewBox="0 0 20 20">
+                    <path d="M3 5h14M3 10h14M3 15h14" stroke="#191512" stroke-width="1.5" stroke-linecap="round"/>
+                  </svg>
+                </button>
+              </div>
+            </div>
+            <!-- Mobile tab bar — active state uses amber underline -->
+            <div class="flex overflow-x-auto border-t border-ps-border">
+              <div class="mx-auto flex px-2">
+                <a class="relative shrink-0 px-3 py-2 text-xs font-semibold text-ps-amber">
+                  Picks
+                  <span class="absolute bottom-0 left-1/2 -translate-x-1/2 h-[2px] w-4 rounded-full bg-ps-amber"></span>
+                </a>
+                <a class="shrink-0 px-3 py-2 text-xs font-semibold text-ps-text-sec">Bracket</a>
+                <a class="shrink-0 px-3 py-2 text-xs font-semibold text-ps-text-sec">Table</a>
+                <a class="shrink-0 px-3 py-2 text-xs font-semibold text-ps-text-sec">Results</a>
+                <a class="shrink-0 px-3 py-2 text-xs font-semibold text-ps-text-sec">Rules</a>
+              </div>
+            </div>
+          </nav>
+
+          <!-- CHANGE 2: Tournament context strip -->
+          <div class="relative">
+            <div class="flex items-center justify-between bg-ps-surface/70 px-4 py-2 border-b border-ps-border/50">
+              <div class="flex items-center gap-2">
+                <!-- Tiny WC mark -->
+                <span class="text-[10px] font-bold uppercase tracking-wider text-ps-text-ter">WC 2026</span>
+                <span class="text-ps-border">|</span>
+                <span class="font-mono text-[10px] font-bold text-ps-amber">16d to kickoff</span>
+              </div>
+              <div class="flex items-center gap-1">
+                <!-- Stacked avatars -->
+                <div class="flex -space-x-1.5">
+                  <div class="h-5 w-5 rounded-full bg-ps-green/30 border border-ps-bg flex items-center justify-center text-[8px] font-bold text-ps-green">E</div>
+                  <div class="h-5 w-5 rounded-full bg-ps-amber/30 border border-ps-bg flex items-center justify-center text-[8px] font-bold text-ps-amber-deep">J</div>
+                  <div class="h-5 w-5 rounded-full bg-ps-red/20 border border-ps-bg flex items-center justify-center text-[8px] font-bold text-ps-red">M</div>
+                  <div class="h-5 w-5 rounded-full bg-ps-chip border border-ps-bg flex items-center justify-center text-[8px] font-bold text-ps-text-ter">+2</div>
+                </div>
+              </div>
+            </div>
+            <span class="annotation" style="top: 4px;">Tournament bar: countdown + who's playing</span>
+          </div>
+
+          <!-- Picks page content -->
+          <div class="px-4 pt-6 pb-16">
+            <h1 class="font-display text-2xl uppercase tracking-tight text-ps-text">Your Picks</h1>
+            <p class="mt-1 text-sm text-ps-text-sec">Select a matchday to make your predictions.</p>
+
+            <!-- Bracket card (same as current, it works) -->
+            <div class="mt-5 rounded-xl border-2 border-ps-amber/40 bg-ps-amber/5 p-4">
+              <div class="flex items-baseline justify-between">
+                <span class="font-mono text-[10px] font-bold uppercase tracking-widest text-ps-amber-deep">Your bracket</span>
+                <span class="font-mono text-[10px] font-bold text-ps-amber-deep">100%</span>
+              </div>
+              <p class="mt-1 text-base font-extrabold text-ps-text">Review & submit your bracket</p>
+              <p class="mt-0.5 text-xs text-ps-text-sec">All picks made — confirm them before kickoff.</p>
+              <div class="mt-3 h-1.5 w-full overflow-hidden rounded-full bg-ps-chip">
+                <div class="h-full bg-ps-amber" style="width: 100%;"></div>
+              </div>
+              <p class="mt-2 text-xs font-semibold text-ps-amber-deep">Review & submit →</p>
+            </div>
+
+            <!-- CHANGE 3: Social invite CTA card -->
+            <div class="relative mt-4">
+              <div class="rounded-xl border border-dashed border-ps-amber/40 bg-ps-surface p-4">
+                <p class="text-sm font-bold text-ps-text">
+                  Your picks are set. Are your mates'?
+                </p>
+                <p class="mt-1 text-xs text-ps-text-sec">
+                  Share the competition. Bragging rights are better earned.
+                </p>
+                <div class="mt-3 flex gap-2">
+                  <button class="flex items-center gap-1.5 rounded-lg px-3 py-2 text-xs font-bold text-white transition hover:opacity-90 wa-green">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="white">
+                      <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/>
+                    </svg>
+                    WhatsApp
+                  </button>
+                  <button class="flex items-center gap-1.5 rounded-lg bg-ps-chip px-3 py-2 text-xs font-bold text-ps-text transition hover:bg-ps-border">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#191512" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                      <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/>
+                      <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/>
+                    </svg>
+                    Copy link
+                  </button>
+                </div>
+              </div>
+              <span class="annotation" style="top: 8px;">Social CTA — contextual, cheeky tone</span>
+            </div>
+
+            <!-- Matchday cards (same structure, unchanged) -->
+            <div class="mt-6 space-y-3">
+              <div class="rounded-xl border border-ps-border bg-ps-bg p-4 border-ps-amber/30">
+                <div class="flex items-start justify-between">
+                  <div>
+                    <p class="text-base font-extrabold text-ps-text">Group Matchday 1</p>
+                    <p class="font-mono text-xs text-ps-text-ter">24 fixtures</p>
+                  </div>
+                  <span class="rounded-full bg-ps-green/10 px-2.5 py-0.5 text-xs font-bold text-ps-green">Open</span>
+                </div>
+                <p class="mt-2 text-xs text-ps-text-sec">Locks in 16d 17h</p>
+                <div class="mt-2 flex gap-2">
+                  <span class="rounded-full bg-ps-green/15 px-2.5 py-0.5 text-[10px] font-bold text-ps-green">OUTCOMES 24/24</span>
+                  <span class="rounded-full bg-ps-chip px-2.5 py-0.5 text-[10px] font-bold text-ps-text-sec">SCORES 13/24</span>
+                </div>
+              </div>
+
+              <div class="rounded-xl border border-ps-border bg-ps-bg p-4 border-ps-amber/30">
+                <div class="flex items-start justify-between">
+                  <div>
+                    <p class="text-base font-extrabold text-ps-text">Group Matchday 2</p>
+                    <p class="font-mono text-xs text-ps-text-ter">24 fixtures</p>
+                  </div>
+                  <span class="rounded-full bg-ps-green/10 px-2.5 py-0.5 text-xs font-bold text-ps-green">Open</span>
+                </div>
+                <p class="mt-2 text-xs text-ps-text-sec">Locks in 23d 14h</p>
+                <div class="mt-2 flex gap-2">
+                  <span class="rounded-full bg-ps-green/15 px-2.5 py-0.5 text-[10px] font-bold text-ps-green">OUTCOMES 24/24</span>
+                  <span class="rounded-full bg-ps-chip px-2.5 py-0.5 text-[10px] font-bold text-ps-text-sec">SCORES 16/24</span>
+                </div>
+              </div>
+
+              <div class="rounded-xl border border-ps-border bg-ps-bg p-4">
+                <div class="flex items-start justify-between">
+                  <div>
+                    <p class="text-base font-extrabold text-ps-text">Group Matchday 3</p>
+                    <p class="font-mono text-xs text-ps-text-ter">24 fixtures</p>
+                  </div>
+                  <span class="rounded-full bg-ps-green/10 px-2.5 py-0.5 text-xs font-bold text-ps-green">Open</span>
+                </div>
+                <p class="mt-2 text-xs text-ps-text-sec">Locks in 29d 17h</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- ============================================ -->
+    <!-- VARIANT STATES                               -->
+    <!-- ============================================ -->
+    <div class="mt-16">
+      <h2 class="text-xl font-extrabold text-neutral-900 text-center">Social CTA Variants — by journey stage</h2>
+      <p class="mt-1 text-sm text-neutral-500 text-center max-w-lg mx-auto">
+        The invite card changes tone depending on where the user is. Same slot, different message.
+      </p>
+    </div>
+
+    <div class="flex flex-wrap gap-8 justify-center mt-8">
+
+      <!-- Variant A: Early — bracket in progress, no matchday picks yet -->
+      <div class="w-[374px]">
+        <p class="text-xs font-bold text-neutral-400 uppercase tracking-widest mb-3">A. Early — bracket in progress</p>
+        <div class="rounded-xl bg-ps-bg p-4">
+          <div class="rounded-xl border border-ps-border bg-ps-surface p-4">
+            <p class="font-mono text-[10px] font-bold uppercase tracking-widest text-ps-text-ter">1 playing</p>
+            <p class="mt-2 text-sm font-bold text-ps-text">
+              Predictions are better with rivals.
+            </p>
+            <p class="mt-1 text-xs text-ps-text-sec">
+              Invite your group and see who calls it best.
+            </p>
+            <div class="mt-3 flex gap-2">
+              <button class="flex items-center gap-1.5 rounded-lg px-3 py-2 text-xs font-bold text-white wa-green">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="white"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>
+                Share the comp
+              </button>
+              <button class="flex items-center gap-1.5 rounded-lg bg-ps-chip px-3 py-2 text-xs font-bold text-ps-text">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#191512" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>
+                Copy link
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Variant B: Mid — bracket done, matchdays in progress (the main scenario) -->
+      <div class="w-[374px]">
+        <p class="text-xs font-bold text-neutral-400 uppercase tracking-widest mb-3">B. Mid — bracket done, picks in progress</p>
+        <div class="rounded-xl bg-ps-bg p-4">
+          <div class="rounded-xl border border-dashed border-ps-amber/40 bg-ps-surface p-4">
+            <p class="text-sm font-bold text-ps-text">
+              Your picks are set. Are your mates'?
+            </p>
+            <p class="mt-1 text-xs text-ps-text-sec">
+              Share the competition. Bragging rights are better earned.
+            </p>
+            <div class="mt-3 flex gap-2">
+              <button class="flex items-center gap-1.5 rounded-lg px-3 py-2 text-xs font-bold text-white wa-green">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="white"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>
+                WhatsApp
+              </button>
+              <button class="flex items-center gap-1.5 rounded-lg bg-ps-chip px-3 py-2 text-xs font-bold text-ps-text">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#191512" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>
+                Copy link
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Variant C: Urgent — tournament approaching, few participants -->
+      <div class="w-[374px]">
+        <p class="text-xs font-bold text-neutral-400 uppercase tracking-widest mb-3">C. Urgent — close to kickoff</p>
+        <div class="rounded-xl bg-ps-bg p-4">
+          <div class="rounded-xl border-2 border-ps-amber/60 bg-gradient-to-r from-ps-amber/10 to-ps-surface p-4">
+            <div class="flex items-center justify-between">
+              <p class="text-sm font-bold text-ps-text">
+                3 days to kickoff.
+              </p>
+              <span class="font-mono text-[10px] font-bold text-ps-amber animate-pulse">LAST CALL</span>
+            </div>
+            <p class="mt-1 text-xs text-ps-text-sec">
+              Anyone not in by June 11 misses out. Send the link.
+            </p>
+            <div class="mt-3 flex gap-2">
+              <button class="flex items-center gap-1.5 rounded-lg px-3 py-2 text-xs font-bold text-white wa-green">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="white"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>
+                Send invite
+              </button>
+              <button class="flex items-center gap-1.5 rounded-lg bg-ps-chip px-3 py-2 text-xs font-bold text-ps-text">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#191512" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>
+                Copy link
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Variant D: Dismissable — user has enough friends, can dismiss permanently -->
+      <div class="w-[374px]">
+        <p class="text-xs font-bold text-neutral-400 uppercase tracking-widest mb-3">D. Dismissed — plenty of friends, collapses to strip</p>
+        <div class="rounded-xl bg-ps-bg p-4">
+          <div class="flex items-center justify-between rounded-lg bg-ps-surface/70 px-3 py-2 border border-ps-border/50">
+            <div class="flex items-center gap-2">
+              <div class="flex -space-x-1.5">
+                <div class="h-5 w-5 rounded-full bg-ps-green/30 border border-ps-bg flex items-center justify-center text-[8px] font-bold text-ps-green">E</div>
+                <div class="h-5 w-5 rounded-full bg-ps-amber/30 border border-ps-bg flex items-center justify-center text-[8px] font-bold text-ps-amber-deep">J</div>
+                <div class="h-5 w-5 rounded-full bg-ps-red/20 border border-ps-bg flex items-center justify-center text-[8px] font-bold text-ps-red">M</div>
+                <div class="h-5 w-5 rounded-full bg-ps-chip border border-ps-bg flex items-center justify-center text-[8px] font-bold text-ps-text-ter">+5</div>
+              </div>
+              <span class="text-xs font-semibold text-ps-text-sec">8 playing</span>
+            </div>
+            <button class="text-xs font-semibold text-ps-amber hover:text-ps-amber-deep">+ Invite</button>
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- ============================================ -->
+    <!-- DESIGN RATIONALE                             -->
+    <!-- ============================================ -->
+    <div class="mt-16 max-w-2xl mx-auto">
+      <h2 class="text-xl font-extrabold text-neutral-900">Design rationale</h2>
+
+      <div class="mt-6 space-y-6 text-sm text-neutral-700">
+
+        <div>
+          <h3 class="font-bold text-neutral-900">1. Rainbow gradient strip (navbar)</h3>
+          <p class="mt-1">
+            Replaces the solid <code>#006847</code> green line. The WC 2026 branding is defined by its
+            multi-color geometric curves — carrying a 5px gradient strip across the top instantly signals
+            "this is the World Cup" without touching the sportspredict brand below it. The effect is: tournament
+            dressing on top of the app's own identity. When the WC ends, this strip disappears and the platform
+            reverts to its neutral chrome. Every future competition could have its own accent strip.
+          </p>
+        </div>
+
+        <div>
+          <h3 class="font-bold text-neutral-900">2. Tournament context strip</h3>
+          <p class="mt-1">
+            Below the nav, a thin bar shows: tournament name, countdown, and who's playing (avatar stack).
+            This serves two purposes: (a) it keeps the WC atmosphere present without a full hero image on every page,
+            and (b) the avatar stack creates social proof — "other people are here, this is a competition, not a solo exercise."
+            Tapping the avatar stack could expand to a participant list or invite flow.
+          </p>
+        </div>
+
+        <div>
+          <h3 class="font-bold text-neutral-900">3. Social CTA card — "When to invite?"</h3>
+          <p class="mt-1">
+            <strong>The answer: after the bracket, before the matchdays.</strong> This is the slot between
+            the bracket hero card and the matchday list. The user has just committed to 104 predictions.
+            They've proven engagement. The natural emotion is: "I want someone to compete against."
+          </p>
+          <p class="mt-2">
+            The card tone adapts to journey stage (variants A-D above). Early users get a soft invite.
+            Mid-journey users get a cheeky prod. Close to kickoff, urgency. Once the user has enough friends
+            (or dismisses), it collapses to a minimal strip showing participant count + subtle invite link.
+          </p>
+          <p class="mt-2">
+            <strong>WhatsApp is primary</strong> — this is Ireland, this is friend groups. Copy-link is secondary.
+            The pre-filled WhatsApp message could be: "I'm in for the World Cup predictions. Think you can beat me?
+            [link]" — competitive, short, easy to forward.
+          </p>
+        </div>
+
+        <div>
+          <h3 class="font-bold text-neutral-900">4. Persistent invite icon (navbar)</h3>
+          <p class="mt-1">
+            A user-plus icon in the navbar with a subtle amber notification dot. Always accessible.
+            Doesn't take up much space. Tapping opens a share sheet (WhatsApp, copy link, QR code).
+            The notification dot can be removed once the user has invited at least one person or the
+            competition has 8+ members.
+          </p>
+        </div>
+
+        <div>
+          <h3 class="font-bold text-neutral-900">5. What this does NOT change</h3>
+          <ul class="mt-1 list-disc list-inside space-y-1">
+            <li>Matchday card structure — it works, clear and functional</li>
+            <li>Bracket hero card — effective, proven</li>
+            <li>Nav link labels — clear and scannable</li>
+            <li>The sportspredict brand identity — the WC dressing sits on top of it</li>
+            <li>The cream/amber/ink palette — this is the app's identity</li>
+          </ul>
+        </div>
+
+        <div>
+          <h3 class="font-bold text-neutral-900">6. Future: post-completion celebration share</h3>
+          <p class="mt-1">
+            The existing <code>MatchdayCompleteCelebration</code> modal could add a share action:
+            "Share your picks" button that generates a WhatsApp message like "Just finished my Group Matchday 1
+            predictions. 24/24. Come at me. [link]". This is a natural emotional peak — the user just achieved
+            something and wants to flex. Not in this prototype but a natural next step.
+          </p>
+        </div>
+
+      </div>
+    </div>
+
+  </div>
+
+</body>
+</html>

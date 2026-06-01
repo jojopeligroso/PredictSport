@@ -1,0 +1,469 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Fixtures Toggle Mockup</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;600;700&display=swap" rel="stylesheet">
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: 'Inter', system-ui, sans-serif;
+    background: #c8c0b4;
+    color: #191512;
+    padding: 32px 16px 48px;
+    display: flex;
+    gap: 28px;
+    justify-content: center;
+    flex-wrap: wrap;
+  }
+
+  .phone-col { display: flex; flex-direction: column; align-items: center; gap: 12px; }
+  .phone-label h2 { font-size: 13px; font-weight: 700; text-align: center; }
+  .phone-label p { font-size: 11px; color: #6b6157; text-align: center; margin-top: 2px; }
+
+  .phone {
+    width: 390px;
+    background: #efe9de;
+    border-radius: 24px;
+    border: 2px solid #a89e92;
+    overflow: hidden;
+    box-shadow: 0 2px 0 #8a8278, 0 12px 40px rgba(0,0,0,0.22);
+    padding-bottom: 20px;
+  }
+
+  .status-bar {
+    height: 44px; padding: 12px 20px 0;
+    display: flex; justify-content: space-between; align-items: center;
+  }
+  .status-bar .time { font-size: 13px; font-weight: 700; }
+
+  .page-header { padding: 10px 16px 0; }
+  .page-title { font-size: 20px; font-weight: 800; text-transform: uppercase; letter-spacing: -0.02em; }
+  .page-sub { font-size: 12px; color: #6b6157; margin-top: 2px; }
+
+  /* Tabs */
+  .tabs {
+    margin: 12px 16px 0;
+    display: flex; gap: 4px;
+    border: 1.5px solid #d6cfc3; border-radius: 10px;
+    background: #f5f0e8; padding: 4px;
+  }
+  .tab {
+    flex: 1; text-align: center;
+    padding: 7px 8px; border-radius: 7px;
+    font-size: 13px; font-weight: 600;
+    cursor: pointer; border: none; background: none; color: #6b6157;
+  }
+  .tab.active { background: #191512; color: #efe9de; }
+  .tab .count {
+    display: inline-flex; min-width: 18px; justify-content: center;
+    margin-left: 4px; padding: 0 4px;
+    border-radius: 999px; font-family: 'JetBrains Mono', monospace;
+    font-size: 10px; font-weight: 600;
+  }
+  .tab.active .count { background: rgba(239,233,222,0.2); color: #efe9de; }
+  .tab:not(.active) .count { background: rgba(214,207,195,0.6); color: #6b6157; }
+
+  /* Toggle banner */
+  .toggle-banner {
+    margin: 10px 16px 0;
+    display: flex; align-items: center; justify-content: space-between;
+    border: 1.5px solid #d6cfc3; border-radius: 10px;
+    background: #f5f0e8; padding: 8px 12px;
+  }
+  .toggle-label { font-size: 12px; color: #6b6157; }
+  .toggle-btn {
+    display: flex; align-items: center; gap: 6px;
+    font-size: 11px; font-weight: 600; color: #6b6157;
+    cursor: pointer; border: none; background: none;
+    padding: 4px 6px; border-radius: 6px;
+  }
+  .toggle-btn:hover { background: #e8e2d6; color: #191512; }
+  .toggle-track {
+    position: relative;
+    width: 28px; height: 16px;
+    border-radius: 999px; transition: background 0.2s;
+  }
+  .toggle-track.on { background: #f59e0b; }
+  .toggle-track.off { background: #d6cfc3; }
+  .toggle-knob {
+    position: absolute; top: 2px;
+    width: 12px; height: 12px;
+    border-radius: 50%; background: #fff;
+    transition: left 0.2s;
+  }
+  .toggle-track.on .toggle-knob { left: 14px; }
+  .toggle-track.off .toggle-knob { left: 2px; }
+
+  /* Cards */
+  .cards { padding: 12px 16px 0; display: flex; flex-direction: column; gap: 10px; }
+
+  .fx-card {
+    border-radius: 14px; overflow: hidden;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.12);
+  }
+
+  .fx-header {
+    display: flex; justify-content: space-between; align-items: flex-start;
+    padding: 10px 14px 6px;
+  }
+  .fx-meta {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px; font-weight: 700;
+    text-transform: uppercase; letter-spacing: 0.06em;
+    color: rgba(255,255,255,0.65);
+  }
+  .fx-city { text-align: right; }
+  .fx-city-name { font-size: 11px; font-weight: 600; color: rgba(255,255,255,0.8); }
+  .fx-stadium { font-size: 9px; font-weight: 500; color: rgba(255,255,255,0.4); margin-top: 1px; }
+
+  /* Prediction row */
+  .fx-predict {
+    display: flex; align-items: center; justify-content: center;
+    gap: 6px; padding: 4px 14px 6px;
+  }
+  .fx-pred-team {
+    flex: 1; min-width: 0;
+    display: flex; flex-direction: column; align-items: center; gap: 3px;
+    padding: 6px 4px; border-radius: 10px;
+    cursor: pointer; transition: all 0.15s;
+  }
+  .fx-pred-team .flag {
+    width: 26px; height: 26px; border-radius: 50%; overflow: hidden;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.25);
+  }
+  .fx-pred-team .flag img { width: 100%; height: 100%; object-fit: cover; }
+  .fx-pred-team .name {
+    font-size: 11px; font-weight: 600; color: rgba(255,255,255,0.55);
+    max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+    text-align: center;
+  }
+  .fx-pred-team.selected {
+    background: rgba(255,255,255,0.12);
+    box-shadow: inset 0 0 0 2px rgba(255,255,255,0.5);
+  }
+  .fx-pred-team.selected .name { color: #fff; }
+
+  .fx-score-input {
+    width: 30px; height: 28px; border-radius: 999px;
+    border: 1.5px solid rgba(255,255,255,0.25);
+    background: rgba(255,255,255,0.08);
+    color: #fff; font-family: 'JetBrains Mono', monospace;
+    font-size: 14px; font-weight: 700; text-align: center;
+    outline: none; flex-shrink: 0;
+  }
+  .fx-score-input::placeholder { color: rgba(255,255,255,0.3); }
+  .fx-score-input.filled {
+    background: rgba(255,255,255,0.18);
+    border-color: rgba(255,255,255,0.5);
+  }
+
+  .fx-draw-btn {
+    flex-shrink: 0; padding: 5px 10px; border-radius: 8px;
+    font-size: 11px; font-weight: 600;
+    color: rgba(255,255,255,0.45);
+    cursor: pointer; border: none; background: none;
+  }
+  .fx-draw-btn.selected {
+    background: rgba(255,255,255,0.12); color: #fff;
+    box-shadow: inset 0 0 0 2px rgba(255,255,255,0.5);
+  }
+
+  /* Read-only teams row */
+  .fx-teams {
+    display: flex; align-items: center; justify-content: center;
+    gap: 6px; padding: 4px 14px 4px;
+  }
+  .fx-team { display: flex; align-items: center; gap: 6px; }
+  .fx-flag-sm {
+    width: 20px; height: 20px; border-radius: 50%; overflow: hidden;
+    box-shadow: 0 1px 2px rgba(0,0,0,0.2);
+  }
+  .fx-flag-sm img { width: 100%; height: 100%; object-fit: cover; }
+  .fx-team-name { font-size: 14px; font-weight: 700; color: #fff; }
+  .fx-vs { font-size: 11px; font-weight: 700; color: rgba(255,255,255,0.4); }
+
+  /* Time info */
+  .fx-time {
+    display: grid; grid-template-columns: 1fr 1fr;
+    margin: 4px 12px 10px;
+    background: rgba(0,0,0,0.12);
+    border-radius: 8px; overflow: hidden;
+  }
+  .fx-time-cell { padding: 7px 10px; }
+  .fx-time-cell:first-child { border-right: 1px solid rgba(255,255,255,0.08); }
+  .fx-time-label {
+    font-size: 9px; font-weight: 700; text-transform: uppercase;
+    letter-spacing: 0.06em; color: rgba(255,255,255,0.4); margin-bottom: 1px;
+  }
+  .fx-time-value {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px; font-weight: 600; color: rgba(255,255,255,0.85);
+  }
+
+  /* Predicted ring */
+  .fx-card.predicted { box-shadow: 0 0 0 2px rgba(255,255,255,0.3), 0 2px 8px rgba(0,0,0,0.12); }
+</style>
+</head>
+<body>
+
+<!-- ═══════ PREDICTIONS ON ═══════ -->
+<div class="phone-col">
+  <div class="phone-label">
+    <h2>Toggle ON</h2>
+    <p>Predictions shown, interactive cards</p>
+  </div>
+  <div class="phone">
+    <div class="status-bar"><span class="time">9:41</span></div>
+    <div class="page-header">
+      <div class="page-title">Fixtures & Results</div>
+      <div class="page-sub">All 104 matches. Times in host city zone and yours.</div>
+    </div>
+
+    <div class="tabs">
+      <button class="tab">Today<span class="count">0</span></button>
+      <button class="tab active">Upcoming<span class="count">96</span></button>
+      <button class="tab">Results<span class="count">0</span></button>
+    </div>
+
+    <div class="toggle-banner">
+      <span class="toggle-label">Your predictions are shown</span>
+      <button class="toggle-btn">
+        Hide picks
+        <span class="toggle-track on"><span class="toggle-knob"></span></span>
+      </button>
+    </div>
+
+    <div class="cards">
+      <!-- Predicted card (ring) -->
+      <div class="fx-card predicted" style="background: #2d6a4f;">
+        <div class="fx-header">
+          <span class="fx-meta">Group A · MD1</span>
+          <div class="fx-city">
+            <div class="fx-city-name">Mexico City</div>
+            <div class="fx-stadium">Estadio Azteca</div>
+          </div>
+        </div>
+        <div class="fx-predict">
+          <div class="fx-pred-team selected">
+            <div class="flag"><img src="https://flagcdn.com/mx.svg" alt=""></div>
+            <span class="name" style="color:#fff;">Mexico</span>
+          </div>
+          <input class="fx-score-input filled" value="2" readonly>
+          <button class="fx-draw-btn">draw</button>
+          <input class="fx-score-input filled" value="1" readonly>
+          <div class="fx-pred-team">
+            <div class="flag"><img src="https://flagcdn.com/kr.svg" alt=""></div>
+            <span class="name">S. Korea</span>
+          </div>
+        </div>
+        <div class="fx-time">
+          <div class="fx-time-cell">
+            <div class="fx-time-label">In Mexico City</div>
+            <div class="fx-time-value">17:00 <span style="color:rgba(255,255,255,0.5)">· Thu 12</span></div>
+          </div>
+          <div class="fx-time-cell">
+            <div class="fx-time-label">Your time</div>
+            <div class="fx-time-value">00:00 IST</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Unpredicted card -->
+      <div class="fx-card" style="background: #1a365d;">
+        <div class="fx-header">
+          <span class="fx-meta">Group B · MD1</span>
+          <div class="fx-city">
+            <div class="fx-city-name">New York</div>
+            <div class="fx-stadium">MetLife Stadium</div>
+          </div>
+        </div>
+        <div class="fx-predict">
+          <div class="fx-pred-team">
+            <div class="flag"><img src="https://flagcdn.com/br.svg" alt=""></div>
+            <span class="name">Brazil</span>
+          </div>
+          <input class="fx-score-input" placeholder="–" readonly>
+          <button class="fx-draw-btn">draw</button>
+          <input class="fx-score-input" placeholder="–" readonly>
+          <div class="fx-pred-team">
+            <div class="flag"><img src="https://flagcdn.com/de.svg" alt=""></div>
+            <span class="name">Germany</span>
+          </div>
+        </div>
+        <div class="fx-time">
+          <div class="fx-time-cell">
+            <div class="fx-time-label">In New York</div>
+            <div class="fx-time-value">20:00 <span style="color:rgba(255,255,255,0.5)">· Thu 12</span></div>
+          </div>
+          <div class="fx-time-cell">
+            <div class="fx-time-label">Your time</div>
+            <div class="fx-time-value">01:00 IST</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Draw predicted -->
+      <div class="fx-card predicted" style="background: #7c3aed;">
+        <div class="fx-header">
+          <span class="fx-meta">Group C · MD1</span>
+          <div class="fx-city">
+            <div class="fx-city-name">Los Angeles</div>
+            <div class="fx-stadium">SoFi Stadium</div>
+          </div>
+        </div>
+        <div class="fx-predict">
+          <div class="fx-pred-team">
+            <div class="flag"><img src="https://flagcdn.com/ar.svg" alt=""></div>
+            <span class="name">Argentina</span>
+          </div>
+          <input class="fx-score-input filled" value="1" readonly>
+          <button class="fx-draw-btn selected">draw</button>
+          <input class="fx-score-input filled" value="1" readonly>
+          <div class="fx-pred-team">
+            <div class="flag"><img src="https://flagcdn.com/fr.svg" alt=""></div>
+            <span class="name">France</span>
+          </div>
+        </div>
+        <div class="fx-time">
+          <div class="fx-time-cell">
+            <div class="fx-time-label">In Los Angeles</div>
+            <div class="fx-time-value">18:00 <span style="color:rgba(255,255,255,0.5)">· Thu 12</span></div>
+          </div>
+          <div class="fx-time-cell">
+            <div class="fx-time-label">Your time</div>
+            <div class="fx-time-value">02:00 IST</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════ PREDICTIONS OFF ═══════ -->
+<div class="phone-col">
+  <div class="phone-label">
+    <h2>Toggle OFF</h2>
+    <p>Pure fixtures view, read-only cards</p>
+  </div>
+  <div class="phone">
+    <div class="status-bar"><span class="time">9:41</span></div>
+    <div class="page-header">
+      <div class="page-title">Fixtures & Results</div>
+      <div class="page-sub">All 104 matches. Times in host city zone and yours.</div>
+    </div>
+
+    <div class="tabs">
+      <button class="tab">Today<span class="count">0</span></button>
+      <button class="tab active">Upcoming<span class="count">96</span></button>
+      <button class="tab">Results<span class="count">0</span></button>
+    </div>
+
+    <div class="toggle-banner">
+      <span class="toggle-label">Fixtures only</span>
+      <button class="toggle-btn">
+        Show picks
+        <span class="toggle-track off"><span class="toggle-knob"></span></span>
+      </button>
+    </div>
+
+    <div class="cards">
+      <div class="fx-card" style="background: #2d6a4f;">
+        <div class="fx-header">
+          <span class="fx-meta">Group A · MD1</span>
+          <div class="fx-city">
+            <div class="fx-city-name">Mexico City</div>
+            <div class="fx-stadium">Estadio Azteca</div>
+          </div>
+        </div>
+        <div class="fx-teams">
+          <div class="fx-team">
+            <div class="fx-flag-sm"><img src="https://flagcdn.com/mx.svg" alt=""></div>
+            <span class="fx-team-name">Mexico</span>
+          </div>
+          <span class="fx-vs">v</span>
+          <div class="fx-team">
+            <div class="fx-flag-sm"><img src="https://flagcdn.com/kr.svg" alt=""></div>
+            <span class="fx-team-name">South Korea</span>
+          </div>
+        </div>
+        <div class="fx-time">
+          <div class="fx-time-cell">
+            <div class="fx-time-label">In Mexico City</div>
+            <div class="fx-time-value">17:00 <span style="color:rgba(255,255,255,0.5)">· Thu 12</span></div>
+          </div>
+          <div class="fx-time-cell">
+            <div class="fx-time-label">Your time</div>
+            <div class="fx-time-value">00:00 IST</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="fx-card" style="background: #1a365d;">
+        <div class="fx-header">
+          <span class="fx-meta">Group B · MD1</span>
+          <div class="fx-city">
+            <div class="fx-city-name">New York</div>
+            <div class="fx-stadium">MetLife Stadium</div>
+          </div>
+        </div>
+        <div class="fx-teams">
+          <div class="fx-team">
+            <div class="fx-flag-sm"><img src="https://flagcdn.com/br.svg" alt=""></div>
+            <span class="fx-team-name">Brazil</span>
+          </div>
+          <span class="fx-vs">v</span>
+          <div class="fx-team">
+            <div class="fx-flag-sm"><img src="https://flagcdn.com/de.svg" alt=""></div>
+            <span class="fx-team-name">Germany</span>
+          </div>
+        </div>
+        <div class="fx-time">
+          <div class="fx-time-cell">
+            <div class="fx-time-label">In New York</div>
+            <div class="fx-time-value">20:00 <span style="color:rgba(255,255,255,0.5)">· Thu 12</span></div>
+          </div>
+          <div class="fx-time-cell">
+            <div class="fx-time-label">Your time</div>
+            <div class="fx-time-value">01:00 IST</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="fx-card" style="background: #7c3aed;">
+        <div class="fx-header">
+          <span class="fx-meta">Group C · MD1</span>
+          <div class="fx-city">
+            <div class="fx-city-name">Los Angeles</div>
+            <div class="fx-stadium">SoFi Stadium</div>
+          </div>
+        </div>
+        <div class="fx-teams">
+          <div class="fx-team">
+            <div class="fx-flag-sm"><img src="https://flagcdn.com/ar.svg" alt=""></div>
+            <span class="fx-team-name">Argentina</span>
+          </div>
+          <span class="fx-vs">v</span>
+          <div class="fx-team">
+            <div class="fx-flag-sm"><img src="https://flagcdn.com/fr.svg" alt=""></div>
+            <span class="fx-team-name">France</span>
+          </div>
+        </div>
+        <div class="fx-time">
+          <div class="fx-time-cell">
+            <div class="fx-time-label">In Los Angeles</div>
+            <div class="fx-time-value">18:00 <span style="color:rgba(255,255,255,0.5)">· Thu 12</span></div>
+          </div>
+          <div class="fx-time-cell">
+            <div class="fx-time-label">Your time</div>
+            <div class="fx-time-value">02:00 IST</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+</body>
+</html>

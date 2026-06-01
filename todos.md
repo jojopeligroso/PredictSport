@@ -86,7 +86,7 @@ Design complete. See `docs/DESIGN-PERSONAL-PREDICTIONS-UNIFICATION.md`. Implemen
 
 ## Round Builder UX Improvements
 
-See `ROUND-BUILDER-IMPROVEMENTS.md` for full details.
+See `docs/ROUND-BUILDER-IMPROVEMENTS.md` for full details.
 
 ### Phase 1: Smart Filtering ✅ COMPLETED (2026-05-12)
 
@@ -115,7 +115,7 @@ See `ROUND-BUILDER-IMPROVEMENTS.md` for full details.
 
 ## Manual Events & API Coverage (2026-05-12)
 
-See `MANUAL-EVENTS-AND-API-GAPS.md` for detailed task breakdown.
+See `docs/MANUAL-EVENTS-AND-API-GAPS.md` for detailed task breakdown.
 
 ### Phase 3: Manual Event Management (3-4 hours) — **INDEPENDENT, can run parallel to Phase 1/2**
 
@@ -235,43 +235,43 @@ See `SPORTS-ARCHITECTURE.md` for detailed spec (TBD).
 
 **WC-H1: Core Components**
 - [x] **Design spike** — Full design complete (2026-05-21). R32 Classification is automatic, not a separate flow.
-- [ ] **H1.1 — Tiebreaker utilities** — Implement FIFA tiebreaker logic (steps 1-5: points, H2H GD, H2H GS, overall GD, overall GS). Phase 1: random fallback for ties beyond step 5. Phase 2: add fair play (6) and FIFA ranking (7).
+- [x] **H1.1 — Tiebreaker utilities** — Implemented in `tiebreakers/fifa.ts` + `engine.ts`. Full hierarchy: H2H points/GD/GS → overall GD/GS → random fallback. Phase 2 stubs for fair play and FIFA ranking.
 - [x] **H1.2 — Best-third ranking** — `rankBestThirds(allThirds)` applies steps 1-5 + random to rank 12 third-place teams, returns top 8.
 - [x] **H1.3 — Best-third slot allocation** — `allocateBestThirdsToSlots(bestThirds)` applies FIFA R32 slot rules based on group origins. **✅ Fully implemented in fifa-world-cup-2026.ts:130** with group-origin tracking, validation, and Phase 1 rule-based allocation (Phase 2: full 495-combination FIFA matrix from Annex C).
 - [x] **H1.4 — R32 bracket generation** — `generateR32Bracket(winners, runnersUp, thirds)` creates full R32 matchup structure. **Implemented as `generateFIFAR32Bracket()` in fifa-world-cup-2026.ts:172**
 
 **WC-H2: Group Stage UI**
-- [ ] **H2.1 — GroupMatchPredictor component** — Single-group UI: 4 teams, 6 matches, H/D/A buttons. Real-time standings calculation.
-- [ ] **H2.2 — LiveGroupStandings component** — Shows live table as user predicts, highlights ties.
-- [ ] **H2.3 — ScoreCollector component** — Smart score input triggered by ties. Only asks for scores of relevant matches (W/L between tied teams).
-- [ ] **H2.4 — Tiebreaker messaging** — Clear UI for random fallback: "FIFA would use fair play, we've randomly placed Team A ahead. Tip: predict different scores to avoid ties."
+- [x] **H2.1 — GroupMatchPredictor component** — Implemented as `GroupResultsStepV2.tsx`. Single-group UI with team-name buttons, real-time standings.
+- [x] **H2.2 — LiveGroupStandings component** — Implemented in `LiveGroupStandings.tsx`. Live table with tie highlighting.
+- [x] **H2.3 — ScoreCollector component** — Implemented in `ScoreCollector.tsx`. Smart score input for tied-team matches only.
+- [x] **H2.4 — Tiebreaker messaging** — Implemented in `TiebreakersStep.tsx`. Random fallback warning with score tips.
 
 **WC-H3: Bracket Wizard Shell**
-> ⚠️ **H3.x BLOCKED pending design (2026-05-22).** `DESIGN-WC-H1-FULL-BRACKET.md` (May 21) is partly superseded by `DESIGN-WC-UNIFIED-PREDICTIONS.md` (May 22, status: proposal), which moves group-score capture into windowed flows (24/24/24 by matchday) instead of group-by-group, and treats `BracketWizardV2.tsx` as the live wizard to extend (not a new component). Two wizard files already exist: `BracketWizard.tsx` (V1, old ranking model) and `BracketWizardV2.tsx` (V2, W/D/L model). Do not build a third wizard. H3.1–H3.3 should be reframed once the unified design is approved — likely "finish BracketWizardV2's knockout stages + checkpoints" rather than a fresh `BracketWizard` component.
-- [ ] **H3.1 — BracketWizard component** — Multi-step wizard with checkpoint system (12 group checkpoints + 5 knockout stage checkpoints). *(BLOCKED — see note above.)*
-- [ ] **H3.2 — Save/resume state** — "Continue later" button, persists bracket_data as draft, resumes from last checkpoint.
-- [ ] **H3.3 — Progress indicator** — Shows Groups A-L → R32 → R16 → QF → SF → Final with completion status.
+> Resolved: unified design approved (2026-05-23). `BracketWizard.tsx` is the live 9-step wizard. `BracketWizardV2.tsx` was the prototype; `BracketWizard.tsx` is the production version. Group picks write to `predictions` table (shared with `/picks` matchday flow).
+- [x] **H3.1 — BracketWizard component** — Implemented in `BracketWizard.tsx`. 9-step wizard: Groups → Tiebreakers → Third-place → R32 → R16 → QF → SF → Final → Review.
+- [x] **H3.2 — Save/resume state** — Draft persistence via `bracket_prediction_submissions`, resumes from last step.
+- [x] **H3.3 — Progress indicator** — Step progress bar in wizard header.
 
 **WC-H4: Knockout Stage UI**
 - [x] **H4.1 — KnockoutStagePredictor component** — Shows all matches for a stage (16 for R32, 8 for R16, etc.), winner picker per match. **✅ Implemented in `KnockoutStagePredictor.tsx` + `KnockoutMatchCard.tsx`** — stage-by-stage winner picker, match count from `template.knockoutStages[].matchCount`, auto-populates later stages from previous winners.
-- [ ] **H4.2 — Bracket context hints** — (?) icons explaining slot allocation ("Argentina here because they're Group C runner-up").
-- [ ] **H4.3 — Auto-population** — Winners from previous stage pre-fill into next stage matches.
+- [x] **H4.2 — Bracket context hints** — Slot source labels in `KnockoutStageStep` ("Winner Group A", "Runner-up Group C", etc.).
+- [x] **H4.3 — Auto-population** — Winners from previous stages auto-fill into next stage via `resolveAllKnockoutMatchups`.
 
 **WC-H5: Review & Submission**
-- [ ] **H5.1 — BracketReview component** — Visual bracket tree, champion path highlighted, R32 team list displayed.
-- [ ] **H5.2 — Edit navigation** — Jump back to any stage to modify predictions before submission.
-- [ ] **H5.3 — Submit & lock** — Confirmation screen, writes to `bracket_prediction_submissions`, sets `locked=true`.
+- [x] **H5.1 — BracketReview component** — Implemented in `BracketReviewStep.tsx`. Visual bracket summary with champion path.
+- [x] **H5.2 — Edit navigation** — Jump-back to any wizard step from review.
+- [x] **H5.3 — Submit & lock** — `POST /api/tournament/bracket/submit` + `/lock` routes. Writes to `bracket_prediction_submissions`.
 
 **WC-H6: R32 Classification (Automatic)**
-- [ ] **H6.1 — R32 team extraction** — `extractR32Teams(bracketData)` pulls 32 teams from group predictions (12 winners + 12 runners-up + 8 thirds).
-- [ ] **H6.2 — R32 scoring logic** — After real Group Stage finalizes, compare predicted vs actual R32 teams, score 1 point per match.
-- [ ] **H6.3 — R32 leaderboard** — Standings display: "Alice 31/32 (96.9%)". Ranked by score, ties broken by submission timestamp.
-- [ ] **H6.4 — Dashboard widget** — "You correctly predicted 29 of the final 32 teams!"
+- [x] **H6.1 — R32 team extraction** — `extractR32Teams()` in `r32-classification.ts`. 24 from groups + 8 from bestThirdPicks.
+- [x] **H6.2 — R32 scoring logic** — `scoreR32Classification()` in `r32-classification.ts`. 1 point per correct team, path-insensitive.
+- [ ] **H6.3 — R32 leaderboard** — Standings display: "Alice 31/32 (96.9%)". Ranked by score, ties broken by submission timestamp. *(Scoring logic exists, UI not built.)*
+- [ ] **H6.4 — Dashboard widget** — "You correctly predicted 29 of the final 32 teams!" *(Not built — depends on real group stage results.)*
 
 **WC-H7: FAQ Page**
-- [ ] **H7.1 — /wc/rules page** — Create FAQ page with collapsible sections: Classifications, Tiebreakers, Best-Third Rules, Slot Allocation, Scoring, Bracket Editing.
-- [ ] **H7.2 — FAQ content** — Write copy for all sections (see design doc §4).
-- [ ] **H7.3 — Searchable/linkable** — Accordion UI, anchor links for deep linking to specific rules.
+- [x] **H7.1 — /wc/rules page** — Implemented at `/wc/rules` (sticky pill nav, single-scroll layout) and `/wc/faq` (generated FAQ).
+- [x] **H7.2 — FAQ content** — Copy written for Points, Format, Picks, Ties sections + FAQ generator in `faq/generator.ts`.
+- [x] **H7.3 — Searchable/linkable** — Anchor links via `StickyPillNav` + `FormatProgressDots` for deep linking to sub-sections.
 
 **WC-H8: Onboarding Integration**
 - [ ] **H8.1 — Add Full Bracket step to onboarding** — After Classifications Overview, show "Want to fill out your bracket now?" with [Start] / [Skip] options.
@@ -280,10 +280,10 @@ See `SPORTS-ARCHITECTURE.md` for detailed spec (TBD).
 - [ ] **H8.4 — Privacy settings** — Add leaderboard visibility choice: public / anonymous (Player #N) / private-only.
 
 **WC-H9: Data Model & API**
-- [ ] **H9.1 — Bracket submission schema** — Already exists: `bracket_prediction_submissions` table with `bracket_data` JSONB. Verify structure matches design doc.
-- [ ] **H9.2 — R32 classification config** — Add R32 classification to tournament seed migration with `type='stage_pick'`, `config.source='bracket_group_stage'`.
-- [ ] **H9.3 — Save draft API** — `POST /api/tournament/bracket/submit` with `draft=true` for checkpoint saves.
-- [ ] **H9.4 — Lock bracket API** — `POST /api/tournament/bracket/lock` finalizes submission, sets `locked=true`.
+- [x] **H9.1 — Bracket submission schema** — `bracket_prediction_submissions` table in `20260521400000_bracket_system.sql`.
+- [x] **H9.2 — R32 classification config** — Migration `20260523000000_r32_pick_classification.sql` + `stage-pick.ts` scorer.
+- [x] **H9.3 — Save draft API** — `POST /api/tournament/bracket/submit` with draft support.
+- [x] **H9.4 — Lock bracket API** — `POST /api/tournament/bracket/lock` finalizes and locks submission.
 
 **Phase 2 Enhancements:**
 - [ ] **H-P2.1 — Fair play tiebreaker** — Add fair play score tracking (requires card data from providers).

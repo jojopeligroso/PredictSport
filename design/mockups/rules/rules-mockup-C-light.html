@@ -1,0 +1,1165 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Rules — WC 2026 (Light)</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans:wght@400;500;600;700;800;900&display=swap" rel="stylesheet" />
+  <style>
+    *, *::before, *::after {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    :root {
+      --ps-bg: #efe9de;
+      --ps-bg-alt: #e7dfd0;
+      --ps-surface: #ffffff;
+      --ps-surface2: #faf6ee;
+      --ps-text: #0a0f0a;
+      --ps-text-sec: #4a5a4a;
+      --ps-text-ter: #7a8a7a;
+      --ps-amber: #b8941f;
+      --ps-amber-deep: #8a6e10;
+      --ps-amber-soft: rgba(184, 148, 31, 0.14);
+      --ps-border: rgba(0, 104, 71, 0.18);
+      --ps-border-strong: rgba(0, 104, 71, 0.32);
+      --ps-chip: rgba(0, 104, 71, 0.06);
+      --ps-green: #0aa86d;
+      --ps-red: #e23d4f;
+      --wc-mexico-green: #006847;
+    }
+
+    html {
+      scroll-behavior: smooth;
+    }
+
+    body {
+      background: var(--ps-bg);
+      color: var(--ps-text);
+      font-family: 'Noto Sans', sans-serif;
+      font-size: 14px;
+      line-height: 1.6;
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
+    }
+
+    /* Top green stripe */
+    body::before {
+      content: '';
+      display: block;
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 4px;
+      background: var(--wc-mexico-green);
+      z-index: 1000;
+    }
+
+    /* Scroll progress bar */
+    #scroll-progress {
+      position: fixed;
+      top: 4px;
+      left: 0;
+      height: 2px;
+      background: var(--ps-amber);
+      width: 0%;
+      z-index: 999;
+      transition: width 0.05s linear;
+    }
+
+    /* Page wrap */
+    .page-wrap {
+      max-width: 480px;
+      margin: 0 auto;
+      padding: 0 16px;
+      padding-bottom: 64px;
+    }
+
+    /* ── Floating nav dots ── */
+    #nav-dots {
+      position: fixed;
+      right: calc(50% - 240px - 20px);
+      top: 50%;
+      transform: translateY(-50%);
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      z-index: 100;
+    }
+
+    /* Fallback for narrow viewports */
+    @media (max-width: 540px) {
+      #nav-dots {
+        right: 8px;
+      }
+    }
+
+    .nav-dot-wrap {
+      position: relative;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .nav-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: var(--ps-text-ter);
+      cursor: pointer;
+      transition: background 0.2s, transform 0.2s;
+      border: none;
+      padding: 0;
+      outline: none;
+    }
+
+    .nav-dot:hover {
+      background: var(--ps-amber-deep);
+      transform: scale(1.25);
+    }
+
+    .nav-dot.active {
+      background: var(--ps-amber);
+      transform: scale(1.2);
+    }
+
+    .nav-dot-tooltip {
+      position: absolute;
+      right: 18px;
+      background: var(--ps-surface);
+      color: var(--ps-text);
+      font-size: 11px;
+      font-weight: 600;
+      padding: 4px 8px;
+      border-radius: 5px;
+      white-space: nowrap;
+      pointer-events: none;
+      opacity: 0;
+      transition: opacity 0.15s;
+      border: 1px solid var(--ps-border-strong);
+      letter-spacing: 0.03em;
+    }
+
+    .nav-dot-wrap:hover .nav-dot-tooltip {
+      opacity: 1;
+    }
+
+    /* ── Header ── */
+    .page-header {
+      padding-top: 28px;
+      padding-bottom: 20px;
+    }
+
+    .back-link {
+      display: inline-block;
+      font-size: 12px;
+      color: var(--ps-text-sec);
+      text-decoration: none;
+      margin-bottom: 12px;
+      cursor: pointer;
+    }
+
+    .back-link:hover {
+      color: var(--ps-text);
+    }
+
+    .page-title {
+      font-size: 20px;
+      font-weight: 800;
+      color: var(--ps-text);
+      line-height: 1.2;
+      margin-bottom: 4px;
+    }
+
+    .page-subtitle {
+      font-size: 12px;
+      color: var(--ps-text-sec);
+    }
+
+    /* ── Intro ── */
+    .intro-italic {
+      font-style: italic;
+      font-size: 14px;
+      color: var(--ps-text-sec);
+      line-height: 1.6;
+      margin-bottom: 40px;
+    }
+
+    /* ── Section label ── */
+    .section-label {
+      font-size: 10px;
+      font-weight: 700;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      color: var(--ps-amber);
+      margin-bottom: 14px;
+    }
+
+    /* ── How it works ── */
+    .how-it-works {
+      margin-bottom: 40px;
+    }
+
+    .steps-row {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      align-items: center;
+    }
+
+    .step-item {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      width: 100%;
+    }
+
+    .step-circle {
+      flex-shrink: 0;
+      width: 28px;
+      height: 28px;
+      border-radius: 50%;
+      background: var(--ps-amber);
+      color: #0a0f0a;
+      font-size: 12px;
+      font-weight: 700;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .step-text {
+      font-size: 14px;
+      color: var(--ps-text);
+      line-height: 1.4;
+    }
+
+    /* ── Section / chapter ── */
+    .chapter {
+      margin-bottom: 40px;
+    }
+
+    /* ── Table card ── */
+    .table-card {
+      background: var(--ps-surface);
+      border: 1px solid var(--ps-border);
+      border-radius: 8px;
+      overflow: hidden;
+      margin-bottom: 12px;
+    }
+
+    .table-card table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+
+    .table-card td {
+      padding: 11px 16px;
+      border-bottom: 1px solid var(--ps-border);
+    }
+
+    .table-card tr:last-child td {
+      border-bottom: none;
+    }
+
+    .table-card .td-label {
+      font-size: 14px;
+      color: var(--ps-text);
+    }
+
+    .table-card .td-val {
+      font-size: 14px;
+      font-weight: 700;
+      color: var(--ps-amber);
+      text-align: right;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .table-card-footer {
+      font-size: 12px;
+      color: var(--ps-text-sec);
+      padding: 10px 16px;
+      background: var(--ps-surface2);
+      border-top: 1px solid var(--ps-border);
+    }
+
+    /* ── Subsection heading ── */
+    .sub-heading {
+      font-size: 16px;
+      font-weight: 800;
+      color: var(--ps-text);
+      margin-bottom: 12px;
+    }
+
+    .sub-heading-sm {
+      font-size: 14px;
+      font-weight: 800;
+      color: var(--ps-text);
+      margin-bottom: 10px;
+    }
+
+    /* ── Chip cards (ways to win) ── */
+    .chip-cards {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .chip-card {
+      background: var(--ps-chip);
+      border-radius: 8px;
+      padding: 12px 14px;
+      font-size: 14px;
+      color: var(--ps-text-sec);
+      line-height: 1.55;
+    }
+
+    .chip-card strong {
+      color: var(--ps-text);
+      font-weight: 700;
+    }
+
+    /* ── Para ── */
+    .para {
+      font-size: 14px;
+      color: var(--ps-text-sec);
+      line-height: 1.6;
+      margin-bottom: 12px;
+    }
+
+    .para:last-child {
+      margin-bottom: 0;
+    }
+
+    /* ── Format section ── */
+    .format-sub {
+      margin-bottom: 24px;
+    }
+
+    /* ── Group card ── */
+    .group-card {
+      background: var(--ps-surface);
+      border: 1px solid var(--ps-border);
+      border-radius: 12px;
+      overflow: hidden;
+      margin-bottom: 12px;
+    }
+
+    .group-card-header {
+      padding: 10px 16px;
+      border-bottom: 1px solid var(--ps-border);
+      display: flex;
+      align-items: baseline;
+      justify-content: space-between;
+    }
+
+    .group-card-title {
+      font-size: 14px;
+      font-weight: 700;
+      color: var(--ps-text);
+    }
+
+    .group-card-meta {
+      font-size: 10px;
+      color: var(--ps-text-ter);
+    }
+
+    .group-row {
+      display: flex;
+      align-items: center;
+      padding: 10px 16px;
+      border-bottom: 1px solid var(--ps-border);
+    }
+
+    .group-row:last-child {
+      border-bottom: none;
+    }
+
+    .group-row-pos {
+      width: 24px;
+      text-align: center;
+      font-size: 12px;
+      font-weight: 700;
+      color: var(--ps-text-ter);
+      flex-shrink: 0;
+    }
+
+    .group-row-name {
+      flex: 1;
+      font-size: 14px;
+      color: var(--ps-text);
+      padding: 0 10px;
+    }
+
+    .group-row-name.semibold {
+      font-weight: 600;
+    }
+
+    .group-row-badge {
+      font-size: 10px;
+      font-weight: 700;
+      border-radius: 4px;
+      padding: 2px 6px;
+      margin-right: 8px;
+      flex-shrink: 0;
+    }
+
+    .badge-safe {
+      color: var(--ps-green);
+      background: rgba(10, 168, 109, 0.15);
+    }
+
+    .badge-you {
+      color: var(--ps-amber);
+      background: var(--ps-amber-soft);
+    }
+
+    .badge-danger {
+      color: var(--ps-amber);
+      background: rgba(184, 148, 31, 0.15);
+    }
+
+    .badge-out {
+      color: var(--ps-red);
+      background: rgba(226, 61, 79, 0.15);
+    }
+
+    .group-row-pts {
+      width: 56px;
+      text-align: right;
+      font-size: 12px;
+      font-weight: 700;
+      color: var(--ps-text);
+      font-variant-numeric: tabular-nums;
+      flex-shrink: 0;
+    }
+
+    .divider-amber {
+      height: 1px;
+      border: none;
+      border-top: 1px dashed rgba(184, 148, 31, 0.5);
+      margin: 0;
+    }
+
+    .divider-red {
+      height: 1px;
+      border: none;
+      border-top: 1px dashed rgba(226, 61, 79, 0.5);
+      margin: 0;
+    }
+
+    .row-you {
+      background: rgba(184, 148, 31, 0.05);
+    }
+
+    .row-danger {
+      background: rgba(184, 148, 31, 0.08);
+    }
+
+    .row-out {
+      background: rgba(226, 61, 79, 0.05);
+      opacity: 0.5;
+    }
+
+    /* ── Cut info chip ── */
+    .cut-chip {
+      background: var(--ps-chip);
+      border-radius: 8px;
+      padding: 12px 14px;
+      margin-bottom: 12px;
+    }
+
+    .cut-chip-title {
+      font-size: 14px;
+      font-weight: 600;
+      color: var(--ps-text);
+      margin-bottom: 8px;
+    }
+
+    .cut-chip ul {
+      list-style: none;
+      padding: 0;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .cut-chip li {
+      font-size: 12px;
+      color: var(--ps-text-sec);
+      line-height: 1.55;
+      padding-left: 12px;
+      position: relative;
+    }
+
+    .cut-chip li::before {
+      content: '-';
+      position: absolute;
+      left: 0;
+      color: var(--ps-text-ter);
+    }
+
+    .cut-chip .c-green { color: var(--ps-green); font-weight: 600; }
+    .cut-chip .c-amber { color: var(--ps-amber); font-weight: 600; }
+    .cut-chip .c-red   { color: var(--ps-red);   font-weight: 600; }
+
+    /* ── R32 card blurred rows ── */
+    .blur-name {
+      display: inline-block;
+      background: var(--ps-text-ter);
+      border-radius: 3px;
+      color: transparent;
+      user-select: none;
+      font-size: 13px;
+      min-width: 80px;
+      height: 13px;
+      opacity: 0.35;
+    }
+
+    .dots-row {
+      text-align: center;
+      color: var(--ps-text-ter);
+      padding: 6px 0;
+      font-size: 14px;
+      letter-spacing: 4px;
+    }
+
+    .eliminated-section {
+      background: rgba(226, 61, 79, 0.03);
+      padding: 12px 16px;
+    }
+
+    .eliminated-label {
+      font-size: 10px;
+      font-weight: 700;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: rgba(226, 61, 79, 0.6);
+      margin-bottom: 8px;
+    }
+
+    .elim-names {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      align-items: center;
+    }
+
+    .elim-name {
+      font-size: 12px;
+      color: rgba(0, 15, 0, 0.3);
+      text-decoration: line-through;
+    }
+
+    .elim-blur {
+      display: inline-block;
+      background: var(--ps-text-ter);
+      border-radius: 2px;
+      color: transparent;
+      height: 11px;
+      opacity: 0.15;
+    }
+
+    /* ── Narrowing table ── */
+    .narrow-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 12px;
+    }
+
+    .narrow-table th {
+      font-size: 10px;
+      font-weight: 700;
+      letter-spacing: 0.08em;
+      color: var(--ps-text-ter);
+      text-transform: uppercase;
+      padding: 8px 10px;
+      text-align: center;
+      border-bottom: 1px solid var(--ps-border);
+    }
+
+    .narrow-table th:first-child {
+      text-align: left;
+    }
+
+    .narrow-table td {
+      padding: 9px 10px;
+      text-align: center;
+      color: var(--ps-text-sec);
+      font-variant-numeric: tabular-nums;
+      border-bottom: 1px solid var(--ps-border);
+    }
+
+    .narrow-table td:first-child {
+      text-align: left;
+      font-weight: 700;
+      color: var(--ps-text);
+    }
+
+    .narrow-table tr:last-child td {
+      border-bottom: none;
+    }
+
+    .narrow-table .row-highlight td {
+      color: var(--ps-amber);
+      font-weight: 700;
+    }
+
+    .narrow-table .row-highlight td:first-child {
+      color: var(--ps-amber);
+    }
+
+    /* ── Tiebreakers ── */
+    .tiebreaker-text {
+      font-size: 14px;
+      color: var(--ps-text-sec);
+      line-height: 1.7;
+    }
+
+    .tiebreaker-text strong {
+      color: var(--ps-text);
+      font-weight: 700;
+    }
+
+    /* ── Details/summary ── */
+    details {
+      margin-top: 8px;
+    }
+
+    summary {
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--ps-amber-deep);
+      cursor: pointer;
+      list-style: none;
+      outline: none;
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+    }
+
+    summary::after {
+      content: '+';
+      font-size: 14px;
+      line-height: 1;
+    }
+
+    details[open] summary::after {
+      content: '-';
+    }
+
+    summary::-webkit-details-marker {
+      display: none;
+    }
+
+    .details-body {
+      margin-top: 10px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .details-body li {
+      font-size: 12px;
+      color: var(--ps-text-sec);
+      line-height: 1.55;
+      padding-left: 12px;
+      position: relative;
+      list-style: none;
+    }
+
+    .details-body li::before {
+      content: '-';
+      position: absolute;
+      left: 0;
+      color: var(--ps-text-ter);
+    }
+
+    /* ── CTA card ── */
+    .cta-card {
+      background: var(--ps-surface);
+      border: 1px solid var(--ps-border);
+      border-radius: 12px;
+      padding: 20px;
+      text-align: center;
+      margin-bottom: 40px;
+    }
+
+    .cta-card-title {
+      font-size: 18px;
+      font-weight: 800;
+      color: var(--ps-text);
+      margin-bottom: 6px;
+    }
+
+    .cta-card-sub {
+      font-size: 12px;
+      color: var(--ps-text-sec);
+      margin-bottom: 16px;
+    }
+
+    .btn-primary {
+      display: block;
+      width: 100%;
+      background: var(--ps-amber);
+      color: #0a0f0a;
+      font-size: 14px;
+      font-weight: 600;
+      font-family: 'Noto Sans', sans-serif;
+      border: none;
+      border-radius: 12px;
+      padding: 12px;
+      cursor: pointer;
+      margin-bottom: 10px;
+      text-align: center;
+    }
+
+    .btn-primary:hover {
+      background: var(--ps-amber-deep);
+    }
+
+    .btn-secondary {
+      display: block;
+      width: 100%;
+      background: transparent;
+      color: var(--ps-text);
+      font-size: 14px;
+      font-weight: 600;
+      font-family: 'Noto Sans', sans-serif;
+      border: 1px solid var(--ps-border-strong);
+      border-radius: 12px;
+      padding: 12px;
+      cursor: pointer;
+      text-align: center;
+    }
+
+    .btn-secondary:hover {
+      border-color: var(--ps-amber);
+      color: var(--ps-amber);
+    }
+
+    /* ── Spacing helpers ── */
+    .spacer-24 { height: 24px; }
+    .spacer-40 { height: 40px; }
+  </style>
+</head>
+<body>
+
+  <!-- Green stripe is ::before on body -->
+  <div id="scroll-progress"></div>
+
+  <!-- Floating nav dots -->
+  <nav id="nav-dots" aria-label="Page sections">
+    <div class="nav-dot-wrap">
+      <button class="nav-dot active" data-target="points" aria-label="Jump to Points"></button>
+      <span class="nav-dot-tooltip">Points</span>
+    </div>
+    <div class="nav-dot-wrap">
+      <button class="nav-dot" data-target="format" aria-label="Jump to Format"></button>
+      <span class="nav-dot-tooltip">Format</span>
+    </div>
+    <div class="nav-dot-wrap">
+      <button class="nav-dot" data-target="picks" aria-label="Jump to Picks"></button>
+      <span class="nav-dot-tooltip">Picks</span>
+    </div>
+    <div class="nav-dot-wrap">
+      <button class="nav-dot" data-target="ties" aria-label="Jump to Tiebreakers"></button>
+      <span class="nav-dot-tooltip">Ties</span>
+    </div>
+  </nav>
+
+  <div class="page-wrap">
+
+    <!-- Header -->
+    <header class="page-header">
+      <a class="back-link" href="#">&larr; Back to World Cup</a>
+      <h1 class="page-title">Rules</h1>
+      <p class="page-subtitle">Everything you need to know.</p>
+    </header>
+
+    <!-- Intro -->
+    <p class="intro-italic">A prediction game built as an homage to the World Cup's own format &mdash; groups, knockouts, and a final.</p>
+
+    <!-- How it works -->
+    <section class="how-it-works">
+      <div class="section-label">How it works</div>
+      <div class="steps-row">
+        <div class="step-item">
+          <div class="step-circle">1</div>
+          <span class="step-text">Pick the winner of each match</span>
+        </div>
+        <div class="step-item">
+          <div class="step-circle">2</div>
+          <span class="step-text">Guess the exact score for bonus points</span>
+        </div>
+        <div class="step-item">
+          <div class="step-circle">3</div>
+          <span class="step-text">Climb the leaderboard</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- ── POINTS ── -->
+    <section class="chapter" id="points">
+      <div class="section-label">Points</div>
+
+      <div class="table-card">
+        <table>
+          <tbody>
+            <tr>
+              <td class="td-label">Correct winner (or draw)</td>
+              <td class="td-val">2</td>
+            </tr>
+            <tr>
+              <td class="td-label">Exact score bonus</td>
+              <td class="td-val">+3</td>
+            </tr>
+            <tr>
+              <td class="td-label">Correct team advances (KO)</td>
+              <td class="td-val">1</td>
+            </tr>
+          </tbody>
+        </table>
+        <div class="table-card-footer">
+          Max per group match: <strong>5 pts</strong>. Max per knockout match: <strong>6 pts</strong>.
+        </div>
+      </div>
+
+      <div class="spacer-24"></div>
+
+      <h2 class="sub-heading">Ways to win</h2>
+      <div class="chip-cards">
+        <div class="chip-card"><strong>Overall</strong> &mdash; Total points across the whole tournament. Every correct pick counts. Most points wins.</div>
+        <div class="chip-card"><strong>Format</strong> &mdash; Survivor-style elimination that mirrors the World Cup itself. Groups, knockouts, last one standing. See the Format section below for the full breakdown.</div>
+        <div class="chip-card"><strong>Full Bracket</strong> &mdash; Before kickoff, predict every group finish and the entire knockout bracket. Locks at first whistle.</div>
+        <div class="chip-card"><strong>KO Bracket</strong> &mdash; Once groups are done, predict every knockout match from the Round of 32 to the Final.</div>
+      </div>
+    </section>
+
+    <!-- ── FORMAT ── -->
+    <section class="chapter" id="format">
+      <div class="section-label">Format &mdash; Survivor</div>
+
+      <p class="para">The Format classification is an homage to the World Cup's own structure. You're placed in a group. After each stage is finalised, the bottom players are eliminated and the survivors are redrawn into new groups. Points reset to zero at each stage &mdash; only your current performance matters.</p>
+
+      <p class="para">With 48 players, the elimination curve mirrors the World Cup itself. With fewer players, the curve is adjusted to keep every round competitive.</p>
+
+      <div class="spacer-24"></div>
+
+      <!-- Group Stage -->
+      <div class="format-sub">
+        <h3 class="sub-heading-sm">Group Stage (Matchdays 1&ndash;3)</h3>
+
+        <p class="para">All three matchdays count as one stage. Your points accumulate across MD1, MD2, and MD3.</p>
+        <p class="para">After MD3, the cut works like the real World Cup:</p>
+
+        <div class="group-card">
+          <div class="group-card-header">
+            <span class="group-card-title">Group A</span>
+            <span class="group-card-meta">1 of 12 groups &middot; 48 players</span>
+          </div>
+          <!-- Row 1 -->
+          <div class="group-row">
+            <span class="group-row-pos">1</span>
+            <span class="group-row-name">Manning</span>
+            <span class="group-row-badge badge-safe">SAFE</span>
+            <span class="group-row-pts">14 pts</span>
+          </div>
+          <!-- Row 2 — You -->
+          <div class="group-row row-you">
+            <span class="group-row-pos">2</span>
+            <span class="group-row-name semibold">You</span>
+            <span class="group-row-badge badge-you">YOU</span>
+            <span class="group-row-badge badge-safe">SAFE</span>
+            <span class="group-row-pts">11 pts</span>
+          </div>
+          <!-- Amber divider -->
+          <hr class="divider-amber" />
+          <!-- Row 3 — Danger -->
+          <div class="group-row row-danger">
+            <span class="group-row-pos">3</span>
+            <span class="group-row-name">Bohanna</span>
+            <span class="group-row-badge badge-danger">?</span>
+            <span class="group-row-pts">7 pts</span>
+          </div>
+          <!-- Red divider -->
+          <hr class="divider-red" />
+          <!-- Row 4 — Out -->
+          <div class="group-row row-out">
+            <span class="group-row-pos">4</span>
+            <span class="group-row-name">Scrooch</span>
+            <span class="group-row-badge badge-out">OUT</span>
+            <span class="group-row-pts">3 pts</span>
+          </div>
+        </div>
+
+        <!-- How the cut works -->
+        <div class="cut-chip">
+          <div class="cut-chip-title">How the cut works</div>
+          <ul>
+            <li><span class="c-green">Top 2</span> in each group qualify automatically.</li>
+            <li><span class="c-amber">3rd place</span> is the danger zone. Your points are compared against every other 3rd-place finisher across all groups. Only the best thirds survive &mdash; the rest are eliminated. With 48 players: 8 of 12 thirds qualify. The other 4 go home.</li>
+            <li><span class="c-red">4th place</span> is always eliminated.</li>
+          </ul>
+        </div>
+      </div>
+
+      <!-- Knockout Rounds -->
+      <div class="format-sub">
+        <h3 class="sub-heading-sm">Knockout Rounds</h3>
+
+        <p class="para">Points reset. New groups drawn from survivors. Bottom half eliminated. Repeat until only the finalists remain.</p>
+
+        <!-- R32 card -->
+        <div class="group-card">
+          <div class="group-card-header">
+            <span class="group-card-title">Round of 32</span>
+            <span class="group-card-meta">32 survive &middot; points reset &middot; new groups drawn</span>
+          </div>
+          <div class="group-row">
+            <span class="group-row-pos">1</span>
+            <span class="group-row-name"><span class="blur-name">&#8203;&#8203;&#8203;&#8203;&#8203;&#8203;&#8203;&#8203;&#8203;&#8203;</span></span>
+            <span class="group-row-pts">&mdash;</span>
+          </div>
+          <div class="group-row">
+            <span class="group-row-pos">2</span>
+            <span class="group-row-name"><span class="blur-name">&#8203;&#8203;&#8203;&#8203;&#8203;&#8203;&#8203;&#8203;&#8203;</span></span>
+            <span class="group-row-pts">&mdash;</span>
+          </div>
+          <div class="dots-row">&middot; &middot; &middot;</div>
+          <div class="group-row row-you">
+            <span class="group-row-pos" style="color: var(--ps-text-sec); font-weight: 700;">14</span>
+            <span class="group-row-name semibold">You</span>
+            <span class="group-row-badge badge-you">YOU</span>
+            <span class="group-row-pts">&mdash;</span>
+          </div>
+          <div class="dots-row">&middot; &middot; &middot;</div>
+          <div class="group-row">
+            <span class="group-row-pos">32</span>
+            <span class="group-row-name"><span class="blur-name">&#8203;&#8203;&#8203;&#8203;&#8203;&#8203;&#8203;</span></span>
+            <span class="group-row-pts">&mdash;</span>
+          </div>
+          <!-- Eliminated section -->
+          <div class="eliminated-section">
+            <div class="eliminated-label">16 Eliminated</div>
+            <div class="elim-names">
+              <span class="elim-name">Scrooch</span>
+              <span class="elim-blur" style="width:55px;">&nbsp;</span>
+              <span class="elim-blur" style="width:42px;">&nbsp;</span>
+              <span class="elim-blur" style="width:65px;">&nbsp;</span>
+              <span class="elim-blur" style="width:48px;">&nbsp;</span>
+              <span class="elim-blur" style="width:58px;">&nbsp;</span>
+              <span class="elim-blur" style="width:44px;">&nbsp;</span>
+              <span class="elim-blur" style="width:62px;">&nbsp;</span>
+              <span class="elim-blur" style="width:50px;">&nbsp;</span>
+              <span class="elim-blur" style="width:38px;">&nbsp;</span>
+              <span class="elim-blur" style="width:70px;">&nbsp;</span>
+              <span class="elim-blur" style="width:46px;">&nbsp;</span>
+              <span class="elim-blur" style="width:54px;">&nbsp;</span>
+              <span class="elim-blur" style="width:60px;">&nbsp;</span>
+              <span class="elim-blur" style="width:40px;">&nbsp;</span>
+              <span class="elim-blur" style="width:52px;">&nbsp;</span>
+            </div>
+          </div>
+        </div>
+
+        <p class="para">Points reset to zero. Only this round counts for survival.</p>
+      </div>
+
+      <!-- Final -->
+      <div class="format-sub">
+        <h3 class="sub-heading-sm">Final</h3>
+        <p class="para">The last 2 survivors predict both the Third-Place Play-Off and the Final. Most points wins. No elimination &mdash; just a winner.</p>
+      </div>
+
+      <!-- How the field narrows -->
+      <div class="format-sub">
+        <h3 class="sub-heading-sm">How the field narrows</h3>
+
+        <p class="para">With 48 players, the elimination curve mirrors the World Cup itself. With fewer players, adjustments are made for competitive integrity &mdash; ensuring at least one elimination at every stage.</p>
+
+        <div class="table-card">
+          <table class="narrow-table">
+            <thead>
+              <tr>
+                <th>Start</th>
+                <th>Grps</th>
+                <th>R32</th>
+                <th>R16</th>
+                <th>QF</th>
+                <th>SF</th>
+                <th>W</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr class="row-highlight">
+                <td>48</td>
+                <td>32</td>
+                <td>16</td>
+                <td>8</td>
+                <td>4</td>
+                <td>2</td>
+                <td>1</td>
+              </tr>
+              <tr>
+                <td>24</td>
+                <td>16</td>
+                <td>8</td>
+                <td>4</td>
+                <td>3</td>
+                <td>2</td>
+                <td>1</td>
+              </tr>
+              <tr>
+                <td>16</td>
+                <td>11</td>
+                <td>6</td>
+                <td>4</td>
+                <td>3</td>
+                <td>2</td>
+                <td>1</td>
+              </tr>
+              <tr>
+                <td>12</td>
+                <td>8</td>
+                <td>5</td>
+                <td>4</td>
+                <td>3</td>
+                <td>2</td>
+                <td>1</td>
+              </tr>
+              <tr>
+                <td>8</td>
+                <td>6</td>
+                <td>5</td>
+                <td>4</td>
+                <td>3</td>
+                <td>2</td>
+                <td>1</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- ── PICKS ── -->
+    <section class="chapter" id="picks">
+      <div class="section-label">When do picks lock?</div>
+
+      <p class="para">Each day's matches lock 10 minutes before the first kickoff of that day. You can submit picks for future days in advance &mdash; but once a day locks, it's locked.</p>
+      <p class="para">Changed your mind? No problem &mdash; update your picks as many times as you like before the day locks.</p>
+
+      <details>
+        <summary>More detail</summary>
+        <ul class="details-body">
+          <li>Outcome-only predictions are saved, but you still need to add exact scores to fully complete that day's predictions.</li>
+          <li>Events inside the same tournament stage may lock on different days and at different times.</li>
+        </ul>
+      </details>
+    </section>
+
+    <!-- ── TIEBREAKERS ── -->
+    <section class="chapter" id="ties">
+      <div class="section-label">Tiebreakers</div>
+      <p class="tiebreaker-text">
+        Same points? <strong>H2H goal diff</strong> &rarr; <strong>H2H goals</strong> &rarr; <strong>overall goal diff</strong> &rarr; <strong>overall goals</strong> &rarr; <strong>coin flip</strong>
+      </p>
+    </section>
+
+    <!-- ── JOIN CTA ── -->
+    <div class="cta-card">
+      <div class="cta-card-title">Ready to play?</div>
+      <p class="cta-card-sub">Joins close 3 days after kickoff.</p>
+      <button class="btn-primary">Join with a code</button>
+      <button class="btn-secondary">Create your own</button>
+    </div>
+
+  </div><!-- /page-wrap -->
+
+  <script>
+    // ── Scroll progress bar ──
+    const progressBar = document.getElementById('scroll-progress');
+
+    function updateProgress() {
+      const scrollTop = window.scrollY;
+      const docHeight = document.documentElement.scrollHeight - window.innerHeight;
+      const pct = docHeight > 0 ? (scrollTop / docHeight) * 100 : 0;
+      progressBar.style.width = pct + '%';
+    }
+
+    // ── Nav dots ──
+    const sections = ['points', 'format', 'picks', 'ties'];
+    const dots = document.querySelectorAll('.nav-dot');
+
+    dots.forEach(function(dot) {
+      dot.addEventListener('click', function() {
+        const target = dot.getAttribute('data-target');
+        const el = document.getElementById(target);
+        if (el) {
+          el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
+      });
+    });
+
+    // IntersectionObserver for active dot
+    const observers = [];
+    const sectionVisibility = {};
+
+    sections.forEach(function(id) {
+      sectionVisibility[id] = false;
+    });
+
+    function updateActiveDot() {
+      // Find the first visible section from the top
+      let active = null;
+      for (let i = 0; i < sections.length; i++) {
+        if (sectionVisibility[sections[i]]) {
+          active = sections[i];
+          break;
+        }
+      }
+      // If none visible, default to first
+      if (!active) active = sections[0];
+
+      dots.forEach(function(dot) {
+        if (dot.getAttribute('data-target') === active) {
+          dot.classList.add('active');
+        } else {
+          dot.classList.remove('active');
+        }
+      });
+    }
+
+    sections.forEach(function(id, idx) {
+      const el = document.getElementById(id);
+      if (!el) return;
+
+      const observer = new IntersectionObserver(
+        function(entries) {
+          entries.forEach(function(entry) {
+            sectionVisibility[id] = entry.isIntersecting;
+          });
+          updateActiveDot();
+        },
+        {
+          rootMargin: '-20% 0px -60% 0px',
+          threshold: 0
+        }
+      );
+      observer.observe(el);
+      observers.push(observer);
+    });
+
+    window.addEventListener('scroll', updateProgress, { passive: true });
+    updateProgress();
+    updateActiveDot();
+  </script>
+
+</body>
+</html>

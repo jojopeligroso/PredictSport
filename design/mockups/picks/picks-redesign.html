@@ -1,0 +1,348 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Picks Page — Redesign Mockup</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;800&family=JetBrains+Mono:wght@500;600;700&display=swap" rel="stylesheet">
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: 'Inter', system-ui, sans-serif;
+    background: #c8c0b4;
+    color: #191512;
+    padding: 32px 24px 48px;
+    display: flex;
+    gap: 32px;
+    justify-content: center;
+    flex-wrap: wrap;
+  }
+
+  .phone-col { display: flex; flex-direction: column; align-items: center; gap: 12px; }
+  .phone-label h2 { font-size: 13px; font-weight: 700; text-align: center; }
+  .phone-label p { font-size: 11px; color: #6b6157; text-align: center; margin-top: 2px; }
+
+  .phone {
+    width: 390px;
+    background: #efe9de;
+    border-radius: 24px;
+    border: 2px solid #a89e92;
+    overflow: hidden;
+    box-shadow: 0 2px 0 #8a8278, 0 12px 40px rgba(0,0,0,0.22);
+  }
+
+  /* Status bar */
+  .status-bar {
+    height: 44px; padding: 12px 20px 0;
+    display: flex; justify-content: space-between; align-items: center;
+  }
+  .status-bar .time { font-size: 13px; font-weight: 700; }
+
+  /* Page header */
+  .page-nav {
+    padding: 8px 16px;
+    display: flex; align-items: center; gap: 8px;
+  }
+  .page-nav .back { font-size: 12px; font-weight: 600; color: #a09888; }
+  .page-header {
+    padding: 0 16px 8px;
+  }
+  .page-header h1 { font-size: 20px; font-weight: 800; text-transform: uppercase; }
+  .page-header .sub { font-size: 11px; color: #a09888; margin-top: 2px; }
+
+  /* Match card — new design */
+  .card {
+    margin: 0 16px 10px;
+    padding: 14px 10px;
+    background: #f5f0e8;
+    border: 1px solid #d6cfc3;
+    border-radius: 12px;
+  }
+  .card.complete { border-color: rgba(245,158,11,0.35); }
+
+  .pick-row {
+    display: flex; align-items: center; justify-content: center; gap: 5px;
+  }
+
+  .team {
+    display: flex; flex-direction: column; align-items: center;
+    gap: 4px; min-width: 62px; padding: 5px 5px 4px; border-radius: 8px; cursor: pointer;
+  }
+  .team .name { font-size: 10px; font-weight: 600; color: #a09888; text-align: center; line-height: 1.2; }
+  .team.selected { background: rgba(245,158,11,0.12); }
+  .team.selected .name { color: #b8941f; }
+
+  .flag-pill {
+    display: inline-block; width: 28px; height: 20px; overflow: hidden;
+    background: #fff; box-shadow: 0 1px 2px rgba(0,0,0,0.18);
+    clip-path: path('M 0 0 L 17 0 A 10 10 0 0 1 28 10 L 28 20 L 11 20 A 10 10 0 0 1 0 10 Z');
+    flex-shrink: 0;
+  }
+  .flag-pill img { width: 100%; height: 100%; object-fit: cover; filter: saturate(0.88) brightness(0.96); }
+
+  .score-input {
+    width: 28px; height: 26px; border-radius: 13px;
+    border: 1.5px solid #d6cfc3; background: transparent;
+    text-align: center; font-family: 'JetBrains Mono', monospace;
+    font-size: 13px; font-weight: 600; color: #191512; outline: none; flex-shrink: 0;
+  }
+  .score-input.filled { background: #fff; border-color: #b8941f; }
+  .score-input::placeholder { color: #ccc; font-weight: 400; }
+
+  .draw-btn {
+    padding: 5px 8px; border-radius: 7px; font-size: 10px; font-weight: 500;
+    color: #bbb; flex-shrink: 0; border: none; background: none; cursor: pointer;
+  }
+  .draw-btn.selected { background: rgba(245,158,11,0.12); color: #b8941f; font-weight: 600; }
+
+  /* Locked card */
+  .locked-card {
+    margin: 0 16px 10px;
+    padding: 10px 14px;
+    background: #f5f0e8;
+    border: 1px solid #d6cfc3;
+    border-radius: 12px;
+    display: flex; align-items: center; justify-content: space-between;
+  }
+  .locked-teams {
+    display: flex; align-items: center; gap: 6px; font-size: 12px; font-weight: 600; color: #191512;
+  }
+  .locked-teams .v { color: #a09888; margin: 0 2px; }
+  .locked-badge {
+    font-size: 9px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em;
+    background: #e0d9cd; color: #a09888; padding: 3px 8px; border-radius: 999px;
+  }
+  .locked-pick { font-size: 11px; color: #a09888; margin-top: 4px; }
+  .locked-pick strong { color: #191512; }
+
+  /* Section divider */
+  .section-label {
+    padding: 12px 16px 6px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px; font-weight: 700;
+    text-transform: uppercase; letter-spacing: 0.07em; color: #a09888;
+  }
+
+  /* Progress pill */
+  .progress-pill {
+    margin: 0 16px 12px;
+    padding: 10px 14px;
+    background: #f5f0e8;
+    border: 1px solid #d6cfc3;
+    border-radius: 12px;
+  }
+  .progress-pill .row { display: flex; justify-content: space-between; align-items: center; }
+  .progress-pill .label { font-size: 12px; font-weight: 600; }
+  .progress-pill .count { font-family: 'JetBrains Mono', monospace; font-size: 12px; font-weight: 600; color: #a09888; }
+  .progress-pill .bar { height: 5px; background: #e0d9cd; border-radius: 3px; margin-top: 6px; overflow: hidden; }
+  .progress-pill .bar-fill { height: 100%; background: #f59e0b; border-radius: 3px; }
+</style>
+</head>
+<body>
+
+<!-- ═══════════════ CURRENT ═══════════════ -->
+<div class="phone-col">
+  <div class="phone-label">
+    <h2>Current Picks Page</h2>
+    <p>3-column grid, "Draw" capitalized, separate exact score</p>
+  </div>
+  <div class="phone">
+    <div class="status-bar"><span class="time">9:41</span></div>
+    <div class="page-nav"><span class="back">&larr; All windows</span></div>
+    <div class="page-header">
+      <h1>Group Matchday 1</h1>
+    </div>
+
+    <!-- Old-style card -->
+    <div style="margin: 0 16px 10px; padding: 8px; background: #f5f0e8; border: 1px solid #d6cfc3; border-radius: 10px;">
+      <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 6px;">
+        <button style="display: flex; align-items: center; justify-content: center; gap: 5px; padding: 8px; border-radius: 6px; background: #f59e0b; color: #191512; font-size: 13px; font-weight: 700; border: none;">
+          <span class="flag-pill" style="width:18px;height:14px;clip-path:path('M 0 0 L 11 0 A 7 7 0 0 1 18 7 L 18 14 L 7 14 A 7 7 0 0 1 0 7 Z');"><img src="https://flagcdn.com/mx.svg"></span>
+          Mexico
+        </button>
+        <button style="padding: 8px; border-radius: 6px; background: #e0d9cd; color: #191512; font-size: 13px; font-weight: 700; border: none;">Draw</button>
+        <button style="display: flex; align-items: center; justify-content: center; gap: 5px; padding: 8px; border-radius: 6px; background: #e0d9cd; color: #191512; font-size: 13px; font-weight: 700; border: none;">
+          <span class="flag-pill" style="width:18px;height:14px;clip-path:path('M 0 0 L 11 0 A 7 7 0 0 1 18 7 L 18 14 L 7 14 A 7 7 0 0 1 0 7 Z');"><img src="https://flagcdn.com/za.svg"></span>
+          South Africa
+        </button>
+      </div>
+      <div style="margin-top: 8px; padding: 10px; border: 1px solid #d6cfc3; border-radius: 8px; background: #efe9de;">
+        <div style="font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; color: #a09888; display: flex; justify-content: space-between;">
+          <span>Exact score</span><span style="color: #b8941f;">+3pts</span>
+        </div>
+        <div style="display: flex; align-items: center; gap: 6px; margin-top: 6px; font-size: 12px; color: #191512;">
+          Mexico
+          <input style="width: 36px; height: 28px; border-radius: 6px; border: 1px solid #d6cfc3; text-align: center; font-family: 'JetBrains Mono', monospace; font-size: 13px; font-weight: 600;" value="0">
+          <span style="color: #a09888;">-</span>
+          <input style="width: 36px; height: 28px; border-radius: 6px; border: 1px solid #d6cfc3; text-align: center; font-family: 'JetBrains Mono', monospace; font-size: 13px; font-weight: 600;" value="0">
+          South Africa
+        </div>
+        <div style="display: flex; gap: 6px; margin-top: 8px;">
+          <button style="padding: 5px 12px; border-radius: 6px; background: #b8941f; color: #fff; font-size: 11px; font-weight: 600; border: none;">Update</button>
+          <button style="padding: 5px 12px; border-radius: 6px; background: transparent; color: #a09888; font-size: 11px; font-weight: 600; border: 1px solid #d6cfc3;">Clear</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Another old card -->
+    <div style="margin: 0 16px 10px; padding: 8px; background: #f5f0e8; border: 1px solid #d6cfc3; border-radius: 10px;">
+      <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 6px;">
+        <button style="display: flex; align-items: center; justify-content: center; gap: 5px; padding: 8px; border-radius: 6px; background: #e0d9cd; color: #191512; font-size: 13px; font-weight: 700; border: none;">
+          <span class="flag-pill" style="width:18px;height:14px;clip-path:path('M 0 0 L 11 0 A 7 7 0 0 1 18 7 L 18 14 L 7 14 A 7 7 0 0 1 0 7 Z');"><img src="https://flagcdn.com/kr.svg"></span>
+          South Korea
+        </button>
+        <button style="padding: 8px; border-radius: 6px; background: #191512; color: #efe9de; font-size: 13px; font-weight: 700; border: none;">Draw</button>
+        <button style="display: flex; align-items: center; justify-content: center; gap: 5px; padding: 8px; border-radius: 6px; background: #e0d9cd; color: #191512; font-size: 13px; font-weight: 700; border: none;">
+          <span class="flag-pill" style="width:18px;height:14px;clip-path:path('M 0 0 L 11 0 A 7 7 0 0 1 18 7 L 18 14 L 7 14 A 7 7 0 0 1 0 7 Z');"><img src="https://flagcdn.com/cz.svg"></span>
+          Czechia
+        </button>
+      </div>
+      <div style="margin-top: 8px; padding: 10px; border: 1px solid #d6cfc3; border-radius: 8px; background: #efe9de;">
+        <div style="font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; color: #a09888; display: flex; justify-content: space-between;">
+          <span>Exact score</span><span style="color: #b8941f;">+3pts</span>
+        </div>
+        <div style="display: flex; align-items: center; gap: 6px; margin-top: 6px; font-size: 12px; color: #191512;">
+          South Korea
+          <input style="width: 36px; height: 28px; border-radius: 6px; border: 1px solid #d6cfc3; text-align: center; font-family: 'JetBrains Mono', monospace; font-size: 13px; font-weight: 600;" value="0">
+          <span style="color: #a09888;">-</span>
+          <input style="width: 36px; height: 28px; border-radius: 6px; border: 1px solid #d6cfc3; text-align: center; font-family: 'JetBrains Mono', monospace; font-size: 13px; font-weight: 600;" value="0">
+          Czechia
+        </div>
+        <div style="display: flex; gap: 6px; margin-top: 8px;">
+          <button style="padding: 5px 12px; border-radius: 6px; background: #b8941f; color: #fff; font-size: 11px; font-weight: 600; border: none;">Update</button>
+          <button style="padding: 5px 12px; border-radius: 6px; background: transparent; color: #a09888; font-size: 11px; font-weight: 600; border: 1px solid #d6cfc3;">Clear</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════ REDESIGNED ═══════════════ -->
+<div class="phone-col">
+  <div class="phone-label">
+    <h2>Picks Page — Redesigned</h2>
+    <p>Flag-above-name, inline scores, "draw" lowercase</p>
+  </div>
+  <div class="phone">
+    <div class="status-bar"><span class="time">9:41</span></div>
+    <div class="page-nav"><span class="back">&larr; All windows</span></div>
+    <div class="page-header">
+      <h1>Matchday 1</h1>
+      <p class="sub">Pick every result. Exact scores are optional.</p>
+    </div>
+
+    <div class="progress-pill">
+      <div class="row">
+        <span class="label">Matchday 1</span>
+        <span class="count">4/6</span>
+      </div>
+      <div class="bar"><div class="bar-fill" style="width: 66%"></div></div>
+    </div>
+
+    <!-- Card 1: Home win + scores -->
+    <div class="card complete">
+      <div class="pick-row">
+        <div class="team selected">
+          <span class="flag-pill"><img src="https://flagcdn.com/mx.svg" alt="Mexico"></span>
+          <span class="name">Mexico</span>
+        </div>
+        <input class="score-input filled" type="text" inputmode="numeric" maxlength="2" value="2" readonly>
+        <button class="draw-btn">draw</button>
+        <input class="score-input filled" type="text" inputmode="numeric" maxlength="2" value="0" readonly>
+        <div class="team">
+          <span class="flag-pill"><img src="https://flagcdn.com/za.svg" alt="South Africa"></span>
+          <span class="name">South Africa</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Card 2: Draw + scores -->
+    <div class="card complete">
+      <div class="pick-row">
+        <div class="team">
+          <span class="flag-pill"><img src="https://flagcdn.com/kr.svg" alt="South Korea"></span>
+          <span class="name">South Korea</span>
+        </div>
+        <input class="score-input filled" type="text" inputmode="numeric" maxlength="2" value="1" readonly>
+        <button class="draw-btn selected">draw</button>
+        <input class="score-input filled" type="text" inputmode="numeric" maxlength="2" value="1" readonly>
+        <div class="team">
+          <span class="flag-pill"><img src="https://flagcdn.com/cz.svg" alt="Czechia"></span>
+          <span class="name">Czechia</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Card 3: Away win, no scores -->
+    <div class="card complete">
+      <div class="pick-row">
+        <div class="team">
+          <span class="flag-pill"><img src="https://flagcdn.com/ca.svg" alt="Canada"></span>
+          <span class="name">Canada</span>
+        </div>
+        <input class="score-input" type="text" inputmode="numeric" maxlength="2" placeholder="–" readonly>
+        <button class="draw-btn">draw</button>
+        <input class="score-input" type="text" inputmode="numeric" maxlength="2" placeholder="–" readonly>
+        <div class="team selected">
+          <span class="flag-pill"><img src="https://flagcdn.com/ba.svg" alt="Bosnia"></span>
+          <span class="name">Bosnia &amp; Herz.</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Card 4: Home win, no scores -->
+    <div class="card complete">
+      <div class="pick-row">
+        <div class="team selected">
+          <span class="flag-pill"><img src="https://flagcdn.com/za.svg" alt="South Africa"></span>
+          <span class="name">South Africa</span>
+        </div>
+        <input class="score-input" type="text" inputmode="numeric" maxlength="2" placeholder="–" readonly>
+        <button class="draw-btn">draw</button>
+        <input class="score-input" type="text" inputmode="numeric" maxlength="2" placeholder="–" readonly>
+        <div class="team">
+          <span class="flag-pill"><img src="https://flagcdn.com/cz.svg" alt="Czechia"></span>
+          <span class="name">Czechia</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Card 5: Unselected -->
+    <div class="card">
+      <div class="pick-row">
+        <div class="team">
+          <span class="flag-pill"><img src="https://flagcdn.com/kr.svg" alt="South Korea"></span>
+          <span class="name">South Korea</span>
+        </div>
+        <input class="score-input" type="text" inputmode="numeric" maxlength="2" placeholder="–" readonly>
+        <button class="draw-btn">draw</button>
+        <input class="score-input" type="text" inputmode="numeric" maxlength="2" placeholder="–" readonly>
+        <div class="team">
+          <span class="flag-pill"><img src="https://flagcdn.com/za.svg" alt="South Africa"></span>
+          <span class="name">South Africa</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Card 6: Unselected -->
+    <div class="card">
+      <div class="pick-row">
+        <div class="team">
+          <span class="flag-pill"><img src="https://flagcdn.com/mx.svg" alt="Mexico"></span>
+          <span class="name">Mexico</span>
+        </div>
+        <input class="score-input" type="text" inputmode="numeric" maxlength="2" placeholder="–" readonly>
+        <button class="draw-btn">draw</button>
+        <input class="score-input" type="text" inputmode="numeric" maxlength="2" placeholder="–" readonly>
+        <div class="team">
+          <span class="flag-pill"><img src="https://flagcdn.com/cz.svg" alt="Czechia"></span>
+          <span class="name">Czechia</span>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+</body>
+</html>

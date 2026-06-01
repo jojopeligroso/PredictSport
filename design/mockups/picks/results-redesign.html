@@ -1,0 +1,319 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Results Page — Stadium Position Mockup</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;800&family=JetBrains+Mono:wght@500;600;700&display=swap" rel="stylesheet">
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: 'Inter', system-ui, sans-serif;
+    background: #c8c0b4;
+    color: #191512;
+    padding: 32px 24px 48px;
+    display: flex;
+    gap: 32px;
+    justify-content: center;
+    flex-wrap: wrap;
+  }
+
+  .phone-col { display: flex; flex-direction: column; align-items: center; gap: 12px; }
+  .phone-label h2 { font-size: 13px; font-weight: 700; text-align: center; }
+  .phone-label p { font-size: 11px; color: #6b6157; text-align: center; margin-top: 2px; }
+
+  .phone {
+    width: 390px;
+    background: #efe9de;
+    border-radius: 24px;
+    border: 2px solid #a89e92;
+    overflow: hidden;
+    box-shadow: 0 2px 0 #8a8278, 0 12px 40px rgba(0,0,0,0.22);
+  }
+
+  .status-bar {
+    height: 44px; padding: 12px 20px 0;
+    display: flex; justify-content: space-between; align-items: center;
+  }
+  .status-bar .time { font-size: 13px; font-weight: 700; }
+
+  /* Nav */
+  .results-nav {
+    padding: 10px 16px 8px;
+    display: flex; align-items: center; justify-content: space-between;
+  }
+  .results-nav .title { font-size: 17px; font-weight: 800; }
+  .results-nav .filter-btn {
+    font-size: 12px; font-weight: 600; color: #a09888;
+    padding: 5px 10px; border: 1px solid #d6cfc3; border-radius: 8px; background: #f5f0e8;
+  }
+
+  /* Round pills */
+  .round-pills { display: flex; gap: 6px; padding: 0 16px 10px; overflow-x: auto; }
+  .round-pill { flex-shrink: 0; padding: 5px 12px; border-radius: 999px; font-size: 12px; font-weight: 600; }
+  .round-pill.active { background: #191512; color: #efe9de; }
+  .round-pill.inactive { border: 1px solid #d6cfc3; color: #a09888; }
+
+  /* Section label */
+  .section-label {
+    padding: 10px 16px 6px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px; font-weight: 700;
+    text-transform: uppercase; letter-spacing: 0.07em; color: #a09888;
+  }
+
+  /* Result card */
+  .result-card {
+    margin: 0 16px 10px;
+    border-radius: 14px;
+    overflow: hidden;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.12);
+  }
+  .result-inner { border-radius: 14px; overflow: hidden; }
+
+  .result-header {
+    display: flex; justify-content: space-between; align-items: flex-start;
+    padding: 10px 14px 8px;
+  }
+  .result-header .group-meta {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px; font-weight: 700;
+    text-transform: uppercase; letter-spacing: 0.06em;
+    color: rgba(255,255,255,0.65);
+  }
+  .result-header .city-col { text-align: right; }
+  .result-header .city-name { font-size: 11px; font-weight: 600; color: rgba(255,255,255,0.75); }
+  .result-header .stadium-name { font-size: 9px; font-weight: 500; color: rgba(255,255,255,0.4); margin-top: 1px; }
+
+  .result-teams {
+    display: flex; align-items: center; justify-content: center;
+    gap: 10px; padding: 6px 14px 10px;
+  }
+  .result-team { display: flex; align-items: center; gap: 7px; }
+  .result-team .flag-round {
+    width: 26px; height: 26px; border-radius: 50%; overflow: hidden; flex-shrink: 0;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.25);
+  }
+  .result-team .flag-round img { width: 100%; height: 100%; object-fit: cover; }
+  .result-team .team-name { font-size: 13px; font-weight: 700; color: #fff; }
+  .result-vs { font-size: 11px; font-weight: 700; color: rgba(255,255,255,0.45); flex-shrink: 0; }
+
+  /* Score */
+  .score-area {
+    display: flex; justify-content: center; align-items: center;
+    gap: 8px; padding: 0 14px 10px;
+  }
+  .score-pill {
+    background: rgba(255,255,255,0.15); border-radius: 999px;
+    padding: 4px 14px; font-family: 'JetBrains Mono', monospace;
+    font-size: 16px; font-weight: 700; color: #fff;
+  }
+  .status-badge {
+    padding: 3px 9px; border-radius: 999px;
+    font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em;
+  }
+  .status-badge.final { background: rgba(10,168,109,0.28); color: #6ee7b7; }
+  .status-badge.upcoming { background: rgba(255,255,255,0.12); color: rgba(255,255,255,0.55); }
+
+  /* Time info */
+  .result-info {
+    display: grid; grid-template-columns: 1fr 1fr;
+    margin: 0 14px 12px; background: rgba(0,0,0,0.15);
+    border-radius: 10px; overflow: hidden;
+  }
+  .result-info-cell { padding: 8px 10px; }
+  .result-info-cell:first-child { border-right: 1px solid rgba(255,255,255,0.08); }
+  .result-info-cell .info-label {
+    font-size: 9px; font-weight: 700; text-transform: uppercase;
+    letter-spacing: 0.07em; color: rgba(255,255,255,0.45); margin-bottom: 2px;
+  }
+  .result-info-cell .info-value { font-size: 11px; font-weight: 600; color: rgba(255,255,255,0.85); }
+</style>
+</head>
+<body>
+
+<!-- ═══════════════ BEFORE ═══════════════ -->
+<div class="phone-col">
+  <div class="phone-label">
+    <h2>Results — Before</h2>
+    <p>Stadium in footer, time on all cards</p>
+  </div>
+  <div class="phone">
+    <div class="status-bar"><span class="time">9:41</span></div>
+    <div class="results-nav">
+      <span class="title">Results</span>
+      <span class="filter-btn">Group Stage</span>
+    </div>
+    <div class="round-pills">
+      <span class="round-pill active">MD1</span>
+      <span class="round-pill inactive">MD2</span>
+      <span class="round-pill inactive">MD3</span>
+    </div>
+
+    <div class="section-label">Wednesday, 11 Jun 2026</div>
+
+    <!-- Old: stadium at bottom -->
+    <div class="result-card">
+      <div class="result-inner" style="background: #2d6a4f;">
+        <div class="result-header">
+          <span class="group-meta">Group A · MD1</span>
+          <span class="city-name" style="font-size: 11px; font-weight: 600; color: rgba(255,255,255,0.75);">Mexico City</span>
+        </div>
+        <div class="result-teams">
+          <div class="result-team">
+            <div class="flag-round"><img src="https://flagcdn.com/mx.svg" alt="Mexico"></div>
+            <span class="team-name">Mexico</span>
+          </div>
+          <span class="result-vs">v</span>
+          <div class="result-team">
+            <div class="flag-round"><img src="https://flagcdn.com/kr.svg" alt="South Korea"></div>
+            <span class="team-name">South Korea</span>
+          </div>
+        </div>
+        <div class="score-area">
+          <div class="score-pill">2 – 1</div>
+          <span class="status-badge final">Final</span>
+        </div>
+        <div class="result-info">
+          <div class="result-info-cell">
+            <div class="info-label">In Mexico City</div>
+            <div class="info-value">17:00 · Wed 11 Jun</div>
+          </div>
+          <div class="result-info-cell">
+            <div class="info-label">Your time</div>
+            <div class="info-value">00:00 IST</div>
+          </div>
+        </div>
+        <!-- OLD: stadium down here -->
+        <div style="padding: 0 14px 11px; font-size: 10px; font-weight: 600; color: rgba(255,255,255,0.4);">
+          Estadio Azteca
+        </div>
+      </div>
+    </div>
+
+    <div class="result-card">
+      <div class="result-inner" style="background: #1a365d;">
+        <div class="result-header">
+          <span class="group-meta">Group B · MD1</span>
+          <span class="city-name" style="font-size: 11px; font-weight: 600; color: rgba(255,255,255,0.75);">New York</span>
+        </div>
+        <div class="result-teams">
+          <div class="result-team">
+            <div class="flag-round"><img src="https://flagcdn.com/br.svg" alt="Brazil"></div>
+            <span class="team-name">Brazil</span>
+          </div>
+          <span class="result-vs">v</span>
+          <div class="result-team">
+            <div class="flag-round"><img src="https://flagcdn.com/de.svg" alt="Germany"></div>
+            <span class="team-name">Germany</span>
+          </div>
+        </div>
+        <div class="score-area">
+          <span class="status-badge upcoming">Not started</span>
+        </div>
+        <div class="result-info">
+          <div class="result-info-cell">
+            <div class="info-label">In New York</div>
+            <div class="info-value">20:00 · Thu 12 Jun</div>
+          </div>
+          <div class="result-info-cell">
+            <div class="info-label">Your time</div>
+            <div class="info-value">01:00 IST</div>
+          </div>
+        </div>
+        <div style="padding: 0 14px 11px; font-size: 10px; font-weight: 600; color: rgba(255,255,255,0.4);">
+          MetLife Stadium
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════ AFTER ═══════════════ -->
+<div class="phone-col">
+  <div class="phone-label">
+    <h2>Results — After</h2>
+    <p>Stadium under city, time only on upcoming</p>
+  </div>
+  <div class="phone">
+    <div class="status-bar"><span class="time">9:41</span></div>
+    <div class="results-nav">
+      <span class="title">Results</span>
+      <span class="filter-btn">Group Stage</span>
+    </div>
+    <div class="round-pills">
+      <span class="round-pill active">MD1</span>
+      <span class="round-pill inactive">MD2</span>
+      <span class="round-pill inactive">MD3</span>
+    </div>
+
+    <div class="section-label">Wednesday, 11 Jun 2026</div>
+
+    <!-- New: stadium in header -->
+    <div class="result-card">
+      <div class="result-inner" style="background: #2d6a4f;">
+        <div class="result-header">
+          <span class="group-meta">Group A · MD1</span>
+          <div class="city-col">
+            <div class="city-name">Mexico City</div>
+            <div class="stadium-name">Estadio Azteca</div>
+          </div>
+        </div>
+        <div class="result-teams">
+          <div class="result-team">
+            <div class="flag-round"><img src="https://flagcdn.com/mx.svg" alt="Mexico"></div>
+            <span class="team-name">Mexico</span>
+          </div>
+          <span class="result-vs">v</span>
+          <div class="result-team">
+            <div class="flag-round"><img src="https://flagcdn.com/kr.svg" alt="South Korea"></div>
+            <span class="team-name">South Korea</span>
+          </div>
+        </div>
+        <div class="score-area">
+          <div class="score-pill">2 – 1</div>
+          <span class="status-badge final">Final</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="result-card">
+      <div class="result-inner" style="background: #1a365d;">
+        <div class="result-header">
+          <span class="group-meta">Group B · MD1</span>
+          <div class="city-col">
+            <div class="city-name">New York</div>
+            <div class="stadium-name">MetLife Stadium</div>
+          </div>
+        </div>
+        <div class="result-teams">
+          <div class="result-team">
+            <div class="flag-round"><img src="https://flagcdn.com/br.svg" alt="Brazil"></div>
+            <span class="team-name">Brazil</span>
+          </div>
+          <span class="result-vs">v</span>
+          <div class="result-team">
+            <div class="flag-round"><img src="https://flagcdn.com/de.svg" alt="Germany"></div>
+            <span class="team-name">Germany</span>
+          </div>
+        </div>
+        <div class="score-area">
+          <span class="status-badge upcoming">Not started</span>
+        </div>
+        <div class="result-info">
+          <div class="result-info-cell">
+            <div class="info-label">In New York</div>
+            <div class="info-value">20:00 · Thu 12 Jun</div>
+          </div>
+          <div class="result-info-cell">
+            <div class="info-label">Your time</div>
+            <div class="info-value">01:00 IST</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+</body>
+</html>

@@ -1,0 +1,1619 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Rules — WC 2026 Prediction Game</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <style>
+    *, *::before, *::after {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    :root {
+      --bg: #efe9de;
+      --surface: #f5f0e8;
+      --text-primary: #191512;
+      --text-secondary: #191512aa;
+      --text-tertiary: #19151266;
+      --amber: #f59e0b;
+      --amber-deep: #d97706;
+      --green: #0aa86d;
+      --red: #e23d4f;
+      --border: #19151215;
+      --chip-bg: #19151208;
+      --font-body: 'Inter', sans-serif;
+      --font-mono: 'JetBrains Mono', monospace;
+    }
+
+    html {
+      scroll-behavior: smooth;
+    }
+
+    body {
+      background: var(--bg);
+      color: var(--text-primary);
+      font-family: var(--font-body);
+      font-size: 15px;
+      line-height: 1.6;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    .page-wrap {
+      max-width: 480px;
+      margin: 0 auto;
+      padding: 0 16px;
+    }
+
+    /* ─── STICKY NAV ──────────────────────────────────────────── */
+
+    #sticky-nav {
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      background: var(--bg);
+      border-bottom: 1px solid var(--border);
+      box-shadow: 0 2px 12px rgba(25, 21, 18, 0.07);
+    }
+
+    .sticky-nav-inner {
+      max-width: 480px;
+      margin: 0 auto;
+      padding: 0 16px;
+      height: 44px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      overflow-x: auto;
+      scrollbar-width: none;
+      -ms-overflow-style: none;
+    }
+
+    .sticky-nav-inner::-webkit-scrollbar {
+      display: none;
+    }
+
+    .nav-label {
+      flex-shrink: 0;
+      font-family: var(--font-mono);
+      font-size: 10px;
+      font-weight: 600;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: var(--text-tertiary);
+      background: transparent;
+      border: 1px solid transparent;
+      border-radius: 20px;
+      padding: 5px 12px;
+      cursor: pointer;
+      transition: background 0.18s ease, color 0.18s ease, border-color 0.18s ease;
+      white-space: nowrap;
+      user-select: none;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    .nav-label:hover {
+      color: var(--text-secondary);
+      background: var(--chip-bg);
+    }
+
+    .nav-label.active {
+      background: var(--amber);
+      color: var(--text-primary);
+      border-color: var(--amber);
+      font-weight: 700;
+    }
+
+    /* ─── HEADER ──────────────────────────────────────────────── */
+
+    .page-header {
+      padding: 48px 0 40px;
+      text-align: center;
+    }
+
+    .page-header-eyebrow {
+      font-family: var(--font-mono);
+      font-size: 10px;
+      font-weight: 600;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      color: var(--amber-deep);
+      margin-bottom: 12px;
+    }
+
+    .page-header h1 {
+      font-size: 40px;
+      font-weight: 800;
+      letter-spacing: -0.03em;
+      line-height: 1.1;
+      margin-bottom: 8px;
+    }
+
+    .page-header .subtitle {
+      font-size: 16px;
+      color: var(--text-secondary);
+      font-weight: 500;
+      margin-bottom: 20px;
+    }
+
+    .page-header .intro-text {
+      font-style: italic;
+      font-size: 14px;
+      color: var(--text-secondary);
+      line-height: 1.7;
+      max-width: 340px;
+      margin: 0 auto;
+    }
+
+    /* ─── HOW IT WORKS ────────────────────────────────────────── */
+
+    .how-it-works {
+      margin-bottom: 48px;
+    }
+
+    .section-label {
+      font-family: var(--font-mono);
+      font-size: 10px;
+      font-weight: 700;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      color: var(--amber-deep);
+      margin-bottom: 16px;
+    }
+
+    .steps-row {
+      display: flex;
+      gap: 4px;
+      align-items: flex-start;
+    }
+
+    .step-item {
+      flex: 1;
+      text-align: center;
+      padding: 0 4px;
+    }
+
+    .step-circle {
+      width: 36px;
+      height: 36px;
+      border-radius: 50%;
+      background: var(--amber);
+      color: var(--text-primary);
+      font-family: var(--font-mono);
+      font-size: 14px;
+      font-weight: 700;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin: 0 auto 10px;
+    }
+
+    .step-connector {
+      flex-shrink: 0;
+      width: 16px;
+      height: 36px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--text-tertiary);
+      font-size: 12px;
+    }
+
+    .step-title {
+      font-size: 12px;
+      font-weight: 700;
+      margin-bottom: 3px;
+    }
+
+    .step-desc {
+      font-size: 11px;
+      color: var(--text-secondary);
+      line-height: 1.5;
+    }
+
+    /* ─── CHAPTER SPACING ─────────────────────────────────────── */
+
+    .chapter {
+      padding-top: 48px;
+      padding-bottom: 0;
+    }
+
+    .chapter-header {
+      margin-bottom: 20px;
+    }
+
+    .chapter-title {
+      font-size: 24px;
+      font-weight: 800;
+      letter-spacing: -0.02em;
+      line-height: 1.2;
+      margin-bottom: 8px;
+    }
+
+    .chapter-intro {
+      font-size: 14px;
+      color: var(--text-secondary);
+      line-height: 1.65;
+    }
+
+    /* ─── CARD ────────────────────────────────────────────────── */
+
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      overflow: hidden;
+    }
+
+    .card + .card {
+      margin-top: 8px;
+    }
+
+    /* ─── POINTS TABLE ────────────────────────────────────────── */
+
+    .points-table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+
+    .points-table thead th {
+      font-family: var(--font-mono);
+      font-size: 9px;
+      font-weight: 700;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: var(--text-tertiary);
+      padding: 10px 16px;
+      text-align: left;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .points-table thead th:last-child {
+      text-align: right;
+    }
+
+    .points-table tbody td {
+      padding: 11px 16px;
+      font-size: 13px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .points-table tbody tr:last-child td {
+      border-bottom: none;
+    }
+
+    .points-table tbody td:last-child {
+      text-align: right;
+      font-family: var(--font-mono);
+      font-weight: 700;
+      font-size: 14px;
+      color: var(--amber-deep);
+    }
+
+    .points-table-footer {
+      padding: 10px 16px;
+      background: var(--chip-bg);
+      border-top: 1px solid var(--border);
+      font-size: 11px;
+      color: var(--text-tertiary);
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .pts-max-badge {
+      font-family: var(--font-mono);
+      font-size: 11px;
+      font-weight: 700;
+      color: var(--amber-deep);
+      background: rgba(245, 158, 11, 0.12);
+      padding: 2px 7px;
+      border-radius: 4px;
+    }
+
+    /* ─── CLASSIFICATION CHIPS ────────────────────────────────── */
+
+    .classification-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+      margin-top: 12px;
+    }
+
+    .classification-card {
+      background: var(--chip-bg);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 12px 14px;
+    }
+
+    .classification-card .cl-title {
+      font-size: 12px;
+      font-weight: 700;
+      margin-bottom: 3px;
+    }
+
+    .classification-card .cl-desc {
+      font-size: 11px;
+      color: var(--text-secondary);
+      line-height: 1.4;
+    }
+
+    /* ─── SUBSECTION LABEL ────────────────────────────────────── */
+
+    .subsection-label {
+      font-family: var(--font-mono);
+      font-size: 10px;
+      font-weight: 700;
+      letter-spacing: 0.15em;
+      text-transform: uppercase;
+      color: var(--text-tertiary);
+      margin-bottom: 10px;
+      margin-top: 28px;
+    }
+
+    /* ─── GROUP ILLUSTRATION ──────────────────────────────────── */
+
+    .group-card-header {
+      padding: 10px 16px;
+      background: var(--chip-bg);
+      border-bottom: 1px solid var(--border);
+      font-family: var(--font-mono);
+      font-size: 10px;
+      font-weight: 600;
+      letter-spacing: 0.1em;
+      color: var(--text-secondary);
+      text-transform: uppercase;
+    }
+
+    .group-row {
+      display: flex;
+      align-items: center;
+      padding: 11px 16px;
+      gap: 10px;
+      border-bottom: 1px solid var(--border);
+      transition: background 0.1s;
+    }
+
+    .group-row:last-child {
+      border-bottom: none;
+    }
+
+    .group-row.dimmed {
+      opacity: 0.45;
+    }
+
+    .group-rank {
+      font-family: var(--font-mono);
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--text-tertiary);
+      width: 16px;
+      text-align: center;
+      flex-shrink: 0;
+    }
+
+    .group-name {
+      flex: 1;
+      font-size: 13px;
+      font-weight: 600;
+    }
+
+    .group-pts {
+      font-family: var(--font-mono);
+      font-size: 13px;
+      font-weight: 700;
+      color: var(--text-primary);
+    }
+
+    .group-status {
+      font-family: var(--font-mono);
+      font-size: 9px;
+      font-weight: 700;
+      letter-spacing: 0.08em;
+      padding: 3px 7px;
+      border-radius: 4px;
+      flex-shrink: 0;
+    }
+
+    .status-safe {
+      background: rgba(10, 168, 109, 0.14);
+      color: var(--green);
+    }
+
+    .status-danger {
+      background: rgba(245, 158, 11, 0.14);
+      color: var(--amber-deep);
+    }
+
+    .status-out {
+      background: rgba(226, 61, 79, 0.14);
+      color: var(--red);
+    }
+
+    .you-badge {
+      font-family: var(--font-mono);
+      font-size: 9px;
+      font-weight: 700;
+      background: var(--amber);
+      color: var(--text-primary);
+      padding: 2px 6px;
+      border-radius: 4px;
+      flex-shrink: 0;
+    }
+
+    .group-divider {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 4px 16px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .group-divider-line {
+      flex: 1;
+      height: 1px;
+      border-top: 2px dashed;
+    }
+
+    .group-divider-line.amber {
+      border-color: var(--amber);
+    }
+
+    .group-divider-line.red {
+      border-color: var(--red);
+    }
+
+    .group-divider-label {
+      font-family: var(--font-mono);
+      font-size: 8px;
+      font-weight: 700;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+    }
+
+    .group-divider-label.amber {
+      color: var(--amber-deep);
+    }
+
+    .group-divider-label.red {
+      color: var(--red);
+    }
+
+    /* ─── CUT EXPLANATION ─────────────────────────────────────── */
+
+    .cut-box {
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      overflow: hidden;
+      margin-top: 12px;
+    }
+
+    .cut-box-header {
+      background: var(--chip-bg);
+      padding: 8px 14px;
+      font-family: var(--font-mono);
+      font-size: 9px;
+      font-weight: 700;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: var(--text-tertiary);
+      border-bottom: 1px solid var(--border);
+    }
+
+    .cut-row {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 10px 14px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .cut-row:last-child {
+      border-bottom: none;
+    }
+
+    .cut-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      flex-shrink: 0;
+    }
+
+    .cut-text {
+      flex: 1;
+      font-size: 12px;
+      font-weight: 500;
+    }
+
+    .cut-label {
+      font-family: var(--font-mono);
+      font-size: 9px;
+      font-weight: 700;
+      letter-spacing: 0.06em;
+    }
+
+    /* ─── KNOCKOUT ILLUSTRATION ───────────────────────────────── */
+
+    .ko-card {
+      border-radius: 12px;
+      overflow: hidden;
+    }
+
+    .ko-card-header {
+      padding: 10px 16px;
+      background: var(--chip-bg);
+      border-bottom: 1px solid var(--border);
+      font-family: var(--font-mono);
+      font-size: 10px;
+      font-weight: 600;
+      letter-spacing: 0.1em;
+      color: var(--text-secondary);
+      text-transform: uppercase;
+    }
+
+    .ko-player-row {
+      display: flex;
+      align-items: center;
+      padding: 7px 16px;
+      gap: 10px;
+      border-bottom: 1px solid var(--border);
+      font-size: 12px;
+    }
+
+    .ko-player-row:last-child {
+      border-bottom: none;
+    }
+
+    .ko-player-row.you-row {
+      background: rgba(245, 158, 11, 0.08);
+    }
+
+    .ko-player-row.eliminated-row {
+      opacity: 0.4;
+    }
+
+    .ko-rank {
+      font-family: var(--font-mono);
+      font-size: 11px;
+      font-weight: 600;
+      color: var(--text-tertiary);
+      width: 20px;
+      text-align: right;
+    }
+
+    .ko-name {
+      flex: 1;
+      font-weight: 500;
+    }
+
+    .ko-pts {
+      font-family: var(--font-mono);
+      font-size: 11px;
+      font-weight: 700;
+    }
+
+    .ko-ellipsis {
+      text-align: center;
+      padding: 4px 16px;
+      color: var(--text-tertiary);
+      font-size: 12px;
+      border-bottom: 1px solid var(--border);
+      letter-spacing: 0.15em;
+    }
+
+    .ko-section-divider {
+      background: var(--chip-bg);
+      padding: 5px 16px;
+      border-bottom: 1px solid var(--border);
+      font-family: var(--font-mono);
+      font-size: 9px;
+      font-weight: 700;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+    }
+
+    .ko-section-divider.green-label {
+      color: var(--green);
+    }
+
+    .ko-section-divider.red-label {
+      color: var(--red);
+    }
+
+    /* ─── ELIMINATION TABLE ───────────────────────────────────── */
+
+    .elim-table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+
+    .elim-table thead th {
+      font-family: var(--font-mono);
+      font-size: 9px;
+      font-weight: 700;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: var(--text-tertiary);
+      padding: 10px 16px;
+      text-align: left;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .elim-table thead th:not(:first-child) {
+      text-align: right;
+    }
+
+    .elim-table tbody td {
+      padding: 10px 16px;
+      font-size: 13px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .elim-table tbody tr:last-child td {
+      border-bottom: none;
+    }
+
+    .elim-table tbody td:not(:first-child) {
+      text-align: right;
+      font-family: var(--font-mono);
+      font-size: 12px;
+      font-weight: 600;
+    }
+
+    .elim-stage {
+      font-weight: 700;
+    }
+
+    .elim-players {
+      color: var(--text-secondary);
+      font-size: 11px;
+    }
+
+    .elim-out {
+      color: var(--red);
+    }
+
+    .elim-survive {
+      color: var(--green);
+    }
+
+    /* ─── RESET BOX ───────────────────────────────────────────── */
+
+    .reset-box {
+      background: rgba(245, 158, 11, 0.08);
+      border: 1px solid rgba(245, 158, 11, 0.25);
+      border-radius: 10px;
+      padding: 14px 16px;
+      margin-top: 12px;
+    }
+
+    .reset-box .reset-title {
+      font-size: 12px;
+      font-weight: 700;
+      margin-bottom: 4px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .reset-box .reset-title::before {
+      content: '';
+      display: inline-block;
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: var(--amber);
+      flex-shrink: 0;
+    }
+
+    .reset-box p {
+      font-size: 12px;
+      color: var(--text-secondary);
+      line-height: 1.55;
+    }
+
+    /* ─── INFO BOX ────────────────────────────────────────────── */
+
+    .info-box {
+      background: var(--chip-bg);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 14px 16px;
+      margin-top: 12px;
+    }
+
+    .info-box p {
+      font-size: 13px;
+      color: var(--text-secondary);
+      line-height: 1.6;
+    }
+
+    .info-box p + p {
+      margin-top: 8px;
+    }
+
+    .info-box strong {
+      color: var(--text-primary);
+    }
+
+    /* ─── PICKS CHAPTER ───────────────────────────────────────── */
+
+    .picks-rule-list {
+      list-style: none;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      margin-top: 4px;
+    }
+
+    .picks-rule-item {
+      display: flex;
+      gap: 12px;
+      align-items: flex-start;
+      background: var(--chip-bg);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 13px 14px;
+    }
+
+    .picks-rule-icon {
+      width: 28px;
+      height: 28px;
+      border-radius: 8px;
+      background: rgba(245, 158, 11, 0.14);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+      font-size: 14px;
+    }
+
+    .picks-rule-body .pr-title {
+      font-size: 13px;
+      font-weight: 700;
+      margin-bottom: 3px;
+    }
+
+    .picks-rule-body .pr-desc {
+      font-size: 12px;
+      color: var(--text-secondary);
+      line-height: 1.5;
+    }
+
+    /* ─── TIEBREAKER CHAIN ────────────────────────────────────── */
+
+    .tb-chain {
+      display: flex;
+      flex-direction: column;
+      gap: 0;
+      margin-top: 4px;
+    }
+
+    .tb-step {
+      display: flex;
+      align-items: stretch;
+      gap: 0;
+    }
+
+    .tb-step-spine {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      flex-shrink: 0;
+      width: 32px;
+    }
+
+    .tb-step-dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      background: var(--amber);
+      border: 2px solid var(--amber-deep);
+      flex-shrink: 0;
+      margin-top: 14px;
+    }
+
+    .tb-step-dot.final {
+      background: var(--text-primary);
+      border-color: var(--text-primary);
+    }
+
+    .tb-step-line {
+      width: 2px;
+      flex: 1;
+      background: rgba(245, 158, 11, 0.25);
+      margin-top: 2px;
+    }
+
+    .tb-step:last-child .tb-step-line {
+      display: none;
+    }
+
+    .tb-step-body {
+      flex: 1;
+      padding: 10px 0 16px 8px;
+    }
+
+    .tb-step:last-child .tb-step-body {
+      padding-bottom: 4px;
+    }
+
+    .tb-step-pill {
+      display: inline-flex;
+      align-items: center;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      padding: 5px 12px 5px 10px;
+      gap: 6px;
+      margin-bottom: 4px;
+    }
+
+    .tb-step-pill.trigger {
+      background: rgba(245, 158, 11, 0.10);
+      border-color: rgba(245, 158, 11, 0.3);
+    }
+
+    .tb-step-num {
+      font-family: var(--font-mono);
+      font-size: 9px;
+      font-weight: 700;
+      color: var(--amber-deep);
+      background: rgba(245, 158, 11, 0.15);
+      width: 16px;
+      height: 16px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .tb-step-name {
+      font-size: 12px;
+      font-weight: 700;
+    }
+
+    .tb-step-desc {
+      font-size: 11px;
+      color: var(--text-secondary);
+      line-height: 1.5;
+      padding-left: 2px;
+    }
+
+    /* ─── FINAL CHAPTER ───────────────────────────────────────── */
+
+    .final-stage-card {
+      border-radius: 12px;
+      overflow: hidden;
+    }
+
+    .final-players {
+      display: flex;
+      gap: 8px;
+      padding: 16px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .final-player {
+      flex: 1;
+      text-align: center;
+      padding: 14px 12px;
+      border-radius: 10px;
+      border: 1px solid var(--border);
+    }
+
+    .final-player.winner {
+      background: rgba(245, 158, 11, 0.1);
+      border-color: rgba(245, 158, 11, 0.35);
+    }
+
+    .final-player-name {
+      font-size: 13px;
+      font-weight: 700;
+      margin-bottom: 4px;
+    }
+
+    .final-player-pts {
+      font-family: var(--font-mono);
+      font-size: 20px;
+      font-weight: 700;
+      color: var(--amber-deep);
+    }
+
+    .final-player-pts-label {
+      font-family: var(--font-mono);
+      font-size: 9px;
+      font-weight: 600;
+      color: var(--text-tertiary);
+      letter-spacing: 0.08em;
+      margin-top: 2px;
+    }
+
+    .final-vs {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 28px;
+      font-family: var(--font-mono);
+      font-size: 10px;
+      font-weight: 700;
+      color: var(--text-tertiary);
+      flex-shrink: 0;
+    }
+
+    .final-rule {
+      padding: 12px 16px;
+      font-size: 12px;
+      color: var(--text-secondary);
+      line-height: 1.5;
+    }
+
+    .final-rule strong {
+      color: var(--text-primary);
+    }
+
+    /* ─── CTA SECTION ─────────────────────────────────────────── */
+
+    .cta-section {
+      margin-top: 64px;
+      margin-bottom: 48px;
+    }
+
+    .cta-card {
+      background: var(--text-primary);
+      border-radius: 16px;
+      padding: 32px 24px;
+      text-align: center;
+    }
+
+    .cta-eyebrow {
+      font-family: var(--font-mono);
+      font-size: 9px;
+      font-weight: 700;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      color: var(--amber);
+      margin-bottom: 10px;
+    }
+
+    .cta-title {
+      font-size: 26px;
+      font-weight: 800;
+      color: #fff;
+      letter-spacing: -0.02em;
+      margin-bottom: 6px;
+    }
+
+    .cta-subtitle {
+      font-size: 14px;
+      color: rgba(255,255,255,0.55);
+      margin-bottom: 24px;
+    }
+
+    .cta-buttons {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .btn-primary {
+      background: var(--amber);
+      color: var(--text-primary);
+      border: none;
+      border-radius: 10px;
+      padding: 14px 24px;
+      font-family: var(--font-body);
+      font-size: 14px;
+      font-weight: 700;
+      cursor: pointer;
+      letter-spacing: -0.01em;
+      transition: background 0.15s;
+    }
+
+    .btn-primary:hover {
+      background: #fbbf24;
+    }
+
+    .btn-outline {
+      background: transparent;
+      color: rgba(255,255,255,0.65);
+      border: 1px solid rgba(255,255,255,0.2);
+      border-radius: 10px;
+      padding: 13px 24px;
+      font-family: var(--font-body);
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: border-color 0.15s, color 0.15s;
+    }
+
+    .btn-outline:hover {
+      border-color: rgba(255,255,255,0.4);
+      color: rgba(255,255,255,0.85);
+    }
+
+    /* ─── PROSE ───────────────────────────────────────────────── */
+
+    .prose p {
+      font-size: 14px;
+      color: var(--text-secondary);
+      line-height: 1.65;
+      margin-bottom: 10px;
+    }
+
+    .prose p:last-child {
+      margin-bottom: 0;
+    }
+
+    .prose strong {
+      color: var(--text-primary);
+      font-weight: 700;
+    }
+
+    /* ─── DIVIDER ─────────────────────────────────────────────── */
+
+    .chapter-divider {
+      height: 1px;
+      background: var(--border);
+      margin: 48px 0 0;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- STICKY NAV -->
+  <div id="sticky-nav">
+    <div class="sticky-nav-inner">
+      <button class="nav-label active" data-target="points">Points</button>
+      <button class="nav-label" data-target="format">Format</button>
+      <button class="nav-label" data-target="picks">Picks</button>
+      <button class="nav-label" data-target="ties">Ties</button>
+    </div>
+  </div>
+
+  <div class="page-wrap">
+
+    <!-- HEADER -->
+    <header class="page-header" id="page-header">
+      <p class="page-header-eyebrow">FIFA World Cup 2026</p>
+      <h1>Rules</h1>
+      <p class="subtitle">Everything you need to know.</p>
+      <p class="intro-text">
+        You're not just predicting results — you're surviving. Every round, the
+        field narrows. Only the sharpest readers of the game make it to the final.
+      </p>
+    </header>
+
+    <!-- HOW IT WORKS -->
+    <div class="how-it-works">
+      <p class="section-label">How it works</p>
+      <div class="steps-row">
+        <div class="step-item">
+          <div class="step-circle">1</div>
+          <div class="step-title">Pick</div>
+          <div class="step-desc">Predict every match before kickoff</div>
+        </div>
+        <div class="step-connector">›</div>
+        <div class="step-item">
+          <div class="step-circle">2</div>
+          <div class="step-title">Survive</div>
+          <div class="step-desc">Stay above the cut each round</div>
+        </div>
+        <div class="step-connector">›</div>
+        <div class="step-item">
+          <div class="step-circle">3</div>
+          <div class="step-title">Win</div>
+          <div class="step-desc">Most points in the final takes the prize</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="chapter-divider"></div>
+
+    <!-- CHAPTER: POINTS -->
+    <section class="chapter" id="points">
+      <div class="chapter-header">
+        <p class="section-label">Points</p>
+        <h2 class="chapter-title">Scoring</h2>
+        <p class="chapter-intro">Points are awarded per match based on how accurately you call the result.</p>
+      </div>
+
+      <div class="card">
+        <table class="points-table">
+          <thead>
+            <tr>
+              <th>Prediction</th>
+              <th>Points</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>Correct result + exact score</td>
+              <td>5</td>
+            </tr>
+            <tr>
+              <td>Correct result + correct goal difference</td>
+              <td>3</td>
+            </tr>
+            <tr>
+              <td>Correct result only</td>
+              <td>1</td>
+            </tr>
+            <tr>
+              <td>Wrong result</td>
+              <td>0</td>
+            </tr>
+          </tbody>
+        </table>
+        <div class="points-table-footer">
+          Max per match:&nbsp;<span class="pts-max-badge">5 pts</span>
+          &nbsp;— you keep the highest tier you hit.
+        </div>
+      </div>
+
+      <div class="classification-grid">
+        <div class="classification-card">
+          <div class="cl-title">Overall</div>
+          <div class="cl-desc">Total points across all stages</div>
+        </div>
+        <div class="classification-card">
+          <div class="cl-title">Format</div>
+          <div class="cl-desc">Survivor leaderboard standing</div>
+        </div>
+        <div class="classification-card">
+          <div class="cl-title">Full Bracket</div>
+          <div class="cl-desc">Group stage + knockout combined</div>
+        </div>
+        <div class="classification-card">
+          <div class="cl-title">KO Bracket</div>
+          <div class="cl-desc">Knockout stage points only</div>
+        </div>
+      </div>
+    </section>
+
+    <div class="chapter-divider"></div>
+
+    <!-- CHAPTER: FORMAT -->
+    <section class="chapter" id="format">
+      <div class="chapter-header">
+        <p class="section-label">Format — Survivor</p>
+        <h2 class="chapter-title">How you survive</h2>
+      </div>
+
+      <div class="prose">
+        <p>
+          The format mirrors the <strong>real World Cup structure</strong> — group stage feeds
+          into a full knockout bracket, from the Round of 32 down to the Final.
+        </p>
+        <p>
+          Your position within the competition changes with every round. <strong>Points reset
+          at the start of the knockout stage</strong>, giving everyone a fresh fight once the
+          groups are done.
+        </p>
+      </div>
+
+      <!-- GROUP STAGE -->
+      <p class="subsection-label">Group Stage</p>
+      <div class="card">
+        <div class="group-card-header">Group A &nbsp;·&nbsp; 1 of 12 groups &nbsp;·&nbsp; 48 players</div>
+        <div class="group-row">
+          <span class="group-rank">1</span>
+          <span class="group-name">Manning</span>
+          <span class="group-pts">14 pts</span>
+          <span class="group-status status-safe">SAFE</span>
+        </div>
+        <div class="group-row">
+          <span class="group-rank">2</span>
+          <span class="group-name">You</span>
+          <span class="you-badge">YOU</span>
+          <span class="group-pts">11 pts</span>
+          <span class="group-status status-safe">SAFE</span>
+        </div>
+        <div class="group-divider">
+          <div class="group-divider-line amber"></div>
+          <span class="group-divider-label amber">Danger zone</span>
+          <div class="group-divider-line amber"></div>
+        </div>
+        <div class="group-row">
+          <span class="group-rank">3</span>
+          <span class="group-name">Bohanna</span>
+          <span class="group-pts">7 pts</span>
+          <span class="group-status status-danger">?</span>
+        </div>
+        <div class="group-divider">
+          <div class="group-divider-line red"></div>
+          <span class="group-divider-label red">Elimination line</span>
+          <div class="group-divider-line red"></div>
+        </div>
+        <div class="group-row dimmed">
+          <span class="group-rank">4</span>
+          <span class="group-name">Scrooch</span>
+          <span class="group-pts">3 pts</span>
+          <span class="group-status status-out">OUT</span>
+        </div>
+      </div>
+
+      <div class="cut-box">
+        <div class="cut-box-header">How the cut works</div>
+        <div class="cut-row">
+          <div class="cut-dot" style="background: var(--green)"></div>
+          <div class="cut-text">Top 2 in each group auto-qualify for the Round of 32</div>
+          <span class="cut-label" style="color: var(--green)">24 spots</span>
+        </div>
+        <div class="cut-row">
+          <div class="cut-dot" style="background: var(--amber)"></div>
+          <div class="cut-text">Best 3rd-place finishers also advance — but it's tight</div>
+          <span class="cut-label" style="color: var(--amber-deep)">8 of 12</span>
+        </div>
+        <div class="cut-row">
+          <div class="cut-dot" style="background: var(--red)"></div>
+          <div class="cut-text">4th place is eliminated, no exceptions</div>
+          <span class="cut-label" style="color: var(--red)">OUT</span>
+        </div>
+      </div>
+
+      <!-- KNOCKOUT -->
+      <p class="subsection-label">Knockout Stage</p>
+      <div class="card ko-card">
+        <div class="ko-card-header">Round of 32 &nbsp;·&nbsp; Field narrows to 32 survivors</div>
+        <div class="ko-section-divider green-label">Qualified</div>
+        <div class="ko-player-row">
+          <span class="ko-rank">1</span>
+          <span class="ko-name">Manning</span>
+          <span class="ko-pts">—</span>
+        </div>
+        <div class="ko-player-row">
+          <span class="ko-rank">2</span>
+          <span class="ko-name">Rooney</span>
+          <span class="ko-pts">—</span>
+        </div>
+        <div class="ko-ellipsis">· · ·</div>
+        <div class="ko-player-row you-row">
+          <span class="ko-rank">14</span>
+          <span class="ko-name">You <span class="you-badge" style="font-size:8px; padding: 1px 5px;">YOU</span></span>
+          <span class="ko-pts">—</span>
+        </div>
+        <div class="ko-ellipsis">· · ·</div>
+        <div class="ko-player-row">
+          <span class="ko-rank">32</span>
+          <span class="ko-name">Farrell</span>
+          <span class="ko-pts">—</span>
+        </div>
+        <div class="ko-section-divider red-label">Eliminated</div>
+        <div class="ko-player-row eliminated-row">
+          <span class="ko-rank">33+</span>
+          <span class="ko-name">Scrooch &amp; others</span>
+          <span class="ko-pts">—</span>
+        </div>
+      </div>
+
+      <div class="reset-box">
+        <div class="reset-title">Points reset at the Round of 32</div>
+        <p>
+          Your group stage score doesn't carry forward. Everyone enters the
+          knockout phase on zero — your group standing only determined
+          whether you qualify, not your head start.
+        </p>
+      </div>
+
+      <!-- ELIMINATION CURVE -->
+      <p class="subsection-label">Elimination curve</p>
+      <div class="card">
+        <table class="elim-table">
+          <thead>
+            <tr>
+              <th>Stage</th>
+              <th>Players in</th>
+              <th style="color: var(--red)">Eliminated</th>
+              <th style="color: var(--green)">Survive</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><span class="elim-stage">Group Stage</span></td>
+              <td class="elim-players">48</td>
+              <td class="elim-out">16</td>
+              <td class="elim-survive">32</td>
+            </tr>
+            <tr>
+              <td><span class="elim-stage">Round of 32</span></td>
+              <td class="elim-players">32</td>
+              <td class="elim-out">16</td>
+              <td class="elim-survive">16</td>
+            </tr>
+            <tr>
+              <td><span class="elim-stage">Round of 16</span></td>
+              <td class="elim-players">16</td>
+              <td class="elim-out">8</td>
+              <td class="elim-survive">8</td>
+            </tr>
+            <tr>
+              <td><span class="elim-stage">Quarter-finals</span></td>
+              <td class="elim-players">8</td>
+              <td class="elim-out">4</td>
+              <td class="elim-survive">4</td>
+            </tr>
+            <tr>
+              <td><span class="elim-stage">Semi-finals</span></td>
+              <td class="elim-players">4</td>
+              <td class="elim-out">2</td>
+              <td class="elim-survive">2</td>
+            </tr>
+            <tr>
+              <td><span class="elim-stage">Final</span></td>
+              <td class="elim-players">2</td>
+              <td class="elim-out">1</td>
+              <td class="elim-survive">1</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <!-- FINAL -->
+      <p class="subsection-label">The Final</p>
+      <div class="card final-stage-card">
+        <div class="final-players">
+          <div class="final-player winner">
+            <div class="final-player-name">You</div>
+            <div class="final-player-pts">187</div>
+            <div class="final-player-pts-label">pts</div>
+          </div>
+          <div class="final-vs">vs</div>
+          <div class="final-player">
+            <div class="final-player-name">Manning</div>
+            <div class="final-player-pts">174</div>
+            <div class="final-player-pts-label">pts</div>
+          </div>
+        </div>
+        <div class="final-rule">
+          The last two players face off across the Final fixture set.
+          <strong>Most points wins the competition.</strong> If tied, tiebreaker rules apply.
+        </div>
+      </div>
+    </section>
+
+    <div class="chapter-divider"></div>
+
+    <!-- CHAPTER: PICKS -->
+    <section class="chapter" id="picks">
+      <div class="chapter-header">
+        <p class="section-label">Your Picks</p>
+        <h2 class="chapter-title">Making predictions</h2>
+        <p class="chapter-intro">You pick the score for every match in the current round. Here's how it works.</p>
+      </div>
+
+      <ul class="picks-rule-list">
+        <li class="picks-rule-item">
+          <div class="picks-rule-icon">&#128274;</div>
+          <div class="picks-rule-body">
+            <div class="pr-title">Locks 10 min before kickoff</div>
+            <div class="pr-desc">
+              Each match locks individually, 10 minutes before its scheduled
+              start. The lock is based on the earliest fixture in the round.
+            </div>
+          </div>
+        </li>
+        <li class="picks-rule-item">
+          <div class="picks-rule-icon">&#9999;&#65039;</div>
+          <div class="picks-rule-body">
+            <div class="pr-title">Change your mind freely</div>
+            <div class="pr-desc">
+              Until the lock, you can update your picks as many times as you
+              like. Only your final saved prediction counts.
+            </div>
+          </div>
+        </li>
+        <li class="picks-rule-item">
+          <div class="picks-rule-icon">&#9917;</div>
+          <div class="picks-rule-body">
+            <div class="pr-title">Scoreline predictions only</div>
+            <div class="pr-desc">
+              You predict a final scoreline — no half-time bets, no goalscorers.
+              Extra time and penalties are treated as separate outcomes.
+            </div>
+          </div>
+        </li>
+        <li class="picks-rule-item">
+          <div class="picks-rule-icon">&#128336;</div>
+          <div class="picks-rule-body">
+            <div class="pr-title">Advance picks available</div>
+            <div class="pr-desc">
+              You can submit picks for any future match as soon as the fixture
+              is published — handy for busy matchdays.
+            </div>
+          </div>
+        </li>
+      </ul>
+
+      <div class="info-box" style="margin-top: 16px;">
+        <p>
+          <strong>Didn't submit?</strong> You'll score 0 for that match.
+          There are no default picks or carry-forwards.
+        </p>
+      </div>
+    </section>
+
+    <div class="chapter-divider"></div>
+
+    <!-- CHAPTER: TIEBREAKERS -->
+    <section class="chapter" id="ties">
+      <div class="chapter-header">
+        <p class="section-label">Tiebreakers</p>
+        <h2 class="chapter-title">Breaking dead heats</h2>
+        <p class="chapter-intro">
+          When two or more players finish a round level on points, we work
+          through this chain until one comes out ahead.
+        </p>
+      </div>
+
+      <div class="tb-chain">
+
+        <div class="tb-step">
+          <div class="tb-step-spine">
+            <div class="tb-step-dot"></div>
+            <div class="tb-step-line"></div>
+          </div>
+          <div class="tb-step-body">
+            <div class="tb-step-pill trigger">
+              <span style="font-family: var(--font-mono); font-size: 10px; font-weight: 700; color: var(--text-tertiary);">Trigger</span>
+              <span class="tb-step-name" style="font-size: 12px; color: var(--text-secondary);">Equal points at end of round</span>
+            </div>
+            <div class="tb-step-desc">Two or more players share the same score — we proceed.</div>
+          </div>
+        </div>
+
+        <div class="tb-step">
+          <div class="tb-step-spine">
+            <div class="tb-step-dot"></div>
+            <div class="tb-step-line"></div>
+          </div>
+          <div class="tb-step-body">
+            <div class="tb-step-pill">
+              <span class="tb-step-num">1</span>
+              <span class="tb-step-name">Head-to-head goal difference</span>
+            </div>
+            <div class="tb-step-desc">Difference between goals scored and conceded in direct H2H predictions.</div>
+          </div>
+        </div>
+
+        <div class="tb-step">
+          <div class="tb-step-spine">
+            <div class="tb-step-dot"></div>
+            <div class="tb-step-line"></div>
+          </div>
+          <div class="tb-step-body">
+            <div class="tb-step-pill">
+              <span class="tb-step-num">2</span>
+              <span class="tb-step-name">Head-to-head goals scored</span>
+            </div>
+            <div class="tb-step-desc">Total goals predicted in H2H matches — more goals breaks the tie.</div>
+          </div>
+        </div>
+
+        <div class="tb-step">
+          <div class="tb-step-spine">
+            <div class="tb-step-dot"></div>
+            <div class="tb-step-line"></div>
+          </div>
+          <div class="tb-step-body">
+            <div class="tb-step-pill">
+              <span class="tb-step-num">3</span>
+              <span class="tb-step-name">Overall goal difference</span>
+            </div>
+            <div class="tb-step-desc">Across all predictions in the round — broadens the comparison.</div>
+          </div>
+        </div>
+
+        <div class="tb-step">
+          <div class="tb-step-spine">
+            <div class="tb-step-dot"></div>
+            <div class="tb-step-line"></div>
+          </div>
+          <div class="tb-step-body">
+            <div class="tb-step-pill">
+              <span class="tb-step-num">4</span>
+              <span class="tb-step-name">Overall goals scored</span>
+            </div>
+            <div class="tb-step-desc">Total goals predicted across all matches in the round.</div>
+          </div>
+        </div>
+
+        <div class="tb-step">
+          <div class="tb-step-spine">
+            <div class="tb-step-dot final"></div>
+          </div>
+          <div class="tb-step-body">
+            <div class="tb-step-pill" style="background: var(--text-primary); border-color: var(--text-primary);">
+              <span class="tb-step-num" style="background: rgba(255,255,255,0.15); color: #fff;">5</span>
+              <span class="tb-step-name" style="color: #fff;">Coin flip</span>
+            </div>
+            <div class="tb-step-desc">If all else is equal — a fair random draw decides it.</div>
+          </div>
+        </div>
+
+      </div>
+    </section>
+
+    <!-- JOIN CTA -->
+    <div class="cta-section">
+      <div class="cta-card">
+        <p class="cta-eyebrow">World Cup 2026</p>
+        <h2 class="cta-title">Ready to play?</h2>
+        <p class="cta-subtitle">Join your group and start predicting.</p>
+        <div class="cta-buttons">
+          <button class="btn-primary">Join a competition</button>
+          <button class="btn-outline">Create your own</button>
+        </div>
+      </div>
+    </div>
+
+  </div><!-- end .page-wrap -->
+
+  <script>
+    (function () {
+      const chapterIds = ['points', 'format', 'picks', 'ties'];
+      const navLabels = document.querySelectorAll('.nav-label');
+
+      // Map target -> nav button
+      const navMap = {};
+      navLabels.forEach(btn => {
+        navMap[btn.dataset.target] = btn;
+      });
+
+      // Click to scroll
+      navLabels.forEach(btn => {
+        btn.addEventListener('click', () => {
+          const el = document.getElementById(btn.dataset.target);
+          if (el) {
+            // Account for sticky nav height
+            const navHeight = document.getElementById('sticky-nav').offsetHeight;
+            const top = el.getBoundingClientRect().top + window.scrollY - navHeight - 8;
+            window.scrollTo({ top, behavior: 'smooth' });
+          }
+        });
+      });
+
+      // IntersectionObserver — track active chapter
+      let activeChapter = null;
+
+      const setActive = (id) => {
+        if (id === activeChapter) return;
+        activeChapter = id;
+        navLabels.forEach(btn => btn.classList.remove('active'));
+        if (navMap[id]) {
+          navMap[id].classList.add('active');
+          // Scroll the nav pill into view within the bar
+          navMap[id].scrollIntoView({ inline: 'nearest', block: 'nearest' });
+        }
+      };
+
+      const observers = [];
+      const chapterEls = chapterIds.map(id => document.getElementById(id)).filter(Boolean);
+
+      // Use a slightly positive rootMargin top offset so the chapter registers
+      // as active as soon as it clears the sticky nav
+      const observer = new IntersectionObserver((entries) => {
+        entries.forEach(entry => {
+          if (entry.isIntersecting) {
+            setActive(entry.target.id);
+          }
+        });
+      }, {
+        threshold: 0,
+        rootMargin: '-44px 0px -55% 0px'
+      });
+
+      chapterEls.forEach(el => observer.observe(el));
+
+      // Initialise active state on load
+      setActive('points');
+    })();
+  </script>
+
+</body>
+</html>

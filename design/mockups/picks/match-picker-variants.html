@@ -1,0 +1,792 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Match Picker vs Results — Side by Side</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:ital,wght@0,400;0,500;0,600;0,800;1,400&family=JetBrains+Mono:wght@500;600;700&display=swap" rel="stylesheet">
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: 'Inter', system-ui, sans-serif;
+    background: #c8c0b4;
+    color: #191512;
+    min-height: 100vh;
+    padding: 32px 24px 48px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 24px;
+  }
+
+  /* Page title */
+  .page-title {
+    text-align: center;
+  }
+  .page-title h1 {
+    font-size: 15px;
+    font-weight: 700;
+    color: #191512;
+    letter-spacing: -0.01em;
+  }
+  .page-title p {
+    font-size: 12px;
+    color: #6b6157;
+    margin-top: 4px;
+  }
+
+  /* Side-by-side layout */
+  .phones-row {
+    display: flex;
+    gap: 32px;
+    align-items: flex-start;
+    flex-wrap: wrap;
+    justify-content: center;
+  }
+
+  /* Phone column with label */
+  .phone-col {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 12px;
+  }
+
+  .phone-label {
+    text-align: center;
+  }
+  .phone-label h2 {
+    font-size: 13px;
+    font-weight: 700;
+    color: #191512;
+    letter-spacing: -0.01em;
+  }
+  .phone-label p {
+    font-size: 11px;
+    color: #6b6157;
+    margin-top: 2px;
+  }
+
+  /* =========================================================
+     PHONE FRAME
+     ========================================================= */
+  .phone {
+    width: 375px;
+    background: #efe9de;
+    border-radius: 28px;
+    border: 2px solid #a89e92;
+    overflow: hidden;
+    box-shadow:
+      0 2px 0 #8a8278,
+      0 12px 40px rgba(0,0,0,0.22),
+      inset 0 1px 0 rgba(255,255,255,0.4);
+  }
+
+  /* Status bar */
+  .status-bar {
+    height: 44px;
+    padding: 12px 20px 0;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+  .status-bar .time {
+    font-size: 13px;
+    font-weight: 700;
+    color: #191512;
+  }
+  .status-bar .icons {
+    display: flex;
+    gap: 6px;
+    align-items: center;
+  }
+  .status-bar .icons svg {
+    width: 14px;
+    height: 14px;
+    fill: #191512;
+  }
+
+  /* =========================================================
+     PHONE 1 — BRACKET WIZARD (MATCH PICKER)
+     ========================================================= */
+
+  /* Nav bar */
+  .wizard-nav {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 10px 16px 8px;
+  }
+  .wizard-nav .back {
+    font-size: 13px;
+    font-weight: 600;
+    color: #a09888;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+  }
+  .wizard-nav .back svg {
+    width: 14px; height: 14px;
+    stroke: #a09888;
+    fill: none;
+    stroke-width: 2.5;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+  }
+  .wizard-nav .step {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    font-weight: 700;
+    color: #a09888;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+  }
+
+  /* Progress bar strip */
+  .wizard-progress-bar {
+    height: 3px;
+    background: #e0d9cd;
+    margin: 0 16px;
+    border-radius: 2px;
+    overflow: hidden;
+  }
+  .wizard-progress-bar-fill {
+    height: 100%;
+    width: 16.6%;
+    background: #f59e0b;
+    border-radius: 2px;
+  }
+
+  /* Group pills */
+  .group-pills {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    padding: 10px 16px 0;
+  }
+  .group-pill {
+    flex-shrink: 0;
+    padding: 5px 11px;
+    border-radius: 999px;
+    font-size: 12px;
+    font-weight: 700;
+    cursor: pointer;
+    border: none;
+    background: none;
+  }
+  .group-pill.active { background: #191512; color: #efe9de; }
+  .group-pill.done { background: rgba(245,158,11,0.15); color: #b8941f; }
+  .group-pill.empty { border: 1px solid #d6cfc3; color: #a09888; }
+
+  /* Group header */
+  .group-header {
+    margin: 10px 16px 8px;
+    padding: 12px 14px;
+    background: #f5f0e8;
+    border: 1px solid #d6cfc3;
+    border-radius: 12px;
+  }
+  .group-header .top-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+  }
+  .group-header .meta {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 9px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: #a09888;
+  }
+  .group-header h2 {
+    font-size: 17px;
+    font-weight: 800;
+    margin-top: 2px;
+    color: #191512;
+  }
+  .group-header .count {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12px;
+    font-weight: 600;
+    color: #a09888;
+  }
+  .group-header .hint {
+    margin-top: 5px;
+    font-size: 11px;
+    color: #a09888;
+  }
+
+  /* Match card */
+  .pick-card {
+    margin: 0 16px 8px;
+    padding: 12px 10px;
+    background: #f5f0e8;
+    border: 1px solid #d6cfc3;
+    border-radius: 12px;
+  }
+  .pick-card.complete { border-color: rgba(245,158,11,0.35); }
+
+  .pick-row {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 5px;
+  }
+
+  .team {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+    min-width: 62px;
+    padding: 5px 5px 4px;
+    border-radius: 8px;
+    cursor: pointer;
+  }
+  .team .name {
+    font-size: 10px;
+    font-weight: 600;
+    color: #a09888;
+    text-align: center;
+    line-height: 1.2;
+  }
+  .team.selected { background: rgba(245,158,11,0.12); }
+  .team.selected .name { color: #b8941f; }
+
+  /* Flag pill — FIFA poster shape */
+  .flag-pill {
+    display: inline-block;
+    width: 28px;
+    height: 20px;
+    overflow: hidden;
+    background: #fff;
+    box-shadow: 0 1px 2px rgba(0,0,0,0.18);
+    clip-path: path('M 0 0 L 17 0 A 10 10 0 0 1 28 10 L 28 20 L 11 20 A 10 10 0 0 1 0 10 Z');
+    flex-shrink: 0;
+  }
+  .flag-pill img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    filter: saturate(0.88) brightness(0.96);
+  }
+
+  .score-input {
+    width: 28px;
+    height: 26px;
+    border-radius: 13px;
+    border: 1.5px solid #d6cfc3;
+    background: transparent;
+    text-align: center;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 13px;
+    font-weight: 600;
+    color: #191512;
+    outline: none;
+    flex-shrink: 0;
+  }
+  .score-input.filled {
+    background: #fff;
+    border-color: #b8941f;
+  }
+  .score-input::placeholder { color: #ccc; font-weight: 400; }
+
+  .draw-btn {
+    padding: 5px 8px;
+    border-radius: 7px;
+    font-size: 10px;
+    font-weight: 500;
+    color: #bbb;
+    flex-shrink: 0;
+    border: none;
+    background: none;
+    cursor: pointer;
+  }
+  .draw-btn.selected {
+    background: rgba(245,158,11,0.12);
+    color: #b8941f;
+    font-weight: 600;
+  }
+
+  /* CTA button */
+  .cta {
+    margin: 4px 16px 18px;
+    display: block;
+    width: calc(100% - 32px);
+    padding: 13px;
+    border-radius: 12px;
+    font-size: 13px;
+    font-weight: 600;
+    text-align: center;
+    border: none;
+    cursor: pointer;
+    background: #e0d9cd;
+    color: #a09888;
+  }
+
+  /* =========================================================
+     PHONE 2 — RESULTS (UNCHANGED)
+     ========================================================= */
+
+  /* Results nav */
+  .results-nav {
+    padding: 10px 16px 8px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+  .results-nav .title {
+    font-size: 17px;
+    font-weight: 800;
+    color: #191512;
+  }
+  .results-nav .filter-btn {
+    font-size: 12px;
+    font-weight: 600;
+    color: #a09888;
+    padding: 5px 10px;
+    border: 1px solid #d6cfc3;
+    border-radius: 8px;
+    background: #f5f0e8;
+  }
+
+  /* Round pill nav */
+  .round-pills {
+    display: flex;
+    gap: 6px;
+    padding: 0 16px 10px;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+  }
+  .round-pills::-webkit-scrollbar { display: none; }
+  .round-pill {
+    flex-shrink: 0;
+    padding: 5px 12px;
+    border-radius: 999px;
+    font-size: 12px;
+    font-weight: 600;
+  }
+  .round-pill.active { background: #191512; color: #efe9de; }
+  .round-pill.inactive { border: 1px solid #d6cfc3; color: #a09888; }
+
+  /* Result card — city-branded */
+  .result-card {
+    margin: 0 16px 10px;
+    border-radius: 14px;
+    overflow: hidden;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.12);
+  }
+
+  .result-card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 10px 14px 8px;
+  }
+  .result-card-header .group-meta {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: rgba(255,255,255,0.65);
+  }
+  .result-card-header .city-col {
+    text-align: right;
+  }
+  .result-card-header .city-name {
+    font-size: 11px;
+    font-weight: 600;
+    color: rgba(255,255,255,0.75);
+  }
+  .result-card-header .stadium-name {
+    font-size: 9px;
+    font-weight: 500;
+    color: rgba(255,255,255,0.4);
+    margin-top: 1px;
+  }
+
+  .result-card-teams {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    padding: 6px 14px 10px;
+  }
+  .result-team {
+    display: flex;
+    align-items: center;
+    gap: 7px;
+  }
+  .result-team .flag-round {
+    width: 26px;
+    height: 26px;
+    border-radius: 50%;
+    overflow: hidden;
+    flex-shrink: 0;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.25);
+  }
+  .result-team .flag-round img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+  .result-team .team-name {
+    font-size: 13px;
+    font-weight: 700;
+    color: #fff;
+  }
+  .result-vs {
+    font-size: 11px;
+    font-weight: 700;
+    color: rgba(255,255,255,0.45);
+    flex-shrink: 0;
+  }
+
+  /* Score pill */
+  .score-area {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 8px;
+    padding: 0 14px 10px;
+  }
+  .score-pill {
+    background: rgba(255,255,255,0.15);
+    border-radius: 999px;
+    padding: 4px 14px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 16px;
+    font-weight: 700;
+    color: #fff;
+    letter-spacing: 0.02em;
+  }
+  .status-badge {
+    padding: 3px 9px;
+    border-radius: 999px;
+    font-size: 10px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+  }
+  .status-badge.final {
+    background: rgba(10,168,109,0.28);
+    color: #6ee7b7;
+  }
+  .status-badge.upcoming {
+    background: rgba(255,255,255,0.12);
+    color: rgba(255,255,255,0.55);
+  }
+
+  /* Info row */
+  .result-info {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0;
+    margin: 0 14px 12px;
+    background: rgba(0,0,0,0.15);
+    border-radius: 10px;
+    overflow: hidden;
+  }
+  .result-info-cell {
+    padding: 8px 10px;
+  }
+  .result-info-cell:first-child {
+    border-right: 1px solid rgba(255,255,255,0.08);
+  }
+  .result-info-cell .info-label {
+    font-size: 9px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.07em;
+    color: rgba(255,255,255,0.45);
+    margin-bottom: 2px;
+  }
+  .result-info-cell .info-value {
+    font-size: 11px;
+    font-weight: 600;
+    color: rgba(255,255,255,0.85);
+    line-height: 1.3;
+  }
+
+  /* Stadium footer */
+  .result-stadium {
+    padding: 0 14px 11px;
+    font-size: 10px;
+    font-weight: 600;
+    color: rgba(255,255,255,0.4);
+    display: flex;
+    align-items: center;
+    gap: 5px;
+  }
+  .result-stadium svg {
+    width: 10px;
+    height: 10px;
+    stroke: rgba(255,255,255,0.35);
+    fill: none;
+    stroke-width: 1.5;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+    flex-shrink: 0;
+  }
+
+  /* Section label */
+  .section-label {
+    padding: 6px 16px 4px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.07em;
+    color: #a09888;
+  }
+</style>
+</head>
+<body>
+
+<div class="page-title">
+  <h1>Bracket Wizard vs Results — separate components</h1>
+  <p>Left: redesigned picker cards &nbsp;·&nbsp; Right: results/fixtures cards (unchanged)</p>
+</div>
+
+<div class="phones-row">
+
+  <!-- =====================================================
+       PHONE 1: BRACKET WIZARD — NEW DESIGN
+       ===================================================== -->
+  <div class="phone-col">
+    <div class="phone-label">
+      <h2>Bracket Wizard — New Design</h2>
+      <p>Redesigned match picker cards</p>
+    </div>
+
+    <div class="phone">
+      <!-- Status bar -->
+      <div class="status-bar">
+        <span class="time">9:41</span>
+        <div class="icons">
+          <!-- Signal -->
+          <svg viewBox="0 0 14 14"><rect x="0" y="8" width="2.5" height="6" rx="0.5"/><rect x="3.5" y="5.5" width="2.5" height="8.5" rx="0.5"/><rect x="7" y="3" width="2.5" height="11" rx="0.5"/><rect x="10.5" y="0" width="2.5" height="14" rx="0.5" opacity="0.3"/></svg>
+          <!-- Wifi -->
+          <svg viewBox="0 0 14 14"><path d="M1 5c1.7-1.7 4-2.7 6.5-2.7s4.8 1 6.5 2.7" stroke="#191512" stroke-width="1.4" fill="none" stroke-linecap="round"/><path d="M3.3 7.3c1.1-1.1 2.6-1.8 4.2-1.8s3.1.7 4.2 1.8" stroke="#191512" stroke-width="1.4" fill="none" stroke-linecap="round"/><circle cx="7.5" cy="10.5" r="1.2"/></svg>
+          <!-- Battery -->
+          <svg viewBox="0 0 18 10"><rect x="0" y="0.5" width="15" height="9" rx="2" stroke="#191512" stroke-width="1" fill="none"/><rect x="1" y="1.5" width="11" height="7" rx="1.2" fill="#191512"/><path d="M15.5 3.5v3" stroke="#191512" stroke-width="1.2" stroke-linecap="round"/></svg>
+        </div>
+      </div>
+
+      <!-- Nav -->
+      <div class="wizard-nav">
+        <span class="back">
+          <svg viewBox="0 0 14 14"><polyline points="9,2 4,7 9,12"/></svg>
+          Groups
+        </span>
+        <span class="step">Step 1 of 3</span>
+      </div>
+
+      <!-- Thin progress bar -->
+      <div class="wizard-progress-bar">
+        <div class="wizard-progress-bar-fill"></div>
+      </div>
+
+      <!-- Group pills -->
+      <div class="group-pills">
+        <button class="group-pill active">A &bull;</button>
+        <button class="group-pill done">B ✓</button>
+        <button class="group-pill empty">C</button>
+        <button class="group-pill empty">D</button>
+        <button class="group-pill empty">E</button>
+        <button class="group-pill empty">F</button>
+        <button class="group-pill empty">G</button>
+        <button class="group-pill empty">H</button>
+      </div>
+
+      <!-- Group header -->
+      <div class="group-header">
+        <div class="top-row">
+          <div>
+            <span class="meta">Group 1 of 12</span>
+            <h2>Group A</h2>
+          </div>
+          <span class="count">1/6</span>
+        </div>
+        <p class="hint">Pick every result. Exact scores are optional.</p>
+      </div>
+
+      <!-- Card 1: Home win, scores filled -->
+      <div class="pick-card complete">
+        <div class="pick-row">
+          <div class="team selected">
+            <span class="flag-pill"><img src="https://flagcdn.com/mx.svg" alt="Mexico"></span>
+            <span class="name">Mexico</span>
+          </div>
+          <input class="score-input filled" type="text" inputmode="numeric" maxlength="2" value="2" readonly>
+          <button class="draw-btn">draw</button>
+          <input class="score-input filled" type="text" inputmode="numeric" maxlength="2" value="1" readonly>
+          <div class="team">
+            <span class="flag-pill"><img src="https://flagcdn.com/kr.svg" alt="South Korea"></span>
+            <span class="name">South Korea</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Card 2: Draw, scores filled -->
+      <div class="pick-card complete">
+        <div class="pick-row">
+          <div class="team">
+            <span class="flag-pill"><img src="https://flagcdn.com/mx.svg" alt="Mexico"></span>
+            <span class="name">Mexico</span>
+          </div>
+          <input class="score-input filled" type="text" inputmode="numeric" maxlength="2" value="1" readonly>
+          <button class="draw-btn selected">draw</button>
+          <input class="score-input filled" type="text" inputmode="numeric" maxlength="2" value="1" readonly>
+          <div class="team">
+            <span class="flag-pill"><img src="https://flagcdn.com/za.svg" alt="South Africa"></span>
+            <span class="name">South Africa</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Card 3: Away win, no scores -->
+      <div class="pick-card complete">
+        <div class="pick-row">
+          <div class="team">
+            <span class="flag-pill"><img src="https://flagcdn.com/za.svg" alt="South Africa"></span>
+            <span class="name">South Africa</span>
+          </div>
+          <input class="score-input" type="text" inputmode="numeric" maxlength="2" placeholder="–" readonly>
+          <button class="draw-btn">draw</button>
+          <input class="score-input" type="text" inputmode="numeric" maxlength="2" placeholder="–" readonly>
+          <div class="team selected">
+            <span class="flag-pill"><img src="https://flagcdn.com/cz.svg" alt="Czechia"></span>
+            <span class="name">Czechia</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Card 4: Unselected -->
+      <div class="pick-card">
+        <div class="pick-row">
+          <div class="team">
+            <span class="flag-pill"><img src="https://flagcdn.com/kr.svg" alt="South Korea"></span>
+            <span class="name">South Korea</span>
+          </div>
+          <input class="score-input" type="text" inputmode="numeric" maxlength="2" placeholder="–" readonly>
+          <button class="draw-btn">draw</button>
+          <input class="score-input" type="text" inputmode="numeric" maxlength="2" placeholder="–" readonly>
+          <div class="team">
+            <span class="flag-pill"><img src="https://flagcdn.com/cz.svg" alt="Czechia"></span>
+            <span class="name">Czechia</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- CTA -->
+      <button class="cta">5 left to call</button>
+    </div>
+  </div>
+
+  <!-- =====================================================
+       PHONE 2: RESULTS — UNCHANGED
+       ===================================================== -->
+  <div class="phone-col">
+    <div class="phone-label">
+      <h2>Results — Unchanged</h2>
+      <p>City-branded read-only fixture cards</p>
+    </div>
+
+    <div class="phone" style="background: #efe9de;">
+      <!-- Status bar -->
+      <div class="status-bar">
+        <span class="time">9:41</span>
+        <div class="icons">
+          <svg viewBox="0 0 14 14"><rect x="0" y="8" width="2.5" height="6" rx="0.5"/><rect x="3.5" y="5.5" width="2.5" height="8.5" rx="0.5"/><rect x="7" y="3" width="2.5" height="11" rx="0.5"/><rect x="10.5" y="0" width="2.5" height="14" rx="0.5" opacity="0.3"/></svg>
+          <svg viewBox="0 0 14 14"><path d="M1 5c1.7-1.7 4-2.7 6.5-2.7s4.8 1 6.5 2.7" stroke="#191512" stroke-width="1.4" fill="none" stroke-linecap="round"/><path d="M3.3 7.3c1.1-1.1 2.6-1.8 4.2-1.8s3.1.7 4.2 1.8" stroke="#191512" stroke-width="1.4" fill="none" stroke-linecap="round"/><circle cx="7.5" cy="10.5" r="1.2"/></svg>
+          <svg viewBox="0 0 18 10"><rect x="0" y="0.5" width="15" height="9" rx="2" stroke="#191512" stroke-width="1" fill="none"/><rect x="1" y="1.5" width="11" height="7" rx="1.2" fill="#191512"/><path d="M15.5 3.5v3" stroke="#191512" stroke-width="1.2" stroke-linecap="round"/></svg>
+        </div>
+      </div>
+
+      <!-- Results nav -->
+      <div class="results-nav">
+        <span class="title">Results</span>
+        <span class="filter-btn">Group Stage</span>
+      </div>
+
+      <!-- Round pills -->
+      <div class="round-pills">
+        <span class="round-pill active">MD1</span>
+        <span class="round-pill inactive">MD2</span>
+        <span class="round-pill inactive">MD3</span>
+        <span class="round-pill inactive">Round of 16</span>
+        <span class="round-pill inactive">QF</span>
+      </div>
+
+      <div class="section-label">Monday, 11 Jun 2026</div>
+
+      <!-- Result Card 1: Mexico City — Finished -->
+      <div class="result-card">
+        <div style="background: #2d6a4f; border-radius: 14px; overflow: hidden;">
+          <div class="result-card-header">
+            <span class="group-meta">Group A · MD1</span>
+            <div class="city-col">
+              <div class="city-name">Mexico City</div>
+              <div class="stadium-name">Estadio Azteca</div>
+            </div>
+          </div>
+          <div class="result-card-teams">
+            <div class="result-team">
+              <div class="flag-round"><img src="https://flagcdn.com/mx.svg" alt="Mexico"></div>
+              <span class="team-name">Mexico</span>
+            </div>
+            <span class="result-vs">v</span>
+            <div class="result-team">
+              <div class="flag-round"><img src="https://flagcdn.com/kr.svg" alt="South Korea"></div>
+              <span class="team-name">South Korea</span>
+            </div>
+          </div>
+          <div class="score-area">
+            <div class="score-pill">2 – 1</div>
+            <span class="status-badge final">Final</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="section-label">Tuesday, 12 Jun 2026</div>
+
+      <!-- Result Card 2: New York — Upcoming -->
+      <div class="result-card">
+        <div style="background: #1a365d; border-radius: 14px; overflow: hidden;">
+          <div class="result-card-header">
+            <span class="group-meta">Group B · MD1</span>
+            <div class="city-col">
+              <div class="city-name">New York</div>
+              <div class="stadium-name">MetLife Stadium</div>
+            </div>
+          </div>
+          <div class="result-card-teams">
+            <div class="result-team">
+              <div class="flag-round"><img src="https://flagcdn.com/br.svg" alt="Brazil"></div>
+              <span class="team-name">Brazil</span>
+            </div>
+            <span class="result-vs">v</span>
+            <div class="result-team">
+              <div class="flag-round"><img src="https://flagcdn.com/de.svg" alt="Germany"></div>
+              <span class="team-name">Germany</span>
+            </div>
+          </div>
+          <div class="score-area">
+            <span class="status-badge upcoming">Not started</span>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+</div><!-- /phones-row -->
+
+</body>
+</html>

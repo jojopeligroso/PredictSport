@@ -1,0 +1,1149 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Rules — WC 2026 Prediction Game</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans:ital,wght@0,400;0,500;0,600;0,700;0,800;0,900;1,400;1,500;1,600&display=swap" rel="stylesheet" />
+  <style>
+    *, *::before, *::after {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    :root {
+      --ps-bg: #0a0f0a;
+      --ps-bg-alt: #0d140d;
+      --ps-surface: #1a231a;
+      --ps-surface2: #141c14;
+      --ps-text: #f1ece2;
+      --ps-text-sec: #a8a090;
+      --ps-text-ter: #706858;
+      --ps-amber: #d4af37;
+      --ps-amber-deep: #b8941f;
+      --ps-amber-soft: rgba(212, 175, 55, 0.12);
+      --ps-border: rgba(212, 175, 55, 0.10);
+      --ps-border-strong: rgba(212, 175, 55, 0.20);
+      --ps-chip: rgba(212, 175, 55, 0.06);
+      --ps-green: #0aa86d;
+      --ps-red: #e23d4f;
+      --wc-mexico-green: #006847;
+      --wc-gold: #d4af37;
+      --wc-dark: #0a0f0a;
+    }
+
+    html {
+      scroll-behavior: smooth;
+    }
+
+    body {
+      background: var(--ps-bg);
+      color: var(--ps-text);
+      font-family: 'Noto Sans', sans-serif;
+      font-size: 15px;
+      line-height: 1.6;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    /* Green stripe at top */
+    .top-stripe {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 4px;
+      background: var(--wc-mexico-green);
+      z-index: 100;
+    }
+
+    .page-wrap {
+      max-width: 480px;
+      margin: 0 auto;
+      padding: 0 16px;
+      padding-top: 4px; /* account for stripe */
+    }
+
+    /* Sticky nav */
+    .sticky-nav {
+      position: sticky;
+      top: 4px;
+      z-index: 50;
+      background: rgba(10, 15, 10, 0.96);
+      backdrop-filter: blur(8px);
+      -webkit-backdrop-filter: blur(8px);
+      padding: 10px 16px;
+      margin: 0 -16px;
+      transition: border-bottom 0.15s ease;
+    }
+
+    .sticky-nav.is-stuck {
+      border-bottom: 1px solid var(--ps-amber);
+    }
+
+    .sticky-nav-inner {
+      display: flex;
+      align-items: center;
+      gap: 0;
+      flex-wrap: nowrap;
+    }
+
+    .nav-link {
+      font-size: 12px;
+      font-weight: 500;
+      color: var(--ps-text-ter);
+      text-decoration: none;
+      cursor: pointer;
+      background: none;
+      border: none;
+      padding: 0;
+      font-family: 'Noto Sans', sans-serif;
+      transition: color 0.15s ease;
+    }
+
+    .nav-link:hover {
+      color: var(--ps-text-sec);
+    }
+
+    .nav-link.active {
+      color: var(--ps-amber);
+    }
+
+    .nav-sep {
+      font-size: 12px;
+      color: var(--ps-text-ter);
+      opacity: 0.5;
+      padding: 0 8px;
+      user-select: none;
+    }
+
+    /* Header */
+    .page-header {
+      padding-top: 24px;
+      padding-bottom: 32px;
+    }
+
+    .back-link {
+      display: inline-block;
+      font-size: 12px;
+      color: var(--ps-text-sec);
+      text-decoration: none;
+      margin-bottom: 12px;
+      cursor: pointer;
+    }
+
+    .back-link:hover {
+      color: var(--ps-text);
+    }
+
+    .page-title {
+      font-size: 20px;
+      font-weight: 800;
+      color: var(--ps-text);
+      line-height: 1.2;
+    }
+
+    .page-subtitle {
+      font-size: 12px;
+      color: var(--ps-text-sec);
+      margin-top: 4px;
+    }
+
+    /* Section label */
+    .section-label {
+      font-size: 10px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.18em;
+      color: var(--ps-amber);
+      margin-bottom: 16px;
+    }
+
+    /* Intro */
+    .intro-text {
+      font-style: italic;
+      font-size: 14px;
+      color: var(--ps-text-sec);
+      line-height: 1.65;
+      margin-bottom: 40px;
+    }
+
+    /* How it works steps */
+    .how-it-works {
+      margin-bottom: 40px;
+    }
+
+    .steps-list {
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+      align-items: center;
+    }
+
+    .step {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      width: 100%;
+    }
+
+    .step-number {
+      width: 24px;
+      height: 24px;
+      border-radius: 50%;
+      background: var(--ps-amber);
+      color: var(--ps-bg);
+      font-size: 12px;
+      font-weight: 700;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+    }
+
+    .step-text {
+      font-size: 14px;
+      color: var(--ps-text);
+    }
+
+    /* Section spacing */
+    .section {
+      margin-bottom: 40px;
+    }
+
+    /* Card */
+    .card {
+      background: var(--ps-surface);
+      border: 1px solid var(--ps-border);
+      border-radius: 8px;
+      overflow: hidden;
+    }
+
+    .card-xl {
+      border-radius: 12px;
+    }
+
+    /* Points table */
+    .points-table {
+      width: 100%;
+    }
+
+    .points-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 10px 16px;
+      border-bottom: 1px solid var(--ps-border);
+    }
+
+    .points-row:last-of-type {
+      border-bottom: none;
+    }
+
+    .points-label {
+      font-size: 14px;
+      color: var(--ps-text);
+    }
+
+    .points-value {
+      font-size: 14px;
+      font-weight: 700;
+      color: var(--ps-amber);
+      font-variant-numeric: tabular-nums;
+      text-align: right;
+      min-width: 40px;
+    }
+
+    .points-footer {
+      padding: 10px 16px;
+      font-size: 12px;
+      color: var(--ps-text-sec);
+      border-top: 1px solid var(--ps-border);
+      background: var(--ps-surface2);
+    }
+
+    /* Ways to win */
+    .ways-heading {
+      font-size: 16px;
+      font-weight: 800;
+      color: var(--ps-text);
+      margin-top: 24px;
+      margin-bottom: 12px;
+    }
+
+    .chips-list {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .chip-card {
+      background: var(--ps-chip);
+      border-radius: 8px;
+      padding: 10px 14px;
+    }
+
+    .chip-card-title {
+      font-size: 13px;
+      font-weight: 700;
+      color: var(--ps-text);
+      margin-bottom: 4px;
+    }
+
+    .chip-card-body {
+      font-size: 12px;
+      color: var(--ps-text-sec);
+      line-height: 1.55;
+    }
+
+    /* Format section */
+    .section-para {
+      font-size: 14px;
+      color: var(--ps-text-sec);
+      line-height: 1.65;
+      margin-bottom: 12px;
+    }
+
+    .section-para:last-child {
+      margin-bottom: 0;
+    }
+
+    .subsection {
+      margin-bottom: 24px;
+    }
+
+    .sub-heading {
+      font-size: 14px;
+      font-weight: 800;
+      color: var(--ps-text);
+      margin-bottom: 10px;
+    }
+
+    /* Group illustration card */
+    .group-card {
+      background: var(--ps-surface);
+      border: 1px solid var(--ps-border);
+      border-radius: 12px;
+      overflow: hidden;
+      margin-bottom: 12px;
+    }
+
+    .group-card-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 10px 16px;
+      border-bottom: 1px solid var(--ps-border);
+    }
+
+    .group-card-title {
+      font-size: 14px;
+      font-weight: 700;
+      color: var(--ps-text);
+    }
+
+    .group-card-meta {
+      font-size: 10px;
+      color: var(--ps-text-ter);
+      font-variant-numeric: tabular-nums;
+    }
+
+    .player-row {
+      display: flex;
+      align-items: center;
+      padding: 10px 16px;
+      gap: 0;
+      border-bottom: 1px solid rgba(212, 175, 55, 0.05);
+    }
+
+    .player-row:last-child {
+      border-bottom: none;
+    }
+
+    .player-rank {
+      width: 24px;
+      font-size: 12px;
+      font-weight: 700;
+      color: var(--ps-text-ter);
+      text-align: center;
+      flex-shrink: 0;
+      margin-right: 10px;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .player-name {
+      font-size: 14px;
+      color: var(--ps-text);
+      flex: 1;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .player-name-you {
+      font-weight: 600;
+    }
+
+    .player-status {
+      flex-shrink: 0;
+      margin-right: 10px;
+    }
+
+    .player-pts {
+      width: 56px;
+      font-size: 12px;
+      font-weight: 700;
+      color: var(--ps-text);
+      text-align: right;
+      font-variant-numeric: tabular-nums;
+      flex-shrink: 0;
+    }
+
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      font-size: 10px;
+      font-weight: 700;
+      border-radius: 4px;
+      padding: 2px 6px;
+      line-height: 1;
+    }
+
+    .badge-safe {
+      color: var(--ps-green);
+      background: rgba(10, 168, 109, 0.15);
+    }
+
+    .badge-amber {
+      color: var(--ps-amber);
+      background: rgba(212, 175, 55, 0.20);
+    }
+
+    .badge-out {
+      color: var(--ps-red);
+      background: rgba(226, 61, 79, 0.15);
+    }
+
+    .badge-you {
+      color: var(--ps-amber);
+      background: rgba(212, 175, 55, 0.20);
+    }
+
+    .row-you {
+      background: rgba(212, 175, 55, 0.05);
+    }
+
+    .row-danger {
+      background: rgba(212, 175, 55, 0.08);
+    }
+
+    .row-out {
+      background: rgba(226, 61, 79, 0.05);
+      opacity: 0.5;
+    }
+
+    .divider-amber {
+      height: 0;
+      border: none;
+      border-top: 1px dashed rgba(212, 175, 55, 0.5);
+      margin: 0;
+    }
+
+    .divider-red {
+      height: 0;
+      border: none;
+      border-top: 1px dashed rgba(226, 61, 79, 0.5);
+      margin: 0;
+    }
+
+    /* How the cut works box */
+    .cut-box {
+      background: var(--ps-chip);
+      border-radius: 8px;
+      padding: 12px 14px;
+      margin-bottom: 24px;
+    }
+
+    .cut-box-title {
+      font-size: 14px;
+      font-weight: 600;
+      color: var(--ps-text);
+      margin-bottom: 8px;
+    }
+
+    .cut-list {
+      list-style: none;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .cut-list li {
+      font-size: 12px;
+      color: var(--ps-text-sec);
+      line-height: 1.55;
+      padding-left: 12px;
+      position: relative;
+    }
+
+    .cut-list li::before {
+      content: '-';
+      position: absolute;
+      left: 0;
+      color: var(--ps-text-ter);
+    }
+
+    .text-green { color: var(--ps-green); font-weight: 600; }
+    .text-amber { color: var(--ps-amber); font-weight: 600; }
+    .text-red   { color: var(--ps-red);   font-weight: 600; }
+    .text-sec   { color: var(--ps-text-sec); }
+    .text-ter   { color: var(--ps-text-ter); }
+    .text-primary { color: var(--ps-text); font-weight: 700; }
+
+    /* R32 card */
+    .blurred-name {
+      color: var(--ps-text-ter);
+      filter: blur(5px);
+      user-select: none;
+    }
+
+    .blurred-name-sm {
+      color: var(--ps-text-ter);
+      opacity: 0.3;
+      filter: blur(3px);
+      user-select: none;
+    }
+
+    .dots-row {
+      text-align: center;
+      font-size: 10px;
+      color: var(--ps-text-ter);
+      padding: 6px 16px;
+      letter-spacing: 4px;
+    }
+
+    .eliminated-section {
+      background: rgba(226, 61, 79, 0.03);
+      padding: 12px 16px;
+    }
+
+    .eliminated-label {
+      font-size: 10px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.14em;
+      color: rgba(226, 61, 79, 0.6);
+      margin-bottom: 8px;
+    }
+
+    .eliminated-names {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 4px 8px;
+    }
+
+    .struck-name {
+      font-size: 11px;
+      color: rgba(112, 104, 88, 0.4);
+      text-decoration: line-through;
+    }
+
+    /* Elimination curve table */
+    .curve-table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+
+    .curve-table th {
+      font-size: 10px;
+      font-weight: 700;
+      color: var(--ps-text-ter);
+      font-variant-numeric: tabular-nums;
+      padding: 10px 0;
+      text-align: center;
+      border-bottom: 1px solid var(--ps-border);
+    }
+
+    .curve-table th:first-child {
+      text-align: left;
+      padding-left: 12px;
+    }
+
+    .curve-table td {
+      font-size: 12px;
+      font-variant-numeric: tabular-nums;
+      color: var(--ps-text-sec);
+      padding: 9px 0;
+      text-align: center;
+      border-bottom: 1px solid var(--ps-border);
+    }
+
+    .curve-table td:first-child {
+      text-align: left;
+      padding-left: 12px;
+    }
+
+    .curve-table tr:last-child td {
+      border-bottom: none;
+    }
+
+    .curve-row-highlight td {
+      background: rgba(212, 175, 55, 0.05);
+    }
+
+    .curve-row-highlight td:first-child {
+      color: var(--ps-amber);
+      font-weight: 700;
+    }
+
+    /* Picks section */
+    .details-el {
+      margin-top: 8px;
+    }
+
+    .details-el summary {
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--ps-amber-deep);
+      cursor: pointer;
+      list-style: none;
+      user-select: none;
+      padding: 4px 0;
+    }
+
+    .details-el summary::-webkit-details-marker {
+      display: none;
+    }
+
+    .details-el summary::before {
+      content: '+ ';
+      opacity: 0.7;
+    }
+
+    .details-el[open] summary::before {
+      content: '- ';
+    }
+
+    .details-content {
+      margin-top: 8px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .details-content p {
+      font-size: 12px;
+      color: var(--ps-text-sec);
+      line-height: 1.6;
+    }
+
+    /* Tiebreakers */
+    .tiebreaker-text {
+      font-size: 14px;
+      color: var(--ps-text-sec);
+      line-height: 1.65;
+    }
+
+    .tiebreaker-text strong {
+      color: var(--ps-text);
+      font-weight: 700;
+    }
+
+    /* Join CTA card */
+    .cta-card {
+      background: var(--ps-surface);
+      border: 1px solid var(--ps-border);
+      border-radius: 12px;
+      padding: 20px;
+      text-align: center;
+      margin-bottom: 64px;
+    }
+
+    .cta-title {
+      font-size: 18px;
+      font-weight: 800;
+      color: var(--ps-text);
+      margin-bottom: 6px;
+    }
+
+    .cta-subtitle {
+      font-size: 12px;
+      color: var(--ps-text-sec);
+      margin-bottom: 16px;
+    }
+
+    .cta-buttons {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .btn-primary {
+      width: 100%;
+      background: var(--ps-amber);
+      color: var(--ps-bg);
+      border: none;
+      border-radius: 12px;
+      font-size: 14px;
+      font-weight: 600;
+      font-family: 'Noto Sans', sans-serif;
+      padding: 12px;
+      cursor: pointer;
+      transition: opacity 0.15s ease;
+    }
+
+    .btn-primary:hover {
+      opacity: 0.9;
+    }
+
+    .btn-secondary {
+      width: 100%;
+      background: transparent;
+      color: var(--ps-text);
+      border: 1px solid var(--ps-border-strong);
+      border-radius: 12px;
+      font-size: 14px;
+      font-weight: 600;
+      font-family: 'Noto Sans', sans-serif;
+      padding: 12px;
+      cursor: pointer;
+      transition: border-color 0.15s ease;
+    }
+
+    .btn-secondary:hover {
+      border-color: var(--ps-amber);
+    }
+
+    /* Utilities */
+    .mb-12 { margin-bottom: 12px; }
+    .mb-24 { margin-bottom: 24px; }
+    .mb-40 { margin-bottom: 40px; }
+  </style>
+</head>
+<body>
+
+  <div class="top-stripe"></div>
+
+  <div class="page-wrap">
+
+    <!-- Sticky Nav -->
+    <nav class="sticky-nav" id="sticky-nav">
+      <div class="sticky-nav-inner">
+        <button class="nav-link active" data-target="points" onclick="scrollToSection('points')">Points</button>
+        <span class="nav-sep">&middot;</span>
+        <button class="nav-link" data-target="format" onclick="scrollToSection('format')">Format</button>
+        <span class="nav-sep">&middot;</span>
+        <button class="nav-link" data-target="picks" onclick="scrollToSection('picks')">Picks</button>
+        <span class="nav-sep">&middot;</span>
+        <button class="nav-link" data-target="ties" onclick="scrollToSection('ties')">Ties</button>
+      </div>
+    </nav>
+
+    <!-- Header (scrolls away) -->
+    <header class="page-header" id="page-header">
+      <a class="back-link" href="#">← Back to World Cup</a>
+      <div class="page-title">Rules</div>
+      <div class="page-subtitle">Everything you need to know.</div>
+    </header>
+
+    <!-- Intro -->
+    <p class="intro-text mb-40">A prediction game built as an homage to the World Cup's own format — groups, knockouts, and a final.</p>
+
+    <!-- How it works -->
+    <section class="how-it-works">
+      <div class="section-label">HOW IT WORKS</div>
+      <div class="steps-list">
+        <div class="step">
+          <div class="step-number">1</div>
+          <div class="step-text">Pick the winner of each match</div>
+        </div>
+        <div class="step">
+          <div class="step-number">2</div>
+          <div class="step-text">Guess the exact score for bonus points</div>
+        </div>
+        <div class="step">
+          <div class="step-number">3</div>
+          <div class="step-text">Climb the leaderboard</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Points chapter -->
+    <section class="section" id="points">
+      <div class="section-label">POINTS</div>
+
+      <div class="card mb-12">
+        <div class="points-table">
+          <div class="points-row">
+            <span class="points-label">Correct winner (or draw)</span>
+            <span class="points-value">2</span>
+          </div>
+          <div class="points-row">
+            <span class="points-label">Exact score bonus</span>
+            <span class="points-value">+3</span>
+          </div>
+          <div class="points-row" style="border-bottom: none;">
+            <span class="points-label">Correct team advances (KO)</span>
+            <span class="points-value">1</span>
+          </div>
+        </div>
+        <div class="points-footer">
+          Max per group match: <strong>5 pts</strong>. Max per knockout match: <strong>6 pts</strong>.
+        </div>
+      </div>
+
+      <div class="ways-heading">Ways to win</div>
+
+      <div class="chips-list">
+        <div class="chip-card">
+          <div class="chip-card-title">Overall</div>
+          <div class="chip-card-body">Total points across the whole tournament. Every correct pick counts. Most points wins.</div>
+        </div>
+        <div class="chip-card">
+          <div class="chip-card-title">Format</div>
+          <div class="chip-card-body">Survivor-style elimination that mirrors the World Cup itself. Groups, knockouts, last one standing. See the Format section below for the full breakdown.</div>
+        </div>
+        <div class="chip-card">
+          <div class="chip-card-title">Full Bracket</div>
+          <div class="chip-card-body">Before kickoff, predict every group finish and the entire knockout bracket. Locks at first whistle.</div>
+        </div>
+        <div class="chip-card">
+          <div class="chip-card-title">KO Bracket</div>
+          <div class="chip-card-body">Once groups are done, predict every knockout match from the Round of 32 to the Final.</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Format chapter -->
+    <section class="section" id="format">
+      <div class="section-label">FORMAT — SURVIVOR</div>
+
+      <p class="section-para">The Format classification is an homage to the World Cup's own structure. You're placed in a group. After each stage is finalised, the bottom players are eliminated and the survivors are redrawn into new groups. Points reset to zero at each stage — only your current performance matters.</p>
+
+      <p class="section-para mb-24">With 48 players, the elimination curve mirrors the World Cup itself. With fewer players, the curve is adjusted to keep every round competitive.</p>
+
+      <!-- Group Stage subsection -->
+      <div class="subsection">
+        <div class="sub-heading">Group Stage (Matchdays 1–3)</div>
+
+        <p class="section-para">All three matchdays count as one stage. Your points accumulate across MD1, MD2, and MD3.</p>
+
+        <p class="section-para">After MD3, the cut works like the real World Cup:</p>
+
+        <!-- Group A illustration card -->
+        <div class="group-card mb-12">
+          <div class="group-card-header">
+            <span class="group-card-title">Group A</span>
+            <span class="group-card-meta">1 of 12 groups &middot; 48 players</span>
+          </div>
+
+          <!-- Row 1: safe -->
+          <div class="player-row">
+            <div class="player-rank">1</div>
+            <div class="player-name">Manning</div>
+            <div class="player-status"><span class="badge badge-safe">SAFE</span></div>
+            <div class="player-pts">14 pts</div>
+          </div>
+
+          <!-- Row 2: You — safe -->
+          <div class="player-row row-you">
+            <div class="player-rank">2</div>
+            <div class="player-name player-name-you">You <span class="badge badge-you">YOU</span></div>
+            <div class="player-status"><span class="badge badge-safe">SAFE</span></div>
+            <div class="player-pts">11 pts</div>
+          </div>
+
+          <div class="divider-amber"></div>
+
+          <!-- Row 3: danger zone -->
+          <div class="player-row row-danger">
+            <div class="player-rank">3</div>
+            <div class="player-name">Bohanna</div>
+            <div class="player-status"><span class="badge badge-amber">?</span></div>
+            <div class="player-pts">7 pts</div>
+          </div>
+
+          <div class="divider-red"></div>
+
+          <!-- Row 4: out -->
+          <div class="player-row row-out">
+            <div class="player-rank">4</div>
+            <div class="player-name">Scrooch</div>
+            <div class="player-status"><span class="badge badge-out">OUT</span></div>
+            <div class="player-pts">3 pts</div>
+          </div>
+        </div>
+
+        <!-- How the cut works box -->
+        <div class="cut-box">
+          <div class="cut-box-title">How the cut works</div>
+          <ul class="cut-list">
+            <li><span class="text-green">Top 2</span> in each group qualify automatically.</li>
+            <li><span class="text-amber">3rd place</span> is the danger zone. Your points are compared against every other 3rd-place finisher across all groups. Only the best thirds survive — the rest are eliminated. With 48 players: 8 of 12 thirds qualify. The other 4 go home.</li>
+            <li><span class="text-red">4th place</span> is always eliminated.</li>
+          </ul>
+        </div>
+      </div>
+
+      <!-- Knockout rounds subsection -->
+      <div class="subsection">
+        <div class="sub-heading">Knockout Rounds</div>
+
+        <p class="section-para">Points reset. New groups drawn from survivors. Bottom half eliminated. Repeat until only the finalists remain.</p>
+
+        <!-- R32 illustration card -->
+        <div class="group-card mb-12">
+          <div class="group-card-header">
+            <span class="group-card-title">Round of 32</span>
+            <span class="group-card-meta">32 survive &middot; points reset &middot; new groups drawn</span>
+          </div>
+
+          <div class="player-row">
+            <div class="player-rank">1</div>
+            <div class="player-name"><span class="blurred-name">████████████</span></div>
+            <div class="player-pts">—</div>
+          </div>
+
+          <div class="player-row">
+            <div class="player-rank">2</div>
+            <div class="player-name"><span class="blurred-name">████████████</span></div>
+            <div class="player-pts">—</div>
+          </div>
+
+          <div class="dots-row">&middot; &middot; &middot;</div>
+
+          <div class="player-row row-you">
+            <div class="player-rank">14</div>
+            <div class="player-name player-name-you">You <span class="badge badge-you">YOU</span></div>
+            <div class="player-pts">—</div>
+          </div>
+
+          <div class="dots-row">&middot; &middot; &middot;</div>
+
+          <div class="player-row">
+            <div class="player-rank">32</div>
+            <div class="player-name"><span class="blurred-name">████████████</span></div>
+            <div class="player-pts">—</div>
+          </div>
+
+          <div class="divider-red"></div>
+
+          <div class="eliminated-section">
+            <div class="eliminated-label">16 ELIMINATED</div>
+            <div class="eliminated-names">
+              <span class="struck-name">Scrooch</span>
+              <span class="blurred-name-sm">██████</span>
+              <span class="blurred-name-sm">███████</span>
+              <span class="blurred-name-sm">████████</span>
+              <span class="blurred-name-sm">██████</span>
+              <span class="blurred-name-sm">███████</span>
+              <span class="blurred-name-sm">█████</span>
+              <span class="blurred-name-sm">████████</span>
+              <span class="blurred-name-sm">██████</span>
+              <span class="blurred-name-sm">███████</span>
+              <span class="blurred-name-sm">████████</span>
+              <span class="blurred-name-sm">██████</span>
+              <span class="blurred-name-sm">███████</span>
+              <span class="blurred-name-sm">█████</span>
+              <span class="blurred-name-sm">████████</span>
+              <span class="blurred-name-sm">██████</span>
+            </div>
+          </div>
+        </div>
+
+        <p class="section-para mb-24">Points reset to zero. Only this round counts for survival.</p>
+      </div>
+
+      <!-- Final subsection -->
+      <div class="subsection">
+        <div class="sub-heading">Final</div>
+        <p class="section-para mb-24">The last 2 survivors predict both the Third-Place Play-Off and the Final. Most points wins. No elimination — just a winner.</p>
+      </div>
+
+      <!-- How the field narrows subsection -->
+      <div class="subsection">
+        <div class="sub-heading">How the field narrows</div>
+
+        <p class="section-para">With 48 players, the elimination curve mirrors the World Cup itself. With fewer players, adjustments are made for competitive integrity — ensuring at least one elimination at every stage.</p>
+
+        <!-- Elimination curve table -->
+        <div class="card">
+          <table class="curve-table">
+            <thead>
+              <tr>
+                <th>Start</th>
+                <th>Grps</th>
+                <th>R32</th>
+                <th>R16</th>
+                <th>QF</th>
+                <th>SF</th>
+                <th>W</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr class="curve-row-highlight">
+                <td>48</td>
+                <td>32</td>
+                <td>16</td>
+                <td>8</td>
+                <td>4</td>
+                <td>2</td>
+                <td>1</td>
+              </tr>
+              <tr>
+                <td>24</td>
+                <td>16</td>
+                <td>8</td>
+                <td>4</td>
+                <td>3</td>
+                <td>2</td>
+                <td>1</td>
+              </tr>
+              <tr>
+                <td>16</td>
+                <td>11</td>
+                <td>6</td>
+                <td>4</td>
+                <td>3</td>
+                <td>2</td>
+                <td>1</td>
+              </tr>
+              <tr>
+                <td>12</td>
+                <td>8</td>
+                <td>5</td>
+                <td>4</td>
+                <td>3</td>
+                <td>2</td>
+                <td>1</td>
+              </tr>
+              <tr>
+                <td>8</td>
+                <td>6</td>
+                <td>5</td>
+                <td>4</td>
+                <td>3</td>
+                <td>2</td>
+                <td>1</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- Picks chapter -->
+    <section class="section" id="picks">
+      <div class="section-label">WHEN DO PICKS LOCK?</div>
+
+      <p class="section-para">Each day's matches lock 10 minutes before the first kickoff of that day. You can submit picks for future days in advance — but once a day locks, it's locked.</p>
+
+      <p class="section-para">Changed your mind? No problem — update your picks as many times as you like before the day locks.</p>
+
+      <details class="details-el">
+        <summary>More detail</summary>
+        <div class="details-content">
+          <p>Outcome-only predictions are saved, but you still need to add exact scores to fully complete that day's predictions.</p>
+          <p>Events inside the same tournament stage may lock on different days and at different times.</p>
+        </div>
+      </details>
+    </section>
+
+    <!-- Tiebreakers chapter -->
+    <section class="section" id="ties">
+      <div class="section-label">TIEBREAKERS</div>
+
+      <p class="tiebreaker-text">
+        <span class="text-sec">Same points?</span>
+        <strong>H2H goal diff</strong>
+        <span class="text-sec"> → </span>
+        <strong>H2H goals</strong>
+        <span class="text-sec"> → </span>
+        <strong>overall goal diff</strong>
+        <span class="text-sec"> → </span>
+        <strong>overall goals</strong>
+        <span class="text-sec"> → </span>
+        <strong>coin flip</strong>
+      </p>
+    </section>
+
+    <!-- Join CTA -->
+    <div class="cta-card">
+      <div class="cta-title">Ready to play?</div>
+      <div class="cta-subtitle">Joins close 3 days after kickoff.</div>
+      <div class="cta-buttons">
+        <button class="btn-primary">Join with a code</button>
+        <button class="btn-secondary">Create your own</button>
+      </div>
+    </div>
+
+  </div><!-- /page-wrap -->
+
+  <script>
+    // Sticky nav border on scroll
+    const nav = document.getElementById('sticky-nav');
+    const header = document.getElementById('page-header');
+
+    const headerObserver = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting) {
+          nav.classList.remove('is-stuck');
+        } else {
+          nav.classList.add('is-stuck');
+        }
+      },
+      { threshold: 0 }
+    );
+    headerObserver.observe(header);
+
+    // Active nav link via IntersectionObserver
+    const sections = ['points', 'format', 'picks', 'ties'];
+    const navLinks = document.querySelectorAll('.nav-link[data-target]');
+
+    let activeSection = 'points';
+
+    function setActive(id) {
+      activeSection = id;
+      navLinks.forEach(link => {
+        if (link.dataset.target === id) {
+          link.classList.add('active');
+        } else {
+          link.classList.remove('active');
+        }
+      });
+    }
+
+    const sectionObserver = new IntersectionObserver(
+      (entries) => {
+        entries.forEach(entry => {
+          if (entry.isIntersecting) {
+            setActive(entry.target.id);
+          }
+        });
+      },
+      {
+        rootMargin: '-20% 0px -70% 0px',
+        threshold: 0
+      }
+    );
+
+    sections.forEach(id => {
+      const el = document.getElementById(id);
+      if (el) sectionObserver.observe(el);
+    });
+
+    // Smooth scroll on nav click
+    function scrollToSection(id) {
+      const el = document.getElementById(id);
+      if (el) {
+        const navHeight = nav.offsetHeight + 4; // 4px for top stripe
+        const top = el.getBoundingClientRect().top + window.scrollY - navHeight - 16;
+        window.scrollTo({ top, behavior: 'smooth' });
+      }
+    }
+  </script>
+
+</body>
+</html>

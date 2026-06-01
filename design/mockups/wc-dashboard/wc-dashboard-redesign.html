@@ -1,0 +1,870 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>WC Dashboard Redesign — Visitor vs Enrolled</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:ital,wght@0,400;0,500;0,600;0,700;0,800;0,900;1,400;1,500&family=JetBrains+Mono:wght@400;500;600;700&family=Instrument+Serif:ital@1&display=swap" rel="stylesheet" />
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            'ps-bg':         '#efe9de',
+            'ps-text':       '#191512',
+            'ps-text-sec':   '#6b6358',
+            'ps-text-ter':   '#9a9187',
+            'ps-amber':      '#f59e0b',
+            'ps-amber-deep': '#d97706',
+            'ps-green':      '#0aa86d',
+            'ps-red':        '#e23d4f',
+            'ps-chip':       '#e2dcd2',
+            'ps-border':     '#d6d0c6',
+            'ps-surface':    '#f5f0e8',
+          },
+          fontFamily: {
+            display: ['Inter', 'system-ui', 'sans-serif'],
+            body:    ['Inter', 'system-ui', 'sans-serif'],
+            mono:    ['JetBrains Mono', 'monospace'],
+            serif:   ['Instrument Serif', 'Georgia', 'serif'],
+          },
+        },
+      },
+    };
+  </script>
+  <style>
+    /* ── Reset ─────────────────────────────────────────────── */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: 'Inter', system-ui, sans-serif; }
+
+    /* ── WC rainbow gradient ────────────────────────────────── */
+    @keyframes wc-shimmer {
+      0%   { background-position: 0% 50%; }
+      100% { background-position: 200% 50%; }
+    }
+    .wc-gradient-strip {
+      background: linear-gradient(
+        90deg,
+        #1976D2, #00897B, #2E7D32, #F9A825, #EF6C00, #D81B60, #7B1FA2, #1976D2,
+        #00897B, #2E7D32, #F9A825, #EF6C00, #D81B60, #7B1FA2, #1976D2
+      );
+      background-size: 200% 100%;
+      animation: wc-shimmer 20s linear infinite;
+      height: 5px;
+      width: 100%;
+    }
+
+    /* ── Device frame ───────────────────────────────────────── */
+    .device-frame {
+      width: 390px;
+      border-radius: 40px;
+      border: 8px solid #191512;
+      overflow: hidden;
+      box-shadow:
+        0 2px 0 rgba(255,255,255,0.12) inset,
+        0 25px 60px rgba(0,0,0,0.30),
+        0 8px 20px rgba(0,0,0,0.18);
+      position: relative;
+      background: #efe9de;
+    }
+
+    /* ── Scrollable screen ──────────────────────────────────── */
+    .device-screen {
+      max-height: 820px;
+      overflow-y: auto;
+      scrollbar-width: none;
+    }
+    .device-screen::-webkit-scrollbar { display: none; }
+
+    /* ── Annotations ────────────────────────────────────────── */
+    .annotation {
+      position: absolute;
+      right: -10px;
+      transform: translateX(100%);
+      background: #1565C0;
+      color: white;
+      font-size: 10px;
+      font-weight: 700;
+      padding: 3px 8px;
+      border-radius: 4px;
+      white-space: nowrap;
+      pointer-events: none;
+      z-index: 50;
+      font-family: 'Inter', sans-serif;
+    }
+    .annotation::before {
+      content: '';
+      position: absolute;
+      left: -4px;
+      top: 50%;
+      transform: translateY(-50%);
+      border: 4px solid transparent;
+      border-right-color: #1565C0;
+    }
+    .annotations-hidden .annotation { display: none; }
+
+    /* ── Hero dark section ──────────────────────────────────── */
+    .hero-dark {
+      background: #0a0a0a;
+      background-image:
+        radial-gradient(ellipse at 75% 15%, rgba(245,158,11,0.08) 0%, transparent 55%),
+        radial-gradient(ellipse at 15% 85%, rgba(10,168,109,0.05) 0%, transparent 50%);
+    }
+
+    /* ── Gold CTA button ────────────────────────────────────── */
+    .btn-gold {
+      display: block;
+      width: 100%;
+      background: linear-gradient(135deg, #d4af37, #b8941f);
+      color: #0a0f0a;
+      font-weight: 800;
+      text-align: center;
+      padding: 14px 20px;
+      border-radius: 14px;
+      border: none;
+      cursor: pointer;
+      font-family: 'Inter', sans-serif;
+      font-size: 15px;
+      letter-spacing: 0.01em;
+      box-shadow: 0 8px 22px -8px rgba(245,158,11,0.55);
+    }
+    .btn-gold:hover { filter: brightness(1.05); }
+
+    /* ── Details/summary fold-out ───────────────────────────── */
+    details > summary {
+      list-style: none;
+      cursor: pointer;
+    }
+    details > summary::-webkit-details-marker { display: none; }
+
+    /* ── Progress bar ───────────────────────────────────────── */
+    .progress-bar {
+      height: 6px;
+      border-radius: 9999px;
+      background: #e2dcd2;
+      overflow: hidden;
+    }
+    .progress-bar-fill {
+      height: 100%;
+      border-radius: 9999px;
+      background: #f59e0b;
+    }
+
+    /* ── Avatar stack ───────────────────────────────────────── */
+    .avatar-stack { display: flex; }
+    .avatar-stack .av {
+      width: 20px;
+      height: 20px;
+      border-radius: 9999px;
+      border: 1.5px solid #efe9de;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 7px;
+      font-weight: 800;
+      margin-left: -5px;
+      font-family: 'Inter', sans-serif;
+    }
+    .avatar-stack .av:first-child { margin-left: 0; }
+
+    /* ── Scoring table ──────────────────────────────────────── */
+    .score-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 6px 0;
+      border-bottom: 1px solid #e2dcd2;
+    }
+    .score-row:last-child { border-bottom: none; }
+
+    /* ── Pulse dot ──────────────────────────────────────────── */
+    @keyframes pulse-dot {
+      0%, 100% { opacity: 1; transform: scale(1); }
+      50% { opacity: 0.5; transform: scale(0.85); }
+    }
+    .pulse-dot {
+      animation: pulse-dot 2s ease-in-out infinite;
+    }
+
+    /* ── Countdown pill ─────────────────────────────────────── */
+    .countdown-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      background: rgba(245,158,11,0.12);
+      border: 1px solid rgba(245,158,11,0.25);
+      border-radius: 9999px;
+      padding: 4px 10px;
+    }
+
+    /* ── WhatsApp button ────────────────────────────────────── */
+    .btn-wa {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      background: #25D366;
+      color: white;
+      font-weight: 700;
+      padding: 9px 14px;
+      border-radius: 10px;
+      font-size: 13px;
+      border: none;
+      cursor: pointer;
+      font-family: 'Inter', sans-serif;
+    }
+    .btn-copy {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      background: #e2dcd2;
+      color: #191512;
+      font-weight: 700;
+      padding: 9px 14px;
+      border-radius: 10px;
+      font-size: 13px;
+      border: none;
+      cursor: pointer;
+      font-family: 'Inter', sans-serif;
+    }
+
+    /* ── Matchday card city border ──────────────────────────── */
+    .md-card {
+      border-radius: 14px;
+      border: 1px solid #d6d0c6;
+      background: #f5f0e8;
+      padding: 14px 14px 14px 18px;
+      position: relative;
+      overflow: hidden;
+    }
+    .md-card::before {
+      content: '';
+      position: absolute;
+      left: 0; top: 0; bottom: 0;
+      width: 6px;
+      border-radius: 14px 0 0 14px;
+    }
+
+    /* ── Sub-section label ──────────────────────────────────── */
+    .eyebrow {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 10px;
+      font-weight: 700;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+    }
+
+    /* ── Rationale section ──────────────────────────────────── */
+    .rationale-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: 16px;
+    }
+    .rationale-card {
+      background: white;
+      border-radius: 12px;
+      padding: 18px;
+      border: 1px solid #e5e7eb;
+    }
+    .rationale-card h4 {
+      font-size: 13px;
+      font-weight: 700;
+      color: #111827;
+      margin-bottom: 6px;
+    }
+    .rationale-card p {
+      font-size: 12px;
+      color: #6b7280;
+      line-height: 1.5;
+    }
+    .rationale-num {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 22px;
+      height: 22px;
+      border-radius: 9999px;
+      background: #f59e0b;
+      color: #0a0f0a;
+      font-size: 11px;
+      font-weight: 800;
+      margin-bottom: 8px;
+    }
+  </style>
+</head>
+<body class="bg-neutral-100 min-h-screen">
+
+  <!-- ─── Page header ──────────────────────────────────────── -->
+  <div class="max-w-6xl mx-auto px-6 pt-10 pb-5">
+    <div class="flex flex-wrap items-start justify-between gap-4">
+      <div>
+        <p class="text-xs font-bold uppercase tracking-widest text-neutral-400 mb-1">PredictSport · Design Prototype</p>
+        <h1 class="text-2xl font-extrabold text-neutral-900">WC Dashboard Redesign</h1>
+        <p class="mt-1.5 text-sm text-neutral-500 max-w-xl">
+          Two states of the World Cup landing page: <strong class="text-neutral-700">Visitor</strong> (unauthenticated / not enrolled) and <strong class="text-neutral-700">Enrolled</strong> (logged-in participant). 390px iPhone 14 frames.
+        </p>
+      </div>
+      <button
+        id="annot-toggle"
+        onclick="document.getElementById('proto').classList.toggle('annotations-hidden'); this.textContent = document.getElementById('proto').classList.contains('annotations-hidden') ? 'Show annotations' : 'Hide annotations';"
+        class="rounded-lg bg-blue-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-blue-700 transition-colors shrink-0"
+      >
+        Hide annotations
+      </button>
+    </div>
+  </div>
+
+  <!-- ─── Prototype area ───────────────────────────────────── -->
+  <div id="proto" class="max-w-6xl mx-auto px-6 pb-12">
+    <div class="flex flex-wrap gap-14 justify-center items-start mt-6">
+
+
+      <!-- ═══════════════════════════════════════════════════ -->
+      <!-- DEVICE 1: VISITOR / NOT ENROLLED                   -->
+      <!-- ═══════════════════════════════════════════════════ -->
+      <div>
+        <div class="text-center mb-5">
+          <p class="text-[10px] font-bold uppercase tracking-widest text-neutral-400">State 1</p>
+          <p class="text-sm font-bold text-neutral-700 mt-1">Visitor / Not Enrolled</p>
+          <p class="text-xs text-neutral-400 mt-0.5">Unauthenticated or pre-join</p>
+        </div>
+
+        <div class="device-frame">
+          <div class="device-screen">
+
+            <!-- WC gradient strip -->
+            <div class="relative">
+              <div class="wc-gradient-strip"></div>
+              <span class="annotation" style="top: -2px;">Animated WC rainbow — replaces solid green bar</span>
+            </div>
+
+            <!-- Navbar (visitor: no icons) -->
+            <nav style="background:#efe9de; border-bottom:1px solid #d6d0c6;">
+              <div style="display:flex; height:48px; align-items:center; justify-content:space-between; padding:0 16px;">
+                <!-- Brand -->
+                <div style="display:flex; align-items:center; gap:8px;">
+                  <!-- Oracle Dot SVG -->
+                  <svg width="24" height="24" viewBox="0 0 100 100" fill="none">
+                    <circle cx="50" cy="50" r="46" fill="#191512"/>
+                    <circle cx="58" cy="46" r="14" fill="#f59e0b"/>
+                    <circle cx="54" cy="38" r="5" fill="white" opacity="0.7"/>
+                  </svg>
+                  <span style="font-family:'Inter',sans-serif; font-size:17px; font-weight:800; letter-spacing:-0.02em; color:#191512;">sports<span style="color:#f59e0b;">predict.</span></span>
+                </div>
+                <!-- Sign in -->
+                <button style="font-family:'Inter',sans-serif; font-size:13px; font-weight:700; background:#191512; color:#efe9de; padding:7px 14px; border-radius:9px; border:none; cursor:pointer; letter-spacing:-0.01em;">Sign in</button>
+              </div>
+            </nav>
+
+            <!-- Hero section -->
+            <div class="hero-dark" style="padding:32px 20px 28px; position:relative;">
+
+              <!-- Countdown pill -->
+              <div style="display:flex; justify-content:center; margin-bottom:16px;">
+                <div class="countdown-pill">
+                  <span class="pulse-dot" style="width:6px; height:6px; border-radius:50%; background:#f59e0b; display:inline-block;"></span>
+                  <span style="font-family:'JetBrains Mono',monospace; font-size:11px; font-weight:700; color:#f59e0b;">16 days to kickoff</span>
+                </div>
+              </div>
+
+              <!-- Title -->
+              <div style="text-align:center;">
+                <p style="font-family:'Inter',sans-serif; font-size:11px; font-weight:700; letter-spacing:0.18em; text-transform:uppercase; color:rgba(245,158,11,0.55); margin-bottom:6px;">World Cup</p>
+                <h1 style="font-family:'Inter',sans-serif; font-size:44px; font-weight:900; line-height:1; letter-spacing:-0.03em; text-transform:uppercase; color:white; margin:0;">
+                  WC <span style="color:#f59e0b;">2026</span>
+                </h1>
+                <!-- Instrument Serif tagline -->
+                <p style="font-family:'Instrument Serif',Georgia,serif; font-style:italic; font-size:19px; color:rgba(255,255,255,0.68); margin-top:10px; line-height:1.3;">You're in the World Cup.</p>
+
+                <!-- Sub-copy -->
+                <p style="font-family:'Inter',sans-serif; font-size:13px; font-weight:800; color:rgba(255,255,255,0.9); margin-top:12px; line-height:1.5; letter-spacing:-0.01em;">
+                  Predict every match. Survive the cut.<br>Outlast everyone. Win.
+                </p>
+              </div>
+
+              <!-- Annotation -->
+              <span class="annotation" style="top:20px; right:-8px;">Dark hero — poster-on-wall energy</span>
+            </div>
+
+            <!-- Cards section -->
+            <div style="background:#efe9de; padding:16px 16px 20px;">
+
+              <!-- FORMAT card — PRIMARY -->
+              <div class="relative" style="border-left:4px solid #f59e0b; border-radius:0 14px 14px 0; background:#f5f0e8; border-top:1px solid #d6d0c6; border-right:1px solid #d6d0c6; border-bottom:1px solid #d6d0c6; padding:16px; margin-bottom:12px;">
+                <span class="annotation" style="top:10px;">FORMAT — most prominent classification</span>
+
+                <p class="eyebrow" style="color:#f59e0b; margin-bottom:6px;">The Format</p>
+                <h2 style="font-family:'Inter',sans-serif; font-size:20px; font-weight:800; color:#191512; line-height:1.15; margin-bottom:8px;">Survive the cut.</h2>
+                <p style="font-family:'Inter',sans-serif; font-size:13px; color:#6b6358; line-height:1.55; margin-bottom:12px;">
+                  You're drawn into a group of four. After each round, points reset and the bottom player is eliminated. New groups are drawn from the survivors. Last player standing wins.
+                </p>
+
+                <!-- Fold-out -->
+                <details style="margin-top:4px;">
+                  <summary style="font-family:'Inter',sans-serif; font-size:12px; font-weight:700; color:#d97706; cursor:pointer; user-select:none;">
+                    How it works step by step &rsaquo;
+                  </summary>
+                  <ol style="margin-top:10px; list-style:none; display:flex; flex-direction:column; gap:6px;">
+                    <li style="display:flex; gap:8px; align-items:flex-start;">
+                      <span style="font-family:'JetBrains Mono',monospace; font-size:10px; font-weight:700; color:#f59e0b; background:rgba(245,158,11,0.12); border-radius:5px; padding:2px 6px; flex-shrink:0; margin-top:1px;">01</span>
+                      <span style="font-family:'Inter',sans-serif; font-size:12px; color:#6b6358; line-height:1.4;">Groups of 4 drawn at random from all participants</span>
+                    </li>
+                    <li style="display:flex; gap:8px; align-items:flex-start;">
+                      <span style="font-family:'JetBrains Mono',monospace; font-size:10px; font-weight:700; color:#f59e0b; background:rgba(245,158,11,0.12); border-radius:5px; padding:2px 6px; flex-shrink:0; margin-top:1px;">02</span>
+                      <span style="font-family:'Inter',sans-serif; font-size:12px; color:#6b6358; line-height:1.4;">Predict all matches in the round before kickoff</span>
+                    </li>
+                    <li style="display:flex; gap:8px; align-items:flex-start;">
+                      <span style="font-family:'JetBrains Mono',monospace; font-size:10px; font-weight:700; color:#f59e0b; background:rgba(245,158,11,0.12); border-radius:5px; padding:2px 6px; flex-shrink:0; margin-top:1px;">03</span>
+                      <span style="font-family:'Inter',sans-serif; font-size:12px; color:#6b6358; line-height:1.4;">Bottom of each group is eliminated</span>
+                    </li>
+                    <li style="display:flex; gap:8px; align-items:flex-start;">
+                      <span style="font-family:'JetBrains Mono',monospace; font-size:10px; font-weight:700; color:#f59e0b; background:rgba(245,158,11,0.12); border-radius:5px; padding:2px 6px; flex-shrink:0; margin-top:1px;">04</span>
+                      <span style="font-family:'Inter',sans-serif; font-size:12px; color:#6b6358; line-height:1.4;">Survivors are redrawn into new groups</span>
+                    </li>
+                    <li style="display:flex; gap:8px; align-items:flex-start;">
+                      <span style="font-family:'JetBrains Mono',monospace; font-size:10px; font-weight:700; color:#f59e0b; background:rgba(245,158,11,0.12); border-radius:5px; padding:2px 6px; flex-shrink:0; margin-top:1px;">05</span>
+                      <span style="font-family:'Inter',sans-serif; font-size:12px; color:#6b6358; line-height:1.4;">Last one standing wins the whole thing</span>
+                    </li>
+                  </ol>
+                </details>
+              </div>
+
+              <!-- OVERALL card — SECONDARY -->
+              <div class="relative" style="border-radius:14px; border:1px solid #d6d0c6; background:#f5f0e8; padding:14px 16px; margin-bottom:12px;">
+                <span class="annotation" style="top:10px;">OVERALL — simpler, less dominant</span>
+
+                <p class="eyebrow" style="color:#6b6358; margin-bottom:5px;">Overall</p>
+                <h2 style="font-family:'Inter',sans-serif; font-size:18px; font-weight:800; color:#191512; line-height:1.15; margin-bottom:7px;">Pure points.</h2>
+                <p style="font-family:'Inter',sans-serif; font-size:12px; color:#6b6358; line-height:1.55;">
+                  Every prediction counts towards one running total. Most points when the dust settles wins. No eliminations, no drama — just consistency.
+                </p>
+              </div>
+
+              <!-- SCORING card — fold-out with visible summary -->
+              <div class="relative" style="border-radius:14px; border:1px solid #d6d0c6; background:#f5f0e8; padding:14px 16px; margin-bottom:16px;">
+                <span class="annotation" style="top:10px;">SCORING — always visible summary table</span>
+
+                <p class="eyebrow" style="color:#6b6358; margin-bottom:10px;">Scoring</p>
+
+                <!-- Scoring table -->
+                <div>
+                  <div class="score-row">
+                    <span style="font-family:'Inter',sans-serif; font-size:12px; color:#6b6358;">Correct outcome</span>
+                    <span style="font-family:'JetBrains Mono',monospace; font-size:13px; font-weight:700; color:#f59e0b;">2 pts</span>
+                  </div>
+                  <div class="score-row">
+                    <span style="font-family:'Inter',sans-serif; font-size:12px; color:#6b6358;">Exact score bonus</span>
+                    <span style="font-family:'JetBrains Mono',monospace; font-size:13px; font-weight:700; color:#f59e0b;">+3 pts</span>
+                  </div>
+                  <div class="score-row">
+                    <span style="font-family:'Inter',sans-serif; font-size:12px; color:#6b6358;">Correct advancing team (KO)</span>
+                    <span style="font-family:'JetBrains Mono',monospace; font-size:13px; font-weight:700; color:#f59e0b;">+1 pt</span>
+                  </div>
+                </div>
+
+                <details style="margin-top:8px;">
+                  <summary style="font-family:'Inter',sans-serif; font-size:11px; font-weight:700; color:#9a9187; cursor:pointer; user-select:none;">
+                    Max points per match &rsaquo;
+                  </summary>
+                  <div style="margin-top:8px; display:flex; gap:8px;">
+                    <div style="flex:1; background:rgba(245,158,11,0.07); border:1px solid rgba(245,158,11,0.2); border-radius:9px; padding:10px; text-align:center;">
+                      <p style="font-family:'JetBrains Mono',monospace; font-size:18px; font-weight:700; color:#f59e0b;">5</p>
+                      <p style="font-family:'Inter',sans-serif; font-size:10px; color:#9a9187; margin-top:2px;">max / group match</p>
+                    </div>
+                    <div style="flex:1; background:rgba(245,158,11,0.07); border:1px solid rgba(245,158,11,0.2); border-radius:9px; padding:10px; text-align:center;">
+                      <p style="font-family:'JetBrains Mono',monospace; font-size:18px; font-weight:700; color:#f59e0b;">6</p>
+                      <p style="font-family:'Inter',sans-serif; font-size:10px; color:#9a9187; margin-top:2px;">max / KO match</p>
+                    </div>
+                  </div>
+                </details>
+              </div>
+
+              <!-- PRIMARY CTA -->
+              <div class="relative">
+                <button class="btn-gold">Match Day 1 — Join the game</button>
+                <span class="annotation" style="top:10px;">Primary CTA — gold gradient, full width</span>
+              </div>
+
+              <!-- BRACKET card — TERTIARY (dashed/muted) -->
+              <div class="relative" style="border-radius:14px; border:1.5px dashed #d6d0c6; background:transparent; padding:14px 16px; margin-top:14px;">
+                <span class="annotation" style="top:10px;">BRACKET — optional, deliberately muted</span>
+
+                <p class="eyebrow" style="color:#9a9187; margin-bottom:5px;">Optional</p>
+                <h2 style="font-family:'Inter',sans-serif; font-size:17px; font-weight:800; color:#191512; line-height:1.15; margin-bottom:7px;">Full bracket.</h2>
+                <p style="font-family:'Inter',sans-serif; font-size:12px; color:#9a9187; line-height:1.5; margin-bottom:10px;">
+                  Before a ball is kicked, predict every group finishing order and the entire knockout bracket. An optional classification for those who want the full challenge.
+                </p>
+                <a href="#" style="font-family:'Inter',sans-serif; font-size:12px; font-weight:700; color:#9a9187; text-decoration:none;">Learn more about the bracket &rsaquo;</a>
+              </div>
+
+            </div>
+
+            <!-- Footer -->
+            <div style="background:#efe9de; padding:20px; text-align:center; border-top:1px solid #d6d0c6;">
+              <svg width="28" height="28" viewBox="0 0 100 100" fill="none" opacity="0.3">
+                <circle cx="50" cy="50" r="46" fill="#191512"/>
+                <circle cx="58" cy="46" r="14" fill="#f59e0b"/>
+                <circle cx="54" cy="38" r="5" fill="white" opacity="0.7"/>
+              </svg>
+            </div>
+
+          </div><!-- /device-screen -->
+        </div><!-- /device-frame -->
+      </div><!-- /device 1 col -->
+
+
+      <!-- ═══════════════════════════════════════════════════ -->
+      <!-- DEVICE 2: ENROLLED USER DASHBOARD                  -->
+      <!-- ═══════════════════════════════════════════════════ -->
+      <div>
+        <div class="text-center mb-5">
+          <p class="text-[10px] font-bold uppercase tracking-widest text-neutral-400">State 2</p>
+          <p class="text-sm font-bold text-neutral-700 mt-1">Enrolled User</p>
+          <p class="text-xs text-neutral-400 mt-0.5">Logged in · Picks in progress</p>
+        </div>
+
+        <div class="device-frame">
+          <div class="device-screen">
+
+            <!-- WC gradient strip -->
+            <div class="relative">
+              <div class="wc-gradient-strip"></div>
+            </div>
+
+            <!-- Navbar (enrolled: invite icon + hamburger) -->
+            <nav style="background:#efe9de; border-bottom:1px solid #d6d0c6;">
+              <div style="display:flex; height:48px; align-items:center; justify-content:space-between; padding:0 16px;">
+                <!-- Brand -->
+                <div style="display:flex; align-items:center; gap:8px;">
+                  <svg width="24" height="24" viewBox="0 0 100 100" fill="none">
+                    <circle cx="50" cy="50" r="46" fill="#191512"/>
+                    <circle cx="58" cy="46" r="14" fill="#f59e0b"/>
+                    <circle cx="54" cy="38" r="5" fill="white" opacity="0.7"/>
+                  </svg>
+                  <span style="font-family:'Inter',sans-serif; font-size:17px; font-weight:800; letter-spacing:-0.02em; color:#191512;">sports<span style="color:#f59e0b;">predict.</span></span>
+                </div>
+                <!-- Right icons -->
+                <div style="display:flex; align-items:center; gap:10px;">
+                  <!-- Invite icon -->
+                  <div style="position:relative;" class="relative">
+                    <button style="display:flex; align-items:center; justify-content:center; width:34px; height:34px; border-radius:9999px; background:#e2dcd2; border:none; cursor:pointer;">
+                      <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#191512" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/>
+                        <circle cx="9" cy="7" r="4"/>
+                        <line x1="19" y1="8" x2="19" y2="14"/>
+                        <line x1="22" y1="11" x2="16" y2="11"/>
+                      </svg>
+                    </button>
+                    <!-- Amber notification dot -->
+                    <span style="position:absolute; top:-2px; right:-2px; width:9px; height:9px; border-radius:50%; background:#f59e0b; border:2px solid #efe9de; display:block;"></span>
+                    <span class="annotation" style="top:2px;">Persistent invite — amber dot = friends pending</span>
+                  </div>
+                  <!-- Hamburger -->
+                  <button style="display:flex; align-items:center; justify-content:center; width:34px; height:34px; border-radius:9px; background:transparent; border:none; cursor:pointer;">
+                    <svg width="20" height="20" viewBox="0 0 20 20">
+                      <path d="M3 5h14M3 10h14M3 15h14" stroke="#191512" stroke-width="1.5" stroke-linecap="round"/>
+                    </svg>
+                  </button>
+                </div>
+              </div>
+            </nav>
+
+            <!-- Tournament context strip -->
+            <div class="relative" style="background:rgba(245,240,232,0.7); border-bottom:1px solid rgba(214,208,198,0.5); padding:7px 16px; display:flex; align-items:center; justify-content:space-between;">
+              <span class="annotation" style="top:4px;">Context strip — tournament + friends at a glance</span>
+              <div style="display:flex; align-items:center; gap:8px;">
+                <span style="font-family:'Inter',sans-serif; font-size:10px; font-weight:700; letter-spacing:0.1em; text-transform:uppercase; color:#9a9187;">WC 2026</span>
+                <span style="color:#d6d0c6; font-size:12px;">|</span>
+                <span style="font-family:'JetBrains Mono',monospace; font-size:10px; font-weight:700; color:#f59e0b;">16d to kickoff</span>
+              </div>
+              <!-- Avatar stack -->
+              <div class="avatar-stack">
+                <div class="av" style="background:rgba(10,168,109,0.2); color:#0aa86d;">E</div>
+                <div class="av" style="background:rgba(245,158,11,0.2); color:#d97706;">J</div>
+                <div class="av" style="background:rgba(226,61,79,0.15); color:#e23d4f;">M</div>
+                <div class="av" style="background:#e2dcd2; color:#9a9187;">+2</div>
+              </div>
+            </div>
+
+            <!-- Dashboard content -->
+            <div style="background:#efe9de; padding:14px 14px 24px;">
+
+              <!-- PROGRESS CARD — hero -->
+              <div class="relative" style="border-left:4px solid #f59e0b; border-radius:0 16px 16px 0; background:#f5f0e8; border-top:1px solid rgba(245,158,11,0.2); border-right:1px solid rgba(245,158,11,0.15); border-bottom:1px solid rgba(245,158,11,0.15); padding:16px; margin-bottom:12px; box-shadow:0 4px 16px -4px rgba(245,158,11,0.15);">
+                <span class="annotation" style="top:10px;">Progress card — amber glow + left border = hero</span>
+
+                <p class="eyebrow" style="color:#d97706; margin-bottom:12px;">Your progress</p>
+
+                <!-- Stat rows -->
+                <div style="display:flex; flex-direction:column; gap:10px; margin-bottom:14px;">
+                  <!-- Games predicted -->
+                  <div>
+                    <div style="display:flex; justify-content:space-between; align-items:baseline; margin-bottom:4px;">
+                      <span style="font-family:'Inter',sans-serif; font-size:12px; color:#6b6358;">Games predicted</span>
+                      <span style="font-family:'JetBrains Mono',monospace; font-size:13px; font-weight:700; color:#191512;">18 / 72</span>
+                    </div>
+                    <div class="progress-bar">
+                      <div class="progress-bar-fill" style="width:25%;"></div>
+                    </div>
+                  </div>
+                  <!-- This round -->
+                  <div>
+                    <div style="display:flex; justify-content:space-between; align-items:baseline; margin-bottom:4px;">
+                      <span style="font-family:'Inter',sans-serif; font-size:12px; color:#6b6358;">This round</span>
+                      <span style="font-family:'JetBrains Mono',monospace; font-size:13px; font-weight:700; color:#191512;">18 / 24</span>
+                    </div>
+                    <div class="progress-bar">
+                      <div class="progress-bar-fill" style="width:75%;"></div>
+                    </div>
+                  </div>
+                  <!-- Scores predicted -->
+                  <div>
+                    <div style="display:flex; justify-content:space-between; align-items:baseline; margin-bottom:4px;">
+                      <span style="font-family:'Inter',sans-serif; font-size:12px; color:#6b6358;">Scores predicted</span>
+                      <span style="font-family:'JetBrains Mono',monospace; font-size:13px; font-weight:700; color:#191512;">13 / 24</span>
+                    </div>
+                    <div class="progress-bar">
+                      <div class="progress-bar-fill" style="width:54%;"></div>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- CTA -->
+                <button class="btn-gold" style="font-size:14px;">Continue — Group Matchday 1 &rarr;</button>
+              </div>
+
+              <!-- SOCIAL CTA card (mid-journey variant) -->
+              <div class="relative" style="border-radius:14px; border:1.5px dashed rgba(245,158,11,0.4); background:#f5f0e8; padding:14px 16px; margin-bottom:12px;">
+                <span class="annotation" style="top:10px;">Social CTA — "mid journey" variant, dashed border</span>
+
+                <p style="font-family:'Inter',sans-serif; font-size:14px; font-weight:700; color:#191512; margin-bottom:4px;">Your picks are set. Are your mates'?</p>
+                <p style="font-family:'Inter',sans-serif; font-size:12px; color:#6b6358; margin-bottom:12px;">Share the competition. Bragging rights are better earned.</p>
+                <div style="display:flex; gap:8px;">
+                  <button class="btn-wa">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="white">
+                      <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/>
+                    </svg>
+                    WhatsApp
+                  </button>
+                  <button class="btn-copy">
+                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#191512" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                      <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/>
+                      <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/>
+                    </svg>
+                    Copy link
+                  </button>
+                </div>
+              </div>
+
+              <!-- MATCHDAY CARDS section label -->
+              <p class="eyebrow" style="color:#9a9187; margin-bottom:8px; padding:0 2px;">Match Rounds</p>
+
+              <!-- MD1 — full picks, Kansas City accent -->
+              <div class="relative md-card" style="margin-bottom:8px;">
+                <span class="annotation" style="top:14px;">MD cards — 6px city-colour left border, bigger padding</span>
+                <div style="position:absolute; left:0; top:0; bottom:0; width:6px; background:#FB2350; border-radius:14px 0 0 14px;"></div>
+
+                <div style="display:flex; align-items:flex-start; justify-content:space-between; margin-bottom:6px;">
+                  <div>
+                    <p style="font-family:'Inter',sans-serif; font-size:16px; font-weight:800; color:#191512; line-height:1.2;">Group Matchday 1</p>
+                    <p style="font-family:'JetBrains Mono',monospace; font-size:10px; color:#9a9187; margin-top:2px;">24 fixtures &middot; Locks in 16d 17h</p>
+                  </div>
+                  <span style="font-family:'Inter',sans-serif; font-size:10px; font-weight:800; background:rgba(10,168,109,0.12); color:#0aa86d; padding:3px 9px; border-radius:9999px; white-space:nowrap; flex-shrink:0; margin-top:2px;">Open</span>
+                </div>
+
+                <!-- Stats row -->
+                <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-top:8px;">
+                  <div>
+                    <p style="font-family:'JetBrains Mono',monospace; font-size:10px; font-weight:700; color:#0aa86d; text-align:center; text-transform:uppercase; letter-spacing:0.08em; margin-bottom:4px;">Outcomes 24/24</p>
+                    <div class="progress-bar">
+                      <div class="progress-bar-fill" style="width:100%; background:#0aa86d;"></div>
+                    </div>
+                  </div>
+                  <div>
+                    <p style="font-family:'JetBrains Mono',monospace; font-size:10px; font-weight:700; color:#9a9187; text-align:center; text-transform:uppercase; letter-spacing:0.08em; margin-bottom:4px;">Scores 13/24</p>
+                    <div class="progress-bar">
+                      <div class="progress-bar-fill" style="width:54%;"></div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- MD2 — partial picks, Los Angeles accent -->
+              <div class="md-card" style="margin-bottom:8px;">
+                <div style="position:absolute; left:0; top:0; bottom:0; width:6px; background:#FF6F66; border-radius:14px 0 0 14px;"></div>
+
+                <div style="display:flex; align-items:flex-start; justify-content:space-between; margin-bottom:6px;">
+                  <div>
+                    <p style="font-family:'Inter',sans-serif; font-size:16px; font-weight:800; color:#191512; line-height:1.2;">Group Matchday 2</p>
+                    <p style="font-family:'JetBrains Mono',monospace; font-size:10px; color:#9a9187; margin-top:2px;">24 fixtures &middot; Locks in 23d 14h</p>
+                  </div>
+                  <span style="font-family:'Inter',sans-serif; font-size:10px; font-weight:800; background:rgba(10,168,109,0.12); color:#0aa86d; padding:3px 9px; border-radius:9999px; white-space:nowrap; flex-shrink:0; margin-top:2px;">Open</span>
+                </div>
+
+                <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-top:8px;">
+                  <div>
+                    <p style="font-family:'JetBrains Mono',monospace; font-size:10px; font-weight:700; color:#d97706; text-align:center; text-transform:uppercase; letter-spacing:0.08em; margin-bottom:4px;">Outcomes 16/24</p>
+                    <div class="progress-bar">
+                      <div class="progress-bar-fill" style="width:67%;"></div>
+                    </div>
+                  </div>
+                  <div>
+                    <p style="font-family:'JetBrains Mono',monospace; font-size:10px; font-weight:700; color:#9a9187; text-align:center; text-transform:uppercase; letter-spacing:0.08em; margin-bottom:4px;">Scores 8/24</p>
+                    <div class="progress-bar">
+                      <div class="progress-bar-fill" style="width:33%;"></div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- MD3 — empty picks, Miami accent -->
+              <div class="md-card" style="margin-bottom:14px; opacity:0.72;">
+                <div style="position:absolute; left:0; top:0; bottom:0; width:6px; background:#EE6FA6; border-radius:14px 0 0 14px;"></div>
+
+                <div style="display:flex; align-items:flex-start; justify-content:space-between; margin-bottom:6px;">
+                  <div>
+                    <p style="font-family:'Inter',sans-serif; font-size:16px; font-weight:800; color:#191512; line-height:1.2;">Group Matchday 3</p>
+                    <p style="font-family:'JetBrains Mono',monospace; font-size:10px; color:#9a9187; margin-top:2px;">24 fixtures &middot; Locks in 29d 17h</p>
+                  </div>
+                  <span style="font-family:'Inter',sans-serif; font-size:10px; font-weight:800; background:rgba(10,168,109,0.12); color:#0aa86d; padding:3px 9px; border-radius:9999px; white-space:nowrap; flex-shrink:0; margin-top:2px;">Open</span>
+                </div>
+
+                <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-top:8px;">
+                  <div>
+                    <p style="font-family:'JetBrains Mono',monospace; font-size:10px; font-weight:700; color:#9a9187; text-align:center; text-transform:uppercase; letter-spacing:0.08em; margin-bottom:4px;">Outcomes 0/24</p>
+                    <div class="progress-bar">
+                      <div class="progress-bar-fill" style="width:0%;"></div>
+                    </div>
+                  </div>
+                  <div>
+                    <p style="font-family:'JetBrains Mono',monospace; font-size:10px; font-weight:700; color:#9a9187; text-align:center; text-transform:uppercase; letter-spacing:0.08em; margin-bottom:4px;">Scores 0/24</p>
+                    <div class="progress-bar">
+                      <div class="progress-bar-fill" style="width:0%;"></div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- BRACKET card — MUTED / secondary -->
+              <div class="relative" style="border-radius:14px; border:1.5px dashed #d6d0c6; background:#f5f0e8; padding:14px 16px; margin-bottom:10px;">
+                <span class="annotation" style="top:10px;">Bracket — demoted to muted secondary card</span>
+
+                <p class="eyebrow" style="color:#9a9187; margin-bottom:5px;">Optional Classification</p>
+                <div style="display:flex; align-items:baseline; justify-content:space-between; margin-bottom:5px;">
+                  <h3 style="font-family:'Inter',sans-serif; font-size:16px; font-weight:700; color:#191512;">Full Bracket</h3>
+                  <span style="font-family:'JetBrains Mono',monospace; font-size:11px; font-weight:600; color:#9a9187;">46%</span>
+                </div>
+                <p style="font-family:'Inter',sans-serif; font-size:11px; color:#9a9187; margin-bottom:8px;">48 / 104 picks</p>
+                <div class="progress-bar" style="margin-bottom:10px;">
+                  <div class="progress-bar-fill" style="width:46%;"></div>
+                </div>
+                <a href="#" style="font-family:'Inter',sans-serif; font-size:12px; font-weight:700; color:#9a9187; text-decoration:none;">Continue bracket &rsaquo;</a>
+              </div>
+
+              <!-- LEADERBOARD PEEK -->
+              <div class="relative" style="border-radius:14px; border:1px solid #d6d0c6; background:#f5f0e8; padding:13px 16px; margin-bottom:10px; display:flex; align-items:center; justify-content:space-between;">
+                <span class="annotation" style="top:10px;">Leaderboard peek — compact, curiosity-driver</span>
+                <div>
+                  <p style="font-family:'Inter',sans-serif; font-size:11px; color:#9a9187; margin-bottom:2px;">Your position</p>
+                  <p style="font-family:'JetBrains Mono',monospace; font-size:22px; font-weight:700; color:#191512; line-height:1;">3<span style="font-size:14px; font-weight:500; color:#9a9187;">rd of 8</span></p>
+                </div>
+                <a href="#" style="font-family:'Inter',sans-serif; font-size:12px; font-weight:700; color:#d97706; text-decoration:none; display:flex; align-items:center; gap:4px;">
+                  View full table
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#d97706" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M9 18l6-6-6-6"/>
+                  </svg>
+                </a>
+              </div>
+
+              <!-- FIXTURES & RESULTS link row -->
+              <div style="border-radius:14px; border:1px solid #d6d0c6; background:#f5f0e8; padding:13px 16px; display:flex; align-items:center; justify-content:space-between; margin-bottom:2px;">
+                <span style="font-family:'Inter',sans-serif; font-size:13px; font-weight:600; color:#6b6358;">Fixtures &amp; Results</span>
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#9a9187" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M9 18l6-6-6-6"/>
+                </svg>
+              </div>
+
+            </div>
+
+            <!-- Footer -->
+            <div style="background:#efe9de; padding:20px; text-align:center; border-top:1px solid #d6d0c6;">
+              <svg width="28" height="28" viewBox="0 0 100 100" fill="none" opacity="0.3">
+                <circle cx="50" cy="50" r="46" fill="#191512"/>
+                <circle cx="58" cy="46" r="14" fill="#f59e0b"/>
+                <circle cx="54" cy="38" r="5" fill="white" opacity="0.7"/>
+              </svg>
+            </div>
+
+          </div><!-- /device-screen -->
+        </div><!-- /device-frame -->
+      </div><!-- /device 2 col -->
+
+
+    </div><!-- /flex row -->
+  </div><!-- /proto -->
+
+
+  <!-- ─── Design Rationale ────────────────────────────────── -->
+  <div class="max-w-6xl mx-auto px-6 pb-16">
+    <div style="border-top:1px solid #e5e7eb; padding-top:32px;">
+      <h2 style="font-family:'Inter',sans-serif; font-size:17px; font-weight:800; color:#111827; margin-bottom:4px;">Design Rationale</h2>
+      <p style="font-family:'Inter',sans-serif; font-size:13px; color:#6b7280; margin-bottom:20px;">Key decisions and changes from the current state.</p>
+
+      <div class="rationale-grid">
+
+        <div class="rationale-card">
+          <div class="rationale-num">1</div>
+          <h4>Two distinct states, not one page</h4>
+          <p>Visitor and enrolled states are now meaningfully different. Visitor gets a landing page with format explanation and CTA. Enrolled user gets a dashboard focused on action — progress, picks, position. No ambiguity about what the primary action is for each user.</p>
+        </div>
+
+        <div class="rationale-card">
+          <div class="rationale-num">2</div>
+          <h4>Matchday cards are significantly bigger</h4>
+          <p>Existing cards use text-base (16px) with minimal padding. New cards use Inter 800 at text-lg (18px) with more generous padding and a 6px city-colour left border. The OUTCOMES/SCORES stats are now centered labels with progress bars — more scannable at a glance, and the host-city colour adds WC atmosphere without being distracting.</p>
+        </div>
+
+        <div class="rationale-card">
+          <div class="rationale-num">3</div>
+          <h4>Classification hierarchy is explicit</h4>
+          <p>FORMAT gets an amber left border and surface background — it's the primary, most novel classification. OVERALL is a plain bordered card. BRACKET is dashed and muted (both visitor and enrolled states). This hierarchy was previously unclear — all three competed for equal attention. The scoring table is always visible rather than hidden inside a fold-out.</p>
+        </div>
+
+        <div class="rationale-card">
+          <div class="rationale-num">4</div>
+          <h4>Progress card as the enrolled hero</h4>
+          <p>The enrolled user's most important question is "what have I done and what's left?" The amber-bordered progress card answers this immediately with three stat rows and a direct CTA. Previously there was no equivalent — the bracket card held that visual weight.</p>
+        </div>
+
+        <div class="rationale-card">
+          <div class="rationale-num">5</div>
+          <h4>Leaderboard peek drives curiosity</h4>
+          <p>A small "3rd of 8" card creates competitive tension without requiring a full tab switch. The monospace number in large type is immediately legible on scroll. Clicking goes to the full table.</p>
+        </div>
+
+        <div class="rationale-card">
+          <div class="rationale-num">6</div>
+          <h4>Social CTA is contextual, not persistent</h4>
+          <p>The WhatsApp/Copy link card appears after picks are set — when it's actually relevant. The invite icon in the navbar (with amber dot for pending friends) handles the always-available case. The dashed border signals it's a secondary action, not a primary destination.</p>
+        </div>
+
+        <div class="rationale-card">
+          <div class="rationale-num">7</div>
+          <h4>WC rainbow strip + host-city colours</h4>
+          <p>The animated gradient strip at the top of every screen connects the app to the official WC 2026 brand palette without requiring any licensed assets. The per-matchday city colours (Atlanta cyan, Kansas City red, Miami pink, etc.) make rounds visually distinct and tie to real geography — adding texture that the current neutral cards lack.</p>
+        </div>
+
+        <div class="rationale-card">
+          <div class="rationale-num">8</div>
+          <h4>Visitor navbar has no clutter</h4>
+          <p>Visitor navbar: brand mark + "Sign in" only. No tab bar, no icons. The enrolled navbar adds invite + hamburger — icons that are only meaningful once you're in. This prevents overwhelming first-time visitors with navigation they can't use yet.</p>
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+</body>
+</html>
