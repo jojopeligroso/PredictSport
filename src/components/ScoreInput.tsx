@@ -37,6 +37,7 @@ export function ScoreInput({
 }: ScoreInputProps) {
   const [home, setHome] = useState(initialHome ?? "");
   const [away, setAway] = useState(initialAway ?? "");
+  const [isSaving, setIsSaving] = useState(false);
 
   // Ghost values — shown as faded placeholders while the user re-enters.
   const [homeGhost, setHomeGhost] = useState("");
@@ -80,7 +81,13 @@ export function ScoreInput({
         return;
       }
       lastCommitted.current = { home: hNum, away: aNum };
-      onCommit(hNum, aNum);
+      setIsSaving(true);
+      const result = onCommit(hNum, aNum);
+      if (result instanceof Promise) {
+        result.finally(() => setIsSaving(false));
+      } else {
+        setTimeout(() => setIsSaving(false), 300);
+      }
     },
     [onCommit],
   );
@@ -150,7 +157,7 @@ export function ScoreInput({
   // ── Variant-specific class strings ─────────────────────────────────────
   if (variant === "compact") {
     return (
-      <div className="inline-flex items-center gap-1">
+      <div className={`inline-flex items-center gap-1${isSaving ? " animate-pulse" : ""}`}>
         <input
           ref={homeRef}
           type="text"
@@ -194,7 +201,7 @@ export function ScoreInput({
 
   if (variant === "card") {
     return (
-      <div className="inline-flex items-center gap-1">
+      <div className={`inline-flex items-center gap-1${isSaving ? " animate-pulse" : ""}`}>
         <input
           ref={homeRef}
           type="text"
@@ -238,7 +245,7 @@ export function ScoreInput({
 
   // variant === "standard"
   return (
-    <div className="flex items-center gap-2">
+    <div className={`flex items-center gap-2${isSaving ? " animate-pulse" : ""}`}>
       <span className="text-xs font-semibold text-ps-text min-w-[60px] truncate text-right">
         {homeLabel}
       </span>

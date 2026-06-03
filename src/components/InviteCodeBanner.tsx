@@ -42,14 +42,14 @@ export function InviteCodeBanner({ inviteCode, competitionName, joinUrl }: Invit
       <button
         type="button"
         onClick={handleCopy}
-        className="ml-auto rounded-md px-2 py-1 text-xs font-medium text-ps-text-sec transition-colors hover:bg-ps-chip hover:text-ps-text"
+        className="ml-auto min-h-[44px] rounded-md px-2 text-xs font-medium text-ps-text-sec transition-colors hover:bg-ps-chip hover:text-ps-text"
       >
         {copied ? "Copied!" : "Copy"}
       </button>
       <button
         type="button"
         onClick={handleShare}
-        className="rounded-md bg-ps-amber px-2.5 py-1 text-xs font-semibold text-ps-bg transition-opacity hover:opacity-90"
+        className="min-h-[44px] rounded-md bg-ps-amber px-2.5 text-xs font-semibold text-ps-bg transition-opacity hover:opacity-90"
       >
         Share
       </button>

@@ -192,3 +192,58 @@ export async function POST(request: NextRequest) {
 
   return NextResponse.json({ prediction: saved });
 }
+
+export async function DELETE(request: NextRequest) {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user)
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+
+  const body = await request.json();
+  const { event_id, competition_id } = body as {
+    event_id?: string;
+    competition_id?: string;
+  };
+
+  if (!event_id) {
+    return NextResponse.json({ error: "event_id required" }, { status: 400 });
+  }
+
+  // Verify event exists and is not locked
+  const { data: event } = await supabase
+    .from("events")
+    .select("lock_time, status")
+    .eq("id", event_id)
+    .single();
+
+  if (!event) {
+    return NextResponse.json({ error: "Event not found" }, { status: 404 });
+  }
+
+  if (new Date(event.lock_time) <= new Date() || event.status !== "upcoming") {
+    return NextResponse.json({ error: "Event is locked" }, { status: 403 });
+  }
+
+  // Delete all predictions for this event/user (or scoped to competition if provided)
+  let query = supabase
+    .from("predictions")
+    .delete()
+    .eq("event_id", event_id)
+    .eq("user_id", user.id);
+
+  // If competition_id provided, scope deletion (for shared events across competitions)
+  if (competition_id) {
+    query = query.eq("competition_id", competition_id);
+  }
+
+  const { error } = await query;
+
+  if (error) {
+    console.error("Failed to reset prediction:", error);
+    return NextResponse.json({ error: "Failed to reset" }, { status: 500 });
+  }
+
+  return NextResponse.json({ success: true });
+}
