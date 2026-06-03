@@ -72,7 +72,7 @@ export default async function LeaderboardPage() {
 
   const appUrl =
     process.env.NEXT_PUBLIC_APP_URL ?? "https://predictsport-rust.vercel.app";
-  const joinUrl = `${appUrl}/wc/join`;
+  const joinUrl = `${appUrl}/join`;
 
   return (
     <div className="mx-auto flex min-h-[calc(100dvh-3.5rem)] max-w-[480px] flex-col px-4 pt-6 pb-16">

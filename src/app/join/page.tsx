@@ -100,11 +100,11 @@ export default async function JoinPage({
       );
     }
   } else {
-    // Try competitions.invite_code (case-insensitive)
+    // Try competitions.invite_code (exact match, case-normalized)
     const { data: comp } = await supabase
       .from("competitions")
       .select("id, name")
-      .ilike("invite_code", token.trim())
+      .eq("invite_code", token.trim().toUpperCase())
       .in("status", ["draft", "active"])
       .single();
 

@@ -71,11 +71,11 @@ export async function POST(request: NextRequest) {
       );
     }
   } else {
-    // Not in invite_tokens — try competitions.invite_code (case-insensitive)
+    // Not in invite_tokens — try competitions.invite_code (exact match, case-normalized)
     const { data: comp } = await supabase
       .from("competitions")
       .select("id")
-      .ilike("invite_code", trimmedToken)
+      .eq("invite_code", trimmedToken.toUpperCase())
       .in("status", ["draft", "active"])
       .single();
 
