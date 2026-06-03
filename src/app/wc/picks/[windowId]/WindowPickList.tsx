@@ -172,7 +172,7 @@ const COMPACT_THEME: SurfaceTheme = {
     ].join(" "),
   scoreInput: (filled) =>
     [
-      "w-[30px] h-[28px] rounded-full border text-center font-mono text-sm font-semibold text-ps-text outline-none transition-all duration-150 shrink-0",
+      "w-[34px] h-[32px] rounded-full border text-center font-mono text-base font-semibold text-ps-text outline-none transition-all duration-150 shrink-0",
       filled ? "bg-white border-ps-amber" : "bg-transparent border-ps-border",
       "focus:border-ps-amber focus:bg-white",
     ].join(" "),
@@ -217,7 +217,7 @@ const CARD_THEME: SurfaceTheme = {
     ].join(" "),
   scoreInput: (filled) =>
     [
-      "w-[30px] h-[28px] rounded-full border text-center font-mono text-sm font-semibold text-white outline-none transition-all duration-150 shrink-0 placeholder:text-white/30",
+      "w-[34px] h-[32px] rounded-full border text-center font-mono text-base font-semibold text-white outline-none transition-all duration-150 shrink-0 placeholder:text-white/30",
       filled ? "bg-white/18 border-ps-amber/70" : "bg-white/8 border-white/25",
       "focus:border-ps-amber/80 focus:bg-white/15",
     ].join(" "),
@@ -584,7 +584,8 @@ function MatchPickRow({
             placeholder="–"
             value={homeScore}
             onChange={(e) => {
-              const val = e.target.value.replace(/[^0-9]/g, "");
+              const raw = e.target.value.replace(/[^0-9]/g, "");
+              const val = raw === "" ? "" : String(parseInt(raw, 10));
               setHomeScore(val);
               if (val !== "" && awayInputRef.current) {
                 awayInputRef.current.focus();
@@ -618,7 +619,8 @@ function MatchPickRow({
             placeholder="–"
             value={awayScore}
             onChange={(e) => {
-              const val = e.target.value.replace(/[^0-9]/g, "");
+              const raw = e.target.value.replace(/[^0-9]/g, "");
+              const val = raw === "" ? "" : String(parseInt(raw, 10));
               setAwayScore(val);
             }}
             onBlur={() => handleScoreBlur(homeScore, awayScore)}
