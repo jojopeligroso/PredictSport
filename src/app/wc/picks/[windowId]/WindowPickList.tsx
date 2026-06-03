@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { useRouter } from "next/navigation";
 import { CountryFlag } from "@/components/CountryFlag";
+import { ScoreInput } from "@/components/ScoreInput";
 import { FixtureCardSurface } from "@/components/wc/FixtureCardSurface";
 import { deriveWinnerFromScore } from "@/lib/score-format";
 import type { WcFixture } from "@/lib/wc/fixtures";
@@ -302,18 +303,6 @@ function MatchPickRow({
   const [, setScorePred] = useState<Prediction | null>(initialScore);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
-  // Score input state — initialized from existing prediction if available.
-  const [homeScore, setHomeScore] = useState<string>(() => {
-    const val = initialScore?.prediction_data?.home;
-    return val !== undefined && val !== null ? String(val) : "";
-  });
-  const [awayScore, setAwayScore] = useState<string>(() => {
-    const val = initialScore?.prediction_data?.away;
-    return val !== undefined && val !== null ? String(val) : "";
-  });
-
-  const awayInputRef = useRef<HTMLInputElement>(null);
-
   // Abort the previous in-flight winner POST when a new tap arrives so the
   // latest tap is what gets persisted even if the earlier one was slow.
   const winnerAbortRef = useRef<AbortController | null>(null);
@@ -444,27 +433,12 @@ function MatchPickRow({
   );
 
   /**
-   * Submit the score prediction on blur when both inputs have valid values.
-   * Auto-infers and sets the winner if none is selected yet.
+   * Commit handler for ScoreInput — receives parsed numbers directly.
+   * Submits the score prediction and auto-derives the winner.
    */
-  const handleScoreBlur = useCallback(
-    async (latestHome: string, latestAway: string) => {
+  const handleScoreCommit = useCallback(
+    async (homeNum: number, awayNum: number) => {
       if (!scoreEpt) return;
-
-      const homeNum = parseInt(latestHome, 10);
-      const awayNum = parseInt(latestAway, 10);
-
-      if (
-        latestHome === "" ||
-        latestAway === "" ||
-        isNaN(homeNum) ||
-        isNaN(awayNum) ||
-        homeNum < 0 ||
-        awayNum < 0
-      ) {
-        return;
-      }
-
       try {
         const saved = await submitPrediction("exact_score", {
           home: homeNum,
@@ -563,8 +537,8 @@ function MatchPickRow({
 
   const interactiveBody = (
     <>
+      {/* Winner buttons row */}
       <div className="flex items-center justify-center gap-1.5">
-        {/* Home team button */}
         <button
           type="button"
           onClick={() => handlePickWinner(home)}
@@ -575,29 +549,6 @@ function MatchPickRow({
           <span className={theme.teamLabel(homeSelected)}>{home}</span>
         </button>
 
-        {/* Home score input */}
-        {scoreEpt && (
-          <input
-            type="text"
-            inputMode="numeric"
-            maxLength={2}
-            placeholder="–"
-            value={homeScore}
-            onChange={(e) => {
-              const raw = e.target.value.replace(/[^0-9]/g, "");
-              const val = raw === "" ? "" : String(parseInt(raw, 10));
-              setHomeScore(val);
-              if (val !== "" && awayInputRef.current) {
-                awayInputRef.current.focus();
-              }
-            }}
-            onBlur={() => handleScoreBlur(homeScore, awayScore)}
-            aria-label={`${home} score`}
-            className={theme.scoreInput(homeScore !== "")}
-          />
-        )}
-
-        {/* Draw button */}
         {winnerOptions.some((opt) => slotOf(opt, home, away) === "draw") && (
           <button
             type="button"
@@ -609,27 +560,6 @@ function MatchPickRow({
           </button>
         )}
 
-        {/* Away score input */}
-        {scoreEpt && (
-          <input
-            ref={awayInputRef}
-            type="text"
-            inputMode="numeric"
-            maxLength={2}
-            placeholder="–"
-            value={awayScore}
-            onChange={(e) => {
-              const raw = e.target.value.replace(/[^0-9]/g, "");
-              const val = raw === "" ? "" : String(parseInt(raw, 10));
-              setAwayScore(val);
-            }}
-            onBlur={() => handleScoreBlur(homeScore, awayScore)}
-            aria-label={`${away} score`}
-            className={theme.scoreInput(awayScore !== "")}
-          />
-        )}
-
-        {/* Away team button */}
         <button
           type="button"
           onClick={() => handlePickWinner(away)}
@@ -641,13 +571,24 @@ function MatchPickRow({
         </button>
       </div>
 
+      {/* Score input row */}
+      {scoreEpt && (
+        <div className="mt-2 flex justify-center">
+          <ScoreInput
+            homeLabel={home}
+            awayLabel={away}
+            initialHome={initialScore?.prediction_data?.home != null ? String(initialScore.prediction_data.home) : undefined}
+            initialAway={initialScore?.prediction_data?.away != null ? String(initialScore.prediction_data.away) : undefined}
+            onCommit={handleScoreCommit}
+            disabled={false}
+            variant={useCardSurface ? "card" : "compact"}
+          />
+        </div>
+      )}
+
       {errorMsg && <p className={theme.errorText}>{errorMsg}</p>}
     </>
   );
-
-  // Exact score is "entered" when both inputs have valid numeric values.
-  const hasExactScore = homeScore !== "" && awayScore !== "" &&
-    !isNaN(parseInt(homeScore, 10)) && !isNaN(parseInt(awayScore, 10));
 
   if (useCardSurface && fixture) {
     return (
