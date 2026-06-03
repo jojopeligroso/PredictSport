@@ -54,80 +54,93 @@ export default async function JoinPage({
     );
   }
 
-  // Authenticated — look up token and competition info
+  // Authenticated — look up token: try invite_tokens first, then competitions.invite_code
   const { data: invite } = await supabase
     .from("invite_tokens")
     .select("*, competitions(id, name)")
     .eq("token", token)
     .single();
 
-  // Token invalid
-  if (!invite) {
-    return (
-      <div className="flex flex-1 flex-col items-center justify-center px-4 py-16">
-        <div className="w-full max-w-sm rounded-[22px] bg-ps-bg px-5 pb-7 pt-5 shadow-[0_-10px_40px_rgba(40,30,20,0.15)]">
-          <div className="mx-auto mb-4 h-1 w-9 rounded-full bg-ps-border" />
-          <div className="rounded-xl border border-ps-red bg-ps-red-soft p-4 text-sm text-ps-red">
-            This invite link is invalid or has been revoked.
-          </div>
-        </div>
-      </div>
-    );
-  }
+  let competitionId: string;
+  let competitionName: string;
 
-  // Token expired
-  if (invite.expires_at && new Date(invite.expires_at) < new Date()) {
-    return (
-      <div className="flex flex-1 flex-col items-center justify-center px-4 py-16">
-        <div className="w-full max-w-sm rounded-[22px] bg-ps-bg px-5 pb-7 pt-5 shadow-[0_-10px_40px_rgba(40,30,20,0.15)]">
-          <div className="mx-auto mb-4 h-1 w-9 rounded-full bg-ps-border" />
-          <div className="rounded-xl border border-ps-red bg-ps-red-soft p-4 text-sm text-ps-red">
-            This invite link has expired.
-          </div>
-        </div>
-      </div>
-    );
-  }
+  if (invite) {
+    const comp = (invite as Record<string, unknown>).competitions as {
+      id: string;
+      name: string;
+    } | null;
+    competitionId = invite.competition_id;
+    competitionName = comp?.name ?? "Competition";
 
-  // Max uses reached
-  if (invite.max_uses !== null && invite.use_count >= invite.max_uses) {
-    return (
-      <div className="flex flex-1 flex-col items-center justify-center px-4 py-16">
-        <div className="w-full max-w-sm rounded-[22px] bg-ps-bg px-5 pb-7 pt-5 shadow-[0_-10px_40px_rgba(40,30,20,0.15)]">
-          <div className="mx-auto mb-4 h-1 w-9 rounded-full bg-ps-border" />
-          <div className="rounded-xl border border-ps-red bg-ps-red-soft p-4 text-sm text-ps-red">
-            This invite link has reached its maximum uses.
+    // Token expired
+    if (invite.expires_at && new Date(invite.expires_at) < new Date()) {
+      return (
+        <div className="flex flex-1 flex-col items-center justify-center px-4 py-16">
+          <div className="w-full max-w-sm rounded-[22px] bg-ps-bg px-5 pb-7 pt-5 shadow-[0_-10px_40px_rgba(40,30,20,0.15)]">
+            <div className="mx-auto mb-4 h-1 w-9 rounded-full bg-ps-border" />
+            <div className="rounded-xl border border-ps-red bg-ps-red-soft p-4 text-sm text-ps-red">
+              This invite link has expired.
+            </div>
           </div>
         </div>
-      </div>
-    );
+      );
+    }
+
+    // Max uses reached
+    if (invite.max_uses !== null && invite.use_count >= invite.max_uses) {
+      return (
+        <div className="flex flex-1 flex-col items-center justify-center px-4 py-16">
+          <div className="w-full max-w-sm rounded-[22px] bg-ps-bg px-5 pb-7 pt-5 shadow-[0_-10px_40px_rgba(40,30,20,0.15)]">
+            <div className="mx-auto mb-4 h-1 w-9 rounded-full bg-ps-border" />
+            <div className="rounded-xl border border-ps-red bg-ps-red-soft p-4 text-sm text-ps-red">
+              This invite link has reached its maximum uses.
+            </div>
+          </div>
+        </div>
+      );
+    }
+  } else {
+    // Try competitions.invite_code (case-insensitive)
+    const { data: comp } = await supabase
+      .from("competitions")
+      .select("id, name")
+      .ilike("invite_code", token.trim())
+      .in("status", ["draft", "active"])
+      .single();
+
+    if (!comp) {
+      return (
+        <div className="flex flex-1 flex-col items-center justify-center px-4 py-16">
+          <div className="w-full max-w-sm rounded-[22px] bg-ps-bg px-5 pb-7 pt-5 shadow-[0_-10px_40px_rgba(40,30,20,0.15)]">
+            <div className="mx-auto mb-4 h-1 w-9 rounded-full bg-ps-border" />
+            <div className="rounded-xl border border-ps-red bg-ps-red-soft p-4 text-sm text-ps-red">
+              This code doesn&apos;t match any active competition.
+            </div>
+          </div>
+        </div>
+      );
+    }
+    competitionId = comp.id;
+    competitionName = comp.name;
   }
 
   // Check if already a member
   const { data: existingMember } = await supabase
     .from("competition_members")
     .select("id")
-    .eq("competition_id", invite.competition_id)
+    .eq("competition_id", competitionId)
     .eq("user_id", user.id)
     .single();
 
   if (existingMember) {
-    redirect(`/predictions?competition=${invite.competition_id}`);
+    redirect(`/predictions?competition=${competitionId}`);
   }
 
   // Get member count
   const { count: memberCount } = await supabase
     .from("competition_members")
     .select("id", { count: "exact", head: true })
-    .eq("competition_id", invite.competition_id);
-
-  // Extract competition info from the join
-  const competition = (invite as Record<string, unknown>).competitions as {
-    id: string;
-    name: string;
-  } | null;
-
-  const competitionName = competition?.name ?? "Competition";
+    .eq("competition_id", competitionId);
 
   return (
     <div className="flex flex-1 flex-col items-center justify-center px-4 py-16">

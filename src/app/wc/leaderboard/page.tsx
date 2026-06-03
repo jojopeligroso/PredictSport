@@ -1,6 +1,7 @@
 import { createClient } from "@/lib/supabase/server";
 import { redirect } from "next/navigation";
 import { ClassificationTabs } from "@/components/tournament/ClassificationTabs";
+import { InviteCodeBanner } from "@/components/InviteCodeBanner";
 
 export const dynamic = "force-dynamic";
 
@@ -20,7 +21,7 @@ export default async function LeaderboardPage() {
   // Find the WC competition
   const { data: competition } = await supabase
     .from("competitions")
-    .select("id, invite_code, max_entrants, min_entrants")
+    .select("id, name, status, invite_code, max_entrants, min_entrants")
     .eq("product_mode", "world_cup_2026_shell")
     .in("status", ["active", "draft", "completed"])
     .limit(1)
@@ -41,6 +42,17 @@ export default async function LeaderboardPage() {
     .eq("id", user.id)
     .single();
 
+  // Check if current user is admin or co_admin of this competition
+  const { data: adminMembership } = await supabase
+    .from("competition_members")
+    .select("role")
+    .eq("competition_id", competition.id)
+    .eq("user_id", user.id)
+    .in("role", ["admin", "co_admin"])
+    .maybeSingle();
+
+  const isAdmin = !!adminMembership;
+
   // Get member count
   const { count: memberCount } = await supabase
     .from("competition_members")
@@ -58,9 +70,22 @@ export default async function LeaderboardPage() {
     (c) => c.classification_key !== "full_bracket" && c.classification_key !== "knockout_bracket"
   );
 
+  const appUrl =
+    process.env.NEXT_PUBLIC_APP_URL ?? "https://predictsport-rust.vercel.app";
+  const joinUrl = `${appUrl}/wc/join`;
+
   return (
     <div className="mx-auto flex min-h-[calc(100dvh-3.5rem)] max-w-[480px] flex-col px-4 pt-6 pb-16">
       <h1 className="font-display text-2xl uppercase tracking-tight text-ps-text">Leaderboard</h1>
+      {isAdmin && competition.invite_code && competition.status === "active" && (
+        <div className="mt-3">
+          <InviteCodeBanner
+            inviteCode={competition.invite_code}
+            competitionName={competition.name ?? "WC Predict"}
+            joinUrl={joinUrl}
+          />
+        </div>
+      )}
       <div className="mt-4 flex flex-1 flex-col">
         <ClassificationTabs
           classifications={classifications ?? []}
