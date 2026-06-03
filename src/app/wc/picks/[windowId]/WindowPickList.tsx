@@ -3,8 +3,10 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { useRouter } from "next/navigation";
 import { CountryFlag } from "@/components/CountryFlag";
+import { ScoreInput } from "@/components/ScoreInput";
 import { FixtureCardSurface } from "@/components/wc/FixtureCardSurface";
 import { deriveWinnerFromScore } from "@/lib/score-format";
+import { getPredictionSummary } from "@/lib/prediction-summary";
 import type { WcFixture } from "@/lib/wc/fixtures";
 import type {
   EventPredictionType,
@@ -164,7 +166,7 @@ const COMPACT_THEME: SurfaceTheme = {
     ].join(" "),
   drawButton: (selected) =>
     [
-      "shrink-0 px-2.5 py-1.5 rounded-lg text-xs font-medium transition-all duration-150",
+      "shrink-0 px-2.5 min-h-[44px] flex items-center rounded-lg text-xs font-medium transition-all duration-150",
       "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ps-amber/50",
       selected
         ? "bg-ps-amber/10 text-ps-amber ring-2 ring-ps-amber"
@@ -172,7 +174,7 @@ const COMPACT_THEME: SurfaceTheme = {
     ].join(" "),
   scoreInput: (filled) =>
     [
-      "w-[30px] h-[28px] rounded-full border text-center font-mono text-sm font-semibold text-ps-text outline-none transition-all duration-150 shrink-0",
+      "w-[34px] h-[32px] rounded-full border text-center font-mono text-base font-semibold text-ps-text outline-none transition-all duration-150 shrink-0",
       filled ? "bg-white border-ps-amber" : "bg-transparent border-ps-border",
       "focus:border-ps-amber focus:bg-white",
     ].join(" "),
@@ -209,7 +211,7 @@ const CARD_THEME: SurfaceTheme = {
     ].join(" "),
   drawButton: (selected) =>
     [
-      "shrink-0 px-2.5 py-1.5 rounded-lg text-xs font-medium transition-all duration-150",
+      "shrink-0 px-2.5 min-h-[44px] flex items-center rounded-lg text-xs font-medium transition-all duration-150",
       "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ps-amber/50",
       selected
         ? "bg-white/12 text-white shadow-[inset_0_0_0_2px_rgba(245,158,11,0.7)]"
@@ -217,7 +219,7 @@ const CARD_THEME: SurfaceTheme = {
     ].join(" "),
   scoreInput: (filled) =>
     [
-      "w-[30px] h-[28px] rounded-full border text-center font-mono text-sm font-semibold text-white outline-none transition-all duration-150 shrink-0 placeholder:text-white/30",
+      "w-[34px] h-[32px] rounded-full border text-center font-mono text-base font-semibold text-white outline-none transition-all duration-150 shrink-0 placeholder:text-white/30",
       filled ? "bg-white/18 border-ps-amber/70" : "bg-white/8 border-white/25",
       "focus:border-ps-amber/80 focus:bg-white/15",
     ].join(" "),
@@ -302,17 +304,19 @@ function MatchPickRow({
   const [, setScorePred] = useState<Prediction | null>(initialScore);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
-  // Score input state — initialized from existing prediction if available.
-  const [homeScore, setHomeScore] = useState<string>(() => {
-    const val = initialScore?.prediction_data?.home;
-    return val !== undefined && val !== null ? String(val) : "";
-  });
-  const [awayScore, setAwayScore] = useState<string>(() => {
-    const val = initialScore?.prediction_data?.away;
-    return val !== undefined && val !== null ? String(val) : "";
-  });
+  // Track whether a score prediction has been committed so we can show a
+  // confirmation summary below the ScoreInput without waiting for a page reload.
+  const [hasCommittedScore, setHasCommittedScore] = useState(initialScore !== null);
+  const [committedHome, setCommittedHome] = useState<number | null>(
+    initialScore?.prediction_data?.home != null ? Number(initialScore.prediction_data.home) : null,
+  );
+  const [committedAway, setCommittedAway] = useState<number | null>(
+    initialScore?.prediction_data?.away != null ? Number(initialScore.prediction_data.away) : null,
+  );
 
-  const awayInputRef = useRef<HTMLInputElement>(null);
+  // Key incremented on reset to force ScoreInput to remount and clear its
+  // internal input state.
+  const [scoreResetKey, setScoreResetKey] = useState(0);
 
   // Abort the previous in-flight winner POST when a new tap arrives so the
   // latest tap is what gets persisted even if the earlier one was slow.
@@ -444,33 +448,21 @@ function MatchPickRow({
   );
 
   /**
-   * Submit the score prediction on blur when both inputs have valid values.
-   * Auto-infers and sets the winner if none is selected yet.
+   * Commit handler for ScoreInput — receives parsed numbers directly.
+   * Submits the score prediction and auto-derives the winner.
    */
-  const handleScoreBlur = useCallback(
-    async (latestHome: string, latestAway: string) => {
+  const handleScoreCommit = useCallback(
+    async (homeNum: number, awayNum: number) => {
       if (!scoreEpt) return;
-
-      const homeNum = parseInt(latestHome, 10);
-      const awayNum = parseInt(latestAway, 10);
-
-      if (
-        latestHome === "" ||
-        latestAway === "" ||
-        isNaN(homeNum) ||
-        isNaN(awayNum) ||
-        homeNum < 0 ||
-        awayNum < 0
-      ) {
-        return;
-      }
-
       try {
         const saved = await submitPrediction("exact_score", {
           home: homeNum,
           away: awayNum,
         });
         setScorePred(saved);
+        setHasCommittedScore(true);
+        setCommittedHome(homeNum);
+        setCommittedAway(awayNum);
         router.refresh();
 
         // Score is source of truth — always align the winner to match it.
@@ -498,6 +490,60 @@ function MatchPickRow({
     ],
   );
 
+  /**
+   * Reset all predictions for this event — optimistic clear, DELETE request,
+   * revert on failure.
+   */
+  const handleReset = useCallback(async () => {
+    if (isLocked) return;
+
+    const previousWinner = winnerPred;
+    const previousHome = committedHome;
+    const previousAway = committedAway;
+    const hadWinner = currentWinner !== null;
+
+    // Optimistic: clear everything immediately.
+    setWinnerPred(null);
+    setHasCommittedScore(false);
+    setCommittedHome(null);
+    setCommittedAway(null);
+    setScoreResetKey((k) => k + 1);
+    setErrorMsg(null);
+    if (hadWinner) onWinnerLanded(event.id, false);
+
+    try {
+      await fetch("/api/predictions", {
+        method: "DELETE",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          event_id: event.id,
+          competition_id: competitionId,
+        }),
+      });
+      router.refresh();
+    } catch {
+      // Revert on error.
+      setWinnerPred(previousWinner);
+      if (previousHome !== null && previousAway !== null) {
+        setHasCommittedScore(true);
+        setCommittedHome(previousHome);
+        setCommittedAway(previousAway);
+      }
+      if (hadWinner) onWinnerLanded(event.id, true);
+      setErrorMsg("Couldn't reset prediction");
+    }
+  }, [
+    isLocked,
+    winnerPred,
+    committedHome,
+    committedAway,
+    currentWinner,
+    event.id,
+    competitionId,
+    router,
+    onWinnerLanded,
+  ]);
+
   // ── Read-only locked branch ──────────────────────────────────────────────
   if (isLocked) {
     const lockedBody = (
@@ -522,16 +568,36 @@ function MatchPickRow({
           )}
         </div>
         {currentWinner ? (
-          <p
-            className={`mt-1 text-xs ${useCardSurface ? "text-white/75" : "text-ps-text-sec"}`}
-          >
-            Picked:{" "}
-            <span className={theme.lockedPickedText}>
-              {currentWinner}
-            </span>
-          </p>
+          <>
+            <p
+              className={`mt-1 text-xs ${useCardSurface ? "text-white/75" : "text-ps-text-sec"}`}
+            >
+              <svg className="inline mr-1 h-3 w-3" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M16.5 10.5V6.75a4.5 4.5 0 10-9 0v3.75m-.75 11.25h10.5a2.25 2.25 0 002.25-2.25v-6.75a2.25 2.25 0 00-2.25-2.25H6.75a2.25 2.25 0 00-2.25 2.25v6.75a2.25 2.25 0 002.25 2.25z" />
+              </svg>
+              Picked:{" "}
+              <span className={theme.lockedPickedText}>
+                {currentWinner}
+              </span>
+            </p>
+            {initialScore && (
+              <p className={`text-[10px] ${useCardSurface ? "text-white/55" : "text-ps-text-ter"}`}>
+                {getPredictionSummary(
+                  "exact_score",
+                  initialScore.prediction_data,
+                  home,
+                  away,
+                )}
+              </p>
+            )}
+          </>
         ) : (
-          <p className={`mt-1 text-xs ${theme.lockedMutedText}`}>No pick</p>
+          <p className={`mt-1 text-xs ${theme.lockedMutedText}`}>
+            <svg className="inline mr-1 h-3 w-3" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" d="M16.5 10.5V6.75a4.5 4.5 0 10-9 0v3.75m-.75 11.25h10.5a2.25 2.25 0 002.25-2.25v-6.75a2.25 2.25 0 00-2.25-2.25H6.75a2.25 2.25 0 00-2.25 2.25v6.75a2.25 2.25 0 002.25 2.25z" />
+            </svg>
+            Locked — no prediction
+          </p>
         )}
       </>
     );
@@ -563,8 +629,8 @@ function MatchPickRow({
 
   const interactiveBody = (
     <>
+      {/* Winner buttons row */}
       <div className="flex items-center justify-center gap-1.5">
-        {/* Home team button */}
         <button
           type="button"
           onClick={() => handlePickWinner(home)}
@@ -575,28 +641,6 @@ function MatchPickRow({
           <span className={theme.teamLabel(homeSelected)}>{home}</span>
         </button>
 
-        {/* Home score input */}
-        {scoreEpt && (
-          <input
-            type="text"
-            inputMode="numeric"
-            maxLength={2}
-            placeholder="–"
-            value={homeScore}
-            onChange={(e) => {
-              const val = e.target.value.replace(/[^0-9]/g, "");
-              setHomeScore(val);
-              if (val !== "" && awayInputRef.current) {
-                awayInputRef.current.focus();
-              }
-            }}
-            onBlur={() => handleScoreBlur(homeScore, awayScore)}
-            aria-label={`${home} score`}
-            className={theme.scoreInput(homeScore !== "")}
-          />
-        )}
-
-        {/* Draw button */}
         {winnerOptions.some((opt) => slotOf(opt, home, away) === "draw") && (
           <button
             type="button"
@@ -608,26 +652,6 @@ function MatchPickRow({
           </button>
         )}
 
-        {/* Away score input */}
-        {scoreEpt && (
-          <input
-            ref={awayInputRef}
-            type="text"
-            inputMode="numeric"
-            maxLength={2}
-            placeholder="–"
-            value={awayScore}
-            onChange={(e) => {
-              const val = e.target.value.replace(/[^0-9]/g, "");
-              setAwayScore(val);
-            }}
-            onBlur={() => handleScoreBlur(homeScore, awayScore)}
-            aria-label={`${away} score`}
-            className={theme.scoreInput(awayScore !== "")}
-          />
-        )}
-
-        {/* Away team button */}
         <button
           type="button"
           onClick={() => handlePickWinner(away)}
@@ -639,13 +663,52 @@ function MatchPickRow({
         </button>
       </div>
 
+      {/* Score input row */}
+      {scoreEpt && (
+        <div className="mt-2 flex justify-center">
+          <ScoreInput
+            key={scoreResetKey}
+            homeLabel={home}
+            awayLabel={away}
+            initialHome={initialScore?.prediction_data?.home != null ? String(initialScore.prediction_data.home) : undefined}
+            initialAway={initialScore?.prediction_data?.away != null ? String(initialScore.prediction_data.away) : undefined}
+            onCommit={handleScoreCommit}
+            disabled={false}
+            variant={useCardSurface ? "card" : "compact"}
+          />
+        </div>
+      )}
+
+      {hasCommittedScore && committedHome !== null && committedAway !== null && (
+        <p className={`mt-1.5 text-center text-[11px] ${useCardSurface ? "text-white/65" : "text-ps-text-sec"}`}>
+          {getPredictionSummary("exact_score", { home: committedHome, away: committedAway }, home, away)}
+          <span className={`ml-1 inline-block ${useCardSurface ? "text-white/40" : "text-ps-text-ter"}`}>
+            <svg className="inline h-3 w-3" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L10.582 16.07a4.5 4.5 0 01-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 011.13-1.897l8.932-8.931zm0 0L19.5 7.125" />
+            </svg>
+          </span>
+        </p>
+      )}
+
+      {currentWinner && (
+        <div className="mt-1 flex justify-center">
+          <button
+            type="button"
+            onClick={handleReset}
+            className={`text-[10px] font-medium transition-colors ${
+              useCardSurface
+                ? "text-white/40 hover:text-red-200"
+                : "text-ps-text-ter hover:text-ps-red"
+            }`}
+          >
+            Reset prediction
+          </button>
+        </div>
+      )}
+
       {errorMsg && <p className={theme.errorText}>{errorMsg}</p>}
     </>
   );
-
-  // Exact score is "entered" when both inputs have valid numeric values.
-  const hasExactScore = homeScore !== "" && awayScore !== "" &&
-    !isNaN(parseInt(homeScore, 10)) && !isNaN(parseInt(awayScore, 10));
 
   if (useCardSurface && fixture) {
     return (

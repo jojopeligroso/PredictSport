@@ -9,7 +9,8 @@ import {
   dataToScore,
   type ScoreValue,
 } from "./ExactScoreInput";
-import { deriveWinnerFromScore } from "@/lib/score-format";
+import { ScoreInput } from "./ScoreInput";
+import { deriveWinnerFromScore, getScoreFormat } from "@/lib/score-format";
 import type { Prediction, PredictionType, EventPredictionType } from "@/types/database";
 
 interface ExactScoreSectionProps {
@@ -47,15 +48,21 @@ export function ExactScoreSection({
   onSubmitScore,
   onUpdateWinner,
 }: ExactScoreSectionProps) {
+  const isGAA = getScoreFormat(sport) === "gaa";
+
   const [isExpanded, setIsExpanded] = useState(
     existingScorePrediction !== null
   );
+  // Score state is only used for GAA (ExactScoreInput is controlled).
+  // For standard sports, ScoreInput manages its own state internally.
   const [score, setScore] = useState<ScoreValue>(() =>
     dataToScore(
       existingScorePrediction?.prediction_data ?? null,
       sport
     )
   );
+  // Reset key — incrementing remounts ScoreInput with fresh state (used by clear).
+  const [resetKey, setResetKey] = useState(0);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   // Track the "original" winner pick before derivation
@@ -68,8 +75,9 @@ export function ExactScoreSection({
     }
   }, [currentWinnerPick, isExpanded]);
 
-  // Compute derivation message from current state
+  // Derivation message — only needed for GAA (which still uses manual Save).
   const derivationMsg = useMemo(() => {
+    if (!isGAA) return null;
     if (!isExpanded || !isScoreComplete(score, sport)) return null;
     const scoreData = scoreToData(score, sport);
     if (!scoreData) return null;
@@ -79,8 +87,9 @@ export function ExactScoreSection({
       return `Score implies ${implied} — winner updated`;
     }
     return null;
-  }, [score, sport, winnerOptions, currentWinnerPick, isExpanded]);
+  }, [isGAA, score, sport, winnerOptions, currentWinnerPick, isExpanded]);
 
+  // GAA manual save — standard sports auto-commit via ScoreInput.
   const handleSave = useCallback(async () => {
     if (!isScoreComplete(score, sport)) {
       setError("Fill in all score fields");
@@ -94,17 +103,14 @@ export function ExactScoreSection({
     setError(null);
 
     try {
-      // Derive the implied winner
       const implied = deriveWinnerFromScore(scoreData, sport, winnerOptions);
 
-      // Save score prediction
       await onSubmitScore({
         eventId,
         predictionType: "exact_score",
         predictionData: scoreData,
       });
 
-      // If derivation changed the winner, sync it
       if (implied && implied !== currentWinnerPick) {
         await onUpdateWinner({
           eventId,
@@ -119,15 +125,39 @@ export function ExactScoreSection({
     }
   }, [score, sport, winnerOptions, currentWinnerPick, eventId, onSubmitScore, onUpdateWinner]);
 
+  // Standard-sport auto-commit handler — receives parsed numbers from ScoreInput.
+  const handleScoreCommit = useCallback(async (homeNum: number, awayNum: number) => {
+    setIsSubmitting(true);
+    setError(null);
+    try {
+      const scoreData = { home: homeNum, away: awayNum };
+      const implied = deriveWinnerFromScore(scoreData, sport, winnerOptions);
+
+      await onSubmitScore({
+        eventId,
+        predictionType: "exact_score",
+        predictionData: scoreData,
+      });
+
+      if (implied && implied !== currentWinnerPick) {
+        await onUpdateWinner({
+          eventId,
+          predictionType: "winner",
+          predictionData: { value: implied },
+        });
+      }
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to save");
+    } finally {
+      setIsSubmitting(false);
+    }
+  }, [sport, winnerOptions, currentWinnerPick, eventId, onSubmitScore, onUpdateWinner]);
+
   const handleClear = useCallback(async () => {
     setIsSubmitting(true);
     setError(null);
 
     try {
-      // Clear the score by submitting empty/null — API handles deletion via empty data
-      // For now, submit a special "clear" marker that the API can handle
-      // Actually — we just reset locally and submit with no score.
-      // The simplest approach: submit an empty object to signal deletion
       await onSubmitScore({
         eventId,
         predictionType: "exact_score",
@@ -144,6 +174,7 @@ export function ExactScoreSection({
       }
 
       setScore(emptyScore(sport));
+      setResetKey((k) => k + 1);
       setIsExpanded(false);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to clear");
@@ -154,7 +185,6 @@ export function ExactScoreSection({
 
   if (isLocked) {
     if (!existingScorePrediction) return null;
-    // Show existing score prediction in locked state
     const data = existingScorePrediction.prediction_data;
     return (
       <div className="mt-2 rounded-lg bg-ps-chip px-3 py-2">
@@ -217,56 +247,99 @@ export function ExactScoreSection({
         </span>
       </div>
 
-      <ExactScoreInput
-        sport={sport}
-        homeTeam={homeTeam}
-        awayTeam={awayTeam}
-        value={score}
-        onChange={setScore}
-        disabled={isSubmitting}
-      />
+      {isGAA ? (
+        /* GAA uses 4-input ExactScoreInput with manual Save */
+        <>
+          <ExactScoreInput
+            sport={sport}
+            homeTeam={homeTeam}
+            awayTeam={awayTeam}
+            value={score}
+            onChange={setScore}
+            disabled={isSubmitting}
+          />
 
-      {/* Derivation notification */}
-      {derivationMsg && (
-        <p className="mt-2 text-[11px] font-medium text-ps-amber-deep animate-pulse">
-          {derivationMsg}
-        </p>
+          {derivationMsg && (
+            <p className="mt-2 text-[11px] font-medium text-ps-amber-deep animate-pulse">
+              {derivationMsg}
+            </p>
+          )}
+
+          <div className="mt-3 flex items-center gap-2">
+            <button
+              type="button"
+              onClick={handleSave}
+              disabled={isSubmitting || !isScoreComplete(score, sport)}
+              className="rounded-lg bg-ps-text px-3 py-1.5 text-xs font-semibold text-ps-bg transition-opacity hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {isSubmitting ? "Saving..." : existingScorePrediction ? "Update" : "Save"}
+            </button>
+            {existingScorePrediction && (
+              <button
+                type="button"
+                onClick={handleClear}
+                disabled={isSubmitting}
+                className="rounded-lg border border-ps-border px-3 py-1.5 text-xs font-medium text-ps-text-sec transition-colors hover:border-ps-red hover:text-ps-red disabled:opacity-50"
+              >
+                Reset prediction
+              </button>
+            )}
+            {!existingScorePrediction && (
+              <button
+                type="button"
+                onClick={() => {
+                  setScore(emptyScore(sport));
+                  setIsExpanded(false);
+                }}
+                disabled={isSubmitting}
+                className="text-xs font-medium text-ps-text-ter hover:text-ps-text-sec"
+              >
+                Cancel
+              </button>
+            )}
+          </div>
+        </>
+      ) : (
+        /* Standard sports use unified ScoreInput with auto-commit */
+        <>
+          <ScoreInput
+            key={resetKey}
+            homeLabel={homeTeam}
+            awayLabel={awayTeam}
+            initialHome={existingScorePrediction?.prediction_data?.home != null ? String(existingScorePrediction.prediction_data.home) : undefined}
+            initialAway={existingScorePrediction?.prediction_data?.away != null ? String(existingScorePrediction.prediction_data.away) : undefined}
+            onCommit={handleScoreCommit}
+            disabled={isSubmitting}
+            variant="standard"
+          />
+
+          <div className="mt-3 flex items-center gap-2">
+            {existingScorePrediction && (
+              <button
+                type="button"
+                onClick={handleClear}
+                disabled={isSubmitting}
+                className="text-[10px] font-medium text-ps-text-ter hover:text-ps-red transition-colors"
+              >
+                Reset prediction
+              </button>
+            )}
+            {!existingScorePrediction && (
+              <button
+                type="button"
+                onClick={() => {
+                  setResetKey((k) => k + 1);
+                  setIsExpanded(false);
+                }}
+                disabled={isSubmitting}
+                className="text-xs font-medium text-ps-text-ter hover:text-ps-text-sec"
+              >
+                Cancel
+              </button>
+            )}
+          </div>
+        </>
       )}
-
-      {/* Actions */}
-      <div className="mt-3 flex items-center gap-2">
-        <button
-          type="button"
-          onClick={handleSave}
-          disabled={isSubmitting || !isScoreComplete(score, sport)}
-          className="rounded-lg bg-ps-text px-3 py-1.5 text-xs font-semibold text-ps-bg transition-opacity hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed"
-        >
-          {isSubmitting ? "Saving..." : existingScorePrediction ? "Update" : "Save"}
-        </button>
-        {existingScorePrediction && (
-          <button
-            type="button"
-            onClick={handleClear}
-            disabled={isSubmitting}
-            className="rounded-lg border border-ps-border px-3 py-1.5 text-xs font-medium text-ps-text-sec transition-colors hover:border-ps-red hover:text-ps-red disabled:opacity-50"
-          >
-            Clear
-          </button>
-        )}
-        {!existingScorePrediction && (
-          <button
-            type="button"
-            onClick={() => {
-              setScore(emptyScore(sport));
-              setIsExpanded(false);
-            }}
-            disabled={isSubmitting}
-            className="text-xs font-medium text-ps-text-ter hover:text-ps-text-sec"
-          >
-            Cancel
-          </button>
-        )}
-      </div>
 
       {error && (
         <p className="mt-1.5 text-xs font-medium text-ps-red">{error}</p>

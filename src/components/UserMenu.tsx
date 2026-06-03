@@ -93,15 +93,13 @@ export function UserMenu({ displayName, avatarUrl, isAdmin }: UserMenuProps) {
             >
               Settings
             </Link>
-            {isAdmin && (
-              <Link
-                href="/competitions"
-                className="block rounded-md px-2 py-1.5 text-sm text-ps-text-sec transition-colors hover:bg-ps-chip hover:text-ps-text"
-                onClick={() => setIsOpen(false)}
-              >
-                Manage competitions
-              </Link>
-            )}
+            <Link
+              href="/competitions"
+              className="block rounded-md px-2 py-1.5 text-sm text-ps-text-sec transition-colors hover:bg-ps-chip hover:text-ps-text"
+              onClick={() => setIsOpen(false)}
+            >
+              My Competitions
+            </Link>
             <button
               type="button"
               onClick={cycleTheme}

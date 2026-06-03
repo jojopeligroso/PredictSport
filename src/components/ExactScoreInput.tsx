@@ -91,7 +91,7 @@ export function dataToScore(data: Record<string, unknown> | null, sport: string)
 }
 
 const numInputClasses =
-  "w-12 rounded-md border border-ps-border-strong bg-ps-surface px-1.5 py-1.5 text-center text-sm font-mono text-ps-text placeholder:text-ps-text-ter focus:border-ps-amber focus:outline-none focus:ring-1 focus:ring-ps-amber disabled:opacity-50 disabled:cursor-not-allowed";
+  "w-12 rounded-md border border-ps-border-strong bg-ps-surface px-1.5 py-1.5 text-center text-base font-mono text-ps-text placeholder:text-ps-text-ter focus:border-ps-amber focus:outline-none focus:ring-1 focus:ring-ps-amber disabled:opacity-50 disabled:cursor-not-allowed";
 
 export function ExactScoreInput({
   sport,
@@ -112,7 +112,7 @@ export function ExactScoreInput({
       }
       const num = parseInt(raw, 10);
       if (!isNaN(num) && num >= 0) {
-        setter(raw);
+        setter(String(num));  // normalize: "01" → "1"
       }
     },
     []
