@@ -75,7 +75,7 @@ export async function POST(request: NextRequest) {
     const { data: comp } = await supabase
       .from("competitions")
       .select("id")
-      .eq("invite_code", trimmedToken.toUpperCase())
+      .eq("invite_code", trimmedToken.toLowerCase())
       .in("status", ["draft", "active"])
       .single();
 

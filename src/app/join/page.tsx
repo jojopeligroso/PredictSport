@@ -104,7 +104,7 @@ export default async function JoinPage({
     const { data: comp } = await supabase
       .from("competitions")
       .select("id, name")
-      .eq("invite_code", token.trim().toUpperCase())
+      .eq("invite_code", token.trim().toLowerCase())
       .in("status", ["draft", "active"])
       .single();
 
