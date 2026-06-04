@@ -445,9 +445,17 @@ function PreviewOverlay({ isAuthenticated }: { isAuthenticated: boolean }) {
             <div className="h-px flex-1 bg-ps-border" />
           </div>
 
+          {!isAuthenticated && (
+            <Link
+              href="/login?next=/wc"
+              className="mt-3 block w-full rounded-xl bg-ps-text px-4 py-3 text-sm font-semibold text-ps-bg transition-opacity hover:opacity-90"
+            >
+              Sign in
+            </Link>
+          )}
           <Link
             href={isAuthenticated ? "/wc/create" : "/login?next=/wc/create"}
-            className="mt-3 block w-full rounded-xl border border-ps-border px-4 py-3 text-sm font-semibold text-ps-text hover:border-ps-amber/40"
+            className="mt-2 block w-full rounded-xl border border-ps-border px-4 py-3 text-sm font-semibold text-ps-text hover:border-ps-amber/40"
           >
             Create your own
           </Link>
