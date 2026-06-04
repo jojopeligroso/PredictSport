@@ -1,29 +1,37 @@
 import Link from "next/link";
-import { Md1PicksLanding } from "./_landing/Md1PicksLanding";
 import { fetchMd1PicksData } from "./_landing/fetchMd1PicksData";
+import { fetchFixturesResultsData } from "./_landing/fetchFixturesResultsData";
+import { WcPicksHub } from "./_landing/WcPicksHub";
 
 export const dynamic = "force-dynamic";
 
 /**
- * /wc — picks-first World Cup landing (ADR 0014).
+ * /wc — picks-first World Cup hub (ADR 0014).
  *
- * The page IS the matchday-1 group-stage picker. Anonymous + non-member
- * visitors see a blurred preview with a tap-to-join overlay.
+ * Three tabs: Upcoming (picks), Fixtures (schedule), Results (completed).
+ * Anonymous + non-member visitors see a blurred preview with a tap-to-join
+ * overlay on the Upcoming tab.
  */
 export default async function WorldCupLanding() {
-  const data = await fetchMd1PicksData();
+  const [md1Data, fixturesData] = await Promise.all([
+    fetchMd1PicksData(),
+    fetchFixturesResultsData(),
+  ]);
 
-  if (!data.ready) return <ComingSoonPanel />;
+  if (!md1Data.ready) return <ComingSoonPanel />;
 
   return (
-    <Md1PicksLanding
-      competitionId={data.competitionId}
-      events={data.events}
-      predictions={data.predictions}
-      fixtureByEventId={data.fixtureByEventId}
-      isMember={data.isMember}
-      isAuthenticated={data.isAuthenticated}
-      windowLocked={data.windowLocked}
+    <WcPicksHub
+      md1={{
+        competitionId: md1Data.competitionId,
+        events: md1Data.events,
+        predictions: md1Data.predictions,
+        fixtureByEventId: md1Data.fixtureByEventId,
+        isMember: md1Data.isMember,
+        isAuthenticated: md1Data.isAuthenticated,
+        windowLocked: md1Data.windowLocked,
+      }}
+      fixturesData={fixturesData}
     />
   );
 }

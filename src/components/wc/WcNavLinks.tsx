@@ -5,9 +5,8 @@ import { usePathname } from "next/navigation";
 import { WcMoreMenu } from "./WcMoreMenu";
 
 const wcNavLinks = [
-  { href: "/wc/picks", label: "Picks" },
+  { href: "/wc", label: "Picks" },
   { href: "/wc/leaderboard", label: "Table" },
-  { href: "/wc/results", label: "Fixtures & Results" },
   { href: "/wc/rules", label: "Rules" },
 ] as const;
 
