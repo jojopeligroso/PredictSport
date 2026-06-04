@@ -93,13 +93,15 @@ export function UserMenu({ displayName, avatarUrl, isAdmin }: UserMenuProps) {
             >
               Settings
             </Link>
-            <Link
-              href="/competitions"
-              className="block rounded-md px-2 py-1.5 text-sm text-ps-text-sec transition-colors hover:bg-ps-chip hover:text-ps-text"
-              onClick={() => setIsOpen(false)}
-            >
-              My Competitions
-            </Link>
+            {process.env.NEXT_PUBLIC_PRODUCT_MODE !== "world_cup_2026_shell" && (
+              <Link
+                href="/competitions"
+                className="block rounded-md px-2 py-1.5 text-sm text-ps-text-sec transition-colors hover:bg-ps-chip hover:text-ps-text"
+                onClick={() => setIsOpen(false)}
+              >
+                My Competitions
+              </Link>
+            )}
             <button
               type="button"
               onClick={cycleTheme}

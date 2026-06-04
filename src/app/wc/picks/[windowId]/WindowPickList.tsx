@@ -280,6 +280,10 @@ function MatchPickRow({
   const scoreEpt = event.event_prediction_types.find(
     (e) => e.prediction_type === "exact_score",
   );
+  const h2hEpt = event.event_prediction_types.find(
+    (e) => e.prediction_type === "head_to_head",
+  );
+  const isKnockout = !!h2hEpt;
 
   const isLocked =
     windowLocked ||
@@ -663,9 +667,20 @@ function MatchPickRow({
         </button>
       </div>
 
+      {isKnockout && winnerOptions.some((opt) => slotOf(opt, home, away) === "draw") && (
+        <p className={`mt-1 text-center text-xs ${useCardSurface ? "text-white/55" : "text-ps-text-ter"}`}>
+          Draw = goes to pens. Pick who advances below.
+        </p>
+      )}
+
       {/* Score input row */}
       {scoreEpt && (
-        <div className="mt-2 flex justify-center">
+        <div className="mt-2 flex flex-col items-center">
+          {!hasCommittedScore && (
+            <p className={`mb-1 text-xs ${useCardSurface ? "text-white/55" : "text-ps-text-ter"}`}>
+              Exact score = +3 bonus pts
+            </p>
+          )}
           <ScoreInput
             key={scoreResetKey}
             homeLabel={home}

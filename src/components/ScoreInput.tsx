@@ -46,6 +46,7 @@ export function ScoreInput({
   const homeRef = useRef<HTMLInputElement>(null);
   const awayRef = useRef<HTMLInputElement>(null);
   const timerRef = useRef<NodeJS.Timeout | null>(null);
+  const advanceTimerRef = useRef<NodeJS.Timeout | null>(null);
 
   // Refs track the latest values synchronously so blur handlers never read
   // stale closure state (the batched setState hasn't committed yet when a
@@ -72,6 +73,7 @@ export function ScoreInput({
   useEffect(() => {
     return () => {
       if (timerRef.current) clearTimeout(timerRef.current);
+      if (advanceTimerRef.current) clearTimeout(advanceTimerRef.current);
     };
   }, []);
 
@@ -126,10 +128,16 @@ export function ScoreInput({
       homeValueRef.current = val;
       setHome(val);
       resetTimer();
-      // Auto-advance only when maxLength reached (2 digits) so multi-digit
-      // scores like "21" can be typed without premature focus change.
+      // Clear any pending single-digit advance timer on each keystroke.
+      if (advanceTimerRef.current) clearTimeout(advanceTimerRef.current);
       if (val.length >= 2) {
+        // Two digits typed — advance immediately.
         awayRef.current?.focus();
+      } else if (val.length === 1) {
+        // Single digit — advance after 750 ms if no second digit follows.
+        advanceTimerRef.current = setTimeout(() => {
+          awayRef.current?.focus();
+        }, 750);
       }
     },
     [resetTimer],
