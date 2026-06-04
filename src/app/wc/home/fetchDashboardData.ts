@@ -80,16 +80,30 @@ export async function fetchDashboardData(): Promise<DashboardResult> {
 
   if (!competition) return { ready: false };
 
-  // 2. Parallel fetches: round, member count, membership, classification
-  const [roundResult, memberCountResult, membershipResult, classificationResult] =
-    await Promise.all([
-      // Current/next open round
+  // 2. Parallel fetches: round (actionable + scored fallback), member count, membership, classification
+  const [
+    actionableRoundResult,
+    scoredRoundResult,
+    memberCountResult,
+    membershipResult,
+    classificationResult,
+  ] = await Promise.all([
+      // Actionable round: draft/open/locked — lowest round_number first
       supabase
         .from("rounds")
         .select("id, status, round_number")
         .eq("competition_id", competition.id)
-        .in("status", ["draft", "open", "locked", "scored"])
+        .in("status", ["draft", "open", "locked"])
         .order("round_number", { ascending: true })
+        .limit(1)
+        .maybeSingle(),
+      // Fallback: most recently scored round (for result display when no actionable round)
+      supabase
+        .from("rounds")
+        .select("id, status, round_number")
+        .eq("competition_id", competition.id)
+        .eq("status", "scored")
+        .order("round_number", { ascending: false })
         .limit(1)
         .maybeSingle(),
       // Member count
@@ -115,7 +129,8 @@ export async function fetchDashboardData(): Promise<DashboardResult> {
         .maybeSingle(),
     ]);
 
-  const currentRound = roundResult.data;
+  // Prefer actionable round; fall back to most recent scored round
+  const currentRound = actionableRoundResult.data ?? scoredRoundResult.data;
   const isMember = Boolean(membershipResult.data);
   const memberCount = memberCountResult.count ?? 0;
   const classificationId = classificationResult.data?.id ?? null;
