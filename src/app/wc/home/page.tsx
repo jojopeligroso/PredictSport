@@ -49,7 +49,8 @@ export default async function WcHomePage() {
       nextEvents={data.nextEvents}
       predictions={data.predictions}
       fixtureByEventId={data.fixtureByEventId}
-      todayFixtures={data.todayFixtures}
+      recentResults={data.recentResults}
+      resultsLabel={data.resultsLabel}
       classificationId={data.classificationId}
       inviteCode={data.inviteCode}
       entryClosesAt={data.entryClosesAt}
