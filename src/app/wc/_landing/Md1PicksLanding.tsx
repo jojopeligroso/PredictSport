@@ -290,6 +290,12 @@ function Sections({
     );
   }
 
+  // Don't render until `now` is available (avoids flash where sections render
+  // as upcoming cards then immediately collapse when statuses compute).
+  if (!now) {
+    return <div className="mx-auto w-full max-w-[480px] px-4" />;
+  }
+
   const visibleSections = sections.slice(0, visibleCount);
   const remainingEvents = sections
     .slice(visibleCount)
