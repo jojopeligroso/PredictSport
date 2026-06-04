@@ -264,10 +264,19 @@ function Sections({
     () => new Set(),
   );
 
-  // Compute visible section count based on batches
+  // Compute visible section count based on batches.
+  // Auto-extend if all visible sections are complete so there's always
+  // something actionable on screen.
   const visibleCount = useMemo(() => {
     let end = 0;
     for (let batch = 0; batch < revealedBatches; batch++) {
+      end = nextBatchEnd(sections, end, 6);
+    }
+    // Keep revealing while every visible section is complete
+    while (
+      end < sections.length &&
+      sections.slice(0, end).every((s) => s.status === "complete")
+    ) {
       end = nextBatchEnd(sections, end, 6);
     }
     return end;
@@ -501,8 +510,8 @@ function PreviewOverlay({ isAuthenticated }: { isAuthenticated: boolean }) {
         setJoinError(data.error ?? "Failed to join");
         return;
       }
-      // Joined successfully — reload to reveal picks
-      router.refresh();
+      // Joined successfully — redirect to dashboard onboarding
+      router.push("/wc/home?onboarding=true");
     } catch {
       setJoinError("Something went wrong. Try again.");
     } finally {
