@@ -13,7 +13,14 @@ export const dynamic = "force-dynamic";
  * invite, and bracket progress. Server component fetches all data,
  * passes to the client shell.
  */
-export default async function WcHomePage() {
+export default async function WcHomePage({
+  searchParams,
+}: {
+  searchParams: Promise<{ onboarding?: string }>;
+}) {
+  const params = await searchParams;
+  const onboarding = params.onboarding === "true";
+
   const supabase = await createClient();
   const {
     data: { user },
@@ -60,6 +67,7 @@ export default async function WcHomePage() {
       windowLocked={data.windowLocked}
       currentUserId={user?.id ?? null}
       bracketProgress={data.bracketProgress}
+      onboarding={onboarding}
     />
   );
 }

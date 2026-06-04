@@ -46,11 +46,13 @@ export function FifaGroupsGrid({
               onClick={() =>
                 setExpandedGroup(isOpen ? null : g.groupId)
               }
-              className={`text-left transition-colors ${
-                isOpen ? "ring-2 ring-ps-amber rounded-lg" : ""
-              }`}
+              className="text-left"
             >
-              <FifaGroupCard groupId={g.groupId} teams={g.teams} />
+              <FifaGroupCard
+                groupId={g.groupId}
+                teams={g.teams}
+                isExpanded={isOpen}
+              />
             </button>
           );
         })}

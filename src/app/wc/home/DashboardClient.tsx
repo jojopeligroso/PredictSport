@@ -9,6 +9,10 @@ import { StatsCard } from "@/components/wc/StatsCard";
 import { InviteCodeBanner } from "@/components/InviteCodeBanner";
 import { CountryFlag } from "@/components/CountryFlag";
 import { fifaTrigram } from "@/lib/tournament/fifa-codes";
+import {
+  OnboardingFlow,
+  OnboardingSection,
+} from "@/components/wc/OnboardingFlow";
 import type { WindowEvent } from "@/app/wc/picks/[windowId]/WindowPickList";
 import type { WcFixture } from "@/lib/wc/fixtures";
 import type { Prediction } from "@/types/database";
@@ -30,6 +34,7 @@ interface DashboardClientProps {
   windowLocked: boolean;
   currentUserId: string | null;
   bracketProgress: { pct: number; label: string } | null;
+  onboarding?: boolean;
 }
 
 type PickStatus = "complete" | "urgent" | "unpicked";
@@ -75,6 +80,7 @@ export function DashboardClient({
   windowLocked,
   currentUserId,
   bracketProgress,
+  onboarding,
 }: DashboardClientProps) {
   // Count picks progress
   const { picked, total } = useMemo(() => {
@@ -90,160 +96,182 @@ export function DashboardClient({
       ? window.location.origin
       : "https://predictsport-rust.vercel.app";
 
-  return (
+  const dashboard = (
     <div className="mx-auto max-w-[480px] px-4 pb-8">
       {/* ── 1. Progress strip ──────────────────────────────────────────── */}
-      {total > 0 && (
-        <div className="pt-3 pb-1 text-center">
-          <p className="text-[11px] font-semibold uppercase tracking-wider text-ps-text-sec">
-            {picked} / {total} picks
-          </p>
-          <div className="mx-auto mt-1.5 h-1 max-w-[200px] overflow-hidden rounded-full bg-ps-border">
-            <div
-              className="h-full rounded-full bg-ps-amber transition-all"
-              style={{ width: `${total > 0 ? (picked / total) * 100 : 0}%` }}
-            />
+      <OnboardingSection id="other">
+        {total > 0 && (
+          <div className="pt-3 pb-1 text-center">
+            <p className="text-[11px] font-semibold uppercase tracking-wider text-ps-text-sec">
+              {picked} / {total} picks
+            </p>
+            <div className="mx-auto mt-1.5 h-1 max-w-[200px] overflow-hidden rounded-full bg-ps-border">
+              <div
+                className="h-full rounded-full bg-ps-amber transition-all"
+                style={{ width: `${total > 0 ? (picked / total) * 100 : 0}%` }}
+              />
+            </div>
           </div>
-        </div>
-      )}
+        )}
+      </OnboardingSection>
 
       {/* ── 2. Next picks (hero cards) ─────────────────────────────────── */}
-      {nextEvents.length > 0 && (
-        <section className="mt-3">
-          <p className="mb-2 text-[11px] font-semibold uppercase tracking-wider text-ps-text-ter">
-            Your picks · Round 1
-          </p>
-          <div className="flex flex-col gap-2">
-            {nextEvents.map((event) => {
-              const fixture = fixtureByEventId.get(event.id);
-              if (!fixture) return null;
-              const status = getPickStatus(event, predictions);
-              return (
-                <DashboardPickRow
-                  key={event.id}
-                  fixture={fixture}
-                  predictions={predictions}
-                  status={status}
-                />
-              );
-            })}
-          </div>
-          <div className="mt-2 text-center">
-            <Link
-              href="/wc"
-              className="text-[13px] font-semibold text-ps-amber transition-colors hover:opacity-80"
-            >
-              Continue to full round →
-            </Link>
-          </div>
-        </section>
-      )}
+      <OnboardingSection id="picks">
+        {nextEvents.length > 0 && (
+          <section className="mt-3">
+            <p className="mb-2 text-[11px] font-semibold uppercase tracking-wider text-ps-text-ter">
+              Your picks · Round 1
+            </p>
+            <div className="flex flex-col gap-2">
+              {nextEvents.map((event) => {
+                const fixture = fixtureByEventId.get(event.id);
+                if (!fixture) return null;
+                const status = getPickStatus(event, predictions);
+                return (
+                  <DashboardPickRow
+                    key={event.id}
+                    fixture={fixture}
+                    predictions={predictions}
+                    status={status}
+                  />
+                );
+              })}
+            </div>
+            <div className="mt-2 text-center">
+              <Link
+                href="/wc"
+                className="text-[13px] font-semibold text-ps-amber transition-colors hover:opacity-80"
+              >
+                Continue to full round →
+              </Link>
+            </div>
+          </section>
+        )}
+      </OnboardingSection>
 
       {/* ── 3. At a Glance (horizontal scroll) ────────────────────────── */}
-      {classificationId && currentUserId && (
-        <section className="mt-4">
-          <p className="mb-2 text-[11px] font-semibold uppercase tracking-wider text-ps-text-ter">
-            At a glance
-          </p>
-          <StatsCard
-            classificationId={classificationId}
-            currentUserId={currentUserId}
-          />
-        </section>
-      )}
+      <OnboardingSection id="other">
+        {classificationId && currentUserId && (
+          <section className="mt-4">
+            <p className="mb-2 text-[11px] font-semibold uppercase tracking-wider text-ps-text-ter">
+              At a glance
+            </p>
+            <StatsCard
+              classificationId={classificationId}
+              currentUserId={currentUserId}
+            />
+          </section>
+        )}
+      </OnboardingSection>
 
       {/* ── 4. Your Group ──────────────────────────────────────────────── */}
-      {classificationId && (
-        <section className="mt-4">
-          <GroupMiniTable
-            classificationId={classificationId}
-            competitionId={competitionId}
-          />
-        </section>
-      )}
+      <OnboardingSection id="group">
+        {classificationId && (
+          <section className="mt-4">
+            <GroupMiniTable
+              classificationId={classificationId}
+              competitionId={competitionId}
+            />
+          </section>
+        )}
+      </OnboardingSection>
 
       {/* ── 4b. FIFA Groups ─────────────────────────────────────────── */}
-      <section className="mt-4">
-        <p className="mb-2 text-[11px] font-semibold uppercase tracking-wider text-ps-text-ter">
-          FIFA Groups
-        </p>
-        <FifaGroupsGrid mode="compact" />
-      </section>
+      <OnboardingSection id="other">
+        <section className="mt-4">
+          <p className="mb-2 text-[11px] font-semibold uppercase tracking-wider text-ps-text-ter">
+            FIFA Groups
+          </p>
+          <FifaGroupsGrid mode="compact" />
+        </section>
+      </OnboardingSection>
 
       {/* ── 5. Recent Results ─────────────────────────────────────────── */}
-      {recentResults.length > 0 && (
-        <section className="mt-2">
-          <div className="rounded-xl border border-ps-border bg-ps-surface p-4">
-            <div className="flex items-center justify-between">
-              <h3 className="text-base font-bold text-ps-text">
-                {resultsLabel}
-              </h3>
-              <span className="text-[11px] font-semibold uppercase text-ps-text-ter">
-                {recentResults.length}{" "}
-                {recentResults.length === 1 ? "match" : "matches"}
-              </span>
+      <OnboardingSection id="other">
+        {recentResults.length > 0 && (
+          <section className="mt-2">
+            <div className="rounded-xl border border-ps-border bg-ps-surface p-4">
+              <div className="flex items-center justify-between">
+                <h3 className="text-base font-bold text-ps-text">
+                  {resultsLabel}
+                </h3>
+                <span className="text-[11px] font-semibold uppercase text-ps-text-ter">
+                  {recentResults.length}{" "}
+                  {recentResults.length === 1 ? "match" : "matches"}
+                </span>
+              </div>
+              <div className="mt-3 space-y-0 divide-y divide-ps-border">
+                {recentResults.map((r) => (
+                  <TodayResultRow key={r.fixture.externalId} result={r} />
+                ))}
+              </div>
             </div>
-            <div className="mt-3 space-y-0 divide-y divide-ps-border">
-              {recentResults.map((r) => (
-                <TodayResultRow key={r.fixture.externalId} result={r} />
-              ))}
-            </div>
-          </div>
-        </section>
-      )}
+          </section>
+        )}
+      </OnboardingSection>
 
       {/* ── 6. Invite Friends ──────────────────────────────────────────── */}
-      {inviteCode && (
-        <section className="mt-2">
-          <InviteCodeBanner
-            inviteCode={inviteCode}
-            competitionName="WC Predict"
-            joinUrl={`${appUrl}/join`}
-            memberCount={memberCount}
-          />
-        </section>
-      )}
+      <OnboardingSection id="invite">
+        {inviteCode && (
+          <section className="mt-2">
+            <InviteCodeBanner
+              inviteCode={inviteCode}
+              competitionName="WC Predict"
+              joinUrl={`${appUrl}/join`}
+              memberCount={memberCount}
+            />
+          </section>
+        )}
+      </OnboardingSection>
 
       {/* ── 7. Bracket strip ───────────────────────────────────────────── */}
-      <section className="mt-2">
-        <Link
-          href="/wc/bracket"
-          className="block rounded-xl border border-ps-border bg-ps-surface px-4 py-3 transition-colors hover:bg-ps-chip"
-        >
-          <div className="flex items-center gap-2">
-            <span className="text-[13px] font-semibold text-ps-text-sec">
-              Bracket
-            </span>
-            <span className="rounded-full bg-ps-purple-soft px-1.5 py-0.5 text-[8px] font-bold uppercase text-ps-purple">
-              Anorak
-            </span>
-            <span className="flex-1" />
-            {bracketProgress && (
-              <span className="font-mono text-[11px] tabular-nums text-ps-text-sec">
-                {bracketProgress.pct}%
+      <OnboardingSection id="other">
+        <section className="mt-2">
+          <Link
+            href="/wc/bracket"
+            className="block rounded-xl border border-ps-border bg-ps-surface px-4 py-3 transition-colors hover:bg-ps-chip"
+          >
+            <div className="flex items-center gap-2">
+              <span className="text-[13px] font-semibold text-ps-text-sec">
+                Bracket
               </span>
-            )}
-            <span className="text-[13px] font-semibold tabular-nums text-ps-text">
-              →
-            </span>
-          </div>
-          {bracketProgress && (
-            <div className="mt-2">
-              <div className="h-1 overflow-hidden rounded-full bg-ps-border">
-                <div
-                  className="h-full rounded-full bg-ps-purple transition-all"
-                  style={{ width: `${bracketProgress.pct}%` }}
-                />
-              </div>
-              <p className="mt-1 font-mono text-[10px] text-ps-text-ter">
-                {bracketProgress.label}
-              </p>
+              <span className="rounded-full bg-ps-purple-soft px-1.5 py-0.5 text-[8px] font-bold uppercase text-ps-purple">
+                Anorak
+              </span>
+              <span className="flex-1" />
+              {bracketProgress && (
+                <span className="font-mono text-[11px] tabular-nums text-ps-text-sec">
+                  {bracketProgress.pct}%
+                </span>
+              )}
+              <span className="text-[13px] font-semibold tabular-nums text-ps-text">
+                →
+              </span>
             </div>
-          )}
-        </Link>
-      </section>
+            {bracketProgress && (
+              <div className="mt-2">
+                <div className="h-1 overflow-hidden rounded-full bg-ps-border">
+                  <div
+                    className="h-full rounded-full bg-ps-purple transition-all"
+                    style={{ width: `${bracketProgress.pct}%` }}
+                  />
+                </div>
+                <p className="mt-1 font-mono text-[10px] text-ps-text-ter">
+                  {bracketProgress.label}
+                </p>
+              </div>
+            )}
+          </Link>
+        </section>
+      </OnboardingSection>
     </div>
   );
+
+  if (onboarding) {
+    return <OnboardingFlow>{dashboard}</OnboardingFlow>;
+  }
+
+  return dashboard;
 }
 
 /** Single result row with score, user prediction, correctness, and points. */

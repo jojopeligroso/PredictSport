@@ -264,10 +264,19 @@ function Sections({
     () => new Set(),
   );
 
-  // Compute visible section count based on batches
+  // Compute visible section count based on batches.
+  // Auto-extend if all visible sections are complete so there's always
+  // something actionable on screen.
   const visibleCount = useMemo(() => {
     let end = 0;
     for (let batch = 0; batch < revealedBatches; batch++) {
+      end = nextBatchEnd(sections, end, 6);
+    }
+    // Keep revealing while every visible section is complete
+    while (
+      end < sections.length &&
+      sections.slice(0, end).every((s) => s.status === "complete")
+    ) {
       end = nextBatchEnd(sections, end, 6);
     }
     return end;
@@ -279,6 +288,12 @@ function Sections({
         No matchday 1 fixtures scheduled yet.
       </p>
     );
+  }
+
+  // Don't render until `now` is available (avoids flash where sections render
+  // as upcoming cards then immediately collapse when statuses compute).
+  if (!now) {
+    return <div className="mx-auto w-full max-w-[480px] px-4" />;
   }
 
   const visibleSections = sections.slice(0, visibleCount);
@@ -418,18 +433,20 @@ function Sections({
 
       {/* 1A: Show more button */}
       {remainingEvents > 0 && (
-        <div className="mt-6 flex flex-col items-center gap-2">
-          {revealedBatches === 1 && (
-            <p className="text-xs font-serif italic text-ps-text-sec">
-              You can continue at any point &mdash; just make sure to have your
-              picks in before kickoff day
-            </p>
-          )}
+        <div className="mt-6 flex justify-center">
           <button
             onClick={() => setRevealedBatches((b) => b + 1)}
-            className="rounded-lg border border-ps-border bg-ps-surface px-4 py-2 text-sm font-semibold text-ps-text transition-colors hover:bg-ps-chip"
+            className="flex flex-col items-center rounded-xl px-6 py-3 transition-opacity hover:opacity-80"
+            style={{ backgroundColor: CHROME_PALETTE.attention }}
           >
-            Show more matches (+{remainingEvents} remaining)
+            <span className="text-sm font-semibold text-white">
+              Show more matches (+{remainingEvents} remaining)
+            </span>
+            {revealedBatches === 1 && (
+              <span className="mt-1 text-[11px] font-serif italic text-white/75">
+                No rush &mdash; just have your picks in before kickoff day
+              </span>
+            )}
           </button>
         </div>
       )}
@@ -500,8 +517,8 @@ function PreviewOverlay({ isAuthenticated }: { isAuthenticated: boolean }) {
         setJoinError(data.error ?? "Failed to join");
         return;
       }
-      // Joined successfully — reload to reveal picks
-      router.refresh();
+      // Joined successfully — redirect to dashboard onboarding
+      router.push("/wc/home?onboarding=true");
     } catch {
       setJoinError("Something went wrong. Try again.");
     } finally {
