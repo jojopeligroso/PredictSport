@@ -47,6 +47,12 @@ export function ScoreInput({
   const awayRef = useRef<HTMLInputElement>(null);
   const timerRef = useRef<NodeJS.Timeout | null>(null);
 
+  // Refs track the latest values synchronously so blur handlers never read
+  // stale closure state (the batched setState hasn't committed yet when a
+  // synchronous focus change triggers blur).
+  const homeValueRef = useRef(initialHome ?? "");
+  const awayValueRef = useRef(initialAway ?? "");
+
   // Guard against double-commit with identical values.
   const lastCommitted = useRef<{ home: number; away: number } | null>(null);
 
@@ -54,8 +60,12 @@ export function ScoreInput({
   const resetTimer = useCallback(() => {
     if (timerRef.current) clearTimeout(timerRef.current);
     timerRef.current = setTimeout(() => {
-      homeRef.current?.blur();
-      awayRef.current?.blur();
+      // Only auto-blur when both scores are filled — don't kick the user
+      // out of the away input before they've typed in it.
+      if (homeValueRef.current !== "" && awayValueRef.current !== "") {
+        homeRef.current?.blur();
+        awayRef.current?.blur();
+      }
     }, 1750);
   }, []);
 
@@ -94,27 +104,31 @@ export function ScoreInput({
 
   // ── Handlers ───────────────────────────────────────────────────────────
   const handleHomeFocus = useCallback(() => {
-    if (home !== "") {
-      setHomeGhost(home);
+    if (homeValueRef.current !== "") {
+      setHomeGhost(homeValueRef.current);
       setHome("");
+      homeValueRef.current = "";
     }
-  }, [home]);
+  }, []);
 
   const handleAwayFocus = useCallback(() => {
-    if (away !== "") {
-      setAwayGhost(away);
+    if (awayValueRef.current !== "") {
+      setAwayGhost(awayValueRef.current);
       setAway("");
+      awayValueRef.current = "";
     }
-  }, [away]);
+  }, []);
 
   const handleHomeChange = useCallback(
     (e: React.ChangeEvent<HTMLInputElement>) => {
       const raw = e.target.value.replace(/[^0-9]/g, "");
       const val = raw === "" ? "" : String(parseInt(raw, 10));
+      homeValueRef.current = val;
       setHome(val);
       resetTimer();
-      // Auto-advance to away input on digit entry.
-      if (val !== "") {
+      // Auto-advance only when maxLength reached (2 digits) so multi-digit
+      // scores like "21" can be typed without premature focus change.
+      if (val.length >= 2) {
         awayRef.current?.focus();
       }
     },
@@ -125,6 +139,7 @@ export function ScoreInput({
     (e: React.ChangeEvent<HTMLInputElement>) => {
       const raw = e.target.value.replace(/[^0-9]/g, "");
       const val = raw === "" ? "" : String(parseInt(raw, 10));
+      awayValueRef.current = val;
       setAway(val);
       resetTimer();
     },
@@ -132,27 +147,26 @@ export function ScoreInput({
   );
 
   const handleHomeBlur = useCallback(() => {
-    let resolved = home;
-    if (home === "" && homeGhost !== "") {
+    let resolved = homeValueRef.current;
+    if (resolved === "" && homeGhost !== "") {
       resolved = homeGhost;
       setHome(homeGhost);
+      homeValueRef.current = homeGhost;
     }
     setHomeGhost("");
-    // Use resolved + current away for commit check.
-    // We need the latest away — read from state via a ref-like pattern.
-    // Since away is captured in closure, this works for the blur moment.
-    tryCommit(resolved, away || awayGhost);
-  }, [home, homeGhost, away, awayGhost, tryCommit]);
+    tryCommit(resolved, awayValueRef.current || awayGhost);
+  }, [homeGhost, awayGhost, tryCommit]);
 
   const handleAwayBlur = useCallback(() => {
-    let resolved = away;
-    if (away === "" && awayGhost !== "") {
+    let resolved = awayValueRef.current;
+    if (resolved === "" && awayGhost !== "") {
       resolved = awayGhost;
       setAway(awayGhost);
+      awayValueRef.current = awayGhost;
     }
     setAwayGhost("");
-    tryCommit(home || homeGhost, resolved);
-  }, [away, awayGhost, home, homeGhost, tryCommit]);
+    tryCommit(homeValueRef.current || homeGhost, resolved);
+  }, [awayGhost, homeGhost, tryCommit]);
 
   // ── Variant-specific class strings ─────────────────────────────────────
   if (variant === "compact") {

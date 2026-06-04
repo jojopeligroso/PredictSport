@@ -44,7 +44,7 @@ export function deriveWinnerFromScore(
     const awayTotal = (away.goals ?? 0) * 3 + (away.points ?? 0);
 
     if (homeTotal === awayTotal) return "Draw";
-    return homeTotal > awayTotal ? (options[0] ?? null) : (options[1] ?? null);
+    return homeTotal > awayTotal ? (options[0] ?? null) : (options[options.length - 1] ?? null);
   }
 
   // Standard format
@@ -53,7 +53,7 @@ export function deriveWinnerFromScore(
 
   if (isNaN(homeScore) || isNaN(awayScore)) return null;
   if (homeScore === awayScore) return "Draw";
-  return homeScore > awayScore ? (options[0] ?? null) : (options[1] ?? null);
+  return homeScore > awayScore ? (options[0] ?? null) : (options[options.length - 1] ?? null);
 }
 
 /** Compute GAA aggregate from goals and points */
