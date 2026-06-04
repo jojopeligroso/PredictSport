@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { Md1PicksLanding } from "./Md1PicksLanding";
 import { FixturesTabs } from "@/components/wc/FixturesTabs";
+import { FifaGroupsGrid } from "@/components/wc/FifaGroupsGrid";
 import type { WindowEvent } from "@/app/wc/picks/[windowId]/WindowPickList";
 import type { WcFixture } from "@/lib/wc/fixtures";
 import type { Prediction } from "@/types/database";
@@ -12,7 +13,7 @@ import type {
   FixturePredictionData,
 } from "@/components/wc/FixturesTabs";
 
-type HubTab = "upcoming" | "fixtures" | "results";
+type HubTab = "upcoming" | "fixtures" | "results" | "groups";
 
 interface WcPicksHubProps {
   /** Data for the Upcoming (picks) tab. */
@@ -32,15 +33,22 @@ interface WcPicksHubProps {
     predictionsByExternalId: Record<string, FixturePredictionData>;
     serverDateIso: string;
   };
+  /** Data for the Groups tab. */
+  groupsData?: {
+    competitionId: string;
+    groupEvents: Map<string, WindowEvent[]>;
+    predictions: Prediction[];
+  } | null;
 }
 
 const HUB_TABS: { id: HubTab; label: string }[] = [
   { id: "upcoming", label: "Upcoming" },
   { id: "fixtures", label: "Fixtures" },
   { id: "results", label: "Results" },
+  { id: "groups", label: "Groups" },
 ];
 
-export function WcPicksHub({ md1, fixturesData }: WcPicksHubProps) {
+export function WcPicksHub({ md1, fixturesData, groupsData }: WcPicksHubProps) {
   const searchParams = useSearchParams();
   const initialTab = parseTab(searchParams.get("tab"));
   const [activeTab, setActiveTab] = useState<HubTab>(initialTab);
@@ -122,11 +130,22 @@ export function WcPicksHub({ md1, fixturesData }: WcPicksHubProps) {
           />
         </div>
       )}
+
+      {activeTab === "groups" && (
+        <div className="mx-auto max-w-[480px] px-4 pt-4 pb-16">
+          <FifaGroupsGrid
+            mode="accordion"
+            groupEvents={groupsData?.groupEvents}
+            predictions={groupsData?.predictions}
+            competitionId={groupsData?.competitionId}
+          />
+        </div>
+      )}
     </>
   );
 }
 
 function parseTab(value: string | null): HubTab {
-  if (value === "fixtures" || value === "results") return value;
+  if (value === "fixtures" || value === "results" || value === "groups") return value;
   return "upcoming";
 }

@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useMemo } from "react";
 import { DashboardPickRow } from "@/components/wc/DashboardPickRow";
 import { GroupMiniTable } from "@/components/wc/GroupMiniTable";
+import { FifaGroupsGrid } from "@/components/wc/FifaGroupsGrid";
 import { StatsCard } from "@/components/wc/StatsCard";
 import { InviteCodeBanner } from "@/components/InviteCodeBanner";
 import { CountryFlag } from "@/components/CountryFlag";
@@ -28,6 +29,7 @@ interface DashboardClientProps {
   isAuthenticated: boolean;
   windowLocked: boolean;
   currentUserId: string | null;
+  bracketProgress: { pct: number; label: string } | null;
 }
 
 type PickStatus = "complete" | "urgent" | "unpicked";
@@ -72,6 +74,7 @@ export function DashboardClient({
   isAuthenticated,
   windowLocked,
   currentUserId,
+  bracketProgress,
 }: DashboardClientProps) {
   // Count picks progress
   const { picked, total } = useMemo(() => {
@@ -159,6 +162,14 @@ export function DashboardClient({
         </section>
       )}
 
+      {/* ── 4b. FIFA Groups ─────────────────────────────────────────── */}
+      <section className="mt-4">
+        <p className="mb-2 text-[11px] font-semibold uppercase tracking-wider text-ps-text-ter">
+          FIFA Groups
+        </p>
+        <FifaGroupsGrid mode="compact" />
+      </section>
+
       {/* ── 5. Recent Results ─────────────────────────────────────────── */}
       {recentResults.length > 0 && (
         <section className="mt-2">
@@ -197,18 +208,38 @@ export function DashboardClient({
       <section className="mt-2">
         <Link
           href="/wc/bracket"
-          className="flex items-center gap-2 rounded-xl border border-ps-border bg-ps-surface px-4 py-3 transition-colors hover:bg-ps-chip"
+          className="block rounded-xl border border-ps-border bg-ps-surface px-4 py-3 transition-colors hover:bg-ps-chip"
         >
-          <span className="text-[13px] font-semibold text-ps-text-sec">
-            Bracket
-          </span>
-          <span className="rounded-full bg-ps-purple-soft px-1.5 py-0.5 text-[8px] font-bold uppercase text-ps-purple">
-            Anorak
-          </span>
-          <span className="flex-1" />
-          <span className="text-[13px] font-semibold tabular-nums text-ps-text">
-            →
-          </span>
+          <div className="flex items-center gap-2">
+            <span className="text-[13px] font-semibold text-ps-text-sec">
+              Bracket
+            </span>
+            <span className="rounded-full bg-ps-purple-soft px-1.5 py-0.5 text-[8px] font-bold uppercase text-ps-purple">
+              Anorak
+            </span>
+            <span className="flex-1" />
+            {bracketProgress && (
+              <span className="font-mono text-[11px] tabular-nums text-ps-text-sec">
+                {bracketProgress.pct}%
+              </span>
+            )}
+            <span className="text-[13px] font-semibold tabular-nums text-ps-text">
+              →
+            </span>
+          </div>
+          {bracketProgress && (
+            <div className="mt-2">
+              <div className="h-1 overflow-hidden rounded-full bg-ps-border">
+                <div
+                  className="h-full rounded-full bg-ps-purple transition-all"
+                  style={{ width: `${bracketProgress.pct}%` }}
+                />
+              </div>
+              <p className="mt-1 font-mono text-[10px] text-ps-text-ter">
+                {bracketProgress.label}
+              </p>
+            </div>
+          )}
         </Link>
       </section>
     </div>

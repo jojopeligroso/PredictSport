@@ -59,6 +59,7 @@ export default async function WcHomePage() {
       isAuthenticated={data.isAuthenticated}
       windowLocked={data.windowLocked}
       currentUserId={user?.id ?? null}
+      bracketProgress={data.bracketProgress}
     />
   );
 }

@@ -1,7 +1,9 @@
 import { createClient } from "@/lib/supabase/server";
 import { WC2026_FIXTURES, type WcFixture } from "@/lib/wc/fixtures";
+import { describeDraftProgress } from "@/lib/bracket/bracket-progress";
 import type { WindowEvent } from "@/app/wc/picks/[windowId]/WindowPickList";
 import type { Prediction } from "@/types/database";
+import type { BracketSubmissionData } from "@/types/tournament";
 
 type EventRowWithExternal = WindowEvent & { external_event_id: string | null };
 
@@ -53,6 +55,8 @@ export interface DashboardData {
   isAuthenticated: boolean;
   /** Whether the current round window is locked. */
   windowLocked: boolean;
+  /** Bracket draft progress, null if user has no bracket activity. */
+  bracketProgress: { pct: number; label: string } | null;
 }
 
 export type DashboardResult =
@@ -213,6 +217,37 @@ export async function fetchDashboardData(): Promise<DashboardResult> {
   const windowLocked =
     currentRound.status === "locked" || currentRound.status === "scored";
 
+  // 7. Bracket progress
+  let bracketProgress: { pct: number; label: string } | null = null;
+  if (user && isMember) {
+    const [bracketSubResult, groupPicksResult] = await Promise.all([
+      supabase
+        .from("bracket_prediction_submissions")
+        .select("bracket_data")
+        .eq("competition_id", competition.id)
+        .eq("user_id", user.id)
+        .eq("is_superseded", false)
+        .maybeSingle(),
+      supabase
+        .from("predictions")
+        .select("id", { count: "exact", head: true })
+        .eq("user_id", user.id)
+        .eq("prediction_type", "winner")
+        .in(
+          "event_id",
+          eventRows
+            .filter((e) => e.external_event_id?.includes("wc2026-grp-"))
+            .map((e) => e.id),
+        ),
+    ]);
+    const bracketData = (bracketSubResult.data?.bracket_data as BracketSubmissionData) ?? null;
+    const groupPicksCount = groupPicksResult.count ?? 0;
+    const progress = describeDraftProgress(bracketData, groupPicksCount);
+    if (progress.pct > 0) {
+      bracketProgress = progress;
+    }
+  }
+
   // Invite code — only show if entry is still open
   const entryClosesAt = competition.entry_closes_at ?? null;
   const entryOpen = !entryClosesAt || new Date(entryClosesAt) > now;
@@ -233,6 +268,7 @@ export async function fetchDashboardData(): Promise<DashboardResult> {
     isMember,
     isAuthenticated: Boolean(user),
     windowLocked,
+    bracketProgress,
   };
 }
 
