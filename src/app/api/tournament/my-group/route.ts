@@ -234,16 +234,34 @@ export async function GET(request: NextRequest) {
     }
   }
 
-  // Build response
-  const members = (groupMembers ?? []).map((m: { user_id: string; seed_position: number | null; status: string }) => ({
-    user_id: m.user_id,
-    display_name: nameMap.get(m.user_id) ?? "Unknown",
-    points: 0, // Pre-kickoff — no scores yet. Live scores come from standings API.
-    predictions_made: predictionsMadeMap.get(m.user_id) ?? 0,
-    predictions_total: predictionsTotal,
-    is_self: m.user_id === user.id,
-    status: m.status,
-  }));
+  // Aggregate total points per group member from all scored predictions
+  const pointsMap = new Map<string, number>();
+  for (const uid of memberUserIds) pointsMap.set(uid, 0);
+
+  const { data: scoredPreds } = await supabase
+    .from("predictions")
+    .select("user_id, points_awarded, events!inner(competition_id)")
+    .in("user_id", memberUserIds)
+    .eq("events.competition_id", competitionId)
+    .not("points_awarded", "is", null);
+
+  for (const p of scoredPreds ?? []) {
+    const current = pointsMap.get(p.user_id) ?? 0;
+    pointsMap.set(p.user_id, current + (p.points_awarded ?? 0));
+  }
+
+  // Build response — sorted by points descending
+  const members = (groupMembers ?? [])
+    .map((m: { user_id: string; seed_position: number | null; status: string }) => ({
+      user_id: m.user_id,
+      display_name: nameMap.get(m.user_id) ?? "Unknown",
+      points: pointsMap.get(m.user_id) ?? 0,
+      predictions_made: predictionsMadeMap.get(m.user_id) ?? 0,
+      predictions_total: predictionsTotal,
+      is_self: m.user_id === user.id,
+      status: m.status,
+    }))
+    .sort((a, b) => b.points - a.points);
 
   return NextResponse.json({
     status: "drawn",
