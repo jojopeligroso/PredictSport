@@ -436,13 +436,14 @@ function Sections({
         <div className="mt-6 flex justify-center">
           <button
             onClick={() => setRevealedBatches((b) => b + 1)}
-            className="flex flex-col items-center rounded-lg border border-ps-border bg-ps-surface px-5 py-3 transition-colors hover:bg-ps-chip"
+            className="flex flex-col items-center rounded-xl px-6 py-3 transition-opacity hover:opacity-80"
+            style={{ backgroundColor: CHROME_PALETTE.attention }}
           >
-            <span className="text-sm font-semibold text-ps-text">
+            <span className="text-sm font-semibold text-white">
               Show more matches (+{remainingEvents} remaining)
             </span>
             {revealedBatches === 1 && (
-              <span className="mt-1 text-[11px] font-serif italic text-ps-text-sec">
+              <span className="mt-1 text-[11px] font-serif italic text-white/75">
                 No rush &mdash; just have your picks in before kickoff day
               </span>
             )}
