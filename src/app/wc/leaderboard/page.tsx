@@ -1,4 +1,5 @@
 import { createClient } from "@/lib/supabase/server";
+import Link from "next/link";
 import { redirect } from "next/navigation";
 import { ClassificationTabs } from "@/components/tournament/ClassificationTabs";
 import { InviteCodeBanner } from "@/components/InviteCodeBanner";
@@ -63,19 +64,15 @@ export default async function LeaderboardPage() {
     process.env.NEXT_PUBLIC_APP_URL ?? "https://predictsport-rust.vercel.app";
   const joinUrl = `${appUrl}/join`;
 
+  const showInvite =
+    competition.invite_code &&
+    competition.status === "active" &&
+    (!competition.entry_closes_at ||
+      new Date() < new Date(competition.entry_closes_at));
+
   return (
     <div className="mx-auto flex min-h-[calc(100dvh-3.5rem)] max-w-[480px] flex-col px-4 pt-6 pb-16">
       <h1 className="font-display text-2xl uppercase tracking-tight text-ps-text">Leaderboard</h1>
-      {competition.invite_code && competition.status === "active" && (!competition.entry_closes_at || new Date() < new Date(competition.entry_closes_at)) && (
-        <div className="mt-3">
-          <InviteCodeBanner
-            inviteCode={competition.invite_code}
-            competitionName={competition.name ?? "WC Predict"}
-            joinUrl={joinUrl}
-            memberCount={memberCount ?? 0}
-          />
-        </div>
-      )}
       <div className="mt-4 flex flex-1 flex-col">
         <ClassificationTabs
           classifications={classifications ?? []}
@@ -88,6 +85,34 @@ export default async function LeaderboardPage() {
           minEntrants={competition.min_entrants ?? null}
           currentDisplayName={profile?.display_name || "You"}
         />
+      </div>
+
+      {/* Invite code banner — below table */}
+      {showInvite && (
+        <div className="mt-4">
+          <InviteCodeBanner
+            inviteCode={competition.invite_code!}
+            competitionName={competition.name ?? "WC Predict"}
+            joinUrl={joinUrl}
+            memberCount={memberCount ?? 0}
+          />
+        </div>
+      )}
+
+      {/* Navigation CTAs */}
+      <div className="mt-4 flex gap-3">
+        <Link
+          href="/wc/home"
+          className="flex-1 rounded-full border border-ps-border px-4 py-2.5 text-center text-sm font-semibold text-ps-text-sec transition-colors hover:bg-ps-chip hover:text-ps-text"
+        >
+          Back to Home
+        </Link>
+        <Link
+          href="/wc"
+          className="flex-1 rounded-full border border-ps-border px-4 py-2.5 text-center text-sm font-semibold text-ps-text-sec transition-colors hover:bg-ps-chip hover:text-ps-text"
+        >
+          Back to Matches
+        </Link>
       </div>
     </div>
   );

@@ -5,6 +5,27 @@ import type { Prediction } from "@/types/database";
 
 type EventRowWithExternal = WindowEvent & { external_event_id: string | null };
 
+/** A single completed match with result data and the user's prediction outcome. */
+export interface ResultRow {
+  fixture: WcFixture;
+  homeScore: number;
+  awayScore: number;
+  /** "home" | "away" | "draw" */
+  winner: string;
+  /** User's winner prediction value (team name or "draw"), null if no prediction. */
+  userWinnerPick: string | null;
+  /** User's exact score prediction, null if none. */
+  userScorePick: { home: number; away: number } | null;
+  /** Did user get the winner right? null = no prediction. */
+  winnerCorrect: boolean | null;
+  /** Did user get the exact score right? null = no prediction. */
+  scoreCorrect: boolean | null;
+  /** Points awarded for winner prediction. */
+  winnerPoints: number;
+  /** Points awarded for exact score prediction. */
+  scorePoints: number;
+}
+
 export interface DashboardData {
   ready: true;
   competitionId: string;
@@ -14,8 +35,10 @@ export interface DashboardData {
   predictions: Prediction[];
   /** Fixture metadata keyed by event.id. */
   fixtureByEventId: Map<string, WcFixture>;
-  /** Today's completed fixtures with results. */
-  todayFixtures: WcFixture[];
+  /** Most recent completed matchday results with user prediction outcomes. */
+  recentResults: ResultRow[];
+  /** Label for the results section (e.g. "Today's Results" or "Jun 12 Results"). */
+  resultsLabel: string;
   /** Classification IDs for group/standings lookup. */
   classificationId: string | null;
   /** Competition invite code (null if no code or entry closed). */
@@ -164,13 +187,13 @@ export async function fetchDashboardData(): Promise<DashboardResult> {
     predictions = (predRows ?? []) as Prediction[];
   }
 
-  // 6. Today's completed fixtures
-  const todayIso = `${now.getUTCFullYear()}-${String(now.getUTCMonth() + 1).padStart(2, "0")}-${String(now.getUTCDate()).padStart(2, "0")}`;
-  const todayFixtures = WC2026_FIXTURES.filter((f) => {
-    const fDate = new Date(f.kickoffUtc);
-    const fIso = `${fDate.getUTCFullYear()}-${String(fDate.getUTCMonth() + 1).padStart(2, "0")}-${String(fDate.getUTCDate()).padStart(2, "0")}`;
-    return fIso === todayIso;
-  });
+  // 6. Most recent completed matchday results with user prediction outcomes
+  const { recentResults, resultsLabel } = await fetchRecentResults(
+    supabase,
+    competition.id,
+    fixtureByExternalId,
+    user?.id ?? null,
+  );
 
   const windowLocked =
     currentRound.status === "locked" || currentRound.status === "scored";
@@ -186,7 +209,8 @@ export async function fetchDashboardData(): Promise<DashboardResult> {
     nextEvents,
     predictions,
     fixtureByEventId,
-    todayFixtures,
+    recentResults,
+    resultsLabel,
     classificationId,
     inviteCode,
     entryClosesAt,
@@ -195,4 +219,152 @@ export async function fetchDashboardData(): Promise<DashboardResult> {
     isAuthenticated: Boolean(user),
     windowLocked,
   };
+}
+
+// ---------------------------------------------------------------------------
+// Recent results helper
+// ---------------------------------------------------------------------------
+
+type SupabaseClient = Awaited<ReturnType<typeof createClient>>;
+
+async function fetchRecentResults(
+  supabase: SupabaseClient,
+  competitionId: string,
+  fixtureByExternalId: Map<string, WcFixture>,
+  userId: string | null,
+): Promise<{ recentResults: ResultRow[]; resultsLabel: string }> {
+  // Fetch all completed events with result_data
+  const { data: completedEvents } = await supabase
+    .from("events")
+    .select("id, external_event_id, start_time, result_data")
+    .eq("competition_id", competitionId)
+    .eq("status", "completed")
+    .not("result_data", "is", null)
+    .order("start_time", { ascending: false });
+
+  if (!completedEvents?.length) {
+    return { recentResults: [], resultsLabel: "Results" };
+  }
+
+  // Group completed events by UTC date, pick today or most recent
+  const byDate = new Map<string, typeof completedEvents>();
+  for (const e of completedEvents) {
+    const d = new Date(e.start_time);
+    const iso = `${d.getUTCFullYear()}-${String(d.getUTCMonth() + 1).padStart(2, "0")}-${String(d.getUTCDate()).padStart(2, "0")}`;
+    const list = byDate.get(iso) ?? [];
+    list.push(e);
+    byDate.set(iso, list);
+  }
+
+  const now = new Date();
+  const todayIso = `${now.getUTCFullYear()}-${String(now.getUTCMonth() + 1).padStart(2, "0")}-${String(now.getUTCDate()).padStart(2, "0")}`;
+
+  // Prefer today; otherwise most recent date
+  let targetDate = todayIso;
+  if (!byDate.has(todayIso)) {
+    const sortedDates = [...byDate.keys()].sort().reverse();
+    targetDate = sortedDates[0];
+  }
+
+  const matchdayEvents = byDate.get(targetDate) ?? [];
+  // Sort chronologically within the matchday
+  matchdayEvents.sort(
+    (a, b) => new Date(a.start_time).getTime() - new Date(b.start_time).getTime(),
+  );
+
+  // Build label
+  const isToday = targetDate === todayIso;
+  let resultsLabel = "Today's Results";
+  if (!isToday) {
+    const d = new Date(targetDate + "T12:00:00Z");
+    resultsLabel = d.toLocaleDateString("en-GB", {
+      day: "numeric",
+      month: "short",
+      timeZone: "UTC",
+    }) + " Results";
+  }
+
+  // Fetch user's predictions for these events (if logged in)
+  type PredRow = {
+    event_id: string;
+    prediction_type: string;
+    prediction_data: Record<string, unknown>;
+    is_correct: boolean | null;
+    points_awarded: number;
+  };
+  const predsByEventId = new Map<string, PredRow[]>();
+
+  if (userId) {
+    const eventIds = matchdayEvents.map((e) => e.id);
+    const { data: preds } = await supabase
+      .from("predictions")
+      .select("event_id, prediction_type, prediction_data, is_correct, points_awarded")
+      .eq("user_id", userId)
+      .in("event_id", eventIds);
+
+    for (const p of (preds ?? []) as PredRow[]) {
+      const list = predsByEventId.get(p.event_id) ?? [];
+      list.push(p);
+      predsByEventId.set(p.event_id, list);
+    }
+  }
+
+  // Assemble result rows
+  const recentResults: ResultRow[] = [];
+  for (const e of matchdayEvents) {
+    if (!e.external_event_id) continue;
+    const fixture = fixtureByExternalId.get(e.external_event_id);
+    if (!fixture) continue;
+
+    const rd = (e.result_data ?? {}) as Record<string, unknown>;
+    const homeScore = numOrNull(rd.home_score ?? rd.homeScore);
+    const awayScore = numOrNull(rd.away_score ?? rd.awayScore);
+    if (homeScore === null || awayScore === null) continue;
+
+    const winner =
+      homeScore > awayScore ? "home" : awayScore > homeScore ? "away" : "draw";
+
+    const preds = predsByEventId.get(e.id) ?? [];
+    const winnerPred = preds.find((p) => p.prediction_type === "winner");
+    const scorePred = preds.find((p) => p.prediction_type === "exact_score");
+
+    // Extract user's winner pick value
+    const userWinnerPick: string | null =
+      (winnerPred?.prediction_data?.value as string) ??
+      (winnerPred?.prediction_data?.selection as string) ??
+      null;
+
+    // Extract user's score pick
+    let userScorePick: { home: number; away: number } | null = null;
+    if (scorePred?.prediction_data) {
+      const sd = scorePred.prediction_data;
+      const h = Number(sd.home ?? sd.home_score);
+      const a = Number(sd.away ?? sd.away_score);
+      if (!isNaN(h) && !isNaN(a)) userScorePick = { home: h, away: a };
+    }
+
+    recentResults.push({
+      fixture,
+      homeScore,
+      awayScore,
+      winner,
+      userWinnerPick,
+      userScorePick,
+      winnerCorrect: winnerPred ? (winnerPred.is_correct ?? false) : null,
+      scoreCorrect: scorePred ? (scorePred.is_correct ?? false) : null,
+      winnerPoints: winnerPred?.points_awarded ?? 0,
+      scorePoints: scorePred?.points_awarded ?? 0,
+    });
+  }
+
+  return { recentResults, resultsLabel };
+}
+
+function numOrNull(v: unknown): number | null {
+  if (typeof v === "number" && Number.isFinite(v)) return v;
+  if (typeof v === "string" && v.trim() !== "") {
+    const n = Number(v);
+    return Number.isFinite(n) ? n : null;
+  }
+  return null;
 }

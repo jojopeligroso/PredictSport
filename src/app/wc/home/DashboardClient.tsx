@@ -11,13 +11,15 @@ import { fifaTrigram } from "@/lib/tournament/fifa-codes";
 import type { WindowEvent } from "@/app/wc/picks/[windowId]/WindowPickList";
 import type { WcFixture } from "@/lib/wc/fixtures";
 import type { Prediction } from "@/types/database";
+import type { ResultRow } from "./fetchDashboardData";
 
 interface DashboardClientProps {
   competitionId: string;
   nextEvents: WindowEvent[];
   predictions: Prediction[];
   fixtureByEventId: Map<string, WcFixture>;
-  todayFixtures: WcFixture[];
+  recentResults: ResultRow[];
+  resultsLabel: string;
   classificationId: string | null;
   inviteCode: string | null;
   entryClosesAt: string | null;
@@ -60,7 +62,8 @@ export function DashboardClient({
   nextEvents,
   predictions,
   fixtureByEventId,
-  todayFixtures,
+  recentResults,
+  resultsLabel,
   classificationId,
   inviteCode,
   entryClosesAt,
@@ -156,22 +159,22 @@ export function DashboardClient({
         </section>
       )}
 
-      {/* ── 5. Today's Results ─────────────────────────────────────────── */}
-      {todayFixtures.length > 0 && (
+      {/* ── 5. Recent Results ─────────────────────────────────────────── */}
+      {recentResults.length > 0 && (
         <section className="mt-2">
           <div className="rounded-xl border border-ps-border bg-ps-surface p-4">
             <div className="flex items-center justify-between">
               <h3 className="text-base font-bold text-ps-text">
-                Today&apos;s Results
+                {resultsLabel}
               </h3>
               <span className="text-[11px] font-semibold uppercase text-ps-text-ter">
-                {todayFixtures.length}{" "}
-                {todayFixtures.length === 1 ? "match" : "matches"}
+                {recentResults.length}{" "}
+                {recentResults.length === 1 ? "match" : "matches"}
               </span>
             </div>
             <div className="mt-3 space-y-0 divide-y divide-ps-border">
-              {todayFixtures.map((f) => (
-                <TodayResultRow key={f.externalId} fixture={f} />
+              {recentResults.map((r) => (
+                <TodayResultRow key={r.fixture.externalId} result={r} />
               ))}
             </div>
           </div>
@@ -212,20 +215,68 @@ export function DashboardClient({
   );
 }
 
-/** Single result row for today's matches. */
-function TodayResultRow({ fixture }: { fixture: WcFixture }) {
+/** Single result row with score, user prediction, correctness, and points. */
+function TodayResultRow({ result }: { result: ResultRow }) {
+  const { fixture, homeScore, awayScore, userWinnerPick, userScorePick, winnerCorrect, scoreCorrect, winnerPoints, scorePoints } = result;
   const homeTri = fifaTrigram(fixture.home) ?? fixture.home.slice(0, 3).toUpperCase();
   const awayTri = fifaTrigram(fixture.away) ?? fixture.away.slice(0, 3).toUpperCase();
 
+  // Correctness color: green (both), light green (winner only), red (wrong), grey (no pred)
+  const hasPrediction = userWinnerPick !== null;
+  const bothCorrect = winnerCorrect === true && scoreCorrect === true;
+  const winnerOnly = winnerCorrect === true && scoreCorrect !== true;
+  const wrong = hasPrediction && winnerCorrect === false;
+
+  let dotColor = "bg-ps-border"; // grey — no prediction
+  if (bothCorrect) dotColor = "bg-[#0aa86d]";
+  else if (winnerOnly) dotColor = "bg-[#0aa86d]/50";
+  else if (wrong) dotColor = "bg-[#e23d4f]";
+
+  const totalPoints = winnerPoints + scorePoints;
+
   return (
-    <div className="flex items-center gap-2 py-3">
-      <CountryFlag name={fixture.home} size={22} />
-      <span className="text-sm font-semibold text-ps-text">{homeTri}</span>
-      <span className="flex-1 text-center text-base font-bold tabular-nums text-ps-text">
-        — : —
-      </span>
-      <span className="text-sm font-semibold text-ps-text">{awayTri}</span>
-      <CountryFlag name={fixture.away} size={22} />
+    <div className="py-3">
+      {/* Match score row */}
+      <div className="flex items-center gap-2">
+        <span className={`h-2 w-2 flex-shrink-0 rounded-full ${dotColor}`} />
+        <CountryFlag name={fixture.home} size={22} />
+        <span className="text-sm font-semibold text-ps-text">{homeTri}</span>
+        <span className="flex-1 text-center font-mono text-base font-bold tabular-nums text-ps-text">
+          {homeScore} – {awayScore}
+        </span>
+        <span className="text-sm font-semibold text-ps-text">{awayTri}</span>
+        <CountryFlag name={fixture.away} size={22} />
+      </div>
+
+      {/* User prediction + points breakdown */}
+      {hasPrediction ? (
+        <div className="mt-1 flex items-center gap-2 pl-4.5">
+          <span className="text-[11px] text-ps-text-ter">
+            You:{" "}
+            <span className="font-semibold text-ps-text-sec">
+              {userScorePick
+                ? `${userScorePick.home}–${userScorePick.away}`
+                : userWinnerPick}
+            </span>
+          </span>
+          {totalPoints > 0 && (
+            <span className="ml-auto font-mono text-[11px] font-semibold tabular-nums text-[#0aa86d]">
+              {winnerPoints > 0 && `+${winnerPoints} winner`}
+              {winnerPoints > 0 && scorePoints > 0 && " "}
+              {scorePoints > 0 && `+${scorePoints} score`}
+            </span>
+          )}
+          {totalPoints === 0 && (
+            <span className="ml-auto font-mono text-[11px] tabular-nums text-ps-text-ter">
+              +0
+            </span>
+          )}
+        </div>
+      ) : (
+        <div className="mt-1 pl-4.5">
+          <span className="text-[11px] text-ps-text-ter">No prediction</span>
+        </div>
+      )}
     </div>
   );
 }
