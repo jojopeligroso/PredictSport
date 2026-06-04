@@ -21,7 +21,7 @@ export default async function LeaderboardPage() {
   // Find the WC competition
   const { data: competition } = await supabase
     .from("competitions")
-    .select("id, name, status, invite_code, max_entrants, min_entrants")
+    .select("id, name, status, invite_code, max_entrants, min_entrants, entry_closes_at")
     .eq("product_mode", "world_cup_2026_shell")
     .in("status", ["active", "draft", "completed"])
     .limit(1)
@@ -41,17 +41,6 @@ export default async function LeaderboardPage() {
     .select("display_name")
     .eq("id", user.id)
     .single();
-
-  // Check if current user is admin or co_admin of this competition
-  const { data: adminMembership } = await supabase
-    .from("competition_members")
-    .select("role")
-    .eq("competition_id", competition.id)
-    .eq("user_id", user.id)
-    .in("role", ["admin", "co_admin"])
-    .maybeSingle();
-
-  const isAdmin = !!adminMembership;
 
   // Get member count
   const { count: memberCount } = await supabase
@@ -77,12 +66,13 @@ export default async function LeaderboardPage() {
   return (
     <div className="mx-auto flex min-h-[calc(100dvh-3.5rem)] max-w-[480px] flex-col px-4 pt-6 pb-16">
       <h1 className="font-display text-2xl uppercase tracking-tight text-ps-text">Leaderboard</h1>
-      {isAdmin && competition.invite_code && competition.status === "active" && (
+      {competition.invite_code && competition.status === "active" && (!competition.entry_closes_at || new Date() < new Date(competition.entry_closes_at)) && (
         <div className="mt-3">
           <InviteCodeBanner
             inviteCode={competition.invite_code}
             competitionName={competition.name ?? "WC Predict"}
             joinUrl={joinUrl}
+            memberCount={memberCount ?? 0}
           />
         </div>
       )}

@@ -7,6 +7,7 @@ const SECTIONS = [
   { id: "format", label: "Format" },
   { id: "picks", label: "Picks" },
   { id: "ties", label: "Ties" },
+  { id: "faq", label: "FAQ" },
 ] as const;
 
 export function StickyPillNav() {

@@ -6,9 +6,10 @@ interface InviteCodeBannerProps {
   inviteCode: string;
   competitionName: string;
   joinUrl: string;
+  memberCount?: number;
 }
 
-export function InviteCodeBanner({ inviteCode, competitionName, joinUrl }: InviteCodeBannerProps) {
+export function InviteCodeBanner({ inviteCode, competitionName, joinUrl, memberCount }: InviteCodeBannerProps) {
   const [copied, setCopied] = useState(false);
 
   const fullLink = `${joinUrl}?token=${encodeURIComponent(inviteCode)}`;
@@ -36,6 +37,11 @@ export function InviteCodeBanner({ inviteCode, competitionName, joinUrl }: Invit
   return (
     <div className="flex items-center gap-2 rounded-xl border border-ps-border bg-ps-chip/50 px-3 py-2">
       <span className="text-xs text-ps-text-sec">Invite code:</span>
+      {memberCount != null && memberCount > 0 && (
+        <span className="rounded-full bg-ps-chip px-2 py-0.5 text-[10px] font-semibold text-ps-text-sec">
+          {memberCount} {memberCount === 1 ? "player" : "players"}
+        </span>
+      )}
       <code className="font-mono text-xs font-semibold text-ps-text tracking-wide">
         {inviteCode}
       </code>

@@ -92,13 +92,15 @@ export function MobileNav({ isLoggedIn, displayName, avatarUrl, isAdmin, extraLi
                 >
                   Profile
                 </Link>
-                <Link
-                  href="/competitions"
-                  onClick={() => setIsOpen(false)}
-                  className="block rounded-md px-3 py-2 text-sm font-medium text-ps-text-sec transition-colors hover:bg-ps-chip hover:text-ps-text"
-                >
-                  My Competitions
-                </Link>
+                {process.env.NEXT_PUBLIC_PRODUCT_MODE !== "world_cup_2026_shell" && (
+                  <Link
+                    href="/competitions"
+                    onClick={() => setIsOpen(false)}
+                    className="block rounded-md px-3 py-2 text-sm font-medium text-ps-text-sec transition-colors hover:bg-ps-chip hover:text-ps-text"
+                  >
+                    My Competitions
+                  </Link>
+                )}
                 {extraLinks?.map((link) => (
                   <Link
                     key={link.href}

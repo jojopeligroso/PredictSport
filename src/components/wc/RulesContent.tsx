@@ -419,6 +419,75 @@ export function RulesContent({
         </p>
       </section>
 
+      {/* ── FAQ ─────────────────────────────────────────────── */}
+      <section id="faq" className="mb-10">
+        <h2 className="font-display text-base font-extrabold text-ps-text">
+          FAQ
+        </h2>
+        <div className="mt-3 space-y-2">
+          <FAQGroup title="Basics">
+            <FAQ q="Do I have to predict every match?">
+              No. You can skip any match. But every correct pick earns points, so
+              the more you predict the better your chances on the leaderboard.
+            </FAQ>
+            <FAQ q="Is the exact score required?">
+              No &mdash; it&rsquo;s optional. Pick the winner (or draw) first.
+              If you also nail the exact score you earn a +3 bonus on top.
+            </FAQ>
+            <FAQ q="Can I change my picks?">
+              Yes, as many times as you like before the day locks. Once a
+              matchday locks (10 min before the first kickoff that day), all
+              picks for that day are final.
+            </FAQ>
+            <FAQ q="When can I join?">
+              You can join any time before the entry deadline (3 days after
+              kickoff). Late joiners can still pick unlocked matches but
+              auto-forfeit anything already locked.
+            </FAQ>
+          </FAQGroup>
+          <FAQGroup title="Scoring &amp; Classifications">
+            <FAQ q="How many points can I earn per match?">
+              Group stage: up to 5 pts (2 for correct outcome + 3 exact score
+              bonus). Knockout: up to 6 pts (2 outcome + 3 score + 1 for
+              correct advancing team).
+            </FAQ>
+            <FAQ q="What are the different leaderboard classifications?">
+              <strong>Overall</strong> &mdash; cumulative points across all
+              matches. <strong>Format</strong> &mdash; survivor elimination that
+              mirrors the World Cup structure. <strong>Full Bracket</strong> &amp;{" "}
+              <strong>KO Bracket</strong> &mdash; pre-tournament bracket
+              predictions scored after groups / knockouts complete.
+            </FAQ>
+            <FAQ q="What does &ldquo;Draw&rdquo; mean in a knockout match?">
+              It means the match goes to extra time and penalties. You still
+              pick who advances separately &mdash; the draw prediction covers
+              the 90-minute result only.
+            </FAQ>
+          </FAQGroup>
+          <FAQGroup title="Rules &amp; Tiebreakers">
+            <FAQ q="How are ties on the leaderboard broken?">
+              Head-to-head goal difference &rarr; head-to-head goals &rarr;
+              overall goal difference &rarr; overall goals &rarr; coin flip.
+            </FAQ>
+            <FAQ q="What happens if a match is postponed?">
+              Your picks stay valid. The match moves to its new time and your
+              predictions carry over. If a match is cancelled, affected picks
+              are voided (no points gained or lost).
+            </FAQ>
+          </FAQGroup>
+          <FAQGroup title="Technical">
+            <FAQ q="Do my picks auto-save?">
+              Yes. Winner picks save instantly on tap. Score predictions save
+              after 1.75 seconds of inactivity or when you tap away.
+            </FAQ>
+            <FAQ q="Can I play on desktop?">
+              Yes &mdash; the app works on any device with a browser. It&rsquo;s
+              designed mobile-first but fully functional on desktop.
+            </FAQ>
+          </FAQGroup>
+        </div>
+      </section>
+
       {/* ── CTA ──────────────────────────────────────────────── */}
       {!isMember && (
         <JoinCta
@@ -562,6 +631,36 @@ function JoinCta({
         </Link>
       </div>
     </div>
+  );
+}
+
+function FAQGroup({
+  title,
+  children,
+}: {
+  title: string;
+  children: React.ReactNode;
+}) {
+  return (
+    <div>
+      <p className="mb-1.5 font-mono text-[10px] font-bold uppercase tracking-[0.12em] text-ps-text-ter">
+        {title}
+      </p>
+      <div className="space-y-1">{children}</div>
+    </div>
+  );
+}
+
+function FAQ({ q, children }: { q: string; children: React.ReactNode }) {
+  return (
+    <details className="group rounded-lg border border-ps-border bg-ps-surface px-3.5 py-2.5">
+      <summary className="cursor-pointer text-sm font-semibold text-ps-text marker:text-ps-amber">
+        {q}
+      </summary>
+      <p className="mt-2 text-xs leading-relaxed text-ps-text-sec">
+        {children}
+      </p>
+    </details>
   );
 }
 
