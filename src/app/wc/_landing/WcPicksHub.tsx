@@ -2,7 +2,6 @@
 
 import { useState } from "react";
 import { useSearchParams } from "next/navigation";
-import Link from "next/link";
 import { Md1PicksLanding } from "./Md1PicksLanding";
 import { FixturesTabs } from "@/components/wc/FixturesTabs";
 import type { WindowEvent } from "@/app/wc/picks/[windowId]/WindowPickList";
@@ -63,28 +62,8 @@ export function WcPicksHub({ md1, fixturesData }: WcPicksHubProps) {
       <div className="sticky top-0 z-20 border-b border-ps-border bg-ps-bg/95 backdrop-blur-sm">
         <div
           role="tablist"
-          className="mx-auto flex max-w-[480px] items-end gap-0.5 px-4 pt-3 pb-0"
+          className="mx-auto flex max-w-[480px] gap-0.5 px-4 pt-3 pb-0"
         >
-          {/* Home icon — persistent link to dashboard */}
-          <Link
-            href="/wc/home"
-            aria-label="Home"
-            className="mr-1 mb-1.5 flex-shrink-0 transition-opacity hover:opacity-80"
-          >
-            <svg
-              width="20"
-              height="20"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="#d4af37"
-              strokeWidth={2}
-              strokeLinecap="round"
-              strokeLinejoin="round"
-            >
-              <path d="M3 9.5L12 3l9 6.5V20a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V9.5z" />
-              <polyline points="9 21 9 14 15 14 15 21" />
-            </svg>
-          </Link>
           {HUB_TABS.map(({ id, label }) => {
             const isActive = activeTab === id;
             return (
