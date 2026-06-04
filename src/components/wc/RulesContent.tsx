@@ -459,9 +459,16 @@ export function RulesContent({
               predictions scored after groups / knockouts complete.
             </FAQ>
             <FAQ q="What does &ldquo;Draw&rdquo; mean in a knockout match?">
-              It means the match goes to extra time and penalties. You still
-              pick who advances separately &mdash; the draw prediction covers
-              the 90-minute result only.
+              It means the scores are level after extra time &mdash; the match
+              is decided by penalties. You pick who advances separately. Your
+              result prediction is the score after extra time, excluding
+              penalties.
+            </FAQ>
+            <FAQ q="How does the extra knockout point work?">
+              In knockout matches you also predict which team advances. This is
+              worth 1 bonus point on top of the result and score picks. It
+              matters most when the match is a draw &mdash; you can still earn
+              a point by correctly picking who goes through on penalties.
             </FAQ>
           </FAQGroup>
           <FAQGroup title="Rules &amp; Tiebreakers">
