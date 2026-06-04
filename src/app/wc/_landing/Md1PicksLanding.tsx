@@ -418,18 +418,19 @@ function Sections({
 
       {/* 1A: Show more button */}
       {remainingEvents > 0 && (
-        <div className="mt-6 flex flex-col items-center gap-2">
-          {revealedBatches === 1 && (
-            <p className="text-xs font-serif italic text-ps-text-sec">
-              You can continue at any point &mdash; just make sure to have your
-              picks in before kickoff day
-            </p>
-          )}
+        <div className="mt-6 flex justify-center">
           <button
             onClick={() => setRevealedBatches((b) => b + 1)}
-            className="rounded-lg border border-ps-border bg-ps-surface px-4 py-2 text-sm font-semibold text-ps-text transition-colors hover:bg-ps-chip"
+            className="flex flex-col items-center rounded-lg border border-ps-border bg-ps-surface px-5 py-3 transition-colors hover:bg-ps-chip"
           >
-            Show more matches (+{remainingEvents} remaining)
+            <span className="text-sm font-semibold text-ps-text">
+              Show more matches (+{remainingEvents} remaining)
+            </span>
+            {revealedBatches === 1 && (
+              <span className="mt-1 text-[11px] font-serif italic text-ps-text-sec">
+                No rush &mdash; just have your picks in before kickoff day
+              </span>
+            )}
           </button>
         </div>
       )}
