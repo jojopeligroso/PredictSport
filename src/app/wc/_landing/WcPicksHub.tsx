@@ -5,6 +5,7 @@ import { useSearchParams } from "next/navigation";
 import { Md1PicksLanding } from "./Md1PicksLanding";
 import { FixturesTabs } from "@/components/wc/FixturesTabs";
 import { FifaGroupsGrid } from "@/components/wc/FifaGroupsGrid";
+import { OnboardingHomeSpotlight } from "@/components/wc/OnboardingFlow";
 import type { WindowEvent } from "@/app/wc/picks/[windowId]/WindowPickList";
 import type { WcFixture } from "@/lib/wc/fixtures";
 import type { Prediction } from "@/types/database";
@@ -66,6 +67,9 @@ export function WcPicksHub({ md1, fixturesData, groupsData }: WcPicksHubProps) {
 
   return (
     <>
+      {/* Onboarding step 5: spotlight the "Home" nav link */}
+      <OnboardingHomeSpotlight />
+
       {/* Tab bar — pinned, uses its own max-w container */}
       <div className="sticky top-0 z-20 border-b border-ps-border bg-ps-bg/95 backdrop-blur-sm">
         <div
