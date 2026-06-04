@@ -228,6 +228,20 @@ interface Section {
   isGroupSection?: boolean;
 }
 
+/**
+ * Walk sections accumulating event count; cut at day boundaries
+ * where cumulative >= batchSize. Returns the index of the first
+ * section NOT included in this batch.
+ */
+function nextBatchEnd(sections: Section[], startIdx: number, batchSize: number): number {
+  let cumulative = 0;
+  for (let i = startIdx; i < sections.length; i++) {
+    cumulative += sections[i].events.length;
+    if (cumulative >= batchSize && i > startIdx) return i + 1;
+  }
+  return sections.length;
+}
+
 function Sections({
   sections,
   competitionId,
@@ -243,6 +257,22 @@ function Sections({
   windowLocked: boolean;
   now: Date | null;
 }) {
+  // 1A: Progressive disclosure — show ~6 matches per batch
+  const [revealedBatches, setRevealedBatches] = useState(1);
+  // 1B: Auto-collapse completed days — track manually expanded ones
+  const [expandedCompleted, setExpandedCompleted] = useState<Set<string>>(
+    () => new Set(),
+  );
+
+  // Compute visible section count based on batches
+  const visibleCount = useMemo(() => {
+    let end = 0;
+    for (let batch = 0; batch < revealedBatches; batch++) {
+      end = nextBatchEnd(sections, end, 6);
+    }
+    return end;
+  }, [sections, revealedBatches]);
+
   if (sections.length === 0) {
     return (
       <p className="mx-auto mt-6 w-full max-w-[480px] px-4 text-center text-sm text-ps-text-sec">
@@ -251,15 +281,62 @@ function Sections({
     );
   }
 
+  const visibleSections = sections.slice(0, visibleCount);
+  const remainingEvents = sections
+    .slice(visibleCount)
+    .reduce((sum, s) => sum + s.events.length, 0);
+
   return (
     <div className="mx-auto w-full max-w-[480px] px-4">
-      {sections.map((s) => {
+      {visibleSections.map((s) => {
         const status = s.status ?? "upcoming";
+        const isComplete = status === "complete";
+        const isCollapsed = isComplete && !expandedCompleted.has(s.domId);
         const eligible =
           now &&
           s.lockTime &&
-          status !== "complete" &&
+          !isComplete &&
           new Date(s.lockTime).getTime() > now.getTime();
+
+        // 1B: Slim collapsed card for completed days
+        if (isCollapsed) {
+          const pickedCount = s.events.filter((e) =>
+            predictions.some((p) => p.event_id === e.id),
+          ).length;
+          return (
+            <section key={s.domId} id={s.domId} className="mt-5 scroll-mt-20">
+              <button
+                onClick={() =>
+                  setExpandedCompleted((prev) => new Set(prev).add(s.domId))
+                }
+                className="flex w-full items-center justify-between rounded-lg border border-ps-border bg-ps-surface px-3 py-2.5"
+              >
+                <div className="flex items-center gap-2">
+                  <SectionStatusIcon status="complete" />
+                  <span className="font-mono text-[11px] font-extrabold uppercase tracking-[0.12em] text-ps-text">
+                    {s.heading}
+                  </span>
+                  <span className="font-mono text-[10px] text-ps-green">
+                    {pickedCount}/{s.events.length} picked
+                  </span>
+                </div>
+                <svg
+                  className="h-4 w-4 text-ps-text-sec"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M19 9l-7 7-7-7"
+                  />
+                </svg>
+              </button>
+            </section>
+          );
+        }
 
         return (
           <section key={s.domId} id={s.domId} className="mt-5 scroll-mt-20">
@@ -272,6 +349,33 @@ function Sections({
                 </h2>
               </div>
               <div className="flex items-center gap-2">
+                {/* Collapse button for expanded completed sections */}
+                {isComplete && expandedCompleted.has(s.domId) && (
+                  <button
+                    onClick={() =>
+                      setExpandedCompleted((prev) => {
+                        const next = new Set(prev);
+                        next.delete(s.domId);
+                        return next;
+                      })
+                    }
+                    className="text-ps-text-sec"
+                  >
+                    <svg
+                      className="h-4 w-4 rotate-180"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                      stroke="currentColor"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M19 9l-7 7-7-7"
+                      />
+                    </svg>
+                  </button>
+                )}
                 {/* Partial: "Exact score needed" label */}
                 {status === "partial" && (
                   <span
@@ -311,6 +415,24 @@ function Sections({
           </section>
         );
       })}
+
+      {/* 1A: Show more button */}
+      {remainingEvents > 0 && (
+        <div className="mt-6 flex flex-col items-center gap-2">
+          {revealedBatches === 1 && (
+            <p className="text-xs font-serif italic text-ps-text-sec">
+              You can continue at any point &mdash; just make sure to have your
+              picks in before kickoff day
+            </p>
+          )}
+          <button
+            onClick={() => setRevealedBatches((b) => b + 1)}
+            className="rounded-lg border border-ps-border bg-ps-surface px-4 py-2 text-sm font-semibold text-ps-text transition-colors hover:bg-ps-chip"
+          >
+            Show more matches (+{remainingEvents} remaining)
+          </button>
+        </div>
+      )}
     </div>
   );
 }

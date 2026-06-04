@@ -48,10 +48,7 @@ export function RulesContent({
       </div>
 
       {/* ── POINTS ───────────────────────────────────────────── */}
-      <section id="points" className="mb-10">
-        <h2 className="font-display text-base font-extrabold text-ps-text">
-          Points
-        </h2>
+      <CollapsibleSection id="points" title="Points">
         <PointsTable />
 
         <h2 className="mt-6 font-display text-base font-extrabold text-ps-text">
@@ -75,13 +72,10 @@ export function RulesContent({
             description="Once groups are done, predict every knockout match from the Round of 32 to the Final."
           />
         </ul>
-      </section>
+      </CollapsibleSection>
 
       {/* ── FORMAT ───────────────────────────────────────────── */}
-      <section id="format" className="mb-10">
-        <h2 className="font-display text-base font-extrabold text-ps-text">
-          Format &mdash; Survivor
-        </h2>
+      <CollapsibleSection id="format" title="Format — Survivor">
         <p className="mt-1 font-serif text-sm italic text-ps-text-sec">
           Last one standing.
         </p>
@@ -371,13 +365,10 @@ export function RulesContent({
             </table>
           </div>
         </div>
-      </section>
+      </CollapsibleSection>
 
       {/* ── PICKS ────────────────────────────────────────────── */}
-      <section id="picks" className="mb-10">
-        <h2 className="font-display text-base font-extrabold text-ps-text">
-          When do picks lock?
-        </h2>
+      <CollapsibleSection id="picks" title="When do picks lock?">
         <p className="mt-2 text-sm leading-relaxed text-ps-text-sec">
           Each day&rsquo;s matches lock 10 minutes before the first kickoff of
           that day. You can submit picks for future days in advance &mdash; but
@@ -402,13 +393,10 @@ export function RulesContent({
             </p>
           </div>
         </details>
-      </section>
+      </CollapsibleSection>
 
       {/* ── TIES ─────────────────────────────────────────────── */}
-      <section id="ties" className="mb-10">
-        <h2 className="font-display text-base font-extrabold text-ps-text">
-          Tiebreakers
-        </h2>
+      <CollapsibleSection id="ties" title="Tiebreakers">
         <p className="mt-2 text-sm leading-relaxed text-ps-text-sec">
           Same points?{" "}
           <strong className="text-ps-text">H2H goal diff</strong> &rarr;{" "}
@@ -417,13 +405,10 @@ export function RulesContent({
           <strong className="text-ps-text">overall goals</strong> &rarr;{" "}
           <strong className="text-ps-text">coin flip</strong>
         </p>
-      </section>
+      </CollapsibleSection>
 
       {/* ── FAQ ─────────────────────────────────────────────── */}
-      <section id="faq" className="mb-10">
-        <h2 className="font-display text-base font-extrabold text-ps-text">
-          FAQ
-        </h2>
+      <CollapsibleSection id="faq" title="FAQ">
         <div className="mt-3 space-y-2">
           <FAQGroup title="Basics">
             <FAQ q="Do I have to predict every match?">
@@ -493,7 +478,7 @@ export function RulesContent({
             </FAQ>
           </FAQGroup>
         </div>
-      </section>
+      </CollapsibleSection>
 
       {/* ── CTA ──────────────────────────────────────────────── */}
       {!isMember && (
@@ -509,6 +494,40 @@ export function RulesContent({
 // ============================================================
 // Sub-components
 // ============================================================
+
+function CollapsibleSection({
+  id,
+  title,
+  children,
+}: {
+  id: string;
+  title: string;
+  children: React.ReactNode;
+}) {
+  return (
+    <details id={id} open className="group mb-10">
+      <summary className="flex cursor-pointer items-center justify-between list-none [&::-webkit-details-marker]:hidden">
+        <h2 className="font-display text-base font-extrabold text-ps-text">
+          {title}
+        </h2>
+        <svg
+          className="h-5 w-5 shrink-0 text-ps-text-sec transition-transform group-open:rotate-180"
+          fill="none"
+          viewBox="0 0 24 24"
+          stroke="currentColor"
+        >
+          <path
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            strokeWidth={2}
+            d="M19 9l-7 7-7-7"
+          />
+        </svg>
+      </summary>
+      {children}
+    </details>
+  );
+}
 
 function HowItWorksStep({
   n,

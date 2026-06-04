@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { fetchMd1PicksData } from "./_landing/fetchMd1PicksData";
 import { fetchFixturesResultsData } from "./_landing/fetchFixturesResultsData";
+import { fetchGroupsData } from "./_landing/fetchGroupsData";
 import { WcPicksHub } from "./_landing/WcPicksHub";
 
 export const dynamic = "force-dynamic";
@@ -13,9 +14,10 @@ export const dynamic = "force-dynamic";
  * overlay on the Upcoming tab.
  */
 export default async function WorldCupLanding() {
-  const [md1Data, fixturesData] = await Promise.all([
+  const [md1Data, fixturesData, groupsData] = await Promise.all([
     fetchMd1PicksData(),
     fetchFixturesResultsData(),
+    fetchGroupsData(),
   ]);
 
   if (!md1Data.ready) return <ComingSoonPanel />;
@@ -32,6 +34,7 @@ export default async function WorldCupLanding() {
         windowLocked: md1Data.windowLocked,
       }}
       fixturesData={fixturesData}
+      groupsData={groupsData}
     />
   );
 }
