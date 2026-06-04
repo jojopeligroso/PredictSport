@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useSearchParams } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useState, useRef, useMemo, useSyncExternalStore } from "react";
 import { WindowPickList, type WindowEvent } from "@/app/wc/picks/[windowId]/WindowPickList";
 import type { WcFixture } from "@/lib/wc/fixtures";
@@ -134,24 +134,11 @@ export function Md1PicksLanding(props: Md1PicksLandingProps) {
             className="h-11 w-auto shrink-0"
           />
           <div className="-mt-1 flex-1">
-            <div className="flex items-baseline gap-2">
-              <p className="font-mono text-[10px] font-bold uppercase tracking-[0.18em] text-ps-amber-deep">
-                Round 1
-              </p>
-              <span className="font-mono text-[10px] text-ps-text-ter">·</span>
-              <p className="font-mono text-[10px] font-bold uppercase tracking-[0.18em] text-ps-text-ter">
-                Group Stage
-              </p>
-              <span className="font-mono text-[10px] text-ps-text-ter">·</span>
-              <p className="font-mono text-[10px] font-bold uppercase tracking-[0.18em] text-ps-text-sec">
-                Matchday 1
-              </p>
-            </div>
-            <h1 className="mt-1.5 font-display text-2xl font-extrabold uppercase tracking-tight text-ps-text">
+            <h1 className="mt-0.5 font-display text-2xl font-extrabold uppercase tracking-tight text-ps-text">
               Pick the winners
             </h1>
             <p className="mt-1.5 font-serif text-sm italic text-ps-text-sec">
-              Twenty-four openers. Eight days. One winner per match.
+              Call it before kickoff.
             </p>
           </div>
         </div>
@@ -360,10 +347,113 @@ function SectionStatusIcon({ status }: { status: DayPredictionStatus }) {
 // ── Preview overlay ─────────────────────────────────────────────────────────
 
 function PreviewOverlay({ isAuthenticated }: { isAuthenticated: boolean }) {
+  const router = useRouter();
+  const [code, setCode] = useState("");
+  const [joinError, setJoinError] = useState<string | null>(null);
+  const [isJoining, setIsJoining] = useState(false);
+
+  async function handleJoinSubmit(e: React.FormEvent<HTMLFormElement>) {
+    e.preventDefault();
+    const trimmed = code.trim();
+    if (!trimmed) {
+      setJoinError("Please enter an invite code.");
+      return;
+    }
+
+    if (!isAuthenticated) {
+      router.push(`/login?next=/join?token=${encodeURIComponent(trimmed)}`);
+      return;
+    }
+
+    setIsJoining(true);
+    setJoinError(null);
+    try {
+      const res = await fetch("/api/join", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ token: trimmed }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        setJoinError(data.error ?? "Failed to join");
+        return;
+      }
+      // Joined successfully — reload to reveal picks
+      router.refresh();
+    } catch {
+      setJoinError("Something went wrong. Try again.");
+    } finally {
+      setIsJoining(false);
+    }
+  }
+
   return (
     <div className="pointer-events-none absolute inset-0 flex items-start justify-center pt-6">
       <div className="mx-4 flex max-w-[360px] flex-col gap-3">
-        {/* Rules summary card */}
+        {/* Join card — primary CTA, above rules */}
+        <div className="pointer-events-auto rounded-2xl border border-ps-border bg-ps-surface px-5 py-5 text-center shadow-lg">
+          <h2 className="font-display text-lg font-extrabold uppercase tracking-tight text-ps-text">
+            Join the game to pick
+          </h2>
+          <p className="mt-1.5 text-xs text-ps-text-sec">
+            Leaderboard bragging rights. Joins close 3 days after kickoff.
+          </p>
+
+          <form onSubmit={handleJoinSubmit} noValidate className="mt-4 space-y-2.5">
+            <div>
+              <label htmlFor="overlay-invite-code" className="sr-only">
+                Invite code
+              </label>
+              <input
+                id="overlay-invite-code"
+                type="text"
+                autoComplete="off"
+                autoCorrect="off"
+                autoCapitalize="none"
+                spellCheck={false}
+                placeholder="Enter invite code"
+                value={code}
+                onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
+                  setCode(e.target.value);
+                  if (joinError) setJoinError(null);
+                }}
+                className="w-full rounded-xl border border-ps-border bg-ps-bg px-4 py-3 text-center text-sm text-ps-text placeholder:text-ps-text-ter focus:border-ps-amber focus:outline-none"
+                aria-describedby={joinError ? "overlay-join-error" : undefined}
+              />
+              {joinError && (
+                <p
+                  id="overlay-join-error"
+                  role="alert"
+                  className="mt-1.5 text-xs text-ps-red"
+                >
+                  {joinError}
+                </p>
+              )}
+            </div>
+            <button
+              type="submit"
+              disabled={isJoining}
+              className="w-full rounded-xl bg-ps-amber px-4 py-3 text-sm font-semibold text-ps-bg transition-opacity hover:opacity-90 active:opacity-80 disabled:opacity-60"
+            >
+              {isJoining ? "Joining..." : "Join"}
+            </button>
+          </form>
+
+          <div className="mt-3 flex items-center gap-3">
+            <div className="h-px flex-1 bg-ps-border" />
+            <span className="text-[10px] font-medium uppercase text-ps-text-ter">or</span>
+            <div className="h-px flex-1 bg-ps-border" />
+          </div>
+
+          <Link
+            href={isAuthenticated ? "/wc/create" : "/login?next=/wc/create"}
+            className="mt-3 block w-full rounded-xl border border-ps-border px-4 py-3 text-sm font-semibold text-ps-text hover:border-ps-amber/40"
+          >
+            Create your own
+          </Link>
+        </div>
+
+        {/* Rules summary card — secondary, below join */}
         <div className="rounded-2xl border border-ps-border bg-ps-surface px-5 py-4 text-center shadow-lg">
           <p className="font-mono text-[10px] font-bold uppercase tracking-[0.18em] text-ps-amber-deep">
             How it works
@@ -387,29 +477,6 @@ function PreviewOverlay({ isAuthenticated }: { isAuthenticated: boolean }) {
             className="pointer-events-auto mt-3 inline-block w-full rounded-xl border border-ps-border px-4 py-2.5 text-sm font-semibold text-ps-text transition-colors hover:bg-ps-surface"
           >
             Read the full rules
-          </Link>
-        </div>
-
-        {/* Join card */}
-        <div className="pointer-events-auto rounded-2xl border border-ps-border bg-ps-surface px-5 py-5 text-center shadow-lg">
-          <h2 className="font-display text-lg font-extrabold uppercase tracking-tight text-ps-text">
-            Join the game to pick
-          </h2>
-          <p className="mt-1.5 text-xs text-ps-text-sec">
-            Twenty-four openers, a bracket if you want it, leaderboard bragging
-            rights. Joins close 3 days after kickoff.
-          </p>
-          <Link
-            href={isAuthenticated ? "/wc/join" : "/login?next=/wc/join"}
-            className="mt-4 block w-full rounded-xl bg-ps-amber px-4 py-3 text-sm font-semibold text-ps-bg"
-          >
-            Join with a code
-          </Link>
-          <Link
-            href={isAuthenticated ? "/wc/create" : "/login?next=/wc/create"}
-            className="mt-2 block w-full rounded-xl border border-ps-border px-4 py-3 text-sm font-semibold text-ps-text hover:border-ps-amber/40"
-          >
-            Create your own
           </Link>
         </div>
       </div>
