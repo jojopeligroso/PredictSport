@@ -112,7 +112,7 @@ export default async function WorldCupLayout({
             </span>
           </Link>
 
-          <WcNavLinks engaged={engaged} variant="desktop" isWcAdmin={isWcAdmin} />
+          <WcNavLinks engaged={engaged} variant="desktop" />
 
           <div className="flex items-center gap-2">
             {authUser ? (
@@ -130,12 +130,15 @@ export default async function WorldCupLayout({
               displayName={displayName}
               avatarUrl={avatarUrl}
               isAdmin={isAdmin || isWcAdmin}
-              extraLinks={[{ href: "/wc/bracket", label: "Bracket prediction" }]}
+              extraLinks={[
+                { href: "/wc/bracket", label: "Bracket prediction" },
+                ...(isWcAdmin ? [{ href: "/wc/admin", label: "Admin" }] : []),
+              ]}
             />
           </div>
         </div>
 
-        <WcNavLinks engaged={engaged} variant="mobile" isWcAdmin={isWcAdmin} />
+        <WcNavLinks engaged={engaged} variant="mobile" />
       </nav>
 
       {needsDisplayName && <DisplayNameModal suggestedName={suggestedName} />}

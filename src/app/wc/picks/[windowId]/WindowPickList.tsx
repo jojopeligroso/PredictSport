@@ -322,6 +322,12 @@ function MatchPickRow({
   // internal input state.
   const [scoreResetKey, setScoreResetKey] = useState(0);
 
+  // Guards the score display after reset: when true, ScoreInput ignores
+  // initialScore props (which still hold stale server data until
+  // router.refresh() delivers fresh props). Cleared when new props arrive
+  // with a null score (reset confirmed server-side).
+  const [resetInFlight, setResetInFlight] = useState(false);
+
   // Abort the previous in-flight winner POST when a new tap arrives so the
   // latest tap is what gets persisted even if the earlier one was slow.
   const winnerAbortRef = useRef<AbortController | null>(null);
@@ -512,6 +518,7 @@ function MatchPickRow({
     setCommittedHome(null);
     setCommittedAway(null);
     setScoreResetKey((k) => k + 1);
+    setResetInFlight(true);
     setErrorMsg(null);
     if (hadWinner) onWinnerLanded(event.id, false);
 
@@ -533,6 +540,7 @@ function MatchPickRow({
         setCommittedHome(previousHome);
         setCommittedAway(previousAway);
       }
+      setResetInFlight(false);
       if (hadWinner) onWinnerLanded(event.id, true);
       setErrorMsg("Couldn't reset prediction");
     }
@@ -584,7 +592,7 @@ function MatchPickRow({
                 {currentWinner}
               </span>
             </p>
-            {initialScore && (
+            {initialScore && !resetInFlight && (
               <p className={`text-[10px] ${useCardSurface ? "text-white/55" : "text-ps-text-ter"}`}>
                 {getPredictionSummary(
                   "exact_score",
@@ -685,8 +693,8 @@ function MatchPickRow({
             key={scoreResetKey}
             homeLabel={home}
             awayLabel={away}
-            initialHome={initialScore?.prediction_data?.home != null ? String(initialScore.prediction_data.home) : undefined}
-            initialAway={initialScore?.prediction_data?.away != null ? String(initialScore.prediction_data.away) : undefined}
+            initialHome={resetInFlight ? undefined : (initialScore?.prediction_data?.home != null ? String(initialScore.prediction_data.home) : undefined)}
+            initialAway={resetInFlight ? undefined : (initialScore?.prediction_data?.away != null ? String(initialScore.prediction_data.away) : undefined)}
             onCommit={handleScoreCommit}
             disabled={false}
             variant={useCardSurface ? "card" : "compact"}

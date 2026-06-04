@@ -529,7 +529,7 @@ function FixtureCard({
                 className={[
                   `flex-1 min-w-0 flex flex-col items-center ${teamPad} rounded-lg transition-all duration-150 cursor-pointer`,
                   homeSelected
-                    ? "bg-white/12 shadow-[inset_0_0_0_2px_rgba(245,158,11,0.7)]"
+                    ? "bg-white/12 shadow-[inset_0_0_0_2px_rgba(212,175,55,0.7)]"
                     : "hover:bg-white/8",
                 ].join(" ")}
               >
@@ -579,7 +579,7 @@ function FixtureCard({
                 className={[
                   `shrink-0 ${drawSize} rounded-lg font-medium transition-all duration-150 cursor-pointer`,
                   drawSelected
-                    ? "bg-white/12 text-white shadow-[inset_0_0_0_2px_rgba(245,158,11,0.7)]"
+                    ? "bg-white/12 text-white shadow-[inset_0_0_0_2px_rgba(212,175,55,0.7)]"
                     : "text-white/45 hover:bg-white/8 hover:text-white/65",
                 ].join(" ")}
               >
@@ -619,7 +619,7 @@ function FixtureCard({
                 className={[
                   `flex-1 min-w-0 flex flex-col items-center ${teamPad} rounded-lg transition-all duration-150 cursor-pointer`,
                   awaySelected
-                    ? "bg-white/12 shadow-[inset_0_0_0_2px_rgba(245,158,11,0.7)]"
+                    ? "bg-white/12 shadow-[inset_0_0_0_2px_rgba(212,175,55,0.7)]"
                     : "hover:bg-white/8",
                 ].join(" ")}
               >

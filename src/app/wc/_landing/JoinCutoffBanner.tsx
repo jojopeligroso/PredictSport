@@ -75,8 +75,8 @@ export function JoinCutoffBanner({
       <div
         className="flex gap-2.5 rounded-md border-l-[3px] px-3 py-2.5 text-xs leading-snug"
         style={{
-          background: "rgba(245, 158, 11, 0.08)",
-          borderColor: "#f59e0b",
+          background: "rgba(212, 175, 55, 0.08)",
+          borderColor: "#d4af37",
         }}
       >
         <span

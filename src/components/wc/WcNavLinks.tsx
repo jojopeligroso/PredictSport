@@ -2,65 +2,84 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { WcMoreMenu } from "./WcMoreMenu";
 
 const wcNavLinks = [
-  { href: "/wc", label: "Picks" },
-  { href: "/wc/leaderboard", label: "Table" },
+  { href: "/wc/home", label: "Home" },
+  { href: "/wc", label: "Matches" },
   { href: "/wc/rules", label: "Rules" },
 ] as const;
 
 /**
- * WC shell navigation links — rendered in two slots (desktop inline inside
- * the nav bar flex row, mobile tab bar below it).
+ * WC shell navigation — three top-level pills: Home · Matches · Rules.
+ * Active pill gets a gold underline. Bracket, Profile & Settings, and
+ * Admin are in the hamburger menu (MobileNav).
  *
- * Hidden on the /wc landing page when the user hasn't started engaging
- * (visitor, first login, or bracket not yet started). Once the user has
- * begun their bracket the full nav appears everywhere.
+ * Hidden on landing pages when the user hasn't engaged (visitor / first
+ * login). Once the user has joined the WC competition the nav shows
+ * everywhere.
  */
 export function WcNavLinks({
   engaged,
   variant,
-  isWcAdmin,
 }: {
   engaged: boolean;
   variant: "desktop" | "mobile";
-  isWcAdmin?: boolean;
 }) {
   const pathname = usePathname();
-  const isLanding = pathname === "/wc";
+  const isLanding = pathname === "/wc" || pathname === "/wc/home";
 
   if (isLanding && !engaged) return null;
+
+  /** Match active link — /wc/home is exact, /wc (Matches) matches /wc and /wc/picks/*, Rules is exact. */
+  function isActive(href: string) {
+    if (href === "/wc/home") return pathname === "/wc/home";
+    if (href === "/wc") return pathname === "/wc" || pathname.startsWith("/wc/picks");
+    return pathname === href || pathname.startsWith(href + "/");
+  }
 
   if (variant === "desktop") {
     return (
       <div className="hidden items-center gap-1 md:flex">
-        {wcNavLinks.map((link) => (
-          <Link
-            key={link.href}
-            href={link.href}
-            className="rounded-md px-3 py-1.5 text-sm font-medium text-ps-text-sec transition-colors hover:bg-ps-chip hover:text-ps-text"
-          >
-            {link.label}
-          </Link>
-        ))}
-        <WcMoreMenu variant="desktop" isWcAdmin={isWcAdmin} />
+        {wcNavLinks.map((link) => {
+          const active = isActive(link.href);
+          return (
+            <Link
+              key={link.href}
+              href={link.href}
+              className={[
+                "rounded-md px-3 py-1.5 text-sm font-medium transition-colors",
+                active
+                  ? "text-ps-text"
+                  : "text-ps-text-sec hover:bg-ps-chip hover:text-ps-text",
+              ].join(" ")}
+            >
+              {link.label}
+            </Link>
+          );
+        })}
       </div>
     );
   }
 
   return (
     <div className="flex justify-center border-t border-ps-border px-2 md:hidden">
-      {wcNavLinks.map((link) => (
-        <Link
-          key={link.href}
-          href={link.href}
-          className="shrink-0 px-3 py-2 text-xs font-semibold text-ps-text-sec transition-colors hover:text-ps-text"
-        >
-          {link.label}
-        </Link>
-      ))}
-      <WcMoreMenu variant="mobile" isWcAdmin={isWcAdmin} />
+      {wcNavLinks.map((link) => {
+        const active = isActive(link.href);
+        return (
+          <Link
+            key={link.href}
+            href={link.href}
+            className={[
+              "shrink-0 px-3 py-2 text-xs font-semibold transition-colors",
+              active
+                ? "border-b-2 border-ps-amber text-ps-text"
+                : "text-ps-text-sec hover:text-ps-text",
+            ].join(" ")}
+          >
+            {link.label}
+          </Link>
+        );
+      })}
     </div>
   );
 }

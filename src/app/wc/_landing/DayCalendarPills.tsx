@@ -111,9 +111,9 @@ export function DayCalendarPills({
               : "border-ps-border";
 
           const pillShadow = isComplete
-            ? { boxShadow: "0 2px 6px -3px rgba(245,158,11,0.5)" }
+            ? { boxShadow: "0 2px 6px -3px rgba(212,175,55,0.5)" }
             : isToday
-              ? { boxShadow: "0 2px 6px -3px rgba(245,158,11,0.3)" }
+              ? { boxShadow: "0 2px 6px -3px rgba(212,175,55,0.3)" }
               : undefined;
 
           return (

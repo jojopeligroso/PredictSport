@@ -54,11 +54,12 @@ export function FixtureCardSurface({
   const onAmber = AMBER_LEANING_CITIES.has(city);
 
   // Halo treatment — matches FixturesTabs.FixtureCard ringClass logic.
-  // Outer amber halo + (for amber-leaning surfaces) an inner white separator.
+  // Outer gold halo + (for amber-leaning surfaces) an inner white separator.
+  // Uses WC26 trophy gold (#d4af37) rather than PredictSport amber (#f59e0b).
   const haloClass = hasPick
     ? onAmber
-      ? "shadow-[inset_0_0_0_2px_#fff,0_0_0_2px_rgba(245,158,11,0.7),0_1px_2px_rgba(0,0,0,0.15)]"
-      : "shadow-[0_0_0_2px_rgba(245,158,11,0.5),0_1px_2px_rgba(0,0,0,0.15)]"
+      ? "shadow-[inset_0_0_0_2px_#fff,0_0_0_2px_rgba(212,175,55,0.7),0_1px_2px_rgba(0,0,0,0.15)]"
+      : "shadow-[0_0_0_2px_rgba(212,175,55,0.5),0_1px_2px_rgba(0,0,0,0.15)]"
     : "shadow-sm";
 
   return (
