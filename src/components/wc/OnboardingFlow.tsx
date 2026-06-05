@@ -10,7 +10,6 @@ import {
 } from "react";
 import { useRouter } from "next/navigation";
 import { useTheme, type ResolvedTheme } from "@/components/ThemeProvider";
-import { validateDisplayName, DISPLAY_NAME_MAX } from "@/lib/display-name";
 import { OnboardingTooltip } from "./OnboardingTooltip";
 
 // ── Constants ──────────────────────────────────────────────────────
@@ -181,17 +180,14 @@ interface OnboardingFlowProps {
  * Wraps the DashboardClient to run the onboarding sequence.
  *
  * - Step 0: Theme toggle (full-screen card)
- * - Step 1: Display name (full-screen card)
  * - Steps 2-4: Progressive dashboard reveal with tooltips
  * - After step 4 → redirects to /wc?onboarding=step5 for the home spotlight
+ * Display name is handled by DisplayNameModal (renders at z-60 via NavBar/layout).
  */
 export function OnboardingFlow({ children }: OnboardingFlowProps) {
   const router = useRouter();
   const { resolved, setTheme } = useTheme();
   const [step, setStep] = useState(0);
-  const [displayName, setDisplayName] = useState("");
-  const [nameError, setNameError] = useState("");
-  const [submitting, setSubmitting] = useState(false);
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
@@ -227,36 +223,6 @@ export function OnboardingFlow({ children }: OnboardingFlowProps) {
     },
     [step],
   );
-
-  async function handleNameSubmit(e: React.FormEvent) {
-    e.preventDefault();
-    const trimmed = displayName.trim();
-    const err = validateDisplayName(trimmed);
-    if (err) {
-      setNameError(err);
-      return;
-    }
-
-    setSubmitting(true);
-    setNameError("");
-    try {
-      const res = await fetch("/api/profile", {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ display_name: trimmed }),
-      });
-      if (!res.ok) {
-        const data = await res.json().catch(() => null);
-        setNameError(data?.error || "Something went wrong.");
-        setSubmitting(false);
-        return;
-      }
-      setStep(2);
-    } catch {
-      setNameError("Network error. Try again.");
-      setSubmitting(false);
-    }
-  }
 
   // Don't render until we check localStorage
   if (!mounted) return null;
@@ -307,73 +273,11 @@ export function OnboardingFlow({ children }: OnboardingFlowProps) {
           </div>
           <button
             type="button"
-            onClick={() => setStep(1)}
+            onClick={() => setStep(2)}
             className="mt-6 w-full rounded-xl bg-ps-amber px-4 py-3 text-sm font-semibold text-[#191512] transition-opacity hover:opacity-90"
           >
             Next
           </button>
-        </FullScreenCard>
-      )}
-
-      {/* Step 1: Display name */}
-      {step === 1 && (
-        <FullScreenCard>
-          <StepIcon>
-            <svg
-              width="20"
-              height="20"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              className="text-ps-amber-deep"
-            >
-              <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
-              <circle cx="12" cy="7" r="4" />
-            </svg>
-          </StepIcon>
-          <h2 className="font-display text-xl font-extrabold uppercase tracking-tight text-ps-text">
-            What should we call you?
-          </h2>
-          <p className="mt-1.5 text-sm text-ps-text-sec">
-            This is how you&apos;ll appear on the leaderboard.
-          </p>
-          <form onSubmit={handleNameSubmit} className="mt-5">
-            <label htmlFor="onboarding-display-name" className="sr-only">
-              Display name
-            </label>
-            <input
-              id="onboarding-display-name"
-              type="text"
-              value={displayName}
-              onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
-                setDisplayName(e.target.value);
-                if (nameError) setNameError("");
-              }}
-              placeholder="e.g. Gerry Ramos"
-              maxLength={DISPLAY_NAME_MAX}
-              autoComplete="off"
-              autoFocus
-              className={[
-                "w-full rounded-xl border bg-ps-bg px-4 py-3 text-sm text-ps-text",
-                "placeholder:text-ps-text-ter",
-                "focus:outline-none focus:ring-2 focus:ring-ps-amber focus:ring-offset-1",
-                nameError ? "border-ps-red" : "border-ps-border",
-              ].join(" ")}
-            />
-            {nameError && (
-              <p className="mt-1.5 text-xs text-ps-red">{nameError}</p>
-            )}
-            <button
-              type="submit"
-              disabled={submitting || displayName.trim().length === 0}
-              className="mt-4 w-full rounded-xl bg-ps-amber px-4 py-3 text-sm font-semibold text-[#191512] transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-60"
-            >
-              {submitting ? "Saving\u2026" : "Continue"}
-            </button>
-          </form>
         </FullScreenCard>
       )}
 
@@ -514,7 +418,7 @@ export function OnboardingHomeSpotlight() {
               onClick={dismiss}
               className="rounded-full bg-ps-amber px-4 py-1.5 text-xs font-semibold text-[#191512] transition-opacity hover:opacity-90 active:opacity-80"
             >
-              Got it
+              Next
             </button>
           </div>
         </div>
