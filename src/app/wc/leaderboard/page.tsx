@@ -103,8 +103,9 @@ export default async function LeaderboardPage() {
       <div className="mt-4 flex gap-3">
         <Link
           href="/wc/home"
-          className="flex-1 rounded-full border border-ps-border px-4 py-2.5 text-center text-sm font-semibold text-ps-text-sec transition-colors hover:bg-ps-chip hover:text-ps-text"
+          className="flex-1 inline-flex items-center justify-center gap-1.5 rounded-full border border-ps-border px-4 py-2.5 text-sm font-semibold text-ps-text-sec transition-colors hover:bg-ps-chip hover:text-ps-text"
         >
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="shrink-0"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" /><polyline points="9 22 9 12 15 12 15 22" /></svg>
           Back to Home
         </Link>
         <Link
