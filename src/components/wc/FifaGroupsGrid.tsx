@@ -18,6 +18,8 @@ interface FifaGroupsGridProps {
   competitionId?: string;
   /** Lock the pick list (non-members, locked rounds). */
   windowLocked?: boolean;
+  /** Label for the back button in accordion mode (default "All groups"). */
+  backLabel?: string;
 }
 
 export function FifaGroupsGrid({
@@ -27,6 +29,7 @@ export function FifaGroupsGrid({
   predictions,
   competitionId,
   windowLocked,
+  backLabel,
 }: FifaGroupsGridProps) {
   const [expandedGroup, setExpandedGroup] = useState<string | null>(null);
 
@@ -54,7 +57,7 @@ export function FifaGroupsGrid({
   if (expandedGroup && selectedGroupData) {
     return (
       <div>
-        <BackToAllGroups onClick={() => setExpandedGroup(null)} />
+        <BackToAllGroups onClick={() => setExpandedGroup(null)} label={backLabel} />
 
         <div className="mx-auto mt-3 max-w-[140px]">
           <button
@@ -79,7 +82,7 @@ export function FifaGroupsGrid({
           />
         )}
 
-        <BackToAllGroups onClick={() => setExpandedGroup(null)} className="mt-4" />
+        <BackToAllGroups onClick={() => setExpandedGroup(null)} label={backLabel} className="mt-4" />
       </div>
     );
   }
@@ -107,9 +110,11 @@ export function FifaGroupsGrid({
 
 function BackToAllGroups({
   onClick,
+  label,
   className = "",
 }: {
   onClick: () => void;
+  label?: string;
   className?: string;
 }) {
   return (
@@ -130,7 +135,7 @@ function BackToAllGroups({
           d="M10.5 19.5L3 12m0 0l7.5-7.5M3 12h18"
         />
       </svg>
-      All groups
+      {label ?? "All groups"}
     </button>
   );
 }

@@ -60,6 +60,7 @@ export default async function WcHomePage({
       resultsLabel={data.resultsLabel}
       classificationId={data.classificationId}
       todayGroups={data.todayGroups}
+      todayGroupEvents={data.todayGroupEvents}
       inviteCode={data.inviteCode}
       entryClosesAt={data.entryClosesAt}
       memberCount={data.memberCount}

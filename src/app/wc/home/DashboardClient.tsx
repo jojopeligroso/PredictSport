@@ -27,6 +27,7 @@ interface DashboardClientProps {
   resultsLabel: string;
   classificationId: string | null;
   todayGroups: string[];
+  todayGroupEvents: Map<string, WindowEvent[]>;
   inviteCode: string | null;
   entryClosesAt: string | null;
   memberCount: number;
@@ -74,6 +75,7 @@ export function DashboardClient({
   resultsLabel,
   classificationId,
   todayGroups,
+  todayGroupEvents,
   inviteCode,
   entryClosesAt,
   memberCount,
@@ -218,12 +220,12 @@ export function DashboardClient({
           <section className="mt-2">
             <Link
               href="/wc/leaderboard"
-              className="flex items-center justify-between rounded-xl border border-ps-border bg-ps-surface px-4 py-3 transition-colors hover:bg-ps-chip"
+              className="flex items-center justify-between rounded-xl border border-ps-amber/40 bg-ps-amber/10 px-4 py-3 transition-colors hover:bg-ps-amber/20"
             >
-              <span className="text-[13px] font-semibold text-ps-text">
+              <span className="text-[13px] font-semibold text-ps-amber-deep">
                 Leaderboard
               </span>
-              <span className="text-[13px] font-semibold text-ps-text">
+              <span className="text-[13px] font-semibold text-ps-amber-deep">
                 →
               </span>
             </Link>
@@ -261,28 +263,22 @@ export function DashboardClient({
         </section>
       </OnboardingSection>
 
-      {/* ── 8. Today's WC Match Groups (collapsible) ─────────────────── */}
+      {/* ── 8. Today's WC Match Groups ──────────────────────────────── */}
       <OnboardingSection id="other">
         {todayGroups.length > 0 && (
           <section className="mt-4">
-            <details open className="group">
-              <summary className="flex cursor-pointer items-center justify-between list-none [&::-webkit-details-marker]:hidden">
-                <p className="text-[11px] font-semibold uppercase tracking-wider text-ps-text-ter">
-                  Today&apos;s Groups
-                </p>
-                <svg
-                  className="h-4 w-4 shrink-0 text-ps-text-ter transition-transform group-open:rotate-180"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  stroke="currentColor"
-                >
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                </svg>
-              </summary>
-              <div className="mt-2">
-                <FifaGroupsGrid mode="compact" groupFilter={todayGroups} />
-              </div>
-            </details>
+            <p className="mb-2 text-[11px] font-semibold uppercase tracking-wider text-ps-text-ter">
+              Today&apos;s Groups
+            </p>
+            <FifaGroupsGrid
+              mode="accordion"
+              groupFilter={todayGroups}
+              groupEvents={todayGroupEvents}
+              predictions={predictions}
+              competitionId={competitionId}
+              windowLocked={windowLocked}
+              backLabel="Today's Groups"
+            />
           </section>
         )}
       </OnboardingSection>

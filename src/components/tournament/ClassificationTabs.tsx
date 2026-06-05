@@ -79,7 +79,7 @@ export function ClassificationTabs({
     let cancelled = false;
 
     fetch(
-      `/api/tournament/standings?classificationId=${activeId}&competitionId=${competitionId}`
+      `/api/tournament/standings?classificationId=${activeId}&competitionId=${competitionId}&provisional=true`
     )
       .then((res) => res.json())
       .then((data) => {
@@ -186,12 +186,6 @@ export function ClassificationTabs({
             <FormatGroupCard
               groupData={groupData}
               displayName={currentDisplayName ?? "You"}
-            />
-          )}
-          {active.classification_key === "overall" && (
-            <OverallPreviewCard
-              displayName={currentDisplayName ?? "You"}
-              totalMembers={memberCount ?? 0}
             />
           )}
         </>
@@ -701,55 +695,6 @@ function FormatGroupCard({
   return null;
 }
 
-function OverallPreviewCard({
-  displayName,
-  totalMembers,
-}: {
-  displayName: string;
-  totalMembers: number;
-}) {
-  return (
-    <div className="mt-4 rounded-xl border border-ps-border bg-ps-surface p-4">
-      <h3 className="text-sm font-bold text-ps-text">Your Position</h3>
-      <div className="mt-3 divide-y divide-ps-border rounded-lg border border-ps-border">
-        {/* 5 blurred rows above */}
-        {[0, 1, 2, 3, 4].map((i) => (
-          <div key={`above-${i}`} className="flex items-center px-3 py-2">
-            <span className="w-6 text-center font-mono text-[10px] text-ps-text-ter">{i + 1}</span>
-            <span className="flex-1 pl-2 text-xs text-ps-text-ter select-none blur-[5px]">
-              {BLURRED_NAMES[i]}
-            </span>
-            <span className="w-12 text-right font-mono text-[10px] text-ps-text-ter">0 pts</span>
-          </div>
-        ))}
-        {/* User's row */}
-        <div className="flex items-center px-3 py-2.5 bg-ps-amber/5">
-          <span className="w-6 text-center font-mono text-[10px] font-bold text-ps-text-ter">6</span>
-          <span className="flex-1 pl-2 text-xs font-semibold text-ps-text">
-            {displayName}
-            <span className="ml-1.5 rounded bg-ps-amber/20 px-1 py-0.5 text-[10px] font-bold text-ps-amber">
-              YOU
-            </span>
-          </span>
-          <span className="w-12 text-right font-mono text-xs font-bold text-ps-text">0 pts</span>
-        </div>
-        {/* 6 blurred rows below */}
-        {[5, 6, 7, 8, 9, 10].map((i) => (
-          <div key={`below-${i}`} className="flex items-center px-3 py-2">
-            <span className="w-6 text-center font-mono text-[10px] text-ps-text-ter">{i + 2}</span>
-            <span className="flex-1 pl-2 text-xs text-ps-text-ter select-none blur-[5px]">
-              {BLURRED_NAMES[i]}
-            </span>
-            <span className="w-12 text-right font-mono text-[10px] text-ps-text-ter">0 pts</span>
-          </div>
-        ))}
-      </div>
-      <p className="mt-3 text-center font-mono text-xs text-ps-text-ter">
-        {totalMembers} entrant{totalMembers !== 1 ? "s" : ""} competing
-      </p>
-    </div>
-  );
-}
 
 function DrawCountdown({ drawAt }: { drawAt: string }) {
   const [label, setLabel] = useState(() => formatCountdown(drawAt));

@@ -57,6 +57,8 @@ export interface DashboardData {
   windowLocked: boolean;
   /** Groups that have matches on the next matchday. */
   todayGroups: string[];
+  /** Events for today's groups keyed by group letter, for accordion mode. */
+  todayGroupEvents: Map<string, WindowEvent[]>;
   /** Bracket draft progress, null if user has no bracket activity. */
   bracketProgress: { pct: number; label: string } | null;
 }
@@ -197,12 +199,31 @@ export async function fetchDashboardData(): Promise<DashboardResult> {
   }
   const nextDayEvents = spilledEvents;
 
-  // Derive which groups play on the next matchday
+  // Derive which groups play on the next matchday — use ALL first-day events
+  // (not the capped hero picks) so the accordion shows complete group data.
+  const firstDayAllEvents: EventRowWithExternal[] =
+    sortedDates.length > 0 ? (byDate.get(sortedDates[0]) ?? []) : [];
   const todayGroupsSet = new Set<string>();
-  for (const row of nextDayEvents) {
+  const todayGroupEvents = new Map<string, WindowEvent[]>();
+  for (const row of firstDayAllEvents) {
     if (!row.external_event_id) continue;
     const fixture = fixtureByExternalId.get(row.external_event_id);
-    if (fixture?.group) todayGroupsSet.add(fixture.group);
+    if (fixture?.group) {
+      todayGroupsSet.add(fixture.group);
+      const event: WindowEvent = {
+        id: row.id,
+        event_name: row.event_name,
+        sport: row.sport,
+        start_time: row.start_time,
+        lock_time: row.lock_time,
+        status: row.status,
+        result_confirmed: row.result_confirmed,
+        event_prediction_types: row.event_prediction_types,
+      };
+      const existing = todayGroupEvents.get(fixture.group) ?? [];
+      existing.push(event);
+      todayGroupEvents.set(fixture.group, existing);
+    }
   }
   const todayGroups = [...todayGroupsSet].sort();
 
@@ -217,10 +238,10 @@ export async function fetchDashboardData(): Promise<DashboardResult> {
     event_prediction_types: row.event_prediction_types,
   }));
 
-  // 5. Fetch predictions for the upcoming events
+  // 5. Fetch predictions for all round events (hero picks + group accordion)
   let predictions: Prediction[] = [];
-  if (user && isMember && nextEvents.length > 0) {
-    const eventIds = nextEvents.map((e) => e.id);
+  if (user && isMember && eventRows.length > 0) {
+    const eventIds = eventRows.map((e) => e.id);
     const { data: predRows } = await supabase
       .from("predictions")
       .select(
@@ -300,6 +321,7 @@ export async function fetchDashboardData(): Promise<DashboardResult> {
     resultsLabel,
     classificationId,
     todayGroups,
+    todayGroupEvents,
     inviteCode,
     entryClosesAt,
     memberCount,
