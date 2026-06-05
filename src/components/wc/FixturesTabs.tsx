@@ -3,7 +3,10 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { CountryFlag } from "@/components/CountryFlag";
 import { HOST_CITIES, type HostCitySlug } from "@/lib/wc/host-cities";
+import { WindowPickList } from "@/app/wc/picks/[windowId]/WindowPickList";
+import type { WindowEvent } from "@/app/wc/picks/[windowId]/WindowPickList";
 import type { WcFixture } from "@/lib/wc/fixtures";
+import type { Prediction } from "@/types/database";
 
 export type FixtureResult = {
   /** "scheduled" | "live" | "resulted" | "locked" */
@@ -45,9 +48,15 @@ interface Props {
    * - "results"  — completed fixtures only, with predictions, no sub-tabs
    */
   mode?: FixturesTabsMode;
+  // Expand-to-pick data (fixtures mode only)
+  windowEventsByExternalId?: Record<string, WindowEvent>;
+  fixtureByEventId?: Map<string, WcFixture>;
+  fullPredictions?: Prediction[];
+  competitionId?: string | null;
+  isMember?: boolean;
 }
 
-export function FixturesTabs({ fixtures, resultsByExternalId, serverDateIso, predictionsByExternalId = {}, mode = "all" }: Props) {
+export function FixturesTabs({ fixtures, resultsByExternalId, serverDateIso, predictionsByExternalId = {}, mode = "all", windowEventsByExternalId, fixtureByEventId, fullPredictions, competitionId, isMember }: Props) {
   // Render server-side with the server's idea of "today", then re-derive on
   // mount from the browser. Avoids hydration mismatch on the timezone shift.
   const [todayIso, setTodayIso] = useState(serverDateIso);
@@ -76,6 +85,9 @@ export function FixturesTabs({ fixtures, resultsByExternalId, serverDateIso, pre
     () => Object.values(resultsByExternalId).some((r) => r !== undefined),
     [resultsByExternalId],
   );
+
+  const [expandedExternalId, setExpandedExternalId] = useState<string | null>(null);
+  const canExpandToPick = mode === "fixtures" && isMember === true && !!windowEventsByExternalId && !!competitionId;
 
   // Smart default: on first client render, pick best non-empty tab
   const tabInitRef = useRef(false);
@@ -220,16 +232,54 @@ export function FixturesTabs({ fixtures, resultsByExternalId, serverDateIso, pre
                   {group.label}
                 </h3>
                 <div className="space-y-3">
-                  {group.items.map((f) => (
-                    <FixtureCard
-                      key={f.externalId}
-                      fixture={f}
-                      result={resultsByExternalId[f.externalId]}
-                      prediction={undefined}
-                      showCorrectness={false}
-                      large={biggerCards}
-                    />
-                  ))}
+                  {group.items.map((f) => {
+                    const windowEvent = canExpandToPick ? windowEventsByExternalId?.[f.externalId] : undefined;
+                    const result = resultsByExternalId[f.externalId];
+                    const isFinished = !!result && (result.homeScore !== null || result.winner !== null);
+                    const isLocked = windowEvent ? new Date(windowEvent.lock_time) <= new Date() : true;
+                    const isExpandable = !!windowEvent && canExpandToPick && !isFinished && !isLocked;
+                    const isExpanded = expandedExternalId === f.externalId;
+
+                    // Expanded: replace card with WindowPickList
+                    if (isExpanded && windowEvent && fixtureByEventId && competitionId) {
+                      const eventPredictions = (fullPredictions ?? []).filter(
+                        (p) => p.event_id === windowEvent.id
+                      );
+                      return (
+                        <div key={f.externalId} className="animate-in fade-in duration-200">
+                          <WindowPickList
+                            competitionId={competitionId}
+                            events={[windowEvent]}
+                            predictions={eventPredictions}
+                            windowLocked={false}
+                            surface="card"
+                            fixtureByEventId={fixtureByEventId}
+                          />
+                          <button
+                            type="button"
+                            onClick={() => setExpandedExternalId(null)}
+                            className="mt-1 w-full text-center text-[10px] font-semibold uppercase tracking-wider text-ps-text-ter hover:text-ps-text-sec"
+                          >
+                            Back to fixture info
+                          </button>
+                        </div>
+                      );
+                    }
+
+                    // Collapsed: normal FixtureCard with optional CTA
+                    return (
+                      <FixtureCard
+                        key={f.externalId}
+                        fixture={f}
+                        result={result}
+                        prediction={undefined}
+                        showCorrectness={false}
+                        large={biggerCards}
+                        expandable={isExpandable}
+                        onExpand={() => setExpandedExternalId(f.externalId)}
+                      />
+                    );
+                  })}
                 </div>
               </div>
             ))
@@ -327,12 +377,16 @@ function FixtureCard({
   prediction,
   showCorrectness,
   large,
+  expandable = false,
+  onExpand,
 }: {
   fixture: WcFixture;
   result: FixtureResult | undefined;
   prediction: FixturePredictionData | undefined;
   showCorrectness: boolean;
   large: boolean;
+  expandable?: boolean;
+  onExpand?: () => void;
 }) {
   const city = HOST_CITIES[fixture.city as HostCitySlug];
   const kickoff = new Date(fixture.kickoffUtc);
@@ -669,13 +723,24 @@ function FixtureCard({
 
         {/* ── Read-only teams (upcoming but locked / no prediction context) ── */}
         {!isFinished && !canPredict && (
-          <h3 className={`flex flex-wrap items-center gap-1.5 ${large ? "text-lg" : "text-base"} font-bold text-white`}>
-            <CountryFlag shape="pill" name={fixture.home} size={flagSizeRo} />
-            <span>{fixture.home}</span>
-            <span className="mx-0.5 text-white/70">v</span>
-            <CountryFlag shape="pill" name={fixture.away} size={flagSizeRo} />
-            <span>{fixture.away}</span>
-          </h3>
+          <div className="flex items-center justify-between gap-2">
+            <h3 className={`flex flex-wrap items-center gap-1.5 ${large ? "text-lg" : "text-base"} font-bold text-white`}>
+              <CountryFlag shape="pill" name={fixture.home} size={flagSizeRo} />
+              <span>{fixture.home}</span>
+              <span className="mx-0.5 text-white/70">v</span>
+              <CountryFlag shape="pill" name={fixture.away} size={flagSizeRo} />
+              <span>{fixture.away}</span>
+            </h3>
+            {expandable && onExpand && (
+              <button
+                type="button"
+                onClick={(e) => { e.stopPropagation(); onExpand(); }}
+                className="shrink-0 rounded-lg bg-white/20 px-3 py-1.5 text-[11px] font-bold text-white transition-colors hover:bg-white/30 active:bg-white/40"
+              >
+                Pick &rarr;
+              </button>
+            )}
+          </div>
         )}
 
         {/* ── Time info (upcoming only) ── */}

@@ -33,6 +33,11 @@ interface WcPicksHubProps {
     resultsByExternalId: Record<string, FixtureResult | undefined>;
     predictionsByExternalId: Record<string, FixturePredictionData>;
     serverDateIso: string;
+    windowEventsByExternalId: Record<string, WindowEvent>;
+    fixtureByEventId: Map<string, WcFixture>;
+    fullPredictions: Prediction[];
+    competitionId: string | null;
+    isMember: boolean;
   };
   /** Data for the Groups tab. */
   groupsData?: {
@@ -139,6 +144,11 @@ export function WcPicksHub({ md1, fixturesData, groupsData }: WcPicksHubProps) {
             resultsByExternalId={fixturesData.resultsByExternalId}
             serverDateIso={fixturesData.serverDateIso}
             mode="fixtures"
+            windowEventsByExternalId={fixturesData.windowEventsByExternalId}
+            fixtureByEventId={fixturesData.fixtureByEventId}
+            fullPredictions={fixturesData.fullPredictions}
+            competitionId={fixturesData.competitionId}
+            isMember={fixturesData.isMember && md1.isMember}
           />
         </div>
       )}

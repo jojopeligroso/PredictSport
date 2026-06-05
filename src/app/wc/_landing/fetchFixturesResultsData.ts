@@ -1,6 +1,8 @@
 import { createClient } from "@/lib/supabase/server";
-import { WC2026_FIXTURES } from "@/lib/wc/fixtures";
+import { WC2026_FIXTURES, type WcFixture } from "@/lib/wc/fixtures";
 import type { FixtureResult, FixturePredictionData } from "@/components/wc/FixturesTabs";
+import type { WindowEvent } from "@/app/wc/picks/[windowId]/WindowPickList";
+import type { Prediction, EventPredictionType } from "@/types/database";
 
 /**
  * Fetch fixture results and user prediction context for the WC fixtures/results tabs.
@@ -24,6 +26,10 @@ export async function fetchFixturesResultsData() {
 
   const resultsByExternalId: Record<string, FixtureResult | undefined> = {};
   const predictionsByExternalId: Record<string, FixturePredictionData> = {};
+  let isMember = false;
+  let fullPredictions: Prediction[] = [];
+  const windowEventsByExternalId: Record<string, WindowEvent> = {};
+  const fixtureByEventId = new Map<string, WcFixture>();
 
   if (competition) {
     const externalIds = WC2026_FIXTURES.map((f) => f.externalId);
@@ -31,7 +37,8 @@ export async function fetchFixturesResultsData() {
     const { data: events } = await supabase
       .from("events")
       .select(
-        "id, external_event_id, status, result_data, result_confirmed, round_id, lock_time, sport",
+        `id, external_event_id, event_name, sport, start_time, lock_time, status, result_data, result_confirmed, round_id,
+         event_prediction_types (id, event_id, prediction_type, points, partial_points, config)`,
       )
       .eq("competition_id", competition.id)
       .in("external_event_id", externalIds);
@@ -84,6 +91,48 @@ export async function fetchFixturesResultsData() {
       };
     }
 
+    // Membership check
+    if (user) {
+      const { data: membership } = await supabase
+        .from("competition_members")
+        .select("id")
+        .eq("competition_id", competition.id)
+        .eq("user_id", user.id)
+        .maybeSingle();
+      isMember = Boolean(membership);
+    }
+
+    // Build WindowEvent objects for expand-to-pick
+    const fixtureByExternalId = new Map<string, WcFixture>();
+    for (const f of WC2026_FIXTURES) fixtureByExternalId.set(f.externalId, f);
+
+    for (const e of events ?? []) {
+      const row = e as {
+        id: string;
+        external_event_id: string;
+        event_name: string;
+        sport: string;
+        start_time: string;
+        lock_time: string;
+        status: string;
+        result_confirmed: boolean;
+        event_prediction_types: EventPredictionType[];
+      };
+      if (!row.external_event_id || !row.id) continue;
+      windowEventsByExternalId[row.external_event_id] = {
+        id: row.id,
+        event_name: row.event_name,
+        sport: row.sport,
+        start_time: row.start_time,
+        lock_time: row.lock_time,
+        status: row.status,
+        result_confirmed: row.result_confirmed ?? false,
+        event_prediction_types: row.event_prediction_types ?? [],
+      };
+      const fixture = fixtureByExternalId.get(row.external_event_id);
+      if (fixture) fixtureByEventId.set(row.id, fixture);
+    }
+
     // Prediction context — only for authenticated users
     if (user) {
       const eventIds = (events ?? [])
@@ -107,7 +156,7 @@ export async function fetchFixturesResultsData() {
         ? await supabase
             .from("predictions")
             .select(
-              "event_id, prediction_type, prediction_data, updated_at",
+              "id, event_prediction_type_id, event_id, user_id, prediction_type, prediction_data, is_correct, is_partial, points_awarded, note_text, note_visibility, submitted_at, updated_at",
             )
             .eq("user_id", user.id)
             .in("event_id", eventIds)
@@ -120,6 +169,8 @@ export async function fetchFixturesResultsData() {
               updated_at: string;
             }[],
           };
+
+      fullPredictions = (userPreds ?? []) as Prediction[];
 
       for (const e of events ?? []) {
         const row = e as {
@@ -191,6 +242,11 @@ export async function fetchFixturesResultsData() {
     resultsByExternalId,
     predictionsByExternalId,
     serverDateIso: new Date().toISOString().slice(0, 10),
+    windowEventsByExternalId,
+    fixtureByEventId,
+    fullPredictions,
+    competitionId: competition?.id ?? null,
+    isMember,
   };
 }
 
