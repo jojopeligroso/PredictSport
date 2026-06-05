@@ -63,14 +63,14 @@ export function DashboardPickRow({
     >
       <div className="flex items-center gap-2">
         {/* Home team */}
-        <CountryFlag name={fixture.home} size={20} />
+        <CountryFlag name={fixture.home} size={20} shape="pill" />
         <span className="text-base font-bold text-white">{homeTrigram}</span>
 
         <span className="mx-1 text-xs text-white/60">vs</span>
 
         {/* Away team */}
         <span className="text-base font-bold text-white">{awayTrigram}</span>
-        <CountryFlag name={fixture.away} size={20} />
+        <CountryFlag name={fixture.away} size={20} shape="pill" />
 
         {/* Spacer */}
         <span className="flex-1" />

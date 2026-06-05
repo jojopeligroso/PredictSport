@@ -8,6 +8,8 @@ import type { Prediction } from "@/types/database";
 
 interface FifaGroupsGridProps {
   mode: "compact" | "accordion";
+  /** Only show these groups (e.g. groups with matches today). Shows all if omitted/empty. */
+  groupFilter?: string[];
   /** Group events keyed by group letter, needed for accordion mode. */
   groupEvents?: Map<string, WindowEvent[]>;
   /** User predictions, needed for accordion mode. */
@@ -20,6 +22,7 @@ interface FifaGroupsGridProps {
 
 export function FifaGroupsGrid({
   mode,
+  groupFilter,
   groupEvents,
   predictions,
   competitionId,
@@ -27,10 +30,15 @@ export function FifaGroupsGrid({
 }: FifaGroupsGridProps) {
   const [expandedGroup, setExpandedGroup] = useState<string | null>(null);
 
+  const filteredGroups =
+    groupFilter && groupFilter.length > 0
+      ? WC2026_GROUPS.filter((g) => groupFilter.includes(g.groupId))
+      : WC2026_GROUPS;
+
   if (mode === "compact") {
     return (
       <div className="grid grid-cols-3 gap-2">
-        {WC2026_GROUPS.map((g) => (
+        {filteredGroups.map((g) => (
           <FifaGroupCard key={g.groupId} groupId={g.groupId} teams={g.teams} />
         ))}
       </div>
@@ -41,7 +49,7 @@ export function FifaGroupsGrid({
   return (
     <div>
       <div className="grid grid-cols-3 gap-2">
-        {WC2026_GROUPS.map((g) => {
+        {filteredGroups.map((g) => {
           const isOpen = expandedGroup === g.groupId;
           return (
             <button

@@ -57,20 +57,23 @@ export default async function JoinPage({
   // Authenticated — look up token: try invite_tokens first, then competitions.invite_code
   const { data: invite } = await supabase
     .from("invite_tokens")
-    .select("*, competitions(id, name)")
+    .select("*, competitions(id, name, product_mode)")
     .eq("token", token)
     .single();
 
   let competitionId: string;
   let competitionName: string;
+  let productMode: string | null = null;
 
   if (invite) {
     const comp = (invite as Record<string, unknown>).competitions as {
       id: string;
       name: string;
+      product_mode?: string | null;
     } | null;
     competitionId = invite.competition_id;
     competitionName = comp?.name ?? "Competition";
+    productMode = comp?.product_mode ?? null;
 
     // Token expired
     if (invite.expires_at && new Date(invite.expires_at) < new Date()) {
@@ -103,7 +106,7 @@ export default async function JoinPage({
     // Try competitions.invite_code (exact match, case-normalized)
     const { data: comp } = await supabase
       .from("competitions")
-      .select("id, name")
+      .select("id, name, product_mode")
       .eq("invite_code", token.trim().toLowerCase())
       .in("status", ["draft", "active"])
       .single();
@@ -122,6 +125,7 @@ export default async function JoinPage({
     }
     competitionId = comp.id;
     competitionName = comp.name;
+    productMode = comp.product_mode ?? null;
   }
 
   // Check if already a member
@@ -133,6 +137,9 @@ export default async function JoinPage({
     .single();
 
   if (existingMember) {
+    if (productMode === "world_cup_2026_shell") {
+      redirect("/wc/home");
+    }
     redirect(`/predictions?competition=${competitionId}`);
   }
 

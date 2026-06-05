@@ -55,6 +55,8 @@ export interface DashboardData {
   isAuthenticated: boolean;
   /** Whether the current round window is locked. */
   windowLocked: boolean;
+  /** Groups that have matches on the next matchday. */
+  todayGroups: string[];
   /** Bracket draft progress, null if user has no bracket activity. */
   bracketProgress: { pct: number; label: string } | null;
 }
@@ -181,6 +183,15 @@ export async function fetchDashboardData(): Promise<DashboardResult> {
   }
   const sortedDates = [...byDate.keys()].sort();
   const nextDayEvents = sortedDates.length > 0 ? (byDate.get(sortedDates[0]) ?? []) : [];
+  // Derive which groups play on the next matchday
+  const todayGroupsSet = new Set<string>();
+  for (const row of nextDayEvents) {
+    if (!row.external_event_id) continue;
+    const fixture = fixtureByExternalId.get(row.external_event_id);
+    if (fixture?.group) todayGroupsSet.add(fixture.group);
+  }
+  const todayGroups = [...todayGroupsSet].sort();
+
   const nextEvents: WindowEvent[] = nextDayEvents.slice(0, 4).map((row) => ({
     id: row.id,
     event_name: row.event_name,
@@ -274,6 +285,7 @@ export async function fetchDashboardData(): Promise<DashboardResult> {
     recentResults,
     resultsLabel,
     classificationId,
+    todayGroups,
     inviteCode,
     entryClosesAt,
     memberCount,

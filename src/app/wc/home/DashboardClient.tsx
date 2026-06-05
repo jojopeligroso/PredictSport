@@ -26,6 +26,7 @@ interface DashboardClientProps {
   recentResults: ResultRow[];
   resultsLabel: string;
   classificationId: string | null;
+  todayGroups: string[];
   inviteCode: string | null;
   entryClosesAt: string | null;
   memberCount: number;
@@ -72,6 +73,7 @@ export function DashboardClient({
   recentResults,
   resultsLabel,
   classificationId,
+  todayGroups,
   inviteCode,
   entryClosesAt,
   memberCount,
@@ -176,14 +178,30 @@ export function DashboardClient({
         )}
       </OnboardingSection>
 
-      {/* ── 4b. FIFA Groups ─────────────────────────────────────────── */}
+      {/* ── 4b. FIFA Groups (collapsible, filtered to today's matchday) */}
       <OnboardingSection id="other">
-        <section className="mt-4">
-          <p className="mb-2 text-[11px] font-semibold uppercase tracking-wider text-ps-text-ter">
-            FIFA Groups
-          </p>
-          <FifaGroupsGrid mode="compact" />
-        </section>
+        {todayGroups.length > 0 && (
+          <section className="mt-4">
+            <details open className="group">
+              <summary className="flex cursor-pointer items-center justify-between list-none [&::-webkit-details-marker]:hidden">
+                <p className="text-[11px] font-semibold uppercase tracking-wider text-ps-text-ter">
+                  Today&apos;s Groups
+                </p>
+                <svg
+                  className="h-4 w-4 shrink-0 text-ps-text-ter transition-transform group-open:rotate-180"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                >
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                </svg>
+              </summary>
+              <div className="mt-2">
+                <FifaGroupsGrid mode="compact" groupFilter={todayGroups} />
+              </div>
+            </details>
+          </section>
+        )}
       </OnboardingSection>
 
       {/* ── 5. Recent Results ─────────────────────────────────────────── */}
@@ -298,13 +316,13 @@ function TodayResultRow({ result }: { result: ResultRow }) {
       {/* Match score row */}
       <div className="flex items-center gap-2">
         <span className={`h-2 w-2 flex-shrink-0 rounded-full ${dotColor}`} />
-        <CountryFlag name={fixture.home} size={22} />
+        <CountryFlag name={fixture.home} size={22} shape="pill" />
         <span className="text-sm font-semibold text-ps-text">{homeTri}</span>
         <span className="flex-1 text-center font-mono text-base font-bold tabular-nums text-ps-text">
           {homeScore} – {awayScore}
         </span>
         <span className="text-sm font-semibold text-ps-text">{awayTri}</span>
-        <CountryFlag name={fixture.away} size={22} />
+        <CountryFlag name={fixture.away} size={22} shape="pill" />
       </div>
 
       {/* User prediction + points breakdown */}

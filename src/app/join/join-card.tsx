@@ -34,8 +34,12 @@ export function JoinCard({ token, competitionName, memberCount }: JoinCardProps)
         return;
       }
 
-      // Success — redirect to predictions
-      router.push(`/predictions?competition=${data.competition_id}`);
+      // Success — WC competitions go to onboarding dashboard
+      if (data.product_mode === "world_cup_2026_shell") {
+        router.push("/wc/home?onboarding=true");
+      } else {
+        router.push(`/predictions?competition=${data.competition_id}`);
+      }
     } catch {
       setError("Something went wrong. Please try again.");
       setIsJoining(false);

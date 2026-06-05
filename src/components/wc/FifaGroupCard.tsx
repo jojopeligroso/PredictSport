@@ -57,7 +57,7 @@ export function FifaGroupCard({
             key={team}
             className="flex items-center gap-1.5 py-[3px]"
           >
-            <CountryFlag name={team} size={14} shape="circle" />
+            <CountryFlag name={team} size={14} shape="pill" />
             <span className="font-mono text-[10px] font-semibold text-white/90">
               {fifaTrigram(team) ?? team.slice(0, 3).toUpperCase()}
             </span>

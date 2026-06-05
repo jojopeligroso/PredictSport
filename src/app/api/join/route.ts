@@ -102,13 +102,14 @@ export async function POST(request: NextRequest) {
 
     const { data: comp } = await supabase
       .from("competitions")
-      .select("name")
+      .select("name, product_mode")
       .eq("id", competitionId)
       .single();
 
     return NextResponse.json({
       competition_id: competitionId,
       competition_name: comp?.name ?? "Competition",
+      product_mode: comp?.product_mode ?? null,
       already_member: true,
     });
   }
@@ -152,15 +153,16 @@ export async function POST(request: NextRequest) {
       .eq("id", invite.id);
   }
 
-  // 8. Fetch competition name
+  // 8. Fetch competition name + product_mode
   const { data: competition } = await supabase
     .from("competitions")
-    .select("name")
+    .select("name, product_mode")
     .eq("id", competitionId)
     .single();
 
   return NextResponse.json({
     competition_id: competitionId,
     competition_name: competition?.name ?? "Competition",
+    product_mode: competition?.product_mode ?? null,
   });
 }
