@@ -430,7 +430,7 @@ export function RulesContent({
       </CollapsibleSection>
 
       {/* ── FAQ ─────────────────────────────────────────────── */}
-      <CollapsibleSection id="faq" title="FAQ" defaultOpen>
+      <CollapsibleSection id="faq" title="FAQs" defaultOpen>
         <div className="mt-3 space-y-2">
           <FAQGroup title="Basics">
             <FAQ q="Do I have to predict every match?">
@@ -692,12 +692,27 @@ function FAQGroup({
   children: React.ReactNode;
 }) {
   return (
-    <div>
-      <p className="mb-1.5 font-mono text-[10px] font-bold uppercase tracking-[0.12em] text-ps-text-ter">
-        {title}
-      </p>
+    <details className="group/faq">
+      <summary className="mb-1.5 flex cursor-pointer items-center justify-between list-none [&::-webkit-details-marker]:hidden">
+        <p className="font-mono text-[10px] font-bold uppercase tracking-[0.12em] text-ps-text-ter">
+          {title}
+        </p>
+        <svg
+          className="h-3.5 w-3.5 shrink-0 text-ps-text-ter transition-transform group-open/faq:rotate-180"
+          fill="none"
+          viewBox="0 0 24 24"
+          stroke="currentColor"
+        >
+          <path
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            strokeWidth={2}
+            d="M19 9l-7 7-7-7"
+          />
+        </svg>
+      </summary>
       <div className="space-y-1">{children}</div>
-    </div>
+    </details>
   );
 }
 
