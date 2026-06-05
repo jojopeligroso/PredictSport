@@ -163,7 +163,21 @@ export function DashboardClient({
         )}
       </OnboardingSection>
 
-      {/* ── 3. At a Glance (horizontal scroll) ────────────────────────── */}
+      {/* ── 3. Invite Friends ──────────────────────────────────────────── */}
+      <OnboardingSection id="invite">
+        {inviteCode && (
+          <section className="mt-2">
+            <InviteCodeBanner
+              inviteCode={inviteCode}
+              competitionName="WC Predict"
+              joinUrl={`${appUrl}/join`}
+              memberCount={memberCount}
+            />
+          </section>
+        )}
+      </OnboardingSection>
+
+      {/* ── 4. At a Glance (horizontal scroll) ────────────────────────── */}
       <OnboardingSection id="other">
         <section className="mt-4">
           <p className="mb-2 text-[11px] font-semibold uppercase tracking-wider text-ps-text-ter">
@@ -184,7 +198,7 @@ export function DashboardClient({
         </section>
       </OnboardingSection>
 
-      {/* ── 4. Your Group ──────────────────────────────────────────────── */}
+      {/* ── 5. Your Prediction Group ──────────────────────────────────── */}
       <OnboardingSection id="group">
         <section className="mt-4">
           {classificationId ? (
@@ -198,33 +212,26 @@ export function DashboardClient({
         </section>
       </OnboardingSection>
 
-      {/* ── 4b. FIFA Groups (collapsible, filtered to today's matchday) */}
+      {/* ── 6. Leaderboard link ──────────────────────────────────────── */}
       <OnboardingSection id="other">
-        {todayGroups.length > 0 && (
-          <section className="mt-4">
-            <details open className="group">
-              <summary className="flex cursor-pointer items-center justify-between list-none [&::-webkit-details-marker]:hidden">
-                <p className="text-[11px] font-semibold uppercase tracking-wider text-ps-text-ter">
-                  Today&apos;s Groups
-                </p>
-                <svg
-                  className="h-4 w-4 shrink-0 text-ps-text-ter transition-transform group-open:rotate-180"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  stroke="currentColor"
-                >
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                </svg>
-              </summary>
-              <div className="mt-2">
-                <FifaGroupsGrid mode="compact" groupFilter={todayGroups} />
-              </div>
-            </details>
+        {isMember && (
+          <section className="mt-2">
+            <Link
+              href="/wc/leaderboard"
+              className="flex items-center justify-between rounded-xl border border-ps-border bg-ps-surface px-4 py-3 transition-colors hover:bg-ps-chip"
+            >
+              <span className="text-[13px] font-semibold text-ps-text">
+                Leaderboard
+              </span>
+              <span className="text-[13px] font-semibold text-ps-text">
+                →
+              </span>
+            </Link>
           </section>
         )}
       </OnboardingSection>
 
-      {/* ── 5. Recent Results ─────────────────────────────────────────── */}
+      {/* ── 7. Recent Results ─────────────────────────────────────────── */}
       <OnboardingSection id="other">
         <section className="mt-2">
           {recentResults.length > 0 ? (
@@ -254,78 +261,64 @@ export function DashboardClient({
         </section>
       </OnboardingSection>
 
-      {/* ── 5b. Leaderboard link ─────────────────────────────────────── */}
+      {/* ── 8. Today's WC Match Groups (collapsible) ─────────────────── */}
       <OnboardingSection id="other">
-        {isMember && (
-          <section className="mt-2">
-            <Link
-              href="/wc/leaderboard"
-              className="flex items-center justify-between rounded-xl border border-ps-border bg-ps-surface px-4 py-3 transition-colors hover:bg-ps-chip"
-            >
-              <span className="text-[13px] font-semibold text-ps-text">
-                Leaderboard
-              </span>
-              <span className="text-[13px] font-semibold text-ps-text">
-                →
-              </span>
-            </Link>
+        {todayGroups.length > 0 && (
+          <section className="mt-4">
+            <details open className="group">
+              <summary className="flex cursor-pointer items-center justify-between list-none [&::-webkit-details-marker]:hidden">
+                <p className="text-[11px] font-semibold uppercase tracking-wider text-ps-text-ter">
+                  Today&apos;s Groups
+                </p>
+                <svg
+                  className="h-4 w-4 shrink-0 text-ps-text-ter transition-transform group-open:rotate-180"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                >
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                </svg>
+              </summary>
+              <div className="mt-2">
+                <FifaGroupsGrid mode="compact" groupFilter={todayGroups} />
+              </div>
+            </details>
           </section>
         )}
       </OnboardingSection>
 
-      {/* ── 6. Invite Friends ──────────────────────────────────────────── */}
-      <OnboardingSection id="invite">
-        {inviteCode && (
-          <section className="mt-2">
-            <InviteCodeBanner
-              inviteCode={inviteCode}
-              competitionName="WC Predict"
-              joinUrl={`${appUrl}/join`}
-              memberCount={memberCount}
-            />
-          </section>
-        )}
-      </OnboardingSection>
-
-      {/* ── 7. Bracket strip (only when user has started a bracket) ──── */}
+      {/* ── 9. Bracket strip (collapsed by default) ──────────────────── */}
       {bracketProgress && (
       <OnboardingSection id="other">
         <section className="mt-2">
-          <Link
-            href="/wc/bracket"
-            className="block rounded-xl border border-ps-border bg-ps-surface px-4 py-3 transition-colors hover:bg-ps-chip"
-          >
-            <div className="flex items-center gap-2">
-              <span className="text-[13px] font-semibold text-ps-text-sec">
-                Bracket
-              </span>
-              <span className="rounded-full bg-ps-purple-soft px-1.5 py-0.5 text-[8px] font-bold uppercase text-ps-purple">
-                Anorak
-              </span>
-              <span className="flex-1" />
-              {bracketProgress && (
-                <span className="font-mono text-[11px] tabular-nums text-ps-text-sec">
-                  {bracketProgress.pct}%
-                </span>
-              )}
-              <span className="text-[13px] font-semibold tabular-nums text-ps-text">
-                →
-              </span>
-            </div>
-            {bracketProgress && (
-              <div className="mt-2">
-                <div className="h-1 overflow-hidden rounded-full bg-ps-border">
-                  <div
-                    className="h-full rounded-full bg-ps-purple transition-all"
-                    style={{ width: `${bracketProgress.pct}%` }}
-                  />
+          <details className="group">
+            <summary className="flex cursor-pointer list-none [&::-webkit-details-marker]:hidden">
+              <Link
+                href="/wc/bracket"
+                className="flex w-full items-center justify-between rounded-xl border border-ps-border bg-ps-surface px-4 py-3 transition-colors hover:bg-ps-chip"
+                onClick={(e) => e.stopPropagation()}
+              >
+                <div className="flex items-center gap-2">
+                  <span className="text-[13px] font-semibold text-ps-text-sec">
+                    Bracket
+                  </span>
+                  <span className="rounded-full bg-ps-purple-soft px-1.5 py-0.5 text-[8px] font-bold uppercase text-ps-purple">
+                    Anorak
+                  </span>
                 </div>
-                <p className="mt-1 font-mono text-[10px] text-ps-text-ter">
-                  {bracketProgress.label}
-                </p>
-              </div>
-            )}
-          </Link>
+                <div className="flex items-center gap-2">
+                  {bracketProgress && (
+                    <span className="font-mono text-[11px] tabular-nums text-ps-text-sec">
+                      {bracketProgress.pct}%
+                    </span>
+                  )}
+                  <span className="text-[13px] font-semibold tabular-nums text-ps-text">
+                    →
+                  </span>
+                </div>
+              </Link>
+            </summary>
+          </details>
         </section>
       </OnboardingSection>
       )}
