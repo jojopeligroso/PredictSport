@@ -46,39 +46,92 @@ export function FifaGroupsGrid({
   }
 
   // accordion mode
+  const selectedGroupData = expandedGroup
+    ? filteredGroups.find((g) => g.groupId === expandedGroup)
+    : null;
+
+  // ── Expanded: single group + fixtures + return CTAs ──
+  if (expandedGroup && selectedGroupData) {
+    return (
+      <div>
+        <BackToAllGroups onClick={() => setExpandedGroup(null)} />
+
+        <div className="mx-auto mt-3 max-w-[140px]">
+          <button
+            onClick={() => setExpandedGroup(null)}
+            className="w-full text-left"
+          >
+            <FifaGroupCard
+              groupId={selectedGroupData.groupId}
+              teams={selectedGroupData.teams}
+              isExpanded
+            />
+          </button>
+        </div>
+
+        {groupEvents && competitionId && (
+          <AccordionPanel
+            groupId={expandedGroup}
+            events={groupEvents.get(expandedGroup) ?? []}
+            predictions={predictions ?? []}
+            competitionId={competitionId}
+            windowLocked={windowLocked ?? false}
+          />
+        )}
+
+        <BackToAllGroups onClick={() => setExpandedGroup(null)} className="mt-4" />
+      </div>
+    );
+  }
+
+  // ── Collapsed: all groups grid ──
   return (
     <div>
       <div className="grid grid-cols-3 gap-2">
-        {filteredGroups.map((g) => {
-          const isOpen = expandedGroup === g.groupId;
-          return (
-            <button
-              key={g.groupId}
-              onClick={() =>
-                setExpandedGroup(isOpen ? null : g.groupId)
-              }
-              className="text-left"
-            >
-              <FifaGroupCard
-                groupId={g.groupId}
-                teams={g.teams}
-                isExpanded={isOpen}
-              />
-            </button>
-          );
-        })}
+        {filteredGroups.map((g) => (
+          <button
+            key={g.groupId}
+            onClick={() => setExpandedGroup(g.groupId)}
+            className="text-left"
+          >
+            <FifaGroupCard
+              groupId={g.groupId}
+              teams={g.teams}
+            />
+          </button>
+        ))}
       </div>
-
-      {expandedGroup && groupEvents && competitionId && (
-        <AccordionPanel
-          groupId={expandedGroup}
-          events={groupEvents.get(expandedGroup) ?? []}
-          predictions={predictions ?? []}
-          competitionId={competitionId}
-          windowLocked={windowLocked ?? false}
-        />
-      )}
     </div>
+  );
+}
+
+function BackToAllGroups({
+  onClick,
+  className = "",
+}: {
+  onClick: () => void;
+  className?: string;
+}) {
+  return (
+    <button
+      onClick={onClick}
+      className={`flex items-center gap-1.5 rounded-full bg-ps-amber px-3.5 py-1.5 font-mono text-[11px] font-bold uppercase tracking-[0.08em] text-white transition-colors hover:bg-ps-amber/85 ${className}`}
+    >
+      <svg
+        className="h-3.5 w-3.5"
+        fill="none"
+        viewBox="0 0 24 24"
+        strokeWidth={2.5}
+        stroke="currentColor"
+      >
+        <path
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          d="M10.5 19.5L3 12m0 0l7.5-7.5M3 12h18"
+        />
+      </svg>
+      All groups
+    </button>
   );
 }
 

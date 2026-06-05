@@ -9,7 +9,7 @@ export function getPredictionSummary(
     const away = predictionData.away as number;
     if (home == null || away == null) return null;
     if (home > away) return `You predicted ${homeTeam} to win ${home}-${away}`;
-    if (away > home) return `You predicted ${homeTeam} to lose ${home}-${away}`;
+    if (away > home) return `You predicted ${awayTeam} to win ${away}-${home}`;
     return `You predicted ${homeTeam} and ${awayTeam} to draw ${home}-${away}`;
   }
 

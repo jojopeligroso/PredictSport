@@ -41,7 +41,7 @@ export function FifaGroupCard({
       className={[
         "overflow-hidden rounded-xl text-white transition-all",
         isExpanded
-          ? "shadow-[0_0_0_2px_rgba(212,175,55,0.7),0_1px_3px_rgba(0,0,0,0.2)]"
+          ? "shadow-[0_0_0_2px_white,0_0_0_4px_rgba(212,175,55,0.8),0_1px_3px_rgba(0,0,0,0.2)]"
           : "shadow-sm",
       ].join(" ")}
       style={{ backgroundColor: cityColor }}
