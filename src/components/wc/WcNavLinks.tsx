@@ -26,7 +26,9 @@ export function WcNavLinks({
   variant: "desktop" | "mobile";
 }) {
   const pathname = usePathname();
-  const isLanding = pathname === "/wc" || pathname === "/wc/home";
+  // Only hide nav on the landing page (/wc) for non-engaged visitors.
+  // /wc/home always shows nav — it's the authenticated dashboard.
+  const isLanding = pathname === "/wc";
 
   if (isLanding && !engaged) return null;
 

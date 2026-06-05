@@ -153,29 +153,44 @@ export function DashboardClient({
 
       {/* ── 3. At a Glance (horizontal scroll) ────────────────────────── */}
       <OnboardingSection id="other">
-        {classificationId && currentUserId && (
-          <section className="mt-4">
-            <p className="mb-2 text-[11px] font-semibold uppercase tracking-wider text-ps-text-ter">
-              At a glance
-            </p>
+        <section className="mt-4">
+          <p className="mb-2 text-[11px] font-semibold uppercase tracking-wider text-ps-text-ter">
+            At a glance
+          </p>
+          {classificationId && currentUserId ? (
             <StatsCard
               classificationId={classificationId}
               currentUserId={currentUserId}
             />
-          </section>
-        )}
+          ) : (
+            <div className="rounded-xl border border-ps-border bg-ps-surface px-4 py-5 text-center">
+              <p className="text-xs text-ps-text-ter">
+                Your stats will appear after the first results.
+              </p>
+            </div>
+          )}
+        </section>
       </OnboardingSection>
 
       {/* ── 4. Your Group ──────────────────────────────────────────────── */}
       <OnboardingSection id="group">
-        {classificationId && (
-          <section className="mt-4">
+        <section className="mt-4">
+          {classificationId ? (
             <GroupMiniTable
               classificationId={classificationId}
               competitionId={competitionId}
             />
-          </section>
-        )}
+          ) : (
+            <div className="rounded-xl border border-ps-border bg-ps-surface px-4 py-5 text-center">
+              <p className="text-[11px] font-semibold uppercase tracking-wider text-ps-text-ter">
+                Your group
+              </p>
+              <p className="mt-1 text-xs text-ps-text-ter">
+                Your group will be drawn before the first match.
+              </p>
+            </div>
+          )}
+        </section>
       </OnboardingSection>
 
       {/* ── 4b. FIFA Groups (collapsible, filtered to today's matchday) */}
@@ -206,8 +221,8 @@ export function DashboardClient({
 
       {/* ── 5. Recent Results ─────────────────────────────────────────── */}
       <OnboardingSection id="other">
-        {recentResults.length > 0 && (
-          <section className="mt-2">
+        <section className="mt-2">
+          {recentResults.length > 0 ? (
             <div className="rounded-xl border border-ps-border bg-ps-surface p-4">
               <div className="flex items-center justify-between">
                 <h3 className="text-base font-bold text-ps-text">
@@ -224,6 +239,31 @@ export function DashboardClient({
                 ))}
               </div>
             </div>
+          ) : (
+            <div className="rounded-xl border border-ps-border bg-ps-surface px-4 py-5 text-center">
+              <p className="text-xs text-ps-text-ter">
+                Results will appear once matches are played.
+              </p>
+            </div>
+          )}
+        </section>
+      </OnboardingSection>
+
+      {/* ── 5b. Leaderboard link ─────────────────────────────────────── */}
+      <OnboardingSection id="other">
+        {isMember && (
+          <section className="mt-2">
+            <Link
+              href="/wc/leaderboard"
+              className="flex items-center justify-between rounded-xl border border-ps-border bg-ps-surface px-4 py-3 transition-colors hover:bg-ps-chip"
+            >
+              <span className="text-[13px] font-semibold text-ps-text">
+                Leaderboard
+              </span>
+              <span className="text-[13px] font-semibold text-ps-text">
+                →
+              </span>
+            </Link>
           </section>
         )}
       </OnboardingSection>
@@ -242,7 +282,8 @@ export function DashboardClient({
         )}
       </OnboardingSection>
 
-      {/* ── 7. Bracket strip ───────────────────────────────────────────── */}
+      {/* ── 7. Bracket strip (only when user has started a bracket) ──── */}
+      {bracketProgress && (
       <OnboardingSection id="other">
         <section className="mt-2">
           <Link
@@ -282,6 +323,7 @@ export function DashboardClient({
           </Link>
         </section>
       </OnboardingSection>
+      )}
     </div>
   );
 
