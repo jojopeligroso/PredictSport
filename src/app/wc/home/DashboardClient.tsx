@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import { DashboardPickRow } from "@/components/wc/DashboardPickRow";
 import { GroupMiniTable } from "@/components/wc/GroupMiniTable";
 import { FifaGroupsGrid } from "@/components/wc/FifaGroupsGrid";
@@ -84,6 +84,8 @@ export function DashboardClient({
   bracketProgress,
   onboarding,
 }: DashboardClientProps) {
+  const [expandedEventId, setExpandedEventId] = useState<string | null>(null);
+
   // Count picks progress
   const { picked, total } = useMemo(() => {
     let picked = 0;
@@ -135,6 +137,16 @@ export function DashboardClient({
                     fixture={fixture}
                     predictions={predictions}
                     status={status}
+                    event={event}
+                    competitionId={competitionId}
+                    fixtureByEventId={fixtureByEventId}
+                    windowLocked={windowLocked}
+                    expanded={expandedEventId === event.id}
+                    onToggle={() =>
+                      setExpandedEventId((prev) =>
+                        prev === event.id ? null : event.id,
+                      )
+                    }
                   />
                 );
               })}

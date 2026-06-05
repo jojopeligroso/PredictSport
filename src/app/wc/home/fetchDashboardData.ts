@@ -182,7 +182,21 @@ export async function fetchDashboardData(): Promise<DashboardResult> {
     byDate.set(iso, list);
   }
   const sortedDates = [...byDate.keys()].sort();
-  const nextDayEvents = sortedDates.length > 0 ? (byDate.get(sortedDates[0]) ?? []) : [];
+
+  // Collect events from the first day; spill into subsequent days until we
+  // have at least 2 (or run out of unlocked events). Still cap at 4 max.
+  const spilledEvents: EventRowWithExternal[] = [];
+  for (const d of sortedDates) {
+    const dayEvents = byDate.get(d) ?? [];
+    for (const e of dayEvents) {
+      if (spilledEvents.length >= 4) break;
+      spilledEvents.push(e);
+    }
+    if (spilledEvents.length >= 2) break;
+    if (spilledEvents.length >= 4) break;
+  }
+  const nextDayEvents = spilledEvents;
+
   // Derive which groups play on the next matchday
   const todayGroupsSet = new Set<string>();
   for (const row of nextDayEvents) {
@@ -192,7 +206,7 @@ export async function fetchDashboardData(): Promise<DashboardResult> {
   }
   const todayGroups = [...todayGroupsSet].sort();
 
-  const nextEvents: WindowEvent[] = nextDayEvents.slice(0, 4).map((row) => ({
+  const nextEvents: WindowEvent[] = nextDayEvents.map((row) => ({
     id: row.id,
     event_name: row.event_name,
     sport: row.sport,
