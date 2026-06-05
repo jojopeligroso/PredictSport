@@ -557,15 +557,15 @@ function FixtureCard({
       style={{ backgroundColor: city.color }}
     >
       {/* Header: stage + city/stadium */}
-      <header className={`flex items-center justify-between ${headerPad} ${headerText} font-bold uppercase tracking-wide text-white/85`}>
-        <span>
+      <header className={`flex items-center justify-between gap-2 ${headerPad} ${headerText} font-bold uppercase tracking-wide text-white/85`}>
+        <span className="shrink-0">
           {fixture.stage === "group"
             ? `Group ${fixture.group} · MD${fixture.matchday}`
             : stageLabel(fixture.stage)}
         </span>
-        <span className="text-right">
-          <span className="block">{city.name}</span>
-          <span className={`block ${stadiumText} font-medium normal-case tracking-normal text-white/50`}>
+        <span className="min-w-0 text-right">
+          <span className="block truncate">{city.name}</span>
+          <span className={`block truncate ${stadiumText} font-medium normal-case tracking-normal text-white/50`}>
             {city.stadium}
           </span>
         </span>

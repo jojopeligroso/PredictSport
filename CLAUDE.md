@@ -151,6 +151,15 @@ Supabase, Playwright, Context7, GitHub, Firecrawl
 
 The `docs/SPEC-*.md` files are superseded by SPEC.md and kept only for historical reference.
 
+## Gotchas — Vercel Hobby Plan Limits
+
+This project runs on **Vercel Hobby (free)**. These limits bite silently:
+
+1. **1 concurrent build** — pushes from multiple sessions queue up. Deploys can take 5–10 min when the queue is backed up. Don't push rapidly; batch changes into fewer commits when possible.
+2. **2 cron jobs max, daily cadence only** — `vercel.json` has 1 active cron (`/api/results/cron`). Adding a second is the max. Sub-daily schedules (`*/5 * * * *`) require Pro. Dormant crons are documented in `vercel.crons.dormant.json` — never move more than 2 into `vercel.json`.
+3. **100 deploys/day** — each push to `master` triggers a deploy. Multi-session days can burn through this fast. If deploys stop triggering, this limit may be the cause.
+4. **6000 build min/month** — Next.js builds take ~1–2 min each. At 20+ deploys/day this adds up. No way to check remaining minutes via API.
+
 ## Multi-Session Warning
 
 **NEVER run `npm run dev` or port-binding commands without explicit user confirmation.**
