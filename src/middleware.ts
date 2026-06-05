@@ -1,10 +1,38 @@
 import { type NextRequest, NextResponse } from "next/server";
 import { updateSession } from "@/lib/supabase/proxy";
 
+const SHELL_MODE =
+  process.env.NEXT_PUBLIC_PRODUCT_MODE === "world_cup_2026_shell";
+
+/** Routes accessible even in shell mode. */
+const SHELL_ALLOWED = [
+  "/wc",
+  "/login",
+  "/auth",
+  "/profile",
+  "/terms",
+  "/privacy",
+  "/telegram",
+  "/api",
+  "/predictions",
+  "/competitions",
+  "/leaderboard",
+];
+
 export async function middleware(request: NextRequest) {
-  // Root → /wc during World Cup (soft redirect, all other routes accessible)
-  if (request.nextUrl.pathname === "/") {
-    return NextResponse.redirect(new URL("/wc", request.url));
+  if (SHELL_MODE) {
+    const { pathname } = request.nextUrl;
+
+    if (pathname === "/") {
+      return NextResponse.redirect(new URL("/wc", request.url));
+    }
+
+    const allowed = SHELL_ALLOWED.some(
+      (p) => pathname === p || pathname.startsWith(p + "/"),
+    );
+    if (!allowed) {
+      return NextResponse.redirect(new URL("/wc", request.url));
+    }
   }
 
   return updateSession(request);
