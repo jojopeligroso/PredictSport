@@ -148,7 +148,7 @@ export function WcPicksHub({ md1, fixturesData, groupsData }: WcPicksHubProps) {
             fixtureByEventId={fixturesData.fixtureByEventId}
             fullPredictions={fixturesData.fullPredictions}
             competitionId={fixturesData.competitionId}
-            isMember={fixturesData.isMember && md1.isMember}
+            isMember={fixturesData.isMember}
           />
         </div>
       )}
