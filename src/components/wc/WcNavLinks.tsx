@@ -6,7 +6,6 @@ import { usePathname } from "next/navigation";
 const wcNavLinks = [
   { href: "/wc/home", label: "Home" },
   { href: "/wc", label: "Matches" },
-  { href: "/wc/leaderboard", label: "Table" },
   { href: "/wc/rules", label: "Rules" },
 ] as const;
 
@@ -35,7 +34,6 @@ export function WcNavLinks({
   function isActive(href: string) {
     if (href === "/wc/home") return pathname === "/wc/home";
     if (href === "/wc") return pathname === "/wc" || pathname.startsWith("/wc/picks");
-    if (href === "/wc/leaderboard") return pathname === "/wc/leaderboard";
     return pathname === href || pathname.startsWith(href + "/");
   }
 
