@@ -30,6 +30,8 @@ export interface HostCity {
   slug: HostCitySlug;
   /** Display label (city only — venue stays in `stadium`). */
   name: string;
+  /** Abbreviated name for tight spaces (e.g. "IN LA", "IN NYC"). */
+  shortName: string;
   country: HostCountry;
   /** IANA timezone for the stadium. */
   timezone: string;
@@ -43,6 +45,7 @@ export const HOST_CITIES: Record<HostCitySlug, HostCity> = {
   atlanta: {
     slug: "atlanta",
     name: "Atlanta",
+    shortName: "Atlanta",
     country: "USA",
     timezone: "America/New_York",
     stadium: "Mercedes-Benz Stadium",
@@ -51,6 +54,7 @@ export const HOST_CITIES: Record<HostCitySlug, HostCity> = {
   boston: {
     slug: "boston",
     name: "Boston",
+    shortName: "Boston",
     country: "USA",
     timezone: "America/New_York",
     stadium: "Gillette Stadium",
@@ -59,6 +63,7 @@ export const HOST_CITIES: Record<HostCitySlug, HostCity> = {
   dallas: {
     slug: "dallas",
     name: "Dallas",
+    shortName: "Dallas",
     country: "USA",
     timezone: "America/Chicago",
     stadium: "AT&T Stadium",
@@ -67,6 +72,7 @@ export const HOST_CITIES: Record<HostCitySlug, HostCity> = {
   houston: {
     slug: "houston",
     name: "Houston",
+    shortName: "Houston",
     country: "USA",
     timezone: "America/Chicago",
     stadium: "NRG Stadium",
@@ -75,6 +81,7 @@ export const HOST_CITIES: Record<HostCitySlug, HostCity> = {
   "kansas-city": {
     slug: "kansas-city",
     name: "Kansas City",
+    shortName: "KC",
     country: "USA",
     timezone: "America/Chicago",
     stadium: "GEHA Field at Arrowhead Stadium",
@@ -83,6 +90,7 @@ export const HOST_CITIES: Record<HostCitySlug, HostCity> = {
   "los-angeles": {
     slug: "los-angeles",
     name: "Los Angeles",
+    shortName: "LA",
     country: "USA",
     timezone: "America/Los_Angeles",
     stadium: "SoFi Stadium",
@@ -91,6 +99,7 @@ export const HOST_CITIES: Record<HostCitySlug, HostCity> = {
   miami: {
     slug: "miami",
     name: "Miami",
+    shortName: "Miami",
     country: "USA",
     timezone: "America/New_York",
     stadium: "Hard Rock Stadium",
@@ -99,6 +108,7 @@ export const HOST_CITIES: Record<HostCitySlug, HostCity> = {
   "new-york-new-jersey": {
     slug: "new-york-new-jersey",
     name: "New York New Jersey",
+    shortName: "NY/NJ",
     country: "USA",
     timezone: "America/New_York",
     stadium: "MetLife Stadium",
@@ -107,6 +117,7 @@ export const HOST_CITIES: Record<HostCitySlug, HostCity> = {
   philadelphia: {
     slug: "philadelphia",
     name: "Philadelphia",
+    shortName: "Philly",
     country: "USA",
     timezone: "America/New_York",
     stadium: "Lincoln Financial Field",
@@ -115,6 +126,7 @@ export const HOST_CITIES: Record<HostCitySlug, HostCity> = {
   "san-francisco-bay-area": {
     slug: "san-francisco-bay-area",
     name: "San Francisco Bay Area",
+    shortName: "SF Bay",
     country: "USA",
     timezone: "America/Los_Angeles",
     stadium: "Levi's Stadium",
@@ -123,6 +135,7 @@ export const HOST_CITIES: Record<HostCitySlug, HostCity> = {
   seattle: {
     slug: "seattle",
     name: "Seattle",
+    shortName: "Seattle",
     country: "USA",
     timezone: "America/Los_Angeles",
     stadium: "Lumen Field",
@@ -131,6 +144,7 @@ export const HOST_CITIES: Record<HostCitySlug, HostCity> = {
   toronto: {
     slug: "toronto",
     name: "Toronto",
+    shortName: "Toronto",
     country: "CAN",
     timezone: "America/Toronto",
     stadium: "BMO Field",
@@ -139,6 +153,7 @@ export const HOST_CITIES: Record<HostCitySlug, HostCity> = {
   vancouver: {
     slug: "vancouver",
     name: "Vancouver",
+    shortName: "Vancouver",
     country: "CAN",
     timezone: "America/Vancouver",
     stadium: "BC Place",
@@ -147,6 +162,7 @@ export const HOST_CITIES: Record<HostCitySlug, HostCity> = {
   guadalajara: {
     slug: "guadalajara",
     name: "Guadalajara",
+    shortName: "GDL",
     country: "MEX",
     timezone: "America/Mexico_City",
     stadium: "Estadio Akron",
@@ -155,6 +171,7 @@ export const HOST_CITIES: Record<HostCitySlug, HostCity> = {
   "mexico-city": {
     slug: "mexico-city",
     name: "Mexico City",
+    shortName: "CDMX",
     country: "MEX",
     timezone: "America/Mexico_City",
     stadium: "Estadio Azteca",
@@ -163,6 +180,7 @@ export const HOST_CITIES: Record<HostCitySlug, HostCity> = {
   monterrey: {
     slug: "monterrey",
     name: "Monterrey",
+    shortName: "MTY",
     country: "MEX",
     timezone: "America/Monterrey",
     stadium: "Estadio BBVA",

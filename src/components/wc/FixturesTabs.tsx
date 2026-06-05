@@ -246,7 +246,15 @@ export function FixturesTabs({ fixtures, resultsByExternalId, serverDateIso, pre
                         (p) => p.event_id === windowEvent.id
                       );
                       return (
-                        <div key={f.externalId} className="animate-in fade-in duration-200">
+                        <div key={f.externalId} className="relative animate-in fade-in duration-200">
+                          <button
+                            type="button"
+                            onClick={() => setExpandedExternalId(null)}
+                            className="absolute right-2 top-2 z-10 flex h-7 w-7 items-center justify-center rounded-full bg-black/30 text-white/80 backdrop-blur-sm transition-colors hover:bg-black/50 hover:text-white"
+                            aria-label="Close prediction"
+                          >
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M18 6L6 18" /><path d="M6 6l12 12" /></svg>
+                          </button>
                           <WindowPickList
                             competitionId={competitionId}
                             events={[windowEvent]}
@@ -255,13 +263,6 @@ export function FixturesTabs({ fixtures, resultsByExternalId, serverDateIso, pre
                             surface="card"
                             fixtureByEventId={fixtureByEventId}
                           />
-                          <button
-                            type="button"
-                            onClick={() => setExpandedExternalId(null)}
-                            className="mt-1 w-full text-center text-[10px] font-semibold uppercase tracking-wider text-ps-text-ter hover:text-ps-text-sec"
-                          >
-                            Back to fixture info
-                          </button>
                         </div>
                       );
                     }
@@ -748,7 +749,7 @@ function FixtureCard({
           <dl className={`mt-2 grid grid-cols-2 gap-x-3 ${timeText} text-white/90`}>
             <div>
               <dt className="font-semibold uppercase tracking-wide text-white/70">
-                In {city.name.split(" ")[0]}
+                In {city.shortName}
               </dt>
               <dd className="font-mono tabular-nums">
                 {cityTime}
