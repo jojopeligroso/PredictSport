@@ -1,8 +1,15 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useRef, useEffect } from "react";
 import Link from "next/link";
 import { LogoutButton } from "./LogoutButton";
+import { useTheme, type ThemePref } from "./ThemeProvider";
+
+const THEME_LABEL: Record<ThemePref, string> = {
+  light: "Light",
+  dark: "Dark",
+  system: "System",
+};
 
 interface MobileNavLink {
   href: string;
@@ -19,9 +26,27 @@ interface MobileNavProps {
 
 export function MobileNav({ isLoggedIn, displayName, avatarUrl, isAdmin, extraLinks }: MobileNavProps) {
   const [isOpen, setIsOpen] = useState(false);
+  const menuRef = useRef<HTMLDivElement>(null);
+  const { theme, cycleTheme } = useTheme();
+
+  // Close on outside tap
+  useEffect(() => {
+    if (!isOpen) return;
+    function handleClickOutside(e: MouseEvent | TouchEvent) {
+      if (menuRef.current && !menuRef.current.contains(e.target as Node)) {
+        setIsOpen(false);
+      }
+    }
+    document.addEventListener("mousedown", handleClickOutside);
+    document.addEventListener("touchstart", handleClickOutside);
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+      document.removeEventListener("touchstart", handleClickOutside);
+    };
+  }, [isOpen]);
 
   return (
-    <div className="md:hidden">
+    <div className="md:hidden" ref={menuRef}>
       {/* Hamburger button */}
       <button
         onClick={() => setIsOpen(!isOpen)}
@@ -64,55 +89,75 @@ export function MobileNav({ isLoggedIn, displayName, avatarUrl, isAdmin, extraLi
 
       {/* Mobile menu panel */}
       {isOpen && (
-        <div className="absolute left-0 right-0 top-12 z-50 animate-in fade-in slide-in-from-top-1 border-b border-ps-border bg-ps-surface duration-150 ease-out">
+        <div className="absolute left-0 right-0 top-12 z-50 animate-in fade-in slide-in-from-top-1 border-b border-ps-border bg-ps-surface shadow-lg duration-150 ease-out">
           <div className="px-4 py-3">
             {isLoggedIn ? (
-              <div className="space-y-2">
-                <div className="flex items-center gap-2 px-3 py-1">
+              <>
+                {/* User header */}
+                <div className="flex items-center gap-2.5 pb-2.5">
                   {avatarUrl ? (
                     <img
                       src={avatarUrl}
                       alt=""
-                      className="h-7 w-7 rounded-full"
+                      className="h-8 w-8 rounded-full"
                       referrerPolicy="no-referrer"
                     />
                   ) : (
-                    <div className="flex h-7 w-7 items-center justify-center rounded-full bg-ps-chip text-xs font-medium text-ps-text-sec">
+                    <div className="flex h-8 w-8 items-center justify-center rounded-full bg-ps-chip text-sm font-medium text-ps-text-sec">
                       {displayName.charAt(0).toUpperCase()}
                     </div>
                   )}
-                  <span className="text-sm font-medium text-ps-text">
+                  <span className="text-sm font-semibold text-ps-text">
                     {displayName}
                   </span>
                 </div>
-                <Link
-                  href="/profile"
-                  onClick={() => setIsOpen(false)}
-                  className="block rounded-md px-3 py-2 text-sm font-medium text-ps-text-sec transition-colors hover:bg-ps-chip hover:text-ps-text"
-                >
-                  Profile
-                </Link>
-                {process.env.NEXT_PUBLIC_PRODUCT_MODE !== "world_cup_2026_shell" && (
+
+                <div className="border-t border-ps-border pt-1.5">
+                  {/* Navigation links */}
                   <Link
-                    href="/competitions"
+                    href="/profile"
                     onClick={() => setIsOpen(false)}
                     className="block rounded-md px-3 py-2 text-sm font-medium text-ps-text-sec transition-colors hover:bg-ps-chip hover:text-ps-text"
                   >
-                    My Competitions
+                    Profile
                   </Link>
-                )}
-                {extraLinks?.map((link) => (
                   <Link
-                    key={link.href}
-                    href={link.href}
+                    href="/wc/leaderboard"
                     onClick={() => setIsOpen(false)}
                     className="block rounded-md px-3 py-2 text-sm font-medium text-ps-text-sec transition-colors hover:bg-ps-chip hover:text-ps-text"
                   >
-                    {link.label}
+                    Leaderboard
                   </Link>
-                ))}
-                <LogoutButton />
-              </div>
+                  {extraLinks?.map((link) => (
+                    <Link
+                      key={link.href}
+                      href={link.href}
+                      onClick={() => setIsOpen(false)}
+                      className="block rounded-md px-3 py-2 text-sm font-medium text-ps-text-sec transition-colors hover:bg-ps-chip hover:text-ps-text"
+                    >
+                      {link.label}
+                    </Link>
+                  ))}
+
+                  {/* Theme toggle */}
+                  <button
+                    type="button"
+                    onClick={cycleTheme}
+                    className="flex w-full items-center justify-between rounded-md px-3 py-2 text-left text-sm font-medium text-ps-text-sec transition-colors hover:bg-ps-chip hover:text-ps-text"
+                    aria-label={`Theme: ${THEME_LABEL[theme]}. Tap to change.`}
+                  >
+                    <span>Theme</span>
+                    <span className="text-xs font-semibold text-ps-text-ter">
+                      {THEME_LABEL[theme]}
+                    </span>
+                  </button>
+                </div>
+
+                {/* Log out — separated */}
+                <div className="mt-1 border-t border-ps-border pt-1.5">
+                  <LogoutButton />
+                </div>
+              </>
             ) : (
               <Link
                 href="/login"
