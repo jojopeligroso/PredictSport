@@ -48,12 +48,12 @@ export function RulesContent({
       </div>
 
       {/* ── POINTS ───────────────────────────────────────────── */}
-      <CollapsibleSection id="points" title="Points Scoring System">
+      <CollapsibleSection id="points" title="Points Scoring System" defaultOpen>
         <PointsTable />
+      </CollapsibleSection>
 
-        <h2 className="mt-6 font-display text-base font-extrabold text-ps-text">
-          Ways to win
-        </h2>
+      {/* ── WAYS TO WIN ─────────────────────────────────────── */}
+      <CollapsibleSection id="ways-to-win" title="Ways to win">
         <ul className="mt-3 space-y-2">
           <ClassificationCard
             name="Format"
