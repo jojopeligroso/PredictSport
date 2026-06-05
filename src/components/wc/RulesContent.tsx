@@ -2,7 +2,7 @@
 
 /**
  * RulesContent — single-scroll rules page for /wc/rules.
- * Sticky pill nav tracks sections: Points, Format, Picks, Ties.
+ * Sticky pill nav tracks sections: Points, Format, Picks, Ties, FAQs.
  * Contextual floating dots appear for Format sub-sections.
  */
 
@@ -432,7 +432,7 @@ export function RulesContent({
       {/* ── FAQ ─────────────────────────────────────────────── */}
       <CollapsibleSection id="faq" title="FAQs" defaultOpen>
         <div className="mt-3 space-y-2">
-          <FAQGroup title="Basics">
+          <FAQGroup title="Basics" defaultOpen>
             <FAQ q="Do I have to predict every match?">
               No. You can skip any match. But every correct pick earns points, so
               the more you predict the better your chances on the leaderboard.
@@ -687,12 +687,14 @@ function JoinCta({
 function FAQGroup({
   title,
   children,
+  defaultOpen = false,
 }: {
   title: string;
   children: React.ReactNode;
+  defaultOpen?: boolean;
 }) {
   return (
-    <details className="group/faq">
+    <details className="group/faq" open={defaultOpen || undefined}>
       <summary className="mb-1.5 flex cursor-pointer items-center justify-between list-none [&::-webkit-details-marker]:hidden">
         <p className="font-mono text-[10px] font-bold uppercase tracking-[0.12em] text-ps-text-ter">
           {title}
