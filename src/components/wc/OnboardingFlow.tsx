@@ -490,10 +490,10 @@ export function OnboardingHomeSpotlight() {
         onClick={dismiss}
       />
 
-      {/* Highlight the Home link — position near the top nav */}
-      <div className="fixed left-1/2 top-16 z-50 w-full max-w-[340px] -translate-x-1/2 px-4">
-        {/* Arrow pointing up */}
-        <div className="flex justify-center">
+      {/* Highlight the Home link — anchored under the house icon */}
+      <div className="fixed left-0 top-[52px] z-50 w-full max-w-[340px] px-4">
+        {/* Arrow pointing up, aligned to house icon (~28px from left on 390px) */}
+        <div className="pl-5">
           <div className="h-0 w-0 border-x-8 border-b-8 border-x-transparent border-b-ps-surface" />
         </div>
         <div
