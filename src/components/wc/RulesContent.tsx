@@ -48,7 +48,7 @@ export function RulesContent({
       </div>
 
       {/* ── POINTS ───────────────────────────────────────────── */}
-      <CollapsibleSection id="points" title="Points">
+      <CollapsibleSection id="points" title="Points Scoring System">
         <PointsTable />
 
         <h2 className="mt-6 font-display text-base font-extrabold text-ps-text">
@@ -430,7 +430,7 @@ export function RulesContent({
       </CollapsibleSection>
 
       {/* ── FAQ ─────────────────────────────────────────────── */}
-      <CollapsibleSection id="faq" title="FAQ">
+      <CollapsibleSection id="faq" title="FAQ" defaultOpen>
         <div className="mt-3 space-y-2">
           <FAQGroup title="Basics">
             <FAQ q="Do I have to predict every match?">
@@ -521,13 +521,15 @@ function CollapsibleSection({
   id,
   title,
   children,
+  defaultOpen = false,
 }: {
   id: string;
   title: string;
   children: React.ReactNode;
+  defaultOpen?: boolean;
 }) {
   return (
-    <details id={id} open className="group mb-10">
+    <details id={id} open={defaultOpen || undefined} className="group mb-10">
       <summary className="flex cursor-pointer items-center justify-between list-none [&::-webkit-details-marker]:hidden">
         <h2 className="font-display text-base font-extrabold text-ps-text">
           {title}
