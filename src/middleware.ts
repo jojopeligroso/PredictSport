@@ -14,6 +14,9 @@ const SHELL_ALLOWED = [
   "/privacy",
   "/telegram",
   "/api",
+  "/predictions",
+  "/competitions",
+  "/leaderboard",
 ];
 
 export async function middleware(request: NextRequest) {
