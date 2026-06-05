@@ -1,6 +1,6 @@
 "use client";
 
-import React from "react";
+import React, { useState } from "react";
 
 interface EventAwaitingResult {
   id: string;
@@ -71,7 +71,7 @@ export function EventsAwaitingResults({
   events,
   onSelectEvent,
 }: EventsAwaitingResultsProps) {
-  const now = Date.now();
+  const [now] = useState(() => Date.now());
 
   const filtered: AnnotatedEvent[] = events
     .filter((e) => {

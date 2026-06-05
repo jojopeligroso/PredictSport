@@ -81,6 +81,7 @@ export default function MatchCard({
           aria-pressed={match.result === 'home_win'}
           className={`
             flex-1 min-w-0 flex flex-col items-center gap-1 px-1.5 py-1.5 rounded-lg transition-all duration-150 cursor-pointer
+            focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ps-amber
             ${match.result === 'home_win' ? `${selectedBgColor} ring-2 ring-ps-amber` : 'hover:bg-ps-chip'}
           `}
         >
@@ -159,6 +160,7 @@ export default function MatchCard({
           aria-pressed={match.result === 'away_win'}
           className={`
             flex-1 min-w-0 flex flex-col items-center gap-1 px-1.5 py-1.5 rounded-lg transition-all duration-150 cursor-pointer
+            focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ps-amber
             ${match.result === 'away_win' ? `${selectedBgColor} ring-2 ring-ps-amber` : 'hover:bg-ps-chip'}
           `}
         >

@@ -429,7 +429,7 @@ export function EventDetail({
 
         {/* Bebas title */}
         <h1
-          className="mt-1.5 font-display"
+          className="mt-1.5 font-display font-extrabold"
           style={{ fontSize: 32, lineHeight: 1.0, letterSpacing: 0.8 }}
         >
           {event.event_name}
@@ -479,7 +479,7 @@ export function EventDetail({
             {isLocked ? "Locked" : "Locks in"}
           </p>
           <p
-            className="mt-0.5 font-display text-ps-amber-deep"
+            className="mt-0.5 font-display font-extrabold text-ps-amber-deep"
             style={{ fontSize: 18, letterSpacing: 0.6 }}
           >
             {isLocked ? "LOCKED" : formatCountdown(event.lock_time)}
@@ -493,8 +493,8 @@ export function EventDetail({
             worth
           </span>
           <span
-            className="rounded-lg bg-ps-amber-soft px-2.5 py-1 font-display text-ps-amber-deep"
-            style={{ fontSize: 13, fontWeight: 800, letterSpacing: 0.5 }}
+            className="rounded-lg bg-ps-amber-soft px-2.5 py-1 font-display font-extrabold text-ps-amber-deep"
+            style={{ fontSize: 13, letterSpacing: 0.5 }}
           >
             +{totalPoints} PTS
           </span>
@@ -662,7 +662,7 @@ export function EventDetail({
                       >
                         {/* Position badge */}
                         <span
-                          className="flex items-center justify-center rounded-full font-display text-[12px]"
+                          className="flex items-center justify-center rounded-full font-display font-extrabold text-[12px]"
                           style={{
                             width: 26,
                             height: 26,
@@ -670,7 +670,6 @@ export function EventDetail({
                               ? "var(--ps-amber)"
                               : "var(--ps-chip)",
                             color: isAssigned ? "var(--ps-surface)" : "var(--ps-text-sec)",
-                            fontWeight: 800,
                           }}
                         >
                           {isAssigned ? assigned.position : ""}

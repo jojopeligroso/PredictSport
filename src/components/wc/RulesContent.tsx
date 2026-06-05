@@ -35,7 +35,7 @@ export function RulesContent({
 
       {/* How it works */}
       <div className="mb-10 rounded-xl border border-ps-border bg-ps-surface px-5 py-5 text-center">
-        <p className="font-mono text-[15px] uppercase tracking-[0.18em] text-ps-amber-deep">
+        <p className="font-display font-extrabold text-[15px] uppercase tracking-[0.18em] text-ps-amber-deep">
           How it works
         </p>
         <div className="mx-auto mt-3 flex w-fit flex-col gap-3">
@@ -696,7 +696,7 @@ function FAQGroup({
   return (
     <details className="group/faq" open={defaultOpen || undefined}>
       <summary className="mb-1.5 flex cursor-pointer items-center justify-between list-none [&::-webkit-details-marker]:hidden">
-        <p className="font-mono text-[10px] font-bold uppercase tracking-[0.12em] text-ps-text-ter">
+        <p className="font-display font-extrabold text-[10px] uppercase tracking-[0.12em] text-ps-text-ter">
           {title}
         </p>
         <svg

@@ -604,28 +604,6 @@ export function EventsSection({ competition, events, rounds, userRole }: EventsS
     setShowRoundBuilder(true);
   };
 
-  // Legacy quick-create (unused but kept for the "New Round" in empty state)
-  const handleQuickCreateRound = async () => {
-    try {
-      const res = await fetch("/api/admin/rounds", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          competition_id: competition.id,
-          round_number: nextRoundNumber,
-        }),
-      });
-      if (res.ok) {
-        router.refresh();
-      } else {
-        const data = await res.json();
-        alert(data.error ?? "Failed to create round");
-      }
-    } finally {
-      // quick-create cleanup
-    }
-  };
-
   // Group events by round_id
   const eventsByRound = new Map<string | null, EventWithPredictionTypes[]>();
   for (const event of events ?? []) {

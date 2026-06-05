@@ -10,17 +10,16 @@ export type SportKey = 'soccer' | 'f1' | 'gaa' | 'nba' | 'golf' | 'rugby' | 'ten
 
 // Unified warm pill style — ink text on muted amber background.
 // Sport differentiation is via emoji + label, not color.
+// All values use CSS custom properties so they adapt to light/dark mode.
 const PILL_STYLE = {
-  pillBg: 'rgba(40, 30, 20, 0.06)',
-  pillFg: '#5e554a',
-  pillFgDark: 'rgba(241, 236, 226, 0.62)',
-  pillFgVar: 'var(--ps-text-sec)',
+  pillBg: 'var(--ps-chip)',
+  pillFg: 'var(--ps-text-sec)',
 } as const;
 
 // Subtle bar accent — warm ink tint, not per-sport gradients.
 const BAR_STYLE = {
-  from: '#8b8275',
-  to: '#5e554a',
+  from: 'var(--ps-text-ter)',
+  to: 'var(--ps-text-sec)',
 } as const;
 
 export const SPORT_CONFIG: Record<
@@ -32,8 +31,6 @@ export const SPORT_CONFIG: Record<
     to: string;
     pillBg: string;
     pillFg: string;
-    pillFgDark: string;
-    pillFgVar: string;
   }
 > = {
   soccer: {

@@ -51,7 +51,7 @@ export default async function LeaderboardPage({ searchParams }: PageProps) {
     return (
       <div className="mx-auto max-w-2xl p-4 sm:p-6">
         <p className="text-[11px] font-extrabold lowercase tracking-tight text-ps-text">sports<span className="text-ps-amber">predict.</span></p>
-        <h1 className="mt-0.5 font-display text-[32px] leading-none tracking-wider text-ps-text">
+        <h1 className="mt-0.5 font-display font-extrabold text-[32px] leading-none tracking-wider text-ps-text">
           THE TABLE
         </h1>
         <div className="mt-8 rounded-2xl border border-ps-border bg-ps-surface p-12 text-center text-ps-text-sec">
@@ -71,7 +71,7 @@ export default async function LeaderboardPage({ searchParams }: PageProps) {
     return (
       <div className="mx-auto max-w-2xl p-4 sm:p-6">
         <p className="text-[11px] font-extrabold lowercase tracking-tight text-ps-text">sports<span className="text-ps-amber">predict.</span></p>
-        <h1 className="mt-0.5 font-display text-[32px] leading-none tracking-wider text-ps-text">
+        <h1 className="mt-0.5 font-display font-extrabold text-[32px] leading-none tracking-wider text-ps-text">
           THE TABLE
         </h1>
         <div className="mt-8 rounded-2xl border border-ps-border bg-ps-surface p-12 text-center text-ps-text-sec">
@@ -97,7 +97,7 @@ export default async function LeaderboardPage({ searchParams }: PageProps) {
             <p className="text-[11px] font-extrabold lowercase tracking-tight text-ps-text">
               sports<span className="text-ps-amber">predict.</span>
             </p>
-            <h1 className="mt-0.5 font-display text-[32px] leading-none tracking-wider text-ps-text">
+            <h1 className="mt-0.5 font-display font-extrabold text-[32px] leading-none tracking-wider text-ps-text">
               THE TABLE
             </h1>
           </div>
@@ -426,7 +426,7 @@ export default async function LeaderboardPage({ searchParams }: PageProps) {
           <p className="text-[11px] font-extrabold lowercase tracking-tight text-ps-text">
             sports<span className="text-ps-amber">predict.</span>
           </p>
-          <h1 className="mt-0.5 font-display text-[32px] leading-none tracking-wider text-ps-text">
+          <h1 className="mt-0.5 font-display font-extrabold text-[32px] leading-none tracking-wider text-ps-text">
             THE TABLE
           </h1>
           <p className="text-xs text-ps-text-ter font-mono">{memberList.length} players</p>

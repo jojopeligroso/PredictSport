@@ -315,6 +315,7 @@ export function CreateCompetitionForm({ alwaysOpen = false }: CreateCompetitionF
   // After competition creation
   const [competitionId, setCompetitionId] = useState<string | null>(null);
   const [inviteCode, setInviteCode] = useState<string | null>(null);
+  const [templateCreating, setTemplateCreating] = useState(false);
 
   // Step 4: round builder
   const [roundName, setRoundName] = useState("Round 1");
@@ -350,7 +351,7 @@ export function CreateCompetitionForm({ alwaysOpen = false }: CreateCompetitionF
   // GAA callout quote — picked once on mount, stable for the component's lifetime.
   // Buckets: 20% "Hon the lads", 5% romantic, 5% Kilkenny fact, 1% "Up the Faythe!",
   // 69% uniform random pick from the pool of 16 quotes (~4.3% each).
-  const gaaQuote = useMemo(() => {
+  const [gaaQuote] = useState(() => {
     const pool = [
       "Ye can put out the cigarettes now lads. This is championship!",
       "Well Joe Brolly, what do you think of that?",
@@ -373,7 +374,7 @@ export function CreateCompetitionForm({ alwaysOpen = false }: CreateCompetitionF
     if (r < 0.30) return "Did you know... Kilkenny are the most successful county in the history of Hurling.";
     if (r < 0.31) return "Up the Faythe!";
     return pool[Math.floor(Math.random() * pool.length)];
-  }, []);
+  });
 
   // Combined results: either active-league fixtures or text-search results
   const displayedResults = useMemo(() => {
@@ -626,8 +627,6 @@ export function CreateCompetitionForm({ alwaysOpen = false }: CreateCompetitionF
   ) : null;
 
   // Template creation — one API call creates competition + rounds + events
-  const [templateCreating, setTemplateCreating] = useState(false);
-
   async function createFromTemplate(template: string, templateName: string) {
     setTemplateCreating(true);
     setError(null);

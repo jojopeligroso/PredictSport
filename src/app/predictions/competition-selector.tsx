@@ -45,7 +45,7 @@ export function CompetitionSelector({
               aria-selected={isActive}
               onClick={() => handleSelect(comp.id)}
               className={[
-                "flex-shrink-0 rounded-xl border px-3 py-1.5 text-sm font-semibold transition-colors",
+                "flex-shrink-0 rounded-xl border px-3 py-1.5 text-sm font-semibold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ps-amber focus-visible:ring-offset-1",
                 isActive
                   ? "border-ps-amber bg-ps-amber-soft text-ps-amber-deep"
                   : "border-transparent bg-ps-chip text-ps-text-sec hover:text-ps-text",

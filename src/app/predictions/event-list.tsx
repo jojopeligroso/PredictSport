@@ -538,7 +538,7 @@ export function EventList({
 
         {/* Giant round name */}
         <h1
-          className="font-display text-ps-text"
+          className="font-sans text-ps-text"
           style={{
             fontSize: 44,
             lineHeight: 0.92,
@@ -606,7 +606,7 @@ export function EventList({
             <button
               key={mode}
               onClick={() => setViewMode(mode)}
-              className={`rounded-[7px] py-[7px] text-center text-[11px] font-bold transition-colors ${
+              className={`rounded-[7px] py-[7px] text-center text-[11px] font-bold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ps-amber ${
                 viewMode === mode
                   ? "bg-ps-surface text-ps-text shadow-[0_1px_3px_rgba(40,30,20,0.08)]"
                   : "text-ps-text-sec"
@@ -627,7 +627,7 @@ export function EventList({
                 key={id}
                 onClick={() => setFilterChip(id)}
                 className={[
-                  "shrink-0 rounded-full px-3 py-1.5 font-semibold transition-colors",
+                  "shrink-0 rounded-full px-3 py-1.5 font-semibold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ps-amber focus-visible:ring-offset-1",
                   filterChip === id
                     ? "bg-ps-text text-ps-bg"
                     : "border border-ps-border bg-ps-surface text-ps-text-sec",
@@ -717,7 +717,7 @@ export function EventList({
                 Last Round
               </p>
               <h2
-                className="font-display text-ps-text"
+                className="font-display font-extrabold text-ps-text"
                 style={{ fontSize: 32, lineHeight: 1, letterSpacing: 1 }}
               >
                 RESULTS
@@ -731,7 +731,7 @@ export function EventList({
                 You
               </p>
               <p
-                className="mt-1 font-display text-ps-green"
+                className="mt-1 font-display font-extrabold text-ps-green"
                 style={{ fontSize: 28, lineHeight: 1 }}
               >
                 +{resultedEvents.reduce((sum, e) => sum + (e.predictions?.[0]?.points_awarded ?? 0), 0)}

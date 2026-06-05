@@ -114,7 +114,7 @@ export function PersonDetail({
               Rank &middot; #{rank}
             </p>
             <h1
-              className="mt-1 font-display"
+              className="mt-1 font-display font-extrabold"
               style={{ fontSize: 36, lineHeight: 1, color: "#fff", letterSpacing: 0.6 }}
             >
               {person.displayName}
@@ -147,7 +147,7 @@ export function PersonDetail({
             >
               {s.label}
             </p>
-            <p className="mt-0.5 font-display" style={{ fontSize: 22, letterSpacing: 0.5, color: s.color }}>
+            <p className="mt-0.5 font-display font-extrabold" style={{ fontSize: 22, letterSpacing: 0.5, color: s.color }}>
               {s.val}
             </p>
           </div>

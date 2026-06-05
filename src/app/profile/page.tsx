@@ -25,7 +25,7 @@ export default async function ProfilePage() {
 
   return (
     <div className="mx-auto max-w-[600px] px-4 py-8 sm:px-6">
-      <h1 className="mb-6 font-light text-2xl uppercase tracking-[0.06em] text-ps-text">
+      <h1 className="mb-6 font-display font-extrabold text-2xl uppercase tracking-[0.06em] text-ps-text">
         Profile
       </h1>
       <ProfileForm user={profile as User} />

@@ -1,4 +1,4 @@
-import type { ReactNode } from "react";
+import type { CSSProperties, ReactNode } from "react";
 import { HOST_CITIES, type HostCitySlug } from "@/lib/wc/host-cities";
 
 /**
@@ -55,12 +55,13 @@ export function FixtureCardSurface({
 
   // Halo treatment — matches FixturesTabs.FixtureCard ringClass logic.
   // Outer gold halo + (for amber-leaning surfaces) an inner white separator.
-  // Uses WC26 trophy gold (#d4af37) rather than PredictSport amber (#f59e0b).
-  const haloClass = hasPick
+  // Uses the --ps-amber token (WC theme overrides it to trophy gold #d4af37).
+  const haloStyle: CSSProperties | undefined = hasPick
     ? onAmber
-      ? "shadow-[inset_0_0_0_2px_#fff,0_0_0_2px_rgba(212,175,55,0.7),0_1px_2px_rgba(0,0,0,0.15)]"
-      : "shadow-[0_0_0_2px_rgba(212,175,55,0.5),0_1px_2px_rgba(0,0,0,0.15)]"
-    : "shadow-sm";
+      ? { boxShadow: "inset 0 0 0 2px #fff, 0 0 0 2px color-mix(in srgb, var(--ps-amber) 70%, transparent), 0 1px 2px rgba(0,0,0,0.15)" }
+      : { boxShadow: "0 0 0 2px color-mix(in srgb, var(--ps-amber) 50%, transparent), 0 1px 2px rgba(0,0,0,0.15)" }
+    : undefined;
+  const haloClass = hasPick ? "" : "shadow-sm";
 
   return (
     <article
@@ -68,7 +69,7 @@ export function FixtureCardSurface({
         "overflow-hidden rounded-xl text-white transition-all",
         haloClass,
       ].join(" ")}
-      style={{ backgroundColor: cityMeta.color }}
+      style={{ backgroundColor: cityMeta.color, ...haloStyle }}
     >
       <header className="flex items-center justify-between gap-2 px-4 pt-3 text-[0.7rem] font-bold uppercase tracking-wide text-white/85">
         <span className="shrink-0">{headerLeft}</span>

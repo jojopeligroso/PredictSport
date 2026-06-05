@@ -74,7 +74,7 @@ export default async function AdminPage() {
   if (!competition) {
     return (
       <div className="mx-auto max-w-[480px] px-4 pt-6 pb-16">
-        <h1 className="font-display text-2xl uppercase tracking-tight text-ps-text">
+        <h1 className="font-display font-extrabold text-2xl uppercase tracking-tight text-ps-text">
           Match Day Desk
         </h1>
         <WcAdminClient mode="create" />

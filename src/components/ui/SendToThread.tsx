@@ -23,10 +23,9 @@ interface SendToThreadProps {
   members?: Member[];
 }
 
-const WA_GREEN = '#25d366';
-const WA_GREEN_DARK = '#128c4d';
-const WA_GREEN_SOFT_DARK = 'rgba(37,211,102,0.18)';
-const WA_GREEN_SOFT_LIGHT = 'rgba(37,211,102,0.14)';
+const WA_GREEN = 'var(--ps-wa-green, #25d366)';
+const WA_GREEN_DARK = 'var(--ps-wa-green-dark, #128c4d)';
+const WA_GREEN_SOFT = 'var(--ps-wa-green-soft, rgba(37,211,102,0.14))';
 
 // ─── Composer bottom sheet ────────────────────────────────────────────────────
 
@@ -302,7 +301,7 @@ export function SendToThread({
           style={{
             width: 30,
             height: 30,
-            background: sent ? WA_GREEN : WA_GREEN_SOFT_DARK,
+            background: sent ? WA_GREEN : WA_GREEN_SOFT,
             transform: sent ? 'scale(1.12)' : 'scale(1)',
             transition: 'transform 200ms ease-out, background 200ms ease-out',
             userSelect: 'none',
@@ -350,7 +349,7 @@ export function SendToThread({
         title="Tap to send · Hold to edit"
         className="inline-flex items-center gap-1.5 rounded-full px-3 py-1 font-semibold transition-opacity hover:opacity-80 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-1"
         style={{
-          background: sent ? WA_GREEN : WA_GREEN_SOFT_LIGHT,
+          background: sent ? WA_GREEN : WA_GREEN_SOFT,
           color: WA_GREEN_DARK,
           fontSize: 12,
           userSelect: 'none',

@@ -193,7 +193,7 @@ export function PredictionForm({
     "w-full rounded-md border border-ps-border-strong bg-ps-surface px-3 py-2 text-sm text-ps-text placeholder:text-ps-text-ter focus:border-ps-amber focus:outline-none focus:ring-1 focus:ring-ps-amber disabled:opacity-50 disabled:cursor-not-allowed";
 
   const selectionBtnClasses = (opt: string) =>
-    `flex-1 rounded-md border px-3 py-2 text-sm font-medium transition-colors disabled:cursor-not-allowed ${
+    `flex-1 rounded-md border px-3 py-2 text-sm font-medium transition-colors disabled:cursor-not-allowed focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ps-amber focus-visible:ring-offset-1 ${
       selection === opt
         ? "border-ps-amber bg-ps-amber-soft text-ps-text"
         : "border-ps-border bg-ps-surface text-ps-text-sec hover:border-ps-border-strong"
@@ -223,7 +223,7 @@ export function PredictionForm({
                   type="button"
                   onClick={() => !isLocked && setValue(opt)}
                   disabled={isLocked}
-                  className={`flex-1 rounded-md border px-3 py-2 text-sm font-medium transition-colors disabled:cursor-not-allowed ${
+                  className={`flex-1 rounded-md border px-3 py-2 text-sm font-medium transition-colors disabled:cursor-not-allowed focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ps-amber focus-visible:ring-offset-1 ${
                     value === opt
                       ? "border-ps-amber bg-ps-amber-soft text-ps-text"
                       : "border-ps-border bg-ps-surface text-ps-text-sec hover:border-ps-border-strong"
@@ -286,7 +286,7 @@ export function PredictionForm({
                   type="button"
                   onClick={() => !isLocked && setValue(opt)}
                   disabled={isLocked}
-                  className={`flex-1 rounded-md border px-3 py-2 text-sm font-medium transition-colors disabled:cursor-not-allowed ${
+                  className={`flex-1 rounded-md border px-3 py-2 text-sm font-medium transition-colors disabled:cursor-not-allowed focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ps-amber focus-visible:ring-offset-1 ${
                     value === opt
                       ? "border-ps-amber bg-ps-amber-soft text-ps-text"
                       : "border-ps-border bg-ps-surface text-ps-text-sec hover:border-ps-border-strong"
@@ -514,7 +514,7 @@ export function PredictionForm({
           <button
             type="submit"
             disabled={isSubmitting || isLocked}
-            className="rounded-xl bg-ps-text px-4 py-2 text-sm font-semibold text-ps-bg transition-opacity hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed"
+            className="rounded-xl bg-ps-text px-4 py-2 text-sm font-semibold text-ps-bg transition-opacity hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ps-amber focus-visible:ring-offset-1"
           >
             {isSubmitting
               ? "Saving..."

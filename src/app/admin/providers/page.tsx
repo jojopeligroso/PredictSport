@@ -123,7 +123,7 @@ export default function ProviderHealthPage() {
                   className="rounded-xl border border-ps-border bg-ps-card p-4"
                 >
                   <div className="flex items-center justify-between">
-                    <h2 className="font-display text-base font-bold text-ps-text">
+                    <h2 className="font-display text-base font-extrabold text-ps-text">
                       {name}
                     </h2>
                     <span className="font-mono text-xs text-ps-text-ter">
@@ -168,7 +168,7 @@ export default function ProviderHealthPage() {
           {/* Failures detail */}
           {data.results.some((r) => r.status === "fail") && (
             <div className="mt-6">
-              <h2 className="font-display text-base font-bold text-ps-text">
+              <h2 className="font-display text-base font-extrabold text-ps-text">
                 Failures
               </h2>
               <div className="mt-2 space-y-2">

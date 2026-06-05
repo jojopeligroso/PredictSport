@@ -270,19 +270,6 @@ function getDatePreset(preset: string): { from: string; to: string } {
   }
 }
 
-function StarFilledIcon() {
-  return (
-    <svg
-      className="h-4 w-4 shrink-0 text-ps-amber"
-      viewBox="0 0 16 16"
-      fill="currentColor"
-      aria-hidden="true"
-    >
-      <path d="M8 1.5l1.9 3.85 4.25.62-3.08 3 .73 4.25L8 11.1l-3.8 2.12.73-4.25-3.08-3 4.25-.62L8 1.5z" />
-    </svg>
-  );
-}
-
 function StarOutlineIcon() {
   return (
     <svg

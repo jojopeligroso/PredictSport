@@ -40,6 +40,11 @@
   --ps-purple-soft: rgba(160, 32, 240, 0.14);
 
   /* Sport pills — unified warm tones (no per-sport hues) */
+
+  /* Third-party brand colors */
+  --ps-wa-green: #25d366;
+  --ps-wa-green-dark: #128c4d;
+  --ps-wa-green-soft: rgba(37, 211, 102, 0.14);
 }
 
 /* Dark mode tokens — applied when html[data-theme="dark"] OR when no explicit
@@ -132,6 +137,14 @@ body {
   }
 }
 
+/* Baseline focus indicator — amber ring on all interactive elements.
+   Components with explicit Tailwind focus-visible: classes override this
+   via higher specificity. This catches any button/link we forgot. */
+:where(button, a, [role="button"], select):focus-visible {
+  outline: 2px solid var(--ps-amber);
+  outline-offset: 2px;
+}
+
 /* Text wrap */
 p, h1, h2, h3, h4, h5, h6 {
   text-wrap: pretty;
@@ -144,6 +157,17 @@ p, h1, h2, h3, h4, h5, h6 {
   margin-right: auto;
   padding-left: 16px;
   padding-right: 16px;
+}
+
+/* Respect reduced motion preference — disable all transitions and animations
+   globally. Individual elements can opt back in with motion-safe: if needed. */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
 }
 
 /* Hide scrollbars in scroll containers */

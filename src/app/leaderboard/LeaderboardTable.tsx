@@ -405,7 +405,7 @@ function PodiumCard({
         onClick={onExpand}
         aria-expanded={isExpanded}
         aria-controls={`detail-${entry.user_id}`}
-        className={`relative w-full overflow-hidden bg-gradient-to-r ${config.gradient} p-[12px_14px] text-left`}
+        className={`relative w-full overflow-hidden bg-gradient-to-r ${config.gradient} p-[12px_14px] text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ps-amber focus-visible:ring-offset-1`}
         style={{ boxShadow: "0 2px 10px rgba(0,0,0,0.10)" }}
       >
         {/* Faded rank watermark — bottom-right, 110px, 10% opacity */}
@@ -465,7 +465,7 @@ function PodiumCard({
 
           {/* Percentage — Bebas Neue 26px, with pts sub-label */}
           <div className="shrink-0 text-right">
-            <p className="font-display leading-none text-white" style={{ fontSize: 26, letterSpacing: 0.6 }}>
+            <p className="font-display font-extrabold leading-none text-white" style={{ fontSize: 26, letterSpacing: 0.6 }}>
               {entry.percentage.toFixed(1)}%
             </p>
             <p
@@ -521,7 +521,7 @@ function TableRow({
         onClick={onExpand}
         aria-expanded={isExpanded}
         aria-controls={`detail-${entry.user_id}`}
-        className={`group w-full px-3 py-[11px] text-left transition-colors hover:bg-ps-chip ${
+        className={`group w-full px-3 py-[11px] text-left transition-colors hover:bg-ps-chip focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ps-amber ${
           !isLast ? "border-b border-ps-border" : ""
         }`}
       >
