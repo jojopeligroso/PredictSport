@@ -64,11 +64,11 @@ export function RulesContent({
             description="Total points across the whole tournament. Every correct pick counts. Most points wins."
           />
           <li>
-            <details className="group/win rounded-lg bg-ps-chip">
-              <summary className="flex cursor-pointer items-center justify-between list-none px-3.5 py-2.5 [&::-webkit-details-marker]:hidden">
-                <p className="text-sm font-bold text-ps-text">KO Bracket</p>
+            <details className="group/more">
+              <summary className="flex cursor-pointer items-center gap-1.5 list-none text-xs font-semibold text-ps-text-sec [&::-webkit-details-marker]:hidden">
+                <span>More ways to win</span>
                 <svg
-                  className="h-4 w-4 shrink-0 text-ps-text-sec transition-transform group-open/win:rotate-180"
+                  className="h-3.5 w-3.5 shrink-0 transition-transform group-open/more:rotate-180"
                   fill="none"
                   viewBox="0 0 24 24"
                   stroke="currentColor"
@@ -81,32 +81,16 @@ export function RulesContent({
                   />
                 </svg>
               </summary>
-              <p className="px-3.5 pb-2.5 text-xs leading-relaxed text-ps-text-sec">
-                Once groups are done, predict every knockout match from the Round of 32 to the Final.
-              </p>
-            </details>
-          </li>
-          <li>
-            <details className="group/win2 rounded-lg bg-ps-chip">
-              <summary className="flex cursor-pointer items-center justify-between list-none px-3.5 py-2.5 [&::-webkit-details-marker]:hidden">
-                <p className="text-sm font-bold text-ps-text">Full Bracket</p>
-                <svg
-                  className="h-4 w-4 shrink-0 text-ps-text-sec transition-transform group-open/win2:rotate-180"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  stroke="currentColor"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M19 9l-7 7-7-7"
-                  />
-                </svg>
-              </summary>
-              <p className="px-3.5 pb-2.5 text-xs leading-relaxed text-ps-text-sec">
-                Before kickoff, predict every group finish and the entire knockout bracket. Locks at first whistle.
-              </p>
+              <ul className="mt-2 space-y-2">
+                <ClassificationCard
+                  name="KO Bracket"
+                  description="Once groups are done, predict every knockout match from the Round of 32 to the Final."
+                />
+                <ClassificationCard
+                  name="Full Bracket"
+                  description="Before kickoff, predict every group finish and the entire knockout bracket. Locks at first whistle."
+                />
+              </ul>
             </details>
           </li>
         </ul>
