@@ -490,6 +490,23 @@ function PreviewOverlay({ isAuthenticated }: { isAuthenticated: boolean }) {
   const [code, setCode] = useState("");
   const [joinError, setJoinError] = useState<string | null>(null);
   const [isJoining, setIsJoining] = useState(false);
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  // Dismiss mobile keyboard + viewport zoom on any touch outside the input.
+  // Single tap anywhere else on the page → blur → browser resets zoom to default.
+  useEffect(() => {
+    function handleTouchOutside(e: TouchEvent) {
+      if (
+        inputRef.current &&
+        document.activeElement === inputRef.current &&
+        !inputRef.current.contains(e.target as Node)
+      ) {
+        inputRef.current.blur();
+      }
+    }
+    document.addEventListener("touchstart", handleTouchOutside);
+    return () => document.removeEventListener("touchstart", handleTouchOutside);
+  }, []);
 
   async function handleJoinSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -544,6 +561,7 @@ function PreviewOverlay({ isAuthenticated }: { isAuthenticated: boolean }) {
                 Invite code
               </label>
               <input
+                ref={inputRef}
                 id="overlay-invite-code"
                 type="text"
                 autoComplete="off"
