@@ -157,12 +157,43 @@ export function WcPicksHub({ md1, fixturesData, groupsData }: WcPicksHubProps) {
 
       {activeTab === "groups" && (
         <div className="mx-auto max-w-[480px] px-4 pt-4 pb-16">
-          <FifaGroupsGrid
-            mode="accordion"
-            groupEvents={groupsData?.groupEvents}
-            predictions={groupsData?.predictions}
-            competitionId={groupsData?.competitionId}
-          />
+          <div className="relative">
+            <div
+              className={
+                !md1.isMember
+                  ? "pointer-events-none select-none [filter:blur(6px)_saturate(0.7)]"
+                  : ""
+              }
+              aria-hidden={!md1.isMember || undefined}
+            >
+              <FifaGroupsGrid
+                mode="accordion"
+                groupEvents={groupsData?.groupEvents}
+                predictions={groupsData?.predictions}
+                competitionId={groupsData?.competitionId}
+                windowLocked={md1.windowLocked || !md1.isMember}
+              />
+            </div>
+            {!md1.isMember && (
+              <div className="pointer-events-none absolute inset-0 flex items-start justify-center pt-6">
+                <div className="pointer-events-auto rounded-2xl border border-ps-border bg-ps-surface px-5 py-5 text-center shadow-lg">
+                  <h2 className="font-display text-lg font-extrabold uppercase tracking-tight text-ps-text">
+                    Join to make group picks
+                  </h2>
+                  <p className="mt-1.5 text-xs text-ps-text-sec">
+                    Head to the Upcoming tab to join with an invite code.
+                  </p>
+                  <button
+                    type="button"
+                    onClick={() => handleTabChange("upcoming")}
+                    className="mt-3 w-full rounded-xl bg-ps-amber px-4 py-3 text-sm font-semibold text-ps-bg transition-opacity hover:opacity-90"
+                  >
+                    Go to Upcoming
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
         </div>
       )}
     </>

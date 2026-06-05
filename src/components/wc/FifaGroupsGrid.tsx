@@ -14,6 +14,8 @@ interface FifaGroupsGridProps {
   predictions?: Prediction[];
   /** Competition ID, needed for accordion mode. */
   competitionId?: string;
+  /** Lock the pick list (non-members, locked rounds). */
+  windowLocked?: boolean;
 }
 
 export function FifaGroupsGrid({
@@ -21,6 +23,7 @@ export function FifaGroupsGrid({
   groupEvents,
   predictions,
   competitionId,
+  windowLocked,
 }: FifaGroupsGridProps) {
   const [expandedGroup, setExpandedGroup] = useState<string | null>(null);
 
@@ -64,6 +67,7 @@ export function FifaGroupsGrid({
           events={groupEvents.get(expandedGroup) ?? []}
           predictions={predictions ?? []}
           competitionId={competitionId}
+          windowLocked={windowLocked ?? false}
         />
       )}
     </div>
@@ -75,11 +79,13 @@ function AccordionPanel({
   events,
   predictions,
   competitionId,
+  windowLocked,
 }: {
   groupId: string;
   events: WindowEvent[];
   predictions: Prediction[];
   competitionId: string;
+  windowLocked: boolean;
 }) {
   if (events.length === 0) {
     return (
@@ -100,7 +106,7 @@ function AccordionPanel({
         competitionId={competitionId}
         events={events}
         predictions={predictions}
-        windowLocked={false}
+        windowLocked={windowLocked}
         surface="compact"
       />
     </div>

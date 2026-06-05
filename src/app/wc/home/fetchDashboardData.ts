@@ -218,9 +218,12 @@ export async function fetchDashboardData(): Promise<DashboardResult> {
     currentRound.status === "locked" || currentRound.status === "scored";
 
   // 7. Bracket progress
+  // Group picks must be counted across ALL group-stage events for the
+  // competition, not just the current round's eventRows. Otherwise the
+  // progress bar resets/undercounts once the dashboard round advances.
   let bracketProgress: { pct: number; label: string } | null = null;
   if (user && isMember) {
-    const [bracketSubResult, groupPicksResult] = await Promise.all([
+    const [bracketSubResult, groupEventsResult] = await Promise.all([
       supabase
         .from("bracket_prediction_submissions")
         .select("bracket_data")
@@ -229,19 +232,28 @@ export async function fetchDashboardData(): Promise<DashboardResult> {
         .eq("is_superseded", false)
         .maybeSingle(),
       supabase
+        .from("events")
+        .select("id")
+        .eq("competition_id", competition.id)
+        .like("external_event_id", "manual:wc2026-grp-%"),
+    ]);
+
+    const allGroupEventIds = (groupEventsResult.data ?? []).map(
+      (e: { id: string }) => e.id,
+    );
+
+    let groupPicksCount = 0;
+    if (allGroupEventIds.length > 0) {
+      const { count } = await supabase
         .from("predictions")
         .select("id", { count: "exact", head: true })
         .eq("user_id", user.id)
         .eq("prediction_type", "winner")
-        .in(
-          "event_id",
-          eventRows
-            .filter((e) => e.external_event_id?.includes("wc2026-grp-"))
-            .map((e) => e.id),
-        ),
-    ]);
+        .in("event_id", allGroupEventIds);
+      groupPicksCount = count ?? 0;
+    }
+
     const bracketData = (bracketSubResult.data?.bracket_data as BracketSubmissionData) ?? null;
-    const groupPicksCount = groupPicksResult.count ?? 0;
     const progress = describeDraftProgress(bracketData, groupPicksCount);
     if (progress.pct > 0) {
       bracketProgress = progress;
