@@ -56,21 +56,59 @@ export function RulesContent({
         </h2>
         <ul className="mt-3 space-y-2">
           <ClassificationCard
-            name="Overall"
-            description="Total points across the whole tournament. Every correct pick counts. Most points wins."
-          />
-          <ClassificationCard
             name="Format"
             description="Survivor-style elimination that mirrors the World Cup itself. Groups, knockouts, last one standing. See the Format section below for the full breakdown."
           />
           <ClassificationCard
-            name="Full Bracket"
-            description="Before kickoff, predict every group finish and the entire knockout bracket. Locks at first whistle."
+            name="Overall"
+            description="Total points across the whole tournament. Every correct pick counts. Most points wins."
           />
-          <ClassificationCard
-            name="KO Bracket"
-            description="Once groups are done, predict every knockout match from the Round of 32 to the Final."
-          />
+          <li>
+            <details className="group/win rounded-lg bg-ps-chip">
+              <summary className="flex cursor-pointer items-center justify-between list-none px-3.5 py-2.5 [&::-webkit-details-marker]:hidden">
+                <p className="text-sm font-bold text-ps-text">KO Bracket</p>
+                <svg
+                  className="h-4 w-4 shrink-0 text-ps-text-sec transition-transform group-open/win:rotate-180"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M19 9l-7 7-7-7"
+                  />
+                </svg>
+              </summary>
+              <p className="px-3.5 pb-2.5 text-xs leading-relaxed text-ps-text-sec">
+                Once groups are done, predict every knockout match from the Round of 32 to the Final.
+              </p>
+            </details>
+          </li>
+          <li>
+            <details className="group/win2 rounded-lg bg-ps-chip">
+              <summary className="flex cursor-pointer items-center justify-between list-none px-3.5 py-2.5 [&::-webkit-details-marker]:hidden">
+                <p className="text-sm font-bold text-ps-text">Full Bracket</p>
+                <svg
+                  className="h-4 w-4 shrink-0 text-ps-text-sec transition-transform group-open/win2:rotate-180"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M19 9l-7 7-7-7"
+                  />
+                </svg>
+              </summary>
+              <p className="px-3.5 pb-2.5 text-xs leading-relaxed text-ps-text-sec">
+                Before kickoff, predict every group finish and the entire knockout bracket. Locks at first whistle.
+              </p>
+            </details>
+          </li>
         </ul>
       </CollapsibleSection>
 
