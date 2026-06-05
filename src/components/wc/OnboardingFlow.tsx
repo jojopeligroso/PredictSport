@@ -6,6 +6,7 @@ import {
   useState,
   useCallback,
   useEffect,
+  useRef,
 } from "react";
 import { useRouter } from "next/navigation";
 import { useTheme, type ResolvedTheme } from "@/components/ThemeProvider";
@@ -85,6 +86,7 @@ export function OnboardingSection({
   children: React.ReactNode;
 }) {
   const { step, isRevealed, advance, skip } = useOnboarding();
+  const sectionRef = useRef<HTMLDivElement>(null);
 
   // Not in onboarding mode — render normally
   if (step === -1) return <>{children}</>;
@@ -95,7 +97,7 @@ export function OnboardingSection({
   // "other" sections stay dimmed during the tour
   if (id === "other") {
     return (
-      <div className="pointer-events-none opacity-30 transition-opacity duration-500">
+      <div className="pointer-events-none opacity-15 transition-opacity duration-500">
         {children}
       </div>
     );
@@ -107,14 +109,54 @@ export function OnboardingSection({
 
   if (!revealed) {
     return (
-      <div className="pointer-events-none opacity-30 transition-opacity duration-500">
+      <div className="pointer-events-none opacity-15 transition-opacity duration-500">
         {children}
       </div>
     );
   }
 
   return (
-    <div className="animate-in slide-in-from-bottom-4 duration-500 ease-out">
+    <ActiveSection
+      isActiveStep={isActiveStep}
+      sectionRef={sectionRef}
+      tooltip={tooltip}
+      advance={advance}
+      skip={skip}
+    >
+      {children}
+    </ActiveSection>
+  );
+}
+
+function ActiveSection({
+  isActiveStep,
+  sectionRef,
+  tooltip,
+  advance,
+  skip,
+  children,
+}: {
+  isActiveStep: boolean;
+  sectionRef: React.RefObject<HTMLDivElement | null>;
+  tooltip: { title: string; description: string };
+  advance: () => void;
+  skip: () => void;
+  children: React.ReactNode;
+}) {
+  useEffect(() => {
+    if (isActiveStep && sectionRef.current) {
+      sectionRef.current.scrollIntoView({ behavior: "smooth", block: "center" });
+    }
+  }, [isActiveStep, sectionRef]);
+
+  return (
+    <div
+      ref={sectionRef}
+      className={[
+        "animate-in slide-in-from-bottom-4 duration-500 ease-out",
+        isActiveStep ? "relative z-10" : "",
+      ].join(" ")}
+    >
       {children}
       {isActiveStep && (
         <OnboardingTooltip
@@ -335,8 +377,17 @@ export function OnboardingFlow({ children }: OnboardingFlowProps) {
         </FullScreenCard>
       )}
 
-      {/* Steps 2-4: Dashboard with progressive reveal */}
-      {step >= 2 && children}
+      {/* Steps 2-4: Dashboard with progressive reveal + dark backdrop */}
+      {step >= 2 && (
+        <div className="relative">
+          {/* Full-screen dark overlay — sits above dashboard but below active sections */}
+          <div
+            className="fixed inset-0 z-[5] bg-black/40 transition-opacity duration-500"
+            aria-hidden="true"
+          />
+          {children}
+        </div>
+      )}
     </OnboardingContext.Provider>
   );
 }

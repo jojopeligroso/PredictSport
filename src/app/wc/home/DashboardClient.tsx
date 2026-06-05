@@ -181,14 +181,7 @@ export function DashboardClient({
               competitionId={competitionId}
             />
           ) : (
-            <div className="rounded-xl border border-ps-border bg-ps-surface px-4 py-5 text-center">
-              <p className="text-[11px] font-semibold uppercase tracking-wider text-ps-text-ter">
-                Your group
-              </p>
-              <p className="mt-1 text-xs text-ps-text-ter">
-                Your group will be drawn before the first match.
-              </p>
-            </div>
+            <MockGroupCard />
           )}
         </section>
       </OnboardingSection>
@@ -332,6 +325,55 @@ export function DashboardClient({
   }
 
   return dashboard;
+}
+
+/** Placeholder group table shown during onboarding when no classification exists. */
+function MockGroupCard() {
+  const mockRows = [
+    { label: "You", pts: 0, isYou: true },
+    { label: "Player 2", pts: 0, isYou: false },
+    { label: "Player 3", pts: 0, isYou: false },
+    { label: "Player 4", pts: 0, isYou: false },
+  ];
+
+  return (
+    <div className="rounded-xl border border-ps-border bg-ps-surface p-4">
+      <div className="flex items-center justify-between">
+        <h3 className="text-base font-bold text-ps-text">Your Group</h3>
+        <Link
+          href="/wc/leaderboard"
+          className="text-[13px] font-semibold text-ps-amber transition-opacity hover:opacity-80"
+        >
+          See all groups →
+        </Link>
+      </div>
+      <p className="mt-0.5 text-[11px] font-semibold uppercase tracking-wider text-ps-text-ter">
+        Group X
+      </p>
+      <div className="mt-3 space-y-0 divide-y divide-ps-border">
+        {mockRows.map((row, i) => (
+          <div
+            key={row.label}
+            className={[
+              "flex items-center gap-3 py-2",
+              row.isYou ? "font-bold text-ps-amber" : "text-ps-text",
+            ].join(" ")}
+          >
+            <span className="w-4 shrink-0 font-mono text-[11px] tabular-nums text-ps-text-ter">
+              {i + 1}.
+            </span>
+            <span className="flex-1 text-sm">{row.label}</span>
+            <span className="font-mono text-[11px] tabular-nums text-ps-text-sec">
+              {row.pts} pts
+            </span>
+          </div>
+        ))}
+      </div>
+      <p className="mt-3 text-center text-xs text-ps-text-ter">
+        Groups will be drawn before the first match.
+      </p>
+    </div>
+  );
 }
 
 /** Single result row with score, user prediction, correctness, and points. */
