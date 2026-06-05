@@ -148,13 +148,16 @@ export function RulesContent({
                 14 pts
               </span>
             </div>
-            {/* Row 2 — You */}
+            {/* Row 2 — Scrooch (YOU) */}
             <div className="flex items-center border-b border-ps-border bg-ps-amber/5 px-4 py-2.5">
               <span className="w-6 text-center font-mono text-xs font-bold text-ps-text-ter">
                 2
               </span>
               <span className="flex-1 pl-2 text-sm font-semibold text-ps-text">
-                You
+                Scrooch
+                <span className="ml-1.5 rounded bg-ps-amber/20 px-1 py-0.5 text-[10px] font-bold text-ps-amber">
+                  YOU
+                </span>
               </span>
               <span className="mr-2 rounded bg-ps-green/15 px-1.5 py-0.5 text-[10px] font-bold text-ps-green">
                 SAFE
@@ -194,12 +197,12 @@ export function RulesContent({
                 4th place is always cut
               </p>
             </div>
-            {/* Row 4 — Scrooch (OUT) */}
+            {/* Row 4 — Gerry Ramos (OUT) */}
             <div className="flex items-center bg-ps-red/5 px-4 py-2.5 opacity-50">
               <span className="w-6 text-center font-mono text-xs font-bold text-ps-text-ter">
                 4
               </span>
-              <span className="flex-1 pl-2 text-sm text-ps-text">Scrooch</span>
+              <span className="flex-1 pl-2 text-sm text-ps-text">Gerry Ramos</span>
               <span className="mr-2 rounded bg-ps-red/15 px-1.5 py-0.5 text-[10px] font-bold text-ps-red">
                 OUT
               </span>
@@ -277,13 +280,16 @@ export function RulesContent({
             <div className="border-b border-ps-border px-4 py-1 text-center font-mono text-[10px] text-ps-text-ter">
               &middot; &middot; &middot;
             </div>
-            {/* You at rank 14 */}
+            {/* Scrooch (YOU) at rank 14 */}
             <div className="flex items-center border-b border-ps-border bg-ps-amber/5 px-4 py-2.5">
               <span className="w-6 text-center font-mono text-xs font-bold text-ps-text-ter">
                 14
               </span>
               <span className="flex-1 pl-2 text-sm font-semibold text-ps-text">
-                You
+                Scrooch
+                <span className="ml-1.5 rounded bg-ps-amber/20 px-1 py-0.5 text-[10px] font-bold text-ps-amber">
+                  YOU
+                </span>
               </span>
               <span className="w-14 text-right font-mono text-xs font-bold text-ps-text">
                 &mdash;
@@ -310,7 +316,7 @@ export function RulesContent({
               </p>
               <div className="mt-1.5 flex flex-wrap gap-1">
                 <span className="text-[10px] text-ps-text-ter/40 line-through">
-                  Scrooch
+                  Gerry Ramos
                 </span>
                 {Array.from({ length: 15 }, (_, i) => (
                   <span
