@@ -1,0 +1,938 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Translation Sheet — sportspredict. World Cup 2026</title>
+<style>
+  :root {
+    --cream: #efe9de;
+    --ink: #191512;
+    --amber: #f59e0b;
+    --green: #0aa86d;
+    --red: #e23d4f;
+    --border: #d4cfc6;
+    --card-bg: #fff;
+    --input-bg: #faf8f5;
+    --comment-bg: #fef9ee;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: Inter, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    background: var(--cream);
+    color: var(--ink);
+    line-height: 1.5;
+    padding: 0 0 120px;
+    -webkit-text-size-adjust: 100%;
+  }
+
+  header {
+    background: var(--ink);
+    color: var(--cream);
+    padding: 24px 16px;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+  }
+
+  header h1 {
+    font-size: 20px;
+    font-weight: 800;
+    letter-spacing: -0.02em;
+  }
+
+  header h1 span { color: var(--amber); }
+
+  header p {
+    font-size: 13px;
+    opacity: 0.7;
+    margin-top: 4px;
+  }
+
+  .instructions {
+    padding: 16px;
+    background: var(--comment-bg);
+    border-bottom: 1px solid var(--border);
+    font-size: 13px;
+    line-height: 1.6;
+  }
+
+  .instructions summary {
+    font-weight: 700;
+    font-size: 14px;
+    cursor: pointer;
+    padding: 4px 0;
+  }
+
+  .instructions ul {
+    margin: 8px 0 0 20px;
+  }
+
+  .instructions li { margin-bottom: 4px; }
+  .instructions code {
+    background: rgba(0,0,0,0.06);
+    padding: 1px 4px;
+    border-radius: 3px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12px;
+  }
+
+  .toc {
+    padding: 12px 16px;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .toc h2 {
+    font-size: 13px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: #888;
+    margin-bottom: 8px;
+  }
+
+  .toc a {
+    display: inline-block;
+    font-size: 13px;
+    color: var(--ink);
+    text-decoration: none;
+    background: var(--card-bg);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 4px 10px;
+    margin: 2px 4px 2px 0;
+  }
+
+  .toc a:active { background: var(--amber); color: #fff; }
+
+  .section {
+    padding: 16px;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .section h2 {
+    font-size: 17px;
+    font-weight: 800;
+    margin-bottom: 12px;
+    letter-spacing: -0.01em;
+    scroll-margin-top: 80px;
+  }
+
+  .entry {
+    background: var(--card-bg);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 12px;
+    margin-bottom: 10px;
+  }
+
+  .entry-key {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    color: #888;
+    margin-bottom: 4px;
+    word-break: break-all;
+  }
+
+  .entry-english {
+    font-size: 14px;
+    font-weight: 600;
+    margin-bottom: 8px;
+    line-height: 1.4;
+  }
+
+  .entry-english code {
+    background: rgba(245, 158, 11, 0.15);
+    color: #b45309;
+    padding: 1px 4px;
+    border-radius: 3px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12px;
+  }
+
+  .translation-input {
+    width: 100%;
+    min-height: 44px;
+    padding: 10px 12px;
+    border: 2px solid var(--border);
+    border-radius: 6px;
+    font-size: 14px;
+    font-family: Inter, sans-serif;
+    background: var(--input-bg);
+    color: var(--ink);
+    resize: vertical;
+    transition: border-color 0.15s;
+  }
+
+  .translation-input:focus {
+    outline: none;
+    border-color: var(--amber);
+    background: #fff;
+  }
+
+  .translation-input::placeholder {
+    color: #bbb;
+    font-style: italic;
+  }
+
+  .comment-toggle {
+    display: inline-block;
+    font-size: 12px;
+    color: #888;
+    cursor: pointer;
+    margin-top: 6px;
+    border: none;
+    background: none;
+    text-decoration: underline;
+    padding: 0;
+  }
+
+  .comment-area {
+    display: none;
+    margin-top: 6px;
+  }
+
+  .comment-area.visible { display: block; }
+
+  .comment-input {
+    width: 100%;
+    min-height: 36px;
+    padding: 8px 10px;
+    border: 1px dashed var(--border);
+    border-radius: 6px;
+    font-size: 12px;
+    font-family: Inter, sans-serif;
+    background: var(--comment-bg);
+    color: var(--ink);
+    resize: vertical;
+  }
+
+  .comment-input:focus {
+    outline: none;
+    border-color: var(--amber);
+  }
+
+  .comment-input::placeholder {
+    color: #bbb;
+  }
+
+  .filled .translation-input {
+    border-color: var(--green);
+    background: #f0faf5;
+  }
+
+  .progress-bar {
+    position: sticky;
+    top: 68px;
+    z-index: 99;
+    background: var(--ink);
+    padding: 6px 16px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .progress-track {
+    flex: 1;
+    height: 6px;
+    background: rgba(255,255,255,0.15);
+    border-radius: 3px;
+    overflow: hidden;
+  }
+
+  .progress-fill {
+    height: 100%;
+    background: var(--amber);
+    border-radius: 3px;
+    transition: width 0.3s;
+    width: 0%;
+  }
+
+  .progress-text {
+    font-size: 12px;
+    color: rgba(255,255,255,0.7);
+    font-family: 'JetBrains Mono', monospace;
+    white-space: nowrap;
+  }
+
+  .actions {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    background: var(--ink);
+    padding: 12px 16px;
+    display: flex;
+    gap: 8px;
+    z-index: 100;
+  }
+
+  .actions button {
+    flex: 1;
+    padding: 12px;
+    border: none;
+    border-radius: 8px;
+    font-size: 14px;
+    font-weight: 700;
+    cursor: pointer;
+    font-family: Inter, sans-serif;
+  }
+
+  .btn-copy {
+    background: var(--card-bg);
+    color: var(--ink);
+  }
+
+  .btn-copy:active { background: #ddd; }
+
+  .btn-email {
+    background: var(--amber);
+    color: #fff;
+  }
+
+  .btn-email:active { background: #d97706; }
+
+  .btn-save {
+    background: var(--green);
+    color: #fff;
+    flex: 0.6;
+  }
+
+  .btn-save:active { background: #088a59; }
+
+  .toast {
+    position: fixed;
+    bottom: 80px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: var(--ink);
+    color: var(--cream);
+    padding: 10px 20px;
+    border-radius: 8px;
+    font-size: 13px;
+    font-weight: 600;
+    opacity: 0;
+    transition: opacity 0.3s;
+    pointer-events: none;
+    z-index: 200;
+  }
+
+  .toast.show { opacity: 1; }
+
+  .translator-notes {
+    padding: 16px;
+    font-size: 13px;
+    line-height: 1.6;
+  }
+
+  .translator-notes h2 {
+    font-size: 17px;
+    font-weight: 800;
+    margin-bottom: 10px;
+  }
+
+  .translator-notes ol {
+    margin-left: 20px;
+  }
+
+  .translator-notes li {
+    margin-bottom: 6px;
+  }
+
+  .translator-notes strong { font-weight: 700; }
+
+  @media (min-width: 640px) {
+    .section, .instructions, .toc, .translator-notes { padding: 20px 24px; }
+    header { padding: 28px 24px; }
+    header h1 { font-size: 24px; }
+    .progress-bar { padding: 8px 24px; }
+    .actions { padding: 14px 24px; }
+    body { max-width: 720px; margin: 0 auto; }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>sports<span>predict.</span> Translation Sheet</h1>
+  <p>World Cup 2026 — English (US) to Español (MX)</p>
+</header>
+
+<div class="progress-bar">
+  <div class="progress-track"><div class="progress-fill" id="progressFill"></div></div>
+  <div class="progress-text" id="progressText">0 / 0</div>
+</div>
+
+<div class="instructions">
+  <details open>
+    <summary>Instructions for translator</summary>
+    <ul>
+      <li><strong>Target language:</strong> Latin American Spanish (Mexico)</li>
+      <li><strong>Tone:</strong> Confident, cheeky, pub-chalkboard casual. Never formal. Think "mates at a bar" energy.</li>
+      <li>Type your translation in the <strong>yellow input box</strong> under each English phrase.</li>
+      <li>Click <em>"+ Add comment"</em> on any entry to leave a note, question, or suggest an alternative.</li>
+      <li>Placeholders like <code>{variable}</code> must stay exactly as written — do NOT translate them.</li>
+      <li>Preserve <strong>**bold**</strong> markdown and <strong>→</strong> arrows exactly.</li>
+      <li>Your work is <strong>auto-saved in your browser</strong>. You can close and return later.</li>
+      <li>When finished, tap <strong>"Email to Eoin"</strong> at the bottom, or <strong>"Copy All"</strong> to paste into a message.</li>
+    </ul>
+  </details>
+</div>
+
+<nav class="toc" id="toc">
+  <h2>Sections</h2>
+</nav>
+
+<div id="content"></div>
+
+<div class="translator-notes">
+  <h2>Translator Notes</h2>
+  <ol>
+    <li><strong>Tone:</strong> Confident, playful, pub-chalkboard. Not corporate. Think WhatsApp group chat energy.</li>
+    <li><strong>"the lads"</strong> — use your local equivalent (los compas, la banda, etc.)</li>
+    <li><strong>"Gerry Ramos"</strong> — this is a friend's name, leave as-is or localise the joke if there's a Mexican equivalent</li>
+    <li><strong>Technical terms to keep in English:</strong> "World Cup", "knockout", "bracket" (unless there's a natural Spanish equivalent the audience would use)</li>
+    <li><strong>Placeholders <code>{variable}</code></strong> — leave exactly as written, do not translate</li>
+    <li><strong>Markdown formatting (<code>**bold**</code>, <code>→</code>)</strong> — preserve exactly</li>
+    <li><strong>"pts"</strong> — can be "pts" or "ptos" — use what's natural in MX sports context</li>
+  </ol>
+</div>
+
+<div class="actions">
+  <button class="btn-save" onclick="saveToStorage()">Save</button>
+  <button class="btn-copy" onclick="copyAll()">Copy All</button>
+  <button class="btn-email" onclick="emailAll()">Email to Eoin</button>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+const SECTIONS = [
+  {
+    id: "nav-global", title: "Navigation & Global",
+    entries: [
+      ["nav.home", "Home"],
+      ["nav.matches", "Matches"],
+      ["nav.rules", "Rules"],
+      ["nav.more", "More"],
+      ["nav.leaderboard", "Leaderboard"],
+      ["nav.back_to_wc", "Back to World Cup"],
+    ]
+  },
+  {
+    id: "login", title: "Login Page",
+    entries: [
+      ["login.tagline", "Call it, then rub it in Gerry Ramos' face."],
+      ["login.error", "Authentication failed. Please try again."],
+      ["login.legal", "By signing in you agree to our Terms and Privacy Policy."],
+      ["login.terms", "Terms"],
+      ["login.privacy", "Privacy Policy"],
+    ]
+  },
+  {
+    id: "onboarding", title: "Onboarding Flow",
+    entries: [
+      ["onboarding.theme_heading", "How do you like it?"],
+      ["onboarding.theme_subtitle", "Pick your vibe. You can change this anytime in settings."],
+      ["onboarding.theme_light", "Light"],
+      ["onboarding.theme_dark", "Dark"],
+      ["onboarding.theme_selected", "Selected"],
+      ["onboarding.next", "Next"],
+      ["onboarding.skip_tour", "Skip tour"],
+      ["onboarding.got_it", "Got it"],
+      ["onboarding.tooltip_picks_title", "Your Picks"],
+      ["onboarding.tooltip_picks_desc", "Pick who wins each match, then guess the exact score for bonus points."],
+      ["onboarding.tooltip_group_title", "Your Group"],
+      ["onboarding.tooltip_group_desc", "See where you stand. Climb the table by picking better than your mates."],
+      ["onboarding.tooltip_invite_title", "Invite Friends"],
+      ["onboarding.tooltip_invite_desc", "Share your invite code. More players means more bragging rights."],
+      ["onboarding.spotlight_heading", "Your Dashboard"],
+      ["onboarding.spotlight_text", "Tap **Home** in the nav to return to your dashboard anytime."],
+    ]
+  },
+  {
+    id: "join", title: "Join Flow",
+    entries: [
+      ["join.heading", "Join the Game"],
+      ["join.entrants", "{currentCount} / {maxEntrants} entrants"],
+      ["join.name_label", "Your display name"],
+      ["join.name_helper", "This is how you'll show up to the lads on the leaderboard. Use the name they'll know you by."],
+      ["join.name_placeholder", "e.g. Malo"],
+      ["join.name_max_error", "{DISPLAY_NAME_MAX} characters max"],
+      ["join.button_loading", "Joining..."],
+      ["join.button", "Join Competition"],
+      ["join.invite_label", "Invite code"],
+      ["join.invite_placeholder", "Invite code"],
+      ["join.invite_empty_error", "Please enter an invite code."],
+      ["join.invite_button", "Join"],
+      ["join.no_code_link", "Don't have a code? Create your own →"],
+      ["join.code_no_match", "This code doesn't match any active competition"],
+    ]
+  },
+  {
+    id: "create", title: "Create Competition",
+    entries: [
+      ["create.heading", "Create a Competition"],
+      ["create.subtitle", "Set up your own World Cup prediction game."],
+      ["create.max_participants", "Max participants"],
+      ["create.classifications_heading", "Classifications"],
+      ["create.classifications_helper", "Choose which competitions to include."],
+      ["create.class_overall", "Overall"],
+      ["create.class_overall_desc", "Most points across the whole tournament"],
+      ["create.class_format", "Format"],
+      ["create.class_format_desc", "Survivor-style elimination. Groups, knockouts, last one standing"],
+      ["create.class_bracket", "Full Bracket"],
+      ["create.class_bracket_desc", "Predict every result before kickoff"],
+      ["create.class_ko_bracket", "KO Bracket"],
+      ["create.class_ko_bracket_desc", "Predict the knockouts after groups finish"],
+      ["create.required", "required"],
+      ["create.error_generic", "Something went wrong. Please try again."],
+      ["create.error_network", "Network error. Please check your connection and try again."],
+      ["create.button_loading", "Creating\u2026"],
+      ["create.button", "Create competition"],
+      ["create.have_code_link", "Have a code? Join with a code →"],
+      ["create.success_label", "Competition created"],
+      ["create.share_message", "Share this code with your group."],
+      ["create.go_to_comp", "Go to your competition →"],
+      ["create.copy", "Copy"],
+      ["create.copied", "Copied"],
+      ["create.copy_error", "Couldn't copy — long-press the code instead."],
+    ]
+  },
+  {
+    id: "dashboard", title: "Dashboard",
+    entries: [
+      ["dash.picks_progress", "{picked} / {total} picks"],
+      ["dash.your_picks", "Your picks \u00b7 Round 1"],
+      ["dash.continue_round", "Continue to full round →"],
+      ["dash.at_a_glance", "At a glance"],
+      ["dash.stats_placeholder", "Your stats will appear after the first results."],
+      ["dash.your_group", "Your Group"],
+      ["dash.results_placeholder", "Results will appear once matches are played."],
+      ["dash.todays_groups", "Today's Groups"],
+      ["dash.bracket", "Bracket"],
+      ["dash.anorak", "Anorak"],
+      ["dash.see_all_groups", "See all groups →"],
+      ["dash.groups_drawn_message", "Groups will be drawn before the first match."],
+      ["dash.no_prediction", "No prediction"],
+      ["dash.winner_points", "+{points} winner"],
+      ["dash.score_points", "+{points} score"],
+    ]
+  },
+  {
+    id: "stats", title: "Stats Card",
+    entries: [
+      ["stats.your_rank", "Your Rank"],
+      ["stats.of_players", "of {totalPlayers} players"],
+      ["stats.points", "Points"],
+      ["stats.accuracy", "Accuracy"],
+      ["stats.after_first_results", "after first results"],
+    ]
+  },
+  {
+    id: "fixtures", title: "Fixtures & Picks",
+    entries: [
+      ["fixtures.today", "Today"],
+      ["fixtures.upcoming", "Upcoming"],
+      ["fixtures.results", "Results"],
+      ["fixtures.hide_picks", "Hide picks"],
+      ["fixtures.show_picks", "Show picks"],
+      ["fixtures.show_correct_wrong", "Show correct / wrong"],
+      ["fixtures.on", "On"],
+      ["fixtures.off", "Off"],
+      ["fixtures.no_fixtures", "No fixtures scheduled."],
+      ["fixtures.no_results", "No results yet."],
+      ["fixtures.no_today", "No matches today."],
+      ["fixtures.no_upcoming", "No upcoming matches."],
+      ["fixtures.close_prediction", "Close prediction"],
+      ["fixtures.pick_cta", "Pick →"],
+      ["fixtures.draw", "draw"],
+      ["fixtures.score_aria", "{team} score"],
+      ["fixtures.result_final", "Final"],
+      ["fixtures.result_provisional", "Provisional"],
+      ["fixtures.in_city", "In {cityName}"],
+      ["fixtures.your_time", "Your time"],
+      ["fixtures.same_tz", "Same"],
+      ["fixtures.stage_group", "Group {group} \u00b7 MD{matchday}"],
+      ["fixtures.stage_r32", "Round of 32"],
+      ["fixtures.stage_r16", "Round of 16"],
+      ["fixtures.stage_qf", "Quarter-final"],
+      ["fixtures.stage_sf", "Semi-final"],
+      ["fixtures.stage_3rd", "Third place"],
+      ["fixtures.stage_final", "Final"],
+    ]
+  },
+  {
+    id: "picks-window", title: "Picks Window",
+    entries: [
+      ["picks.all_windows", "\u2190 All windows"],
+      ["picks.prev_window", "\u2190 {prevWindowName}"],
+      ["picks.finalised", "Finalised"],
+      ["picks.locked", "Locked"],
+      ["picks.not_open", "This window isn't open for predictions yet."],
+    ]
+  },
+  {
+    id: "rules", title: "Rules & Points",
+    entries: [
+      ["rules.page_title", "Rules"],
+      ["rules.page_subtitle", "Everything you need to know."],
+      ["rules.intro", "A prediction game built as an homage to the World Cup's own format \u2014 groups, knockouts, and a final."],
+      ["rules.how_it_works", "How it works"],
+      ["rules.step1", "Pick the winner of each match"],
+      ["rules.step2", "Guess the exact score for bonus points"],
+      ["rules.step3", "Climb the leaderboard"],
+      ["rules.points_title", "Points Scoring System"],
+      ["rules.correct_winner", "Correct winner (or draw)"],
+      ["rules.exact_score_bonus", "Exact score bonus"],
+      ["rules.correct_advances", "Correct team advances (KO)"],
+      ["rules.max_group", "Max per group match: **5 pts**."],
+      ["rules.max_knockout", "Max per knockout match: **6 pts**."],
+      ["rules.ways_to_win", "Ways to win"],
+      ["rules.more_ways", "More ways to win"],
+      ["rules.format_title", "Format \u2014 Survivor"],
+      ["rules.format_tagline", "Last one standing."],
+      ["rules.format_desc_1", "The Format classification is an homage to the World Cup's own structure. You're placed in a group. After each stage is finalised, the bottom players are eliminated and the survivors are redrawn into new groups. Points reset to zero at each stage \u2014 only your current performance matters."],
+      ["rules.format_desc_2", "With 48 players, the elimination curve mirrors the World Cup itself. With fewer players, the curve is adjusted to keep every round competitive."],
+      ["rules.group_stage_heading", "Group Stage (Matchdays 1\u20133)"],
+      ["rules.group_stage_desc_1", "All three matchdays count as one stage. Your points accumulate across MD1, MD2, and MD3."],
+      ["rules.group_stage_desc_2", "After MD3, the cut works like the real World Cup:"],
+      ["rules.safe", "SAFE"],
+      ["rules.danger_zone", "Danger Zone"],
+      ["rules.danger_desc", "Only the best 3rd-place finishers survive"],
+      ["rules.at_risk", "AT RISK"],
+      ["rules.eliminated", "Eliminated"],
+      ["rules.eliminated_desc", "4th place is always cut"],
+      ["rules.out", "OUT"],
+      ["rules.how_cut_works", "How the cut works"],
+      ["rules.top2", "**Top 2** in each group qualify automatically."],
+      ["rules.third_place", "**3rd place** is the danger zone. Your points are compared against every other 3rd-place finisher across all groups. Only the best thirds survive \u2014 the rest are eliminated. With 48 players: 8 of 12 thirds qualify. The other 4 go home."],
+      ["rules.fourth_place", "**4th place** is always eliminated."],
+      ["rules.knockout_heading", "Knockout Rounds"],
+      ["rules.knockout_desc", "Points reset. New groups drawn from survivors. Bottom half eliminated. Repeat until only the finalists remain."],
+      ["rules.r32_meta", "32 survive \u00b7 points reset \u00b7 new groups drawn"],
+      ["rules.eliminated_count", "{count} eliminated"],
+      ["rules.knockout_note", "Points reset to zero. Only this round counts for survival."],
+      ["rules.final_heading", "Final"],
+      ["rules.final_desc", "The last 2 survivors predict both the Third-Place Play-Off and the Final. Most points wins. No elimination \u2014 just a winner."],
+      ["rules.narrowing_heading", "How the field narrows"],
+      ["rules.narrowing_desc", "With 48 players, the elimination curve mirrors the World Cup itself. With fewer players, adjustments are made for competitive integrity \u2014 ensuring at least one elimination at every stage."],
+      ["rules.table_start", "Start"],
+      ["rules.table_grps", "Grps"],
+      ["rules.table_r32", "R32"],
+      ["rules.table_r16", "R16"],
+      ["rules.table_qf", "QF"],
+      ["rules.table_sf", "SF"],
+      ["rules.table_w", "W"],
+    ]
+  },
+  {
+    id: "locks", title: "Picks Lock",
+    entries: [
+      ["locks.title", "When do picks lock?"],
+      ["locks.desc_1", "Each day's matches lock 10 minutes before the first kickoff of that day. You can submit picks for future days in advance \u2014 but once a day locks, it's locked."],
+      ["locks.desc_2", "Changed your mind? No problem \u2014 update your picks as many times as you like before the day locks."],
+      ["locks.more_detail", "More detail"],
+      ["locks.detail_1", "Outcome-only predictions are saved, but you still need to add exact scores to fully complete that day's predictions."],
+      ["locks.detail_2", "Events inside the same tournament stage may lock on different days and at different times."],
+    ]
+  },
+  {
+    id: "tiebreakers", title: "Tiebreakers",
+    entries: [
+      ["ties.title", "Tiebreakers"],
+      ["ties.desc", "Same points? **H2H goal diff** \u2192 **H2H goals** \u2192 **overall goal diff** \u2192 **overall goals** \u2192 **coin flip**"],
+    ]
+  },
+  {
+    id: "faq", title: "FAQs",
+    entries: [
+      ["faq.title", "FAQs"],
+      ["faq.group_basics", "Basics"],
+      ["faq.group_scoring", "Scoring & Classifications"],
+      ["faq.group_rules", "Rules & Tiebreakers"],
+      ["faq.group_technical", "Technical"],
+      ["faq.q_every_match", "Do I have to predict every match?"],
+      ["faq.a_every_match", "No. You can skip any match. But every correct pick earns points, so the more you predict the better your chances on the leaderboard."],
+      ["faq.q_exact_required", "Is the exact score required?"],
+      ["faq.a_exact_required", "No \u2014 it's optional. Pick the winner (or draw) first. If you also nail the exact score you earn a +3 bonus on top."],
+      ["faq.q_change_picks", "Can I change my picks?"],
+      ["faq.a_change_picks", "Yes, as many times as you like before the day locks. Once a matchday locks (10 min before the first kickoff that day), all picks for that day are final."],
+      ["faq.q_when_join", "When can I join?"],
+      ["faq.a_when_join", "You can join any time before the entry deadline (3 days after kickoff). Late joiners can still pick unlocked matches but auto-forfeit anything already locked."],
+      ["faq.q_points_per_match", "How many points can I earn per match?"],
+      ["faq.a_points_per_match", "Group stage: up to 5 pts (2 for correct outcome + 3 exact score bonus). Knockout: up to 6 pts (2 outcome + 3 score + 1 for correct advancing team)."],
+      ["faq.q_classifications", "What are the different leaderboard classifications?"],
+      ["faq.a_classifications", "**Overall** \u2014 cumulative points across all matches. **Format** \u2014 survivor elimination that mirrors the World Cup structure. **Full Bracket** & **KO Bracket** \u2014 pre-tournament bracket predictions scored after groups / knockouts complete."],
+      ["faq.q_draw_knockout", "What does \u201cDraw\u201d mean in a knockout match?"],
+      ["faq.a_draw_knockout", "It means the scores are level after extra time \u2014 the match is decided by penalties. You pick who advances separately. Your result prediction is the score after extra time, excluding penalties."],
+      ["faq.q_extra_ko_point", "How does the extra knockout point work?"],
+      ["faq.a_extra_ko_point", "In knockout matches you also predict which team advances. This is worth 1 bonus point on top of the result and score picks. It matters most when the match is a draw \u2014 you can still earn a point by correctly picking who goes through on penalties."],
+      ["faq.q_tiebreakers", "How are ties on the leaderboard broken?"],
+      ["faq.a_tiebreakers", "Head-to-head goal difference \u2192 head-to-head goals \u2192 overall goal difference \u2192 overall goals \u2192 coin flip."],
+      ["faq.q_postponed", "What happens if a match is postponed?"],
+      ["faq.a_postponed", "Your picks stay valid. The match moves to its new time and your predictions carry over. If a match is cancelled, affected picks are voided (no points gained or lost)."],
+      ["faq.q_auto_save", "Do my picks auto-save?"],
+      ["faq.a_auto_save", "Yes. Winner picks save instantly on tap. Score predictions save after 1.75 seconds of inactivity or when you tap away."],
+      ["faq.q_desktop", "Can I play on desktop?"],
+      ["faq.a_desktop", "Yes \u2014 the app works on any device with a browser. It's designed mobile-first but fully functional on desktop."],
+    ]
+  },
+  {
+    id: "cta", title: "CTA / Join Prompt",
+    entries: [
+      ["cta.ready", "Ready to play?"],
+      ["cta.join_closes", "Joins close 3 days after kickoff."],
+      ["cta.locks_in", "Picks lock in {countdown}"],
+      ["cta.join_button", "Join with a code"],
+      ["cta.create_button", "Create your own"],
+    ]
+  },
+  {
+    id: "invite", title: "Invite Banner",
+    entries: [
+      ["invite.label", "Invite code:"],
+      ["invite.players", "{count} players"],
+      ["invite.player", "{count} player"],
+      ["invite.copy", "Copy"],
+      ["invite.copied", "Copied!"],
+      ["invite.share", "Share"],
+    ]
+  },
+  {
+    id: "more-menu", title: "More Menu",
+    entries: [
+      ["menu.admin", "Admin"],
+      ["menu.admin_desc", "Manage competition"],
+      ["menu.bracket", "Bracket prediction"],
+      ["menu.bracket_desc", "Advanced \u2014 not for casuals"],
+      ["menu.groups", "Group standings"],
+      ["menu.groups_desc", "Official FIFA tables \u2197"],
+    ]
+  },
+  {
+    id: "predictions", title: "Predictions Page",
+    entries: [
+      ["predictions.heading", "My Predictions"],
+      ["predictions.subtitle", "Submit your predictions before each event locks."],
+      ["predictions.no_comps", "You haven't joined any competitions yet."],
+      ["predictions.no_comps_help", "Ask a friend for an invite link, or join a public competition to get started."],
+      ["predictions.load_error", "Failed to load competitions. Please try again later."],
+      ["predictions.events_error", "Failed to load events. Please try again later."],
+      ["predictions.comp_not_found", "Competition not found. Select a different one above."],
+    ]
+  },
+  {
+    id: "common", title: "Common / Shared",
+    entries: [
+      ["common.you", "YOU"],
+      ["common.pts", "pts"],
+      ["common.points", "points"],
+      ["common.players_joined", "{count} players joined."],
+      ["common.collapse", "Collapse"],
+      ["common.coming_soon", "Coming soon"],
+      ["common.redirecting", "Redirecting to rules\u2026"],
+    ]
+  },
+  {
+    id: "leaderboard", title: "Leaderboard",
+    entries: [
+      ["leaderboard.heading", "Leaderboard"],
+      ["leaderboard.no_competition", "No competition found"],
+      ["leaderboard.home", "Home"],
+      ["leaderboard.back_to_matches", "Back to Matches"],
+    ]
+  },
+  {
+    id: "landing", title: "WC Landing (Pre-tournament)",
+    entries: [
+      ["landing.coming_soon_heading", "The World Cup is being set up."],
+      ["landing.coming_soon_desc", "Drop back closer to June. We're seeding the fixtures, polishing the scoring, and getting the chairs out."],
+      ["landing.see_rules", "See the rules →"],
+      ["landing.dash_coming_heading", "Dashboard is being set up."],
+      ["landing.dash_coming_desc", "Drop back closer to June."],
+    ]
+  },
+];
+
+const STORAGE_KEY = "sportspredict_translations_v1";
+
+function escapeHtml(str) {
+  const div = document.createElement("div");
+  div.textContent = str;
+  return div.innerHTML;
+}
+
+function highlightPlaceholders(text) {
+  return escapeHtml(text).replace(/\{(\w+)\}/g, '<code>{$1}</code>');
+}
+
+function loadSaved() {
+  try {
+    return JSON.parse(localStorage.getItem(STORAGE_KEY) || "{}");
+  } catch { return {}; }
+}
+
+function saveCurrent() {
+  const data = {};
+  document.querySelectorAll(".entry").forEach(entry => {
+    const key = entry.dataset.key;
+    const trans = entry.querySelector(".translation-input").value;
+    const comment = entry.querySelector(".comment-input").value;
+    if (trans || comment) {
+      data[key] = { translation: trans, comment: comment };
+    }
+  });
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+}
+
+function updateProgress() {
+  const inputs = document.querySelectorAll(".translation-input");
+  let filled = 0;
+  inputs.forEach(input => {
+    const entry = input.closest(".entry");
+    if (input.value.trim()) {
+      filled++;
+      entry.classList.add("filled");
+    } else {
+      entry.classList.remove("filled");
+    }
+  });
+  const total = inputs.length;
+  const pct = total ? Math.round((filled / total) * 100) : 0;
+  document.getElementById("progressFill").style.width = pct + "%";
+  document.getElementById("progressText").textContent = filled + " / " + total + " (" + pct + "%)";
+}
+
+function showToast(msg) {
+  const t = document.getElementById("toast");
+  t.textContent = msg;
+  t.classList.add("show");
+  setTimeout(() => t.classList.remove("show"), 2000);
+}
+
+function saveToStorage() {
+  saveCurrent();
+  showToast("Saved to browser storage");
+}
+
+function buildOutput() {
+  const saved = loadSaved();
+  let lines = [];
+  lines.push("TRANSLATION SHEET — sportspredict. World Cup 2026");
+  lines.push("Target: Latin American Spanish (Mexico)");
+  lines.push("Translator: _______________");
+  lines.push("Date: " + new Date().toLocaleDateString());
+  lines.push("");
+
+  SECTIONS.forEach(section => {
+    lines.push("=== " + section.title + " ===");
+    lines.push("");
+    section.entries.forEach(([key, english]) => {
+      const d = saved[key] || {};
+      const trans = d.translation || "(not translated)";
+      lines.push("[" + key + "]");
+      lines.push("  EN: " + english);
+      lines.push("  ES: " + trans);
+      if (d.comment) {
+        lines.push("  COMMENT: " + d.comment);
+      }
+      lines.push("");
+    });
+  });
+
+  return lines.join("\n");
+}
+
+function copyAll() {
+  saveCurrent();
+  const text = buildOutput();
+  navigator.clipboard.writeText(text).then(() => {
+    showToast("Copied to clipboard");
+  }).catch(() => {
+    // Fallback
+    const ta = document.createElement("textarea");
+    ta.value = text;
+    ta.style.position = "fixed";
+    ta.style.opacity = "0";
+    document.body.appendChild(ta);
+    ta.select();
+    document.execCommand("copy");
+    document.body.removeChild(ta);
+    showToast("Copied to clipboard");
+  });
+}
+
+function emailAll() {
+  saveCurrent();
+  const body = buildOutput();
+  const subject = encodeURIComponent("sportspredict. Translation Sheet — Español (MX)");
+  const mailto = "mailto:eoinmaleoin@gmail.com?subject=" + subject + "&body=" + encodeURIComponent(body);
+  window.location.href = mailto;
+}
+
+function toggleComment(btn) {
+  const area = btn.nextElementSibling;
+  area.classList.toggle("visible");
+  if (area.classList.contains("visible")) {
+    area.querySelector("textarea").focus();
+    btn.textContent = "- Hide comment";
+  } else {
+    btn.textContent = "+ Add comment";
+  }
+}
+
+// Build the page
+function render() {
+  const saved = loadSaved();
+  const contentEl = document.getElementById("content");
+  const tocEl = document.getElementById("toc");
+  let html = "";
+
+  SECTIONS.forEach(section => {
+    // TOC link
+    const link = document.createElement("a");
+    link.href = "#section-" + section.id;
+    link.textContent = section.title;
+    tocEl.appendChild(link);
+
+    html += '<div class="section" id="section-' + section.id + '">';
+    html += '<h2>' + escapeHtml(section.title) + '</h2>';
+
+    section.entries.forEach(([key, english]) => {
+      const d = saved[key] || {};
+      const hasComment = d.comment ? true : false;
+      html += '<div class="entry' + (d.translation ? ' filled' : '') + '" data-key="' + escapeHtml(key) + '">';
+      html += '<div class="entry-key">' + escapeHtml(key) + '</div>';
+      html += '<div class="entry-english">' + highlightPlaceholders(english) + '</div>';
+      html += '<textarea class="translation-input" placeholder="Traducción en español\u2026">' + escapeHtml(d.translation || "") + '</textarea>';
+      html += '<button class="comment-toggle" onclick="toggleComment(this)">' + (hasComment ? '- Hide comment' : '+ Add comment') + '</button>';
+      html += '<div class="comment-area' + (hasComment ? ' visible' : '') + '">';
+      html += '<textarea class="comment-input" placeholder="Question, note, or alternative\u2026">' + escapeHtml(d.comment || "") + '</textarea>';
+      html += '</div>';
+      html += '</div>';
+    });
+
+    html += '</div>';
+  });
+
+  contentEl.innerHTML = html;
+
+  // Auto-save on input
+  let saveTimeout;
+  contentEl.addEventListener("input", () => {
+    updateProgress();
+    clearTimeout(saveTimeout);
+    saveTimeout = setTimeout(saveCurrent, 1500);
+  });
+
+  updateProgress();
+}
+
+render();
+</script>
+
+</body>
+</html>
