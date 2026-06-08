@@ -231,12 +231,12 @@ export function DashboardClient({
           <section className="mt-2">
             <Link
               href="/wc/leaderboard"
-              className="flex items-center justify-between rounded-xl border border-ps-amber/40 bg-ps-amber/10 px-4 py-3 transition-colors hover:bg-ps-amber/20"
+              className="flex items-center justify-between rounded-xl bg-ps-amber px-4 py-3 transition-colors hover:opacity-90"
             >
-              <span className="text-[13px] font-semibold text-ps-amber-deep">
+              <span className="text-[13px] font-semibold text-white">
                 Leaderboard
               </span>
-              <span className="text-[13px] font-semibold text-ps-amber-deep">
+              <span className="text-[13px] font-semibold text-white">
                 →
               </span>
             </Link>
