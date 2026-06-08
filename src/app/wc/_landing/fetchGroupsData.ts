@@ -1,6 +1,8 @@
 import { createClient } from "@/lib/supabase/server";
+import { computeGroupStandings } from "@/lib/wc/compute-group-standings";
 import type { WindowEvent } from "@/app/wc/picks/[windowId]/WindowPickList";
 import type { Prediction } from "@/types/database";
+import type { TeamWithStats } from "@/lib/tournament/bracket/types";
 
 type EventRowWithExternal = WindowEvent & { external_event_id: string | null };
 
@@ -58,7 +60,9 @@ export async function fetchGroupsData() {
     groupEvents.set(groupLetter, existing);
   }
 
-  // Fetch user predictions for these events
+  // Fetch user predictions and live standings in parallel
+  const standingsPromise = computeGroupStandings(supabase, competition.id);
+
   let predictions: Prediction[] = [];
   if (user && eventRows.length > 0) {
     const eventIds = eventRows.map((e) => e.id);
@@ -72,9 +76,13 @@ export async function fetchGroupsData() {
     predictions = (predRows ?? []) as Prediction[];
   }
 
+  const standingsMap = await standingsPromise;
+  const groupStandings: Record<string, TeamWithStats[]> = Object.fromEntries(standingsMap);
+
   return {
     competitionId: competition.id,
     groupEvents,
     predictions,
+    groupStandings,
   };
 }

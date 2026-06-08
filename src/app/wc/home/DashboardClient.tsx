@@ -17,6 +17,7 @@ import type { WindowEvent } from "@/app/wc/picks/[windowId]/WindowPickList";
 import type { WcFixture } from "@/lib/wc/fixtures";
 import type { Prediction } from "@/types/database";
 import type { ResultRow } from "./fetchDashboardData";
+import type { TeamWithStats } from "@/lib/tournament/bracket/types";
 
 interface DashboardClientProps {
   competitionId: string;
@@ -36,6 +37,7 @@ interface DashboardClientProps {
   windowLocked: boolean;
   currentUserId: string | null;
   bracketProgress: { pct: number; label: string } | null;
+  groupStandings?: Record<string, TeamWithStats[]>;
   onboarding?: boolean;
 }
 
@@ -84,6 +86,7 @@ export function DashboardClient({
   windowLocked,
   currentUserId,
   bracketProgress,
+  groupStandings,
   onboarding,
 }: DashboardClientProps) {
   const [expandedEventId, setExpandedEventId] = useState<string | null>(null);
@@ -278,6 +281,7 @@ export function DashboardClient({
               competitionId={competitionId}
               windowLocked={windowLocked}
               backLabel="Today's Groups"
+              standings={groupStandings}
             />
           </section>
         )}

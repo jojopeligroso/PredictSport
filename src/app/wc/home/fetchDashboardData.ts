@@ -1,9 +1,11 @@
 import { createClient } from "@/lib/supabase/server";
 import { WC2026_FIXTURES, type WcFixture } from "@/lib/wc/fixtures";
 import { describeDraftProgress } from "@/lib/bracket/bracket-progress";
+import { computeGroupStandings } from "@/lib/wc/compute-group-standings";
 import type { WindowEvent } from "@/app/wc/picks/[windowId]/WindowPickList";
 import type { Prediction } from "@/types/database";
 import type { BracketSubmissionData } from "@/types/tournament";
+import type { TeamWithStats } from "@/lib/tournament/bracket/types";
 
 type EventRowWithExternal = WindowEvent & { external_event_id: string | null };
 
@@ -61,6 +63,8 @@ export interface DashboardData {
   todayGroupEvents: Map<string, WindowEvent[]>;
   /** Bracket draft progress, null if user has no bracket activity. */
   bracketProgress: { pct: number; label: string } | null;
+  /** Live group standings from confirmed results, keyed by group letter. */
+  groupStandings: Record<string, TeamWithStats[]>;
 }
 
 export type DashboardResult =
@@ -252,13 +256,12 @@ export async function fetchDashboardData(): Promise<DashboardResult> {
     predictions = (predRows ?? []) as Prediction[];
   }
 
-  // 6. Most recent completed matchday results with user prediction outcomes
-  const { recentResults, resultsLabel } = await fetchRecentResults(
-    supabase,
-    competition.id,
-    fixtureByExternalId,
-    user?.id ?? null,
-  );
+  // 6. Most recent completed matchday results + live group standings (parallel)
+  const [{ recentResults, resultsLabel }, standingsMap] = await Promise.all([
+    fetchRecentResults(supabase, competition.id, fixtureByExternalId, user?.id ?? null),
+    computeGroupStandings(supabase, competition.id),
+  ]);
+  const groupStandings = Object.fromEntries(standingsMap);
 
   const windowLocked =
     currentRound.status === "locked" || currentRound.status === "scored";
@@ -329,6 +332,7 @@ export async function fetchDashboardData(): Promise<DashboardResult> {
     isAuthenticated: Boolean(user),
     windowLocked,
     bracketProgress,
+    groupStandings,
   };
 }
 

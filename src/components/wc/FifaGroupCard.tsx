@@ -1,6 +1,7 @@
 import { CountryFlag } from "@/components/CountryFlag";
 import { fifaTrigram } from "@/lib/tournament/fifa-codes";
 import { HOST_CITIES, type HostCitySlug } from "@/lib/wc/host-cities";
+import type { TeamWithStats } from "@/lib/tournament/bracket/types";
 
 /**
  * Maps each FIFA WC2026 group to a host-city colour for visual identity.
@@ -26,12 +27,15 @@ interface FifaGroupCardProps {
   teams: string[];
   /** When true, a gold ring highlights the expanded card (accordion mode). */
   isExpanded?: boolean;
+  /** Standings data — when provided, teams are reordered by position and Pts shown. */
+  standings?: TeamWithStats[];
 }
 
 export function FifaGroupCard({
   groupId,
   teams,
   isExpanded,
+  standings,
 }: FifaGroupCardProps) {
   const citySlug = GROUP_CITY[groupId] ?? "atlanta";
   const cityColor = HOST_CITIES[citySlug].color;
@@ -52,17 +56,26 @@ export function FifaGroupCard({
         </p>
       </div>
       <div className="px-2.5 pb-2">
-        {teams.map((team) => (
-          <div
-            key={team}
-            className="flex items-center gap-1.5 py-[3px]"
-          >
-            <CountryFlag name={team} size={14} shape="pill" />
-            <span className="font-mono text-[10px] font-semibold text-white/90">
-              {fifaTrigram(team) ?? team.slice(0, 3).toUpperCase()}
-            </span>
-          </div>
-        ))}
+        {(standings ?? teams.map((t) => ({ name: t }))).map((entry) => {
+          const team = typeof entry === "string" ? entry : entry.name;
+          const pts = standings ? (entry as TeamWithStats).points : null;
+          return (
+            <div
+              key={team}
+              className="flex items-center gap-1.5 py-[3px]"
+            >
+              <CountryFlag name={team} size={14} shape="pill" />
+              <span className="flex-1 font-mono text-[10px] font-semibold text-white/90">
+                {fifaTrigram(team) ?? team.slice(0, 3).toUpperCase()}
+              </span>
+              {pts !== null && (
+                <span className="font-mono text-[10px] font-bold tabular-nums text-white">
+                  {pts}
+                </span>
+              )}
+            </div>
+          );
+        })}
       </div>
     </div>
   );

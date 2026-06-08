@@ -13,6 +13,7 @@ import type {
   FixtureResult,
   FixturePredictionData,
 } from "@/components/wc/FixturesTabs";
+import type { TeamWithStats } from "@/lib/tournament/bracket/types";
 
 type HubTab = "upcoming" | "fixtures" | "results" | "groups";
 
@@ -44,6 +45,7 @@ interface WcPicksHubProps {
     competitionId: string;
     groupEvents: Map<string, WindowEvent[]>;
     predictions: Prediction[];
+    groupStandings?: Record<string, TeamWithStats[]>;
   } | null;
 }
 
@@ -182,6 +184,7 @@ export function WcPicksHub({ md1, fixturesData, groupsData }: WcPicksHubProps) {
                 predictions={groupsData?.predictions}
                 competitionId={groupsData?.competitionId}
                 windowLocked={md1.windowLocked || !md1.isMember}
+                standings={groupsData?.groupStandings}
               />
             </div>
             {!md1.isMember && (

@@ -69,6 +69,7 @@ export default async function WcHomePage({
       windowLocked={data.windowLocked}
       currentUserId={user?.id ?? null}
       bracketProgress={data.bracketProgress}
+      groupStandings={data.groupStandings}
       onboarding={onboarding}
     />
   );
