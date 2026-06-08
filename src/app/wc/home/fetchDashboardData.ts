@@ -9,6 +9,16 @@ import type { TeamWithStats } from "@/lib/tournament/bracket/types";
 
 type EventRowWithExternal = WindowEvent & { external_event_id: string | null };
 
+export interface DatePillSummary {
+  iso: string;
+  weekday: string;
+  dayNum: number;
+  totalCount: number;
+  fullyComplete: number;
+  hasAnyOutcome: boolean;
+  lockTime: string;
+}
+
 /** A single completed match with result data and the user's prediction outcome. */
 export interface ResultRow {
   fixture: WcFixture;
@@ -65,6 +75,8 @@ export interface DashboardData {
   bracketProgress: { pct: number; label: string } | null;
   /** Live group standings from confirmed results, keyed by group letter. */
   groupStandings: Record<string, TeamWithStats[]>;
+  /** Date pill summaries for the first 3 unlocked matchdays. */
+  datePills: DatePillSummary[];
 }
 
 export type DashboardResult =
@@ -256,6 +268,37 @@ export async function fetchDashboardData(): Promise<DashboardResult> {
     predictions = (predRows ?? []) as Prediction[];
   }
 
+  // Build date pill summaries for the first 3 unlocked dates
+  const datePills: DatePillSummary[] = sortedDates.slice(0, 3).map((iso) => {
+    const dayEvents = byDate.get(iso) ?? [];
+    const dayEventIds = new Set(dayEvents.map((e) => e.id));
+    const dayPreds = predictions.filter((p) => dayEventIds.has(p.event_id));
+
+    let fullyComplete = 0;
+    let hasAnyOutcome = false;
+    for (const ev of dayEvents) {
+      const evPreds = dayPreds.filter((p) => p.event_id === ev.id);
+      const hasWinner = evPreds.some((p) => p.prediction_type === "winner");
+      const hasScore = evPreds.some((p) => p.prediction_type === "exact_score");
+      if (hasWinner && hasScore) fullyComplete++;
+      if (hasWinner || hasScore) hasAnyOutcome = true;
+    }
+
+    const lockTimes = dayEvents.map((e) => e.lock_time).sort();
+    const d = new Date(iso + "T00:00:00Z");
+    const weekday = d.toLocaleDateString("en-US", { weekday: "short", timeZone: "UTC" });
+
+    return {
+      iso,
+      weekday,
+      dayNum: d.getUTCDate(),
+      totalCount: dayEvents.length,
+      fullyComplete,
+      hasAnyOutcome,
+      lockTime: lockTimes[0] ?? iso,
+    };
+  });
+
   // 6. Most recent completed matchday results + live group standings (parallel)
   const [{ recentResults, resultsLabel }, standingsMap] = await Promise.all([
     fetchRecentResults(supabase, competition.id, fixtureByExternalId, user?.id ?? null),
@@ -333,6 +376,7 @@ export async function fetchDashboardData(): Promise<DashboardResult> {
     windowLocked,
     bracketProgress,
     groupStandings,
+    datePills,
   };
 }
 

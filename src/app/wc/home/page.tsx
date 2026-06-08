@@ -70,6 +70,7 @@ export default async function WcHomePage({
       currentUserId={user?.id ?? null}
       bracketProgress={data.bracketProgress}
       groupStandings={data.groupStandings}
+      datePills={data.datePills}
       onboarding={onboarding}
     />
   );

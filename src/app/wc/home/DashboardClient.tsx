@@ -1,7 +1,10 @@
 "use client";
 
 import Link from "next/link";
-import { useMemo, useState } from "react";
+import { useMemo, useState, useSyncExternalStore, useRef } from "react";
+import { computeDayStatus, formatLockCountdown } from "@/lib/wc/daily-lock";
+import { CHROME_PALETTE } from "@/app/wc/_landing/brand-palette";
+import type { DatePillSummary } from "./fetchDashboardData";
 import { DashboardPickRow } from "@/components/wc/DashboardPickRow";
 import { GroupMiniTable } from "@/components/wc/GroupMiniTable";
 import { FifaGroupsGrid } from "@/components/wc/FifaGroupsGrid";
@@ -39,6 +42,7 @@ interface DashboardClientProps {
   bracketProgress: { pct: number; label: string } | null;
   groupStandings?: Record<string, TeamWithStats[]>;
   onboarding?: boolean;
+  datePills: DatePillSummary[];
 }
 
 type PickStatus = "complete" | "urgent" | "unpicked";
@@ -88,6 +92,7 @@ export function DashboardClient({
   bracketProgress,
   groupStandings,
   onboarding,
+  datePills,
 }: DashboardClientProps) {
   const [expandedEventId, setExpandedEventId] = useState<string | null>(null);
 
@@ -100,6 +105,8 @@ export function DashboardClient({
     return { picked, total: nextEvents.length };
   }, [nextEvents, predictions]);
 
+  const now = useNowAfterMount();
+
   const appUrl =
     typeof window !== "undefined"
       ? window.location.origin
@@ -111,6 +118,7 @@ export function DashboardClient({
       <OnboardingSection id="other">
         {total > 0 && (
           <div className="pt-3 pb-1 text-center">
+            {datePills.length > 0 && <DashboardDatePills pills={datePills} now={now} />}
             <p className="text-[11px] font-semibold uppercase tracking-wider text-ps-text-sec">
               {picked} / {total} picks
             </p>
@@ -381,6 +389,116 @@ function MockGroupCard() {
   );
 }
 
+/** Date pills showing status for the next 3 match dates. Chrome element — ps-* tokens only. */
+function DashboardDatePills({
+  pills,
+  now,
+}: {
+  pills: DatePillSummary[];
+  now: Date | null;
+}) {
+  if (pills.length === 0) return null;
+
+  // Find earliest urgent pill for warning banner
+  let warningText: string | null = null;
+  for (const p of pills) {
+    const status = now
+      ? computeDayStatus({
+          totalEvents: p.totalCount,
+          fullyComplete: p.fullyComplete,
+          hasAnyOutcome: p.hasAnyOutcome,
+          lockTime: p.lockTime,
+          now,
+        })
+      : "upcoming";
+    if (status === "urgent") {
+      const countdown = formatLockCountdown(p.lockTime, now!);
+      if (countdown) warningText = `\u26A0 ${countdown} to submit ${p.weekday} picks`;
+      break;
+    }
+  }
+
+  return (
+    <>
+      <div className="flex justify-center gap-1.5">
+        {pills.map((p) => {
+          const status = now
+            ? computeDayStatus({
+                totalEvents: p.totalCount,
+                fullyComplete: p.fullyComplete,
+                hasAnyOutcome: p.hasAnyOutcome,
+                lockTime: p.lockTime,
+                now,
+              })
+            : "upcoming";
+
+          const isComplete = status === "complete";
+          const isUrgent = status === "urgent";
+          const borderClass = isComplete || isUrgent ? "border-ps-amber" : "border-ps-border";
+          const pillShadow = isComplete
+            ? { boxShadow: "0 2px 6px -3px rgba(212,175,55,0.5)" }
+            : isUrgent
+              ? { boxShadow: "0 2px 6px -3px rgba(212,175,55,0.3)" }
+              : undefined;
+
+          return (
+            <span key={p.iso} className="flex shrink-0 flex-col items-center">
+              <span className="mb-1 h-4" aria-hidden="true" />
+              <span
+                className={[
+                  "flex h-12 w-11 flex-col items-center justify-center rounded-md border bg-ps-surface",
+                  borderClass,
+                ].join(" ")}
+                style={pillShadow}
+              >
+                <span className="font-mono text-[9px] font-bold uppercase tracking-[0.10em] text-ps-text-ter">
+                  {p.weekday}
+                </span>
+                <span className="font-display text-base font-extrabold leading-none text-ps-text">
+                  {p.dayNum}
+                </span>
+              </span>
+              <DashboardPillIndicator status={status} />
+            </span>
+          );
+        })}
+      </div>
+      {warningText && (
+        <p className="mt-2 text-[11px] font-semibold text-ps-red">{warningText}</p>
+      )}
+    </>
+  );
+}
+
+function DashboardPillIndicator({ status }: { status: string }) {
+  switch (status) {
+    case "complete":
+      return (
+        <span className="mt-1 inline-flex h-3.5 w-3.5 items-center justify-center rounded-full bg-ps-green text-[8px] font-extrabold leading-none text-white" aria-label="Complete">
+          ✓
+        </span>
+      );
+    case "partial":
+      return (
+        <span
+          className="mt-1 inline-flex h-3.5 w-3.5 items-center justify-center rounded-full text-[9px] font-extrabold leading-none text-white"
+          style={{ background: CHROME_PALETTE.attention }}
+          aria-label="Exact score needed"
+        >
+          !
+        </span>
+      );
+    case "urgent":
+      return (
+        <span className="mt-1 inline-flex h-3.5 w-3.5 items-center justify-center rounded-full bg-ps-red text-[7px] font-extrabold leading-none text-white" style={{ letterSpacing: "-0.5px" }} aria-label="Locks soon">
+          !!
+        </span>
+      );
+    default:
+      return <span className="mt-1 h-3.5" aria-hidden="true" />;
+  }
+}
+
 /** Single result row with score, user prediction, correctness, and points. */
 function TodayResultRow({ result }: { result: ResultRow }) {
   const { fixture, homeScore, awayScore, userWinnerPick, userScorePick, winnerCorrect, scoreCorrect, winnerPoints, scorePoints } = result;
@@ -444,5 +562,15 @@ function TodayResultRow({ result }: { result: ResultRow }) {
         </div>
       )}
     </div>
+  );
+}
+
+/** Hydration-safe "now" — null on server, stable Date after mount. */
+function useNowAfterMount(): Date | null {
+  const nowRef = useRef<Date | null>(null);
+  return useSyncExternalStore(
+    () => () => {},
+    () => (nowRef.current ??= new Date()),
+    () => null,
   );
 }
