@@ -54,6 +54,7 @@ export default async function WcHomePage({
     <DashboardClient
       competitionId={data.competitionId}
       nextEvents={data.nextEvents}
+      pillDateEvents={data.pillDateEvents}
       predictions={data.predictions}
       fixtureByEventId={data.fixtureByEventId}
       recentResults={data.recentResults}

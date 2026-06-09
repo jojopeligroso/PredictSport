@@ -75,6 +75,8 @@ export interface DashboardData {
   bracketProgress: { pct: number; label: string } | null;
   /** Live group standings from confirmed results, keyed by group letter. */
   groupStandings: Record<string, TeamWithStats[]>;
+  /** All events across the 3 pill dates (for client-side date filtering). */
+  pillDateEvents: WindowEvent[];
   /** Date pill summaries for the first 3 unlocked matchdays. */
   datePills: DatePillSummary[];
 }
@@ -299,6 +301,20 @@ export async function fetchDashboardData(): Promise<DashboardResult> {
     };
   });
 
+  // All events for pill dates (client-side date filtering)
+  const pillDateEvents: WindowEvent[] = sortedDates.slice(0, 3).flatMap((iso) =>
+    (byDate.get(iso) ?? []).map((row) => ({
+      id: row.id,
+      event_name: row.event_name,
+      sport: row.sport,
+      start_time: row.start_time,
+      lock_time: row.lock_time,
+      status: row.status,
+      result_confirmed: row.result_confirmed,
+      event_prediction_types: row.event_prediction_types,
+    })),
+  );
+
   // 6. Most recent completed matchday results + live group standings (parallel)
   const [{ recentResults, resultsLabel }, standingsMap] = await Promise.all([
     fetchRecentResults(supabase, competition.id, fixtureByExternalId, user?.id ?? null),
@@ -361,6 +377,7 @@ export async function fetchDashboardData(): Promise<DashboardResult> {
     ready: true,
     competitionId: competition.id,
     nextEvents,
+    pillDateEvents,
     predictions,
     fixtureByEventId,
     recentResults,

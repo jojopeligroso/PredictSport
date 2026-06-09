@@ -25,6 +25,7 @@ import type { TeamWithStats } from "@/lib/tournament/bracket/types";
 interface DashboardClientProps {
   competitionId: string;
   nextEvents: WindowEvent[];
+  pillDateEvents: WindowEvent[];
   predictions: Prediction[];
   fixtureByEventId: Map<string, WcFixture>;
   recentResults: ResultRow[];
@@ -75,6 +76,7 @@ function getPickStatus(
 export function DashboardClient({
   competitionId,
   nextEvents,
+  pillDateEvents,
   predictions,
   fixtureByEventId,
   recentResults,
@@ -95,15 +97,28 @@ export function DashboardClient({
   datePills,
 }: DashboardClientProps) {
   const [expandedEventId, setExpandedEventId] = useState<string | null>(null);
+  const [selectedDate, setSelectedDate] = useState<string | null>(null);
+
+  // Filter events by selected date pill
+  // No pill selected → original capped nextEvents (unchanged deploy behavior)
+  // Pill selected → all events for that date from pillDateEvents
+  const filteredEvents = useMemo(() => {
+    if (!selectedDate) return nextEvents;
+    return pillDateEvents.filter((e) => {
+      const d = new Date(e.start_time);
+      const iso = `${d.getUTCFullYear()}-${String(d.getUTCMonth() + 1).padStart(2, "0")}-${String(d.getUTCDate()).padStart(2, "0")}`;
+      return iso === selectedDate;
+    });
+  }, [nextEvents, pillDateEvents, selectedDate]);
 
   // Count picks progress
   const { picked, total } = useMemo(() => {
     let picked = 0;
-    for (const e of nextEvents) {
+    for (const e of filteredEvents) {
       if (getPickStatus(e, predictions) === "complete") picked++;
     }
-    return { picked, total: nextEvents.length };
-  }, [nextEvents, predictions]);
+    return { picked, total: filteredEvents.length };
+  }, [filteredEvents, predictions]);
 
   const now = useNowAfterMount();
 
@@ -118,7 +133,14 @@ export function DashboardClient({
       <OnboardingSection id="other">
         {total > 0 && (
           <div className="pt-3 pb-1 text-center">
-            {datePills.length > 0 && <DashboardDatePills pills={datePills} now={now} />}
+            {datePills.length > 0 && (
+              <DashboardDatePills
+                pills={datePills}
+                now={now}
+                selectedDate={selectedDate}
+                onSelectDate={(iso) => setSelectedDate((prev) => prev === iso ? null : iso)}
+              />
+            )}
             <p className="text-[11px] font-semibold uppercase tracking-wider text-ps-text-sec">
               {picked} / {total} picks
             </p>
@@ -134,13 +156,13 @@ export function DashboardClient({
 
       {/* ── 2. Next picks (hero cards) ─────────────────────────────────── */}
       <OnboardingSection id="picks">
-        {nextEvents.length > 0 && (
+        {filteredEvents.length > 0 && (
           <section className="mt-3">
             <p className="mb-2 text-[11px] font-semibold uppercase tracking-wider text-ps-text-ter">
               Your picks · Round 1
             </p>
             <div className="flex flex-col gap-2">
-              {nextEvents.map((event) => {
+              {filteredEvents.map((event) => {
                 const fixture = fixtureByEventId.get(event.id);
                 if (!fixture) return null;
                 const status = getPickStatus(event, predictions);
@@ -393,9 +415,13 @@ function MockGroupCard() {
 function DashboardDatePills({
   pills,
   now,
+  selectedDate,
+  onSelectDate,
 }: {
   pills: DatePillSummary[];
   now: Date | null;
+  selectedDate: string | null;
+  onSelectDate: (iso: string) => void;
 }) {
   if (pills.length === 0) return null;
 
@@ -441,25 +467,35 @@ function DashboardDatePills({
               ? { boxShadow: "0 2px 6px -3px rgba(212,175,55,0.3)" }
               : undefined;
 
+          const isSelected = selectedDate === p.iso;
+
           return (
-            <span key={p.iso} className="flex shrink-0 flex-col items-center">
+            <button key={p.iso} onClick={() => onSelectDate(p.iso)} className="flex shrink-0 flex-col items-center">
               <span className="mb-1 h-4" aria-hidden="true" />
               <span
                 className={[
-                  "flex h-12 w-11 flex-col items-center justify-center rounded-md border bg-ps-surface",
-                  borderClass,
+                  "flex h-12 w-11 flex-col items-center justify-center rounded-md border transition-colors",
+                  isSelected
+                    ? "border-ps-amber bg-ps-amber"
+                    : `bg-ps-surface ${borderClass}`,
                 ].join(" ")}
-                style={pillShadow}
+                style={isSelected ? undefined : pillShadow}
               >
-                <span className="font-mono text-[9px] font-bold uppercase tracking-[0.10em] text-ps-text-ter">
+                <span className={[
+                  "font-mono text-[9px] font-bold uppercase tracking-[0.10em]",
+                  isSelected ? "text-white" : "text-ps-text-ter",
+                ].join(" ")}>
                   {p.weekday}
                 </span>
-                <span className="font-display text-base font-extrabold leading-none text-ps-text">
+                <span className={[
+                  "font-display text-base font-extrabold leading-none",
+                  isSelected ? "text-white" : "text-ps-text",
+                ].join(" ")}>
                   {p.dayNum}
                 </span>
               </span>
               <DashboardPillIndicator status={status} />
-            </span>
+            </button>
           );
         })}
       </div>
