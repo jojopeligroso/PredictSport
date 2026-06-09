@@ -442,11 +442,16 @@ function DashboardDatePills({
               : undefined;
 
           return (
-            <span key={p.iso} className="flex shrink-0 flex-col items-center">
+            <Link
+              key={p.iso}
+              href={`/wc#date-${p.iso}`}
+              aria-label={`${p.weekday} ${p.dayNum} — ${p.fullyComplete} of ${p.totalCount} picked${isComplete ? ", complete" : ""}`}
+              className="flex shrink-0 flex-col items-center text-center focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ps-amber/60 rounded-md"
+            >
               <span className="mb-1 h-4" aria-hidden="true" />
               <span
                 className={[
-                  "flex h-12 w-11 flex-col items-center justify-center rounded-md border bg-ps-surface",
+                  "flex h-12 w-11 flex-col items-center justify-center rounded-md border bg-ps-surface transition-colors hover:bg-ps-bg-alt",
                   borderClass,
                 ].join(" ")}
                 style={pillShadow}
@@ -459,7 +464,7 @@ function DashboardDatePills({
                 </span>
               </span>
               <DashboardPillIndicator status={status} />
-            </span>
+            </Link>
           );
         })}
       </div>
