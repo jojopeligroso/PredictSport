@@ -10,6 +10,8 @@ export type EventStatus =
   | "postponed"
   | "cancelled";
 export type NominationStatus = "pending" | "approved" | "rejected";
+export type ChatMessageType = "user" | "system";
+export type ChatDeletedBy = "user" | "admin";
 export type PredictionType =
   | "winner"
   | "top_n"
@@ -57,7 +59,21 @@ export interface Competition {
   hidden_at: string | null;
   max_entrants: number | null;
   min_entrants: number | null;
+  chat_enabled: boolean;
   created_at: string;
+}
+
+export interface ChatMessage {
+  id: string;
+  competition_id: string;
+  user_id: string;
+  content: string;
+  message_type: ChatMessageType;
+  mentioned_user_ids: string[];
+  created_at: string;
+  updated_at: string | null;
+  deleted_at: string | null;
+  deleted_by: ChatDeletedBy | null;
 }
 
 export type NoteVisibility = "public" | "private";

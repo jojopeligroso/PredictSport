@@ -194,6 +194,7 @@ interface PatchBody {
   type?: CompetitionType;
   allow_nominations?: boolean;
   lock_default_minutes?: number;
+  chat_enabled?: boolean;
 }
 
 /**
@@ -416,6 +417,10 @@ export async function PATCH(request: Request) {
 
   if (Object.prototype.hasOwnProperty.call(body, "lock_default_minutes")) {
     updates.lock_default_minutes = Number(body.lock_default_minutes);
+  }
+
+  if (Object.prototype.hasOwnProperty.call(body, "chat_enabled")) {
+    updates.chat_enabled = Boolean(body.chat_enabled);
   }
 
   if (Object.keys(updates).length === 0) {

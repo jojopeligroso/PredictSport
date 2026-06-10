@@ -33,6 +33,7 @@ export function SettingsSection({ competition, userRole = "admin" }: SettingsSec
   const [editVisibility, setEditVisibility] = useState(competition.visibility);
   const [editAllowNominations, setEditAllowNominations] = useState(competition.allow_nominations);
   const [editLockMinutes, setEditLockMinutes] = useState(competition.lock_default_minutes);
+  const [editChatEnabled, setEditChatEnabled] = useState(competition.chat_enabled);
 
   // Delete state
   const [isDeleting, setIsDeleting] = useState(false);
@@ -114,6 +115,7 @@ export function SettingsSection({ competition, userRole = "admin" }: SettingsSec
     setEditVisibility(competition.visibility);
     setEditAllowNominations(competition.allow_nominations);
     setEditLockMinutes(competition.lock_default_minutes);
+    setEditChatEnabled(competition.chat_enabled);
     setSaveError(null);
     setIsEditing(true);
   };
@@ -143,6 +145,7 @@ export function SettingsSection({ competition, userRole = "admin" }: SettingsSec
           visibility: editVisibility,
           allow_nominations: editAllowNominations,
           lock_default_minutes: editLockMinutes,
+          chat_enabled: editChatEnabled,
         }),
       });
 
@@ -311,6 +314,26 @@ export function SettingsSection({ competition, userRole = "admin" }: SettingsSec
               </span>
             </div>
 
+            <div className="flex items-center gap-3">
+              <label className="text-sm text-ps-text-sec">Competition Chat</label>
+              <button
+                type="button"
+                onClick={() => setEditChatEnabled(!editChatEnabled)}
+                className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
+                  editChatEnabled ? "bg-ps-amber" : "bg-ps-border"
+                }`}
+              >
+                <span
+                  className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+                    editChatEnabled ? "translate-x-6" : "translate-x-1"
+                  }`}
+                />
+              </button>
+              <span className="text-xs text-ps-text-ter">
+                Let members chat within this competition.
+              </span>
+            </div>
+
             <div>
               <label className="block text-sm text-ps-text-sec mb-1">Lock Default (minutes)</label>
               <input
@@ -387,6 +410,14 @@ export function SettingsSection({ competition, userRole = "admin" }: SettingsSec
                 </dt>
                 <dd className="text-sm text-ps-text">
                   {competition.allow_nominations ? "Enabled" : "Disabled"}
+                </dd>
+              </div>
+              <div className="flex justify-between px-4 py-3">
+                <dt className="text-sm text-ps-text-sec">
+                  Chat
+                </dt>
+                <dd className="text-sm text-ps-text">
+                  {competition.chat_enabled ? "Enabled" : "Disabled"}
                 </dd>
               </div>
               <div className="flex justify-between px-4 py-3">
