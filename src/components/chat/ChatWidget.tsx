@@ -10,8 +10,6 @@ interface ChatWidgetProps {
   currentUserId: string;
   currentUserRole: string;
   mode: "mini" | "full";
-  /** Mini mode: callback when close (X) is tapped */
-  onClose?: () => void;
 }
 
 export function ChatWidget({
@@ -19,7 +17,6 @@ export function ChatWidget({
   currentUserId,
   currentUserRole,
   mode,
-  onClose,
 }: ChatWidgetProps) {
   const {
     messages,
@@ -186,21 +183,12 @@ export function ChatWidget({
         mode === "full" ? "h-[80vh] max-h-[80vh]" : "max-h-72"
       }`}
     >
-      {/* Header (mini mode only) */}
-      {mode === "mini" && (
+      {/* Header (full mode only — mini mode header is provided by parent) */}
+      {mode === "full" && (
         <div className="flex items-center justify-between px-3 py-2 border-b border-ps-border">
           <span className="text-xs font-semibold text-ps-text-sec">
             Chat
           </span>
-          {onClose && (
-            <button
-              onClick={onClose}
-              className="text-ps-text-ter hover:text-ps-text text-sm leading-none"
-              aria-label="Close chat"
-            >
-              &times;
-            </button>
-          )}
         </div>
       )}
 

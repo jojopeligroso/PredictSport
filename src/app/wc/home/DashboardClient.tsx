@@ -107,15 +107,19 @@ export function DashboardClient({
   const [expandedEventId, setExpandedEventId] = useState<string | null>(null);
   const [selectedDate, setSelectedDate] = useState<string | null>(null);
 
-  // Smart close for mini chat: closed state persisted in localStorage
-  const chatStorageKey = `chat-closed-${competitionId}`;
-  const [chatClosed, setChatClosed] = useState(false);
+  // Collapsible mini chat: persisted in localStorage
+  const chatStorageKey = `chat-collapsed-${competitionId}`;
+  const [chatCollapsed, setChatCollapsed] = useState(() => {
+    if (typeof window === "undefined") return false;
+    try { return localStorage.getItem(chatStorageKey) === "1"; } catch { return false; }
+  });
 
-  const handleChatClose = () => {
-    setChatClosed(true);
-    try {
-      localStorage.setItem(chatStorageKey, new Date().toISOString());
-    } catch { /* ignore */ }
+  const toggleChatCollapsed = () => {
+    setChatCollapsed((prev) => {
+      const next = !prev;
+      try { localStorage.setItem(chatStorageKey, next ? "1" : "0"); } catch { /* ignore */ }
+      return next;
+    });
   };
 
   // Filter events by selected date pill
@@ -291,27 +295,45 @@ export function DashboardClient({
       </OnboardingSection>
 
       {/* ── 5c. Mini Chat (above leaderboard) ─────────────────────── */}
-      {chatEnabled && isMember && currentUserId && !chatClosed && (
+      {chatEnabled && isMember && currentUserId && (
         <OnboardingSection id="other">
-          <section className="mt-2">
-            <a
-              href="/wc/leaderboard#chat"
-              className="block rounded-xl border border-ps-border bg-ps-surface overflow-hidden"
-            >
-              <div className="flex items-center justify-between px-4 py-3">
-                <span className="text-sm font-bold text-ps-text">Chat</span>
-                <span className="text-xs text-ps-text-ter">Open full chat &rarr;</span>
+          <section className="mt-2 rounded-xl border border-ps-border bg-ps-surface overflow-hidden">
+            {/* Single header: Chat label + full chat link + collapse chevron */}
+            <div className="flex items-center justify-between px-4 py-3">
+              <span className="text-sm font-bold text-ps-text">Chat</span>
+              <div className="flex items-center gap-2">
+                <a
+                  href="/wc/leaderboard#chat"
+                  className="text-xs text-ps-text-ter hover:text-ps-text-sec"
+                  onClick={(e) => e.stopPropagation()}
+                >
+                  Open full chat &rarr;
+                </a>
+                <button
+                  onClick={toggleChatCollapsed}
+                  className="flex h-6 w-6 items-center justify-center rounded text-ps-text-sec hover:text-ps-text"
+                  aria-label={chatCollapsed ? "Expand chat" : "Collapse chat"}
+                >
+                  <svg
+                    className={`h-4 w-4 transition-transform ${chatCollapsed ? "" : "rotate-180"}`}
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                  >
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                  </svg>
+                </button>
               </div>
-            </a>
-            <div className="mt-1 rounded-xl border border-ps-border bg-ps-surface overflow-hidden">
+            </div>
+            {/* Collapsible body */}
+            {!chatCollapsed && (
               <ChatWidget
                 competitionId={competitionId}
                 currentUserId={currentUserId}
                 currentUserRole={memberRole}
                 mode="mini"
-                onClose={handleChatClose}
               />
-            </div>
+            )}
           </section>
         </OnboardingSection>
       )}
