@@ -3,7 +3,7 @@
 import { useCallback, useRef, useState } from "react";
 import Image from "next/image";
 import { getInitials } from "@/lib/display-name";
-import type { ChatMessageWithUser, UseChatMember } from "./useRealtimeChat";
+import type { ChatMessageWithUser, UseChatMember, ReplyPreview } from "./useRealtimeChat";
 
 const ROLE_RANK: Record<string, number> = {
   participant: 0,
@@ -24,6 +24,8 @@ interface ChatMessageProps {
   onDelete?: (messageId: string) => void;
   onEdit?: (messageId: string, content: string) => void;
   onMute?: (userId: string) => void;
+  onReply?: (message: ChatMessageWithUser) => void;
+  onScrollToMessage?: (messageId: string) => void;
 }
 
 const EDIT_WINDOW_MS = 5 * 60 * 1000;
@@ -88,11 +90,17 @@ export function ChatMessage({
   onDelete,
   onEdit,
   onMute,
+  onReply,
+  onScrollToMessage,
 }: ChatMessageProps) {
   const [isEditing, setIsEditing] = useState(false);
   const [editContent, setEditContent] = useState(message.content);
   const [showContextMenu, setShowContextMenu] = useState(false);
+  const [showImageLightbox, setShowImageLightbox] = useState(false);
   const longPressTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const swipeStartX = useRef<number | null>(null);
+  const swipeOffset = useRef(0);
+  const messageEl = useRef<HTMLDivElement>(null);
 
   const isOwn = message.user_id === currentUserId;
   const isDeleted = !!message.deleted_at;
@@ -111,19 +119,55 @@ export function ChatMessage({
   const canMute = !isOwn && actorRank >= ROLE_RANK.mod && actorRank > targetRank;
 
   // Long-press handlers for context menu
-  const handleTouchStart = useCallback(() => {
-    if (!canMute && !canModDelete) return;
-    longPressTimer.current = setTimeout(() => {
-      setShowContextMenu(true);
-    }, 500);
-  }, [canMute, canModDelete]);
+  const handleTouchStart = useCallback(
+    (e: React.TouchEvent) => {
+      swipeStartX.current = e.touches[0].clientX;
+      if (!canMute && !canModDelete) return;
+      longPressTimer.current = setTimeout(() => {
+        setShowContextMenu(true);
+      }, 500);
+    },
+    [canMute, canModDelete]
+  );
+
+  const handleTouchMove = useCallback(
+    (e: React.TouchEvent) => {
+      if (swipeStartX.current === null) return;
+      const dx = e.touches[0].clientX - swipeStartX.current;
+      // Cancel long-press on any significant move
+      if (Math.abs(dx) > 10 && longPressTimer.current) {
+        clearTimeout(longPressTimer.current);
+        longPressTimer.current = null;
+      }
+      // Only allow right swipe for reply (non-deleted, non-system)
+      if (dx > 0 && !isDeleted && !isSystem && onReply) {
+        swipeOffset.current = Math.min(dx, 80);
+        if (messageEl.current) {
+          messageEl.current.style.transform = `translateX(${swipeOffset.current}px)`;
+          messageEl.current.style.transition = "none";
+        }
+      }
+    },
+    [isDeleted, isSystem, onReply]
+  );
 
   const handleTouchEnd = useCallback(() => {
     if (longPressTimer.current) {
       clearTimeout(longPressTimer.current);
       longPressTimer.current = null;
     }
-  }, []);
+    // If swiped far enough, trigger reply
+    if (swipeOffset.current >= 60 && onReply && !isDeleted && !isSystem) {
+      onReply(message);
+    }
+    // Animate back
+    if (messageEl.current) {
+      messageEl.current.style.transform = "translateX(0)";
+      messageEl.current.style.transition = "transform 0.2s ease-out";
+    }
+    swipeStartX.current = null;
+    swipeOffset.current = 0;
+  }, [message, onReply, isDeleted, isSystem]);
 
   // System messages
   if (isSystem) {
@@ -189,163 +233,253 @@ export function ChatMessage({
   const showAvatar = isFirstInGroup && !isOwn;
   const showTimestamp = isLastInGroup;
 
+  const canReply = !isDeleted && !isSystem && !!onReply;
+
   return (
-    <div
-      className={`group relative flex gap-2 ${isFirstInGroup ? "pt-1.5" : "pt-px"} ${isOwn ? "flex-row-reverse" : "flex-row"}`}
-    >
-      {/* Avatar — show on first in group, reserve space otherwise */}
-      {!isOwn && (
-        <div className="flex-shrink-0 w-7">
-          {showAvatar ? (
-            <div className="w-7 h-7 rounded-full bg-ps-chip flex items-center justify-center">
-              {message.avatar_url ? (
-                <Image
-                  src={message.avatar_url}
-                  alt=""
-                  width={28}
-                  height={28}
-                  className="rounded-full object-cover"
+    <>
+      <div
+        ref={messageEl}
+        data-message-id={message.id}
+        className={`group relative flex gap-2 ${isFirstInGroup ? "pt-1.5" : "pt-px"} ${isOwn ? "flex-row-reverse" : "flex-row"}`}
+        onTouchStart={handleTouchStart}
+        onTouchMove={handleTouchMove}
+        onTouchEnd={handleTouchEnd}
+        onTouchCancel={handleTouchEnd}
+      >
+        {/* Avatar — show on first in group, reserve space otherwise */}
+        {!isOwn && (
+          <div className="flex-shrink-0 w-7">
+            {showAvatar ? (
+              <div className="w-7 h-7 rounded-full bg-ps-chip flex items-center justify-center">
+                {message.avatar_url ? (
+                  <Image
+                    src={message.avatar_url}
+                    alt=""
+                    width={28}
+                    height={28}
+                    className="rounded-full object-cover"
+                  />
+                ) : (
+                  <span className="text-[10px] font-semibold text-ps-text-sec">
+                    {getInitials(message.display_name)}
+                  </span>
+                )}
+              </div>
+            ) : null}
+          </div>
+        )}
+
+        {/* Message bubble */}
+        <div
+          className={`max-w-[75%] ${isOwn ? "items-end" : "items-start"}`}
+        >
+          {/* Sender name — only on first in group */}
+          {showName && (
+            <p className={`text-[10px] font-semibold text-ps-text-sec mb-0.5 ${isOwn ? "text-right mr-1" : "ml-1"}`}>
+              {message.display_name}
+            </p>
+          )}
+
+          <div
+            className={`rounded-2xl px-3 py-1.5 text-sm ${
+              isOwn
+                ? "bg-ps-amber/15 text-ps-text"
+                : "bg-ps-chip text-ps-text"
+            }`}
+            onContextMenu={(e) => {
+              if (canMute || canModDelete || canReply) {
+                e.preventDefault();
+                setShowContextMenu(true);
+              }
+            }}
+          >
+            {/* Reply preview */}
+            {message.reply_preview && (
+              <button
+                type="button"
+                onClick={() => onScrollToMessage?.(message.reply_preview!.id)}
+                className={`w-full text-left mb-1.5 rounded-lg px-2 py-1 border-l-2 border-ps-amber/60 ${
+                  isOwn ? "bg-ps-amber/10" : "bg-ps-bg/50"
+                }`}
+              >
+                <p className="text-[10px] font-semibold text-ps-amber truncate">
+                  {message.reply_preview.display_name}
+                </p>
+                <p className="text-[11px] text-ps-text-sec truncate">
+                  {message.reply_preview.media_type
+                    ? message.reply_preview.media_type === "gif" ? "GIF" : "Photo"
+                    : message.reply_preview.content}
+                </p>
+              </button>
+            )}
+
+            {isEditing ? (
+              <div className="flex gap-1">
+                <input
+                  type="text"
+                  value={editContent}
+                  onChange={(e) => setEditContent(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter") handleEditSubmit();
+                    if (e.key === "Escape") setIsEditing(false);
+                  }}
+                  className="flex-1 bg-transparent text-sm text-ps-text outline-none"
+                  autoFocus
                 />
-              ) : (
-                <span className="text-[10px] font-semibold text-ps-text-sec">
-                  {getInitials(message.display_name)}
+                <button
+                  onClick={handleEditSubmit}
+                  className="text-xs text-ps-amber font-semibold"
+                >
+                  Save
+                </button>
+              </div>
+            ) : (
+              <>
+                {/* Media content */}
+                {message.media_url && !message.deleted_at && (
+                  <button
+                    type="button"
+                    onClick={() => setShowImageLightbox(true)}
+                    className="block mb-1 rounded-lg overflow-hidden max-w-[240px]"
+                  >
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img
+                      src={message.media_url}
+                      alt={message.media_type === "gif" ? "GIF" : "Photo"}
+                      className="w-full h-auto max-h-[300px] object-contain rounded-lg"
+                      loading="lazy"
+                    />
+                  </button>
+                )}
+
+                {/* Text content */}
+                {message.content && (
+                  <p className="whitespace-pre-wrap break-words">
+                    {renderContent(message.content)}
+                  </p>
+                )}
+              </>
+            )}
+          </div>
+
+          {/* Context menu (long-press / right-click) */}
+          {showContextMenu && (
+            <>
+              <div
+                className="fixed inset-0 z-40"
+                onClick={() => setShowContextMenu(false)}
+              />
+              <div className="absolute z-50 mt-1 rounded-lg border border-ps-border bg-ps-surface shadow-lg py-1 min-w-[140px]">
+                {canReply && (
+                  <button
+                    onClick={() => {
+                      setShowContextMenu(false);
+                      onReply?.(message);
+                    }}
+                    className="block w-full text-left px-3 py-1.5 text-xs text-ps-text-sec hover:bg-ps-chip"
+                  >
+                    Reply
+                  </button>
+                )}
+                {canModDelete && (
+                  <button
+                    onClick={() => {
+                      setShowContextMenu(false);
+                      onDelete?.(message.id);
+                    }}
+                    className="block w-full text-left px-3 py-1.5 text-xs text-ps-red hover:bg-ps-chip"
+                  >
+                    Delete message
+                  </button>
+                )}
+                {canMute && (
+                  <button
+                    onClick={() => {
+                      setShowContextMenu(false);
+                      onMute?.(message.user_id);
+                    }}
+                    className="block w-full text-left px-3 py-1.5 text-xs text-ps-text-sec hover:bg-ps-chip"
+                  >
+                    Mute this user
+                  </button>
+                )}
+              </div>
+            </>
+          )}
+
+          {/* Meta row: time, edited, actions — only on last in group (or when actions available) */}
+          {(showTimestamp || showEditButton || canDelete || canReply) && (
+            <div
+              className={`flex items-center gap-1.5 mt-0.5 ${
+                isOwn ? "justify-end mr-1" : "ml-1"
+              }`}
+            >
+              {showTimestamp && (
+                <span className="text-[10px] text-ps-text-ter">
+                  {formatMessageTime(message.created_at)}
+                </span>
+              )}
+              {isEdited && showTimestamp && (
+                <span className="text-[10px] text-ps-text-ter italic">
+                  (edited)
+                </span>
+              )}
+
+              {/* Actions — visible on hover */}
+              {(showEditButton || canDelete || canReply) && (
+                <span className="opacity-0 group-hover:opacity-100 transition-opacity flex gap-1">
+                  {canReply && (
+                    <button
+                      onClick={() => onReply?.(message)}
+                      className="text-[10px] text-ps-text-ter hover:text-ps-text"
+                    >
+                      reply
+                    </button>
+                  )}
+                  {showEditButton && (
+                    <button
+                      onClick={handleStartEdit}
+                      className="text-[10px] text-ps-text-ter hover:text-ps-text"
+                    >
+                      edit
+                    </button>
+                  )}
+                  {canDelete && (
+                    <button
+                      onClick={() => onDelete?.(message.id)}
+                      className="text-[10px] text-ps-text-ter hover:text-ps-red"
+                    >
+                      delete
+                    </button>
+                  )}
                 </span>
               )}
             </div>
-          ) : null}
-        </div>
-      )}
-
-      {/* Message bubble */}
-      <div
-        className={`max-w-[75%] ${isOwn ? "items-end" : "items-start"}`}
-      >
-        {/* Sender name — only on first in group */}
-        {showName && (
-          <p className={`text-[10px] font-semibold text-ps-text-sec mb-0.5 ${isOwn ? "text-right mr-1" : "ml-1"}`}>
-            {message.display_name}
-          </p>
-        )}
-
-        <div
-          className={`rounded-2xl px-3 py-1.5 text-sm ${
-            isOwn
-              ? "bg-ps-amber/15 text-ps-text"
-              : "bg-ps-chip text-ps-text"
-          }`}
-          onTouchStart={handleTouchStart}
-          onTouchEnd={handleTouchEnd}
-          onTouchCancel={handleTouchEnd}
-          onContextMenu={(e) => {
-            if (canMute || canModDelete) {
-              e.preventDefault();
-              setShowContextMenu(true);
-            }
-          }}
-        >
-          {isEditing ? (
-            <div className="flex gap-1">
-              <input
-                type="text"
-                value={editContent}
-                onChange={(e) => setEditContent(e.target.value)}
-                onKeyDown={(e) => {
-                  if (e.key === "Enter") handleEditSubmit();
-                  if (e.key === "Escape") setIsEditing(false);
-                }}
-                className="flex-1 bg-transparent text-sm text-ps-text outline-none"
-                autoFocus
-              />
-              <button
-                onClick={handleEditSubmit}
-                className="text-xs text-ps-amber font-semibold"
-              >
-                Save
-              </button>
-            </div>
-          ) : (
-            <p className="whitespace-pre-wrap break-words">
-              {renderContent(message.content)}
-            </p>
           )}
         </div>
-
-        {/* Context menu (long-press / right-click) */}
-        {showContextMenu && (
-          <>
-            <div
-              className="fixed inset-0 z-40"
-              onClick={() => setShowContextMenu(false)}
-            />
-            <div className="absolute z-50 mt-1 rounded-lg border border-ps-border bg-ps-surface shadow-lg py-1 min-w-[140px]">
-              {canModDelete && (
-                <button
-                  onClick={() => {
-                    setShowContextMenu(false);
-                    onDelete?.(message.id);
-                  }}
-                  className="block w-full text-left px-3 py-1.5 text-xs text-ps-red hover:bg-ps-chip"
-                >
-                  Delete message
-                </button>
-              )}
-              {canMute && (
-                <button
-                  onClick={() => {
-                    setShowContextMenu(false);
-                    onMute?.(message.user_id);
-                  }}
-                  className="block w-full text-left px-3 py-1.5 text-xs text-ps-text-sec hover:bg-ps-chip"
-                >
-                  Mute this user
-                </button>
-              )}
-            </div>
-          </>
-        )}
-
-        {/* Meta row: time, edited, actions — only on last in group (or when actions available) */}
-        {(showTimestamp || showEditButton || canDelete) && (
-          <div
-            className={`flex items-center gap-1.5 mt-0.5 ${
-              isOwn ? "justify-end mr-1" : "ml-1"
-            }`}
-          >
-            {showTimestamp && (
-              <span className="text-[10px] text-ps-text-ter">
-                {formatMessageTime(message.created_at)}
-              </span>
-            )}
-            {isEdited && showTimestamp && (
-              <span className="text-[10px] text-ps-text-ter italic">
-                (edited)
-              </span>
-            )}
-
-            {/* Actions — visible on hover */}
-            {(showEditButton || canDelete) && (
-              <span className="opacity-0 group-hover:opacity-100 transition-opacity flex gap-1">
-                {showEditButton && (
-                  <button
-                    onClick={handleStartEdit}
-                    className="text-[10px] text-ps-text-ter hover:text-ps-text"
-                  >
-                    edit
-                  </button>
-                )}
-                {canDelete && (
-                  <button
-                    onClick={() => onDelete?.(message.id)}
-                    className="text-[10px] text-ps-text-ter hover:text-ps-red"
-                  >
-                    delete
-                  </button>
-                )}
-              </span>
-            )}
-          </div>
-        )}
       </div>
-    </div>
+
+      {/* Image lightbox */}
+      {showImageLightbox && message.media_url && (
+        <div
+          className="fixed inset-0 z-[100] flex items-center justify-center bg-black/80 p-4"
+          onClick={() => setShowImageLightbox(false)}
+        >
+          <button
+            className="absolute top-4 right-4 text-white/80 hover:text-white text-2xl font-bold"
+            onClick={() => setShowImageLightbox(false)}
+          >
+            &times;
+          </button>
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src={message.media_url}
+            alt={message.media_type === "gif" ? "GIF" : "Photo"}
+            className="max-w-full max-h-[90vh] object-contain rounded-lg"
+            onClick={(e) => e.stopPropagation()}
+          />
+        </div>
+      )}
+    </>
   );
 }

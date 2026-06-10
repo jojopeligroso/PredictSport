@@ -12,6 +12,7 @@ export type EventStatus =
 export type NominationStatus = "pending" | "approved" | "rejected";
 export type ChatMessageType = "user" | "system";
 export type ChatDeletedBy = "user" | "mod" | "admin";
+export type ChatMediaType = "image" | "gif";
 export type PredictionType =
   | "winner"
   | "top_n"
@@ -70,6 +71,9 @@ export interface ChatMessage {
   content: string;
   message_type: ChatMessageType;
   mentioned_user_ids: string[];
+  reply_to_id: string | null;
+  media_url: string | null;
+  media_type: ChatMediaType | null;
   created_at: string;
   updated_at: string | null;
   deleted_at: string | null;

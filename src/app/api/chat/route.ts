@@ -49,7 +49,7 @@ export async function GET(request: NextRequest) {
   let query = supabase
     .from("chat_messages")
     .select(
-      "id, competition_id, user_id, content, message_type, mentioned_user_ids, created_at, updated_at, deleted_at, deleted_by"
+      "id, competition_id, user_id, content, message_type, mentioned_user_ids, reply_to_id, media_url, media_type, created_at, updated_at, deleted_at, deleted_by"
     )
     .eq("competition_id", competitionId)
     .order("created_at", { ascending: false })
@@ -112,6 +112,9 @@ export async function POST(request: Request) {
     competitionId: string;
     content: string;
     mentionedUserIds?: string[];
+    replyToId?: string;
+    mediaUrl?: string;
+    mediaType?: "image" | "gif";
   };
   try {
     body = await request.json();
@@ -126,10 +129,12 @@ export async function POST(request: Request) {
     );
   }
 
-  const content = body.content?.trim();
-  if (!content) {
+  const content = body.content?.trim() ?? "";
+  const hasMedia = !!body.mediaUrl;
+
+  if (!content && !hasMedia) {
     return NextResponse.json(
-      { error: "Message content is required" },
+      { error: "Message content or media is required" },
       { status: 400 }
     );
   }
@@ -204,14 +209,34 @@ export async function POST(request: Request) {
     }
   }
 
+  // Validate reply_to_id if provided
+  if (body.replyToId) {
+    const { data: parentMsg } = await supabase
+      .from("chat_messages")
+      .select("id")
+      .eq("id", body.replyToId)
+      .eq("competition_id", body.competitionId)
+      .single();
+
+    if (!parentMsg) {
+      return NextResponse.json(
+        { error: "Reply target message not found" },
+        { status: 400 }
+      );
+    }
+  }
+
   const { data: message, error } = await supabase
     .from("chat_messages")
     .insert({
       competition_id: body.competitionId,
       user_id: user.id,
-      content,
+      content: content || "",
       message_type: "user",
       mentioned_user_ids: mentionedUserIds,
+      reply_to_id: body.replyToId ?? null,
+      media_url: body.mediaUrl ?? null,
+      media_type: body.mediaType ?? null,
     })
     .select()
     .single();

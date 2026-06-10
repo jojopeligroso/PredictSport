@@ -4,6 +4,52 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { ChatMessage } from "./ChatMessage";
 import { MentionAutocomplete, findAtTrigger } from "./MentionAutocomplete";
 import { useRealtimeChat } from "./useRealtimeChat";
+import type { ChatMessageWithUser } from "./useRealtimeChat";
+
+const MAX_IMAGE_DIMENSION = 1200;
+const ALLOWED_MEDIA_TYPES = ["image/jpeg", "image/png", "image/gif", "image/webp"];
+
+/** Compress an image file client-side using canvas (skips GIFs to preserve animation) */
+async function compressImage(file: File): Promise<File> {
+  if (file.type === "image/gif") return file;
+
+  return new Promise((resolve) => {
+    const img = new window.Image();
+    img.onload = () => {
+      let { width, height } = img;
+
+      // Only resize if larger than max dimension
+      if (width <= MAX_IMAGE_DIMENSION && height <= MAX_IMAGE_DIMENSION) {
+        resolve(file);
+        return;
+      }
+
+      const ratio = Math.min(MAX_IMAGE_DIMENSION / width, MAX_IMAGE_DIMENSION / height);
+      width = Math.round(width * ratio);
+      height = Math.round(height * ratio);
+
+      const canvas = document.createElement("canvas");
+      canvas.width = width;
+      canvas.height = height;
+      const ctx = canvas.getContext("2d")!;
+      ctx.drawImage(img, 0, 0, width, height);
+
+      canvas.toBlob(
+        (blob) => {
+          if (blob) {
+            resolve(new File([blob], file.name, { type: file.type }));
+          } else {
+            resolve(file);
+          }
+        },
+        file.type,
+        0.85
+      );
+    };
+    img.onerror = () => resolve(file);
+    img.src = URL.createObjectURL(file);
+  });
+}
 
 interface ChatWidgetProps {
   competitionId: string;
@@ -28,6 +74,7 @@ export function ChatWidget({
     deleteMessage,
     editMessage,
     muteUser,
+    uploadMedia,
     isSending,
     mutedUntil,
   } = useRealtimeChat({ competitionId, currentUserId, mode });
@@ -37,8 +84,12 @@ export function ChatWidget({
   const [showMentions, setShowMentions] = useState(false);
   const [sendError, setSendError] = useState<string | null>(null);
   const [muteError, setMuteError] = useState<string | null>(null);
+  const [replyTo, setReplyTo] = useState<ChatMessageWithUser | null>(null);
+  const [mediaPreview, setMediaPreview] = useState<{ file: File; url: string } | null>(null);
+  const [isUploading, setIsUploading] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const prevMessageCount = useRef(0);
 
   // Compute mute remaining time
@@ -114,21 +165,103 @@ export function ChatWidget({
     [members]
   );
 
+  // Handle reply
+  const handleReply = useCallback((msg: ChatMessageWithUser) => {
+    setReplyTo(msg);
+    inputRef.current?.focus();
+  }, []);
+
+  // Scroll to a specific message
+  const handleScrollToMessage = useCallback((messageId: string) => {
+    const el = scrollRef.current?.querySelector(`[data-message-id="${messageId}"]`);
+    if (el) {
+      el.scrollIntoView({ behavior: "smooth", block: "center" });
+      // Brief highlight
+      el.classList.add("bg-ps-amber/10");
+      setTimeout(() => el.classList.remove("bg-ps-amber/10"), 1500);
+    }
+  }, []);
+
+  // Handle file selection
+  const handleFileSelect = useCallback(async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    // Reset file input so same file can be re-selected
+    e.target.value = "";
+
+    if (!ALLOWED_MEDIA_TYPES.includes(file.type)) {
+      setSendError("Only JPEG, PNG, WebP, and GIF files are allowed");
+      setTimeout(() => setSendError(null), 4000);
+      return;
+    }
+
+    const maxSize = file.type === "image/gif" ? 3 * 1024 * 1024 : 5 * 1024 * 1024;
+    if (file.size > maxSize) {
+      setSendError(file.type === "image/gif" ? "GIF must be under 3MB" : "Image must be under 5MB");
+      setTimeout(() => setSendError(null), 4000);
+      return;
+    }
+
+    // Compress image (skips GIFs)
+    const compressed = await compressImage(file);
+    const previewUrl = URL.createObjectURL(compressed);
+    setMediaPreview({ file: compressed, url: previewUrl });
+  }, []);
+
+  // Clear media preview
+  const clearMedia = useCallback(() => {
+    if (mediaPreview) {
+      URL.revokeObjectURL(mediaPreview.url);
+      setMediaPreview(null);
+    }
+  }, [mediaPreview]);
+
   // Send message
   const handleSend = async () => {
     const content = inputValue.trim();
-    if (!content || isSending) return;
+    if (!content && !mediaPreview) return;
+    if (isSending || isUploading) return;
 
     const mentionedIds = extractMentionedUserIds(content);
+    const currentReplyTo = replyTo;
+    const currentMedia = mediaPreview;
+
     setInputValue("");
     setShowMentions(false);
     setSendError(null);
+    setReplyTo(null);
+    setMediaPreview(null);
+
     try {
-      await sendMessage(content, mentionedIds);
+      let mediaUrl: string | undefined;
+      let mediaType: "image" | "gif" | undefined;
+
+      // Upload media first if present
+      if (currentMedia) {
+        setIsUploading(true);
+        try {
+          const result = await uploadMedia(currentMedia.file);
+          mediaUrl = result.url;
+          mediaType = result.mediaType;
+        } finally {
+          setIsUploading(false);
+          URL.revokeObjectURL(currentMedia.url);
+        }
+      }
+
+      await sendMessage({
+        content,
+        mentionedUserIds: mentionedIds,
+        replyToId: currentReplyTo?.id,
+        mediaUrl,
+        mediaType,
+      });
     } catch (err) {
       const msg = err instanceof Error ? err.message : "Failed to send";
       setSendError(msg);
       setInputValue(content); // restore input so user can retry
+      setReplyTo(currentReplyTo); // restore reply target
       setTimeout(() => setSendError(null), 4000);
     }
   };
@@ -142,6 +275,11 @@ export function ChatWidget({
     if (e.key === "Enter" && !e.shiftKey && !showMentions) {
       e.preventDefault();
       handleSend();
+    }
+
+    // Escape clears reply
+    if (e.key === "Escape" && replyTo) {
+      setReplyTo(null);
     }
   };
 
@@ -228,6 +366,8 @@ export function ChatWidget({
               onDelete={deleteMessage}
               onEdit={editMessage}
               onMute={handleMuteUser}
+              onReply={handleReply}
+              onScrollToMessage={handleScrollToMessage}
             />
           ))
         )}
@@ -257,7 +397,69 @@ export function ChatWidget({
               />
             )}
 
+            {/* Reply preview bar */}
+            {replyTo && (
+              <div className="flex items-center gap-2 mb-2 rounded-lg bg-ps-chip/50 px-3 py-1.5 border-l-2 border-ps-amber">
+                <div className="flex-1 min-w-0">
+                  <p className="text-[10px] font-semibold text-ps-amber truncate">
+                    {replyTo.display_name}
+                  </p>
+                  <p className="text-[11px] text-ps-text-sec truncate">
+                    {replyTo.media_url
+                      ? replyTo.media_type === "gif" ? "GIF" : "Photo"
+                      : replyTo.content}
+                  </p>
+                </div>
+                <button
+                  onClick={() => setReplyTo(null)}
+                  className="flex-shrink-0 text-ps-text-ter hover:text-ps-text text-sm font-bold"
+                >
+                  &times;
+                </button>
+              </div>
+            )}
+
+            {/* Media preview */}
+            {mediaPreview && (
+              <div className="relative mb-2 inline-block">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
+                  src={mediaPreview.url}
+                  alt="Attachment preview"
+                  className="max-h-32 max-w-[200px] rounded-lg object-contain border border-ps-border"
+                />
+                <button
+                  onClick={clearMedia}
+                  className="absolute -top-1.5 -right-1.5 w-5 h-5 rounded-full bg-ps-red text-white text-xs font-bold flex items-center justify-center shadow"
+                >
+                  &times;
+                </button>
+              </div>
+            )}
+
             <div className="flex items-center gap-2">
+              {/* Media upload button */}
+              <button
+                type="button"
+                onClick={() => fileInputRef.current?.click()}
+                disabled={isUploading}
+                className="flex-shrink-0 rounded-xl p-1.5 text-ps-text-ter hover:text-ps-text hover:bg-ps-chip transition-colors disabled:opacity-40"
+                title="Attach image or GIF"
+              >
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <rect x="3" y="3" width="18" height="18" rx="2" ry="2" />
+                  <circle cx="8.5" cy="8.5" r="1.5" />
+                  <polyline points="21 15 16 10 5 21" />
+                </svg>
+              </button>
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept="image/jpeg,image/png,image/gif,image/webp"
+                className="hidden"
+                onChange={handleFileSelect}
+              />
+
               <input
                 ref={inputRef}
                 type="text"
@@ -269,16 +471,16 @@ export function ChatWidget({
                     (e.target as HTMLInputElement).selectionStart ?? 0
                   )
                 }
-                placeholder="Type a message..."
+                placeholder={replyTo ? "Reply..." : "Type a message..."}
                 maxLength={2000}
                 className="flex-1 rounded-xl border border-ps-border bg-ps-bg px-3 py-1.5 text-sm text-ps-text placeholder:text-ps-text-ter focus:outline-none focus:ring-1 focus:ring-ps-amber"
               />
               <button
                 onClick={handleSend}
-                disabled={!inputValue.trim() || isSending}
+                disabled={(!inputValue.trim() && !mediaPreview) || isSending || isUploading}
                 className="rounded-xl bg-ps-amber px-3 py-1.5 text-sm font-bold text-ps-bg hover:opacity-90 disabled:opacity-40"
               >
-                {isSending ? "..." : "Send"}
+                {isUploading ? "..." : isSending ? "..." : "Send"}
               </button>
             </div>
           </>
