@@ -2,7 +2,7 @@
 
 ## Project Overview
 
-Social sports prediction platform. Admin builds competitions with rounds of mixed-sport events. Participants predict outcomes, earn points, compete on leaderboards. Built for bragging rights.
+Social sports prediction platform. Tournament blueprints define fixture catalogues, classification definitions, scoring rules, and bracket shapes. Competition instances are instantiated from blueprints — multiple instances can run concurrently from the same blueprint. Participants join instances, predict fixture outcomes, earn points, compete on per-instance leaderboards. A Global Classification aggregates across instances when total entrants exceed a threshold. Built for bragging rights.
 
 ## Commands
 
@@ -34,15 +34,19 @@ No test framework configured yet.
 ### Data Model (key relationships)
 
 ```
-Competition → Rounds → Events → EventPredictionTypes
-                                → Predictions
-Competition → CompetitionMembers
+Tournament Blueprint (sporting_tournaments + sporting_stages + bracket_templates)
+  └─ Fixture Catalogue (events — shared across all instances)
+
+Competition Instance (competitions row) → Rounds → Events → EventPredictionTypes
+                                                           → Predictions
+Competition Instance → CompetitionMembers → ClassificationMemberships
 ```
 
-- **Personal competitions** — Each user has one `type='personal'` competition (auto-created at signup). Same schema as group competitions but `scoring_rules='{}'`, no rounds, events created on-the-fly. See `docs/DESIGN-PERSONAL-PREDICTIONS-UNIFICATION.md`.
-- **Rounds** group events (can mix sports/leagues). `round_number` unique per competition.
+- **Blueprint vs Instance:** A tournament blueprint defines the fixture catalogue, classification types, scoring defaults, and bracket shape. Competition instances are instantiated from blueprints. Fixtures are shared; predictions/standings are per-instance. See `docs/WC-TERMINOLOGY-CONTRACT.md`.
+- **Personal competitions** — Each user has one `type='personal'` competition instance (auto-created at signup). Same schema as group instances but `scoring_rules='{}'`, no rounds, events created on-the-fly. See `docs/DESIGN-PERSONAL-PREDICTIONS-UNIFICATION.md`.
+- **Rounds** group fixtures (can mix sports/leagues). `round_number` unique per instance.
 - **EventPredictionTypes** normalised table. Each row = one prediction type for one event, with its own points/partial_points/config.
-- **Competition.scoring_rules** is the default template; `event_prediction_types` is source of truth per event.
+- **Competition.scoring_rules** is the default from the blueprint; `event_prediction_types` is source of truth per event.
 - **Competition.min_rounds_required** — minimum rounds to participate (null = all).
 - **Competition.allow_prediction_updates** — can participants change predictions before lock?
 - `events.prediction_types` JSONB column has been dropped. All prediction type data is in `event_prediction_types` rows.

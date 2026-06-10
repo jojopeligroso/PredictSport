@@ -9,7 +9,7 @@ Leaderboard standings can be computed live from prediction scores, but live reca
 
 ## Decision
 
-`classification_standings_snapshots` are immutable denormalised JSON records written after Prediction Window or Sporting Stage finalisation. They store the authoritative leaderboard state for one Classification at one finalisation point.
+`classification_standings_snapshots` are immutable denormalised JSON records written after Prediction Window or Sporting Stage finalisation within a competition instance. They store the authoritative leaderboard state for one Classification at one finalisation point. Each instance produces its own snapshots independently, even when multiple instances share the same tournament blueprint and fixture results.
 
 Snapshot types: `window`, `stage`, `final`, `correction`. Generation methods: `manual`, `automatic`, `correction`.
 

@@ -15,9 +15,11 @@ Three product modes: `predictsport_full` (default), `world_cup_2026_shell`, `wor
 
 Deployment: one shared GitHub repo, two Vercel projects pointing to the same Supabase backend. The shell hides unrelated routes and redirects unsupported paths to the World Cup home page.
 
-World Cup specificity belongs in: template data, product mode configuration, adapter logic, seeded schedule data, branded shell copy and routing.
+World Cup specificity belongs in: the tournament blueprint (scoring rules, classification definitions, bracket shape, fixture catalogue), product mode configuration, adapter logic, seeded schedule data, branded shell copy and routing.
 
-World Cup specificity must not be hard-coded into: generic bracket engine, generic Classification persistence, generic leaderboard calculations, generic result finalisation jobs, generic Prediction Window locking logic.
+World Cup specificity must not be hard-coded into: generic bracket engine, generic Classification persistence, generic leaderboard calculations, generic result finalisation jobs, generic Prediction Window locking logic. These generic systems must support multiple concurrent competition instances instantiated from the same tournament blueprint.
+
+In Phase 1, the shell deploys a single competition instance. The architecture supports multiple concurrent instances from the same tournament blueprint, with auto-provisioning when an instance reaches its entrant cap.
 
 ## Rationale
 
@@ -31,3 +33,4 @@ World Cup specificity must not be hard-coded into: generic bracket engine, gener
 - Middleware must gate routes based on product mode.
 - Navigation components must conditionally render based on product mode.
 - Archive mode must export static JSON and static pages before the main app schema evolves post-tournament.
+- The fixture catalogue is shared across all competition instances. Fixtures are not duplicated per instance.

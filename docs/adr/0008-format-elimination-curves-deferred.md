@@ -12,7 +12,7 @@ The original ADR deferred exact curve definition to a dedicated design session. 
 
 ## Decision
 
-Phase 1 uses a formula-based elimination curve generator that accepts any entrant count from 8 to 96 (not just presets). The curve is generated at PW1 lock and stored as immutable template data.
+Phase 1 uses a formula-based elimination curve generator that accepts any entrant count from 8 to 96 (not just presets). The curve formula is defined in the tournament blueprint. For each competition instance, the curve is generated at PW1 lock from the instance's actual entrant count and stored as an immutable per-instance snapshot in `classifications.config.elimination_curve`.
 
 **Core formula:**
 - Group Stage survivor target: `ceil(N * 2/3)`

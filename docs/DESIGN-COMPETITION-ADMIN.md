@@ -97,7 +97,7 @@ Dedicated full page.
 - House rules text
 - Communication (announcements, pinned messages, notifications)
 - Stakes tracking + Treasurer role (96-member cap)
-- Global Classification (platform-wide leaderboard, >2k users, same scores)
+- Global Classification (platform-wide leaderboard aggregating all competition instances from the same tournament blueprint, >2k total entrants across all instances)
 - Email allowlists (layer on Approval mode)
 - Public user profiles
 - Pause / archive / delete league on /wc

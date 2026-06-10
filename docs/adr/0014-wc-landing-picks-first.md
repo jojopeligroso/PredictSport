@@ -9,7 +9,7 @@ A user test of the WC surface revealed that the four-tab IA (Picks · Bracket ·
 
 The previous `/wc` landing was an ink-on-poster hero card stack with the bracket as the headline CTA. This shipped well for power users but tested poorly with casuals — they bounced before submitting a single pick.
 
-Separately, SPEC.md §16.10 says the parent prediction game closes at PW1 lock (1 minute before the first MD1 kickoff). This is a hard cutoff with no slack — viable for a fully-marketed tournament with everyone signed up beforehand, but unsuitable for our small-friend-group reality where someone always remembers the day before kickoff.
+Separately, SPEC.md §16.10 says a competition instance closes at PW1 lock (1 minute before the first MD1 kickoff). This is a hard cutoff with no slack — viable for a fully-marketed tournament with everyone signed up beforehand, but unsuitable for our small-friend-group reality where someone always remembers the day before kickoff.
 
 ## Decision
 
@@ -23,7 +23,7 @@ Six binding decisions:
 
 4. **Bracket demoted to a `More` dropdown.** `Bracket` is removed from the top-level `WcNavLinks` (Picks · Bracket · Table · Results · Rules). A new `WcMoreMenu` component sits in the trailing nav slot. Inside, `Bracket prediction` carries an `Advanced — not for casuals` warning sub-label. The `/wc/bracket` route stays fully functional.
 
-5. **Soft 3-day join cutoff overrides SPEC.md §16.10.** The parent WC game remains joinable for 72h after the first MD1 kickoff (Thu 11 Jun 19:00 UTC → Sun 14 Jun 19:00 UTC). After that, no new entrants. Late joiners during the soft window can pick remaining matches but auto-forfeit any already-locked match (lock_time enforcement on `/api/predictions` already handles this server-side). The cutoff is persisted **declaratively** on the existing `competitions.entry_closes_at` column (added by migration `20260521600000`). For the WC competition this is seeded to `2026-06-14T19:00:00Z` by migration `20260527000000`. `/api/tournament/enroll` and `/wc/join` both check this column server-side. No cron job is required — the deadline is declarative on the row, not observed.
+5. **Soft 3-day join cutoff overrides SPEC.md §16.10.** A WC competition instance remains joinable for 72h after the first MD1 kickoff (Thu 11 Jun 19:00 UTC → Sun 14 Jun 19:00 UTC). After that, no new entrants. Late joiners during the soft window can pick remaining matches but auto-forfeit any already-locked match (lock_time enforcement on `/api/predictions` already handles this server-side). The cutoff is persisted **declaratively** on the existing `competitions.entry_closes_at` column (added by migration `20260521600000`). For the WC competition this is seeded to `2026-06-14T19:00:00Z` by migration `20260527000000`. `/api/tournament/enroll` and `/wc/join` both check this column server-side. No cron job is required — the deadline is declarative on the row, not observed.
 
 6. **Anonymous and non-member visitors see a blurred preview.** `/wc` renders for everyone. For anon/non-members the sections container applies `filter: blur(6px) saturate(0.7)` with `pointer-events: none`, and a tap-to-unblur `Join now` overlay routes to `/wc/join`. Hero, calendar pills, progress strip, and toggle remain crisp — the format is communicated without giving away picks behind a paywall.
 

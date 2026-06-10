@@ -6,10 +6,12 @@ Status: accepted
 
 ## Context
 
-The shell hosts exactly one World Cup Prediction Game (ADR 0006, SPEC §16.9).
-Every member is enrolled in all five classifications: Overall, Format, Full
-Bracket, Knockout Bracket, Last 32. The public leaderboard therefore exposes
-each member's `users.display_name` against their points in all five.
+In Phase 1, the shell hosts a single World Cup competition instance (ADR 0006).
+The architecture supports multiple concurrent instances from the same tournament
+blueprint. Every member of an instance is enrolled in all five classifications:
+Overall, Format, Full Bracket, Knockout Bracket, Last 32. The public leaderboard
+therefore exposes each member's `users.display_name` against their points in all
+five.
 
 Some users want to compete fully but not appear by name on the public board —
 either because they're a known administrator and don't want to skew the

@@ -7,7 +7,7 @@
 
 The existing admin UI is a single 10-tab panel (Events, Confirm Results, Add Event, Nominations, Windows, Standings, Finalise, Members, Settings) that serves both the Super Administrator and Competition Admin roles. Both roles see the same surface, with feature-level guards controlling what each can do.
 
-The Super Administrator is a single platform operator (terminal-primary, technical) responsible for tournament truth: fixtures, results, round management, scoring. The Competition Admin is a non-technical, mobile-first user who owns a private league and needs only lightweight member and settings management.
+The Super Administrator is a single platform operator (terminal-primary, technical) responsible for tournament blueprint truth: the fixture catalogue, results, round management, scoring. The Competition Admin is a non-technical, mobile-first user who owns a private competition instance and needs only lightweight member and settings management.
 
 ## Decision
 

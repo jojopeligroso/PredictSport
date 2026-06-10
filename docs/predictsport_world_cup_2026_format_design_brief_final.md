@@ -14,19 +14,19 @@ Read order:
 
 Core implementation constraint:
 
-The World Cup 2026 shell is not a forked rules engine. It is a product shell over reusable PredictSport tournament-format logic. World Cup-specific behaviour belongs in template data, adapter logic, product mode configuration, and seeded schedule data. Do not create one-off tables such as `world_cup_2026_predictions`, `world_cup_2026_leaderboards`, or `world_cup_2026_groups`.
+The World Cup 2026 shell is not a forked rules engine. It is a product shell over reusable PredictSport tournament-format logic. World Cup-specific behaviour belongs in the tournament blueprint (scoring rules, classification definitions, bracket shape, fixture catalogue), adapter logic, product mode configuration, and seeded schedule data. Do not create one-off tables such as `world_cup_2026_predictions`, `world_cup_2026_leaderboards`, or `world_cup_2026_groups`. The tournament blueprint can be instantiated into multiple concurrent competition instances.
 
 Locked for Phase 1:
 
 - The feature targets FIFA World Cup 2026.
-- The product supports four concurrent Classifications inside the main World Cup Prediction Game:
+- The product supports four concurrent Classifications inside each World Cup competition instance:
   - Overall Classification.
   - Format Classification.
   - Full Bracket Survivor.
   - Knockout Bracket Survivor.
-- Classifications are first-class backend entities scoped to a Prediction Game.
+- Classifications are first-class backend entities scoped to a competition instance.
 - Entrant status must be tracked per Classification, not globally.
-- Classifications are competition-scoped instances cloned from reusable template data. Existing competitions must store immutable configuration snapshots.
+- Classifications are instantiated from the tournament blueprint when a competition instance is created. Each instance stores immutable configuration snapshots. The same blueprint can produce multiple independent instances.
 - The minimum Classification schema is accepted:
   - `classifications`.
   - `classification_memberships`.
@@ -43,15 +43,15 @@ Locked for Phase 1:
 - FIFA-specific bracket logic must live in the World Cup 2026 template adapter, not in the generic bracket UI or persistence model.
 - Bracket predictions use versioned JSON snapshots in Phase 1.
 - Prediction Windows map to the current app's Round concept for Phase 1.
-- Each Prediction Window locks before its first Event starts.
-- Preferred lock offset is 1 minute before first Event. Fallback lock offset is 5 minutes if database or operational safety requires it.
+- Each Prediction Window locks before its first Fixture starts.
+- Preferred lock offset is 1 minute before first Fixture. Fallback lock offset is 5 minutes if database or operational safety requires it.
 - Multiple future Prediction Windows may be open for Pick submission at the same time.
-- The parent World Cup Prediction Game closes to new Entrants after Prediction Window 1 is finalised, not merely after it locks.
+- A World Cup competition instance closes to new Entrants after Prediction Window 1 is finalised, not merely after it locks.
 - Provisional results must be user-visible.
 - Authoritative scoring, advancement, standings, and eliminations occur only after Super Administrator finalisation or fallback auto-finalisation.
 - If a completed Prediction Window or Sporting Stage has not been finalised, the system auto-finalises it 15 minutes before the next dependent Prediction Window locks, provided all required fixture results are present.
 - If required results are missing at fallback time, do not finalise, do not eliminate, keep next-window Pick submission open, and escalate urgently to the Super Administrator.
-- Result confirmation, result correction, official result finalisation, official template changes, and official archive export are Super Administrator actions, not Competition Admin actions.
+- Fixture result confirmation (blueprint-level, shared across all instances), result correction, official result finalisation, official blueprint changes, and official archive export are Super Administrator actions, not Competition Admin actions.
 - Phase 1 entrant presets include 12, 24, 48, 64, and 96.
 - Exact elimination curves are deliberately deferred to a separate design session.
 - The selected preset and curve become immutable once the first Prediction Window locks.
@@ -73,7 +73,7 @@ Must clarify before implementation:
 1. Standalone Knockout Prediction surface.
    - The desired product behaviour is a separate public entry surface and leaderboard after the official Round of 32 is known.
    - It must not duplicate canonical World Cup fixtures, results, finalisation jobs, bracket templates, or bracket logic.
-   - The build model must decide whether this is represented as a separate Competition, a separate Classification, an entry cohort, a view over shared bracket submissions, or another abstraction.
+   - The build model must decide whether this is represented as a separate competition instance (instantiated from the same tournament blueprint), a separate Classification, an entry cohort, a view over shared bracket submissions, or another abstraction.
    - The implementation must avoid duplicated predictions where the same user enters the same canonical knockout bracket through both the main World Cup game and the standalone knockout surface.
 
 2. Classification schema details.
@@ -87,7 +87,7 @@ Must clarify before implementation:
    - Produce the detailed screen map for Overall, Format Classification, Full Bracket Survivor, Knockout Bracket Survivor, Results, Super Admin, Competition Admin, Archive, and the standalone knockout surface.
 
 5. Official schedule source.
-   - Store World Cup schedule data as template data.
+   - Store World Cup schedule as a fixture catalogue in the tournament blueprint. Fixtures are shared across all competition instances — they are not duplicated per instance.
    - Verify against official FIFA sources during build.
    - Do not hard-code schedule dates into generic logic.
 
@@ -161,7 +161,7 @@ The FIFA World Cup 2026 shell must use reusable PredictSport tournament-format l
 
 World Cup specificity belongs in:
 
-- Template data.
+- Tournament blueprint data (fixture catalogue, classification definitions, scoring rules, bracket shape).
 - Product mode configuration.
 - World Cup 2026 adapter logic.
 - Seeded official schedule data.
@@ -287,7 +287,7 @@ Excluded from Phase 1:
 
 ## Prediction Game Entry Rules
 
-The parent World Cup Prediction Game remains joinable beyond the first Prediction Window lock.
+A World Cup competition instance remains joinable beyond the first Prediction Window lock.
 
 Reason:
 
@@ -296,12 +296,12 @@ Reason:
 
 Rules:
 
-- Entrants may join the parent World Cup Prediction Game until Prediction Window 1 is finalised.
-- The parent game closes to all new Entrants after Prediction Window 1 finalisation.
+- Entrants may join a World Cup competition instance until Prediction Window 1 is finalised.
+- The instance closes to all new Entrants after Prediction Window 1 finalisation.
 - Prediction Window 1 means the first Group Stage cycle in which every team has played its first group fixture.
 - Entrants joining after Prediction Window 1 locks receive zero points for missed Fixtures.
 - Entrants joining before Prediction Window 1 finalisation may still participate in future open Prediction Windows.
-- No new Entrants may join the parent game after Prediction Window 1 finalisation.
+- No new Entrants may join the instance after Prediction Window 1 finalisation.
 
 This supersedes any earlier interpretation that allowed joining until the final Group Stage Prediction Window locks.
 
@@ -309,7 +309,7 @@ This supersedes any earlier interpretation that allowed joining until the final 
 
 ## Four Concurrent Classifications
 
-The World Cup 2026 parent Prediction Game contains four concurrent Classifications.
+Each World Cup 2026 competition instance contains four concurrent Classifications (as defined by the tournament blueprint).
 
 | Classification | Purpose | Eliminates Entrants? | Scoring Basis |
 |---|---|---:|---|
@@ -479,12 +479,12 @@ Do not create subtype-specific tables for every Classification unless implementa
 
 ## Classification Template Cloning
 
-Classifications are competition-scoped instances cloned from reusable template data.
+Classifications are scoped to a competition instance. Each is instantiated from the tournament blueprint when the instance is created.
 
 Rules:
 
 - Each Classification belongs to one Prediction Game.
-- A Classification may be created from reusable template data.
+- A Classification is instantiated from the tournament blueprint when a competition instance is created. The same blueprint can produce multiple independent instances.
 - Once created, it stores its own immutable configuration snapshot.
 - Later template changes must not silently alter existing competitions.
 - Running competitions must not be mutated by template updates unless a Super Administrator explicitly runs a migration or correction workflow.
@@ -587,7 +587,7 @@ Public competitions:
 - Prediction Groups are generated automatically when registration closes.
 - No manual intervention is required.
 
-Late Entrant placement before the parent game closes:
+Late Entrant placement before the instance closes:
 
 - If late entry into a Format Classification is allowed before Prediction Window 1 finalisation, a late Entrant is inserted into the smallest existing Prediction Group.
 - If multiple groups share the smallest size, the destination group is selected randomly among those groups.
@@ -660,7 +660,7 @@ Locked Phase 1 principles:
 - Phase 2 should explore a more elegant proportional curve.
 - The curve should not be overfitted to strict 50 percent cuts.
 - 50 percent elimination is a useful tension heuristic, not a law.
-- Curves must be stored as configurable template data, not hard-coded as a single mathematical formula.
+- Curves must be stored as configurable blueprint data, not hard-coded as a single mathematical formula. The curve is generated per instance from its actual entrant count at PW1 lock.
 - The UI must show the consequences of the selected preset before launch.
 - The selected preset and curve become immutable once the first Prediction Window locks.
 
@@ -711,7 +711,7 @@ Rules:
 - Future use cases may include 8, 16, 24, 32, 48, or 64-team brackets.
 - The generic engine stores bracket predictions, lock state, advancement picks, scoring hooks, and validation results.
 - The World Cup 2026 adapter defines groups, best-third logic, Round of 32 mapping, third-place play-off toggle, and official bracket allocation.
-- The UI wizard renders steps based on template data.
+- The UI wizard renders steps based on the tournament blueprint.
 - The visual bracket is a display and review layer.
 - The scoring layer reads submitted bracket state against official results.
 
@@ -719,7 +719,7 @@ Rules:
 
 ## Full Bracket Survivor
 
-Full Bracket Survivor is a separate Classification inside the parent World Cup Prediction Game.
+Full Bracket Survivor is a separate Classification inside each World Cup competition instance.
 
 Entrant action before tournament kick-off:
 
@@ -735,7 +735,7 @@ Entrant action before tournament kick-off:
 Rules:
 
 - Full bracket is editable until the tournament-level bracket lock time.
-- Bracket lock time should come from official first-fixture template data.
+- Bracket lock time should come from the fixture catalogue's first fixture start time.
 - After lock, the bracket becomes immutable.
 - No exact scores are required.
 - Correctness is progression-based.
@@ -754,7 +754,7 @@ UI treatment:
 
 ## Knockout Bracket Survivor Inside Main Game
 
-Knockout Bracket Survivor is a separate Classification inside the parent World Cup Prediction Game.
+Knockout Bracket Survivor is a separate Classification inside each World Cup competition instance.
 
 It differs from Full Bracket Survivor:
 
@@ -768,7 +768,7 @@ Rules:
 - It opens only after the Group Stage has been finalised.
 - It opens only after the official Round of 32 entrants and bracket slots have been generated.
 - It locks before the first Round of 32 fixture.
-- It is open to all Entrants in the parent Prediction Game.
+- It is open to all Entrants in the competition instance.
 - Eligibility is not dependent on survival in Full Bracket Survivor, Format Classification, or Overall standing.
 - An Entrant eliminated from Full Bracket Survivor or Format Classification may still enter Knockout Bracket Survivor.
 - It uses the same reusable Bracket Prediction Engine.
@@ -785,9 +785,9 @@ This is not fully resolved for implementation and must be clarified with the bui
 Confirmed product intent:
 
 - Once the official Round of 32 is known, a separate public knockout-only entry surface can become available.
-- Users who did not join the parent World Cup Prediction Game may join this knockout-only surface.
+- Users who did not join a World Cup competition instance may join this knockout-only surface.
 - Users who join only this knockout-only surface must not appear on the default global World Cup leaderboard.
-- They must not appear in the parent game's Overall Classification, Format Classification, Full Bracket Survivor, or main-game Knockout Bracket Survivor.
+- They must not appear in the main instance's Overall Classification, Format Classification, Full Bracket Survivor, or main-game Knockout Bracket Survivor.
 - They appear only on the leaderboard and archive for that knockout-only surface.
 
 Critical implementation warning:
@@ -797,7 +797,7 @@ Critical implementation warning:
 - This must not duplicate finalisation jobs.
 - This must not duplicate bracket templates.
 - This must not duplicate bracket logic.
-- The system should avoid duplicating identical bracket predictions where the same user participates through both the parent game and the knockout-only surface.
+- The system should avoid duplicating identical bracket predictions where the same user participates through both the main instance and the knockout-only surface.
 
 Clarification required before implementation:
 
@@ -807,7 +807,7 @@ The standalone Knockout Prediction surface is intended to be a separate public e
 
 Default availability:
 
-- The surface may be pre-created as hidden template data.
+- The surface may be pre-created as a hidden competition instance from the blueprint.
 - It becomes publicly available only after the Group Stage is finalised.
 - It requires official Round of 32 entrants and bracket slots to be generated.
 - It requires Super Administrator publication.
@@ -1255,13 +1255,13 @@ UI guardrails:
 - Eliminations must never appear provisional.
 - Bracket-live status uses heavy outline treatment around Entrant names.
 - Dead bracket status removes the outline but does not remove the Entrant from other Classifications.
-- Knockout-only users must not appear on the parent World Cup global leaderboard.
+- Knockout-only users must not appear on the main World Cup competition instance leaderboard. They may appear on the Global Classification (cross-instance aggregate) if it is active.
 
 ---
 
-## World Cup Schedule Template Data
+## World Cup Fixture Catalogue
 
-The World Cup schedule must be stored as template data.
+The World Cup schedule must be stored as a fixture catalogue within the tournament blueprint. Fixtures are shared across all competition instances — they are not duplicated per instance. Result confirmation on a fixture propagates to all instances.
 
 Do not hard-code dates into generic logic.
 
@@ -1383,10 +1383,10 @@ The following earlier positions are superseded:
 
 | Earlier language | Updated position |
 |---|---|
-| Three concurrent Classifications | Four inside the parent World Cup game: Overall, Format, Full Bracket Survivor, Knockout Bracket Survivor. |
+| Three concurrent Classifications | Four inside each World Cup competition instance: Overall, Format, Full Bracket Survivor, Knockout Bracket Survivor. |
 | Format Classification final always has exactly 2 Entrants | Final entrant count is curve-derived. 96 has 4, 64 has 3, 48 has 2, fewer than 48 has 2 or fewer. |
 | Child Format Classification hard cap of 48 | Phase 1 supports approved presets 12, 24, 48, 64, 96. Exact curve still deferred. |
-| New Entrants may join until final Group Stage Prediction Window locks | Parent game closes after Prediction Window 1 finalisation. |
+| New Entrants may join until final Group Stage Prediction Window locks | Competition instance closes after Prediction Window 1 finalisation. |
 | Knockout-only game as separate duplicated backend competition | Clarification required. It should be a separate entry surface/leaderboard without duplicated canonical data. |
 | Admin confirms results | Super Administrator confirms official results. Competition Admin does not. |
 
@@ -1451,7 +1451,7 @@ Must produce detailed UI spec for all user, Competition Admin, Super Administrat
 
 ### Open Question 6: Official FIFA Schedule Verification
 
-Must verify schedule data against official FIFA sources during implementation and store it as template data.
+Must verify schedule data against official FIFA sources during implementation and store it as the tournament blueprint's fixture catalogue.
 
 ---
 
@@ -1547,7 +1547,7 @@ Recommended ADRs:
 
 ### Standalone knockout surface
 
-- Users who join only the standalone knockout surface do not appear in parent World Cup leaderboards.
+- Users who join only the standalone knockout surface do not appear in main World Cup instance leaderboards.
 - Standalone knockout surface does not duplicate fixtures or results.
 - Shared canonical result finalisation feeds both relevant surfaces.
 
@@ -1559,7 +1559,7 @@ After this document is applied, the PredictSport World Cup 2026 feature should b
 
 - A reusable tournament-format feature.
 - A World Cup 2026 Product Shell.
-- A four-Classification parent Prediction Game.
+- A four-Classification competition instance (instantiated from the tournament blueprint).
 - A generic bracket engine with World Cup-specific adapter logic.
 - A Super Administrator-controlled official result pipeline.
 - A snapshot-based authoritative leaderboard archive.

@@ -10,24 +10,29 @@ knockouts `draft`). The Full Bracket is predictable now.
 
 The items below were deferred from that session.
 
-## C1 — App-wide general leaderboard (cross-competition)
-A global leaderboard aggregating points across **all** competitions, not scoped
-to one. Today `classifications.classification_key='overall'` is per-competition
-(`competition_id` FK). This needs a new app-wide aggregate (table or view) plus
-a **user-level opt-out** setting (likely `users.notification_prefs` or a new
-column). Entrants can opt out of appearing on the global board.
+## C1 — Global Classification (cross-instance leaderboard)
+A Global Classification aggregating standings across **all competition instances**
+instantiated from the same tournament blueprint. Today
+`classifications.classification_key='overall'` is per-instance (`competition_id`
+FK). This needs a new cross-instance aggregate (table or view) plus a
+**user-level opt-out** setting (likely `users.notification_prefs` or a new
+column). Entrants can opt out of appearing on the Global Classification.
+Activates when total entrants across all instances exceed a threshold (e.g., 2,000).
 
 ## C2 — World Cup-wide leaderboard
-Surface the World Cup `overall` classification as an **app-wide** board (every
-World Cup participant across the whole app on one leaderboard — it is already
-app-wide-within-the-competition; it needs a leaderboard view/page at
+Surface the World Cup `overall` classification as a **cross-instance** board (every
+World Cup participant across all competition instances on one leaderboard — it is
+already working per-instance; it needs a leaderboard view/page at
 `/wc/leaderboard`, which currently exists as a route — verify it renders the
-`overall` classification standings).
+`overall` classification standings). This is the Phase 1 precursor to the full
+Global Classification (C1).
 
-## C3 — WC admin "Create competition" UI  ⚠️ recurring-pain
+## C3 — WC admin "Instantiate competition" UI  ⚠️ recurring-pain
 `createWorldCupCompetition()` (`src/lib/tournament/create-world-cup-competition.ts`)
-has **no caller** — the competition had to be created by hand-written SQL.
-Wire it to a button in `/wc/admin` behind an API route so this is repeatable.
+has **no caller** — the first instance had to be created by hand-written SQL.
+Wire it to a button in `/wc/admin` behind an API route so instantiation from the
+tournament blueprint is repeatable. This is also the foundation for
+auto-provisioning (new instance when current one is full).
 Note: `/wc/admin` requires `users.is_super_admin = true`; the creator account
 (eoinmaleoin@gmail.com) currently has `is_super_admin = false` — grant it or
 this panel is unreachable.

@@ -6,11 +6,11 @@ Status: accepted
 
 ## Context
 
-A participant's rank within a competition is not stored — `/leaderboard`
+A participant's rank within a competition instance is not stored — `/leaderboard`
 computes it live from `predictions` rows on every render. The All-Competitions
-Dashboard (Phase F) needs each user's rank across *all* their competitions on
-one page, which would mean running that full leaderboard computation once per
-competition per render.
+Dashboard (Phase F) needs each user's rank across *all* their competition
+instances on one page, which would mean running that full leaderboard
+computation once per instance per render.
 
 ## Decision
 
