@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { useT } from "@/lib/i18n";
+import { useT, useLocale, type Locale } from "@/lib/i18n";
 
 interface Classification {
   id: string;
@@ -195,11 +195,17 @@ export function ClassificationTabs({
         <ClassificationRulesPreview classificationKey={active.classification_key} />
       )}
 
-      {/* Format: All groups view (user's group first) OR single-group preview */}
+      {/* Format: Your Group card + All groups view, OR single-group preview */}
       {active?.classification_key === "format" && (
         groupData?.allGroups && groupData.allGroups.length > 0 ? (
           <div className="mt-4">
-            <AllGroupsView groups={groupData.allGroups} myGroupId={groupData.myGroupId ?? null} />
+            {groupData.myGroupId && (() => {
+              const myGroup = groupData.allGroups!.find((g) => g.id === groupData.myGroupId);
+              return myGroup ? <YourGroupCard group={myGroup} /> : null;
+            })()}
+            <div className={groupData.myGroupId ? "mt-3" : ""}>
+              <AllGroupsView groups={groupData.allGroups} myGroupId={groupData.myGroupId ?? null} />
+            </div>
           </div>
         ) : (
           <FormatGroupCard
@@ -539,6 +545,50 @@ function EntrantCounter({
   );
 }
 
+function FlagToggle() {
+  const { locale, setLocale } = useLocale();
+  const t = useT();
+  const nextLocale: Locale = locale === "es" ? "en" : "es";
+  const targetFlag = locale === "es" ? "ca" : "mx";
+  const toggleLabel =
+    locale === "es" ? t("common.switch_to_en") : t("common.switch_to_es");
+
+  const w = 20;
+  const h = Math.round((w * 3) / 4);
+  const r = Math.round(w * 0.35);
+  const clip = `path('M 0 0 L ${w - r} 0 A ${r} ${r} 0 0 1 ${w} ${r} L ${w} ${h} L ${r} ${h} A ${r} ${r} 0 0 1 0 ${h - r} Z')`;
+
+  return (
+    <button
+      type="button"
+      onClick={() => setLocale(nextLocale)}
+      aria-label={toggleLabel}
+      title={toggleLabel}
+      className="flex shrink-0 items-center rounded-full p-1 transition-opacity hover:opacity-80 active:scale-95"
+    >
+      <span
+        className="relative inline-block shrink-0 bg-white"
+        style={{
+          width: w,
+          height: h,
+          clipPath: clip,
+          WebkitClipPath: clip,
+          filter: "drop-shadow(0 1px 2px rgba(0,0,0,0.25))",
+        }}
+      >
+        <img
+          src={`https://flagcdn.com/${targetFlag}.svg`}
+          alt=""
+          width={w}
+          height={h}
+          className="absolute inset-0 h-full w-full object-cover"
+          style={{ filter: "saturate(0.88) brightness(0.96)" }}
+        />
+      </span>
+    </button>
+  );
+}
+
 function ClassificationRulesPreview({
   classificationKey,
 }: {
@@ -547,7 +597,10 @@ function ClassificationRulesPreview({
   if (classificationKey === "format") {
     return (
       <div className="mt-4 rounded-xl border border-ps-border bg-ps-surface p-4">
-        <h3 className="text-sm font-bold text-ps-text">How Format works</h3>
+        <div className="flex items-center justify-between">
+          <h3 className="text-sm font-bold text-ps-text">How Format works</h3>
+          <FlagToggle />
+        </div>
         <div className="mt-3 space-y-2">
           <ScoringRow label="Correct match outcome" points="2 pts" />
           <ScoringRow label="Exact score bonus" points="+3 pts" />
@@ -572,7 +625,10 @@ function ClassificationRulesPreview({
   if (classificationKey === "overall") {
     return (
       <div className="mt-4 rounded-xl border border-ps-border bg-ps-surface p-4">
-        <h3 className="text-sm font-bold text-ps-text">How Overall works</h3>
+        <div className="flex items-center justify-between">
+          <h3 className="text-sm font-bold text-ps-text">How Overall works</h3>
+          <FlagToggle />
+        </div>
         <p className="mt-1 font-serif text-xs italic text-ps-text-sec">
           Even if you're out, you're in.
         </p>
@@ -767,6 +823,140 @@ function daysFromNow(iso: string): number {
 }
 
 // ============================================================
+// Your Group — qualification card with colour-coded zones
+// ============================================================
+
+function getQualificationZone(
+  rank: number,
+  groupSize: number,
+): "qualify" | "best-third" | "eliminated" {
+  // Top 2 always qualify
+  if (rank <= 2) return "qualify";
+
+  if (groupSize === 5 && rank === 3) return "qualify";
+  if (groupSize === 4 && rank === 3) return "best-third";
+
+  return "eliminated";
+}
+
+function QualificationRuleSummary({ groupSize }: { groupSize: number }) {
+  if (groupSize === 3) {
+    return (
+      <div className="mt-2 flex flex-wrap gap-1.5 text-[10px] font-semibold">
+        <span className="rounded-full bg-ps-green/15 px-2 py-0.5 text-ps-green">
+          Top 2 qualify
+        </span>
+        <span className="rounded-full bg-ps-red/15 px-2 py-0.5 text-ps-red">
+          3rd out
+        </span>
+      </div>
+    );
+  }
+
+  if (groupSize === 4) {
+    return (
+      <div className="mt-2 flex flex-wrap gap-1.5 text-[10px] font-semibold">
+        <span className="rounded-full bg-ps-green/15 px-2 py-0.5 text-ps-green">
+          Top 2 qualify
+        </span>
+        <span className="rounded-full bg-ps-amber/15 px-2 py-0.5 text-ps-amber">
+          3rd best-third pool
+        </span>
+        <span className="rounded-full bg-ps-red/15 px-2 py-0.5 text-ps-red">
+          4th out
+        </span>
+      </div>
+    );
+  }
+
+  if (groupSize >= 5) {
+    return (
+      <div className="mt-2 flex flex-wrap gap-1.5 text-[10px] font-semibold">
+        <span className="rounded-full bg-ps-green/15 px-2 py-0.5 text-ps-green">
+          Top 3 qualify
+        </span>
+        <span className="rounded-full bg-ps-red/15 px-2 py-0.5 text-ps-red">
+          {groupSize === 5 ? "4th–5th out" : `4th–${groupSize}th out`}
+        </span>
+      </div>
+    );
+  }
+
+  return null;
+}
+
+function YourGroupCard({
+  group,
+}: {
+  group: GroupInfo;
+}) {
+  const t = useT();
+  const groupSize = group.members.length;
+
+  const zoneColors = {
+    qualify: "border-l-ps-green",
+    "best-third": "border-l-ps-amber",
+    eliminated: "border-l-ps-red",
+  };
+
+  return (
+    <div className="mt-4 rounded-xl border border-ps-amber/40 bg-ps-surface ring-1 ring-ps-amber/20">
+      {/* Header */}
+      <div className="flex items-center justify-between bg-ps-amber/5 px-4 py-3">
+        <div>
+          <div className="flex items-center gap-2">
+            <h3 className="text-sm font-bold text-ps-text">{group.name}</h3>
+            <span className="rounded bg-ps-amber/20 px-1.5 py-0.5 text-[10px] font-bold text-ps-amber">
+              {t('classification.you_label')}
+            </span>
+          </div>
+          <QualificationRuleSummary groupSize={groupSize} />
+        </div>
+        <span className="text-[10px] font-medium text-ps-text-ter">
+          {groupSize} players
+        </span>
+      </div>
+
+      {/* Members with zone indicators */}
+      <div className="divide-y divide-ps-border">
+        {group.members.map((m, i) => {
+          const rank = i + 1;
+          const zone = getQualificationZone(rank, groupSize);
+
+          return (
+            <div
+              key={m.user_id}
+              className={`flex items-center border-l-2 px-3 py-2 ${zoneColors[zone]} ${
+                m.is_self ? "bg-ps-amber/5" : ""
+              }`}
+            >
+              <span className="w-6 text-center font-mono text-xs font-bold text-ps-text-ter">
+                {rank}
+              </span>
+              <span
+                className={`flex-1 truncate pl-2 text-sm ${
+                  m.is_self ? "font-semibold text-ps-text" : "text-ps-text"
+                }`}
+              >
+                {m.display_name}
+                {m.is_self && (
+                  <span className="ml-1.5 rounded bg-ps-amber/20 px-1 py-0.5 text-[10px] font-bold text-ps-amber">
+                    {t('classification.you_label')}
+                  </span>
+                )}
+              </span>
+              <span className="w-14 text-right font-mono text-sm font-bold text-ps-text">
+                {m.points}
+              </span>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+// ============================================================
 // All Groups View — user's group first, rest alphabetical
 // ============================================================
 
@@ -779,39 +969,21 @@ function AllGroupsView({
 }) {
   const t = useT();
 
-  // User's group first, then rest by groupNumber
-  const myGroup = myGroupId ? groups.find((g) => g.id === myGroupId) : null;
-  const otherGroups = groups
+  // When myGroupId is set, YourGroupCard renders it separately above — skip here
+  const ordered = groups
     .filter((g) => g.id !== myGroupId)
     .sort((a, b) => a.groupNumber - b.groupNumber);
 
-  const ordered = myGroup ? [myGroup, ...otherGroups] : otherGroups;
-
   return (
     <div className="space-y-3">
-      {ordered.map((group) => {
-        const isMyGroup = group.id === myGroupId;
-        return (
+      {ordered.map((group) => (
           <div
             key={group.id}
-            className={`rounded-xl border bg-ps-surface ${
-              isMyGroup
-                ? "border-ps-amber/40 ring-1 ring-ps-amber/20"
-                : "border-ps-border"
-            }`}
+            className="rounded-xl border border-ps-border bg-ps-surface"
           >
             {/* Group header */}
-            <div className={`flex items-center justify-between px-3 py-2 ${
-              isMyGroup ? "bg-ps-amber/5" : ""
-            }`}>
-              <div className="flex items-center gap-2">
-                <h3 className="text-sm font-bold text-ps-text">{group.name}</h3>
-                {isMyGroup && (
-                  <span className="rounded bg-ps-amber/20 px-1.5 py-0.5 text-[10px] font-bold text-ps-amber">
-                    {t('classification.you_label')}
-                  </span>
-                )}
-              </div>
+            <div className="flex items-center justify-between px-3 py-2">
+              <h3 className="text-sm font-bold text-ps-text">{group.name}</h3>
               <span className="text-[10px] font-medium text-ps-text-ter">
                 {group.members.length} players
               </span>
@@ -851,8 +1023,7 @@ function AllGroupsView({
               })}
             </div>
           </div>
-        );
-      })}
+      ))}
     </div>
   );
 }

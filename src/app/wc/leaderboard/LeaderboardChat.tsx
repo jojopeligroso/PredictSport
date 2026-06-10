@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { ChatWidget } from "@/components/chat";
 
 interface LeaderboardChatProps {
@@ -14,6 +14,9 @@ export function LeaderboardChat({
   currentUserId,
   currentUserRole,
 }: LeaderboardChatProps) {
+  const [expanded, setExpanded] = useState(false);
+  const containerRef = useRef<HTMLDivElement>(null);
+
   // Mark chat as seen when viewing the leaderboard
   useEffect(() => {
     try {
@@ -21,12 +24,37 @@ export function LeaderboardChat({
     } catch { /* ignore */ }
   }, []);
 
+  // Collapse when clicking outside
+  const handleBlur = useCallback(
+    (e: React.FocusEvent<HTMLDivElement>) => {
+      if (!e.currentTarget.contains(e.relatedTarget as Node)) {
+        setExpanded(false);
+      }
+    },
+    [],
+  );
+
+  // Expand when user scrolls up within the chat (reading older messages)
+  const handleScroll = useCallback(() => {
+    if (!expanded) setExpanded(true);
+  }, [expanded]);
+
   return (
-    <ChatWidget
-      competitionId={competitionId}
-      currentUserId={currentUserId}
-      currentUserRole={currentUserRole}
-      mode="full"
-    />
+    <div
+      ref={containerRef}
+      onFocus={() => setExpanded(true)}
+      onBlur={handleBlur}
+      onScroll={handleScroll}
+      className={`transition-[max-height] duration-300 ease-out overflow-hidden ${
+        expanded ? "max-h-[80vh]" : "max-h-[280px]"
+      }`}
+    >
+      <ChatWidget
+        competitionId={competitionId}
+        currentUserId={currentUserId}
+        currentUserRole={currentUserRole}
+        mode="full"
+      />
+    </div>
   );
 }
