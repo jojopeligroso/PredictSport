@@ -533,41 +533,55 @@ function PreviewOverlay({
 
   return (
     <div className="pointer-events-none absolute inset-0 flex items-start justify-center pt-6">
-      <div className="mx-4 flex max-w-[360px] flex-col gap-3">
+      <div className="mx-4 flex max-w-[420px] flex-col gap-4">
+        {/* Card 0 — Early join CTA (above the fold) */}
+        <div className="pointer-events-auto rounded-2xl border border-ps-border bg-ps-surface px-6 py-5 text-center shadow-lg">
+          <h2 className="font-display text-xl font-extrabold uppercase tracking-tight text-ps-text">
+            Join the World Cup game
+          </h2>
+          <button
+            onClick={handleJoin}
+            disabled={isJoining}
+            className="mt-3 w-full rounded-xl bg-ps-amber px-4 py-3.5 text-base font-semibold text-ps-bg transition-opacity hover:opacity-90 active:opacity-80 disabled:opacity-60"
+          >
+            {isJoining ? "Joining..." : "Join now — it\u2019s free"}
+          </button>
+        </div>
+
         {/* Card 1 — Format explainer */}
-        <div className="pointer-events-auto rounded-2xl border border-ps-border bg-ps-surface px-5 py-4 text-center shadow-lg">
-          <div className="mx-auto mb-2 flex h-10 w-10 items-center justify-center rounded-full bg-ps-amber/15">
-            <svg width="20" height="20" viewBox="0 0 20 20" fill="none" className="text-ps-amber">
+        <div className="pointer-events-auto rounded-2xl border border-ps-border bg-ps-surface px-6 py-5 text-center shadow-lg">
+          <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-ps-amber/15">
+            <svg width="24" height="24" viewBox="0 0 20 20" fill="none" className="text-ps-amber">
               <path d="M10 2L12.5 7.5L18 8.5L14 12.5L15 18L10 15.5L5 18L6 12.5L2 8.5L7.5 7.5L10 2Z" fill="currentColor" />
             </svg>
           </div>
-          <p className="font-mono text-[10px] font-bold uppercase tracking-[0.18em] text-ps-amber-deep">
+          <p className="font-mono text-xs font-bold uppercase tracking-[0.18em] text-ps-amber-deep">
             How it works
           </p>
-          <p className="mt-2 text-xs leading-relaxed text-ps-text-sec">
+          <p className="mt-2.5 text-sm leading-relaxed text-ps-text-sec">
             Pick the winner of every match and guess the exact score for bonus
             points. The group stage locks one matchday at a time — predict before
             kickoff, then climb the leaderboard.
           </p>
           <Link
             href="/wc/rules"
-            className="mt-2.5 inline-block text-[11px] font-semibold text-ps-amber transition-colors hover:opacity-80"
+            className="mt-3 inline-block text-xs font-semibold text-ps-amber transition-colors hover:opacity-80"
           >
             Full rules →
           </Link>
         </div>
 
         {/* Card 2 — Join CTA */}
-        <div className="pointer-events-auto rounded-2xl border border-ps-border bg-ps-surface px-5 py-5 text-center shadow-lg">
-          <h2 className="font-display text-lg font-extrabold uppercase tracking-tight text-ps-text">
+        <div className="pointer-events-auto rounded-2xl border border-ps-border bg-ps-surface px-6 py-6 text-center shadow-lg">
+          <h2 className="font-display text-xl font-extrabold uppercase tracking-tight text-ps-text">
             Join the World Cup game
           </h2>
-          <p className="mt-1.5 text-xs text-ps-text-sec">
+          <p className="mt-2 text-sm text-ps-text-sec">
             Free to play. Bragging rights on the line.
           </p>
 
           {joinError && (
-            <p role="alert" className="mt-2 text-xs text-ps-red">
+            <p role="alert" className="mt-2 text-sm text-ps-red">
               {joinError}
             </p>
           )}
@@ -575,14 +589,14 @@ function PreviewOverlay({
           <button
             onClick={handleJoin}
             disabled={isJoining}
-            className="mt-4 w-full rounded-xl bg-ps-amber px-4 py-3 text-sm font-semibold text-ps-bg transition-opacity hover:opacity-90 active:opacity-80 disabled:opacity-60"
+            className="mt-4 w-full rounded-xl bg-ps-amber px-4 py-3.5 text-base font-semibold text-ps-bg transition-opacity hover:opacity-90 active:opacity-80 disabled:opacity-60"
           >
             {isJoining ? "Joining..." : "Join the World Cup game"}
           </button>
 
           <Link
             href={isAuthenticated ? "/wc/create" : "/login?next=/wc/create"}
-            className="mt-3 inline-block text-[11px] font-medium text-ps-text-ter transition-colors hover:text-ps-text-sec"
+            className="mt-3 inline-block text-xs font-medium text-ps-text-ter transition-colors hover:text-ps-text-sec"
           >
             or create your own competition
           </Link>
