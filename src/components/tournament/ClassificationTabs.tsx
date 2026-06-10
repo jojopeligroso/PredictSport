@@ -279,14 +279,15 @@ function FormatDrawBanner({
   drawAt: string;
   label: string;
 }) {
-  const [countdown, setCountdown] = useState(() => formatCountdown(drawAt));
+  const t = useT();
+  const [countdown, setCountdown] = useState(() => formatCountdown(drawAt, t));
 
   useEffect(() => {
     const interval = setInterval(() => {
-      setCountdown(formatCountdown(drawAt));
+      setCountdown(formatCountdown(drawAt, t));
     }, 60_000);
     return () => clearInterval(interval);
-  }, [drawAt]);
+  }, [drawAt, t]);
 
   return (
     <div className="mt-3 rounded-xl border border-ps-amber/20 bg-ps-amber/5 px-4 py-3 text-center">
@@ -433,15 +434,17 @@ function EmptyStandings({
   inviteCode: string | null;
   kickoffIso: string | null;
 }) {
+  const t = useT();
   const daysUntil = kickoffIso ? daysFromNow(kickoffIso) : null;
 
   const headline = isDraft
-    ? "This classification hasn't opened yet."
+    ? t('standings.not_opened')
     : daysUntil && daysUntil > 0
-      ? `Standings open when results land. Kickoff in ${daysUntil} ${
-          daysUntil === 1 ? "day" : "days"
-        }.`
-      : "Standings will appear here once results land.";
+      ? t('standings.kickoff_in', {
+          days: daysUntil,
+          dayLabel: daysUntil === 1 ? t('standings.day_singular') : t('standings.day_plural'),
+        })
+      : t('standings.will_appear');
 
   return (
     <div className="w-full rounded-xl border border-ps-border bg-ps-surface px-4 py-6">
@@ -449,7 +452,7 @@ function EmptyStandings({
       {inviteCode && (
         <div className="mt-5 border-t border-ps-border pt-5">
           <p className="text-center text-xs text-ps-text-ter">
-            Bring a rival before kickoff.
+            {t('standings.bring_rival')}
           </p>
           <InviteCodeBlock code={inviteCode} />
         </div>
@@ -553,7 +556,7 @@ function FlagToggle() {
   const toggleLabel =
     locale === "es" ? t("common.switch_to_en") : t("common.switch_to_es");
 
-  const w = 20;
+  const w = 28;
   const h = Math.round((w * 3) / 4);
   const r = Math.round(w * 0.35);
   const clip = `path('M 0 0 L ${w - r} 0 A ${r} ${r} 0 0 1 ${w} ${r} L ${w} ${h} L ${r} ${h} A ${r} ${r} 0 0 1 0 ${h - r} Z')`;
@@ -564,7 +567,8 @@ function FlagToggle() {
       onClick={() => setLocale(nextLocale)}
       aria-label={toggleLabel}
       title={toggleLabel}
-      className="flex shrink-0 items-center rounded-full p-1 transition-opacity hover:opacity-80 active:scale-95"
+      className="flex shrink-0 items-center justify-center rounded-full p-2 transition-opacity hover:opacity-80 active:scale-95"
+      style={{ minWidth: 44, minHeight: 44 }}
     >
       <span
         className="relative inline-block shrink-0 bg-white"
@@ -594,29 +598,28 @@ function ClassificationRulesPreview({
 }: {
   classificationKey: string;
 }) {
+  const t = useT();
+
   if (classificationKey === "format") {
     return (
       <div className="mt-4 rounded-xl border border-ps-border bg-ps-surface p-4">
         <div className="flex items-center justify-between">
-          <h3 className="text-sm font-bold text-ps-text">How Format works</h3>
+          <h3 className="text-sm font-bold text-ps-text">{t('rules_preview.format_heading')}</h3>
           <FlagToggle />
         </div>
         <div className="mt-3 space-y-2">
-          <ScoringRow label="Correct match outcome" points="2 pts" />
-          <ScoringRow label="Exact score bonus" points="+3 pts" />
-          <ScoringRow label="Correct advancing team (knockout)" points="1 pt" />
+          <ScoringRow label={t('rules_preview.format_scoring_winner')} points={t('rules_preview.format_scoring_winner_pts')} />
+          <ScoringRow label={t('rules_preview.format_scoring_score')} points={t('rules_preview.format_scoring_score_pts')} />
+          <ScoringRow label={t('rules_preview.format_scoring_advance')} points={t('rules_preview.format_scoring_advance_pts')} />
         </div>
         <p className="mt-4 text-xs leading-relaxed text-ps-text-sec">
-          Players are drawn into groups of four. After each prediction window,
-          the bottom player in each group is eliminated. New groups are drawn
-          from the survivors. Last player standing wins.
+          {t('rules_preview.format_p1')}
         </p>
         <p className="mt-2 text-xs leading-relaxed text-ps-text-sec">
-          Points reset each window. Only your performance in the current round
-          matters for survival.
+          {t('rules_preview.format_p2')}
         </p>
         <p className="mt-2 text-xs leading-relaxed text-ps-text-sec">
-          Groups are drawn 24 hours before the first match of each stage.
+          {t('rules_preview.format_p3')}
         </p>
       </div>
     );
@@ -626,21 +629,19 @@ function ClassificationRulesPreview({
     return (
       <div className="mt-4 rounded-xl border border-ps-border bg-ps-surface p-4">
         <div className="flex items-center justify-between">
-          <h3 className="text-sm font-bold text-ps-text">How Overall works</h3>
+          <h3 className="text-sm font-bold text-ps-text">{t('rules_preview.overall_heading')}</h3>
           <FlagToggle />
         </div>
         <p className="mt-1 font-serif text-xs italic text-ps-text-sec">
-          Even if you're out, you're in.
+          {t('rules_preview.overall_tagline')}
         </p>
         <div className="mt-3 space-y-2">
-          <ScoringRow label="Correct match outcome" points="2 pts" />
-          <ScoringRow label="Exact score bonus" points="+3 pts" />
-          <ScoringRow label="Correct advancing team (knockout)" points="1 pt" />
+          <ScoringRow label={t('rules_preview.format_scoring_winner')} points={t('rules_preview.format_scoring_winner_pts')} />
+          <ScoringRow label={t('rules_preview.format_scoring_score')} points={t('rules_preview.format_scoring_score_pts')} />
+          <ScoringRow label={t('rules_preview.format_scoring_advance')} points={t('rules_preview.format_scoring_advance_pts')} />
         </div>
         <p className="mt-4 text-xs leading-relaxed text-ps-text-sec">
-          Every point counts across the whole tournament. No elimination, no
-          resets. Eliminated from the Format? Your Overall score keeps ticking.
-          Consistency wins.
+          {t('rules_preview.overall_p1')}
         </p>
       </div>
     );
@@ -649,11 +650,9 @@ function ClassificationRulesPreview({
   if (classificationKey === "full_bracket") {
     return (
       <div className="mt-4 rounded-xl border border-ps-border bg-ps-surface p-4">
-        <h3 className="text-sm font-bold text-ps-text">How the Bracket works</h3>
+        <h3 className="text-sm font-bold text-ps-text">{t('rules_preview.bracket_heading')}</h3>
         <p className="mt-2 text-xs leading-relaxed text-ps-text-sec">
-          Predict the outcome of every group and every knockout tie before the
-          tournament starts. As results come in, incorrect predictions are
-          knocked out. Players with the most surviving picks lead the table.
+          {t('rules_preview.bracket_p1')}
         </p>
       </div>
     );
@@ -662,11 +661,9 @@ function ClassificationRulesPreview({
   if (classificationKey === "knockout_bracket") {
     return (
       <div className="mt-4 rounded-xl border border-ps-border bg-ps-surface p-4">
-        <h3 className="text-sm font-bold text-ps-text">How the KO Bracket works</h3>
+        <h3 className="text-sm font-bold text-ps-text">{t('rules_preview.ko_bracket_heading')}</h3>
         <p className="mt-2 text-xs leading-relaxed text-ps-text-sec">
-          Once the group stage is finalised, predict every knockout tie from the
-          Round of 32 to the Final. Same rules as the Full Bracket, but with
-          the advantage of knowing who actually qualified.
+          {t('rules_preview.ko_bracket_p1')}
         </p>
       </div>
     );
@@ -715,9 +712,9 @@ function FormatGroupCard({
   if (groupData.status === "draw_error") {
     return (
       <div className="mt-4 rounded-xl border border-ps-red/40 bg-ps-red/5 p-4">
-        <h3 className="text-sm font-bold text-ps-red">Group draw failed</h3>
+        <h3 className="text-sm font-bold text-ps-red">{t('group.draw_failed')}</h3>
         <p className="mt-1 text-xs text-ps-text-sec">
-          {groupData.error || "Unknown error. Contact admin."}
+          {groupData.error || t('group.draw_error_fallback')}
         </p>
       </div>
     );
@@ -789,30 +786,31 @@ function FormatGroupCard({
 
 
 function DrawCountdown({ drawAt }: { drawAt: string }) {
-  const [label, setLabel] = useState(() => formatCountdown(drawAt));
+  const t = useT();
+  const [label, setLabel] = useState(() => formatCountdown(drawAt, t));
 
   useEffect(() => {
     const interval = setInterval(() => {
-      setLabel(formatCountdown(drawAt));
+      setLabel(formatCountdown(drawAt, t));
     }, 60_000);
     return () => clearInterval(interval);
-  }, [drawAt]);
+  }, [drawAt, t]);
 
   return (
     <span className="text-[11px] font-medium text-ps-amber">{label}</span>
   );
 }
 
-function formatCountdown(iso: string): string {
+function formatCountdown(iso: string, t: (k: string, v?: Record<string, string | number>) => string): string {
   const diff = new Date(iso).getTime() - Date.now();
-  if (diff <= 0) return "Drawing groups...";
+  if (diff <= 0) return t('group.drawing');
   const days = Math.floor(diff / (1000 * 60 * 60 * 24));
   const hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
   const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
 
-  if (days > 0) return `Groups drawn in ${days}d ${hours}h`;
-  if (hours > 0) return `Groups drawn in ${hours}h ${minutes}m`;
-  return `Groups drawn in ${minutes}m`;
+  if (days > 0) return t('group.drawn_in_dh', { days, hours });
+  if (hours > 0) return t('group.drawn_in_hm', { hours, minutes });
+  return t('group.drawn_in_m', { minutes });
 }
 
 function daysFromNow(iso: string): number {
@@ -840,14 +838,16 @@ function getQualificationZone(
 }
 
 function QualificationRuleSummary({ groupSize }: { groupSize: number }) {
+  const t = useT();
+
   if (groupSize === 3) {
     return (
       <div className="mt-2 flex flex-wrap gap-1.5 text-[10px] font-semibold">
         <span className="rounded-full bg-ps-green/15 px-2 py-0.5 text-ps-green">
-          Top 2 qualify
+          {t('group.top2_qualify')}
         </span>
         <span className="rounded-full bg-ps-red/15 px-2 py-0.5 text-ps-red">
-          3rd out
+          {t('group.third_out')}
         </span>
       </div>
     );
@@ -857,13 +857,13 @@ function QualificationRuleSummary({ groupSize }: { groupSize: number }) {
     return (
       <div className="mt-2 flex flex-wrap gap-1.5 text-[10px] font-semibold">
         <span className="rounded-full bg-ps-green/15 px-2 py-0.5 text-ps-green">
-          Top 2 qualify
+          {t('group.top2_qualify')}
         </span>
         <span className="rounded-full bg-ps-amber/15 px-2 py-0.5 text-ps-amber">
-          3rd best-third pool
+          {t('group.third_best_pool')}
         </span>
         <span className="rounded-full bg-ps-red/15 px-2 py-0.5 text-ps-red">
-          4th out
+          {t('group.fourth_out')}
         </span>
       </div>
     );
@@ -873,10 +873,10 @@ function QualificationRuleSummary({ groupSize }: { groupSize: number }) {
     return (
       <div className="mt-2 flex flex-wrap gap-1.5 text-[10px] font-semibold">
         <span className="rounded-full bg-ps-green/15 px-2 py-0.5 text-ps-green">
-          Top 3 qualify
+          {t('group.top3_qualify')}
         </span>
         <span className="rounded-full bg-ps-red/15 px-2 py-0.5 text-ps-red">
-          {groupSize === 5 ? "4th–5th out" : `4th–${groupSize}th out`}
+          {groupSize === 5 ? t('group.nth_out', { last: '5' }) : t('group.nth_out', { last: String(groupSize) })}
         </span>
       </div>
     );
@@ -913,7 +913,7 @@ function YourGroupCard({
           <QualificationRuleSummary groupSize={groupSize} />
         </div>
         <span className="text-[10px] font-medium text-ps-text-ter">
-          {groupSize} players
+          {t('group.players_count', { count: groupSize })}
         </span>
       </div>
 
@@ -985,7 +985,7 @@ function AllGroupsView({
             <div className="flex items-center justify-between px-3 py-2">
               <h3 className="text-sm font-bold text-ps-text">{group.name}</h3>
               <span className="text-[10px] font-medium text-ps-text-ter">
-                {group.members.length} players
+                {t('group.players_count', { count: group.members.length })}
               </span>
             </div>
 
