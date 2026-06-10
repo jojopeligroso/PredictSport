@@ -176,8 +176,8 @@ export function ChatMessage({
     setIsEditing(true);
   };
 
-  // Show edit button for own recent messages (rough check — actual enforcement at click + API)
-  const showEditButton = isOwn && !isEditing;
+  // Show edit button only within the 5-minute edit window
+  const showEditButton = isOwn && !isEditing && messageAge <= EDIT_WINDOW_MS;
 
   return (
     <div
