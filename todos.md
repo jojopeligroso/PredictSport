@@ -268,6 +268,14 @@ See `SPORTS-ARCHITECTURE.md` for detailed spec (TBD).
 
 > **Queue processes these first.** Everything below "Backlog" is lower priority.
 
+## i18n Translation Proofread
+
+> 510 EN/ES keys wired (2026-06-10). Coverage is comprehensive but quality needs a native-speaker pass.
+
+- [ ] **i18n-PR1 — Native speaker proofread of es.json** — Full review of all 510 Spanish translations for grammar, tone, and natural phrasing. Many were machine-translated or rough from the original translator. Key areas: prediction summaries ("Pronosticaste que X ganaría"), chat strings, profile/settings labels, rules page copy. Fix any awkward phrasing, missing accents, or overly literal translations.
+- [ ] **i18n-PR2 — ClassificationRulesPreview content** — ~40 strings in ClassificationTabs.tsx rules preview sections (How Format works, How Overall works, How Bracket works, How KO Bracket works) are still hardcoded English. Need keys + translations.
+- [ ] **i18n-PR3 — Country name localisation** — Country names on fixture cards come from DB data. Would need a country-name lookup table keyed by locale to translate (e.g. "Germany" → "Alemania").
+
 ## Competition Chat
 
 > Design complete: grill session 2026-06-10. ADR: `docs/adr/0016-db-backed-chat-over-broadcast.md`. CONTEXT.md updated with: Competition Chat, System Message, Tombstone, @Mention.
