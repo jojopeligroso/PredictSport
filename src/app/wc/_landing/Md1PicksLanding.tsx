@@ -523,12 +523,13 @@ function PreviewOverlay({
             </svg>
           </div>
           <p className="font-mono text-xs font-bold uppercase tracking-[0.18em] text-ps-amber-deep">
-            How it works
+            Last one standing
           </p>
           <p className="mt-2.5 text-sm leading-relaxed text-ps-text-sec">
-            Pick the winner of every match and guess the exact score for bonus
-            points. The group stage locks one matchday at a time — predict before
-            kickoff, then climb the leaderboard.
+            48 players. Groups of 4. Finish bottom of your group and
+            you&apos;re out. Survivors face knockout rounds where the field
+            halves until only one remains. Pick match winners, guess exact
+            scores for bonus points.
           </p>
           <Link
             href="/wc/rules"
