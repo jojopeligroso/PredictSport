@@ -319,7 +319,7 @@ export function ChatWidget({
 
   return (
     <div
-      className={`flex flex-col ${
+      className={`flex flex-col overflow-hidden ${
         mode === "full" ? "h-[80vh] max-h-[80vh]" : "max-h-72"
       }`}
     >
@@ -335,7 +335,7 @@ export function ChatWidget({
       {/* Messages area */}
       <div
         ref={scrollRef}
-        className="flex-1 overflow-y-auto px-3 py-2"
+        className="flex-1 overflow-y-auto overflow-x-hidden px-3 py-2"
       >
         {/* Load more button (full mode) */}
         {mode === "full" && hasMore && (

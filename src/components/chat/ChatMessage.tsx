@@ -245,6 +245,7 @@ export function ChatMessage({
         ref={messageEl}
         data-message-id={message.id}
         className={`group relative flex gap-2 ${isFirstInGroup ? "pt-1.5" : "pt-px"} ${isOwn ? "flex-row-reverse" : "flex-row"}`}
+        style={{ touchAction: "pan-y" }}
         onTouchStart={handleTouchStart}
         onTouchMove={handleTouchMove}
         onTouchEnd={handleTouchEnd}
