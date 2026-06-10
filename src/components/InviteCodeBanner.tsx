@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useCallback } from "react";
+import { useT } from "@/lib/i18n";
 
 interface InviteCodeBannerProps {
   inviteCode: string;
@@ -10,6 +11,7 @@ interface InviteCodeBannerProps {
 }
 
 export function InviteCodeBanner({ inviteCode, competitionName, joinUrl, memberCount }: InviteCodeBannerProps) {
+  const t = useT();
   const [copied, setCopied] = useState(false);
 
   const fullLink = `${joinUrl}?token=${encodeURIComponent(inviteCode)}`;
@@ -36,10 +38,10 @@ export function InviteCodeBanner({ inviteCode, competitionName, joinUrl, memberC
 
   return (
     <div className="flex items-center gap-2 rounded-xl border border-ps-border bg-ps-chip/50 px-3 py-2">
-      <span className="text-xs text-ps-text-sec">Invite code:</span>
+      <span className="text-xs text-ps-text-sec">{t('invite.label')}</span>
       {memberCount != null && memberCount > 0 && (
         <span className="rounded-full bg-ps-chip px-2 py-0.5 text-[10px] font-semibold text-ps-text-sec">
-          {memberCount} {memberCount === 1 ? "player" : "players"}
+          {t(memberCount === 1 ? 'invite.player' : 'invite.players', { count: memberCount })}
         </span>
       )}
       <code className="font-mono text-xs font-semibold text-ps-text tracking-wide">
@@ -50,14 +52,14 @@ export function InviteCodeBanner({ inviteCode, competitionName, joinUrl, memberC
         onClick={handleCopy}
         className="ml-auto min-h-[44px] rounded-md px-2 text-xs font-medium text-ps-text-sec transition-colors hover:bg-ps-chip hover:text-ps-text"
       >
-        {copied ? "Copied!" : "Copy"}
+        {copied ? t('invite.copied') : t('invite.copy')}
       </button>
       <button
         type="button"
         onClick={handleShare}
         className="min-h-[44px] rounded-md bg-ps-amber px-2.5 text-xs font-semibold text-ps-bg transition-opacity hover:opacity-90"
       >
-        Share
+        {t('invite.share')}
       </button>
     </div>
   );

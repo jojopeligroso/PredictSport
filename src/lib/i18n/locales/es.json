@@ -508,5 +508,12 @@
   "prediction.error_save": "No se pudo guardar ese pronóstico",
   "prediction.error_reset": "No se pudo restablecer el pronóstico",
   "prediction.resulted": "Con resultado",
-  "prediction.locked": "Bloqueado"
+  "prediction.locked": "Bloqueado",
+  "rules.nav_points": "Puntos",
+  "rules.nav_format": "Formato",
+  "rules.nav_picks": "Pronósticos",
+  "rules.nav_ties": "Desempate",
+  "rules.nav_faq": "Preguntas",
+  "common.switch_to_es": "Cambiar a español",
+  "common.switch_to_en": "Switch to English"
 }

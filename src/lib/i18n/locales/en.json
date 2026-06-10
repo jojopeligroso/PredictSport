@@ -508,5 +508,12 @@
   "prediction.error_save": "Couldn't save that pick",
   "prediction.error_reset": "Couldn't reset prediction",
   "prediction.resulted": "Resulted",
-  "prediction.locked": "Locked"
+  "prediction.locked": "Locked",
+  "rules.nav_points": "Points",
+  "rules.nav_format": "Format",
+  "rules.nav_picks": "Picks",
+  "rules.nav_ties": "Ties",
+  "rules.nav_faq": "FAQs",
+  "common.switch_to_es": "Cambiar a español",
+  "common.switch_to_en": "Switch to English"
 }
