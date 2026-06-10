@@ -1,8 +1,6 @@
 "use client";
 
 import { useCallback, useRef, useState } from "react";
-import Image from "next/image";
-import { getInitials } from "@/lib/display-name";
 import { useT, useLocale } from "@/lib/i18n";
 import type { ChatMessageWithUser, UseChatMember, ReplyPreview } from "./useRealtimeChat";
 
@@ -188,13 +186,6 @@ export function ChatMessage({
   if (isDeleted) {
     return (
       <div className={`flex gap-2 py-1 ${isOwn ? "flex-row-reverse" : "flex-row"}`}>
-        {!isOwn && (
-          <div className="flex-shrink-0 w-7 h-7 rounded-full bg-ps-chip flex items-center justify-center opacity-40">
-            <span className="text-[10px] font-semibold text-ps-text-sec">
-              {getInitials(message.display_name)}
-            </span>
-          </div>
-        )}
         <div className={`max-w-[75%] ${isOwn ? "items-end" : "items-start"}`}>
           {!isOwn && (
             <p className="text-[10px] font-semibold text-ps-text-ter mb-0.5 ml-1">
@@ -234,7 +225,6 @@ export function ChatMessage({
   const showEditButton = isOwn && !isEditing && messageAge <= EDIT_WINDOW_MS;
 
   const showName = isFirstInGroup;
-  const showAvatar = isFirstInGroup && !isOwn;
   const showTimestamp = isLastInGroup;
 
   const canReply = !isDeleted && !isSystem && !!onReply;
@@ -251,29 +241,6 @@ export function ChatMessage({
         onTouchEnd={handleTouchEnd}
         onTouchCancel={handleTouchEnd}
       >
-        {/* Avatar — show on first in group, reserve space otherwise */}
-        {!isOwn && (
-          <div className="flex-shrink-0 w-7">
-            {showAvatar ? (
-              <div className="w-7 h-7 rounded-full bg-ps-chip flex items-center justify-center">
-                {message.avatar_url ? (
-                  <Image
-                    src={message.avatar_url}
-                    alt=""
-                    width={28}
-                    height={28}
-                    className="rounded-full object-cover"
-                  />
-                ) : (
-                  <span className="text-[10px] font-semibold text-ps-text-sec">
-                    {getInitials(message.display_name)}
-                  </span>
-                )}
-              </div>
-            ) : null}
-          </div>
-        )}
-
         {/* Message bubble */}
         <div
           className={`max-w-[75%] ${isOwn ? "items-end" : "items-start"}`}

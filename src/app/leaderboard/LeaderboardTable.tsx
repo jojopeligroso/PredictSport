@@ -3,7 +3,6 @@
 import { useState } from "react";
 import Link from "next/link";
 import {
-  Avatar,
   FormBadge,
   AccuracyRing,
   MovementBadge,
@@ -54,28 +53,6 @@ export interface LeaderboardEntry {
 
 // -- Helpers --
 
-const AVATAR_PALETTE = [
-  "#3b82f6",
-  "#8b5cf6",
-  "#0aa86d",
-  "#f59e0b",
-  "#e23d4f",
-  "#0ea5e9",
-  "#d97706",
-  "#6366f1",
-  "#ec4899",
-  "#14b8a6",
-];
-
-function avatarColor(seed: string): string {
-  let hash = 0;
-  for (let i = 0; i < seed.length; i++) {
-    hash = (hash * 31 + seed.charCodeAt(i)) >>> 0;
-  }
-  return AVATAR_PALETTE[hash % AVATAR_PALETTE.length]!;
-}
-
-import { getInitials } from "@/lib/display-name";
 
 /**
  * Map a prediction outcome to FormBadge letter.
@@ -395,8 +372,6 @@ function PodiumCard({
   const config = PODIUM_CONFIG[entry.rank as 1 | 2 | 3];
   if (!config) return null;
 
-  const initials = getInitials(entry.display_name);
-  const color = avatarColor(entry.user_id);
   const form = getForm(entry.predictions);
 
   return (
@@ -418,17 +393,11 @@ function PodiumCard({
         </span>
 
         <div className="relative flex items-center gap-3">
-          {/* Medal + Avatar */}
-          <div className="flex shrink-0 flex-col items-center gap-1.5">
+          {/* Medal */}
+          <div className="flex shrink-0 items-center">
             <span className="text-[22px] leading-none" style={{ filter: "drop-shadow(0 1px 2px rgba(0,0,0,0.3))" }} aria-hidden="true">
               {config.medal}
             </span>
-            <Avatar
-              initials={initials}
-              color={color}
-              size={42}
-              ring="0 0 0 2px rgba(255,255,255,0.5)"
-            />
           </div>
 
           {/* Name + form badges */}
@@ -509,8 +478,6 @@ function TableRow({
   isExpanded: boolean;
   isLast: boolean;
 }) {
-  const initials = getInitials(entry.display_name);
-  const color = avatarColor(entry.user_id);
   const form = getForm(entry.predictions);
   const accuracyValue = entry.accuracy / 100;
   const dimmed = !entry.qualified;
@@ -533,9 +500,6 @@ function TableRow({
           >
             {dimmed ? "—" : entry.rank}
           </span>
-
-          {/* Avatar */}
-          <Avatar initials={initials} color={color} size={30} />
 
           {/* Name + form + qualification */}
           <div className="min-w-0 flex-1">

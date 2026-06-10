@@ -320,7 +320,7 @@ export function ChatWidget({
   return (
     <div
       className={`flex flex-col overflow-hidden ${
-        mode === "full" ? "h-[80vh] max-h-[80vh]" : "max-h-72"
+        mode === "full" ? "h-full" : "max-h-72"
       }`}
     >
       {/* Header (full mode only — mini mode header is provided by parent) */}

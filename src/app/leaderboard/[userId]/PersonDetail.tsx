@@ -2,7 +2,6 @@
 
 import Link from "next/link";
 import {
-  Avatar,
   FormBadge,
   SectionHeader,
   PersonaCallout,
@@ -31,8 +30,6 @@ function avatarColor(seed: string): string {
   }
   return AVATAR_PALETTE[hash % AVATAR_PALETTE.length]!;
 }
-
-import { getInitials } from "@/lib/display-name";
 
 interface PersonPrediction {
   id: string;
@@ -67,7 +64,6 @@ export function PersonDetail({
   predictions,
 }: PersonDetailProps) {
   const color = avatarColor(person.id);
-  const initials = getInitials(person.displayName);
 
   return (
     <div className="mx-auto max-w-2xl pb-8">
@@ -94,13 +90,7 @@ export function PersonDetail({
             />
           </svg>
         </Link>
-        <div className="mt-3.5 flex items-center gap-3.5">
-          <Avatar
-            initials={initials}
-            color={color}
-            size={64}
-            ring="0 0 0 2px rgba(255,255,255,0.45)"
-          />
+        <div className="mt-3.5">
           <div>
             <p
               style={{

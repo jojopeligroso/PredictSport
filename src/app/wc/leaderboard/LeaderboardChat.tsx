@@ -45,8 +45,8 @@ export function LeaderboardChat({
       onFocus={() => setExpanded(true)}
       onBlur={handleBlur}
       onScroll={handleScroll}
-      className={`transition-[max-height] duration-300 ease-out overflow-hidden ${
-        expanded ? "max-h-[80vh]" : "max-h-[280px]"
+      className={`flex flex-col transition-[height] duration-300 ease-out ${
+        expanded ? "h-[80vh]" : "h-[280px]"
       }`}
     >
       <ChatWidget
