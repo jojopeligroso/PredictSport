@@ -534,20 +534,6 @@ function PreviewOverlay({
   return (
     <div className="pointer-events-none absolute inset-0 flex items-start justify-center pt-6">
       <div className="mx-4 flex max-w-[420px] flex-col gap-4">
-        {/* Card 0 — Early join CTA (above the fold) */}
-        <div className="pointer-events-auto rounded-2xl border border-ps-border bg-ps-surface px-6 py-5 text-center shadow-lg">
-          <h2 className="font-display text-xl font-extrabold uppercase tracking-tight text-ps-text">
-            Join the World Cup game
-          </h2>
-          <button
-            onClick={handleJoin}
-            disabled={isJoining}
-            className="mt-3 w-full rounded-xl bg-ps-amber px-4 py-3.5 text-base font-semibold text-ps-bg transition-opacity hover:opacity-90 active:opacity-80 disabled:opacity-60"
-          >
-            {isJoining ? "Joining..." : "Join now — it\u2019s free"}
-          </button>
-        </div>
-
         {/* Card 1 — Format explainer */}
         <div className="pointer-events-auto rounded-2xl border border-ps-border bg-ps-surface px-6 py-5 text-center shadow-lg">
           <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-ps-amber/15">
