@@ -62,6 +62,7 @@ export function useRealtimeChat({
   const [isSending, setIsSending] = useState(false);
   const [mutedUntil, setMutedUntil] = useState<string | null>(null);
   const channelRef = useRef<RealtimeChannel | null>(null);
+  const latestTimestampRef = useRef<string | null>(null);
   const supabase = createClient();
 
   // Build a user lookup from members
@@ -229,6 +230,71 @@ export function useRealtimeChat({
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [competitionId, resolveUser]);
+
+  // Track latest message timestamp for polling
+  useEffect(() => {
+    if (messages.length > 0) {
+      latestTimestampRef.current = messages[messages.length - 1].created_at;
+    }
+  }, [messages]);
+
+  // Polling fallback — fetch new messages every 5s (realtime is unreliable)
+  useEffect(() => {
+    if (memberMap.current.size === 0) return;
+
+    const poll = async () => {
+      // Skip polling when tab is hidden
+      if (document.hidden) return;
+
+      const since = latestTimestampRef.current;
+      let query = supabase
+        .from("chat_messages")
+        .select("*")
+        .eq("competition_id", competitionId)
+        .order("created_at", { ascending: true })
+        .limit(50);
+
+      if (since) {
+        query = query.gt("created_at", since);
+      } else {
+        // No messages yet — fetch the latest batch
+        query = supabase
+          .from("chat_messages")
+          .select("*")
+          .eq("competition_id", competitionId)
+          .order("created_at", { ascending: false })
+          .limit(mode === "mini" ? MINI_SIZE : PAGE_SIZE);
+      }
+
+      const { data } = await query;
+      if (!data || data.length === 0) return;
+
+      // For the "no since" case, reverse to oldest-first
+      const sorted = since ? data : [...data].reverse();
+
+      const enriched: ChatMessageWithUser[] = sorted.map((msg) => {
+        const user = resolveUser(msg.user_id);
+        return {
+          ...msg,
+          content: tombstoneContent(msg),
+          mentioned_user_ids: msg.deleted_at ? [] : msg.mentioned_user_ids,
+          display_name: user.display_name,
+          avatar_url: user.avatar_url,
+        };
+      });
+
+      setMessages((prev) => {
+        const existingIds = new Set(prev.map((m) => m.id));
+        const newMsgs = enriched.filter((m) => !existingIds.has(m.id));
+        if (newMsgs.length === 0) return prev;
+        return [...prev, ...newMsgs];
+      });
+    };
+
+    const interval = setInterval(poll, 5000);
+    return () => clearInterval(interval);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [competitionId, mode, members]);
 
   // Load more (pagination — full mode only)
   const loadMore = useCallback(async () => {
