@@ -6,10 +6,9 @@
  * Contextual floating dots appear for Format sub-sections.
  */
 
-import { useEffect, useRef, useState } from "react";
-import Link from "next/link";
 import { StickyPillNav } from "./StickyPillNav";
 import { FormatProgressDots } from "./FormatProgressDots";
+import { WcJoinCard } from "./WcJoinCard";
 
 interface RulesContentProps {
   isMember: boolean;
@@ -97,7 +96,7 @@ export function RulesContent({
       </CollapsibleSection>
 
       {/* ── FORMAT ───────────────────────────────────────────── */}
-      <CollapsibleSection id="format" title="Format — Survivor">
+      <CollapsibleSection id="format" title="Format — Survivor" defaultOpen>
         <p className="mt-1 font-serif text-sm italic text-ps-text-sec">
           Last one standing.
         </p>
@@ -510,7 +509,7 @@ export function RulesContent({
 
       {/* ── CTA ──────────────────────────────────────────────── */}
       {!isMember && (
-        <JoinCta
+        <WcJoinCard
           isAuthenticated={isAuthenticated}
           firstLockTime={firstLockTime}
         />
@@ -651,44 +650,6 @@ function EliminationRow({
   );
 }
 
-function JoinCta({
-  isAuthenticated,
-  firstLockTime,
-}: {
-  isAuthenticated: boolean;
-  firstLockTime: string | null;
-}) {
-  return (
-    <div className="rounded-xl border border-ps-border bg-ps-surface px-5 py-5 text-center">
-      <h2 className="font-display text-lg font-extrabold text-ps-text">
-        Ready to play?
-      </h2>
-      <div className="mt-1.5">
-        {firstLockTime ? (
-          <LockCountdown lockTime={firstLockTime} />
-        ) : (
-          <p className="text-xs text-ps-text-sec">
-            Joins close 3 days after kickoff.
-          </p>
-        )}
-      </div>
-      <div className="mt-4 flex flex-col gap-2">
-        <Link
-          href={isAuthenticated ? "/wc/join" : "/login?next=/wc/join"}
-          className="inline-block w-full rounded-xl bg-ps-amber px-4 py-3 text-sm font-semibold text-ps-bg transition-colors hover:bg-ps-amber/90"
-        >
-          Join with a code
-        </Link>
-        <Link
-          href={isAuthenticated ? "/wc/create" : "/login?next=/wc/create"}
-          className="inline-block w-full rounded-xl border border-ps-border px-4 py-3 text-sm font-semibold text-ps-text transition-colors hover:bg-ps-surface"
-        >
-          Create your own
-        </Link>
-      </div>
-    </div>
-  );
-}
 
 function FAQGroup({
   title,
@@ -737,46 +698,3 @@ function FAQ({ q, children }: { q: string; children: React.ReactNode }) {
   );
 }
 
-function LockCountdown({ lockTime }: { lockTime: string }) {
-  const [display, setDisplay] = useState<string | null>(null);
-  const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
-
-  useEffect(() => {
-    function tick() {
-      const diff = new Date(lockTime).getTime() - Date.now();
-      if (diff <= 0) {
-        setDisplay(null);
-        if (intervalRef.current) clearInterval(intervalRef.current);
-        return;
-      }
-      const d = Math.floor(diff / 86_400_000);
-      const h = Math.floor((diff % 86_400_000) / 3_600_000);
-      const m = Math.floor((diff % 3_600_000) / 60_000);
-      const s = Math.floor((diff % 60_000) / 1_000);
-      setDisplay(
-        `${d}d ${String(h).padStart(2, "0")}h ${String(m).padStart(2, "0")}m ${String(s).padStart(2, "0")}s`,
-      );
-    }
-
-    tick();
-    intervalRef.current = setInterval(tick, 1000);
-    return () => {
-      if (intervalRef.current) clearInterval(intervalRef.current);
-    };
-  }, [lockTime]);
-
-  if (display === null) {
-    return (
-      <p className="text-xs text-ps-text-sec">
-        Joins close 3 days after kickoff.
-      </p>
-    );
-  }
-
-  return (
-    <p className="text-xs text-ps-text-sec">
-      Picks lock in{" "}
-      <span className="font-mono font-bold text-ps-text">{display}</span>
-    </p>
-  );
-}

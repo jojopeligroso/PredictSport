@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useSearchParams } from "next/navigation";
 import { useEffect, useState, useRef, useMemo, useSyncExternalStore } from "react";
 import { WindowPickList, type WindowEvent } from "@/app/wc/picks/[windowId]/WindowPickList";
 import type { WcFixture } from "@/lib/wc/fixtures";
@@ -21,6 +21,7 @@ import { DayCalendarPills, type DayBucket } from "./DayCalendarPills";
 import { JoinCutoffBanner } from "./JoinCutoffBanner";
 import { ViewToggle, type ViewMode } from "./ViewToggle";
 import { CHROME_PALETTE } from "./brand-palette";
+import { WcJoinCard } from "@/components/wc/WcJoinCard";
 
 /**
  * Md1PicksLanding — client root for the picks-first /wc landing.
@@ -111,6 +112,14 @@ export function Md1PicksLanding(props: Md1PicksLandingProps) {
     () => countFullyPicked(props.events, props.predictions),
     [props.events, props.predictions],
   );
+
+  // Earliest lock time for the countdown on the join card.
+  const firstLockTime = useMemo(() => {
+    if (props.events.length === 0) return null;
+    return props.events.reduce((min, e) =>
+      e.lock_time < min ? e.lock_time : min,
+    props.events[0].lock_time);
+  }, [props.events]);
 
   // Bucket events for the chosen view. The card surface picks logic key is
   // `event.id`, so re-bucketing parents does not unmount rows — optimistic
@@ -212,7 +221,7 @@ export function Md1PicksLanding(props: Md1PicksLandingProps) {
         </div>
 
         {previewMode && (
-          <PreviewOverlay isAuthenticated={props.isAuthenticated} competitionId={props.competitionId} />
+          <PreviewOverlay isAuthenticated={props.isAuthenticated} competitionId={props.competitionId} firstLockTime={firstLockTime} />
         )}
       </div>
     </div>
@@ -497,41 +506,12 @@ function SectionStatusIcon({ status }: { status: DayPredictionStatus }) {
 function PreviewOverlay({
   isAuthenticated,
   competitionId,
+  firstLockTime,
 }: {
   isAuthenticated: boolean;
   competitionId: string;
+  firstLockTime: string | null;
 }) {
-  const router = useRouter();
-  const [joinError, setJoinError] = useState<string | null>(null);
-  const [isJoining, setIsJoining] = useState(false);
-
-  async function handleJoin() {
-    if (!isAuthenticated) {
-      router.push("/login?next=/wc/join-open");
-      return;
-    }
-
-    setIsJoining(true);
-    setJoinError(null);
-    try {
-      const res = await fetch("/api/join", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ competitionId }),
-      });
-      const data = await res.json();
-      if (!res.ok) {
-        setJoinError(data.error ?? "Failed to join");
-        return;
-      }
-      router.push("/wc/home?onboarding=true");
-    } catch {
-      setJoinError("Something went wrong. Try again.");
-    } finally {
-      setIsJoining(false);
-    }
-  }
-
   return (
     <div className="pointer-events-none absolute inset-0 flex items-start justify-center pt-6">
       <div className="mx-4 flex max-w-[420px] flex-col gap-4">
@@ -558,36 +538,13 @@ function PreviewOverlay({
           </Link>
         </div>
 
-        {/* Card 2 — Join CTA */}
-        <div className="pointer-events-auto rounded-2xl border border-ps-border bg-ps-surface px-6 py-6 text-center shadow-lg">
-          <h2 className="font-display text-xl font-extrabold uppercase tracking-tight text-ps-text">
-            Join the World Cup game
-          </h2>
-          <p className="mt-2 text-sm text-ps-text-sec">
-            Free to play. Bragging rights on the line.
-          </p>
-
-          {joinError && (
-            <p role="alert" className="mt-2 text-sm text-ps-red">
-              {joinError}
-            </p>
-          )}
-
-          <button
-            onClick={handleJoin}
-            disabled={isJoining}
-            className="mt-4 w-full rounded-xl bg-ps-amber px-4 py-3.5 text-base font-semibold text-ps-bg transition-opacity hover:opacity-90 active:opacity-80 disabled:opacity-60"
-          >
-            {isJoining ? "Joining..." : "Join the World Cup game"}
-          </button>
-
-          <Link
-            href={isAuthenticated ? "/wc/create" : "/login?next=/wc/create"}
-            className="mt-3 inline-block text-xs font-medium text-ps-text-ter transition-colors hover:text-ps-text-sec"
-          >
-            or create your own competition
-          </Link>
-        </div>
+        {/* Card 2 — Join CTA (shared component) */}
+        <WcJoinCard
+          isAuthenticated={isAuthenticated}
+          competitionId={competitionId}
+          firstLockTime={firstLockTime}
+          className="pointer-events-auto shadow-lg"
+        />
       </div>
     </div>
   );
