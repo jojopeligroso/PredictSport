@@ -234,3 +234,38 @@ A dismissible notification bar shown on the home dashboard, picks page, and land
 ## Open Entry
 
 A temporary or permanent state where a [[Competition]] does not require an invite code to join — any authenticated user can join directly. Controlled by removing the invite-code gate at the join endpoint, not by changing `visibility`. Entry is still bounded by `entry_closes_at` on the competition.
+
+---
+
+## Tournament Blueprint
+
+A Factory that produces [[Competition Instance]]s. Encapsulates the [[Fixture Catalogue]], stage topology, [[Classification]] definitions, scoring rule defaults, and bracket shape. Immutable once the tournament is live. A single Blueprint can produce many independent Instances. Stored across `sporting_tournaments`, `sporting_stages`, `bracket_templates`, and seed data.
+_Avoid_: Template, configuration, competition (unqualified)
+
+---
+
+## Competition Instance
+
+An independent Aggregate instantiated from a [[Tournament Blueprint]]. Owns its own members, predictions, standings, classification memberships, prediction groups, and chat. Multiple Instances of the same Blueprint run concurrently with no shared mutable state between them. Backed by a `competitions` row.
+_Avoid_: Competition (unqualified), game, league
+
+---
+
+## Fixture Catalogue
+
+The complete set of shared reference Entities (fixtures) owned by a [[Tournament Blueprint]]. Exists once regardless of how many [[Competition Instance]]s reference it. Fixtures are never duplicated per Instance. Results confirmed on a fixture are visible to all Instances by shared-state-by-reference (same row, no propagation needed).
+_Avoid_: Event list, competition events
+
+---
+
+## Instance Type
+
+The stage scope configuration of a [[Competition Instance]]. Determines which subset of the [[Fixture Catalogue]] the Instance participates in. Current types: `full` (all stages) and `knockout_only` (R32 onwards). Stored in competition config. Fixture queries filter by `tournament_id` + `sporting_stage_id`.
+_Avoid_: Competition type, variant
+
+---
+
+## Auto-Provisioning
+
+The fully automatic instantiation of a new [[Competition Instance]] from a [[Tournament Blueprint]] when all active Instances reach their entrant cap. No human approval gate. New Instance starts Active, inherits all Blueprint defaults, Super Administrator is notified. Joining user is placed into the new Instance in a single request.
+_Avoid_: Clone, fork, spin-up
