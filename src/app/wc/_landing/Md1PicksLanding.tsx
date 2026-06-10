@@ -169,13 +169,13 @@ export function Md1PicksLanding(props: Md1PicksLandingProps) {
         </div>
       </div>}
 
-      {/* 8-day calendar pills — hidden for non-members */}
-      {!previewMode && <DayCalendarPills
+      {/* 8-day calendar pills with month labels */}
+      <DayCalendarPills
         days={dayBuckets}
         dayBeforeCloseIso={dayBeforeCloseIso}
         todayIso={todayIso}
         now={now}
-      />}
+      />
 
       {/* Soft cutoff banner */}
       <JoinCutoffBanner state={cutoffState} closeDateLabel={closeDateLabel} />
