@@ -22,12 +22,23 @@ interface MobileNavProps {
   avatarUrl: string | null;
   isAdmin?: boolean;
   extraLinks?: MobileNavLink[];
+  /** ISO timestamp of the latest chat message (for unread badge) */
+  latestChatAt?: string | null;
 }
 
-export function MobileNav({ isLoggedIn, displayName, avatarUrl, isAdmin, extraLinks }: MobileNavProps) {
+export function MobileNav({ isLoggedIn, displayName, avatarUrl, isAdmin, extraLinks, latestChatAt }: MobileNavProps) {
   const [isOpen, setIsOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
   const { theme, cycleTheme } = useTheme();
+
+  // Unread badge: compare latest chat message with localStorage last-seen
+  const [hasUnread, setHasUnread] = useState(() => {
+    if (typeof window === "undefined" || !latestChatAt) return false;
+    try {
+      const lastSeen = localStorage.getItem("chat-last-seen");
+      return !lastSeen || new Date(latestChatAt) > new Date(lastSeen);
+    } catch { return false; }
+  });
 
   // Close on outside tap
   useEffect(() => {
@@ -123,10 +134,19 @@ export function MobileNav({ isLoggedIn, displayName, avatarUrl, isAdmin, extraLi
                   </Link>
                   <Link
                     href="/wc/leaderboard"
-                    onClick={() => setIsOpen(false)}
-                    className="block rounded-md px-3 py-2 text-sm font-medium text-ps-text-sec transition-colors hover:bg-ps-chip hover:text-ps-text"
+                    onClick={() => {
+                      setIsOpen(false);
+                      setHasUnread(false);
+                      try {
+                        localStorage.setItem("chat-last-seen", new Date().toISOString());
+                      } catch { /* ignore */ }
+                    }}
+                    className="flex items-center gap-1.5 rounded-md px-3 py-2 text-sm font-medium text-ps-text-sec transition-colors hover:bg-ps-chip hover:text-ps-text"
                   >
                     Leaderboard
+                    {hasUnread && (
+                      <span className="h-2 w-2 rounded-full bg-ps-amber" aria-label="New chat messages" />
+                    )}
                   </Link>
                   {extraLinks?.map((link) => (
                     <Link

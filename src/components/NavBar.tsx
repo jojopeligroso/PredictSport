@@ -15,6 +15,7 @@ export async function NavBar() {
   let profile: { display_name: string; avatar_url: string | null; is_super_admin: boolean | null } | null =
     null;
   let isAdmin = false;
+  let latestChatAt: string | null = null;
   if (authUser) {
     const [profileRes, adminRes] = await Promise.all([
       supabase
@@ -31,6 +32,27 @@ export async function NavBar() {
     ]);
     profile = profileRes.data;
     isAdmin = ((adminRes.data ?? []).length > 0);
+
+    // Fetch latest chat message for unread badge (WC competition)
+    const { data: wcComp } = await supabase
+      .from("competitions")
+      .select("id")
+      .eq("product_mode", "world_cup_2026_shell")
+      .in("status", ["active", "draft"])
+      .limit(1)
+      .maybeSingle();
+
+    if (wcComp) {
+      const { data: latestMsg } = await supabase
+        .from("chat_messages")
+        .select("created_at")
+        .eq("competition_id", wcComp.id)
+        .order("created_at", { ascending: false })
+        .limit(1)
+        .maybeSingle();
+
+      latestChatAt = latestMsg?.created_at ?? null;
+    }
   }
 
   const isSuperAdmin = profile?.is_super_admin === true;
@@ -83,6 +105,7 @@ export async function NavBar() {
             displayName={displayName}
             avatarUrl={avatarUrl}
             isAdmin={isAdmin || isSuperAdmin}
+            latestChatAt={latestChatAt}
           />
         </div>
       </div>

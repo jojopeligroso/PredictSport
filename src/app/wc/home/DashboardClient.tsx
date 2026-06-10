@@ -21,6 +21,7 @@ import type { WcFixture } from "@/lib/wc/fixtures";
 import type { Prediction } from "@/types/database";
 import type { ResultRow } from "./fetchDashboardData";
 import type { TeamWithStats } from "@/lib/tournament/bracket/types";
+import { ChatWidget } from "@/components/chat";
 
 interface DashboardClientProps {
   competitionId: string;
@@ -44,6 +45,8 @@ interface DashboardClientProps {
   groupStandings?: Record<string, TeamWithStats[]>;
   onboarding?: boolean;
   datePills: DatePillSummary[];
+  chatEnabled: boolean;
+  isCompetitionAdmin: boolean;
 }
 
 type PickStatus = "complete" | "urgent" | "unpicked";
@@ -95,9 +98,22 @@ export function DashboardClient({
   groupStandings,
   onboarding,
   datePills,
+  chatEnabled,
+  isCompetitionAdmin,
 }: DashboardClientProps) {
   const [expandedEventId, setExpandedEventId] = useState<string | null>(null);
   const [selectedDate, setSelectedDate] = useState<string | null>(null);
+
+  // Smart close for mini chat: closed state persisted in localStorage
+  const chatStorageKey = `chat-closed-${competitionId}`;
+  const [chatClosed, setChatClosed] = useState(false);
+
+  const handleChatClose = () => {
+    setChatClosed(true);
+    try {
+      localStorage.setItem(chatStorageKey, new Date().toISOString());
+    } catch { /* ignore */ }
+  };
 
   // Filter events by selected date pill
   // No pill selected → original capped nextEvents (unchanged deploy behavior)
@@ -246,6 +262,23 @@ export function DashboardClient({
           )}
         </section>
       </OnboardingSection>
+
+      {/* ── 5b. Mini Chat ──────────────────────────────────────────── */}
+      {chatEnabled && isMember && currentUserId && !chatClosed && (
+        <OnboardingSection id="other">
+          <section className="mt-2">
+            <div className="rounded-xl border border-ps-border bg-ps-surface overflow-hidden">
+              <ChatWidget
+                competitionId={competitionId}
+                currentUserId={currentUserId}
+                isAdmin={isCompetitionAdmin}
+                mode="mini"
+                onClose={handleChatClose}
+              />
+            </div>
+          </section>
+        </OnboardingSection>
+      )}
 
       {/* ── 6. Leaderboard link ──────────────────────────────────────── */}
       <OnboardingSection id="other">

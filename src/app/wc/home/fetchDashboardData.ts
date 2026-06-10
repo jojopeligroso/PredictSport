@@ -79,6 +79,10 @@ export interface DashboardData {
   pillDateEvents: WindowEvent[];
   /** Date pill summaries for the first 3 unlocked matchdays. */
   datePills: DatePillSummary[];
+  /** Whether chat is enabled for this competition. */
+  chatEnabled: boolean;
+  /** Whether the current user is an admin/co-admin. */
+  isCompetitionAdmin: boolean;
 }
 
 export type DashboardResult =
@@ -98,7 +102,7 @@ export async function fetchDashboardData(): Promise<DashboardResult> {
   // 1. Find the WC competition
   const { data: competition } = await supabase
     .from("competitions")
-    .select("id, status, invite_code, entry_closes_at, max_entrants")
+    .select("id, status, invite_code, entry_closes_at, max_entrants, chat_enabled")
     .eq("product_mode", "world_cup_2026_shell")
     .in("status", ["active", "draft"])
     .limit(1)
@@ -137,11 +141,11 @@ export async function fetchDashboardData(): Promise<DashboardResult> {
         .from("competition_members")
         .select("id", { count: "exact", head: true })
         .eq("competition_id", competition.id),
-      // User membership
+      // User membership (with role for chat admin)
       user
         ? supabase
             .from("competition_members")
-            .select("id")
+            .select("id, role")
             .eq("competition_id", competition.id)
             .eq("user_id", user.id)
             .maybeSingle()
@@ -157,7 +161,9 @@ export async function fetchDashboardData(): Promise<DashboardResult> {
 
   // Prefer actionable round; fall back to most recent scored round
   const currentRound = actionableRoundResult.data ?? scoredRoundResult.data;
-  const isMember = Boolean(membershipResult.data);
+  const membership = membershipResult.data;
+  const isMember = Boolean(membership);
+  const isCompetitionAdmin = membership?.role === "admin" || membership?.role === "co_admin";
   const memberCount = memberCountResult.count ?? 0;
   const classificationId = classificationResult.data?.id ?? null;
 
@@ -395,6 +401,8 @@ export async function fetchDashboardData(): Promise<DashboardResult> {
     bracketProgress,
     groupStandings,
     datePills,
+    chatEnabled: competition.chat_enabled ?? true,
+    isCompetitionAdmin,
   };
 }
 

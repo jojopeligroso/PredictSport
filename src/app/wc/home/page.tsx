@@ -72,6 +72,8 @@ export default async function WcHomePage({
       bracketProgress={data.bracketProgress}
       groupStandings={data.groupStandings}
       datePills={data.datePills}
+      chatEnabled={data.chatEnabled}
+      isCompetitionAdmin={data.isCompetitionAdmin}
       onboarding={onboarding}
     />
   );

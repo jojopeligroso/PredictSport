@@ -3,6 +3,7 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { ClassificationTabs } from "@/components/tournament/ClassificationTabs";
 import { InviteCodeBanner } from "@/components/InviteCodeBanner";
+import { LeaderboardChat } from "./LeaderboardChat";
 
 export const dynamic = "force-dynamic";
 
@@ -22,7 +23,7 @@ export default async function LeaderboardPage() {
   // Find the WC competition
   const { data: competition } = await supabase
     .from("competitions")
-    .select("id, name, status, invite_code, max_entrants, min_entrants, entry_closes_at")
+    .select("id, name, status, invite_code, max_entrants, min_entrants, entry_closes_at, chat_enabled")
     .eq("product_mode", "world_cup_2026_shell")
     .in("status", ["active", "draft", "completed"])
     .limit(1)
@@ -43,11 +44,21 @@ export default async function LeaderboardPage() {
     .eq("id", user.id)
     .single();
 
-  // Get member count
-  const { count: memberCount } = await supabase
-    .from("competition_members")
-    .select("id", { count: "exact", head: true })
-    .eq("competition_id", competition.id);
+  // Get member count + user's role
+  const [{ count: memberCount }, { data: membership }] = await Promise.all([
+    supabase
+      .from("competition_members")
+      .select("id", { count: "exact", head: true })
+      .eq("competition_id", competition.id),
+    supabase
+      .from("competition_members")
+      .select("role")
+      .eq("competition_id", competition.id)
+      .eq("user_id", user.id)
+      .maybeSingle(),
+  ]);
+
+  const isAdmin = membership?.role === "admin" || membership?.role === "co_admin";
 
   // Get classifications — exclude bracket types (accessed via More menu)
   const { data: classificationsRaw } = await supabase
@@ -88,6 +99,19 @@ export default async function LeaderboardPage() {
           currentDisplayName={profile?.display_name || "You"}
         />
       </div>
+
+      {/* Full chat widget */}
+      {competition.chat_enabled && membership && (
+        <div className="mt-4">
+          <div className="rounded-xl border border-ps-border bg-ps-surface overflow-hidden">
+            <LeaderboardChat
+              competitionId={competition.id}
+              currentUserId={user.id}
+              isAdmin={isAdmin}
+            />
+          </div>
+        </div>
+      )}
 
       {/* Invite code banner — below table */}
       {showInvite && (
