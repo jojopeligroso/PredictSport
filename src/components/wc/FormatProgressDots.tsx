@@ -1,15 +1,17 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { useT } from "@/lib/i18n";
 
-const SUB_SECTIONS = [
-  { id: "format-groups", label: "Group Stage" },
-  { id: "format-knockouts", label: "Knockout Rounds" },
-  { id: "format-final", label: "Final" },
-  { id: "format-narrowing", label: "How it Narrows" },
+const SUB_SECTION_KEYS = [
+  { id: "format-groups", key: "format.group_stage" },
+  { id: "format-knockouts", key: "format.knockout_rounds" },
+  { id: "format-final", key: "format.final" },
+  { id: "format-narrowing", key: "format.how_narrows" },
 ] as const;
 
 export function FormatProgressDots() {
+  const t = useT();
   const [visible, setVisible] = useState(false);
   const [showTooltips, setShowTooltips] = useState(false);
   const [activeSub, setActiveSub] = useState("format-groups");
@@ -72,7 +74,7 @@ export function FormatProgressDots() {
       { rootMargin: "-56px 0px -55% 0px", threshold: 0 },
     );
 
-    for (const { id } of SUB_SECTIONS) {
+    for (const { id } of SUB_SECTION_KEYS) {
       const el = document.getElementById(id);
       if (el) observer.observe(el);
     }
@@ -93,31 +95,34 @@ export function FormatProgressDots() {
 
   return (
     <nav
-      aria-label="Format sub-sections"
+      aria-label={t('format.sub_sections')}
       aria-hidden={!visible}
       className={`fixed top-1/2 z-40 flex -translate-y-1/2 flex-col items-center gap-5 transition-opacity duration-150 ${
         visible ? "opacity-100" : "pointer-events-none opacity-0"
       }`}
       style={{ right: "max(6px, calc(50vw - 240px))" }}
     >
-      {SUB_SECTIONS.map(({ id, label }) => (
-        <button
-          key={id}
-          onClick={() => scrollTo(id)}
-          aria-label={label}
-          tabIndex={visible ? 0 : -1}
-          title={label}
-          className={`group relative h-[7px] w-[7px] rounded-full border-0 p-0 transition-all duration-150 ${
-            activeSub === id
-              ? "scale-[1.3] bg-ps-amber"
-              : "bg-ps-text-ter/40 hover:bg-ps-text-ter/70"
-          }`}
-        >
-          <span className={`pointer-events-none absolute right-[calc(100%+10px)] top-1/2 -translate-y-1/2 whitespace-nowrap rounded-md border border-ps-border bg-ps-surface px-2 py-1 text-[10px] font-semibold text-ps-text shadow-sm transition-opacity duration-150 ${showTooltips ? "opacity-100" : "opacity-0"}`}>
-            {label}
-          </span>
-        </button>
-      ))}
+      {SUB_SECTION_KEYS.map(({ id, key }) => {
+        const label = t(key);
+        return (
+          <button
+            key={id}
+            onClick={() => scrollTo(id)}
+            aria-label={label}
+            tabIndex={visible ? 0 : -1}
+            title={label}
+            className={`group relative h-[7px] w-[7px] rounded-full border-0 p-0 transition-all duration-150 ${
+              activeSub === id
+                ? "scale-[1.3] bg-ps-amber"
+                : "bg-ps-text-ter/40 hover:bg-ps-text-ter/70"
+            }`}
+          >
+            <span className={`pointer-events-none absolute right-[calc(100%+10px)] top-1/2 -translate-y-1/2 whitespace-nowrap rounded-md border border-ps-border bg-ps-surface px-2 py-1 text-[10px] font-semibold text-ps-text shadow-sm transition-opacity duration-150 ${showTooltips ? "opacity-100" : "opacity-0"}`}>
+              {label}
+            </span>
+          </button>
+        );
+      })}
     </nav>
   );
 }

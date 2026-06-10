@@ -3,12 +3,14 @@
 import { useState, useRef, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { validateDisplayName, DISPLAY_NAME_MAX } from "@/lib/display-name";
+import { useT } from "@/lib/i18n";
 
 interface DisplayNameModalProps {
   suggestedName: string;
 }
 
 export function DisplayNameModal({ suggestedName }: DisplayNameModalProps) {
+  const t = useT();
   const router = useRouter();
   const inputRef = useRef<HTMLInputElement>(null);
   const [name, setName] = useState(suggestedName);
@@ -46,7 +48,7 @@ export function DisplayNameModal({ suggestedName }: DisplayNameModalProps) {
 
       if (!res.ok) {
         const data = await res.json().catch(() => null);
-        setError(data?.error || "Something went wrong. Try again.");
+        setError(data?.error || t('display_name.error_generic'));
         setSubmitting(false);
         return;
       }
@@ -54,7 +56,7 @@ export function DisplayNameModal({ suggestedName }: DisplayNameModalProps) {
       // Re-render server components so the guard sees the updated display_name
       router.refresh();
     } catch {
-      setError("Network error. Try again.");
+      setError(t('display_name.error_network'));
       setSubmitting(false);
     }
   }
@@ -84,11 +86,10 @@ export function DisplayNameModal({ suggestedName }: DisplayNameModalProps) {
         </div>
 
         <h2 className="text-lg font-extrabold text-ps-text">
-          What should the leaderboard call you?
+          {t('display_name.heading')}
         </h2>
         <p className="mt-1 text-sm text-ps-text-sec">
-          This is how you&apos;ll appear to everyone. You can change it later in
-          your profile.
+          {t('display_name.subtitle')}
         </p>
 
         <form onSubmit={handleSubmit} className="mt-5">
@@ -104,7 +105,7 @@ export function DisplayNameModal({ suggestedName }: DisplayNameModalProps) {
               setName(e.target.value);
               if (error) setError("");
             }}
-            placeholder="e.g. Gerry Ramos"
+            placeholder={t('display_name.placeholder')}
             maxLength={DISPLAY_NAME_MAX}
             autoComplete="off"
             className={[
@@ -130,7 +131,7 @@ export function DisplayNameModal({ suggestedName }: DisplayNameModalProps) {
               "disabled:opacity-60 disabled:cursor-not-allowed",
             ].join(" ")}
           >
-            {submitting ? "Saving\u2026" : "Lock it in"}
+            {submitting ? t('display_name.submitting') : t('display_name.submit')}
           </button>
         </form>
       </div>

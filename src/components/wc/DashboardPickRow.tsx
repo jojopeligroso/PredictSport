@@ -1,5 +1,6 @@
 "use client";
 
+import { useT } from "@/lib/i18n";
 import { CountryFlag } from "@/components/CountryFlag";
 import { FixtureCardSurface } from "@/components/wc/FixtureCardSurface";
 import { WindowPickList } from "@/app/wc/picks/[windowId]/WindowPickList";
@@ -44,6 +45,7 @@ export function DashboardPickRow({
   expanded,
   onToggle,
 }: DashboardPickRowProps) {
+  const t = useT();
   const homeTrigram = fifaTrigram(fixture.home) ?? fixture.home.slice(0, 3).toUpperCase();
   const awayTrigram = fifaTrigram(fixture.away) ?? fixture.away.slice(0, 3).toUpperCase();
 
@@ -72,13 +74,13 @@ export function DashboardPickRow({
         <button
           type="button"
           onClick={onToggle}
-          aria-label="Collapse pick card"
+          aria-label={t('picks.collapse_card')}
           className="mb-1 w-full text-left text-[10px] font-semibold uppercase tracking-wider text-ps-text-ter flex items-center gap-1"
         >
           <svg className="h-3 w-3 rotate-180" fill="none" viewBox="0 0 24 24" strokeWidth={2.5} stroke="currentColor">
             <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
           </svg>
-          Collapse
+          {t('picks.collapse_card')}
         </button>
         <div className="animate-in slide-in-from-top-2 duration-200">
           <WindowPickList
@@ -99,14 +101,14 @@ export function DashboardPickRow({
     <button
       type="button"
       onClick={onToggle}
-      aria-label={`${fixture.home} vs ${fixture.away} — tap to pick`}
+      aria-label={t('picks.tap_to_pick', { home: fixture.home, away: fixture.away })}
       className="w-full text-left"
     >
       <FixtureCardSurface
         city={fixture.city}
         headerLeft={
           <span>
-            Group {fixture.group} · MD{fixture.matchday}
+            {t('fixtures.stage_group', { group: fixture.group ?? '', matchday: fixture.matchday ?? '' })}
           </span>
         }
         headerRight={
@@ -133,7 +135,7 @@ export function DashboardPickRow({
           {/* Status indicator + CTA */}
           {status === "complete" && (
             <span className="flex items-center gap-1.5">
-              <span className="text-[11px] font-semibold text-white/80">Edit</span>
+              <span className="text-[11px] font-semibold text-white/80">{t('picks.edit')}</span>
               <span className="flex h-6 w-6 items-center justify-center rounded-full bg-ps-green text-white">
                 <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" strokeWidth={3} stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" d="M4.5 12.75l6 6 9-13.5" />
@@ -143,14 +145,14 @@ export function DashboardPickRow({
           )}
           {status === "urgent" && (
             <span className="flex items-center gap-1.5">
-              <span className="text-[11px] font-bold text-white">Pick →</span>
+              <span className="text-[11px] font-bold text-white">{t('fixtures.pick_cta')}</span>
               <span className="animate-pulse rounded-full bg-ps-purple/80 px-2 py-0.5 text-[10px] font-bold text-white">
-                &lt; 24H
+                {t('picks.urgent_24h')}
               </span>
             </span>
           )}
           {status === "unpicked" && (
-            <span className="text-[11px] font-bold text-white/90">Pick →</span>
+            <span className="text-[11px] font-bold text-white/90">{t('fixtures.pick_cta')}</span>
           )}
         </div>
       </FixtureCardSurface>

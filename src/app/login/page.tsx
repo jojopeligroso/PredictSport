@@ -2,12 +2,14 @@ import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { LoginButton } from "@/components/LoginButton";
 import { BrandMark } from "@/components/BrandMark";
+import { getServerT } from "@/lib/i18n/server";
 
 export default async function LoginPage({
   searchParams,
 }: {
   searchParams: Promise<{ error?: string; message?: string; next?: string }>;
 }) {
+  const t = await getServerT();
   const supabase = await createClient();
   const {
     data: { user },
@@ -43,7 +45,7 @@ export default async function LoginPage({
               sports<span className="text-ps-amber">predict.</span>
             </p>
             <p className="font-serif text-[11.5px] italic leading-tight text-ps-text-sec">
-              Call it, then rub it in Gerry Ramos' face.
+              {t('login.tagline')}
             </p>
           </div>
         </div>
@@ -52,7 +54,7 @@ export default async function LoginPage({
         {error && (
           <div className="mb-4 rounded-xl border border-ps-red bg-ps-red-soft p-3 text-sm text-ps-red">
             {error === "auth"
-              ? "Authentication failed. Please try again."
+              ? t('login.error')
               : error}
           </div>
         )}
@@ -68,9 +70,11 @@ export default async function LoginPage({
 
         {/* Caption */}
         <p className="mt-2.5 text-center text-[11px] text-ps-text-ter">
-          By signing in you agree to our{" "}
-          <a href="/terms" className="underline hover:text-ps-text">Terms</a> and{" "}
-          <a href="/privacy" className="underline hover:text-ps-text">Privacy Policy</a>.
+          {t('login.legal').split(t('login.terms'))[0]}
+          <a href="/terms" className="underline hover:text-ps-text">{t('login.terms')}</a>
+          {(t('login.legal').split(t('login.terms'))[1] || '').split(t('login.privacy'))[0]}
+          <a href="/privacy" className="underline hover:text-ps-text">{t('login.privacy')}</a>
+          {(t('login.legal').split(t('login.terms'))[1] || '').split(t('login.privacy'))[1]}
         </p>
       </div>
     </div>

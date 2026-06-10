@@ -2,6 +2,7 @@
 
 import { useState, useRef, useEffect } from "react";
 import Link from "next/link";
+import { useT } from "@/lib/i18n";
 
 interface WcMoreMenuProps {
   variant: "desktop" | "mobile";
@@ -9,6 +10,7 @@ interface WcMoreMenuProps {
 }
 
 export function WcMoreMenu({ variant, isWcAdmin }: WcMoreMenuProps) {
+  const t = useT();
   const [isOpen, setIsOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
 
@@ -40,9 +42,9 @@ export function WcMoreMenu({ variant, isWcAdmin }: WcMoreMenuProps) {
           className="block px-4 py-2.5 transition-colors hover:bg-ps-chip"
           onClick={() => setIsOpen(false)}
         >
-          <span className="block text-sm font-medium text-ps-text">Admin</span>
+          <span className="block text-sm font-medium text-ps-text">{t('menu.admin')}</span>
           <span className="mt-0.5 block text-xs text-ps-text-ter">
-            Manage competition
+            {t('menu.admin_desc')}
           </span>
         </Link>
       )}
@@ -53,10 +55,10 @@ export function WcMoreMenu({ variant, isWcAdmin }: WcMoreMenuProps) {
         onClick={() => setIsOpen(false)}
       >
         <span className="block text-sm font-medium text-ps-text">
-          Bracket prediction
+          {t('menu.bracket')}
         </span>
         <span className="mt-0.5 block text-xs text-ps-text-ter">
-          Advanced — not for casuals
+          {t('menu.bracket_desc')}
         </span>
       </Link>
       <a
@@ -68,10 +70,10 @@ export function WcMoreMenu({ variant, isWcAdmin }: WcMoreMenuProps) {
         onClick={() => setIsOpen(false)}
       >
         <span className="block text-sm font-medium text-ps-text">
-          Group standings
+          {t('menu.groups')}
         </span>
         <span className="mt-0.5 block text-xs text-ps-text-ter">
-          Official FIFA tables ↗
+          {t('menu.groups_desc')}
         </span>
       </a>
     </>
@@ -87,7 +89,7 @@ export function WcMoreMenu({ variant, isWcAdmin }: WcMoreMenuProps) {
           aria-expanded={isOpen}
           className="rounded-md px-3 py-1.5 text-sm font-medium text-ps-text-sec transition-colors hover:bg-ps-chip hover:text-ps-text"
         >
-          More
+          {t('nav.more')}
         </button>
         {isOpen && (
           <div
@@ -110,7 +112,7 @@ export function WcMoreMenu({ variant, isWcAdmin }: WcMoreMenuProps) {
         aria-expanded={isOpen}
         className="px-3 py-2 text-xs font-semibold text-ps-text-sec transition-colors hover:text-ps-text"
       >
-        More
+        {t('nav.more')}
       </button>
       {isOpen && (
         <>

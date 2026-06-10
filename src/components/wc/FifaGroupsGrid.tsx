@@ -8,6 +8,7 @@ import { CountryFlag } from "@/components/CountryFlag";
 import { fifaTrigram } from "@/lib/tournament/fifa-codes";
 import type { Prediction } from "@/types/database";
 import type { TeamWithStats } from "@/lib/tournament/bracket/types";
+import { useT } from "@/lib/i18n";
 
 interface FifaGroupsGridProps {
   mode: "compact" | "accordion";
@@ -137,6 +138,7 @@ function BackToAllGroups({
   label?: string;
   className?: string;
 }) {
+  const t = useT();
   return (
     <button
       onClick={onClick}
@@ -155,7 +157,7 @@ function BackToAllGroups({
           d="M10.5 19.5L3 12m0 0l7.5-7.5M3 12h18"
         />
       </svg>
-      {label ?? "All groups"}
+      {label ?? t('groups.all_groups')}
     </button>
   );
 }
@@ -173,11 +175,12 @@ function AccordionPanel({
   competitionId: string;
   windowLocked: boolean;
 }) {
+  const t = useT();
   if (events.length === 0) {
     return (
       <div className="mt-3 rounded-lg border border-ps-border bg-ps-surface px-4 py-3 text-center">
         <p className="text-xs text-ps-text-sec">
-          No Group {groupId} fixtures loaded yet.
+          {t('groups.no_fixtures', { groupId })}
         </p>
       </div>
     );
@@ -186,7 +189,7 @@ function AccordionPanel({
   return (
     <div className="mt-3">
       <p className="mb-2 font-mono text-[11px] font-extrabold uppercase tracking-[0.12em] text-ps-text">
-        Group {groupId} matches
+        {t('groups.group_matches', { groupId })}
       </p>
       <WindowPickList
         competitionId={competitionId}
@@ -199,10 +202,22 @@ function AccordionPanel({
   );
 }
 
-/** FIFA-style group standings table using the ps-* design tokens. */
+/**
+ * FIFA-style group standings table with WC2026 qualification tiers:
+ *  - Position 1, 2: Green (auto-qualifies for R32)
+ *  - Position 3: Amber (8 of 12 thirds qualify — contention)
+ *  - Position 4: No highlight (eliminated)
+ */
 function GroupTable({ standings }: { standings: TeamWithStats[] }) {
+  const t = useT();
   const thClass =
     "pb-2 text-center font-mono text-[11px] font-semibold text-ps-text-ter";
+
+  function positionStyle(pos: number) {
+    if (pos <= 2) return { bg: "bg-ps-green-soft", badge: "bg-ps-green text-white" };
+    if (pos === 3) return { bg: "bg-ps-amber-soft", badge: "bg-ps-amber text-white" };
+    return { bg: "", badge: "bg-ps-chip text-ps-text-ter" };
+  }
 
   return (
     <div className="overflow-x-auto">
@@ -210,39 +225,32 @@ function GroupTable({ standings }: { standings: TeamWithStats[] }) {
         <thead>
           <tr className="border-b border-ps-border">
             <th className={`${thClass} w-7 text-left`}>#</th>
-            <th className={`${thClass} text-left`}>Team</th>
-            <th className={thClass}>P</th>
-            <th className={thClass}>W</th>
-            <th className={thClass}>D</th>
-            <th className={thClass}>L</th>
-            <th className={thClass}>GF</th>
-            <th className={thClass}>GA</th>
-            <th className={thClass}>GD</th>
-            <th className={`${thClass} font-bold`}>Pts</th>
+            <th className={`${thClass} text-left`}>{t('groups.team')}</th>
+            <th className={thClass}>{t('groups.p')}</th>
+            <th className={thClass}>{t('groups.w')}</th>
+            <th className={thClass}>{t('groups.d')}</th>
+            <th className={thClass}>{t('groups.l')}</th>
+            <th className={thClass}>{t('groups.gf')}</th>
+            <th className={thClass}>{t('groups.ga')}</th>
+            <th className={thClass}>{t('groups.gd')}</th>
+            <th className={`${thClass} font-bold`}>{t('groups.pts')}</th>
           </tr>
         </thead>
         <tbody>
           {standings.map((team) => {
-            const isQ = [1, 2].includes(team.position ?? 0);
+            const pos = team.position ?? 4;
+            const style = positionStyle(pos);
             const gd = team.goalDifference ?? team.gd ?? 0;
             return (
               <tr
                 key={team.name}
-                className={[
-                  "border-b border-ps-border/40",
-                  isQ ? "bg-ps-green-soft" : "",
-                ].join(" ")}
+                className={`border-b border-ps-border/40 ${style.bg}`}
               >
                 <td className="py-2 text-left">
                   <span
-                    className={[
-                      "inline-flex h-5 w-5 items-center justify-center rounded-full text-[10px] font-semibold",
-                      isQ
-                        ? "bg-ps-green text-white"
-                        : "bg-ps-chip text-ps-text-ter",
-                    ].join(" ")}
+                    className={`inline-flex h-5 w-5 items-center justify-center rounded-full text-[10px] font-semibold ${style.badge}`}
                   >
-                    {team.position}
+                    {pos}
                   </span>
                 </td>
                 <td className="py-2 text-left font-sans text-[13px] font-semibold text-ps-text">
@@ -282,9 +290,15 @@ function GroupTable({ standings }: { standings: TeamWithStats[] }) {
           })}
         </tbody>
       </table>
-      <div className="mt-2.5 flex items-center gap-1.5 text-[10px] text-ps-text-ter">
-        <div className="h-2.5 w-2.5 rounded-full bg-ps-green" />
-        <span>Qualifies for knockout stage</span>
+      <div className="mt-2.5 flex flex-wrap items-center gap-x-4 gap-y-1 text-[10px] text-ps-text-ter">
+        <span className="inline-flex items-center gap-1.5">
+          <span className="inline-block h-2.5 w-2.5 rounded-full bg-ps-green" />
+          {t('groups.qualifies')}
+        </span>
+        <span className="inline-flex items-center gap-1.5">
+          <span className="inline-block h-2.5 w-2.5 rounded-full bg-ps-amber" />
+          {t('groups.best_3rd')}
+        </span>
       </div>
     </div>
   );

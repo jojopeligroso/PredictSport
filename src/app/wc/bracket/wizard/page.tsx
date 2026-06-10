@@ -7,6 +7,7 @@ import { BracketVersionFooter } from "@/components/wc/BracketVersionFooter";
 import type { BracketSubmissionData } from "@/types/tournament";
 import { WC2026_GROUPS } from "@/lib/bracket/adapters/fifa-world-cup-2026";
 import { loadGroupDataAndEventMap } from "@/lib/tournament/bracket/adapters/predictions-to-group-data";
+import { getServerT } from "@/lib/i18n/server";
 
 export const dynamic = "force-dynamic";
 
@@ -29,6 +30,7 @@ export default async function BracketWizardPage({
   }
 
   const supabase = await createClient();
+  const t = await getServerT();
   const {
     data: { user },
   } = await supabase.auth.getUser();
@@ -51,12 +53,12 @@ export default async function BracketWizardPage({
   if (classification.status !== "active") {
     return (
       <div className="mx-auto max-w-[480px] px-4 pt-16 text-center">
-        <h1 className="text-xl font-bold text-ps-text">Not Available</h1>
+        <h1 className="text-xl font-bold text-ps-text">{t('bracket.not_available_title')}</h1>
         <p className="mt-2 text-sm text-ps-text-sec">
-          This bracket classification is not currently accepting submissions.
+          {t('bracket.not_accepting')}
         </p>
         <Link href="/wc/bracket" className="mt-4 inline-block text-sm font-medium text-ps-amber hover:underline">
-          Back to brackets
+          {t('bracket.back')}
         </Link>
       </div>
     );
@@ -76,12 +78,12 @@ export default async function BracketWizardPage({
   if (existingSubmission?.status === "locked") {
     return (
       <div className="mx-auto max-w-[480px] px-4 pt-16 text-center">
-        <h1 className="text-xl font-bold text-ps-text">Bracket Locked</h1>
+        <h1 className="text-xl font-bold text-ps-text">{t('bracket.locked_title')}</h1>
         <p className="mt-2 text-sm text-ps-text-sec">
-          Your bracket has been locked and cannot be modified.
+          {t('bracket.locked_desc')}
         </p>
         <Link href="/wc/bracket" className="mt-4 inline-block text-sm font-medium text-ps-amber hover:underline">
-          Back to brackets
+          {t('bracket.back')}
         </Link>
       </div>
     );
@@ -103,11 +105,11 @@ export default async function BracketWizardPage({
         title={classification.name}
         subtitle={
           isKnockout
-            ? "Pick the advancing team in each knockout match."
-            : "Predict every group + knockout match before kickoff."
+            ? t('bracket.ko_wizard_desc')
+            : t('bracket.full_wizard_desc')
         }
         backHref="/wc/bracket"
-        backLabel="Back to brackets"
+        backLabel={t('bracket.back')}
       />
 
       <div className="mt-5">

@@ -11,6 +11,7 @@ import {
   WC2026_GROUPS,
 } from "@/lib/bracket/adapters/fifa-world-cup-2026";
 import { describeDraftProgress } from "@/lib/bracket/bracket-progress";
+import { getServerT } from "@/lib/i18n/server";
 
 export const dynamic = "force-dynamic";
 
@@ -20,6 +21,7 @@ export const dynamic = "force-dynamic";
  */
 export default async function BracketPage() {
   const supabase = await createClient();
+  const t = await getServerT();
   const {
     data: { user },
   } = await supabase.auth.getUser();
@@ -40,7 +42,7 @@ export default async function BracketPage() {
   if (!competition) {
     return (
       <div className="mx-auto max-w-[480px] px-4 pt-16 text-center">
-        <h1 className="text-xl font-bold text-ps-text">No competition found</h1>
+        <h1 className="text-xl font-bold text-ps-text">{t('leaderboard.no_competition')}</h1>
       </div>
     );
   }
@@ -137,8 +139,8 @@ export default async function BracketPage() {
   return (
     <div className="mx-auto max-w-[480px] px-4 pt-6 pb-16">
       <WcBrandedTitle
-        title="Bracket Predictions"
-        subtitle="Predict the entire tournament bracket. One wrong pick and you're out."
+        title={t('bracket.title')}
+        subtitle={t('bracket.subtitle')}
       />
 
       {hasAnyProgress && posterData && (
@@ -173,13 +175,14 @@ export default async function BracketPage() {
                   <h2 className="text-base font-bold text-ps-text">{cls.name}</h2>
                   <p className="mt-0.5 text-xs text-ps-text-sec">
                     {isKnockout
-                      ? "Knockout rounds only. Opens after group stage."
-                      : "Full tournament bracket from groups to final."}
+                      ? t('bracket.ko_desc')
+                      : t('bracket.full_desc')}
                   </p>
                 </div>
                 <StatusBadge
                   classificationStatus={cls.status}
                   submissionStatus={submission?.status}
+                  t={t}
                 />
               </div>
 
@@ -188,7 +191,7 @@ export default async function BracketPage() {
                   href={`/wc/bracket/wizard?classificationId=${cls.id}`}
                   className="mt-4 block w-full rounded-lg bg-ps-text px-4 py-2.5 text-center text-sm font-semibold text-ps-bg transition-all hover:opacity-90 active:scale-[0.98]"
                 >
-                  Start bracket
+                  {t('bracket.start')}
                 </Link>
               )}
 
@@ -201,7 +204,7 @@ export default async function BracketPage() {
                   <div className="mt-3 space-y-2 rounded-lg bg-ps-bg px-3 py-2.5">
                     <div className="flex items-center justify-between">
                       <span className="font-mono text-[10px] font-bold uppercase tracking-widest text-ps-text-sec">
-                        Up to: {progress.label}
+                        {t('bracket.up_to', { label: progress.label })}
                       </span>
                       <span className="font-mono text-[10px] font-bold text-ps-amber">
                         {progress.pct}%
@@ -228,7 +231,7 @@ export default async function BracketPage() {
                           href={`/wc/bracket/wizard?classificationId=${cls.id}`}
                           className="text-xs font-bold text-ps-amber hover:underline"
                         >
-                          {progress.pct === 100 ? "Review & submit →" : "Continue →"}
+                          {progress.pct === 100 ? t('bracket.review_submit') : t('bracket.continue')}
                         </Link>
                       )}
                     </div>
@@ -239,8 +242,8 @@ export default async function BracketPage() {
               {!isAvailable && !submission && (
                 <p className="mt-3 text-xs text-ps-text-ter">
                   {isKnockout
-                    ? "Opens when the group stage is finalised."
-                    : "Not yet available."}
+                    ? t('bracket.opens_after_groups')
+                    : t('bracket.not_available_msg')}
                 </p>
               )}
             </div>
@@ -254,35 +257,37 @@ export default async function BracketPage() {
 function StatusBadge({
   classificationStatus,
   submissionStatus,
+  t,
 }: {
   classificationStatus: string;
   submissionStatus?: string;
+  t: (key: string) => string;
 }) {
   if (submissionStatus === "locked") {
     return (
       <span className="rounded-full bg-ps-green/15 px-2 py-0.5 text-xs font-semibold text-ps-green">
-        Locked
+        {t('bracket.status_locked')}
       </span>
     );
   }
   if (submissionStatus === "submitted") {
     return (
       <span className="rounded-full bg-ps-amber/15 px-2 py-0.5 text-xs font-semibold text-ps-amber">
-        Submitted
+        {t('bracket.status_submitted')}
       </span>
     );
   }
   if (submissionStatus === "draft") {
     return (
       <span className="rounded-full bg-ps-chip px-2 py-0.5 text-xs font-semibold text-ps-text-sec">
-        Draft
+        {t('bracket.status_draft')}
       </span>
     );
   }
   if (classificationStatus === "draft") {
     return (
       <span className="rounded-full bg-ps-chip px-2 py-0.5 text-xs font-semibold text-ps-text-ter">
-        Coming soon
+        {t('common.coming_soon')}
       </span>
     );
   }

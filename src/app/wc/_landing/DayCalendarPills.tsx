@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { CHROME_PALETTE } from "./brand-palette";
 import { computeDayStatus, type DayPredictionStatus } from "@/lib/wc/daily-lock";
+import { useT } from "@/lib/i18n";
 
 export interface DayBucket {
   /** UTC YYYY-MM-DD. Pill targets `#date-{iso}` for scroll-to. */
@@ -51,6 +52,7 @@ export function DayCalendarPills({
   /** Hide status indicators and cutoff badges (e.g. for non-members). */
   hideIndicators?: boolean;
 }) {
+  const t = useT();
   // Group pills by month for label positioning.
   const monthGroups: { month: string; startIdx: number; count: number }[] = [];
   let currentMonth = "";
@@ -88,7 +90,7 @@ export function DayCalendarPills({
       {/* Pills row */}
       <div
         role="list"
-        aria-label="Matchday calendar"
+        aria-label={t('calendar.matchday')}
         className="flex items-end gap-1.5 overflow-x-auto pb-1"
       >
         {days.map((d) => {
@@ -124,7 +126,7 @@ export function DayCalendarPills({
               key={d.iso}
               role="listitem"
               href={`#date-${d.iso}`}
-              aria-label={`${d.weekday} ${d.dayNum} — ${d.fullyComplete} of ${d.totalCount} picked${isComplete ? ", complete" : ""}`}
+              aria-label={t('calendar.pill_aria', { weekday: d.weekday, dayNum: d.dayNum, complete: d.fullyComplete, total: d.totalCount })}
               className="relative flex shrink-0 flex-col items-center text-center"
             >
               {/* Badge above pill: day-before-close warning */}
@@ -161,13 +163,14 @@ export function DayCalendarPills({
 }
 
 function PillStatusIndicator({ status }: { status: DayPredictionStatus }) {
+  const t = useT();
   switch (status) {
     case "complete":
       // Green tick on amber-accented pill — completion state
       return (
         <span
           className="mt-1 inline-flex h-3.5 w-3.5 items-center justify-center rounded-full bg-ps-green text-[8px] font-extrabold leading-none text-white"
-          aria-label="Complete"
+          aria-label={t('calendar.complete')}
         >
           ✓
         </span>
@@ -178,7 +181,7 @@ function PillStatusIndicator({ status }: { status: DayPredictionStatus }) {
         <span
           className="mt-1 inline-flex h-3.5 w-3.5 items-center justify-center rounded-full text-[9px] font-extrabold leading-none text-white"
           style={{ background: CHROME_PALETTE.attention }}
-          aria-label="Exact score needed"
+          aria-label={t('calendar.exact_score_needed')}
         >
           !
         </span>
@@ -188,7 +191,7 @@ function PillStatusIndicator({ status }: { status: DayPredictionStatus }) {
       return (
         <span
           className="mt-1 inline-flex h-3.5 w-3.5 items-center justify-center rounded-full bg-ps-red text-[8px] font-extrabold leading-none text-white"
-          aria-label="Locks soon, incomplete"
+          aria-label={t('calendar.locks_soon')}
         >
           ✗
         </span>
@@ -200,6 +203,7 @@ function PillStatusIndicator({ status }: { status: DayPredictionStatus }) {
 
 /** Yellow ! badge above the day-before-joins-close pill. Tap to see message. */
 function JoinCutoffBadge() {
+  const t = useT();
   const [open, setOpen] = useState(false);
   const btnRef = useRef<HTMLButtonElement>(null);
   const popoverRef = useRef<HTMLDivElement>(null);
@@ -248,7 +252,7 @@ function JoinCutoffBadge() {
           color: "#191512",
           boxShadow: "0 1px 2px rgba(0,0,0,0.18)",
         }}
-        aria-label="Join deadline info"
+        aria-label={t('calendar.join_deadline')}
         aria-expanded={open}
       >
         !
@@ -261,11 +265,10 @@ function JoinCutoffBadge() {
             style={{ top: `${pos.top}px`, left: `${pos.left}px`, position: "absolute" }}
           >
             <p className="text-[11px] font-semibold text-ps-text">
-              Joins close soon
+              {t('calendar.joins_close')}
             </p>
             <p className="mt-1 text-[11px] leading-snug text-ps-text-sec">
-              After this day, new players can no longer join. Share the link
-              with friends before it&rsquo;s too late.
+              {t('calendar.joins_close_desc')}
             </p>
             <button
               type="button"
@@ -277,7 +280,7 @@ function JoinCutoffBadge() {
               }}
               className="mt-2 w-full rounded-lg bg-ps-text px-3 py-2 text-[11px] font-semibold text-ps-bg transition-colors hover:bg-ps-text/90"
             >
-              Copy invite link
+              {t('calendar.copy_invite')}
             </button>
           </div>,
           document.body,

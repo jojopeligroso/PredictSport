@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import type { User } from "@/types/database";
 import { useTheme, type ThemePref } from "@/components/ThemeProvider";
 import { validateDisplayName, DISPLAY_NAME_MAX } from "@/lib/display-name";
+import { useT } from "@/lib/i18n";
 
 const SPORT_OPTIONS = [
   "Soccer", "GAA", "Rugby", "US Sports", "Motorsport", "Tennis", "Cricket", "Other",
@@ -135,13 +136,14 @@ function Toggle({ id, checked, onChange, label, description }: ToggleProps) {
   );
 }
 
-const THEME_OPTIONS: ReadonlyArray<{ value: ThemePref; label: string }> = [
-  { value: "light", label: "Light" },
-  { value: "dark", label: "Dark" },
-  { value: "system", label: "System" },
+const THEME_OPTIONS: ReadonlyArray<{ value: ThemePref }> = [
+  { value: "light" },
+  { value: "dark" },
+  { value: "system" },
 ];
 
 function BiggerCardsToggle() {
+  const t = useT();
   const [bigger, setBigger] = useState(() => {
     if (typeof window === "undefined") return false;
     return localStorage.getItem("ps-bigger-cards") === "true";
@@ -155,15 +157,15 @@ function BiggerCardsToggle() {
   return (
     <section className="rounded-xl border border-ps-border bg-ps-surface p-6">
       <h2 className="mb-1 text-xs font-semibold uppercase tracking-widest text-ps-text-sec">
-        Display
+        {t('profile.display')}
       </h2>
       <div className="divide-y divide-ps-border">
         <Toggle
           id="bigger_cards"
           checked={bigger}
           onChange={handleChange}
-          label="Bigger cards"
-          description="Use larger fixture cards on the World Cup results page"
+          label={t('profile.bigger_cards')}
+          description={t('profile.bigger_cards_desc')}
         />
       </div>
     </section>
@@ -171,15 +173,15 @@ function BiggerCardsToggle() {
 }
 
 function AppearanceSection() {
+  const t = useT();
   const { theme, setTheme } = useTheme();
   return (
     <section className="rounded-xl border border-ps-border bg-ps-surface p-6">
       <h2 className="mb-1 text-xs font-semibold uppercase tracking-widest text-ps-text-sec">
-        Appearance
+        {t('profile.appearance')}
       </h2>
       <p className="mt-0.5 text-xs text-ps-text-ter">
-        Light is a warm off-white. Dark is the deep ink shell. System follows
-        your device.
+        {t('profile.appearance_desc')}
       </p>
       <div
         className="mt-3 inline-flex rounded-lg border border-ps-border bg-ps-chip p-0.5"
@@ -188,6 +190,8 @@ function AppearanceSection() {
       >
         {THEME_OPTIONS.map((opt) => {
           const active = theme === opt.value;
+          const themeLabel = (v: ThemePref) =>
+            t(v === 'light' ? 'profile.theme_light' : v === 'dark' ? 'profile.theme_dark' : 'profile.theme_system');
           return (
             <button
               key={opt.value}
@@ -200,7 +204,7 @@ function AppearanceSection() {
                   : "text-ps-text-sec hover:text-ps-text"
               }`}
             >
-              {opt.label}
+              {themeLabel(opt.value)}
             </button>
           );
         })}
@@ -226,6 +230,7 @@ function nameChangeLockedUntil(updatedAt: string | null): Date | null {
 }
 
 export function ProfileForm({ user }: { user: User }) {
+  const t = useT();
   const initial = stateFromUser(user);
   const [form, setForm] = useState<FormState>(initial);
   const [submitting, setSubmitting] = useState(false);
@@ -289,15 +294,15 @@ export function ProfileForm({ user }: { user: User }) {
         } | null;
         setFeedback({
           type: "error",
-          message: body?.error ?? "Something went wrong. Please try again.",
+          message: body?.error ?? t('profile.error_generic'),
         });
       } else {
-        setFeedback({ type: "success", message: "Profile saved." });
+        setFeedback({ type: "success", message: t('profile.saved') });
       }
     } catch {
       setFeedback({
         type: "error",
-        message: "Network error. Please try again.",
+        message: t('profile.error_network'),
       });
     } finally {
       setSubmitting(false);
@@ -339,7 +344,7 @@ export function ProfileForm({ user }: { user: User }) {
             {/* Display Name */}
             <section className="rounded-xl border border-ps-border bg-ps-surface p-6">
               <h2 className="mb-4 text-xs font-semibold uppercase tracking-widest text-ps-text-sec">
-                Display Name
+                {t('profile.display_name')}
               </h2>
               <label htmlFor="display_name" className="sr-only">
                 Display name
@@ -354,12 +359,11 @@ export function ProfileForm({ user }: { user: User }) {
                     className="w-full rounded-xl border border-ps-border bg-ps-chip p-3 text-sm text-ps-text-sec cursor-not-allowed"
                   />
                   <p className="mt-2 text-xs text-ps-text-ter">
-                    You can change your name again on{" "}
-                    {nameLockDate.toLocaleDateString(undefined, {
+                    {t('profile.name_locked', { date: nameLockDate.toLocaleDateString(undefined, {
                       month: "short",
                       day: "numeric",
                       year: "numeric",
-                    })}
+                    }) })}
                   </p>
                 </>
               ) : (
@@ -378,13 +382,12 @@ export function ProfileForm({ user }: { user: User }) {
                       }));
                       setFeedback(null);
                     }}
-                    placeholder="Your display name"
+                    placeholder={t('profile.name_placeholder')}
                     className="w-full rounded-xl border border-ps-border bg-ps-surface p-3 text-sm text-ps-text placeholder:text-ps-text-ter focus:border-ps-text-sec focus:outline-none"
                   />
                   {form.display_name.trim().length > DISPLAY_NAME_MAX && (
                     <p className="mt-2 text-xs text-ps-red" role="alert">
-                      Display name must be {DISPLAY_NAME_MAX} characters or
-                      fewer.
+                      {t('profile.name_max_error', { max: DISPLAY_NAME_MAX })}
                     </p>
                   )}
                 </>
@@ -394,7 +397,7 @@ export function ProfileForm({ user }: { user: User }) {
             {/* Avatar */}
             <section className="rounded-xl border border-ps-border bg-ps-surface p-6">
               <h2 className="mb-4 text-xs font-semibold uppercase tracking-widest text-ps-text-sec">
-                Avatar
+                {t('profile.avatar')}
               </h2>
               <div className="flex items-center gap-4">
                 {user.avatar_url ? (
@@ -415,11 +418,11 @@ export function ProfileForm({ user }: { user: User }) {
                 <div>
                   <p className="text-sm text-ps-text">
                     {user.avatar_url
-                      ? "Google profile picture"
-                      : "No avatar set"}
+                      ? t('profile.avatar_google')
+                      : t('profile.avatar_none')}
                   </p>
                   <p className="mt-0.5 text-xs text-ps-text-ter">
-                    Avatar upload is not available in this version.
+                    {t('profile.avatar_upload')}
                   </p>
                 </div>
               </div>
@@ -434,43 +437,43 @@ export function ProfileForm({ user }: { user: User }) {
             {/* Notifications */}
             <section className="rounded-xl border border-ps-border bg-ps-surface p-6">
               <h2 className="mb-1 text-xs font-semibold uppercase tracking-widest text-ps-text-sec">
-                Notifications
+                {t('profile.notifications')}
               </h2>
               <div className="divide-y divide-ps-border">
                 <Toggle
                   id="prediction_reminders"
                   checked={form.notification_prefs.prediction_reminders}
                   onChange={(v) => setNotifPref("prediction_reminders", v)}
-                  label="Prediction reminders"
-                  description="Remind me before events lock"
+                  label={t('profile.prediction_reminders')}
+                  description={t('profile.prediction_reminders_desc')}
                 />
                 <Toggle
                   id="result_notifications"
                   checked={form.notification_prefs.result_notifications}
                   onChange={(v) => setNotifPref("result_notifications", v)}
-                  label="Result notifications"
-                  description="Notify me when results are confirmed"
+                  label={t('profile.result_notifications')}
+                  description={t('profile.result_notifications_desc')}
                 />
                 <Toggle
                   id="leaderboard_updates"
                   checked={form.notification_prefs.leaderboard_updates}
                   onChange={(v) => setNotifPref("leaderboard_updates", v)}
-                  label="Leaderboard updates"
-                  description="Weekly leaderboard summary"
+                  label={t('profile.leaderboard_updates')}
+                  description={t('profile.leaderboard_updates_desc')}
                 />
                 <Toggle
                   id="chat_mentions"
                   checked={form.notification_prefs.chat_mentions}
                   onChange={(v) => setNotifPref("chat_mentions", v)}
-                  label="Chat @mentions"
-                  description="Notify me when someone mentions me in chat"
+                  label={t('profile.chat_mentions')}
+                  description={t('profile.chat_mentions_desc')}
                 />
                 <Toggle
                   id="chat_member_join"
                   checked={form.notification_prefs.chat_member_join}
                   onChange={(v) => setNotifPref("chat_member_join", v)}
-                  label="New member alerts"
-                  description="Notify me when someone joins my competition"
+                  label={t('profile.new_member')}
+                  description={t('profile.new_member_desc')}
                 />
               </div>
             </section>
@@ -481,24 +484,37 @@ export function ProfileForm({ user }: { user: User }) {
             {/* Predictions */}
             <section className="rounded-xl border border-ps-border bg-ps-surface p-6">
               <h2 className="mb-1 text-xs font-semibold uppercase tracking-widest text-ps-text-sec">
-                Predictions
+                {t('profile.predictions_heading')}
               </h2>
               <div className="divide-y divide-ps-border">
                 <Toggle
                   id="result_hints"
                   checked={form.notification_prefs.result_hints}
                   onChange={(v) => setNotifPref("result_hints", v)}
-                  label="Result colour hints"
-                  description="Green or red accent on cards when a result is confirmed"
+                  label={t('profile.result_hints')}
+                  description={t('profile.result_hints_desc')}
                 />
                 <div className="py-3">
-                  <p className="text-sm font-medium text-ps-text">Default sport</p>
+                  <p className="text-sm font-medium text-ps-text">{t('profile.default_sport')}</p>
                   <p className="mt-0.5 text-xs text-ps-text-ter">
-                    Opens here when you visit My Personal Predictions
+                    {t('profile.default_sport_desc')}
                   </p>
                   <div className="mt-3 flex flex-wrap gap-2" role="group" aria-label="Default sport">
                     {SPORT_OPTIONS.map((sport) => {
                       const active = form.notification_prefs.default_sport === sport;
+                      const sportLabel = (s: SportOption) => {
+                        const map: Record<SportOption, string> = {
+                          Soccer: t('sport.soccer'),
+                          GAA: t('sport.gaa'),
+                          Rugby: t('sport.rugby'),
+                          'US Sports': t('sport.us_sports'),
+                          Motorsport: t('sport.motorsport'),
+                          Tennis: t('sport.tennis'),
+                          Cricket: t('sport.cricket'),
+                          Other: t('sport.other'),
+                        };
+                        return map[s] ?? s;
+                      };
                       return (
                         <button
                           key={sport}
@@ -517,7 +533,7 @@ export function ProfileForm({ user }: { user: User }) {
                               : "bg-ps-chip text-ps-text-sec hover:bg-ps-border"
                           }`}
                         >
-                          {sport}
+                          {sportLabel(sport)}
                         </button>
                       );
                     })}
@@ -550,7 +566,7 @@ export function ProfileForm({ user }: { user: User }) {
             disabled={!canSave}
             className="rounded-xl bg-ps-text px-4 py-3 text-sm font-semibold text-ps-bg transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50"
           >
-            {submitting ? "Saving..." : "Save changes"}
+            {submitting ? t('profile.saving') : t('profile.save')}
           </button>
         </div>
       </form>

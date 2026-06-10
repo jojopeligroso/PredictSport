@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { validateDisplayName, DISPLAY_NAME_MAX } from "@/lib/display-name";
+import { useT } from "@/lib/i18n";
 
 interface JoinFlowProps {
   competitionId: string;
@@ -19,6 +20,7 @@ export function JoinFlow({
   maxEntrants,
   currentCount,
 }: JoinFlowProps) {
+  const t = useT();
   const router = useRouter();
   const [displayName, setDisplayName] = useState(currentDisplayName);
   const [submitting, setSubmitting] = useState(false);
@@ -69,23 +71,22 @@ export function JoinFlow({
   return (
     <div className="mx-auto max-w-[480px] px-4 pt-12 pb-16">
       <h1 className="font-display text-2xl uppercase tracking-tight text-ps-text">
-        Join the Game
+        {t('join.heading')}
       </h1>
 
       {maxEntrants && (
         <p className="mt-2 font-mono text-xs text-ps-text-ter">
-          {currentCount} / {maxEntrants} entrants
+          {t('join.entrants', { currentCount, maxEntrants: maxEntrants! })}
         </p>
       )}
 
       <div className="mt-6 rounded-xl border border-ps-border bg-ps-surface p-5">
         <label htmlFor="display-name" className="block">
           <span className="text-sm font-semibold text-ps-text">
-            Your display name
+            {t('join.name_label')}
           </span>
           <p className="mt-1 text-xs text-ps-text-sec">
-            This is how you'll show up to the lads on the leaderboard.
-            Use the name they'll know you by.
+            {t('join.name_helper')}
           </p>
         </label>
 
@@ -96,12 +97,12 @@ export function JoinFlow({
           onChange={(e) => setDisplayName(e.target.value)}
           maxLength={50}
           className="mt-3 block w-full rounded-lg border border-ps-border bg-ps-bg px-3 py-2.5 text-sm text-ps-text outline-none focus:border-ps-amber"
-          placeholder="e.g. Malo"
+          placeholder={t('join.name_placeholder')}
         />
 
         {displayName.trim().length > DISPLAY_NAME_MAX && (
           <p className="mt-1.5 text-xs font-medium text-ps-red">
-            {DISPLAY_NAME_MAX} characters max
+            {t('join.name_max_error', { DISPLAY_NAME_MAX })}
           </p>
         )}
 
@@ -115,7 +116,7 @@ export function JoinFlow({
           disabled={submitting || !nameValid}
           className="mt-5 w-full rounded-lg bg-ps-amber px-4 py-2.5 text-sm font-bold text-[#1a1208] transition-opacity disabled:opacity-50"
         >
-          {submitting ? "Joining..." : "Join Competition"}
+          {submitting ? t('join.button_loading') : t('join.button')}
         </button>
       </div>
     </div>

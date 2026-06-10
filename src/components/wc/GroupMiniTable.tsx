@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
+import { useT } from "@/lib/i18n";
 
 interface GroupMember {
   user_id: string;
@@ -41,6 +42,7 @@ export function GroupMiniTable({
   classificationId,
   competitionId,
 }: GroupMiniTableProps) {
+  const t = useT();
   const [data, setData] = useState<GroupData | null>(null);
   const [loading, setLoading] = useState(true);
 
@@ -77,13 +79,13 @@ export function GroupMiniTable({
     return (
       <div className="rounded-xl border border-ps-border bg-ps-surface p-4">
         <div className="flex items-center justify-between">
-          <h3 className="text-base font-bold text-ps-text">Your Group</h3>
+          <h3 className="text-base font-bold text-ps-text">{t('dash.your_group')}</h3>
         </div>
         <p className="mt-2 text-xs text-ps-text-sec">
-          Groups will be drawn before the first match.
+          {t('dash.groups_drawn_message')}
           {data?.totalMembers != null && (
             <span className="ml-1 text-ps-text-ter">
-              {data.totalMembers} players joined.
+              {t('common.players_joined', { count: data.totalMembers })}
             </span>
           )}
         </p>
@@ -124,20 +126,20 @@ export function GroupMiniTable({
   return (
     <div className="rounded-xl border border-ps-border bg-ps-surface p-4">
       <div className="flex items-center justify-between">
-        <h3 className="text-base font-bold text-ps-text">Your Group</h3>
+        <h3 className="text-base font-bold text-ps-text">{t('dash.your_group')}</h3>
         <Link
           href="/wc/leaderboard"
           className="text-xs font-semibold text-ps-amber transition-colors hover:opacity-80"
         >
-          See full table →
+          {t('leaderboard.see_full_table')}
         </Link>
       </div>
 
       {/* Column headers */}
       <div className="mt-3 flex items-center border-b border-ps-border pb-1.5 text-[10px] font-semibold uppercase tracking-wider text-ps-text-ter">
         <span className="w-6 text-center">#</span>
-        <span className="flex-1 pl-2">Player</span>
-        <span className="w-10 text-right">Pts</span>
+        <span className="flex-1 pl-2">{t('leaderboard.player')}</span>
+        <span className="w-10 text-right">{t('common.pts')}</span>
       </div>
 
       {/* Rows */}

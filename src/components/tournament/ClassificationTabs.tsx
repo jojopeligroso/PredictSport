@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { useT } from "@/lib/i18n";
 
 interface Classification {
   id: string;
@@ -61,6 +62,7 @@ export function ClassificationTabs({
   minEntrants?: number | null;
   currentDisplayName?: string;
 }) {
+  const t = useT();
   const visibleClassifications = classifications.filter((c) => c.status !== "draft");
   const formatClassification = visibleClassifications.find(
     (c) => c.classification_key === "format"
@@ -129,7 +131,7 @@ export function ClassificationTabs({
   if (visibleClassifications.length === 0) {
     return (
       <p className="py-8 text-center text-sm text-ps-text-sec">
-        No classifications configured yet.
+        {t('classification.no_config')}
       </p>
     );
   }
@@ -150,7 +152,7 @@ export function ClassificationTabs({
                 : "text-ps-text-sec hover:text-ps-text"
             }`}
           >
-            {shortLabel(cls.classification_key)}
+            {shortLabel(cls.classification_key, t)}
           </button>
         ))}
       </div>
@@ -170,7 +172,7 @@ export function ClassificationTabs({
         groupData.drawAt && (
           <FormatDrawBanner
             drawAt={groupData.drawAt}
-            label="Format groups drawn in"
+            label={t('classification.format_draw_in')}
           />
         )}
 
@@ -239,7 +241,7 @@ export function ClassificationTabs({
         groupData.drawAt && (
           <FormatDrawBanner
             drawAt={groupData.drawAt}
-            label="You'll know your group in"
+            label={t('classification.know_group_in')}
           />
         )}
     </div>
@@ -287,6 +289,7 @@ function StandingsTable({
   selfVisibility: "public" | "private";
   onToggleVisibility: (next: "public" | "private") => void;
 }) {
+  const t = useT();
   const isBracket = classificationType === "bracket_survivor";
   const isFormat = classificationType === "format_elimination";
 
@@ -295,9 +298,9 @@ function StandingsTable({
       {/* Header */}
       <div className="flex items-center px-3 py-2 text-xs font-semibold text-ps-text-ter">
         <span className="w-8 text-center">#</span>
-        <span className="flex-1 pl-2">Player</span>
+        <span className="flex-1 pl-2">{t('leaderboard.player')}</span>
         <span className="w-16 text-right">
-          {isBracket ? "Correct" : "Pts"}
+          {isBracket ? t('classification.correct') : t('common.pts')}
         </span>
       </div>
 
@@ -323,7 +326,7 @@ function StandingsTable({
               </span>
               {isMe && (
                 <span className="rounded bg-ps-amber/20 px-1 py-0.5 text-[10px] font-bold text-ps-amber">
-                  YOU
+                  {t('classification.you_label')}
                 </span>
               )}
               {isMe && !isFormat && (
@@ -334,7 +337,7 @@ function StandingsTable({
               )}
               {isEliminated && (
                 <span className="rounded bg-ps-red/15 px-1 py-0.5 text-[10px] font-bold text-ps-red">
-                  {row.status === "dead" ? "DEAD" : "OUT"}
+                  {row.status === "dead" ? t('classification.dead') : t('classification.out')}
                 </span>
               )}
               {row.movement !== undefined && row.movement !== 0 && !isEliminated && (
@@ -364,6 +367,7 @@ function VisibilityToggle({
   visibility: "public" | "private";
   onToggle: (next: "public" | "private") => void;
 }) {
+  const t = useT();
   const isPrivate = visibility === "private";
   return (
     <button
@@ -371,8 +375,8 @@ function VisibilityToggle({
       onClick={() => onToggle(isPrivate ? "public" : "private")}
       aria-label={
         isPrivate
-          ? "Currently anonymous. Tap to show your name on this leaderboard."
-          : "Currently public. Tap to appear anonymously on this leaderboard."
+          ? t('classification.anon_desc')
+          : t('classification.public_desc')
       }
       className={`rounded px-1.5 py-0.5 text-[10px] font-semibold transition-colors ${
         isPrivate
@@ -380,17 +384,17 @@ function VisibilityToggle({
           : "bg-ps-amber/10 text-ps-amber hover:bg-ps-amber/20"
       }`}
     >
-      {isPrivate ? "Anon" : "Hide me"}
+      {isPrivate ? t('classification.anon') : t('classification.hide_me')}
     </button>
   );
 }
 
-function shortLabel(key: string): string {
+function shortLabel(key: string, t: (k: string) => string): string {
   const labels: Record<string, string> = {
-    overall: "Overall",
-    format: "Format",
-    full_bracket: "Bracket",
-    knockout_bracket: "KO Bracket",
+    overall: t('classification.overall_label'),
+    format: t('classification.format_label'),
+    full_bracket: t('classification.bracket_label'),
+    knockout_bracket: t('classification.ko_bracket_label'),
     r32_pick: "Last 32",
   };
   return labels[key] ?? key;
@@ -431,6 +435,7 @@ function EmptyStandings({
 }
 
 function InviteCodeBlock({ code }: { code: string }) {
+  const t = useT();
   const [copied, setCopied] = useState(false);
   const [error, setError] = useState(false);
 
@@ -473,12 +478,12 @@ function InviteCodeBlock({ code }: { code: string }) {
           aria-hidden="true"
           className="text-xs font-semibold text-ps-text-ter transition-colors group-hover:text-ps-amber-deep"
         >
-          {copied ? "Copied" : "Copy"}
+          {copied ? t('create.copied') : t('create.copy')}
         </span>
       </button>
       {error && (
         <p className="text-xs text-ps-red">
-          Couldn&apos;t copy — long-press the code instead.
+          {t('create.copy_error')}
         </p>
       )}
     </div>
@@ -494,21 +499,22 @@ function EntrantCounter({
   max: number | null;
   min: number | null;
 }) {
+  const t = useT();
   const belowMin = min !== null && count < min;
 
   return (
     <div className="mt-3">
       {belowMin ? (
         <p className="text-center text-xs font-medium text-ps-amber">
-          {count} of {min} minimum required for the competition to begin
+          {t('classification.entrants_min', { count, min: min! })}
         </p>
       ) : max ? (
         <p className="text-center font-mono text-xs text-ps-text-ter">
-          {count} / {max} entrants
+          {t('classification.entrants_max', { count, max })}
         </p>
       ) : (
         <p className="text-center font-mono text-xs text-ps-text-ter">
-          {count} entrant{count !== 1 ? "s" : ""}
+          {t('classification.entrants_count', { count })}
         </p>
       )}
     </div>
@@ -629,13 +635,14 @@ function FormatGroupCard({
   groupData: MyGroupData | null;
   displayName: string;
 }) {
+  const t = useT();
   if (!groupData) return null;
 
   if (groupData.status === "draw_pending") {
     return (
       <div className="mt-4 rounded-xl border border-ps-border bg-ps-surface p-4">
         <div className="flex items-center justify-between">
-          <h3 className="text-sm font-bold text-ps-text">Your Group</h3>
+          <h3 className="text-sm font-bold text-ps-text">{t('dash.your_group')}</h3>
           {groupData.drawAt && <DrawCountdown drawAt={groupData.drawAt} />}
         </div>
         <div className="mt-3 divide-y divide-ps-border rounded-lg border border-ps-border">
@@ -643,7 +650,7 @@ function FormatGroupCard({
           <div className="flex items-center px-3 py-2.5 bg-ps-amber/5">
             <span className="flex-1 text-sm font-semibold text-ps-text">{displayName}</span>
             <span className="w-12 text-center font-mono text-xs text-ps-text-ter">&mdash;</span>
-            <span className="w-14 text-right font-mono text-xs font-bold text-ps-text">0 pts</span>
+            <span className="w-14 text-right font-mono text-xs font-bold text-ps-text">0 {t('common.pts')}</span>
           </div>
           {/* Blurred placeholders */}
           {[0, 1, 2].map((i) => (
@@ -652,7 +659,7 @@ function FormatGroupCard({
                 {BLURRED_NAMES[i]}
               </span>
               <span className="w-12 text-center font-mono text-xs text-ps-text-ter">&mdash;</span>
-              <span className="w-14 text-right font-mono text-xs text-ps-text-ter">0 pts</span>
+              <span className="w-14 text-right font-mono text-xs text-ps-text-ter">0 {t('common.pts')}</span>
             </div>
           ))}
         </div>
@@ -675,7 +682,7 @@ function FormatGroupCard({
                 {m.display_name}
                 {m.is_self && (
                   <span className="ml-1.5 rounded bg-ps-amber/20 px-1 py-0.5 text-[10px] font-bold text-ps-amber">
-                    YOU
+                    {t('classification.you_label')}
                   </span>
                 )}
               </span>
@@ -683,7 +690,7 @@ function FormatGroupCard({
                 {m.predictions_made}/{m.predictions_total}
               </span>
               <span className="w-14 text-right font-mono text-xs font-bold text-ps-text">
-                {m.points} pts
+                {m.points} {t('common.pts')}
               </span>
             </div>
           ))}

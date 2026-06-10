@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useMemo, useState, useSyncExternalStore, useRef } from "react";
+import { useT } from "@/lib/i18n";
 import { computeDayStatus, formatLockCountdown } from "@/lib/wc/daily-lock";
 import { CHROME_PALETTE } from "@/app/wc/_landing/brand-palette";
 import type { DatePillSummary } from "./fetchDashboardData";
@@ -104,6 +105,7 @@ export function DashboardClient({
   isCompetitionAdmin,
   memberRole,
 }: DashboardClientProps) {
+  const t = useT();
   const [expandedEventId, setExpandedEventId] = useState<string | null>(null);
   const [selectedDate, setSelectedDate] = useState<string | null>(null);
 
@@ -170,7 +172,7 @@ export function DashboardClient({
               />
             )}
             <p className="text-[11px] font-semibold uppercase tracking-wider text-ps-text-sec">
-              {picked} / {total} picks
+              {t('dash.picks_progress', { picked, total })}
             </p>
             <div className="mx-auto mt-1.5 h-1 max-w-[200px] overflow-hidden rounded-full bg-ps-border">
               <div
@@ -187,7 +189,7 @@ export function DashboardClient({
         {filteredEvents.length > 0 && (
           <section className="mt-3">
             <p className="mb-2 text-[11px] font-semibold uppercase tracking-wider text-ps-text-ter">
-              Your picks · Round 1
+              {t('dash.your_picks')}
             </p>
             <div className="flex flex-col gap-2">
               {filteredEvents.map((event) => {
@@ -219,7 +221,7 @@ export function DashboardClient({
                 href="/wc"
                 className="text-[13px] font-semibold text-ps-amber transition-colors hover:opacity-80"
               >
-                Continue to full round →
+                {t('dash.continue_round')}
               </Link>
             </div>
           </section>
@@ -244,7 +246,7 @@ export function DashboardClient({
       <OnboardingSection id="other">
         <section className="mt-4">
           <p className="mb-2 text-[11px] font-semibold uppercase tracking-wider text-ps-text-ter">
-            At a glance
+            {t('dash.at_a_glance')}
           </p>
           {classificationId && currentUserId ? (
             <StatsCard
@@ -254,7 +256,7 @@ export function DashboardClient({
           ) : (
             <div className="rounded-xl border border-ps-border bg-ps-surface px-4 py-5 text-center">
               <p className="text-xs text-ps-text-ter">
-                Your stats will appear after the first results.
+                {t('dash.stats_placeholder')}
               </p>
             </div>
           )}
@@ -284,7 +286,7 @@ export function DashboardClient({
               className="flex items-center justify-between rounded-xl bg-ps-amber px-4 py-3 transition-colors hover:opacity-90"
             >
               <span className="text-[13px] font-semibold text-white">
-                Leaderboard
+                {t('dash.leaderboard')}
               </span>
               <span className="text-[13px] font-semibold text-white">
                 →
@@ -300,19 +302,19 @@ export function DashboardClient({
           <section className="mt-2 rounded-xl border border-ps-border bg-ps-surface overflow-hidden">
             {/* Single header: Chat label + full chat link + collapse chevron */}
             <div className={`flex items-center justify-between px-4 py-3${chatCollapsed ? "" : " border-b border-ps-border"}`}>
-              <span className="text-sm font-bold text-ps-text">Chat</span>
+              <span className="text-sm font-bold text-ps-text">{t('dash.chat')}</span>
               <div className="flex items-center gap-3">
                 <a
                   href="/wc/leaderboard#chat"
                   className="text-xs font-semibold text-ps-amber hover:opacity-80"
                   onClick={(e) => e.stopPropagation()}
                 >
-                  Open full chat &rarr;
+                  {t('dash.open_full_chat')} →
                 </a>
                 <button
                   onClick={toggleChatCollapsed}
                   className="-mr-1 flex h-8 w-8 items-center justify-center rounded-lg text-ps-text-sec transition-colors hover:bg-ps-bg-alt hover:text-ps-text"
-                  aria-label={chatCollapsed ? "Expand chat" : "Collapse chat"}
+                  aria-label={chatCollapsed ? t('dash.expand_chat') : t('dash.collapse_chat')}
                 >
                   <svg
                     className={`h-4 w-4 transition-transform duration-200 ${chatCollapsed ? "" : "rotate-180"}`}
@@ -348,8 +350,7 @@ export function DashboardClient({
                   {resultsLabel}
                 </h3>
                 <span className="text-[11px] font-semibold uppercase text-ps-text-ter">
-                  {recentResults.length}{" "}
-                  {recentResults.length === 1 ? "match" : "matches"}
+                  {t(recentResults.length === 1 ? 'wc.match' : 'wc.matches', { count: recentResults.length })}
                 </span>
               </div>
               <div className="mt-3 space-y-0 divide-y divide-ps-border">
@@ -361,7 +362,7 @@ export function DashboardClient({
           ) : (
             <div className="rounded-xl border border-ps-border bg-ps-surface px-4 py-5 text-center">
               <p className="text-xs text-ps-text-ter">
-                Results will appear once matches are played.
+                {t('dash.results_placeholder')}
               </p>
             </div>
           )}
@@ -373,7 +374,7 @@ export function DashboardClient({
         {todayGroups.length > 0 && (
           <section className="mt-4">
             <p className="mb-2 text-[11px] font-semibold uppercase tracking-wider text-ps-text-ter">
-              Today&apos;s Groups
+              {t('dash.todays_groups')}
             </p>
             <FifaGroupsGrid
               mode="accordion"
@@ -382,7 +383,7 @@ export function DashboardClient({
               predictions={predictions}
               competitionId={competitionId}
               windowLocked={windowLocked}
-              backLabel="Today's Groups"
+              backLabel={t('dash.todays_groups')}
               standings={groupStandings}
             />
           </section>
@@ -402,10 +403,10 @@ export function DashboardClient({
               >
                 <div className="flex items-center gap-2">
                   <span className="text-[13px] font-semibold text-ps-text-sec">
-                    Bracket
+                    {t('dash.bracket')}
                   </span>
                   <span className="rounded-full bg-ps-purple-soft px-1.5 py-0.5 text-[8px] font-bold uppercase text-ps-purple">
-                    Anorak
+                    {t('dash.anorak')}
                   </span>
                 </div>
                 <div className="flex items-center gap-2">
@@ -436,6 +437,7 @@ export function DashboardClient({
 
 /** Placeholder group table shown during onboarding when no classification exists. */
 function MockGroupCard() {
+  const t = useT();
   const mockRows = [
     { label: "You", pts: 0, isYou: true },
     { label: "Player 2", pts: 0, isYou: false },
@@ -446,16 +448,16 @@ function MockGroupCard() {
   return (
     <div className="rounded-xl border border-ps-border bg-ps-surface p-4">
       <div className="flex items-center justify-between">
-        <h3 className="text-base font-bold text-ps-text">Your Group</h3>
+        <h3 className="text-base font-bold text-ps-text">{t('dash.your_group')}</h3>
         <Link
           href="/wc/leaderboard"
           className="text-[13px] font-semibold text-ps-amber transition-opacity hover:opacity-80"
         >
-          See all groups →
+          {t('dash.see_all_groups')}
         </Link>
       </div>
       <p className="mt-0.5 text-[11px] font-semibold uppercase tracking-wider text-ps-text-ter">
-        Group X
+        {t('dash.group_x')}
       </p>
       <div className="mt-3 space-y-0 divide-y divide-ps-border">
         {mockRows.map((row, i) => (
@@ -471,13 +473,13 @@ function MockGroupCard() {
             </span>
             <span className="flex-1 text-sm">{row.label}</span>
             <span className="font-mono text-[11px] tabular-nums text-ps-text-sec">
-              {row.pts} pts
+              {row.pts} {t('common.pts')}
             </span>
           </div>
         ))}
       </div>
       <p className="mt-3 text-center text-xs text-ps-text-ter">
-        Groups will be drawn before the first match.
+        {t('dash.groups_drawn_message')}
       </p>
     </div>
   );
@@ -579,10 +581,11 @@ function DashboardDatePills({
 }
 
 function DashboardPillIndicator({ status }: { status: string }) {
+  const t = useT();
   switch (status) {
     case "complete":
       return (
-        <span className="mt-1 inline-flex h-3.5 w-3.5 items-center justify-center rounded-full bg-ps-green text-[8px] font-extrabold leading-none text-white" aria-label="Complete">
+        <span className="mt-1 inline-flex h-3.5 w-3.5 items-center justify-center rounded-full bg-ps-green text-[8px] font-extrabold leading-none text-white" aria-label={t('calendar.complete')}>
           ✓
         </span>
       );
@@ -591,14 +594,14 @@ function DashboardPillIndicator({ status }: { status: string }) {
         <span
           className="mt-1 inline-flex h-3.5 w-3.5 items-center justify-center rounded-full text-[9px] font-extrabold leading-none text-white"
           style={{ background: CHROME_PALETTE.attention }}
-          aria-label="Exact score needed"
+          aria-label={t('calendar.exact_score_needed')}
         >
           !
         </span>
       );
     case "urgent":
       return (
-        <span className="mt-1 inline-flex h-3.5 w-3.5 items-center justify-center rounded-full bg-ps-red text-[7px] font-extrabold leading-none text-white" style={{ letterSpacing: "-0.5px" }} aria-label="Locks soon">
+        <span className="mt-1 inline-flex h-3.5 w-3.5 items-center justify-center rounded-full bg-ps-red text-[7px] font-extrabold leading-none text-white" style={{ letterSpacing: "-0.5px" }} aria-label={t('calendar.locks_soon')}>
           !!
         </span>
       );
@@ -609,6 +612,7 @@ function DashboardPillIndicator({ status }: { status: string }) {
 
 /** Single result row with score, user prediction, correctness, and points. */
 function TodayResultRow({ result }: { result: ResultRow }) {
+  const t = useT();
   const { fixture, homeScore, awayScore, userWinnerPick, userScorePick, winnerCorrect, scoreCorrect, winnerPoints, scorePoints } = result;
   const homeTri = fifaTrigram(fixture.home) ?? fixture.home.slice(0, 3).toUpperCase();
   const awayTri = fifaTrigram(fixture.away) ?? fixture.away.slice(0, 3).toUpperCase();
@@ -644,7 +648,7 @@ function TodayResultRow({ result }: { result: ResultRow }) {
       {hasPrediction ? (
         <div className="mt-1 flex items-center gap-2 pl-4.5">
           <span className="text-[11px] text-ps-text-ter">
-            You:{" "}
+            {t('dash.you_label')}{" "}
             <span className="font-semibold text-ps-text-sec">
               {userScorePick
                 ? `${userScorePick.home}–${userScorePick.away}`
@@ -653,9 +657,9 @@ function TodayResultRow({ result }: { result: ResultRow }) {
           </span>
           {totalPoints > 0 && (
             <span className="ml-auto font-mono text-[11px] font-semibold tabular-nums text-[#0aa86d]">
-              {winnerPoints > 0 && `+${winnerPoints} winner`}
+              {winnerPoints > 0 && t('dash.winner_points', { points: winnerPoints })}
               {winnerPoints > 0 && scorePoints > 0 && " "}
-              {scorePoints > 0 && `+${scorePoints} score`}
+              {scorePoints > 0 && t('dash.score_points', { points: scorePoints })}
             </span>
           )}
           {totalPoints === 0 && (
@@ -666,7 +670,7 @@ function TodayResultRow({ result }: { result: ResultRow }) {
         </div>
       ) : (
         <div className="mt-1 pl-4.5">
-          <span className="text-[11px] text-ps-text-ter">No prediction</span>
+          <span className="text-[11px] text-ps-text-ter">{t('dash.no_prediction')}</span>
         </div>
       )}
     </div>

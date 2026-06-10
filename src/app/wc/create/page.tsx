@@ -10,6 +10,7 @@ import { Metadata } from "next";
 import { createClient } from "@/lib/supabase/server";
 import { WcBrandedTitle } from "@/components/wc/WcBrandedTitle";
 import { CreateWcCompetition } from "./CreateWcCompetition";
+import { getServerT } from "@/lib/i18n/server";
 
 export const dynamic = "force-dynamic";
 
@@ -19,6 +20,7 @@ export const metadata: Metadata = {
 };
 
 export default async function WcCreatePage() {
+  const t = await getServerT();
   const supabase = await createClient();
   const {
     data: { user },
@@ -31,10 +33,10 @@ export default async function WcCreatePage() {
   return (
     <div className="mx-auto max-w-[480px] px-4 pt-6 pb-16">
       <WcBrandedTitle
-        title="Create a Competition"
-        subtitle="Set up your own World Cup prediction game."
+        title={t('create.heading')}
+        subtitle={t('create.subtitle')}
         backHref="/wc"
-        backLabel="Back to World Cup"
+        backLabel={t('nav.back_to_wc')}
         className="mb-8"
       />
 

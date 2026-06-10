@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useT } from "@/lib/i18n";
 
 interface StandingRow {
   rank: number;
@@ -24,6 +25,7 @@ export function StatsCard({
   classificationId,
   currentUserId,
 }: StatsCardProps) {
+  const t = useT();
   const [rank, setRank] = useState<number | null>(null);
   const [points, setPoints] = useState<number>(0);
   const [totalPlayers, setTotalPlayers] = useState<number>(0);
@@ -74,9 +76,9 @@ export function StatsCard({
         <p className="text-2xl font-bold tabular-nums text-ps-amber">
           {rank != null ? `${rank}${rankSuffix}` : "—"}
         </p>
-        <p className="mt-0.5 text-[11px] text-ps-text-sec">Your Rank</p>
+        <p className="mt-0.5 text-[11px] text-ps-text-sec">{t('stats.your_rank')}</p>
         <p className="text-[10px] text-ps-text-ter">
-          of {totalPlayers} players
+          {t('stats.of_players', { totalPlayers })}
         </p>
       </div>
 
@@ -85,7 +87,7 @@ export function StatsCard({
         <p className="text-2xl font-bold tabular-nums text-ps-text">
           {points}
         </p>
-        <p className="mt-0.5 text-[11px] text-ps-text-sec">Points</p>
+        <p className="mt-0.5 text-[11px] text-ps-text-sec">{t('stats.points')}</p>
       </div>
 
       {/* Accuracy — placeholder until scoring is live */}
@@ -93,8 +95,8 @@ export function StatsCard({
         <p className="text-2xl font-bold tabular-nums text-ps-green">
           —
         </p>
-        <p className="mt-0.5 text-[11px] text-ps-text-sec">Accuracy</p>
-        <p className="text-[10px] text-ps-text-ter">after first results</p>
+        <p className="mt-0.5 text-[11px] text-ps-text-sec">{t('stats.accuracy')}</p>
+        <p className="text-[10px] text-ps-text-ter">{t('stats.after_first_results')}</p>
       </div>
     </div>
   );
