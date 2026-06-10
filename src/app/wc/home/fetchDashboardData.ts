@@ -98,7 +98,7 @@ export async function fetchDashboardData(): Promise<DashboardResult> {
   // 1. Find the WC competition
   const { data: competition } = await supabase
     .from("competitions")
-    .select("id, status, invite_code, entry_closes_at")
+    .select("id, status, invite_code, entry_closes_at, max_entrants")
     .eq("product_mode", "world_cup_2026_shell")
     .in("status", ["active", "draft"])
     .limit(1)
@@ -368,9 +368,10 @@ export async function fetchDashboardData(): Promise<DashboardResult> {
     }
   }
 
-  // Invite code — only show if entry is still open
+  // Invite code — only show if entry is still open and competition isn't full
   const entryClosesAt = competition.entry_closes_at ?? null;
-  const entryOpen = !entryClosesAt || new Date(entryClosesAt) > now;
+  const competitionFull = competition.max_entrants && memberCount >= competition.max_entrants;
+  const entryOpen = !competitionFull && (!entryClosesAt || new Date(entryClosesAt) > now);
   const inviteCode = entryOpen ? (competition.invite_code ?? null) : null;
 
   return {

@@ -88,7 +88,30 @@ export async function POST(request: NextRequest) {
     competitionId = comp.id;
   }
 
-  // 4. Check if user already a member
+  // 4. Check entrant cap
+  {
+    const { data: comp } = await supabase
+      .from("competitions")
+      .select("max_entrants")
+      .eq("id", competitionId)
+      .single();
+
+    if (comp?.max_entrants) {
+      const { count } = await supabase
+        .from("competition_members")
+        .select("id", { count: "exact", head: true })
+        .eq("competition_id", competitionId);
+
+      if ((count ?? 0) >= comp.max_entrants) {
+        return NextResponse.json(
+          { error: "Competition is full" },
+          { status: 403 }
+        );
+      }
+    }
+  }
+
+  // 5. Check if user already a member
   const { data: existing } = await supabase
     .from("competition_members")
     .select("id")
@@ -114,7 +137,7 @@ export async function POST(request: NextRequest) {
     });
   }
 
-  // 5. Insert into competition_members
+  // 6. Insert into competition_members
   const { error: insertError } = await supabase
     .from("competition_members")
     .insert({
@@ -142,10 +165,10 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "Failed to join" }, { status: 500 });
   }
 
-  // 6. Enroll in classifications (idempotent — no-op for non-tournament competitions)
+  // 7. Enroll in classifications (idempotent — no-op for non-tournament competitions)
   await enrollEntrant(supabase, competitionId, user.id);
 
-  // 7. Increment use_count (only for invite_tokens, not permanent invite_codes)
+  // 8. Increment use_count (only for invite_tokens, not permanent invite_codes)
   if (isInviteToken && invite) {
     await supabase
       .from("invite_tokens")
@@ -153,7 +176,7 @@ export async function POST(request: NextRequest) {
       .eq("id", invite.id);
   }
 
-  // 8. Fetch competition name + product_mode
+  // 9. Fetch competition name + product_mode
   const { data: competition } = await supabase
     .from("competitions")
     .select("name, product_mode")

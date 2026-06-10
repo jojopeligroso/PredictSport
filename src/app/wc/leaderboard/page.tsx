@@ -64,9 +64,11 @@ export default async function LeaderboardPage() {
     process.env.NEXT_PUBLIC_APP_URL ?? "https://predictsport-rust.vercel.app";
   const joinUrl = `${appUrl}/join`;
 
+  const competitionFull = competition.max_entrants && (memberCount ?? 0) >= competition.max_entrants;
   const showInvite =
     competition.invite_code &&
     competition.status === "active" &&
+    !competitionFull &&
     (!competition.entry_closes_at ||
       new Date() < new Date(competition.entry_closes_at));
 
