@@ -8,6 +8,7 @@
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { enrollEntrant } from "@/lib/tournament/classification-engine";
+import { addLateEntrant } from "@/lib/tournament/format/group-allocation";
 import { requireDisplayName } from "@/lib/require-display-name";
 
 export const dynamic = "force-dynamic";
@@ -63,6 +64,31 @@ export default async function WcJoinOpenPage() {
 
     // Enroll in classifications
     await enrollEntrant(supabase, comp.id, user.id);
+
+    // If format groups already drawn, slot this user into the smallest group
+    const { data: formatCls } = await supabase
+      .from("classifications")
+      .select("id")
+      .eq("competition_id", comp.id)
+      .eq("classification_type", "format_elimination")
+      .eq("status", "active")
+      .maybeSingle();
+
+    if (formatCls) {
+      const { data: existingGroups } = await supabase
+        .from("format_prediction_groups")
+        .select("id")
+        .eq("classification_id", formatCls.id)
+        .limit(1);
+
+      if (existingGroups && existingGroups.length > 0) {
+        try {
+          await addLateEntrant(supabase, formatCls.id, user.id);
+        } catch (err) {
+          console.error("[join-open] Failed to add late entrant to group:", (err as Error).message);
+        }
+      }
+    }
   }
 
   redirect("/wc/home?onboarding=true");

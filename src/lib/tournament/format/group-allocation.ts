@@ -202,12 +202,25 @@ export async function addLateEntrant(
   // Find current group sizes
   const { data: groups, error: groupError } = await supabase
     .from("format_prediction_groups")
-    .select("id, group_number")
-    .eq("classification_id", classificationId);
+    .select("id, group_number, competition_id")
+    .eq("classification_id", classificationId)
+    .order("group_number", { ascending: true });
 
   if (groupError) throw new Error(`Failed to fetch groups: ${groupError.message}`);
   if (!groups || groups.length === 0) {
     throw new Error("No prediction groups exist for this classification");
+  }
+
+  // Check if user is already in a group
+  const { data: existingMembership } = await supabase
+    .from("format_group_memberships")
+    .select("id")
+    .eq("classification_id", classificationId)
+    .eq("user_id", userId)
+    .maybeSingle();
+
+  if (existingMembership) {
+    throw new Error("User is already in a group for this classification");
   }
 
   const { data: mbData, error: mbError } = await supabase
@@ -218,8 +231,9 @@ export async function addLateEntrant(
   if (mbError) throw new Error(`Failed to fetch group memberships: ${mbError.message}`);
 
   // Count members per group
+  const groupList = groups as { id: string; group_number: number; competition_id: string }[];
   const sizeCounts = new Map<string, number>();
-  for (const g of groups as { id: string; group_number: number }[]) {
+  for (const g of groupList) {
     sizeCounts.set(g.id, 0);
   }
   for (const m of mbData ?? []) {
@@ -227,14 +241,39 @@ export async function addLateEntrant(
     sizeCounts.set(m.group_id, current + 1);
   }
 
-  // Find minimum size
-  const minSize = Math.min(...Array.from(sizeCounts.values()));
-  const candidateGroupIds = Array.from(sizeCounts.entries())
-    .filter(([, count]) => count === minSize)
-    .map(([id]) => id);
+  // Find groups under 4 members first (fill to 4 before creating new groups)
+  const underFour = Array.from(sizeCounts.entries())
+    .filter(([, count]) => count < 4);
 
-  // Random tie-break among smallest groups using crypto
-  const chosenGroupId = cryptoChoice(candidateGroupIds);
+  let chosenGroupId: string;
+
+  if (underFour.length > 0) {
+    // Pick the smallest under-4 group (random tie-break)
+    const minSize = Math.min(...underFour.map(([, c]) => c));
+    const candidates = underFour.filter(([, c]) => c === minSize).map(([id]) => id);
+    chosenGroupId = cryptoChoice(candidates);
+  } else {
+    // All groups are at 4+. Create a new group for this user.
+    const maxGroupNumber = Math.max(...groupList.map((g) => g.group_number));
+    const newGroupNumber = maxGroupNumber + 1;
+    const newGroupName = `Group ${numberToLetter(newGroupNumber)}`;
+
+    const { data: newGroup, error: newGroupError } = await supabase
+      .from("format_prediction_groups")
+      .insert({
+        classification_id: classificationId,
+        competition_id: groupList[0].competition_id,
+        group_name: newGroupName,
+        group_number: newGroupNumber,
+        target_size: 4,
+        metadata: {},
+      })
+      .select("id")
+      .single();
+
+    if (newGroupError) throw new Error(`Failed to create new group: ${newGroupError.message}`);
+    chosenGroupId = newGroup.id;
+  }
 
   const { data: inserted, error: insertError } = await supabase
     .from("format_group_memberships")
