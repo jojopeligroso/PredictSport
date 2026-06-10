@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useT } from "@/lib/i18n";
 import { CountryFlag } from "@/components/CountryFlag";
 import { HOST_CITIES, type HostCitySlug } from "@/lib/wc/host-cities";
 import { WindowPickList } from "@/app/wc/picks/[windowId]/WindowPickList";
@@ -57,6 +58,7 @@ interface Props {
 }
 
 export function FixturesTabs({ fixtures, resultsByExternalId, serverDateIso, predictionsByExternalId = {}, mode = "all", windowEventsByExternalId, fixtureByEventId, fullPredictions, competitionId, isMember }: Props) {
+  const t = useT();
   // Render server-side with the server's idea of "today", then re-derive on
   // mount from the browser. Avoids hydration mismatch on the timezone shift.
   const [todayIso, setTodayIso] = useState(serverDateIso);
@@ -172,13 +174,13 @@ export function FixturesTabs({ fixtures, resultsByExternalId, serverDateIso, pre
       {showSubTabs && (
         <div role="tablist" className="mt-4 flex gap-1 rounded-lg border border-ps-border bg-ps-surface p-1">
           <TabButton id="today" current={tab} onSelect={setTab} count={buckets.today.length}>
-            Today
+            {t('fixtures.today')}
           </TabButton>
           <TabButton id="upcoming" current={tab} onSelect={setTab} count={buckets.upcoming.length}>
-            Upcoming
+            {t('fixtures.upcoming')}
           </TabButton>
           <TabButton id="results" current={tab} onSelect={setTab} count={buckets.results.length}>
-            Results
+            {t('fixtures.results')}
           </TabButton>
         </div>
       )}
@@ -187,10 +189,10 @@ export function FixturesTabs({ fixtures, resultsByExternalId, serverDateIso, pre
         <div className="mt-3 space-y-0 rounded-lg border border-ps-border bg-ps-surface px-3 py-2">
           <div className="flex items-center justify-between">
             <span className="text-xs text-ps-text-sec">
-              {showPredictions ? "Your predictions are shown" : "Fixtures only"}
+              {showPredictions ? t('fixtures.show_picks') : t('fixtures.hide_picks')}
             </span>
             <ToggleSwitch
-              label={showPredictions ? "Hide picks" : "Show picks"}
+              label={showPredictions ? t('fixtures.hide_picks') : t('fixtures.show_picks')}
               checked={showPredictions}
               onChange={() => setShowPredictions((v) => !v)}
             />
@@ -198,10 +200,10 @@ export function FixturesTabs({ fixtures, resultsByExternalId, serverDateIso, pre
           {showPredictions && hasResults && (
             <div className="flex items-center justify-between border-t border-ps-border/50 pt-2 mt-2">
               <span className="text-xs text-ps-text-sec">
-                Show correct / wrong
+                {t('fixtures.show_correct_wrong')}
               </span>
               <ToggleSwitch
-                label={showCorrectness ? "On" : "Off"}
+                label={showCorrectness ? t('fixtures.on') : t('fixtures.off')}
                 checked={showCorrectness}
                 onChange={() => setShowCorrectness((v) => !v)}
               />
@@ -214,14 +216,14 @@ export function FixturesTabs({ fixtures, resultsByExternalId, serverDateIso, pre
         {active.length === 0 && (
           <p className="rounded-xl border border-ps-border bg-ps-surface px-4 py-8 text-center text-sm text-ps-text-sec">
             {mode === "fixtures"
-              ? "No fixtures scheduled."
+              ? t('fixtures.no_fixtures')
               : mode === "results"
-                ? "No results yet."
+                ? t('fixtures.no_results')
                 : tab === "today"
-                  ? "No matches today."
+                  ? t('fixtures.no_today')
                   : tab === "upcoming"
-                    ? "No upcoming matches."
-                    : "No results yet."}
+                    ? t('fixtures.no_upcoming')
+                    : t('fixtures.no_results')}
           </p>
         )}
 
@@ -389,6 +391,7 @@ function FixtureCard({
   expandable?: boolean;
   onExpand?: () => void;
 }) {
+  const t = useT();
   const city = HOST_CITIES[fixture.city as HostCitySlug];
   const kickoff = new Date(fixture.kickoffUtc);
 
@@ -561,8 +564,8 @@ function FixtureCard({
       <header className={`flex items-center justify-between gap-2 ${headerPad} ${headerText} font-bold uppercase tracking-wide text-white/85`}>
         <span className="shrink-0">
           {fixture.stage === "group"
-            ? `Group ${fixture.group} · MD${fixture.matchday}`
-            : stageLabel(fixture.stage)}
+            ? t('fixtures.stage_group', { group: fixture.group ?? '', matchday: String(fixture.matchday ?? '') })
+            : stageLabel(fixture.stage, t)}
         </span>
         <span className="min-w-0 text-right">
           <span className="block truncate">{city.name}</span>
@@ -638,7 +641,7 @@ function FixtureCard({
                     : "text-white/45 hover:bg-white/8 hover:text-white/65",
                 ].join(" ")}
               >
-                draw
+                {t('fixtures.draw')}
               </button>
 
               {/* Away score input */}
@@ -716,7 +719,7 @@ function FixtureCard({
                   result?.isFinalised ? "bg-emerald-500/90 text-white" : "bg-amber-500/90 text-white",
                 ].join(" ")}
               >
-                {result?.isFinalised ? "Final" : "Provisional"}
+                {result?.isFinalised ? t('fixtures.result_final') : t('fixtures.result_provisional')}
               </span>
             </div>
           </>
@@ -738,7 +741,7 @@ function FixtureCard({
                 onClick={(e) => { e.stopPropagation(); onExpand(); }}
                 className="shrink-0 rounded-lg bg-white/20 px-3 py-1.5 text-[11px] font-bold text-white transition-colors hover:bg-white/30 active:bg-white/40"
               >
-                Pick &rarr;
+                {t('fixtures.pick_cta')}
               </button>
             )}
           </div>
@@ -749,7 +752,7 @@ function FixtureCard({
           <dl className={`mt-2 grid grid-cols-2 gap-x-3 ${timeText} text-white/90`}>
             <div>
               <dt className="font-semibold uppercase tracking-wide text-white/70">
-                In {city.shortName}
+                {t('fixtures.in_city', { cityName: city.shortName })}
               </dt>
               <dd className="font-mono tabular-nums">
                 {cityTime}
@@ -757,9 +760,9 @@ function FixtureCard({
               </dd>
             </div>
             <div>
-              <dt className="font-semibold uppercase tracking-wide text-white/70">Your time</dt>
+              <dt className="font-semibold uppercase tracking-wide text-white/70">{t('fixtures.your_time')}</dt>
               <dd className="font-mono tabular-nums">
-                {sameClock ? "Same" : `${localTime} ${localTzAbbr}`}
+                {sameClock ? t('fixtures.same_tz') : `${localTime} ${localTzAbbr}`}
               </dd>
             </div>
           </dl>
@@ -769,14 +772,14 @@ function FixtureCard({
   );
 }
 
-function stageLabel(stage: WcFixture["stage"]): string {
+function stageLabel(stage: WcFixture["stage"], t: (key: string) => string): string {
   switch (stage) {
-    case "R32": return "Round of 32";
-    case "R16": return "Round of 16";
-    case "QF": return "Quarter-final";
-    case "SF": return "Semi-final";
-    case "3RD": return "Third place";
-    case "FINAL": return "Final";
+    case "R32": return t('fixtures.stage_r32');
+    case "R16": return t('fixtures.stage_r16');
+    case "QF": return t('fixtures.stage_qf');
+    case "SF": return t('fixtures.stage_sf');
+    case "3RD": return t('fixtures.stage_3rd');
+    case "FINAL": return t('fixtures.stage_final');
     default: return stage;
   }
 }

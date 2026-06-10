@@ -309,5 +309,20 @@
   "wc.join_subtitle": "Ingresa el código que te dieron.",
   "wc.join_to_pick": "Únete para hacer pronósticos de grupo",
   "wc.join_to_pick_desc": "Ve a la pestaña de Próximos para unirte con un código de invitación.",
-  "wc.go_to_upcoming": "Ir a Próximos"
+  "wc.go_to_upcoming": "Ir a Próximos",
+  "wc.pick_the_winners": "Elige a los ganadores",
+  "wc.call_it": "Haz tu pronóstico antes del silbatazo.",
+  "wc.md1_picks": "Pronósticos J1",
+  "wc.picked": "{count}/{total} hechos",
+  "wc.exact_score_needed": "Falta marcador exacto",
+  "wc.show_more": "Más partidos (+{count} restantes)",
+  "wc.no_rush": "Sin prisa — solo ten tus pronósticos antes del día del partido",
+  "wc.no_md1_fixtures": "Aún no hay partidos de la jornada 1 programados.",
+  "wc.match": "{count} partido",
+  "wc.matches": "{count} partidos",
+  "wc.last_one_standing": "El último sobreviviente",
+  "wc.format_explainer": "48 jugadores. Grupos de 4. Terminas último en tu grupo y quedas fuera. Los sobrevivientes enfrentan rondas eliminatorias donde el campo se reduce a la mitad hasta que solo queda uno. Elige ganadores, pronostica marcadores exactos para puntos extra.",
+  "wc.full_rules": "Reglas completas →",
+  "wc.by_date": "Por fecha",
+  "wc.by_group": "Por grupo"
 }

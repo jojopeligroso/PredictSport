@@ -1,5 +1,6 @@
 "use client";
 
+import { useT } from "@/lib/i18n";
 import { CHROME_PALETTE } from "./brand-palette";
 
 export type ViewMode = "date" | "group";
@@ -24,14 +25,15 @@ export function ViewToggle({
   value: ViewMode;
   onChange: (next: ViewMode) => void;
 }) {
+  const t = useT();
   return (
     <div
       role="tablist"
       aria-label="Group picks by"
       className="mx-auto mt-4 flex w-full max-w-[480px] gap-1 px-4"
     >
-      <Segment label="By date" active={value === "date"} onClick={() => onChange("date")} />
-      <Segment label="By group" active={value === "group"} onClick={() => onChange("group")} />
+      <Segment label={t('wc.by_date')} active={value === "date"} onClick={() => onChange("date")} />
+      <Segment label={t('wc.by_group')} active={value === "group"} onClick={() => onChange("group")} />
     </div>
   );
 }

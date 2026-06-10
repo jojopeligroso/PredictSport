@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { useEffect, useState, useRef, useMemo, useSyncExternalStore } from "react";
+import { useT } from "@/lib/i18n";
 import { WindowPickList, type WindowEvent } from "@/app/wc/picks/[windowId]/WindowPickList";
 import type { WcFixture } from "@/lib/wc/fixtures";
 import type { Prediction } from "@/types/database";
@@ -54,6 +55,7 @@ interface Md1PicksLandingProps {
 }
 
 export function Md1PicksLanding(props: Md1PicksLandingProps) {
+  const t = useT();
   const searchParams = useSearchParams();
   const [view, setView] = useState<ViewMode>(
     () => (searchParams.get("view") === "group" ? "group" : "date"),
@@ -145,10 +147,10 @@ export function Md1PicksLanding(props: Md1PicksLandingProps) {
           />
           <div className="-mt-1 flex-1">
             <h1 className="mt-0.5 font-display text-2xl font-extrabold uppercase tracking-tight text-ps-text">
-              Pick the winners
+              {t('wc.pick_the_winners')}
             </h1>
             <p className="mt-1.5 font-serif text-sm italic text-ps-text-sec">
-              Call it before kickoff.
+              {t('wc.call_it')}
             </p>
           </div>
         </div>
@@ -158,7 +160,7 @@ export function Md1PicksLanding(props: Md1PicksLandingProps) {
       {!previewMode && <div className="mx-auto mt-4 w-full max-w-[480px] px-4">
         <div className="flex items-center gap-3 rounded-lg border border-ps-border bg-ps-surface px-3.5 py-2.5">
           <span className="font-mono text-[10px] font-bold uppercase tracking-[0.12em] text-ps-text-ter">
-            MD1 picks
+            {t('wc.md1_picks')}
           </span>
           <div
             className="h-1 flex-1 overflow-hidden rounded-full bg-ps-bg-alt"
@@ -275,6 +277,7 @@ function Sections({
   windowLocked: boolean;
   now: Date | null;
 }) {
+  const t = useT();
   // 1A: Progressive disclosure — show ~6 matches per batch
   const [revealedBatches, setRevealedBatches] = useState(1);
   // 1B: Auto-collapse completed days — track manually expanded ones
@@ -303,7 +306,7 @@ function Sections({
   if (sections.length === 0) {
     return (
       <p className="mx-auto mt-6 w-full max-w-[480px] px-4 text-center text-sm text-ps-text-sec">
-        No matchday 1 fixtures scheduled yet.
+        {t('wc.no_md1_fixtures')}
       </p>
     );
   }
@@ -350,7 +353,7 @@ function Sections({
                     {s.heading}
                   </span>
                   <span className="font-mono text-[10px] text-ps-green">
-                    {pickedCount}/{s.events.length} picked
+                    {t('wc.picked', { count: String(pickedCount), total: String(s.events.length) })}
                   </span>
                 </div>
                 <svg
@@ -415,7 +418,7 @@ function Sections({
                     className="font-mono text-[9px] font-semibold uppercase tracking-wide"
                     style={{ color: CHROME_PALETTE.attention }}
                   >
-                    Exact score needed
+                    {t('wc.exact_score_needed')}
                   </span>
                 )}
                 {/* Live dd:hh:mm:ss countdown + optional group info */}
@@ -458,11 +461,11 @@ function Sections({
             style={{ backgroundColor: CHROME_PALETTE.attention }}
           >
             <span className="text-sm font-semibold text-white">
-              Show more matches (+{remainingEvents} remaining)
+              {t('wc.show_more', { count: String(remainingEvents) })}
             </span>
             {revealedBatches === 1 && (
               <span className="mt-1 text-[11px] font-serif italic text-white/75">
-                No rush &mdash; just have your picks in before kickoff day
+                {t('wc.no_rush')}
               </span>
             )}
           </button>
@@ -512,6 +515,7 @@ function PreviewOverlay({
   competitionId: string;
   firstLockTime: string | null;
 }) {
+  const t = useT();
   return (
     <div className="pointer-events-none absolute inset-0 flex items-start justify-center">
       <div className="mx-4 flex max-w-[420px] flex-col gap-4">
@@ -523,19 +527,16 @@ function PreviewOverlay({
             </svg>
           </div>
           <p className="font-mono text-xs font-bold uppercase tracking-[0.18em] text-ps-amber-deep">
-            Last one standing
+            {t('wc.last_one_standing')}
           </p>
           <p className="mt-2.5 text-sm leading-relaxed text-ps-text-sec">
-            48 players. Groups of 4. Finish bottom of your group and
-            you&apos;re out. Survivors face knockout rounds where the field
-            halves until only one remains. Pick match winners, guess exact
-            scores for bonus points.
+            {t('wc.format_explainer')}
           </p>
           <Link
             href="/wc/rules"
             className="mt-3 inline-block text-xs font-semibold text-ps-amber transition-colors hover:opacity-80"
           >
-            Full rules →
+            {t('wc.full_rules')}
           </Link>
         </div>
 

@@ -309,5 +309,20 @@
   "wc.join_subtitle": "Enter the code you were given.",
   "wc.join_to_pick": "Join to make group picks",
   "wc.join_to_pick_desc": "Head to the Upcoming tab to join with an invite code.",
-  "wc.go_to_upcoming": "Go to Upcoming"
+  "wc.go_to_upcoming": "Go to Upcoming",
+  "wc.pick_the_winners": "Pick the winners",
+  "wc.call_it": "Call it before kickoff.",
+  "wc.md1_picks": "MD1 picks",
+  "wc.picked": "{count}/{total} picked",
+  "wc.exact_score_needed": "Exact score needed",
+  "wc.show_more": "Show more matches (+{count} remaining)",
+  "wc.no_rush": "No rush — just have your picks in before kickoff day",
+  "wc.no_md1_fixtures": "No matchday 1 fixtures scheduled yet.",
+  "wc.match": "{count} match",
+  "wc.matches": "{count} matches",
+  "wc.last_one_standing": "Last one standing",
+  "wc.format_explainer": "48 players. Groups of 4. Finish bottom of your group and you're out. Survivors face knockout rounds where the field halves until only one remains. Pick match winners, guess exact scores for bonus points.",
+  "wc.full_rules": "Full rules →",
+  "wc.by_date": "By date",
+  "wc.by_group": "By group"
 }
