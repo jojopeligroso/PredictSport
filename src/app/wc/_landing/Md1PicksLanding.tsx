@@ -201,7 +201,7 @@ export function Md1PicksLanding(props: Md1PicksLandingProps) {
       )}
 
       {/* Sections — blurred for non-members with a tap-to-join overlay */}
-      <div className="relative mt-3">
+      <div className={`relative ${previewMode ? "mt-[15px]" : "mt-3"}`}>
         <div
           className={
             previewMode
@@ -513,7 +513,7 @@ function PreviewOverlay({
   firstLockTime: string | null;
 }) {
   return (
-    <div className="pointer-events-none absolute inset-0 flex items-start justify-center pt-1">
+    <div className="pointer-events-none absolute inset-0 flex items-start justify-center">
       <div className="mx-4 flex max-w-[420px] flex-col gap-4">
         {/* Card 1 — Format explainer */}
         <div className="pointer-events-auto rounded-2xl border border-ps-border bg-ps-surface px-6 py-5 text-center shadow-lg">
