@@ -202,3 +202,21 @@ The placeholder displayed in [[Competition Chat]] when a message is deleted afte
 ## @Mention
 
 A reference to a [[Competition]] member within a [[Competition Chat]] message, triggered by typing `@` followed by the member's [[Display Name]]. Renders as a highlighted, tappable name. Generates a push notification to the mentioned member (adjustable in user settings).
+
+---
+
+## Urgent Threshold
+
+The time window before an event's `lock_time` during which unpicked or incomplete predictions trigger visual urgency indicators (pulsing pill, banner). Set to 36 hours. Not the same as "locked" — events remain pickable until `lock_time`, but the UI pressures the user to act within this window.
+
+---
+
+## Prediction Banner
+
+A dismissible notification bar shown on the home dashboard, picks page, and landing page when a user has incomplete predictions for events within the [[Urgent Threshold]]. Displays the lock time in the user's local timezone. Persists until predictions are complete or the user dismisses it. Reappears if new events enter the urgent window.
+
+---
+
+## Open Entry
+
+A temporary or permanent state where a [[Competition]] does not require an invite code to join — any authenticated user can join directly. Controlled by removing the invite-code gate at the join endpoint, not by changing `visibility`. Entry is still bounded by `entry_closes_at` on the competition.
