@@ -3,13 +3,8 @@
 import { useState, useRef, useEffect } from "react";
 import Link from "next/link";
 import { LogoutButton } from "./LogoutButton";
-import { useTheme, type ThemePref } from "./ThemeProvider";
-
-const THEME_LABEL: Record<ThemePref, string> = {
-  light: "Light",
-  dark: "Dark",
-  system: "System",
-};
+import { useTheme } from "./ThemeProvider";
+import { useT } from "@/lib/i18n";
 
 interface MobileNavLink {
   href: string;
@@ -30,6 +25,13 @@ export function MobileNav({ isLoggedIn, displayName, avatarUrl, isAdmin, extraLi
   const [isOpen, setIsOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
   const { theme, cycleTheme } = useTheme();
+  const t = useT();
+
+  const themeLabel = {
+    light: t("onboarding.theme_light"),
+    dark: t("onboarding.theme_dark"),
+    system: t("onboarding.theme_system"),
+  }[theme];
 
   // Unread badge: compare latest chat message with localStorage last-seen
   const [hasUnread, setHasUnread] = useState(() => {
@@ -130,7 +132,7 @@ export function MobileNav({ isLoggedIn, displayName, avatarUrl, isAdmin, extraLi
                     onClick={() => setIsOpen(false)}
                     className="block rounded-md px-3 py-2 text-sm font-medium text-ps-text-sec transition-colors hover:bg-ps-chip hover:text-ps-text"
                   >
-                    Profile
+                    {t("menu.profile")}
                   </Link>
                   <Link
                     href="/wc/leaderboard"
@@ -143,7 +145,7 @@ export function MobileNav({ isLoggedIn, displayName, avatarUrl, isAdmin, extraLi
                     }}
                     className="flex items-center gap-1.5 rounded-md px-3 py-2 text-sm font-medium text-ps-text-sec transition-colors hover:bg-ps-chip hover:text-ps-text"
                   >
-                    Leaderboard
+                    {t("nav.leaderboard")}
                     {hasUnread && (
                       <span className="h-2 w-2 rounded-full bg-ps-amber" aria-label="New chat messages" />
                     )}
@@ -164,11 +166,11 @@ export function MobileNav({ isLoggedIn, displayName, avatarUrl, isAdmin, extraLi
                     type="button"
                     onClick={cycleTheme}
                     className="flex w-full items-center justify-between rounded-md px-3 py-2 text-left text-sm font-medium text-ps-text-sec transition-colors hover:bg-ps-chip hover:text-ps-text"
-                    aria-label={`Theme: ${THEME_LABEL[theme]}. Tap to change.`}
+                    aria-label={`${t("menu.theme")}: ${themeLabel}. Tap to change.`}
                   >
-                    <span>Theme</span>
+                    <span>{t("menu.theme")}</span>
                     <span className="text-xs font-semibold text-ps-text-ter">
-                      {THEME_LABEL[theme]}
+                      {themeLabel}
                     </span>
                   </button>
                 </div>
@@ -184,7 +186,7 @@ export function MobileNav({ isLoggedIn, displayName, avatarUrl, isAdmin, extraLi
                 onClick={() => setIsOpen(false)}
                 className="block rounded-md bg-ps-text px-4 py-2 text-center text-sm font-medium text-ps-bg transition-colors hover:opacity-90"
               >
-                Log in
+                {t("common.log_in")}
               </Link>
             )}
           </div>

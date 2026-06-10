@@ -11,6 +11,7 @@ import {
 import { useRouter } from "next/navigation";
 import { useTheme, type ResolvedTheme } from "@/components/ThemeProvider";
 import { OnboardingTooltip } from "./OnboardingTooltip";
+import { useT } from "@/lib/i18n";
 
 // ── Constants ──────────────────────────────────────────────────────
 
@@ -26,22 +27,19 @@ const SECTION_STEP: Record<OnboardingSectionId, number> = {
 
 const SECTION_TOOLTIP: Record<
   OnboardingSectionId,
-  { title: string; description: string }
+  { titleKey: string; descriptionKey: string }
 > = {
   picks: {
-    title: "Your Picks",
-    description:
-      "Pick who wins each match, then guess the exact score for bonus points.",
+    titleKey: "onboarding.tooltip_picks_title",
+    descriptionKey: "onboarding.tooltip_picks_desc",
   },
   group: {
-    title: "Your Group",
-    description:
-      "See where you stand. Climb the table by picking better than your mates.",
+    titleKey: "onboarding.tooltip_group_title",
+    descriptionKey: "onboarding.tooltip_group_desc",
   },
   invite: {
-    title: "Invite Friends",
-    description:
-      "Share your invite code. More players means more bragging rights.",
+    titleKey: "onboarding.tooltip_invite_title",
+    descriptionKey: "onboarding.tooltip_invite_desc",
   },
 };
 
@@ -137,11 +135,13 @@ function ActiveSection({
 }: {
   isActiveStep: boolean;
   sectionRef: React.RefObject<HTMLDivElement | null>;
-  tooltip: { title: string; description: string };
+  tooltip: { titleKey: string; descriptionKey: string };
   advance: () => void;
   skip: () => void;
   children: React.ReactNode;
 }) {
+  const t = useT();
+
   useEffect(() => {
     if (isActiveStep && sectionRef.current) {
       sectionRef.current.scrollIntoView({ behavior: "smooth", block: "center" });
@@ -159,8 +159,8 @@ function ActiveSection({
       {children}
       {isActiveStep && (
         <OnboardingTooltip
-          title={tooltip.title}
-          description={tooltip.description}
+          title={t(tooltip.titleKey)}
+          description={t(tooltip.descriptionKey)}
           onConfirm={advance}
           showSkip
           onSkip={skip}
@@ -185,6 +185,7 @@ interface OnboardingFlowProps {
  * Display name is handled by DisplayNameModal (renders at z-60 via NavBar/layout).
  */
 export function OnboardingFlow({ children }: OnboardingFlowProps) {
+  const t = useT();
   const router = useRouter();
   const { resolved, setTheme } = useTheme();
   const [step, setStep] = useState(0);
@@ -252,20 +253,20 @@ export function OnboardingFlow({ children }: OnboardingFlowProps) {
             </svg>
           </StepIcon>
           <h2 className="font-display text-xl font-extrabold uppercase tracking-tight text-ps-text">
-            How do you like it?
+            {t("onboarding.theme_heading")}
           </h2>
           <p className="mt-1.5 text-sm text-ps-text-sec">
-            Pick your vibe. You can change this anytime in settings.
+            {t("onboarding.theme_subtitle")}
           </p>
           <div className="mt-6 flex gap-3">
             <ThemeOption
-              label="Light"
+              label={t("onboarding.theme_light")}
               active={resolved === "light"}
               onClick={() => setTheme("light")}
               preview="light"
             />
             <ThemeOption
-              label="Dark"
+              label={t("onboarding.theme_dark")}
               active={resolved === "dark"}
               onClick={() => setTheme("dark")}
               preview="dark"
@@ -276,7 +277,7 @@ export function OnboardingFlow({ children }: OnboardingFlowProps) {
             onClick={() => setStep(2)}
             className="mt-6 w-full rounded-xl bg-ps-amber px-4 py-3 text-sm font-semibold text-[#191512] transition-opacity hover:opacity-90"
           >
-            Next
+            {t("onboarding.next")}
           </button>
         </FullScreenCard>
       )}
@@ -334,6 +335,7 @@ function ThemeOption({
   onClick: () => void;
   preview: "light" | "dark";
 }) {
+  const t = useT();
   const bg = preview === "light" ? "bg-[#efe9de]" : "bg-[#191512]";
   const text = preview === "light" ? "text-[#191512]" : "text-[#efe9de]";
   const border = active
@@ -349,7 +351,7 @@ function ThemeOption({
       <span className={`text-sm font-semibold ${text}`}>{label}</span>
       {active && (
         <span className="mt-2 block text-xs font-medium text-ps-amber">
-          Selected
+          {t("onboarding.theme_selected")}
         </span>
       )}
     </button>
@@ -363,6 +365,7 @@ function ThemeOption({
  * "Home" nav link. Shown once after steps 0-4 complete.
  */
 export function OnboardingHomeSpotlight() {
+  const t = useT();
   const [visible, setVisible] = useState(false);
 
   useEffect(() => {
@@ -371,8 +374,8 @@ export function OnboardingHomeSpotlight() {
     if (params.get("onboarding") !== "step5") return;
 
     // Small delay so the page settles before showing the spotlight
-    const t = setTimeout(() => setVisible(true), 400);
-    return () => clearTimeout(t);
+    const timer = setTimeout(() => setVisible(true), 400);
+    return () => clearTimeout(timer);
   }, []);
 
   function dismiss() {
@@ -406,11 +409,10 @@ export function OnboardingHomeSpotlight() {
           className="animate-in slide-in-from-top-2 duration-300 ease-out rounded-xl border-2 border-ps-amber/40 bg-ps-surface p-4 shadow-lg"
         >
           <h3 className="text-sm font-extrabold text-ps-text">
-            Your Dashboard
+            {t("onboarding.spotlight_heading")}
           </h3>
           <p className="mt-1 text-xs leading-relaxed text-ps-text-sec">
-            Tap <span className="font-semibold text-ps-text">Home</span> in the
-            nav to return to your dashboard anytime.
+            {t("onboarding.spotlight_text")}
           </p>
           <div className="mt-3">
             <button
@@ -418,7 +420,7 @@ export function OnboardingHomeSpotlight() {
               onClick={dismiss}
               className="rounded-full bg-ps-amber px-4 py-1.5 text-xs font-semibold text-[#191512] transition-opacity hover:opacity-90 active:opacity-80"
             >
-              Next
+              {t("onboarding.next")}
             </button>
           </div>
         </div>

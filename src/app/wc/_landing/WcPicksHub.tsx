@@ -6,6 +6,7 @@ import { Md1PicksLanding } from "./Md1PicksLanding";
 import { FixturesTabs } from "@/components/wc/FixturesTabs";
 import { FifaGroupsGrid } from "@/components/wc/FifaGroupsGrid";
 import { OnboardingHomeSpotlight } from "@/components/wc/OnboardingFlow";
+import { useT } from "@/lib/i18n";
 import type { WindowEvent } from "@/app/wc/picks/[windowId]/WindowPickList";
 import type { WcFixture } from "@/lib/wc/fixtures";
 import type { Prediction } from "@/types/database";
@@ -16,6 +17,15 @@ import type {
 import type { TeamWithStats } from "@/lib/tournament/bracket/types";
 
 type HubTab = "upcoming" | "fixtures" | "results" | "groups";
+
+// Tab label keys indexed by tab id — used inside the component where t() is available
+const HUB_TAB_IDS: HubTab[] = ["upcoming", "fixtures", "results", "groups"];
+const HUB_TAB_KEYS: Record<HubTab, string> = {
+  upcoming: "wc.tab_upcoming",
+  fixtures: "wc.tab_fixtures",
+  results: "wc.tab_results",
+  groups: "wc.tab_groups",
+};
 
 interface WcPicksHubProps {
   /** Data for the Upcoming (picks) tab. */
@@ -49,14 +59,8 @@ interface WcPicksHubProps {
   } | null;
 }
 
-const HUB_TABS: { id: HubTab; label: string }[] = [
-  { id: "upcoming", label: "Upcoming" },
-  { id: "fixtures", label: "Fixtures" },
-  { id: "results", label: "Results" },
-  { id: "groups", label: "Groups" },
-];
-
 export function WcPicksHub({ md1, fixturesData, groupsData }: WcPicksHubProps) {
+  const t = useT();
   const searchParams = useSearchParams();
   const initialTab = parseTab(searchParams.get("tab"));
   const [activeTab, setActiveTab] = useState<HubTab>(initialTab);
@@ -103,7 +107,7 @@ export function WcPicksHub({ md1, fixturesData, groupsData }: WcPicksHubProps) {
               <polyline points="9 22 9 12 15 12 15 22" />
             </svg>
           </a>
-          {HUB_TABS.map(({ id, label }) => {
+          {HUB_TAB_IDS.map((id) => {
             const isActive = activeTab === id;
             return (
               <button
@@ -119,7 +123,7 @@ export function WcPicksHub({ md1, fixturesData, groupsData }: WcPicksHubProps) {
                     : "text-ps-text-sec hover:text-ps-text",
                 ].join(" ")}
               >
-                {label}
+                {t(HUB_TAB_KEYS[id])}
               </button>
             );
           })}
@@ -191,17 +195,17 @@ export function WcPicksHub({ md1, fixturesData, groupsData }: WcPicksHubProps) {
               <div className="pointer-events-none absolute inset-0 flex items-start justify-center pt-6">
                 <div className="pointer-events-auto rounded-2xl border border-ps-border bg-ps-surface px-5 py-5 text-center shadow-lg">
                   <h2 className="font-display text-lg font-extrabold uppercase tracking-tight text-ps-text">
-                    Join to make group picks
+                    {t("wc.join_to_pick")}
                   </h2>
                   <p className="mt-1.5 text-xs text-ps-text-sec">
-                    Head to the Upcoming tab to join with an invite code.
+                    {t("wc.join_to_pick_desc")}
                   </p>
                   <button
                     type="button"
                     onClick={() => handleTabChange("upcoming")}
                     className="mt-3 w-full rounded-xl bg-ps-amber px-4 py-3 text-sm font-semibold text-ps-bg transition-opacity hover:opacity-90"
                   >
-                    Go to Upcoming
+                    {t("wc.go_to_upcoming")}
                   </button>
                 </div>
               </div>

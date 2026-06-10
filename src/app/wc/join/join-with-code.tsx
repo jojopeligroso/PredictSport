@@ -10,8 +10,10 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+import { useT } from "@/lib/i18n";
 
 export function JoinWithCode() {
+  const t = useT();
   const router = useRouter();
   const [code, setCode] = useState("");
   const [error, setError] = useState<string | null>(null);
@@ -20,7 +22,7 @@ export function JoinWithCode() {
     e.preventDefault();
     const trimmed = code.trim();
     if (!trimmed) {
-      setError("Please enter an invite code.");
+      setError(t("join.invite_empty_error"));
       return;
     }
     router.push(`/join?token=${encodeURIComponent(trimmed)}`);
@@ -30,7 +32,7 @@ export function JoinWithCode() {
     <form onSubmit={handleSubmit} noValidate className="mt-8 space-y-4">
       <div>
         <label htmlFor="invite-code" className="sr-only">
-          Invite code
+          {t("join.invite_placeholder")}
         </label>
         <input
           id="invite-code"
@@ -39,7 +41,7 @@ export function JoinWithCode() {
           autoCorrect="off"
           autoCapitalize="none"
           spellCheck={false}
-          placeholder="Invite code"
+          placeholder={t("join.invite_placeholder")}
           value={code}
           onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
             setCode(e.target.value);
@@ -63,16 +65,15 @@ export function JoinWithCode() {
         type="submit"
         className="w-full rounded-xl bg-ps-amber px-4 py-3 text-sm font-semibold text-ps-bg transition-opacity hover:opacity-90 active:opacity-80"
       >
-        Join
+        {t("join.invite_button")}
       </button>
 
       <p className="text-center text-xs text-ps-text-sec">
-        Don&apos;t have a code?{" "}
         <Link
           href="/wc/create"
           className="font-semibold text-ps-amber-deep underline-offset-2 hover:underline"
         >
-          Create your own →
+          {t("join.no_code_link")}
         </Link>
       </p>
     </form>

@@ -8,6 +8,7 @@ import { Metadata } from "next";
 import { createClient } from "@/lib/supabase/server";
 import { WcBrandedTitle } from "@/components/wc/WcBrandedTitle";
 import { RulesContent } from "@/components/wc/RulesContent";
+import { getServerT } from "@/lib/i18n/server";
 
 export const dynamic = "force-dynamic";
 
@@ -18,6 +19,7 @@ export const metadata: Metadata = {
 };
 
 export default async function WcRulesPage() {
+  const t = await getServerT();
   const supabase = await createClient();
   const {
     data: { user },
@@ -69,10 +71,10 @@ export default async function WcRulesPage() {
   return (
     <div className="mx-auto max-w-[480px] px-4 pt-6 pb-16">
       <WcBrandedTitle
-        title="Rules"
-        subtitle="Everything you need to know."
+        title={t('rules.page_title')}
+        subtitle={t('rules.page_subtitle')}
         backHref="/wc"
-        backLabel="Back to World Cup"
+        backLabel={t('nav.back_to_wc')}
         className="mb-8"
       />
       <RulesContent

@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { useT } from "@/lib/i18n";
 
 function parseToken(raw: string): string {
   const trimmed = raw.trim();
@@ -16,6 +17,7 @@ function parseToken(raw: string): string {
 }
 
 export default function JoinCompetitionCard() {
+  const t = useT();
   const [value, setValue] = useState("");
   const [error, setError] = useState<string | null>(null);
   const router = useRouter();
@@ -27,7 +29,7 @@ export default function JoinCompetitionCard() {
     const token = parseToken(value);
 
     if (!token) {
-      setError("Please paste an invite link or code.");
+      setError(t("join.paste_invite_error"));
       return;
     }
 
@@ -36,9 +38,9 @@ export default function JoinCompetitionCard() {
 
   return (
     <div className="rounded-xl border border-ps-border bg-ps-surface p-4">
-      <p className="text-sm font-semibold text-ps-text">Join a Competition</p>
+      <p className="text-sm font-semibold text-ps-text">{t("join.join_competition")}</p>
       <p className="mt-0.5 text-xs text-ps-text-ter">
-        Paste an invite link or code
+        {t("join.paste_invite")}
       </p>
 
       <form onSubmit={handleSubmit} className="mt-3">
@@ -49,8 +51,8 @@ export default function JoinCompetitionCard() {
             onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
               setValue(e.target.value)
             }
-            placeholder="Invite link or code"
-            aria-label="Invite link or code"
+            placeholder={t("join.paste_invite_placeholder")}
+            aria-label={t("join.paste_invite_placeholder")}
             className="min-w-0 flex-1 rounded-xl border border-ps-border bg-ps-bg px-3 py-2.5 text-sm text-ps-text placeholder:text-ps-text-ter outline-none focus:border-ps-border-strong"
             autoComplete="off"
             spellCheck={false}
@@ -59,7 +61,7 @@ export default function JoinCompetitionCard() {
             type="submit"
             className="shrink-0 rounded-xl bg-ps-text px-4 py-2.5 text-sm font-semibold text-ps-bg transition-opacity hover:opacity-80 active:opacity-70"
           >
-            Join
+            {t("join.invite_button")}
           </button>
         </div>
 

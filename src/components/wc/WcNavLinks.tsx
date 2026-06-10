@@ -2,12 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-
-const wcNavLinks = [
-  { href: "/wc/home", label: "Home" },
-  { href: "/wc", label: "Matches" },
-  { href: "/wc/rules", label: "Rules" },
-] as const;
+import { useT } from "@/lib/i18n";
 
 /**
  * WC shell navigation — three top-level pills: Home · Matches · Rules.
@@ -26,6 +21,14 @@ export function WcNavLinks({
   variant: "desktop" | "mobile";
 }) {
   const pathname = usePathname();
+  const t = useT();
+
+  const links = [
+    { href: "/wc/home", label: t("nav.home") },
+    { href: "/wc", label: t("nav.matches") },
+    { href: "/wc/rules", label: t("nav.rules") },
+  ];
+
   // Only hide nav on the landing page (/wc) for non-engaged visitors.
   // /wc/home always shows nav — it's the authenticated dashboard.
   const isLanding = pathname === "/wc";
@@ -42,7 +45,7 @@ export function WcNavLinks({
   if (variant === "desktop") {
     return (
       <div className="hidden items-center gap-1 md:flex">
-        {wcNavLinks.map((link) => {
+        {links.map((link) => {
           const active = isActive(link.href);
           return (
             <Link
@@ -65,7 +68,7 @@ export function WcNavLinks({
 
   return (
     <div className="flex justify-center border-t border-ps-border px-2 md:hidden">
-      {wcNavLinks.map((link) => {
+      {links.map((link) => {
         const active = isActive(link.href);
         return (
           <Link

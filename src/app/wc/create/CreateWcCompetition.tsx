@@ -13,6 +13,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
+import { useT } from "@/lib/i18n";
 
 // ---------------------------------------------------------------------------
 // Types
@@ -40,8 +41,8 @@ type ParticipantOption = (typeof PARTICIPANT_OPTIONS)[number];
 
 interface Classification {
   id: string;
-  label: string;
-  description: string;
+  labelKey: string;
+  descKey: string;
   defaultChecked: boolean;
   required: boolean;
 }
@@ -49,30 +50,29 @@ interface Classification {
 const CLASSIFICATIONS: Classification[] = [
   {
     id: "overall",
-    label: "Overall",
-    description: "Most points across the whole tournament",
+    labelKey: "create.class_overall",
+    descKey: "create.class_overall_desc",
     defaultChecked: true,
     required: true,
   },
   {
     id: "format",
-    label: "Format",
-    description:
-      "Survivor-style elimination. Groups, knockouts, last one standing",
+    labelKey: "create.class_format",
+    descKey: "create.class_format_desc",
     defaultChecked: true,
     required: false,
   },
   {
     id: "full_bracket",
-    label: "Full Bracket",
-    description: "Predict every result before kickoff",
+    labelKey: "create.class_bracket",
+    descKey: "create.class_bracket_desc",
     defaultChecked: false,
     required: false,
   },
   {
     id: "ko_bracket",
-    label: "KO Bracket",
-    description: "Predict the knockouts after groups finish",
+    labelKey: "create.class_ko_bracket",
+    descKey: "create.class_ko_bracket_desc",
     defaultChecked: false,
     required: false,
   },
@@ -83,6 +83,7 @@ const CLASSIFICATIONS: Classification[] = [
 // ---------------------------------------------------------------------------
 
 function InviteCodeBlock({ code }: { code: string }) {
+  const t = useT();
   const [copied, setCopied] = useState(false);
   const [error, setError] = useState(false);
 
@@ -124,12 +125,12 @@ function InviteCodeBlock({ code }: { code: string }) {
           aria-hidden="true"
           className="text-xs font-semibold text-ps-text-ter transition-colors group-hover:text-ps-amber-deep"
         >
-          {copied ? "Copied" : "Copy"}
+          {copied ? t("create.copied") : t("create.copy")}
         </span>
       </button>
       {error && (
         <p className="text-xs text-ps-red">
-          Couldn&apos;t copy — long-press the code instead.
+          {t("create.copy_error")}
         </p>
       )}
     </div>
@@ -141,6 +142,7 @@ function InviteCodeBlock({ code }: { code: string }) {
 // ---------------------------------------------------------------------------
 
 function SuccessPanel({ competition }: { competition: CreatedCompetition }) {
+  const t = useT();
   return (
     <div
       role="status"
@@ -148,13 +150,13 @@ function SuccessPanel({ competition }: { competition: CreatedCompetition }) {
       className="rounded-xl border border-ps-border bg-ps-surface px-5 py-6 text-center"
     >
       <p className="text-xs font-semibold uppercase tracking-widest text-ps-amber">
-        Competition created
+        {t("create.success_label")}
       </p>
       <h2 className="mt-2 font-display text-lg font-extrabold text-ps-text">
         {competition.name}
       </h2>
       <p className="mt-1 text-xs text-ps-text-sec">
-        Share this code with your group.
+        {t("create.share_message")}
       </p>
 
       <div className="mt-5 border-t border-ps-border pt-5">
@@ -165,7 +167,7 @@ function SuccessPanel({ competition }: { competition: CreatedCompetition }) {
         href="/wc"
         className="mt-6 inline-block w-full rounded-xl bg-ps-amber px-4 py-3 text-sm font-semibold text-ps-bg transition-colors hover:bg-ps-amber/90"
       >
-        Go to your competition →
+        {t("create.go_to_comp")}
       </Link>
     </div>
   );
@@ -176,6 +178,7 @@ function SuccessPanel({ competition }: { competition: CreatedCompetition }) {
 // ---------------------------------------------------------------------------
 
 export function CreateWcCompetition() {
+  const t = useT();
   const [maxParticipants, setMaxParticipants] =
     useState<ParticipantOption>(16);
   const [checkedClassifications, setCheckedClassifications] = useState<
@@ -217,7 +220,7 @@ export function CreateWcCompetition() {
       });
 
       if (!res.ok) {
-        let message = "Something went wrong. Please try again.";
+        let message = t("create.error_generic");
         try {
           const body = (await res.json()) as { error?: string };
           if (body.error) message = body.error;
@@ -231,7 +234,7 @@ export function CreateWcCompetition() {
       const data = (await res.json()) as ApiSuccessResponse;
       setCreatedCompetition(data.competition);
     } catch {
-      setSubmitError("Network error. Please check your connection and try again.");
+      setSubmitError(t("create.error_network"));
     } finally {
       setIsSubmitting(false);
     }
@@ -246,11 +249,11 @@ export function CreateWcCompetition() {
       {/* Max participants */}
       <fieldset>
         <legend className="text-sm font-semibold text-ps-text">
-          Max participants
+          {t("create.max_participants")}
         </legend>
         <div
           role="group"
-          aria-label="Max participants"
+          aria-label={t("create.max_participants")}
           className="mt-3 flex flex-wrap gap-2"
         >
           {PARTICIPANT_OPTIONS.map((n) => {
@@ -279,10 +282,10 @@ export function CreateWcCompetition() {
       {/* Classifications */}
       <fieldset className="mt-6">
         <legend className="text-sm font-semibold text-ps-text">
-          Classifications
+          {t("create.classifications_heading")}
         </legend>
         <p className="mt-0.5 text-xs text-ps-text-sec">
-          Choose which competitions to include.
+          {t("create.classifications_helper")}
         </p>
         <div className="mt-3 space-y-2">
           {CLASSIFICATIONS.map((cls) => {
@@ -305,7 +308,7 @@ export function CreateWcCompetition() {
                     checked={checked}
                     disabled={cls.required}
                     onChange={() => toggleClassification(cls.id, cls.required)}
-                    aria-label={cls.label}
+                    aria-label={t(cls.labelKey)}
                     className="sr-only"
                   />
                   <span
@@ -340,16 +343,16 @@ export function CreateWcCompetition() {
                 <div className="min-w-0 flex-1">
                   <div className="flex items-center gap-2">
                     <span className="text-sm font-semibold text-ps-text">
-                      {cls.label}
+                      {t(cls.labelKey)}
                     </span>
                     {cls.required && (
                       <span className="rounded-full bg-ps-chip px-1.5 py-0.5 text-[10px] font-semibold text-ps-text-ter">
-                        required
+                        {t("create.required")}
                       </span>
                     )}
                   </div>
                   <p className="mt-0.5 text-xs leading-relaxed text-ps-text-sec">
-                    {cls.description}
+                    {t(cls.descKey)}
                   </p>
                 </div>
               </label>
@@ -374,17 +377,16 @@ export function CreateWcCompetition() {
         disabled={isSubmitting}
         className="mt-6 w-full rounded-xl bg-ps-amber px-4 py-3 text-sm font-semibold text-ps-bg transition-colors hover:bg-ps-amber/90 disabled:cursor-not-allowed disabled:opacity-60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ps-amber/50"
       >
-        {isSubmitting ? "Creating…" : "Create competition"}
+        {isSubmitting ? t("create.button_loading") : t("create.button")}
       </button>
 
       {/* Cross-link */}
       <p className="mt-6 text-center text-xs text-ps-text-sec">
-        Have a code?{" "}
         <Link
           href="/wc/join"
           className="font-semibold text-ps-text underline-offset-2 hover:underline"
         >
-          Join with a code →
+          {t("create.have_code_link")}
         </Link>
       </p>
     </form>

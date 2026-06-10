@@ -6,6 +6,7 @@ import { GlobalChromeGuard } from "@/components/GlobalChromeGuard";
 import { PushPromptWrapper } from "@/components/PushPromptWrapper";
 import { ThemeProvider, themeInitScript } from "@/components/ThemeProvider";
 import { LocaleProvider } from "@/lib/i18n";
+import { getServerLocale } from "@/lib/i18n/server";
 import { isWorldCupShell } from "@/lib/product-mode";
 import "./globals.css";
 
@@ -52,10 +53,11 @@ export default async function RootLayout({
   children: React.ReactNode;
 }>) {
   const shellMode = isWorldCupShell();
+  const locale = await getServerLocale();
 
   return (
     <html
-      lang="en"
+      lang={locale}
       className={`${inter.variable} ${jetbrainsMono.variable} ${instrumentSerif.variable} ${notoSans.variable} h-full antialiased`}
     >
       <head>

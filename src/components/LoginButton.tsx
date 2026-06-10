@@ -3,6 +3,7 @@
 import { useState, useEffect, useRef, useMemo } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { OrDivider } from "@/components/OrDivider";
+import { useT } from "@/lib/i18n";
 
 // User-agent substrings that indicate an in-app browser where Google OAuth
 // is typically blocked (Telegram, Messenger, Instagram, Line, WhatsApp, etc.)
@@ -32,6 +33,7 @@ interface LoginButtonProps {
 }
 
 export function LoginButton({ redirectTo }: LoginButtonProps) {
+  const t = useT();
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [email, setEmail] = useState("");
@@ -76,7 +78,7 @@ export function LoginButton({ redirectTo }: LoginButtonProps) {
 
   async function handleMagicLink() {
     if (!email.trim()) {
-      setError("Please enter your email address");
+      setError(t("login.email_placeholder"));
       return;
     }
 
@@ -106,7 +108,7 @@ export function LoginButton({ redirectTo }: LoginButtonProps) {
       {isInAppBrowser ? (
         /* In-app browser banner — Google OAuth is blocked here */
         <div className="rounded-xl border border-ps-border bg-ps-surface px-3 py-2.5 text-sm text-ps-text-sec">
-          Open in your browser for Google sign-in, or enter your email below.
+          {t("login.open_in_browser")}
         </div>
       ) : (
         <>
@@ -139,7 +141,7 @@ export function LoginButton({ redirectTo }: LoginButtonProps) {
                 d="M24 47.5c6 0 11-2 14.7-5.3l-7.4-5.7c-2 1.4-4.6 2.2-7.3 2.2-6.6 0-12-4-14-9.7l-7.5 5.8C6.6 42.3 14.6 47.5 24 47.5z"
               />
             </svg>
-            {isLoading ? "Redirecting..." : "Continue with Google"}
+            {isLoading ? "Redirecting..." : t("login.google")}
           </button>
 
           {/* Divider */}
@@ -167,14 +169,14 @@ export function LoginButton({ redirectTo }: LoginButtonProps) {
           className="flex w-full items-center justify-center rounded-xl border border-ps-border bg-transparent px-4 py-3 text-sm font-medium text-ps-text transition-all duration-150 hover:bg-ps-surface active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50 motion-reduce:transition-none"
           style={{ minHeight: "44px" }}
         >
-          {isSendingMagicLink ? "Sending..." : "Send magic link"}
+          {isSendingMagicLink ? "Sending..." : t("login.magic_link")}
         </button>
       </div>
 
       {/* Success message */}
       {magicLinkSent && (
         <p className="text-center text-sm text-ps-green">
-          Check your email for a login link
+          {t("login.magic_link_sent")}
         </p>
       )}
 

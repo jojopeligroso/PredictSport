@@ -9,6 +9,7 @@
 import { StickyPillNav } from "./StickyPillNav";
 import { FormatProgressDots } from "./FormatProgressDots";
 import { WcJoinCard } from "./WcJoinCard";
+import { useT } from "@/lib/i18n";
 
 interface RulesContentProps {
   isMember: boolean;
@@ -21,6 +22,8 @@ export function RulesContent({
   isAuthenticated,
   firstLockTime,
 }: RulesContentProps) {
+  const t = useT();
+
   return (
     <>
       <StickyPillNav />
@@ -28,44 +31,41 @@ export function RulesContent({
 
       {/* Intro */}
       <p className="mb-10 font-serif text-sm italic leading-relaxed text-ps-text-sec">
-        A prediction game built as an homage to the World Cup&rsquo;s own format
-        &mdash; groups, knockouts, and a final.
+        {t("rules.intro")}
       </p>
 
       {/* How it works */}
       <div className="mb-10 rounded-xl border border-ps-border bg-ps-surface px-5 py-5 text-center">
         <p className="font-display font-extrabold text-[15px] uppercase tracking-[0.18em] text-ps-amber-deep">
-          How it works
+          {t("rules.how_it_works")}
         </p>
         <div className="mx-auto mt-3 flex w-fit flex-col gap-3">
-          <HowItWorksStep n={1}>Pick the winner of each match</HowItWorksStep>
-          <HowItWorksStep n={2}>
-            Guess the exact score for bonus points
-          </HowItWorksStep>
-          <HowItWorksStep n={3}>Climb the leaderboard</HowItWorksStep>
+          <HowItWorksStep n={1}>{t("rules.step1")}</HowItWorksStep>
+          <HowItWorksStep n={2}>{t("rules.step2")}</HowItWorksStep>
+          <HowItWorksStep n={3}>{t("rules.step3")}</HowItWorksStep>
         </div>
       </div>
 
       {/* ── POINTS ───────────────────────────────────────────── */}
-      <CollapsibleSection id="points" title="Points Scoring System" defaultOpen>
+      <CollapsibleSection id="points" title={t("rules.points_title")} defaultOpen>
         <PointsTable />
       </CollapsibleSection>
 
       {/* ── WAYS TO WIN ─────────────────────────────────────── */}
-      <CollapsibleSection id="ways-to-win" title="Ways to win">
+      <CollapsibleSection id="ways-to-win" title={t("rules.ways_to_win")}>
         <ul className="mt-3 space-y-2">
           <ClassificationCard
-            name="Format"
-            description="Survivor-style elimination that mirrors the World Cup itself. Groups, knockouts, last one standing. See the Format section below for the full breakdown."
+            name={t("create.class_format")}
+            description={t("create.class_format_desc")}
           />
           <ClassificationCard
-            name="Overall"
-            description="Total points across the whole tournament. Every correct pick counts. Most points wins."
+            name={t("create.class_overall")}
+            description={t("create.class_overall_desc")}
           />
           <li>
             <details className="group/more">
               <summary className="flex cursor-pointer items-center gap-1.5 list-none text-xs font-semibold text-ps-text-sec [&::-webkit-details-marker]:hidden">
-                <span>More ways to win</span>
+                <span>{t("rules.more_ways")}</span>
                 <svg
                   className="h-3.5 w-3.5 shrink-0 transition-transform group-open/more:rotate-180"
                   fill="none"
@@ -82,12 +82,12 @@ export function RulesContent({
               </summary>
               <ul className="mt-2 space-y-2">
                 <ClassificationCard
-                  name="KO Bracket"
-                  description="Once groups are done, predict every knockout match from the Round of 32 to the Final."
+                  name={t("create.class_ko_bracket")}
+                  description={t("create.class_ko_bracket_desc")}
                 />
                 <ClassificationCard
-                  name="Full Bracket"
-                  description="Before kickoff, predict every group finish and the entire knockout bracket. Locks at first whistle."
+                  name={t("create.class_bracket")}
+                  description={t("create.class_bracket_desc")}
                 />
               </ul>
             </details>
@@ -96,34 +96,27 @@ export function RulesContent({
       </CollapsibleSection>
 
       {/* ── FORMAT ───────────────────────────────────────────── */}
-      <CollapsibleSection id="format" title="Format — Survivor" defaultOpen>
+      <CollapsibleSection id="format" title={t("rules.format_title")} defaultOpen>
         <p className="mt-1 font-serif text-sm italic text-ps-text-sec">
-          Last one standing.
+          {t("rules.format_tagline")}
         </p>
         <p className="mt-3 text-sm leading-relaxed text-ps-text-sec">
-          The Format classification is an homage to the World Cup&rsquo;s own
-          structure. You&rsquo;re placed in a group. After each stage is
-          finalised, the bottom players are eliminated and the survivors are
-          redrawn into new groups. Points reset to zero at each stage &mdash;
-          only your current performance matters.
+          {t("rules.format_desc_1")}
         </p>
         <p className="mt-2 text-sm leading-relaxed text-ps-text-sec">
-          With 48 players, the elimination curve mirrors the World Cup itself.
-          With fewer players, the curve is adjusted to keep every round
-          competitive.
+          {t("rules.format_desc_2")}
         </p>
 
         {/* ── Group Stage ── */}
         <div id="format-groups" className="mt-6">
           <h3 className="font-display text-sm font-extrabold text-ps-text">
-            Group Stage (Matchdays 1&ndash;3)
+            {t("rules.group_stage_heading")}
           </h3>
           <p className="mt-2 text-sm leading-relaxed text-ps-text-sec">
-            All three matchdays count as one stage. Your points accumulate
-            across MD1, MD2, and MD3.
+            {t("rules.group_stage_desc_1")}
           </p>
           <p className="mt-2 text-sm leading-relaxed text-ps-text-sec">
-            After MD3, the cut works like the real World Cup:
+            {t("rules.group_stage_desc_2")}
           </p>
 
           {/* Group A card */}
@@ -141,7 +134,7 @@ export function RulesContent({
               </span>
               <span className="flex-1 pl-2 text-sm text-ps-text">Manning</span>
               <span className="mr-2 rounded bg-ps-green/15 px-1.5 py-0.5 text-[10px] font-bold text-ps-green">
-                SAFE
+                {t("rules.safe")}
               </span>
               <span className="w-14 text-right font-mono text-xs font-bold text-ps-text">
                 14 pts
@@ -155,11 +148,11 @@ export function RulesContent({
               <span className="flex-1 pl-2 text-sm font-semibold text-ps-text">
                 Scrooch
                 <span className="ml-1.5 rounded bg-ps-amber/20 px-1 py-0.5 text-[10px] font-bold text-ps-amber">
-                  YOU
+                  {t("common.you")}
                 </span>
               </span>
               <span className="mr-2 rounded bg-ps-green/15 px-1.5 py-0.5 text-[10px] font-bold text-ps-green">
-                SAFE
+                {t("rules.safe")}
               </span>
               <span className="w-14 text-right font-mono text-xs font-bold text-ps-text">
                 11 pts
@@ -168,10 +161,10 @@ export function RulesContent({
             {/* DANGER ZONE banner */}
             <div className="border-l-[3px] border-l-ps-amber bg-ps-amber/[0.15] px-4 py-2">
               <p className="font-mono text-[10px] font-bold uppercase tracking-[0.12em] text-ps-amber">
-                Danger Zone
+                {t("rules.danger_zone")}
               </p>
               <p className="mt-0.5 text-[10px] text-ps-text-sec">
-                Only the best 3rd-place finishers survive
+                {t("rules.danger_desc")}
               </p>
             </div>
             {/* Row 3 — Bohanna (AT RISK) */}
@@ -181,7 +174,7 @@ export function RulesContent({
               </span>
               <span className="flex-1 pl-2 text-sm text-ps-text">Bohanna</span>
               <span className="mr-2 rounded bg-ps-amber/25 px-2 py-0.5 text-[10px] font-bold text-ps-amber">
-                AT RISK
+                {t("rules.at_risk")}
               </span>
               <span className="w-14 text-right font-mono text-xs font-bold text-ps-text">
                 7 pts
@@ -190,10 +183,10 @@ export function RulesContent({
             {/* ELIMINATED banner */}
             <div className="border-l-[3px] border-l-ps-red bg-ps-red/[0.08] px-4 py-2">
               <p className="font-mono text-[10px] font-bold uppercase tracking-[0.12em] text-ps-red">
-                Eliminated
+                {t("rules.eliminated")}
               </p>
               <p className="mt-0.5 text-[10px] text-ps-text-sec">
-                4th place is always cut
+                {t("rules.eliminated_desc")}
               </p>
             </div>
             {/* Row 4 — Gerry Ramos (OUT) */}
@@ -203,7 +196,7 @@ export function RulesContent({
               </span>
               <span className="flex-1 pl-2 text-sm text-ps-text">Gerry Ramos</span>
               <span className="mr-2 rounded bg-ps-red/15 px-1.5 py-0.5 text-[10px] font-bold text-ps-red">
-                OUT
+                {t("rules.out")}
               </span>
               <span className="w-14 text-right font-mono text-xs font-bold text-ps-text">
                 3 pts
@@ -214,24 +207,14 @@ export function RulesContent({
           {/* How the cut works */}
           <div className="mt-3 rounded-lg bg-ps-chip px-3.5 py-3">
             <p className="text-sm font-semibold text-ps-text">
-              How the cut works
+              {t("rules.how_cut_works")}
             </p>
             <ul className="mt-2 space-y-1.5 text-xs leading-relaxed text-ps-text-sec">
-              <li>
-                <span className="font-semibold text-ps-green">Top 2</span> in
-                each group qualify automatically.
-              </li>
+              <li>{t("rules.top2")}</li>
               <li className="-mx-1.5 rounded-md bg-ps-amber/[0.08] px-2.5 py-2 text-[13px]">
-                <span className="font-semibold text-ps-amber">3rd place</span>{" "}
-                is the danger zone. Your points are compared against every other
-                3rd-place finisher across all groups. Only the best thirds
-                survive &mdash; the rest are eliminated. With 48 players: 8 of
-                12 thirds qualify. The other 4 go home.
+                {t("rules.third_place")}
               </li>
-              <li>
-                <span className="font-semibold text-ps-red">4th place</span> is
-                always eliminated.
-              </li>
+              <li>{t("rules.fourth_place")}</li>
             </ul>
           </div>
         </div>
@@ -239,11 +222,10 @@ export function RulesContent({
         {/* ── Knockout Rounds ── */}
         <div id="format-knockouts" className="mt-6">
           <h3 className="font-display text-sm font-extrabold text-ps-text">
-            Knockout Rounds
+            {t("rules.knockout_heading")}
           </h3>
           <p className="mt-2 text-sm leading-relaxed text-ps-text-sec">
-            Points reset. New groups drawn from survivors. Bottom half
-            eliminated. Repeat until only the finalists remain.
+            {t("rules.knockout_desc")}
           </p>
 
           {/* R32 card */}
@@ -251,7 +233,7 @@ export function RulesContent({
             <div className="border-b border-ps-border px-4 py-2.5">
               <p className="text-sm font-bold text-ps-text">Round of 32</p>
               <p className="font-mono text-[10px] text-ps-text-ter">
-                32 survive &middot; points reset &middot; new groups drawn
+                {t("rules.r32_meta")}
               </p>
             </div>
             <div className="flex items-center border-b border-ps-border px-4 py-2">
@@ -287,7 +269,7 @@ export function RulesContent({
               <span className="flex-1 pl-2 text-sm font-semibold text-ps-text">
                 Scrooch
                 <span className="ml-1.5 rounded bg-ps-amber/20 px-1 py-0.5 text-[10px] font-bold text-ps-amber">
-                  YOU
+                  {t("common.you")}
                 </span>
               </span>
               <span className="w-14 text-right font-mono text-xs font-bold text-ps-text">
@@ -311,7 +293,7 @@ export function RulesContent({
             {/* Eliminated section */}
             <div className="bg-ps-red/[0.03] px-4 py-3">
               <p className="font-mono text-[10px] font-bold uppercase tracking-[0.12em] text-ps-red/60">
-                16 eliminated
+                {t("rules.eliminated_count", { count: 16 })}
               </p>
               <div className="mt-1.5 flex flex-wrap gap-1">
                 <span className="text-[10px] text-ps-text-ter/40 line-through">
@@ -330,55 +312,52 @@ export function RulesContent({
           </div>
 
           <p className="mt-3 text-sm leading-relaxed text-ps-text-sec">
-            Points reset to zero. Only this round counts for survival.
+            {t("rules.knockout_note")}
           </p>
         </div>
 
         {/* ── Final ── */}
         <div id="format-final" className="mt-6">
           <h3 className="font-display text-sm font-extrabold text-ps-text">
-            Final
+            {t("rules.final_heading")}
           </h3>
           <p className="mt-2 text-sm leading-relaxed text-ps-text-sec">
-            The last 2 survivors predict both the Third-Place Play-Off and the
-            Final. Most points wins. No elimination &mdash; just a winner.
+            {t("rules.final_desc")}
           </p>
         </div>
 
         {/* ── How the field narrows ── */}
         <div id="format-narrowing" className="mt-6">
           <h3 className="font-display text-sm font-extrabold text-ps-text">
-            How the field narrows
+            {t("rules.narrowing_heading")}
           </h3>
           <p className="mt-2 text-sm leading-relaxed text-ps-text-sec">
-            With 48 players, the elimination curve mirrors the World Cup itself.
-            With fewer players, adjustments are made for competitive integrity
-            &mdash; ensuring at least one elimination at every stage.
+            {t("rules.narrowing_desc")}
           </p>
           <div className="mt-3 overflow-hidden rounded-lg border border-ps-border bg-ps-surface">
             <table className="w-full text-xs">
               <thead>
                 <tr className="border-b border-ps-border">
                   <th className="px-3 py-2 text-left font-mono font-bold text-ps-text-ter">
-                    Start
+                    {t("rules.table_start")}
                   </th>
                   <th className="px-2 py-2 text-center font-mono font-bold text-ps-text-ter">
-                    Grps
+                    {t("rules.table_grps")}
                   </th>
                   <th className="px-2 py-2 text-center font-mono font-bold text-ps-text-ter">
-                    R32
+                    {t("rules.table_r32")}
                   </th>
                   <th className="px-2 py-2 text-center font-mono font-bold text-ps-text-ter">
-                    R16
+                    {t("rules.table_r16")}
                   </th>
                   <th className="px-2 py-2 text-center font-mono font-bold text-ps-text-ter">
-                    QF
+                    {t("rules.table_qf")}
                   </th>
                   <th className="px-2 py-2 text-center font-mono font-bold text-ps-text-ter">
-                    SF
+                    {t("rules.table_sf")}
                   </th>
                   <th className="px-2 py-2 text-center font-mono font-bold text-ps-text-ter">
-                    W
+                    {t("rules.table_w")}
                   </th>
                 </tr>
               </thead>
@@ -395,113 +374,76 @@ export function RulesContent({
       </CollapsibleSection>
 
       {/* ── PICKS ────────────────────────────────────────────── */}
-      <CollapsibleSection id="picks" title="When do picks lock?">
+      <CollapsibleSection id="picks" title={t("locks.title")}>
         <p className="mt-2 text-sm leading-relaxed text-ps-text-sec">
-          Each day&rsquo;s matches lock 10 minutes before the first kickoff of
-          that day. You can submit picks for future days in advance &mdash; but
-          once a day locks, it&rsquo;s locked.
+          {t("locks.desc_1")}
         </p>
         <p className="mt-2 text-sm leading-relaxed text-ps-text-sec">
-          Changed your mind? No problem &mdash; update your picks as many times
-          as you like before the day locks.
+          {t("locks.desc_2")}
         </p>
         <details className="mt-2">
           <summary className="cursor-pointer text-xs font-semibold text-ps-amber-deep">
-            More detail
+            {t("locks.more_detail")}
           </summary>
           <div className="mt-2 text-xs leading-relaxed text-ps-text-sec">
-            <p>
-              Outcome-only predictions are saved, but you still need to add
-              exact scores to fully complete that day&rsquo;s predictions.
-            </p>
-            <p className="mt-1.5">
-              Events inside the same tournament stage may lock on different days
-              and at different times.
-            </p>
+            <p>{t("locks.detail_1")}</p>
+            <p className="mt-1.5">{t("locks.detail_2")}</p>
           </div>
         </details>
       </CollapsibleSection>
 
       {/* ── TIES ─────────────────────────────────────────────── */}
-      <CollapsibleSection id="ties" title="Tiebreakers">
+      <CollapsibleSection id="ties" title={t("ties.title")}>
         <p className="mt-2 text-sm leading-relaxed text-ps-text-sec">
-          Same points?{" "}
-          <strong className="text-ps-text">H2H goal diff</strong> &rarr;{" "}
-          <strong className="text-ps-text">H2H goals</strong> &rarr;{" "}
-          <strong className="text-ps-text">overall goal diff</strong> &rarr;{" "}
-          <strong className="text-ps-text">overall goals</strong> &rarr;{" "}
-          <strong className="text-ps-text">coin flip</strong>
+          {t("ties.desc")}
         </p>
       </CollapsibleSection>
 
       {/* ── FAQ ─────────────────────────────────────────────── */}
-      <CollapsibleSection id="faq" title="FAQs" defaultOpen>
+      <CollapsibleSection id="faq" title={t("faq.title")} defaultOpen>
         <div className="mt-3 space-y-2">
-          <FAQGroup title="Basics" defaultOpen>
-            <FAQ q="Do I have to predict every match?">
-              No. You can skip any match. But every correct pick earns points, so
-              the more you predict the better your chances on the leaderboard.
+          <FAQGroup title={t("faq.group_basics")} defaultOpen>
+            <FAQ q={t("faq.q_every_match")}>
+              {t("faq.a_every_match")}
             </FAQ>
-            <FAQ q="Is the exact score required?">
-              No &mdash; it&rsquo;s optional. Pick the winner (or draw) first.
-              If you also nail the exact score you earn a +3 bonus on top.
+            <FAQ q={t("faq.q_exact_required")}>
+              {t("faq.a_exact_required")}
             </FAQ>
-            <FAQ q="Can I change my picks?">
-              Yes, as many times as you like before the day locks. Once a
-              matchday locks (10 min before the first kickoff that day), all
-              picks for that day are final.
+            <FAQ q={t("faq.q_change_picks")}>
+              {t("faq.a_change_picks")}
             </FAQ>
-            <FAQ q="When can I join?">
-              You can join any time before the entry deadline (3 days after
-              kickoff). Late joiners can still pick unlocked matches but
-              auto-forfeit anything already locked.
+            <FAQ q={t("faq.q_when_join")}>
+              {t("faq.a_when_join")}
             </FAQ>
           </FAQGroup>
-          <FAQGroup title="Scoring &amp; Classifications">
-            <FAQ q="How many points can I earn per match?">
-              Group stage: up to 5 pts (2 for correct outcome + 3 exact score
-              bonus). Knockout: up to 6 pts (2 outcome + 3 score + 1 for
-              correct advancing team).
+          <FAQGroup title={t("faq.group_scoring")}>
+            <FAQ q={t("faq.q_points_per_match")}>
+              {t("faq.a_points_per_match")}
             </FAQ>
-            <FAQ q="What are the different leaderboard classifications?">
-              <strong>Overall</strong> &mdash; cumulative points across all
-              matches. <strong>Format</strong> &mdash; survivor elimination that
-              mirrors the World Cup structure. <strong>Full Bracket</strong> &amp;{" "}
-              <strong>KO Bracket</strong> &mdash; pre-tournament bracket
-              predictions scored after groups / knockouts complete.
+            <FAQ q={t("faq.q_classifications")}>
+              {t("faq.a_classifications")}
             </FAQ>
-            <FAQ q="What does &ldquo;Draw&rdquo; mean in a knockout match?">
-              It means the scores are level after extra time &mdash; the match
-              is decided by penalties. You pick who advances separately. Your
-              result prediction is the score after extra time, excluding
-              penalties.
+            <FAQ q={t("faq.q_draw_knockout")}>
+              {t("faq.a_draw_knockout")}
             </FAQ>
-            <FAQ q="How does the extra knockout point work?">
-              In knockout matches you also predict which team advances. This is
-              worth 1 bonus point on top of the result and score picks. It
-              matters most when the match is a draw &mdash; you can still earn
-              a point by correctly picking who goes through on penalties.
+            <FAQ q={t("faq.q_extra_ko_point")}>
+              {t("faq.a_extra_ko_point")}
             </FAQ>
           </FAQGroup>
-          <FAQGroup title="Rules &amp; Tiebreakers">
-            <FAQ q="How are ties on the leaderboard broken?">
-              Head-to-head goal difference &rarr; head-to-head goals &rarr;
-              overall goal difference &rarr; overall goals &rarr; coin flip.
+          <FAQGroup title={t("faq.group_rules")}>
+            <FAQ q={t("faq.q_tiebreakers")}>
+              {t("faq.a_tiebreakers")}
             </FAQ>
-            <FAQ q="What happens if a match is postponed?">
-              Your picks stay valid. The match moves to its new time and your
-              predictions carry over. If a match is cancelled, affected picks
-              are voided (no points gained or lost).
+            <FAQ q={t("faq.q_postponed")}>
+              {t("faq.a_postponed")}
             </FAQ>
           </FAQGroup>
-          <FAQGroup title="Technical">
-            <FAQ q="Do my picks auto-save?">
-              Yes. Winner picks save instantly on tap. Score predictions save
-              after 1.75 seconds of inactivity or when you tap away.
+          <FAQGroup title={t("faq.group_technical")}>
+            <FAQ q={t("faq.q_auto_save")}>
+              {t("faq.a_auto_save")}
             </FAQ>
-            <FAQ q="Can I play on desktop?">
-              Yes &mdash; the app works on any device with a browser. It&rsquo;s
-              designed mobile-first but fully functional on desktop.
+            <FAQ q={t("faq.q_desktop")}>
+              {t("faq.a_desktop")}
             </FAQ>
           </FAQGroup>
         </div>
@@ -576,21 +518,21 @@ function HowItWorksStep({
 }
 
 function PointsTable() {
+  const t = useT();
+
   return (
     <div className="mt-3 overflow-hidden rounded-lg border border-ps-border bg-ps-surface">
       <table className="w-full text-sm">
         <tbody className="divide-y divide-ps-border">
-          <PointsRow label="Correct winner (or draw)" points="2" />
-          <PointsRow label="Exact score bonus" points="+3" />
-          <PointsRow label="Correct team advances (KO)" points="1" />
+          <PointsRow label={t("rules.correct_winner")} points="2" />
+          <PointsRow label={t("rules.exact_score_bonus")} points="+3" />
+          <PointsRow label={t("rules.correct_advances")} points="1" />
         </tbody>
       </table>
       <div className="border-t border-ps-border px-4 py-2.5">
         <p className="text-xs text-ps-text-sec">
-          Max per group match:{" "}
-          <span className="font-mono font-bold text-ps-text">5 pts</span>. Max
-          per knockout match:{" "}
-          <span className="font-mono font-bold text-ps-text">6 pts</span>.
+          {t("rules.max_group")}{" "}
+          {t("rules.max_knockout")}
         </p>
       </div>
     </div>
@@ -697,4 +639,3 @@ function FAQ({ q, children }: { q: string; children: React.ReactNode }) {
     </details>
   );
 }
-

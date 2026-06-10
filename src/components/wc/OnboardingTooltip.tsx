@@ -1,5 +1,7 @@
 "use client";
 
+import { useT } from "@/lib/i18n";
+
 interface OnboardingTooltipProps {
   title: string;
   description: string;
@@ -19,10 +21,13 @@ export function OnboardingTooltip({
   title,
   description,
   onConfirm,
-  confirmLabel = "Got it",
+  confirmLabel,
   showSkip,
   onSkip,
 }: OnboardingTooltipProps) {
+  const t = useT();
+  const resolvedConfirmLabel = confirmLabel ?? t("onboarding.got_it");
+
   return (
     <div
       role="dialog"
@@ -39,7 +44,7 @@ export function OnboardingTooltip({
           onClick={onConfirm}
           className="rounded-full bg-ps-amber px-4 py-1.5 text-xs font-semibold text-[#191512] transition-opacity hover:opacity-90 active:opacity-80"
         >
-          {confirmLabel}
+          {resolvedConfirmLabel}
         </button>
         {showSkip && onSkip && (
           <button
@@ -47,7 +52,7 @@ export function OnboardingTooltip({
             onClick={onSkip}
             className="text-xs text-ps-text-ter transition-colors hover:text-ps-text-sec"
           >
-            Skip tour
+            {t("onboarding.skip_tour")}
           </button>
         )}
       </div>

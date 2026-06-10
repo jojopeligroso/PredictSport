@@ -5,6 +5,7 @@ import { BrandMark } from "@/components/BrandMark";
 import JoinCompetitionCard from "@/components/JoinCompetitionCard";
 import { OrDivider } from "@/components/OrDivider";
 import { computePickCounts, findActiveRound } from "@/lib/dashboard-helpers";
+import { getServerT } from "@/lib/i18n/server";
 
 export const dynamic = "force-dynamic";
 
@@ -13,9 +14,13 @@ const WC_REDIRECT_ENABLED = true;
 
 const WC2026_TOURNAMENT_ID = "a0000000-0000-0000-0000-000000000026";
 
+// ── Shared type for the translation function ────────────────────────────────
+
+type TFn = (key: string, vars?: Record<string, string | number>) => string;
+
 // ── Landing page (unauthenticated) ──────────────────────────────────────────
 
-function LandingPage() {
+function LandingPage({ t }: { t: TFn }) {
   return (
     <div className="flex flex-1 flex-col items-center px-4">
       <section className="flex w-full max-w-md flex-col items-center gap-8 pt-16 pb-12 text-center md:pt-24 md:pb-16">
@@ -25,14 +30,14 @@ function LandingPage() {
             sports<span className="text-ps-amber">predict.</span>
           </h1>
           <p className="mt-3 font-serif text-lg italic text-ps-text-sec md:text-xl">
-            Call it, then rub it in Gerry Ramos' face.
+            {t('login.tagline')}
           </p>
         </div>
         <Link
           href="/login"
           className="w-full max-w-xs rounded-xl bg-ps-text px-6 py-4 text-center text-base font-semibold text-ps-bg transition-all duration-150 hover:opacity-90 active:scale-[0.97] md:text-lg"
         >
-          Get started
+          {t('landing.get_started')}
         </Link>
       </section>
 
@@ -47,38 +52,38 @@ function LandingPage() {
             className="text-[10px] font-bold uppercase tracking-widest"
             style={{ color: "#006847" }}
           >
-            Coming June 2026
+            {t('landing.coming_june')}
           </p>
-          <h2 className="mt-1 text-lg font-extrabold">World Cup</h2>
+          <h2 className="mt-1 text-lg font-extrabold">{t('landing.wc_title')}</h2>
           <p className="mt-1 text-xs" style={{ color: "#a8a090" }}>
-            Predict every match. 5 ways to compete. Bragging rights guaranteed.
+            {t('landing.wc_desc')}
           </p>
           <span
             className="mt-3 inline-block rounded-lg px-4 py-2 text-sm font-semibold"
             style={{ background: "#d4af37", color: "#0a0f0a" }}
           >
-            Learn more
+            {t('landing.learn_more')}
           </span>
         </Link>
       </section>
 
       <section className="w-full max-w-md border-t border-ps-border pt-10 pb-12">
         <h2 className="text-center text-xs font-bold uppercase tracking-widest text-ps-text-ter">
-          How it works
+          {t('landing.how_it_works')}
         </h2>
         <div className="mt-8 space-y-8">
-          <Step number="1" title="Join a group" description="Your mate sends a link. You're in. No downloads, no sign-up forms — just Google log in and go." />
-          <Step number="2" title="Make your picks" description="Each round has a mix of fixtures across sports. Pick your winners before the deadline locks." />
-          <Step number="3" title="Climb the table" description="Points land as results come in. See where you stand, who called it, and who got it very wrong." />
+          <Step number="1" title={t('landing.step1_title')} description={t('landing.step1_desc')} />
+          <Step number="2" title={t('landing.step2_title')} description={t('landing.step2_desc')} />
+          <Step number="3" title={t('landing.step3_title')} description={t('landing.step3_desc')} />
         </div>
       </section>
 
       <section className="w-full max-w-md border-t border-ps-border pt-10 pb-14">
         <div className="rounded-2xl border border-ps-border bg-ps-surface p-6">
           <p className="text-sm font-medium leading-relaxed text-ps-text">
-            For friend groups.{" "}
+            {t('landing.for_friends')}{" "}
             <span className="text-ps-text-sec">
-              Just the cold, crisp satisfaction of being right.
+              {t('landing.for_friends_desc')}
             </span>
           </p>
         </div>
@@ -89,10 +94,10 @@ function LandingPage() {
           href="/login"
           className="inline-block rounded-xl bg-ps-text px-8 py-3.5 text-sm font-semibold text-ps-bg transition-all duration-150 hover:opacity-90 active:scale-[0.97]"
         >
-          Get started
+          {t('landing.get_started')}
         </Link>
         <p className="mt-4 text-xs text-ps-text-ter">
-          Free. No app store required.
+          {t('landing.free')}
         </p>
       </section>
     </div>
@@ -166,7 +171,7 @@ function UserCircleIcon() {
 
 // ── Dashboard ───────────────────────────────────────────────────────────────
 
-async function Dashboard({ userId }: { userId: string }) {
+async function Dashboard({ userId, t }: { userId: string; t: TFn }) {
   const supabase = await createClient();
 
   // Fetch user profile for avatar
@@ -320,13 +325,13 @@ async function Dashboard({ userId }: { userId: string }) {
             className="text-[10px] font-bold uppercase tracking-[0.18em]"
             style={{ color: "rgba(212,175,55,0.6)" }}
           >
-            Now open &mdash; make your move
+            {t('dash.now_open')}
           </p>
           <p className="mt-1 text-[13px] font-semibold" style={{ color: "rgba(255,255,255,0.55)" }}>
             <span style={{ color: "rgba(255,255,255,0.85)" }}>{heroComp.name}</span>
             {memberCounts[heroComp.id] ? (
               <span className="ml-2 font-mono text-xs" style={{ color: "rgba(255,255,255,0.35)" }}>
-                {memberCounts[heroComp.id]} players
+                {t('dash.players', { count: String(memberCounts[heroComp.id]) })}
               </span>
             ) : null}
           </p>
@@ -367,7 +372,7 @@ async function Dashboard({ userId }: { userId: string }) {
                 {heroRound.name ?? `Round ${heroRound.round_number}`}
               </h2>
               <p className="mt-1 text-[13px] font-semibold" style={{ color: "rgba(255,255,255,0.45)" }}>
-                {heroPickCount} of {heroEvtCount} picks made
+                {t('dash.picks_made', { picked: String(heroPickCount), total: String(heroEvtCount) })}
               </p>
               {daysLeft !== null && (
                 <div
@@ -376,7 +381,7 @@ async function Dashboard({ userId }: { userId: string }) {
                 >
                   <span className="h-1.5 w-1.5 animate-pulse rounded-full" style={{ background: "#d4af37" }} />
                   <span className="font-mono text-xs font-semibold" style={{ color: "#d4af37" }}>
-                    {daysLeft} {daysLeft === 1 ? "day" : "days"} left
+                    {t(daysLeft === 1 ? 'dash.day_left' : 'dash.days_left', { count: String(daysLeft) })}
                   </span>
                 </div>
               )}
@@ -387,11 +392,11 @@ async function Dashboard({ userId }: { userId: string }) {
             className="mt-5 rounded-[14px] py-3.5 text-center text-[15px] font-extrabold"
             style={{ background: "#f59e0b", color: "#0a0f0a", boxShadow: "0 4px 16px rgba(212,175,55,0.35)" }}
           >
-            Make your picks &rarr;
+            {t('dash.make_picks')}
           </div>
           {deadlineLabel && (
             <p className="mt-2 text-center text-[11px] font-medium" style={{ color: "rgba(255,255,255,0.35)" }}>
-              Deadline: {deadlineLabel}
+              {t('dash.deadline', { deadline: deadlineLabel })}
             </p>
           )}
         </Link>
@@ -403,17 +408,17 @@ async function Dashboard({ userId }: { userId: string }) {
           style={{ background: "#0a0f0a", color: "#f1ece2" }}
         >
           <p className="text-[10px] font-bold uppercase tracking-widest" style={{ color: "#006847" }}>
-            World Cup 2026
+            {t('landing.wc_title')} 2026
           </p>
-          <h2 className="mt-1 text-lg font-extrabold">Make your picks</h2>
+          <h2 className="mt-1 text-lg font-extrabold">{t('wc.make_picks')}</h2>
           <p className="mt-1 text-xs" style={{ color: "#a8a090" }}>
-            48 teams. 5 ways to play. Free entry.
+            {t('wc.free_entry')}
           </p>
           <span
             className="mt-3 inline-block rounded-lg px-4 py-2 text-sm font-semibold"
             style={{ background: "#d4af37", color: "#0a0f0a" }}
           >
-            Get started
+            {t('landing.get_started')}
           </span>
         </Link>
       ) : null}
@@ -422,15 +427,15 @@ async function Dashboard({ userId }: { userId: string }) {
       {comps.length === 0 ? (
         <div className="mt-4 space-y-3">
           <div className="rounded-2xl border border-dashed border-ps-border bg-ps-surface p-6 text-center">
-            <p className="text-sm font-medium text-ps-text-sec">No active competitions yet.</p>
+            <p className="text-sm font-medium text-ps-text-sec">{t('dash.no_comps')}</p>
             <p className="mt-2 text-xs text-ps-text-ter">
-              Start your own, or join one with an invite link below.
+              {t('dash.no_comps_help')}
             </p>
             <Link
               href="/competitions/new"
               className="mt-4 inline-block rounded-xl bg-gradient-to-r from-[#f59e0b] to-[#d97706] px-4 py-2.5 text-sm font-semibold text-ps-text"
             >
-              Create Competition
+              {t('dash.create_comp')}
             </Link>
           </div>
           <OrDivider />
@@ -448,11 +453,11 @@ async function Dashboard({ userId }: { userId: string }) {
               <CrosshairIcon />
             </div>
             <div className="min-w-0 flex-1">
-              <div className="text-[13px] font-bold text-ps-text">Personal Predictions</div>
-              <div className="mt-0.5 text-[11px] font-medium text-ps-text-ter">Your private pick tracker</div>
+              <div className="text-[13px] font-bold text-ps-text">{t('dash.personal_predictions')}</div>
+              <div className="mt-0.5 text-[11px] font-medium text-ps-text-ter">{t('dash.personal_desc')}</div>
             </div>
             <span className="rounded-full bg-ps-chip px-2 py-0.5 text-[10px] font-bold text-ps-text-ter">
-              Open &rarr;
+              {t('common.open')}
             </span>
           </Link>
 
@@ -465,11 +470,11 @@ async function Dashboard({ userId }: { userId: string }) {
               <PodiumIcon />
             </div>
             <div className="min-w-0 flex-1">
-              <div className="text-[13px] font-bold text-ps-text">Leaderboard</div>
-              <div className="mt-0.5 text-[11px] font-medium text-ps-text-ter">See how you stack up</div>
+              <div className="text-[13px] font-bold text-ps-text">{t('dash.leaderboard')}</div>
+              <div className="mt-0.5 text-[11px] font-medium text-ps-text-ter">{t('dash.leaderboard_desc')}</div>
             </div>
             <span className="rounded-full bg-ps-chip px-2 py-0.5 text-[10px] font-bold text-ps-text-ter">
-              View &rarr;
+              {t('common.view')}
             </span>
           </Link>
 
@@ -511,12 +516,12 @@ async function Dashboard({ userId }: { userId: string }) {
                     <span>
                       {activeRound
                         ? (activeRound.name ?? `Round ${activeRound.round_number}`)
-                        : "No active round"}
+                        : t('common.no_active_round')}
                     </span>
                     {count > 0 && (
                       <>
                         <span>&middot;</span>
-                        <span className="font-mono text-xs">{count} players</span>
+                        <span className="font-mono text-xs">{t('dash.players', { count: String(count) })}</span>
                       </>
                     )}
                   </div>
@@ -535,7 +540,7 @@ async function Dashboard({ userId }: { userId: string }) {
                   </span>
                 ) : (
                   <span className="rounded-full bg-[rgba(245,158,11,0.1)] px-2 py-0.5 text-[10px] font-bold text-[#b8741f]">
-                    Idle
+                    {t('common.idle')}
                   </span>
                 )}
               </Link>
@@ -552,14 +557,15 @@ async function Dashboard({ userId }: { userId: string }) {
 export default async function Home() {
   if (WC_REDIRECT_ENABLED) redirect("/wc");
 
+  const t = await getServerT();
   const supabase = await createClient();
   const {
     data: { user },
   } = await supabase.auth.getUser();
 
   if (!user) {
-    return <LandingPage />;
+    return <LandingPage t={t} />;
   }
 
-  return <Dashboard userId={user.id} />;
+  return <Dashboard userId={user.id} t={t} />;
 }
