@@ -17,6 +17,10 @@ interface ChatMessageProps {
   currentUserId: string;
   currentUserRole: string;
   members: UseChatMember[];
+  /** First message in a sender group — show name + avatar */
+  isFirstInGroup?: boolean;
+  /** Last message in a sender group — show timestamp */
+  isLastInGroup?: boolean;
   onDelete?: (messageId: string) => void;
   onEdit?: (messageId: string, content: string) => void;
   onMute?: (userId: string) => void;
@@ -79,6 +83,8 @@ export function ChatMessage({
   currentUserId,
   currentUserRole,
   members,
+  isFirstInGroup = true,
+  isLastInGroup = true,
   onDelete,
   onEdit,
   onMute,
@@ -179,26 +185,34 @@ export function ChatMessage({
   // Show edit button only within the 5-minute edit window
   const showEditButton = isOwn && !isEditing && messageAge <= EDIT_WINDOW_MS;
 
+  const showName = isFirstInGroup;
+  const showAvatar = isFirstInGroup && !isOwn;
+  const showTimestamp = isLastInGroup;
+
   return (
     <div
-      className={`group relative flex gap-2 py-1 ${isOwn ? "flex-row-reverse" : "flex-row"}`}
+      className={`group relative flex gap-2 ${isFirstInGroup ? "pt-1.5" : "pt-px"} ${isOwn ? "flex-row-reverse" : "flex-row"}`}
     >
-      {/* Avatar */}
+      {/* Avatar — show on first in group, reserve space otherwise */}
       {!isOwn && (
-        <div className="flex-shrink-0 w-7 h-7 rounded-full bg-ps-chip flex items-center justify-center">
-          {message.avatar_url ? (
-            <Image
-              src={message.avatar_url}
-              alt=""
-              width={28}
-              height={28}
-              className="rounded-full object-cover"
-            />
-          ) : (
-            <span className="text-[10px] font-semibold text-ps-text-sec">
-              {getInitials(message.display_name)}
-            </span>
-          )}
+        <div className="flex-shrink-0 w-7">
+          {showAvatar ? (
+            <div className="w-7 h-7 rounded-full bg-ps-chip flex items-center justify-center">
+              {message.avatar_url ? (
+                <Image
+                  src={message.avatar_url}
+                  alt=""
+                  width={28}
+                  height={28}
+                  className="rounded-full object-cover"
+                />
+              ) : (
+                <span className="text-[10px] font-semibold text-ps-text-sec">
+                  {getInitials(message.display_name)}
+                </span>
+              )}
+            </div>
+          ) : null}
         </div>
       )}
 
@@ -206,10 +220,12 @@ export function ChatMessage({
       <div
         className={`max-w-[75%] ${isOwn ? "items-end" : "items-start"}`}
       >
-        {/* Sender name */}
-        <p className={`text-[10px] font-semibold text-ps-text-sec mb-0.5 ${isOwn ? "text-right mr-1" : "ml-1"}`}>
-          {message.display_name}
-        </p>
+        {/* Sender name — only on first in group */}
+        {showName && (
+          <p className={`text-[10px] font-semibold text-ps-text-sec mb-0.5 ${isOwn ? "text-right mr-1" : "ml-1"}`}>
+            {message.display_name}
+          </p>
+        )}
 
         <div
           className={`rounded-2xl px-3 py-1.5 text-sm ${
@@ -288,43 +304,47 @@ export function ChatMessage({
           </>
         )}
 
-        {/* Meta row: time, edited, actions */}
-        <div
-          className={`flex items-center gap-1.5 mt-0.5 ${
-            isOwn ? "justify-end mr-1" : "ml-1"
-          }`}
-        >
-          <span className="text-[10px] text-ps-text-ter">
-            {formatMessageTime(message.created_at)}
-          </span>
-          {isEdited && (
-            <span className="text-[10px] text-ps-text-ter italic">
-              (edited)
-            </span>
-          )}
+        {/* Meta row: time, edited, actions — only on last in group (or when actions available) */}
+        {(showTimestamp || showEditButton || canDelete) && (
+          <div
+            className={`flex items-center gap-1.5 mt-0.5 ${
+              isOwn ? "justify-end mr-1" : "ml-1"
+            }`}
+          >
+            {showTimestamp && (
+              <span className="text-[10px] text-ps-text-ter">
+                {formatMessageTime(message.created_at)}
+              </span>
+            )}
+            {isEdited && showTimestamp && (
+              <span className="text-[10px] text-ps-text-ter italic">
+                (edited)
+              </span>
+            )}
 
-          {/* Actions — visible on hover/group */}
-          {(showEditButton || canDelete) && (
-            <span className="opacity-0 group-hover:opacity-100 transition-opacity flex gap-1">
-              {showEditButton && (
-                <button
-                  onClick={handleStartEdit}
-                  className="text-[10px] text-ps-text-ter hover:text-ps-text"
-                >
-                  edit
-                </button>
-              )}
-              {canDelete && (
-                <button
-                  onClick={() => onDelete?.(message.id)}
-                  className="text-[10px] text-ps-text-ter hover:text-ps-red"
-                >
-                  delete
-                </button>
-              )}
-            </span>
-          )}
-        </div>
+            {/* Actions — visible on hover */}
+            {(showEditButton || canDelete) && (
+              <span className="opacity-0 group-hover:opacity-100 transition-opacity flex gap-1">
+                {showEditButton && (
+                  <button
+                    onClick={handleStartEdit}
+                    className="text-[10px] text-ps-text-ter hover:text-ps-text"
+                  >
+                    edit
+                  </button>
+                )}
+                {canDelete && (
+                  <button
+                    onClick={() => onDelete?.(message.id)}
+                    className="text-[10px] text-ps-text-ter hover:text-ps-red"
+                  >
+                    delete
+                  </button>
+                )}
+              </span>
+            )}
+          </div>
+        )}
       </div>
     </div>
   );

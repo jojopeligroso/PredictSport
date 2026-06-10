@@ -152,6 +152,26 @@ export function ChatWidget({
   const displayMessages =
     mode === "mini" ? messages.slice(-5) : messages;
 
+  // Compute grouping: consecutive messages from the same sender within 10 min
+  const GROUP_WINDOW_MS = 10 * 60 * 1000;
+  const groupPositions = displayMessages.map((msg, i) => {
+    const prev = i > 0 ? displayMessages[i - 1] : null;
+    const next = i < displayMessages.length - 1 ? displayMessages[i + 1] : null;
+
+    const canGroupWith = (a: typeof msg, b: typeof msg) =>
+      a.user_id === b.user_id &&
+      a.message_type !== "system" &&
+      b.message_type !== "system" &&
+      !a.deleted_at &&
+      !b.deleted_at &&
+      Math.abs(new Date(b.created_at).getTime() - new Date(a.created_at).getTime()) <= GROUP_WINDOW_MS;
+
+    const isFirstInGroup = !prev || !canGroupWith(prev, msg);
+    const isLastInGroup = !next || !canGroupWith(msg, next);
+
+    return { isFirstInGroup, isLastInGroup };
+  });
+
   if (isLoading) {
     return (
       <div className={`${mode === "full" ? "h-[75vh]" : ""} flex items-center justify-center`}>
@@ -187,7 +207,7 @@ export function ChatWidget({
       {/* Messages area */}
       <div
         ref={scrollRef}
-        className="flex-1 overflow-y-auto px-3 py-2 space-y-0.5"
+        className="flex-1 overflow-y-auto px-3 py-2"
       >
         {/* Load more button (full mode) */}
         {mode === "full" && hasMore && (
@@ -208,13 +228,15 @@ export function ChatWidget({
             </p>
           </div>
         ) : (
-          displayMessages.map((msg) => (
+          displayMessages.map((msg, i) => (
             <ChatMessage
               key={msg.id}
               message={msg}
               currentUserId={currentUserId}
               currentUserRole={currentUserRole}
               members={members}
+              isFirstInGroup={groupPositions[i].isFirstInGroup}
+              isLastInGroup={groupPositions[i].isLastInGroup}
               onDelete={deleteMessage}
               onEdit={editMessage}
               onMute={handleMuteUser}
