@@ -169,13 +169,13 @@ export function Md1PicksLanding(props: Md1PicksLandingProps) {
         </div>
       </div>}
 
-      {/* 8-day calendar pills with month labels */}
-      <DayCalendarPills
+      {/* 8-day calendar pills — hidden for non-members */}
+      {!previewMode && <DayCalendarPills
         days={dayBuckets}
         dayBeforeCloseIso={dayBeforeCloseIso}
         todayIso={todayIso}
         now={now}
-      />
+      />}
 
       {/* Soft cutoff banner */}
       <JoinCutoffBanner state={cutoffState} closeDateLabel={closeDateLabel} />
@@ -195,7 +195,7 @@ export function Md1PicksLanding(props: Md1PicksLandingProps) {
         <div
           className={
             previewMode
-              ? "pointer-events-none select-none [filter:blur(6px)_saturate(0.7)]"
+              ? "pointer-events-none select-none [filter:blur(2px)_saturate(0.7)]"
               : ""
           }
           aria-hidden={previewMode || undefined}
