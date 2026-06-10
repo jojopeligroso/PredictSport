@@ -176,3 +176,29 @@ The user-chosen name shown on leaderboards, standings, and to other participants
 ## The Cut
 
 The R32 Classification, renamed. Measures how many of the 32 knockout-stage teams the user correctly predicted from their Full Bracket group stage picks. Not path-sensitive — only checks whether each team made the knockouts, regardless of position. Short label: "The Cut". Full title: "Who Made the Cut". No question mark.
+
+---
+
+## Competition Chat
+
+A per-competition messaging feature scoped to members of a single [[Competition]]. Async-first — designed for users who dip in and out around their lives, not for synchronous group presence. Messages persist in the database. The [[Competition Admin]] can enable or disable chat; disabling hides the entire chat surface but preserves messages in storage.
+_Avoid_: Group chat, channel, thread
+
+---
+
+## System Message
+
+An auto-generated [[Competition Chat]] message triggered by a competition event. Currently limited to member joins ("X joined the competition"). System messages never reveal prediction content — no spoilers.
+_Avoid_: Bot message, notification
+
+---
+
+## Tombstone
+
+The placeholder displayed in [[Competition Chat]] when a message is deleted after the grace window (10 seconds). Shows "This message was deleted by user" or "This message was deleted by admin" depending on who deleted it. Messages deleted within the grace window vanish entirely with no trace.
+
+---
+
+## @Mention
+
+A reference to a [[Competition]] member within a [[Competition Chat]] message, triggered by typing `@` followed by the member's [[Display Name]]. Renders as a highlighted, tappable name. Generates a push notification to the mentioned member (adjustable in user settings).

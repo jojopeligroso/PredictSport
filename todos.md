@@ -350,3 +350,45 @@ Fixtures with unknown participants (TBA / TBC team names from providers) should 
 - [x] **DS-A — Dashboard State Machine (Section A)** — Grill session complete (2026-05-25). Defined 5 dashboard states, card stack ordering, bracket card visibility rules, derivation logic, data contract (`WcDashboardState` interface), Full Bracket eligibility rule (sealed at PW1 lock), leaderboard state awareness. ADR 0012 accepted. CONTEXT.md updated with "Dashboard State" term.
 - [ ] **DS-B — Format Classification Hero Surface (Section B)** — Design the Format Classification hero card and onboarding experience. What the user sees when Format is the primary dashboard. Includes: format group display, standings within group, elimination danger indicators, rules presentation, participant count + share/invite CTA, animated demo concept (noted, not implemented). Also: KO Bracket onboarding copy ("this bracket is borderline impossible — a second one opens after groups"). R32 classification rename. Read `docs/DESIGN-WC-DASHBOARD-STATE.md` Section 9 for all noted items.
 - [ ] **DS-C — Surface-Wide Polish (Section C)** — Copy tone audit across all `/wc` pages. Fixture card naming ("Fixtures" → "Fixtures & Results" → "Results"). Brand mark usage rules (mono variants, host city colorways). Nav redesign via mockups. Inline prediction reminder on fixture cards. Remove filler copy that doesn't establish tone.
+
+## Prediction Visibility Revisit
+
+> **Run `/grill-with-docs` before any implementation.** Raised during chat feature design (2026-06-10). Currently predictions are hidden behind `pick_reveal_at` (defaults to `lock_time`). Questions to resolve: (1) Should other competition members see *what* you predicted after lock, or only *that* you predicted? (2) If visible, when — at lock, after result, or never? (3) How does this interact with chat (no prediction spoilers in system messages — already decided)? (4) Does the leaderboard or any social surface expose individual picks?
+
+- [ ] **PV-1 — Design spike (grill session)** — Run `/grill-with-docs`. Define visibility rules for predictions across all surfaces: chat, leaderboard, match cards, profile. Do not change code until this is complete.
+
+## Competition Chat
+
+> Design complete: grill session 2026-06-10. ADR: `docs/adr/0016-db-backed-chat-over-broadcast.md`. CONTEXT.md updated with: Competition Chat, System Message, Tombstone, @Mention.
+>
+> Per-competition async chat. DB-backed via Supabase `postgres_changes`. Admin can enable/disable (hides UI, preserves data). No prediction content in system messages.
+
+### Phase CH-A — Schema & API
+
+- [ ] **CH-A1 — chat_messages table migration** — `chat_messages` (id uuid, competition_id FK, user_id FK, content text, message_type enum('user','system'), mentioned_user_ids uuid[], created_at, updated_at, deleted_at, deleted_by enum('user','admin') null). RLS: read/write scoped to competition members. Realtime publication enabled.
+- [ ] **CH-A2 — Chat toggle on competitions** — Add `chat_enabled boolean default true` to `competitions`. Admin UI checkbox in competition settings.
+- [ ] **CH-A3 — Send message API** — `POST /api/chat` — validates membership, rate limiting (standard), max message length, inserts row.
+- [ ] **CH-A4 — List messages API** — `GET /api/chat?competitionId=X&cursor=Y` — cursor-based pagination, newest first, tombstones for deleted messages.
+- [ ] **CH-A5 — Delete message API** — `DELETE /api/chat/:id` — user can delete own; admin can delete any. Within 10s: hard delete. After 10s: soft delete (set deleted_at + deleted_by).
+- [ ] **CH-A6 — Edit message API** — `PATCH /api/chat/:id` — user can edit own within 5 minutes. Sets updated_at. Returns 403 after window.
+- [ ] **CH-A7 — System message on join** — Trigger: when a new `competition_members` row is inserted, insert a system message "X joined the competition".
+
+### Phase CH-B — Components
+
+- [ ] **CH-B1 — ChatMessage component** — Renders a single message: display name, content, timestamp, "(edited)" indicator, tombstone state. @mention highlighted + tappable (no-op v1, future: scroll to profile).
+- [ ] **CH-B2 — ChatWidget component** — Shared component with mini/full modes. Mini: last 3 messages (5 if user sent one), single input field, close button (X). Full: ~75% iPhone screen height, full input, scroll to load history.
+- [ ] **CH-B3 — MentionAutocomplete component** — Triggered by `@` in input. Dropdown of competition members by display name. Inserts `@DisplayName` into message text.
+- [ ] **CH-B4 — Realtime subscription** — Subscribe to `postgres_changes` on `chat_messages` filtered by `competition_id`. Append new messages, handle edits/deletes live.
+
+### Phase CH-C — Integration
+
+- [ ] **CH-C1 — Mini chat on dashboard** — Add ChatWidget (mini mode) to DashboardClient.tsx. Position: below group fixtures section (section 5), above leaderboard link. Smart close: closed state in localStorage, reappears when new message arrives after close timestamp.
+- [ ] **CH-C2 — Full chat on leaderboard** — Add ChatWidget (full mode) to leaderboard page. Overall leaderboard collapses to show user + ~4 above/below. Chat takes remaining ~75% of screen.
+- [ ] **CH-C3 — Move leaderboard link up on dashboard** — Reorder dashboard sections: leaderboard link moves to after group fixtures (section 5 → section 6), displacing current position.
+- [ ] **CH-C4 — Unread badge on nav** — Compare user's last-seen timestamp against latest message timestamp. Show dot/badge on leaderboard nav item.
+
+### Phase CH-D — Notifications
+
+- [ ] **CH-D1 — Push notification for @mentions** — When a message contains @mention, send push to mentioned user (if opted in).
+- [ ] **CH-D2 — Push notification for new member join** — When system message "X joined" fires, push to all competition members (if opted in).
+- [ ] **CH-D3 — Notification settings** — Add chat notification preferences to user settings: @mention alerts (on/off), new member alerts (on/off).
