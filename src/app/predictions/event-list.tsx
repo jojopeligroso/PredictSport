@@ -598,19 +598,17 @@ export function EventList({
 
       {/* ── View Toggle: The Round / Results ──────────────────────── */}
       <div className="px-4 pt-2">
-        <div
-          className="grid grid-cols-2 gap-0.5 rounded-[10px] p-[3px]"
-          style={{ background: "var(--ps-chip)" }}
-        >
+        <div className="flex gap-1 rounded-lg border border-ps-border bg-ps-surface p-1">
           {(["sheet", "damage"] as const).map((mode) => (
             <button
               key={mode}
               onClick={() => setViewMode(mode)}
-              className={`rounded-[7px] py-[7px] text-center text-[11px] font-bold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ps-amber ${
+              className={[
+                "flex-1 rounded-md py-[7px] text-center text-[11px] font-bold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ps-amber",
                 viewMode === mode
-                  ? "bg-ps-surface text-ps-text shadow-[0_1px_3px_rgba(40,30,20,0.08)]"
-                  : "text-ps-text-sec"
-              }`}
+                  ? "bg-ps-text text-ps-bg"
+                  : "text-ps-text-sec hover:text-ps-text",
+              ].join(" ")}
             >
               {mode === "sheet" ? "The Round" : "Results"}
             </button>
