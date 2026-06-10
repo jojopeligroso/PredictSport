@@ -78,13 +78,26 @@ export async function GET(request: NextRequest) {
 
     const userIds = memberships.map((m: { user_id: string }) => m.user_id);
 
-    // Get all predictions for this competition
-    const { data: predictions } = await supabase
-      .from("predictions")
-      .select("user_id, points_awarded, events!inner(competition_id)")
-      .in("user_id", userIds)
-      .eq("events.competition_id", classification.competition_id)
-      .not("points_awarded", "is", null);
+    // Get all predictions for this competition (tournament-aware)
+    const { data: compForTournament } = await supabase
+      .from("competitions")
+      .select("tournament_id")
+      .eq("id", classification.competition_id)
+      .single();
+
+    const { data: predictions } = compForTournament?.tournament_id
+      ? await supabase
+          .from("predictions")
+          .select("user_id, points_awarded, events!inner(tournament_id)")
+          .in("user_id", userIds)
+          .eq("events.tournament_id", compForTournament.tournament_id)
+          .not("points_awarded", "is", null)
+      : await supabase
+          .from("predictions")
+          .select("user_id, points_awarded, events!inner(competition_id)")
+          .in("user_id", userIds)
+          .eq("events.competition_id", classification.competition_id)
+          .not("points_awarded", "is", null);
 
     // Aggregate points
     const pointsMap = new Map<string, number>();

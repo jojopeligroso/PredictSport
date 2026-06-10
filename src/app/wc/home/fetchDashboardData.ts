@@ -104,7 +104,7 @@ export async function fetchDashboardData(): Promise<DashboardResult> {
   // 1. Find the WC competition
   const { data: competition } = await supabase
     .from("competitions")
-    .select("id, status, invite_code, entry_closes_at, max_entrants, chat_enabled")
+    .select("id, status, invite_code, entry_closes_at, max_entrants, chat_enabled, tournament_id")
     .eq("product_mode", "world_cup_2026_shell")
     .in("status", ["active", "draft"])
     .limit(1)
@@ -347,11 +347,17 @@ export async function fetchDashboardData(): Promise<DashboardResult> {
         .eq("user_id", user.id)
         .eq("is_superseded", false)
         .maybeSingle(),
-      supabase
-        .from("events")
-        .select("id")
-        .eq("competition_id", competition.id)
-        .like("external_event_id", "manual:wc2026-grp-%"),
+      competition.tournament_id
+        ? supabase
+            .from("events")
+            .select("id")
+            .eq("tournament_id", competition.tournament_id)
+            .like("external_event_id", "manual:wc2026-grp-%")
+        : supabase
+            .from("events")
+            .select("id")
+            .eq("competition_id", competition.id)
+            .like("external_event_id", "manual:wc2026-grp-%"),
     ]);
 
     const allGroupEventIds = (groupEventsResult.data ?? []).map(

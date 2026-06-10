@@ -58,12 +58,26 @@ export async function GET(request: NextRequest) {
   for (const uid of allUserIds) pointsMap.set(uid, 0);
 
   if (allUserIds.length > 0) {
-    const { data: scoredPreds } = await supabase
-      .from("predictions")
-      .select("user_id, points_awarded, events!inner(competition_id)")
-      .in("user_id", allUserIds)
-      .eq("events.competition_id", competitionId)
-      .not("points_awarded", "is", null);
+    // Resolve tournament_id for shared fixture scoring
+    const { data: comp } = await supabase
+      .from("competitions")
+      .select("tournament_id")
+      .eq("id", competitionId)
+      .single();
+
+    const { data: scoredPreds } = comp?.tournament_id
+      ? await supabase
+          .from("predictions")
+          .select("user_id, points_awarded, events!inner(tournament_id)")
+          .in("user_id", allUserIds)
+          .eq("events.tournament_id", comp.tournament_id)
+          .not("points_awarded", "is", null)
+      : await supabase
+          .from("predictions")
+          .select("user_id, points_awarded, events!inner(competition_id)")
+          .in("user_id", allUserIds)
+          .eq("events.competition_id", competitionId)
+          .not("points_awarded", "is", null);
 
     for (const p of scoredPreds ?? []) {
       const current = pointsMap.get(p.user_id) ?? 0;

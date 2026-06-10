@@ -52,11 +52,16 @@ export async function generateStandingsSnapshot(
   let standingsData: StandingRow[] = [];
 
   if (classification.classification_type === "leaderboard") {
-    // Get all event IDs for this competition to scope predictions correctly
-    const { data: compEvents } = await supabase
-      .from("events")
-      .select("id")
-      .eq("competition_id", classification.competition_id);
+    // Get all event IDs — tournament-aware for shared fixtures
+    const { data: compMeta } = await supabase
+      .from("competitions")
+      .select("tournament_id")
+      .eq("id", classification.competition_id)
+      .single();
+
+    const { data: compEvents } = compMeta?.tournament_id
+      ? await supabase.from("events").select("id").eq("tournament_id", compMeta.tournament_id)
+      : await supabase.from("events").select("id").eq("competition_id", classification.competition_id);
     const compEventIds = (compEvents ?? []).map((e: { id: string }) => e.id);
 
     const userIds = membershipList.map((m) => m.user_id);

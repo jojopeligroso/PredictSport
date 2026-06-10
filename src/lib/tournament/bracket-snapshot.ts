@@ -41,7 +41,7 @@ export async function getWcBracketSnapshot(
 ): Promise<BracketSnapshot | null> {
   const { data: competition } = await supabase
     .from("competitions")
-    .select("id")
+    .select("id, tournament_id")
     .eq("product_mode", "world_cup_2026_shell")
     .in("status", ["active", "draft"])
     .limit(1)
@@ -69,16 +69,19 @@ export async function getWcBracketSnapshot(
   // Group progress lives in `predictions` (2026-05-23 unified-predictions
   // amendment), not in bracket_data. Count winner predictions on this
   // competition's WC group events so a /picks-only user still shows progress.
-  const { count: groupPicksCount } = await supabase
+  const groupPicksQuery = supabase
     .from("predictions")
-    .select("event_id, events!inner(competition_id, external_event_id)", {
+    .select("event_id, events!inner(tournament_id, competition_id, external_event_id)", {
       count: "exact",
       head: true,
     })
     .eq("user_id", userId)
     .eq("prediction_type", "winner")
-    .eq("events.competition_id", competition.id)
     .like("events.external_event_id", "manual:wc2026-grp-%");
+
+  const { count: groupPicksCount } = competition.tournament_id
+    ? await groupPicksQuery.eq("events.tournament_id", competition.tournament_id)
+    : await groupPicksQuery.eq("events.competition_id", competition.id);
 
   const data = submission?.bracket_data as BracketSubmissionData | null;
   const progress = bracketProgress(data, groupPicksCount ?? 0);

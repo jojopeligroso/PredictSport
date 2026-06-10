@@ -88,7 +88,7 @@ export async function POST(request: NextRequest) {
   const { data: ept, error: eptError } = await supabase
     .from("event_prediction_types")
     .select(
-      "id, event:events!inner(id, competition_id, lock_time, status)"
+      "id, event:events!inner(id, competition_id, tournament_id, lock_time, status)"
     )
     .eq("event_id", event_id)
     .eq("prediction_type", prediction_type)
@@ -102,14 +102,28 @@ export async function POST(request: NextRequest) {
   }
 
   const eptEvent = (ept as unknown as {
-    event: { id: string; competition_id: string; lock_time: string; status: string };
+    event: { id: string; competition_id: string; tournament_id: string | null; lock_time: string; status: string };
   }).event;
 
   if (eptEvent.competition_id !== competition_id) {
-    return NextResponse.json(
-      { error: "Event not found in this competition" },
-      { status: 404 }
-    );
+    // For tournament events, verify user's competition shares the same blueprint
+    if (!eptEvent.tournament_id) {
+      return NextResponse.json(
+        { error: "Event not found in this competition" },
+        { status: 404 }
+      );
+    }
+    const { data: userComp } = await supabase
+      .from("competitions")
+      .select("tournament_id")
+      .eq("id", competition_id)
+      .single();
+    if (userComp?.tournament_id !== eptEvent.tournament_id) {
+      return NextResponse.json(
+        { error: "Event not found in this competition" },
+        { status: 404 }
+      );
+    }
   }
 
   if (new Date(eptEvent.lock_time) <= new Date()) {

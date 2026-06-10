@@ -58,12 +58,22 @@ export async function computeGroupStandings(
   supabase: SupabaseClient,
   competitionId: string,
 ): Promise<Map<string, TeamWithStats[]>> {
-  const { data: events } = await supabase
+  // Resolve tournament_id for shared fixture lookup
+  const { data: comp } = await supabase
+    .from("competitions")
+    .select("tournament_id")
+    .eq("id", competitionId)
+    .single();
+
+  const eventQuery = supabase
     .from("events")
     .select("external_event_id, result_data")
-    .eq("competition_id", competitionId)
     .eq("result_confirmed", true)
     .like("external_event_id", "manual:wc2026-grp-%");
+
+  const { data: events } = comp?.tournament_id
+    ? await eventQuery.eq("tournament_id", comp.tournament_id)
+    : await eventQuery.eq("competition_id", competitionId);
 
   if (!events?.length) return new Map();
 

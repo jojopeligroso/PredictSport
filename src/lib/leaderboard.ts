@@ -80,7 +80,13 @@ export async function computeStandings(
 ): Promise<Standing[]> {
   const db = supabase ?? (await createClient());
 
-  // --- Load: members, all events, tiebreakers (parallel) ---
+  // --- Load: competition metadata (for tournament_id), members, events, tiebreakers ---
+  const { data: comp } = await db
+    .from("competitions")
+    .select("tournament_id")
+    .eq("id", competitionId)
+    .single();
+
   const [{ data: members }, { data: allEvents }, { data: tiebreakers }] =
     await Promise.all([
       db
@@ -88,10 +94,16 @@ export async function computeStandings(
         .select("user_id, users(id, display_name, avatar_url)")
         .eq("competition_id", competitionId),
       // ALL events (not just resulted) so round participation is correct.
-      db
-        .from("events")
-        .select("id, event_name, sport, status, result_data, round_id")
-        .eq("competition_id", competitionId),
+      // For tournament competitions, events are shared via tournament_id.
+      comp?.tournament_id
+        ? db
+            .from("events")
+            .select("id, event_name, sport, status, result_data, round_id")
+            .eq("tournament_id", comp.tournament_id)
+        : db
+            .from("events")
+            .select("id, event_name, sport, status, result_data, round_id")
+            .eq("competition_id", competitionId),
       db
         .from("tiebreakers")
         .select("id, question_text, correct_value")

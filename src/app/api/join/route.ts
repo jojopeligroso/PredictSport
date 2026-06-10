@@ -120,11 +120,11 @@ export async function POST(request: NextRequest) {
     }
   }
 
-  // 4. Check entrant cap
+  // 4. Check entrant cap — auto-provision for tournament competitions
   {
     const { data: comp } = await supabase
       .from("competitions")
-      .select("max_entrants")
+      .select("max_entrants, tournament_id, instance_type")
       .eq("id", competitionId)
       .single();
 
@@ -135,10 +135,22 @@ export async function POST(request: NextRequest) {
         .eq("competition_id", competitionId);
 
       if ((count ?? 0) >= comp.max_entrants) {
-        return NextResponse.json(
-          { error: "Competition is full" },
-          { status: 403 }
-        );
+        if (comp.tournament_id) {
+          // Tournament instance full — find or create a new one
+          const { findOrProvisionInstance } = await import("@/lib/tournament/auto-provision");
+          competitionId = await findOrProvisionInstance(
+            supabase,
+            comp.tournament_id,
+            (comp.instance_type as "full" | "knockout_only") ?? "full",
+            user.id
+          );
+        } else {
+          // Non-tournament: hard cap
+          return NextResponse.json(
+            { error: "Competition is full" },
+            { status: 403 }
+          );
+        }
       }
     }
   }

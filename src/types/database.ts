@@ -61,6 +61,8 @@ export interface Competition {
   max_entrants: number | null;
   min_entrants: number | null;
   chat_enabled: boolean;
+  instance_type: "full" | "knockout_only" | null;
+  instance_number: number;
   created_at: string;
 }
 
@@ -131,6 +133,7 @@ export interface Event {
   external_event_id: string | null;
   sporting_event_id: string | null;
   provider_league: string | null;
+  tournament_id: string | null;
   is_bracket_placeholder: boolean;
   created_at: string;
 }

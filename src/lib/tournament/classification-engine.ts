@@ -66,10 +66,16 @@ export async function getClassificationStandings(
 
   if (classification.classification_type === "leaderboard") {
     // Overall: fetch all scored predictions scoped to this competition's events
-    const { data: compEvents } = await supabase
-      .from("events")
-      .select("id")
-      .eq("competition_id", classification.competition_id);
+    // For tournament competitions, use tournament_id for shared fixture lookup
+    const { data: compMeta } = await supabase
+      .from("competitions")
+      .select("tournament_id")
+      .eq("id", classification.competition_id)
+      .single();
+
+    const { data: compEvents } = compMeta?.tournament_id
+      ? await supabase.from("events").select("id").eq("tournament_id", compMeta.tournament_id)
+      : await supabase.from("events").select("id").eq("competition_id", classification.competition_id);
     const compEventIds = (compEvents ?? []).map((e: { id: string }) => e.id);
 
     const userIds = membershipList.map((m) => m.user_id);

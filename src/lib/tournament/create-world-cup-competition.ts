@@ -42,6 +42,7 @@ interface CreateWCOptions {
   minEntrants?: number; // Minimum to proceed. Null = no minimum.
   groupDrawHoursBefore?: number; // Hours before first event to draw groups. Default 24.
   enabledClassifications?: string[]; // e.g. ["overall","format","full_bracket","knockout_bracket"]; omit for all
+  skipRounds?: boolean; // When true, skip round creation — auto-provisioned instances share rounds via tournament_id RLS
 }
 
 /**
@@ -173,19 +174,22 @@ export async function createWorldCupCompetition(
   }
 
   // 3. Create 8 prediction windows (rounds)
-  const roundRows = PREDICTION_WINDOWS.map((pw) => ({
-    competition_id: competitionId,
-    name: pw.name,
-    round_number: pw.windowNumber,
-    sporting_stage_id: pw.stageId,
-    prediction_window_number: pw.windowNumber,
-    status: "draft" as const,
-  }));
+  // Skipped when skipRounds is true — auto-provisioned instances share the original rounds via tournament_id RLS.
+  if (!options.skipRounds) {
+    const roundRows = PREDICTION_WINDOWS.map((pw) => ({
+      competition_id: competitionId,
+      name: pw.name,
+      round_number: pw.windowNumber,
+      sporting_stage_id: pw.stageId,
+      prediction_window_number: pw.windowNumber,
+      status: "draft" as const,
+    }));
 
-  const { error: roundError } = await supabase.from("rounds").insert(roundRows);
+    const { error: roundError } = await supabase.from("rounds").insert(roundRows);
 
-  if (roundError) {
-    throw new Error(`Failed to create prediction windows: ${roundError.message}`);
+    if (roundError) {
+      throw new Error(`Failed to create prediction windows: ${roundError.message}`);
+    }
   }
 
   // 4. Add creator as admin member

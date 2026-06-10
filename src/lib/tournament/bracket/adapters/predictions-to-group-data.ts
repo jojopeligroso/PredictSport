@@ -212,11 +212,24 @@ async function loadGroupEventsBySignature(
 ): Promise<Map<string, EventRow>> {
   const map = new Map<string, EventRow>();
 
-  const { data, error } = await supabase
-    .from("events")
-    .select("id, external_event_id, event_name")
-    .eq("competition_id", competitionId)
-    .like("external_event_id", "manual:wc2026-grp-%");
+  // Resolve tournament_id for shared fixture lookup
+  const { data: comp } = await supabase
+    .from("competitions")
+    .select("tournament_id")
+    .eq("id", competitionId)
+    .single();
+
+  const { data, error } = comp?.tournament_id
+    ? await supabase
+        .from("events")
+        .select("id, external_event_id, event_name")
+        .eq("tournament_id", comp.tournament_id)
+        .like("external_event_id", "manual:wc2026-grp-%")
+    : await supabase
+        .from("events")
+        .select("id, external_event_id, event_name")
+        .eq("competition_id", competitionId)
+        .like("external_event_id", "manual:wc2026-grp-%");
 
   if (error || !data) return map;
 

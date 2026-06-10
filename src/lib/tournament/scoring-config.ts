@@ -69,12 +69,26 @@ export async function aggregateOverallPoints(
   userId: string,
   competitionId: string
 ): Promise<number> {
-  const { data, error } = await supabase
-    .from("predictions")
-    .select("points_awarded, events!inner(competition_id, status)")
-    .eq("user_id", userId)
-    .eq("events.competition_id", competitionId)
-    .eq("events.status", "resulted");
+  // Resolve tournament_id for shared fixture scoring
+  const { data: comp } = await supabase
+    .from("competitions")
+    .select("tournament_id")
+    .eq("id", competitionId)
+    .single();
+
+  const { data, error } = comp?.tournament_id
+    ? await supabase
+        .from("predictions")
+        .select("points_awarded, events!inner(tournament_id, status)")
+        .eq("user_id", userId)
+        .eq("events.tournament_id", comp.tournament_id)
+        .eq("events.status", "resulted")
+    : await supabase
+        .from("predictions")
+        .select("points_awarded, events!inner(competition_id, status)")
+        .eq("user_id", userId)
+        .eq("events.competition_id", competitionId)
+        .eq("events.status", "resulted");
 
   if (error) {
     throw new Error(`Failed to aggregate overall points: ${error.message}`);
