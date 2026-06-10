@@ -25,7 +25,7 @@ const ThemeContext = createContext<ThemeContextValue | null>(null);
 function readStoredTheme(): ThemePref {
   if (typeof window === "undefined") return "system";
   const raw = window.localStorage.getItem(STORAGE_KEY);
-  return raw === "light" || raw === "dark" || raw === "system" ? raw : "system";
+  return raw === "light" || raw === "dark" || raw === "system" ? raw : "light";
 }
 
 function systemPrefersDark(): boolean {
@@ -41,7 +41,7 @@ function applyTheme(pref: ThemePref): ResolvedTheme {
 }
 
 export function ThemeProvider({ children }: { children: React.ReactNode }) {
-  const [theme, setThemeState] = useState<ThemePref>("system");
+  const [theme, setThemeState] = useState<ThemePref>("light");
   const [resolved, setResolved] = useState<ResolvedTheme>("light");
 
   useEffect(() => {
@@ -83,4 +83,4 @@ export function useTheme(): ThemeContextValue {
 
 /* Inline script injected before paint to set data-theme synchronously and
    avoid a light/dark flash on first load. Mirrors the resolution logic above. */
-export const themeInitScript = `(function(){try{var s=localStorage.getItem('${STORAGE_KEY}');var t=(s==='light'||s==='dark'||s==='system')?s:'system';var r=t==='system'?(window.matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light'):t;document.documentElement.setAttribute('data-theme',r);}catch(e){}})();`;
+export const themeInitScript = `(function(){try{var s=localStorage.getItem('${STORAGE_KEY}');var t=(s==='light'||s==='dark'||s==='system')?s:'light';var r=t==='system'?(window.matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light'):t;document.documentElement.setAttribute('data-theme',r);}catch(e){}})();`;
