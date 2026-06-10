@@ -155,6 +155,18 @@ Supabase, Playwright, Context7, GitHub, Firecrawl
 
 The `docs/SPEC-*.md` files are superseded by SPEC.md and kept only for historical reference.
 
+## Gotchas — Elimination Curve & Group Draw
+
+1. **Elimination curve stores absolute numbers but must scale to actual entrants.** The DB config has `{ entrantCount: 48, curve: [{remaining: 32}, ...] }`. If 37 people join, the raw target (32 survivors from 37) is mathematically impossible. `getEliminationCurve()` auto-scales via `generateEliminationCurve(actualEntrants)` when counts differ. NEVER use the stored curve without passing `actualEntrants`.
+
+2. **Group draw is lazy, not scheduled.** There is no cron or timer. The draw triggers when a user hits `GET /api/tournament/my-group` after `drawAt` has passed. The countdown timer in the UI is purely cosmetic. If the draw fails, it will fail silently on every subsequent page load until the root cause is fixed.
+
+3. **`computeGroupComposition(N, S)` has hard constraints.** Max survivors = `totalGroups * 2 + groups5 + groups4` (top 2 per group + thirds from 5-player groups auto-qualify + best-thirds from 4-player groups). If the survivor target exceeds this maximum, the function throws. Always verify targets are achievable or use `generateEliminationCurve()` which guarantees valid targets.
+
+4. **Draw errors surface as `status: "draw_error"` not `"draw_pending"`.** Never silently return `draw_pending` when the draw actually failed — that creates an infinite silent failure loop where every page load retries and fails.
+
+5. **`addLateEntrant` does not rebalance groups.** It adds the new member to the smallest group. It does NOT move existing members to create a cleaner composition (e.g. 40 entrants won't auto-redraw from 37+3). Rebalancing requires a full redraw via `allocatePredictionGroups` (only safe if `canRegenerateDraw` returns true).
+
 ## Gotchas — Vercel Hobby Plan Limits
 
 This project runs on **Vercel Hobby (free)**. These limits bite silently:

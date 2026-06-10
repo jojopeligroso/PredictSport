@@ -41,8 +41,9 @@ interface GroupInfo {
 }
 
 interface MyGroupData {
-  status: "draw_pending" | "drawn" | "no_classification";
+  status: "draw_pending" | "drawn" | "draw_error" | "no_classification";
   drawAt?: string | null;
+  error?: string;
   group?: {
     name: string;
     groupNumber: number;
@@ -654,6 +655,17 @@ function FormatGroupCard({
 }) {
   const t = useT();
   if (!groupData) return null;
+
+  if (groupData.status === "draw_error") {
+    return (
+      <div className="mt-4 rounded-xl border border-ps-red/40 bg-ps-red/5 p-4">
+        <h3 className="text-sm font-bold text-ps-red">Group draw failed</h3>
+        <p className="mt-1 text-xs text-ps-text-sec">
+          {groupData.error || "Unknown error. Contact admin."}
+        </p>
+      </div>
+    );
+  }
 
   if (groupData.status === "draw_pending") {
     return (

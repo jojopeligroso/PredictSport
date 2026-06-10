@@ -1,6 +1,6 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { Classification } from "@/types/tournament";
-import type { CurveStep } from "./curve-generator";
+import { generateEliminationCurve, type CurveStep } from "./curve-generator";
 import { eliminateEntrant } from "../membership";
 import { computeFormatGroupStandings, computeBestThirdRanking } from "./scoring";
 
@@ -23,6 +23,8 @@ export interface EliminationResult {
   eliminated_user_ids: string[];
   survivors: number;
   target_survivors: number;
+  /** Extra survivors beyond target due to ties at the cut line */
+  tie_overflow: number;
 }
 
 // ============================================================
@@ -83,40 +85,70 @@ export async function eliminateFromFormat(
   // - 3-player: top 2 qualify, 3rd eliminated (never qualifies)
   // - 4-player: top 2 qualify, 3rd enters best-third pool, 4th eliminated
   // - 5-player: top 2 qualify, 3rd auto-qualifies, 4th-5th eliminated
+  //
+  // Tie rule: when two entrants are tied on meaningful metrics (points,
+  // exact_hits, outcome_hits) at any elimination boundary, both advance.
+  // The next stage naturally compensates (same target, more entrants in).
   const qualifyingUserIds = new Set<string>();
   const eliminatedDirectly: string[] = [];
+  let tieOverflow = 0;
 
   for (const group of groupList) {
     const standings = await computeFormatGroupStandings(supabase, group.id, stageId);
     const sorted = standings.sort((a, b) => a.group_position - b.group_position);
 
+    // Auto-qualify boundary: top 2 always, top 3 for 5-player groups
+    const autoQualifyUpTo = group.target_size === 5 ? 3 : 2;
+    const lastAutoQualifier = autoQualifyUpTo <= sorted.length
+      ? sorted[autoQualifyUpTo - 1]
+      : null;
+
     for (let idx = 0; idx < sorted.length; idx++) {
       const userId = sorted[idx].user_id;
-      if (idx < 2) {
-        // Top 2 — always qualify
+
+      if (idx < autoQualifyUpTo) {
+        // Within auto-qualify range — always qualifies
         qualifyingUserIds.add(userId);
-      } else if (idx === 2) {
-        // Third place — depends on group size
-        if (group.target_size === 5) {
-          qualifyingUserIds.add(userId); // auto-qualifies
-        } else if (group.target_size === 3) {
-          eliminatedDirectly.push(userId); // last place, never qualifies
-        }
-        // target_size === 4: handled by best-third ranking below
+      } else if (lastAutoQualifier && areStandingsTied(sorted[idx], lastAutoQualifier)) {
+        // Tied with last auto-qualifier on meaningful metrics — promote
+        qualifyingUserIds.add(userId);
+        tieOverflow++;
+      } else if (idx === 2 && group.target_size === 4) {
+        // 3rd in 4-player group → best-third pool (handled below)
       } else {
-        // 4th and below — always eliminated
+        // Eliminated (not tied with last qualifier)
         eliminatedDirectly.push(userId);
       }
     }
   }
 
-  // Determine how many best-third spots remain
-  const spotsFromBestThird = Math.max(0, targetSurvivors - qualifyingUserIds.size);
+  // Best-third spots: use original auto-qualifiers (before tie promotions)
+  // so that within-group overflow doesn't steal best-third slots
+  const originalAutoQualifiers = qualifyingUserIds.size - tieOverflow;
+  const spotsFromBestThird = Math.max(0, targetSurvivors - originalAutoQualifiers);
 
-  // Rank third-place finishers via the same best-third logic
+  // Rank third-place finishers, excluding any already promoted via within-group ties
   const thirdPlaceRows = await computeBestThirdRanking(supabase, classificationId, stageId);
-  const qualifyingThirds = thirdPlaceRows.slice(0, spotsFromBestThird).map((r) => r.user_id);
-  const eliminatedThirds = thirdPlaceRows.slice(spotsFromBestThird).map((r) => r.user_id);
+  const eligibleThirds = thirdPlaceRows.filter((r) => !qualifyingUserIds.has(r.user_id));
+
+  // Extend for ties at the best-third cutoff
+  let bestThirdQualifyCount = Math.min(spotsFromBestThird, eligibleThirds.length);
+
+  if (bestThirdQualifyCount > 0 && bestThirdQualifyCount < eligibleThirds.length) {
+    const lastIn = eligibleThirds[bestThirdQualifyCount - 1];
+    while (bestThirdQualifyCount < eligibleThirds.length) {
+      const firstOut = eligibleThirds[bestThirdQualifyCount];
+      if (areStandingsTied(lastIn, firstOut)) {
+        bestThirdQualifyCount++;
+        tieOverflow++;
+      } else {
+        break;
+      }
+    }
+  }
+
+  const qualifyingThirds = eligibleThirds.slice(0, bestThirdQualifyCount).map((r) => r.user_id);
+  const eliminatedThirds = eligibleThirds.slice(bestThirdQualifyCount).map((r) => r.user_id);
 
   for (const userId of qualifyingThirds) {
     qualifyingUserIds.add(userId);
@@ -178,22 +210,47 @@ export async function eliminateFromFormat(
     eliminated_user_ids: uniqueToEliminate,
     survivors: qualifyingUserIds.size,
     target_survivors: targetSurvivors,
+    tie_overflow: tieOverflow,
   };
 }
 
 // ============================================================
-// Read the elimination curve from classification config
-// New format: { entrantCount, locked, curve: CurveStep[] }
+// Read the elimination curve from classification config.
+// Auto-scales if actual entrant count differs from configured.
+//
+// The stored curve uses absolute numbers (e.g. 48 → 32 → 16).
+// If actual entrants differ, regenerate the curve via the
+// generator to maintain correct elimination ratios. This
+// prevents impossible survivor targets (e.g. 32 survivors
+// from 37 entrants is mathematically impossible with group
+// qualification rules).
 // ============================================================
 
-export function getEliminationCurve(classification: Classification): CurveStep[] {
+export function getEliminationCurve(
+  classification: Classification,
+  actualEntrants?: number,
+): CurveStep[] {
   const config = classification.config as Record<string, unknown>;
-  const curveConfig = config?.elimination_curve as { curve?: CurveStep[] } | undefined;
+  const curveConfig = config?.elimination_curve as {
+    curve?: CurveStep[];
+    entrantCount?: number;
+  } | undefined;
 
   if (!curveConfig?.curve || !Array.isArray(curveConfig.curve)) {
     throw new Error(
       `No elimination_curve.curve found in config for classification ${classification.id}`
     );
+  }
+
+  // If actual entrants differ from configured count, regenerate
+  // the curve to maintain correct proportions
+  if (
+    actualEntrants &&
+    actualEntrants >= 8 &&
+    curveConfig.entrantCount &&
+    actualEntrants !== curveConfig.entrantCount
+  ) {
+    return generateEliminationCurve(actualEntrants);
   }
 
   return curveConfig.curve;
@@ -261,4 +318,30 @@ function compareEntrantScore(
   if (b.exact_hits !== a.exact_hits) return b.exact_hits - a.exact_hits;
   if (b.outcome_hits !== a.outcome_hits) return b.outcome_hits - a.outcome_hits;
   return 0;
+}
+
+/**
+ * Two standings rows are "meaningfully tied" if they share the same
+ * points, exact-score hits, and correct-outcome hits. Earliest-submission
+ * and seeded-random are display tiebreakers only — they should never
+ * decide who survives vs. who gets eliminated.
+ */
+function areStandingsTied(
+  a: { points: number; tie_break_values: Record<string, number> },
+  b: { points: number; tie_break_values: Record<string, number> }
+): boolean {
+  return (
+    compareEntrantScore(
+      {
+        points: a.points,
+        exact_hits: a.tie_break_values?.exact_hits ?? 0,
+        outcome_hits: a.tie_break_values?.outcome_hits ?? 0,
+      },
+      {
+        points: b.points,
+        exact_hits: b.tie_break_values?.exact_hits ?? 0,
+        outcome_hits: b.tie_break_values?.outcome_hits ?? 0,
+      }
+    ) === 0
+  );
 }

@@ -121,17 +121,18 @@ export async function GET(request: NextRequest) {
     }
 
     try {
-      // Get survivor target from elimination curve
-      const curveSteps = getEliminationCurve(classification);
+      // Get survivor target from elimination curve, scaled to actual entrants
+      const curveSteps = getEliminationCurve(classification, memberCount);
       // First curve step after "start" is the group stage target
       const firstElimination = curveSteps[1];
       const survivorTarget = firstElimination?.remaining ?? memberCount;
 
       await allocatePredictionGroups(supabase, classificationId, survivorTarget);
     } catch (err) {
-      console.error("[my-group] Lazy draw failed:", (err as Error).message);
+      console.error("[my-group] Draw FAILED:", (err as Error).message);
       return NextResponse.json({
-        status: "draw_pending",
+        status: "draw_error",
+        error: (err as Error).message,
         drawAt: drawAt.toISOString(),
         totalMembers: memberCount,
       });
