@@ -5,6 +5,7 @@ import { Footer } from "@/components/Footer";
 import { GlobalChromeGuard } from "@/components/GlobalChromeGuard";
 import { PushPromptWrapper } from "@/components/PushPromptWrapper";
 import { ThemeProvider, themeInitScript } from "@/components/ThemeProvider";
+import { LocaleProvider } from "@/lib/i18n";
 import { isWorldCupShell } from "@/lib/product-mode";
 import "./globals.css";
 
@@ -66,20 +67,22 @@ export default async function RootLayout({
       </head>
       <body className="min-h-full flex flex-col bg-ps-bg text-ps-text">
         <ThemeProvider>
-          {!shellMode && (
-            <GlobalChromeGuard>
-              <NavBar />
-            </GlobalChromeGuard>
-          )}
-          <main className="flex flex-1 flex-col">
-            {children}
-          </main>
-          {!shellMode && (
-            <GlobalChromeGuard>
-              <Footer />
-            </GlobalChromeGuard>
-          )}
-          <PushPromptWrapper />
+          <LocaleProvider>
+            {!shellMode && (
+              <GlobalChromeGuard>
+                <NavBar />
+              </GlobalChromeGuard>
+            )}
+            <main className="flex flex-1 flex-col">
+              {children}
+            </main>
+            {!shellMode && (
+              <GlobalChromeGuard>
+                <Footer />
+              </GlobalChromeGuard>
+            )}
+            <PushPromptWrapper />
+          </LocaleProvider>
         </ThemeProvider>
       </body>
     </html>

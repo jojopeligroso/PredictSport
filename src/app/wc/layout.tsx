@@ -6,6 +6,7 @@ import { BrandMark } from "@/components/BrandMark";
 import { WcNavLinks } from "@/components/wc/WcNavLinks";
 import { getWcBracketSnapshot } from "@/lib/tournament/bracket-snapshot";
 import { DisplayNameModal } from "@/components/DisplayNameModal";
+import { LanguageToggle } from "@/components/LanguageToggle";
 
 export default async function WorldCupLayout({
   children,
@@ -114,7 +115,8 @@ export default async function WorldCupLayout({
 
           <WcNavLinks engaged={engaged} variant="desktop" />
 
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1">
+            <LanguageToggle />
             {authUser ? (
               <UserMenu displayName={displayName} avatarUrl={avatarUrl} isAdmin={isAdmin || isWcAdmin} />
             ) : (

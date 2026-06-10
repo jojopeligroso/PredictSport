@@ -1,0 +1,1024 @@
+TRANSLATION SHEET — sportspredict. World Cup 2026
+Target: Latin American Spanish (Mexico)
+Translator: _______________
+Date: 8/6/2026
+
+=== Navigation & Global ===
+
+[nav.home]
+  EN: Home
+  ES: Inicio
+
+[nav.matches]
+  EN: Matches
+  ES: Partidos
+
+[nav.rules]
+  EN: Rules
+  ES: Reglas
+
+[nav.more]
+  EN: More
+  ES: Mas
+
+[nav.leaderboard]
+  EN: Leaderboard
+  ES: Tabla de posiciones
+
+[nav.back_to_wc]
+  EN: Back to World Cup
+  ES: Volver al Mundial
+
+=== Login Page ===
+
+[login.tagline]
+  EN: Call it, then rub it in Gerry Ramos' face.
+  ES: Haz tu pronóstico y luego restriegaselo en la cara a Gerry Ramos.
+
+[login.error]
+  EN: Authentication failed. Please try again.
+  ES:     Error de autenticación. Vuelve a intentarlo.
+
+[login.legal]
+  EN: By signing in you agree to our Terms and Privacy Policy.
+  ES: Al iniciar sesión, aceptas los Términos y la Política de Privacidad.
+
+[login.terms]
+  EN: Terms
+  ES: Términos
+
+[login.privacy]
+  EN: Privacy Policy
+  ES: Politica de Privacidad
+
+=== Onboarding Flow ===
+
+[onboarding.theme_heading]
+  EN: How do you like it?
+  ES: ¿Qué te parece
+
+[onboarding.theme_subtitle]
+  EN: Pick your vibe. You can change this anytime in settings.
+  ES: Elige tu estilo. Puedes cambiarlo en cualquier momento desde la configuración.
+
+[onboarding.theme_light]
+  EN: Light
+  ES:     Tema claro
+
+[onboarding.theme_dark]
+  EN: Dark
+  ES: Tema Obscuro
+
+[onboarding.theme_selected]
+  EN: Selected
+  ES: Seleccionado
+
+[onboarding.next]
+  EN: Next
+  ES: Siguiente
+
+[onboarding.skip_tour]
+  EN: Skip tour
+  ES: Omitir tutorial
+
+[onboarding.got_it]
+  EN: Got it
+  ES: Entendido
+
+[onboarding.tooltip_picks_title]
+  EN: Your Picks
+  ES: Tus selecciones
+
+[onboarding.tooltip_picks_desc]
+  EN: Pick who wins each match, then guess the exact score for bonus points.
+  ES: Elige al ganador de cada partido y adivina el marcador exacto para ganar puntos extra.
+
+[onboarding.tooltip_group_title]
+  EN: Your Group
+  ES: Tu Grupo
+
+[onboarding.tooltip_group_desc]
+  EN: See where you stand. Climb the table by picking better than your mates.
+  ES: Consulta tu posición y escala en la tabla de clasificación superando los pronósticos de tus amigos
+
+[onboarding.tooltip_invite_title]
+  EN: Invite Friends
+  ES: Invita a tus amigos
+
+[onboarding.tooltip_invite_desc]
+  EN: Share your invite code. More players means more bragging rights.
+  ES:     Comparte tu código de invitación. Entre más jugadores, más chance de demostrar quién es el mejor.
+
+[onboarding.spotlight_heading]
+  EN: Your Dashboard
+  ES: Tu tablero
+
+[onboarding.spotlight_text]
+  EN: Tap **Home** in the nav to return to your dashboard anytime.
+  ES:     Pulsa “Inicio” en el menú para regresar a tu panel en cualquier momento.
+
+=== Join Flow ===
+
+[join.heading]
+  EN: Join the Game
+  ES: Únete al juego
+
+[join.entrants]
+  EN: {currentCount} / {maxEntrants} entrants
+  ES: Participantes
+
+[join.name_label]
+  EN: Your display name
+  ES:     Nombre de perfil
+
+[join.name_helper]
+  EN: This is how you'll show up to the lads on the leaderboard. Use the name they'll know you by.
+  ES: Así es como aparecerás en la tabla de clasificación frente a los demás. Usa el nombre con el que te reconocerán tus amigos.
+
+[join.name_placeholder]
+  EN: e.g. Malo
+  ES: Malo
+
+[join.name_max_error]
+  EN: {DISPLAY_NAME_MAX} characters max
+  ES: Maximo Caracteres
+
+[join.button_loading]
+  EN: Joining...
+  ES: Ingresando
+
+[join.button]
+  EN: Join Competition
+  ES: Unirse a la competenci
+
+[join.invite_label]
+  EN: Invite code
+  ES: Código de invitación
+
+[join.invite_placeholder]
+  EN: Invite code
+  ES: Código de invitación
+
+[join.invite_empty_error]
+  EN: Please enter an invite code.
+  ES:     Introduce tu código de invitación
+
+[join.invite_button]
+  EN: Join
+  ES: Ingresar
+
+[join.no_code_link]
+  EN: Don't have a code? Create your own →
+  ES: No tienes un código? Crea el tuyo
+
+[join.code_no_match]
+  EN: This code doesn't match any active competition
+  ES:     Este código no coincide con ninguna competencia activa.
+
+=== Create Competition ===
+
+[create.heading]
+  EN: Create a Competition
+  ES: Crea una competencia
+
+[create.subtitle]
+  EN: Set up your own World Cup prediction game.
+  ES:     Crea tu propio juego de predicciones del Mundi
+
+[create.max_participants]
+  EN: Max participants
+  ES: Maximo Participantes
+
+[create.classifications_heading]
+  EN: Classifications
+  ES:     Tabla de clasificación
+
+[create.classifications_helper]
+  EN: Choose which competitions to include.
+  ES:     Selecciona las competencias que deseas incluir.
+
+[create.class_overall]
+  EN: Overall
+  ES: General
+
+[create.class_overall_desc]
+  EN: Most points across the whole tournament
+  ES:     Máxima puntuación en el torneo
+
+[create.class_format]
+  EN: Format
+  ES: Formato
+
+[create.class_format_desc]
+  EN: Survivor-style elimination. Groups, knockouts, last one standing
+  ES: Modo supervivencia:  Fase de grupos, eliminatorias y el último sobreviviente.
+
+[create.class_bracket]
+  EN: Full Bracket
+  ES: Cuadro completo
+
+[create.class_bracket_desc]
+  EN: Predict every result before kickoff
+  ES: Haz tus pronósticos antes del inicio de los partidos.
+
+[create.class_ko_bracket]
+  EN: KO Bracket
+  ES: Cuadro de eliminación directa
+
+[create.class_ko_bracket_desc]
+  EN: Predict the knockouts after groups finish
+  ES: Haz tus pronósticos de las eliminatorias al terminar la fase de grupos.
+
+[create.required]
+  EN: required
+  ES: Obligatorio
+
+[create.error_generic]
+  EN: Something went wrong. Please try again.
+  ES: Algo salió mal. Inténtalo de nuevo.
+
+[create.error_network]
+  EN: Network error. Please check your connection and try again.
+  ES: Error de red. Revisa tu conexión e inténtalo de nuevo.
+
+[create.button_loading]
+  EN: Creating…
+  ES: Creando…
+
+[create.button]
+  EN: Create competition
+  ES: Crear competencia
+
+[create.have_code_link]
+  EN: Have a code? Join with a code →
+  ES: ¿Tienes un código? Ingresa para unirte.
+
+[create.success_label]
+  EN: Competition created
+  ES: Competencia cread
+
+[create.share_message]
+  EN: Share this code with your group.
+  ES: Comparte este código con tu grupo
+
+[create.go_to_comp]
+  EN: Go to your competition →
+  ES: Ir a tu competencia
+
+[create.copy]
+  EN: Copy
+  ES: Copiar
+
+[create.copied]
+  EN: Copied
+  ES: Copiado
+
+[create.copy_error]
+  EN: Couldn't copy — long-press the code instead.
+  ES: Error al copiar — mantén presionado el código para copiarlo.
+
+=== Dashboard ===
+
+[dash.picks_progress]
+  EN: {picked} / {total} picks
+  ES: Pronosticos
+
+[dash.your_picks]
+  EN: Your picks · Round 1
+  ES: Tus Pronosticos · Ronda 1
+
+[dash.continue_round]
+  EN: Continue to full round →
+  ES: Ir a la ronda completa
+
+[dash.at_a_glance]
+  EN: At a glance
+  ES: Da un vistazo
+
+[dash.stats_placeholder]
+  EN: Your stats will appear after the first results.
+  ES: Tus estadísticas aparecerán después de los primeros resultados.
+
+[dash.your_group]
+  EN: Your Group
+  ES: Tu Grupo
+
+[dash.results_placeholder]
+  EN: Results will appear once matches are played.
+  ES: Los resultados aparecerán una vez que se jueguen los partidos
+
+[dash.todays_groups]
+  EN: Today's Groups
+  ES: Grupos de hoy
+
+[dash.bracket]
+  EN: Bracket
+  ES: Cuadro del Torneo
+
+[dash.anorak]
+  EN: Anorak
+  ES: (not translated)
+
+[dash.see_all_groups]
+  EN: See all groups →
+  ES: Mostrar todos los grupos
+
+[dash.groups_drawn_message]
+  EN: Groups will be drawn before the first match.
+  ES: Los grupos se definirán antes del primer partido.
+
+[dash.no_prediction]
+  EN: No prediction
+  ES: Sin pronóstico
+
+[dash.winner_points]
+  EN: +{points} winner
+  ES: +{points} ganador
+
+[dash.score_points]
+  EN: +{points} score
+  ES: Puntuacion
+
+=== Stats Card ===
+
+[stats.your_rank]
+  EN: Your Rank
+  ES: (not translated)
+
+[stats.of_players]
+  EN: of {totalPlayers} players
+  ES: Total de Jugadores
+
+[stats.points]
+  EN: Points
+  ES: Puntos
+
+[stats.accuracy]
+  EN: Accuracy
+  ES: Aciertos
+
+[stats.after_first_results]
+  EN: after first results
+  ES: después de los primeros resultados
+
+=== Fixtures & Picks ===
+
+[fixtures.today]
+  EN: Today
+  ES: Hoy
+
+[fixtures.upcoming]
+  EN: Upcoming
+  ES: Próximos partido
+
+[fixtures.results]
+  EN: Results
+  ES: Resultados
+
+[fixtures.hide_picks]
+  EN: Hide picks
+  ES: Ocultar pronósticos
+
+[fixtures.show_picks]
+  EN: Show picks
+  ES: Mostrar pronósticos
+
+[fixtures.show_correct_wrong]
+  EN: Show correct / wrong
+  ES: Mostrar aciertos / errores
+
+[fixtures.on]
+  EN: On
+  ES: Activado
+
+[fixtures.off]
+  EN: Off
+  ES: Desactivado
+
+[fixtures.no_fixtures]
+  EN: No fixtures scheduled.
+  ES: No hay partidos programados
+
+[fixtures.no_results]
+  EN: No results yet.
+  ES: Sin resultados aún
+
+[fixtures.no_today]
+  EN: No matches today.
+  ES: No hay partidos hoy.
+
+[fixtures.no_upcoming]
+  EN: No upcoming matches.
+  ES: No hay próximos partidos.
+
+[fixtures.close_prediction]
+  EN: Close prediction
+  ES: Finalizar pronóstico
+
+[fixtures.pick_cta]
+  EN: Pick →
+  ES: pronóstico
+
+[fixtures.draw]
+  EN: draw
+  ES: empate
+
+[fixtures.score_aria]
+  EN: {team} score
+  ES: Puntuaje
+
+[fixtures.result_final]
+  EN: Final
+  ES: Resultado Final
+
+[fixtures.result_provisional]
+  EN: Provisional
+  ES: Temporal
+
+[fixtures.in_city]
+  EN: In {cityName}
+  ES: En {NombreCiudad}
+
+[fixtures.your_time]
+  EN: Your time
+  ES: Tu tiempo
+
+[fixtures.same_tz]
+  EN: Same
+  ES: Igual
+
+[fixtures.stage_group]
+  EN: Group {group} · MD{matchday}
+  ES: Grupo - Partido del Dia
+
+[fixtures.stage_r32]
+  EN: Round of 32
+  ES: Dieciseisavos de final
+
+[fixtures.stage_r16]
+  EN: Round of 16
+  ES: Octavos de final
+
+[fixtures.stage_qf]
+  EN: Quarter-final
+  ES: Cuartos de final
+
+[fixtures.stage_sf]
+  EN: Semi-final
+  ES: Semi Final
+
+[fixtures.stage_3rd]
+  EN: Third place
+  ES: Tercer Lugar
+
+[fixtures.stage_final]
+  EN: Final
+  ES: Final
+
+=== Picks Window ===
+
+[picks.all_windows]
+  EN: ← All windows
+  ES: Todas las ventanas
+
+[picks.prev_window]
+  EN: ← {prevWindowName}
+  ES: PreviaNombreVentana
+
+[picks.finalised]
+  EN: Finalised
+  ES: Finalizado
+
+[picks.locked]
+  EN: Locked
+  ES: Bloqueado
+
+[picks.not_open]
+  EN: This window isn't open for predictions yet.
+  ES: Esta ventana aún no está abierta para pronósticos.
+
+=== Rules & Points ===
+
+[rules.page_title]
+  EN: Rules
+  ES: Reglas
+
+[rules.page_subtitle]
+  EN: Everything you need to know.
+  ES: Todo lo que necesitas saber.
+
+[rules.intro]
+  EN: A prediction game built as an homage to the World Cup's own format — groups, knockouts, and a final.
+  ES: Un juego de predicciones inspirado en el formato de la Copa Mundial: fase de grupos, eliminatorias y una final.
+
+[rules.how_it_works]
+  EN: How it works
+  ES: Como Funciona
+
+[rules.step1]
+  EN: Pick the winner of each match
+  ES: Elige al ganador de cada partido
+
+[rules.step2]
+  EN: Guess the exact score for bonus points
+  ES: Pronostica el marcador exacto para ganar puntos extra
+
+[rules.step3]
+  EN: Climb the leaderboard
+  ES: Escala posiciones en la tabla
+
+[rules.points_title]
+  EN: Points Scoring System
+  ES: Sistema de puntuación
+
+[rules.correct_winner]
+  EN: Correct winner (or draw)
+  ES: Resultado correcto (ganador o empate)
+
+[rules.exact_score_bonus]
+  EN: Exact score bonus
+  ES: Puntos extra por marcador exacto
+
+[rules.correct_advances]
+  EN: Correct team advances (KO)
+  ES: Equipo clasificado (eliminatorias)
+
+[rules.max_group]
+  EN: Max per group match: **5 pts**.
+  ES: Puntaje máximo por partido de grupos: 5 pts.
+
+[rules.max_knockout]
+  EN: Max per knockout match: **6 pts**.
+  ES: Puntaje máximo por partido de eliminatorias: 6 pts
+
+[rules.ways_to_win]
+  EN: Ways to win
+  ES: Maneras de ganar
+
+[rules.more_ways]
+  EN: More ways to win
+  ES: Mas maneras de ganar
+
+[rules.format_title]
+  EN: Format — Survivor
+  ES: Formato — Modo supervivencia
+
+[rules.format_tagline]
+  EN: Last one standing.
+  ES: El último sobreviviente.
+
+[rules.format_desc_1]
+  EN: The Format classification is an homage to the World Cup's own structure. You're placed in a group. After each stage is finalised, the bottom players are eliminated and the survivors are redrawn into new groups. Points reset to zero at each stage — only your current performance matters.
+  ES: La clasificación del formato es un homenaje a la estructura de la Copa Mundial. Se te coloca en un grupo. Tras finalizar cada etapa, los jugadores con menor puntuación son eliminados y los supervivientes se redistribuyen en nuevos grupos. Los puntos se reinician a cero en cada fase — solo importa tu rendimiento actual.
+
+[rules.format_desc_2]
+  EN: With 48 players, the elimination curve mirrors the World Cup itself. With fewer players, the curve is adjusted to keep every round competitive.
+  ES: Con 48 jugadores, la curva de eliminación refleja la propia Copa Mundial. Con menos jugadores, se ajusta para mantener cada ronda competitiva.
+
+[rules.group_stage_heading]
+  EN: Group Stage (Matchdays 1–3)
+  ES: Fase de grupos (Jornadas 1–3)
+
+[rules.group_stage_desc_1]
+  EN: All three matchdays count as one stage. Your points accumulate across MD1, MD2, and MD3.
+  ES: Las tres jornadas forman una sola etapa. Tus puntos se acumulan en MD1, MD2 y MD3.
+
+[rules.group_stage_desc_2]
+  EN: After MD3, the cut works like the real World Cup:
+  ES: Después de la MD3, la eliminación funciona como en la Copa Mundial real:
+
+[rules.safe]
+  EN: SAFE
+  ES: Seguro
+
+[rules.danger_zone]
+  EN: Danger Zone
+  ES: Zona de Peligro
+
+[rules.danger_desc]
+  EN: Only the best 3rd-place finishers survive
+  ES: Solo sobreviven los mejores terceros lugares.
+
+[rules.at_risk]
+  EN: AT RISK
+  ES: En Peligro
+
+[rules.eliminated]
+  EN: Eliminated
+  ES: Eliminado
+
+[rules.eliminated_desc]
+  EN: 4th place is always cut
+  ES: El cuarto lugar siempre queda eliminado.
+
+[rules.out]
+  EN: OUT
+  ES: Eliminado
+
+[rules.how_cut_works]
+  EN: How the cut works
+  ES: Reglas de eliminación
+
+[rules.top2]
+  EN: **Top 2** in each group qualify automatically.
+  ES: Los 2 mejores de cada grupo se clasifican automáticamente.
+
+[rules.third_place]
+  EN: **3rd place** is the danger zone. Your points are compared against every other 3rd-place finisher across all groups. Only the best thirds survive — the rest are eliminated. With 48 players: 8 of 12 thirds qualify. The other 4 go home.
+  ES: El 3er lugar es la zona de peligro. Tus puntos se comparan con todos los demás terceros de cada grupo. Solo los mejores terceros sobreviven — el resto queda eliminado. Con 48 jugadores: 8 de 12 terceros clasifican. Los otros 4 quedan eliminados.
+
+[rules.fourth_place]
+  EN: **4th place** is always eliminated.
+  ES: El 4.º lugar siempre queda eliminado.
+
+[rules.knockout_heading]
+  EN: Knockout Rounds
+  ES: Fase eliminatoria
+
+[rules.knockout_desc]
+  EN: Points reset. New groups drawn from survivors. Bottom half eliminated. Repeat until only the finalists remain.
+  ES: Los puntos se reinician. Se forman nuevos grupos a partir de los supervivientes. La mitad inferior queda eliminada. Se repite hasta que solo queden los finalistas.
+
+[rules.r32_meta]
+  EN: 32 survive · points reset · new groups drawn
+  ES: 32 sobreviven · puntos reiniciados · nuevos grupos formados
+
+[rules.eliminated_count]
+  EN: {count} eliminated
+  ES: Eliminados
+
+[rules.knockout_note]
+  EN: Points reset to zero. Only this round counts for survival.
+  ES: Los puntos se reinician a cero. Solo esta ronda cuenta para sobrevivir.
+
+[rules.final_heading]
+  EN: Final
+  ES: Final
+
+[rules.final_desc]
+  EN: The last 2 survivors predict both the Third-Place Play-Off and the Final. Most points wins. No elimination — just a winner.
+  ES: Los últimos 2 supervivientes pronostican tanto el partido por el tercer puesto como la final. El que más puntos obtenga gana. No hay eliminación — solo un ganador.
+
+[rules.narrowing_heading]
+  EN: How the field narrows
+  ES: Proceso de eliminación
+
+[rules.narrowing_desc]
+  EN: With 48 players, the elimination curve mirrors the World Cup itself. With fewer players, adjustments are made for competitive integrity — ensuring at least one elimination at every stage.
+  ES: Con 48 jugadores, la curva de eliminación refleja la propia Copa Mundial. Con menos jugadores, se hacen ajustes para mantener la integridad competitiva — asegurando al menos una eliminación en cada fase.
+
+[rules.table_start]
+  EN: Start
+  ES: Iniciar
+
+[rules.table_grps]
+  EN: Grps
+  ES: Grupos
+
+[rules.table_r32]
+  EN: R32
+  ES: Dieciseisavos de final
+
+[rules.table_r16]
+  EN: R16
+  ES: Octavos de final
+
+[rules.table_qf]
+  EN: QF
+  ES: Cuartos de Final
+
+[rules.table_sf]
+  EN: SF
+  ES: Semi Final
+
+[rules.table_w]
+  EN: W
+  ES: Ganador
+
+=== Picks Lock ===
+
+[locks.title]
+  EN: When do picks lock?
+  ES:     ¿Cuándo se cierran los pronósticos?
+
+[locks.desc_1]
+  EN: Each day's matches lock 10 minutes before the first kickoff of that day. You can submit picks for future days in advance — but once a day locks, it's locked.
+  ES: Cada día de partidos se bloquea 10 minutos antes del primer inicio de ese día. Puedes enviar pronósticos para días futuros con antelación — pero una vez que un día se bloquea, queda bloqueado.
+
+[locks.desc_2]
+  EN: Changed your mind? No problem — update your picks as many times as you like before the day locks.
+  ES: ¿Cambiaste de opinión? No hay problema — actualiza tus pronósticos tantas veces como quieras antes de que el día se bloquee.
+
+[locks.more_detail]
+  EN: More detail
+  ES: Mas detalle
+
+[locks.detail_1]
+  EN: Outcome-only predictions are saved, but you still need to add exact scores to fully complete that day's predictions.
+  ES: Los pronósticos solo de resultado se guardan, pero aún necesitas añadir los marcadores exactos para completar totalmente los pronósticos de ese día.
+
+[locks.detail_2]
+  EN: Events inside the same tournament stage may lock on different days and at different times.
+  ES: Los eventos dentro de la misma fase del torneo pueden bloquearse en días y horarios diferentes.
+
+=== Tiebreakers ===
+
+[ties.title]
+  EN: Tiebreakers
+  ES: Desempate
+
+[ties.desc]
+  EN: Same points? **H2H goal diff** → **H2H goals** → **overall goal diff** → **overall goals** → **coin flip**
+  ES: Mismos puntos? Dif. de goles en enfrentamientos directos → Goles en enfrentamientos directos → Diferencia de goles general → Goles generales → Sorteo Final
+
+=== FAQs ===
+
+[faq.title]
+  EN: FAQs
+  ES: Preguntas frecuentes
+
+[faq.group_basics]
+  EN: Basics
+  ES: Conceptos básicos
+
+[faq.group_scoring]
+  EN: Scoring & Classifications
+  ES: Puntuación y clasificación
+
+[faq.group_rules]
+  EN: Rules & Tiebreakers
+  ES: Reglas y sistema de desempate
+
+[faq.group_technical]
+  EN: Technical
+  ES: Detalles Técnicos
+
+[faq.q_every_match]
+  EN: Do I have to predict every match?
+  ES: ¿Tengo que pronosticar todos los partidos?
+
+[faq.a_every_match]
+  EN: No. You can skip any match. But every correct pick earns points, so the more you predict the better your chances on the leaderboard.
+  ES: No. Puedes omitir cualquier partido. Pero cada acierto suma puntos, así que cuanto más pronostiques, mayores serán tus posibilidades en la clasificación.
+
+[faq.q_exact_required]
+  EN: Is the exact score required?
+  ES: ¿Es obligatorio el marcador exacto?
+
+[faq.a_exact_required]
+  EN: No — it's optional. Pick the winner (or draw) first. If you also nail the exact score you earn a +3 bonus on top.
+  ES: No — es opcional. Primero elige al ganador (o empate). Si además aciertas el marcador exacto, obtienes un bono de +3 puntos adicionales.
+
+[faq.q_change_picks]
+  EN: Can I change my picks?
+  ES: ¿Puedo cambiar mis pronósticos
+
+[faq.a_change_picks]
+  EN: Yes, as many times as you like before the day locks. Once a matchday locks (10 min before the first kickoff that day), all picks for that day are final.
+  ES: Sí, tantas veces como quieras antes de que el día se bloquee. Una vez que un día de partidos se bloquea (10 minutos antes del primer inicio de ese día), todos los pronósticos de ese día son definitivos.
+
+[faq.q_when_join]
+  EN: When can I join?
+  ES: ¿Cuándo puedo unirme?
+
+[faq.a_when_join]
+  EN: You can join any time before the entry deadline (3 days after kickoff). Late joiners can still pick unlocked matches but auto-forfeit anything already locked.
+  ES: Puedes unirte en cualquier momento antes de la fecha límite de inscripción (3 días después del inicio). Quienes se unan tarde aún pueden pronosticar los partidos que no estén bloqueados, pero perderán automáticamente los que ya estén cerrados.
+
+[faq.q_points_per_match]
+  EN: How many points can I earn per match?
+  ES: ¿Cuántos puntos puedo ganar por partido?
+
+[faq.a_points_per_match]
+  EN: Group stage: up to 5 pts (2 for correct outcome + 3 exact score bonus). Knockout: up to 6 pts (2 outcome + 3 score + 1 for correct advancing team).
+  ES: Fase de grupos: hasta 5 puntos (2 por resultado correcto + 3 de bono por marcador exacto). Eliminatorias: hasta 6 puntos (2 por resultado + 3 por marcador + 1 por acertar el equipo que avanza).
+
+[faq.q_classifications]
+  EN: What are the different leaderboard classifications?
+  ES: ¿Cuáles son las diferentes clasificaciones del ranking?
+
+[faq.a_classifications]
+  EN: **Overall** — cumulative points across all matches. **Format** — survivor elimination that mirrors the World Cup structure. **Full Bracket** & **KO Bracket** — pre-tournament bracket predictions scored after groups / knockouts complete.
+  ES: General — puntos acumulados en todos los partidos. Formato — eliminación tipo supervivencia que refleja la estructura de la Copa Mundial. Cuadro completo y Cuadro eliminatorio — predicciones del cuadro antes del torneo que se puntúan después de la fase de grupos / eliminatorias.
+
+[faq.q_draw_knockout]
+  EN: What does “Draw” mean in a knockout match?
+  ES: ¿Qué significa “empate” en una fase eliminatoria?
+
+[faq.a_draw_knockout]
+  EN: It means the scores are level after extra time — the match is decided by penalties. You pick who advances separately. Your result prediction is the score after extra time, excluding penalties.
+  ES: Significa que el marcador está empatado tras el tiempo extra — el partido se decide en penales. Tú eliges quién avanza por separado. Tu predicción de resultado corresponde al marcador al final del tiempo extra, sin incluir los penales.
+
+[faq.q_extra_ko_point]
+  EN: How does the extra knockout point work?
+  ES: ¿Cómo funciona el punto extra en la fase eliminatori
+
+[faq.a_extra_ko_point]
+  EN: In knockout matches you also predict which team advances. This is worth 1 bonus point on top of the result and score picks. It matters most when the match is a draw — you can still earn a point by correctly picking who goes through on penalties.
+  ES: En los partidos de eliminatorias también pronosticas qué equipo avanza. Esto vale 1 punto adicional, además de los puntos por resultado y marcador. Es especialmente importante cuando el partido termina en empate — aún puedes ganar ese punto si aciertas quién clasifica en penales.
+
+[faq.q_tiebreakers]
+  EN: How are ties on the leaderboard broken?
+  ES: ¿Cómo se resuelven los empates en la clasificación?
+
+[faq.a_tiebreakers]
+  EN: Head-to-head goal difference → head-to-head goals → overall goal difference → overall goals → coin flip.
+  ES: Diferencia de goles en enfrentamientos directos → goles en enfrentamientos directos → diferencia de goles general → goles totales → moneda al aire.
+
+[faq.q_postponed]
+  EN: What happens if a match is postponed?
+  ES: ¿Qué pasa si un partido se pospone?
+
+[faq.a_postponed]
+  EN: Your picks stay valid. The match moves to its new time and your predictions carry over. If a match is cancelled, affected picks are voided (no points gained or lost).
+  ES: Tus pronósticos se mantienen válidos. El partido se traslada a su nueva fecha y tus predicciones se conservan. Si un partido se cancela, los pronósticos afectados quedan anulados (no se ganan ni se pierden puntos).
+
+[faq.q_auto_save]
+  EN: Do my picks auto-save?
+  ES: ¿Se guardan automáticamente mis pronósticos?
+
+[faq.a_auto_save]
+  EN: Yes. Winner picks save instantly on tap. Score predictions save after 1.75 seconds of inactivity or when you tap away.
+  ES: Sí. Los pronósticos del ganador se guardan al instante al tocarlos. Las predicciones de marcador se guardan después de 1,75 segundos de inactividad o cuando haces clic fuera.
+
+[faq.q_desktop]
+  EN: Can I play on desktop?
+  ES: ¿Puedo jugar en computadora de escritorio?
+
+[faq.a_desktop]
+  EN: Yes — the app works on any device with a browser. It's designed mobile-first but fully functional on desktop.
+  ES: Sí — la app funciona en cualquier dispositivo con navegador. Está diseñada primero para móvil, pero es totalmente funcional en escritorio.
+
+=== CTA / Join Prompt ===
+
+[cta.ready]
+  EN: Ready to play?
+  ES: ¿Listo para jugar?
+
+[cta.join_closes]
+  EN: Joins close 3 days after kickoff.
+  ES: Puedes unirte hasta 3 días después del inicio.
+
+[cta.locks_in]
+  EN: Picks lock in {countdown}
+  ES: Los pronósticos se bloquean en {CuentaRegresiva}
+
+[cta.join_button]
+  EN: Join with a code
+  ES: Unete con un Código
+
+[cta.create_button]
+  EN: Create your own
+  ES: Crea tu propio código
+
+=== Invite Banner ===
+
+[invite.label]
+  EN: Invite code:
+  ES: Código de invitación:
+
+[invite.players]
+  EN: {count} players
+  ES: Jugadores
+
+[invite.player]
+  EN: {count} player
+  ES: Jugador
+
+[invite.copy]
+  EN: Copy
+  ES: Copiar
+
+[invite.copied]
+  EN: Copied!
+  ES: Copiado!
+
+[invite.share]
+  EN: Share
+  ES: Compartir
+
+=== More Menu ===
+
+[menu.admin]
+  EN: Admin
+  ES: Administrar
+
+[menu.admin_desc]
+  EN: Manage competition
+  ES: Manage competition
+
+[menu.bracket]
+  EN: Bracket prediction
+  ES: Cuadro de predicciones
+
+[menu.bracket_desc]
+  EN: Advanced — not for casuals
+  ES: Avanzado — no apto para principiantes
+
+[menu.groups]
+  EN: Group standings
+  ES: Clasificación del grupo
+
+[menu.groups_desc]
+  EN: Official FIFA tables ↗
+  ES: Tablas oficiales de la FIFA ↗
+
+=== Predictions Page ===
+
+[predictions.heading]
+  EN: My Predictions
+  ES: Mis Pronosticos
+
+[predictions.subtitle]
+  EN: Submit your predictions before each event locks.
+  ES:  Envía tus pronósticos antes de que cada evento se bloquee
+
+[predictions.no_comps]
+  EN: You haven't joined any competitions yet.
+  ES: No te has unido a ninguna competición todavía.
+
+[predictions.no_comps_help]
+  EN: Ask a friend for an invite link, or join a public competition to get started.
+  ES: Pide a un amigo que te comparta su enlace de invitación o únete a una competición pública para empezar.
+
+[predictions.load_error]
+  EN: Failed to load competitions. Please try again later.
+  ES: No se pudieron cargar las competiciones. Inténtalo de nuevo más tarde.
+
+[predictions.events_error]
+  EN: Failed to load events. Please try again later.
+  ES: No fue posible cargar los eventos. Vuelve a intentarlo más tarde.
+
+[predictions.comp_not_found]
+  EN: Competition not found. Select a different one above.
+  ES: No se encontró la competición. Selecciona otra arriba.
+
+=== Common / Shared ===
+
+[common.you]
+  EN: YOU
+  ES: Tu
+
+[common.pts]
+  EN: pts
+  ES: puntos
+
+[common.points]
+  EN: points
+  ES: puntos
+
+[common.players_joined]
+  EN: {count} players joined.
+  ES: Jugadores que se han unido.
+
+[common.collapse]
+  EN: Collapse
+  ES: contraer
+
+[common.coming_soon]
+  EN: Coming soon
+  ES: Proximamente
+
+[common.redirecting]
+  EN: Redirecting to rules…
+  ES: Redirigiendo a las reglas…
+
+=== Leaderboard ===
+
+[leaderboard.heading]
+  EN: Leaderboard
+  ES: Tabla de clasificación
+
+[leaderboard.no_competition]
+  EN: No competition found
+  ES: No se encontró ninguna competición
+
+[leaderboard.home]
+  EN: Home
+  ES: Inicio
+
+[leaderboard.back_to_matches]
+  EN: Back to Matches
+  ES: Volver a los partidos
+
+=== WC Landing (Pre-tournament) ===
+
+[landing.coming_soon_heading]
+  EN: The World Cup is being set up.
+  ES: Preparando la Copa Mundial.
+
+[landing.coming_soon_desc]
+  EN: Drop back closer to June. We're seeding the fixtures, polishing the scoring, and getting the chairs out.
+  ES: Vuelve más cerca de junio. Estamos configurando los partidos, ajustando la puntuación y preparando todo.
+
+[landing.see_rules]
+  EN: See the rules →
+  ES: Ve las reglas
+
+[landing.dash_coming_heading]
+  EN: Dashboard is being set up.
+  ES: El panel se está preparando.
+
+[landing.dash_coming_desc]
+  EN: Drop back closer to June.
+  ES: Regresa más cerca de junio.
