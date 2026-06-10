@@ -173,7 +173,10 @@ export function useRealtimeChat({
             display_name: user.display_name,
             avatar_url: user.avatar_url,
           };
-          setMessages((prev) => [...prev, enriched]);
+          // Deduplicate: skip if already added by optimistic sendMessage
+          setMessages((prev) =>
+            prev.some((m) => m.id === msg.id) ? prev : [...prev, enriched]
+          );
         }
       )
       .on(
@@ -261,12 +264,12 @@ export function useRealtimeChat({
     }
   }, [competitionId, hasMore, messages, resolveUser, supabase]);
 
-  // Send message
+  // Send message — add to state immediately on success (don't rely on realtime)
   const sendMessage = useCallback(
     async (content: string, mentionedUserIds?: string[]) => {
       setIsSending(true);
       try {
-        await fetch("/api/chat", {
+        const res = await fetch("/api/chat", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
@@ -275,16 +278,57 @@ export function useRealtimeChat({
             mentionedUserIds: mentionedUserIds ?? [],
           }),
         });
+
+        if (!res.ok) {
+          const data = await res.json().catch(() => ({}));
+          throw new Error(data.error || "Failed to send message");
+        }
+
+        const { message: saved } = await res.json();
+        if (saved) {
+          const user = resolveUser(saved.user_id);
+          const enriched: ChatMessageWithUser = {
+            ...saved,
+            display_name: user.display_name,
+            avatar_url: user.avatar_url,
+          };
+          // Add immediately; realtime INSERT will be deduped
+          setMessages((prev) =>
+            prev.some((m) => m.id === saved.id) ? prev : [...prev, enriched]
+          );
+        }
       } finally {
         setIsSending(false);
       }
     },
-    [competitionId]
+    [competitionId, resolveUser]
   );
 
-  // Delete message
+  // Delete message — update state immediately (don't rely on realtime)
   const deleteMessage = useCallback(async (messageId: string) => {
-    await fetch(`/api/chat/${messageId}`, { method: "DELETE" });
+    const res = await fetch(`/api/chat/${messageId}`, { method: "DELETE" });
+    if (res.ok) {
+      const data = await res.json();
+      if (data.type === "hard") {
+        // Remove from state
+        setMessages((prev) => prev.filter((m) => m.id !== messageId));
+      } else {
+        // Soft delete — show tombstone
+        setMessages((prev) =>
+          prev.map((m) =>
+            m.id === messageId
+              ? {
+                  ...m,
+                  content: "This message was deleted",
+                  deleted_at: new Date().toISOString(),
+                  deleted_by: "user",
+                  mentioned_user_ids: [],
+                }
+              : m
+          )
+        );
+      }
+    }
   }, []);
 
   // Edit message

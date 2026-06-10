@@ -38,6 +38,7 @@ export function ChatWidget({
   const [inputValue, setInputValue] = useState("");
   const [cursorPosition, setCursorPosition] = useState(0);
   const [showMentions, setShowMentions] = useState(false);
+  const [sendError, setSendError] = useState<string | null>(null);
   const [muteError, setMuteError] = useState<string | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
@@ -124,7 +125,15 @@ export function ChatWidget({
     const mentionedIds = extractMentionedUserIds(content);
     setInputValue("");
     setShowMentions(false);
-    await sendMessage(content, mentionedIds);
+    setSendError(null);
+    try {
+      await sendMessage(content, mentionedIds);
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : "Failed to send";
+      setSendError(msg);
+      setInputValue(content); // restore input so user can retry
+      setTimeout(() => setSendError(null), 4000);
+    }
   };
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
@@ -216,9 +225,9 @@ export function ChatWidget({
 
       {/* Input area */}
       <div className="relative border-t border-ps-border px-3 py-2">
-        {muteError && (
+        {(sendError || muteError) && (
           <div className="mb-2 rounded-lg bg-ps-red/10 px-3 py-1.5 text-xs text-ps-red">
-            {muteError}
+            {sendError || muteError}
           </div>
         )}
 

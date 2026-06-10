@@ -127,13 +127,32 @@ export function ChatMessage({
     );
   }
 
-  // Tombstone (deleted)
+  // Tombstone (deleted) — still show sender for attribution
   if (isDeleted) {
     return (
-      <div className="flex justify-center py-1">
-        <span className="text-xs text-ps-text-ter italic">
-          {message.content}
-        </span>
+      <div className={`flex gap-2 py-1 ${isOwn ? "flex-row-reverse" : "flex-row"}`}>
+        {!isOwn && (
+          <div className="flex-shrink-0 w-7 h-7 rounded-full bg-ps-chip flex items-center justify-center opacity-40">
+            <span className="text-[10px] font-semibold text-ps-text-sec">
+              {getInitials(message.display_name)}
+            </span>
+          </div>
+        )}
+        <div className={`max-w-[75%] ${isOwn ? "items-end" : "items-start"}`}>
+          {!isOwn && (
+            <p className="text-[10px] font-semibold text-ps-text-ter mb-0.5 ml-1">
+              {message.display_name}
+            </p>
+          )}
+          <div className="rounded-2xl px-3 py-1.5 bg-ps-chip/50">
+            <p className="text-xs text-ps-text-ter italic">{message.content}</p>
+          </div>
+          <div className={`mt-0.5 ${isOwn ? "text-right mr-1" : "ml-1"}`}>
+            <span className="text-[10px] text-ps-text-ter">
+              {formatMessageTime(message.created_at)}
+            </span>
+          </div>
+        </div>
       </div>
     );
   }
