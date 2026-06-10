@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
+import { useT } from "@/lib/i18n";
 import type { ChatMessage } from "@/types/database";
 import type { RealtimeChannel } from "@supabase/supabase-js";
 
@@ -60,11 +61,11 @@ const PAGE_SIZE = 50;
 const MINI_SIZE = 5;
 
 /** Tombstone content for deleted messages */
-function tombstoneContent(msg: ChatMessage): string {
+function tombstoneContent(msg: ChatMessage, t: (k: string) => string): string {
   if (!msg.deleted_at) return msg.content;
-  if (msg.deleted_by === "admin") return "This message was deleted by admin";
-  if (msg.deleted_by === "mod") return "This message was deleted by mod";
-  return "This message was deleted";
+  if (msg.deleted_by === "admin") return t("chat.deleted_by_admin");
+  if (msg.deleted_by === "mod") return t("chat.deleted_by_mod");
+  return t("chat.deleted");
 }
 
 export function useRealtimeChat({
@@ -72,6 +73,7 @@ export function useRealtimeChat({
   currentUserId,
   mode = "full",
 }: UseRealtimeChatOptions): UseRealtimeChatReturn {
+  const t = useT();
   const [messages, setMessages] = useState<ChatMessageWithUser[]>([]);
   const [members, setMembers] = useState<UseChatMember[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -90,9 +92,9 @@ export function useRealtimeChat({
       const m = memberMap.current.get(userId);
       return m
         ? { display_name: m.display_name, avatar_url: m.avatar_url }
-        : { display_name: "Unknown", avatar_url: null };
+        : { display_name: t("chat.unknown_user"), avatar_url: null };
     },
-    []
+    [t]
   );
 
   // Fetch members
@@ -140,14 +142,14 @@ export function useRealtimeChat({
         id: parent.id,
         display_name: parentUser.display_name,
         content: parent.deleted_at
-          ? "This message was deleted"
+          ? t("chat.deleted")
           : parent.content.length > 80
             ? parent.content.slice(0, 77) + "..."
             : parent.content,
         media_type: parent.media_type ?? null,
       };
     },
-    [resolveUser]
+    [resolveUser, t]
   );
 
   // Fetch initial messages
@@ -188,7 +190,7 @@ export function useRealtimeChat({
           const user = resolveUser(msg.user_id);
           return {
             ...msg,
-            content: tombstoneContent(msg),
+            content: tombstoneContent(msg, t),
             mentioned_user_ids: msg.deleted_at ? [] : msg.mentioned_user_ids,
             display_name: user.display_name,
             avatar_url: user.avatar_url,
@@ -235,7 +237,7 @@ export function useRealtimeChat({
                   id: parent.id,
                   display_name: parent.display_name,
                   content: parent.deleted_at
-                    ? "This message was deleted"
+                    ? t("chat.deleted")
                     : parent.content.length > 80
                       ? parent.content.slice(0, 77) + "..."
                       : parent.content,
@@ -279,7 +281,7 @@ export function useRealtimeChat({
               m.id === updated.id
                 ? {
                     ...m,
-                    content: tombstoneContent(updated),
+                    content: tombstoneContent(updated, t),
                     updated_at: updated.updated_at,
                     deleted_at: updated.deleted_at,
                     deleted_by: updated.deleted_by,
@@ -362,7 +364,7 @@ export function useRealtimeChat({
           const u = resolveUser(msg.user_id);
           return {
             ...msg,
-            content: tombstoneContent(msg),
+            content: tombstoneContent(msg, t),
             mentioned_user_ids: msg.deleted_at ? [] : msg.mentioned_user_ids,
             display_name: u.display_name,
             avatar_url: u.avatar_url,
@@ -404,7 +406,7 @@ export function useRealtimeChat({
           const u = resolveUser(msg.user_id);
           return {
             ...msg,
-            content: tombstoneContent(msg),
+            content: tombstoneContent(msg, t),
             mentioned_user_ids: msg.deleted_at ? [] : msg.mentioned_user_ids,
             display_name: u.display_name,
             avatar_url: u.avatar_url,
@@ -415,7 +417,7 @@ export function useRealtimeChat({
       });
       setHasMore(hasMoreResults);
     }
-  }, [competitionId, hasMore, messages, resolveUser, supabase, buildReplyPreview]);
+  }, [competitionId, hasMore, messages, resolveUser, supabase, buildReplyPreview, t]);
 
   // Send message — add to state immediately on success (don't rely on realtime)
   const sendMessage = useCallback(
@@ -437,7 +439,7 @@ export function useRealtimeChat({
 
         if (!res.ok) {
           const data = await res.json().catch(() => ({}));
-          throw new Error(data.error || "Failed to send message");
+          throw new Error(data.error || t("chat.error_send_message"));
         }
 
         const { message: saved } = await res.json();
@@ -453,7 +455,7 @@ export function useRealtimeChat({
                   id: parent.id,
                   display_name: parent.display_name,
                   content: parent.deleted_at
-                    ? "This message was deleted"
+                    ? t("chat.deleted")
                     : parent.content.length > 80
                       ? parent.content.slice(0, 77) + "..."
                       : parent.content,
@@ -485,7 +487,7 @@ export function useRealtimeChat({
         setIsSending(false);
       }
     },
-    [competitionId, resolveUser]
+    [competitionId, resolveUser, t]
   );
 
   // Upload media to Supabase Storage
@@ -502,12 +504,12 @@ export function useRealtimeChat({
 
       if (!res.ok) {
         const data = await res.json().catch(() => ({}));
-        throw new Error(data.error || "Upload failed");
+        throw new Error(data.error || t("chat.error_upload"));
       }
 
       return res.json();
     },
-    [competitionId]
+    [competitionId, t]
   );
 
   // Delete message — update state immediately (don't rely on realtime)
@@ -525,7 +527,7 @@ export function useRealtimeChat({
             m.id === messageId
               ? {
                   ...m,
-                  content: "This message was deleted",
+                  content: t("chat.deleted"),
                   deleted_at: new Date().toISOString(),
                   deleted_by: "user",
                   mentioned_user_ids: [],
@@ -535,7 +537,7 @@ export function useRealtimeChat({
         );
       }
     }
-  }, []);
+  }, [t]);
 
   // Edit message
   const editMessage = useCallback(

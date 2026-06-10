@@ -444,7 +444,7 @@ function MatchPickRow({
           setWinnerPred(previousPred);
           if (!hadWinner) onWinnerLanded(event.id, false);
           setErrorMsg(
-            err instanceof Error ? err.message : "Couldn't save that pick",
+            err instanceof Error ? err.message : t('prediction.error_save'),
           );
         });
     },
@@ -544,7 +544,7 @@ function MatchPickRow({
       }
       setResetInFlight(false);
       if (hadWinner) onWinnerLanded(event.id, true);
-      setErrorMsg("Couldn't reset prediction");
+      setErrorMsg(t('prediction.error_reset'));
     }
   }, [
     isLocked,
@@ -604,6 +604,7 @@ function MatchPickRow({
                   initialScore.prediction_data,
                   home,
                   away,
+                  t,
                 )}
               </p>
             )}
@@ -628,7 +629,7 @@ function MatchPickRow({
             {away}
           </span>
           <span className="rounded-full bg-ps-chip px-2 py-0.5 text-[10px] font-semibold uppercase text-ps-text-sec">
-            {event.result_confirmed ? "Resulted" : "Locked"}
+            {event.result_confirmed ? t('prediction.resulted') : t('prediction.locked')}
           </span>
         </div>
         {currentWinner ? (
@@ -649,6 +650,7 @@ function MatchPickRow({
                   initialScore.prediction_data,
                   home,
                   away,
+                  t,
                 )}
               </p>
             )}
@@ -754,7 +756,7 @@ function MatchPickRow({
 
       {hasCommittedScore && committedHome !== null && committedAway !== null && (
         <p className={`mt-1.5 text-center text-[11px] ${useCardSurface ? "text-white/65" : "text-ps-text-sec"}`}>
-          {getPredictionSummary("exact_score", { home: committedHome, away: committedAway }, home, away)}
+          {getPredictionSummary("exact_score", { home: committedHome, away: committedAway }, home, away, t)}
           <span className={`ml-1 inline-block ${useCardSurface ? "text-white/40" : "text-ps-text-ter"}`}>
             <svg className="inline h-3 w-3" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L10.582 16.07a4.5 4.5 0 01-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 011.13-1.897l8.932-8.931zm0 0L19.5 7.125" />
@@ -774,7 +776,7 @@ function MatchPickRow({
                 : "text-ps-text-ter hover:text-ps-red"
             }`}
           >
-            Reset prediction
+            {t('prediction.reset')}
           </button>
         </div>
       )}

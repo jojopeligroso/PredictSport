@@ -11,6 +11,7 @@ import {
 } from "./ExactScoreInput";
 import { ScoreInput } from "./ScoreInput";
 import { deriveWinnerFromScore, getScoreFormat } from "@/lib/score-format";
+import { useT } from "@/lib/i18n";
 import type { Prediction, PredictionType, EventPredictionType } from "@/types/database";
 
 interface ExactScoreSectionProps {
@@ -48,6 +49,7 @@ export function ExactScoreSection({
   onSubmitScore,
   onUpdateWinner,
 }: ExactScoreSectionProps) {
+  const t = useT();
   const isGAA = getScoreFormat(sport) === "gaa";
 
   const [isExpanded, setIsExpanded] = useState(
@@ -272,7 +274,7 @@ export function ExactScoreSection({
               disabled={isSubmitting || !isScoreComplete(score, sport)}
               className="rounded-lg bg-ps-text px-3 py-1.5 text-xs font-semibold text-ps-bg transition-opacity hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              {isSubmitting ? "Saving..." : existingScorePrediction ? "Update" : "Save"}
+              {isSubmitting ? t('prediction.saving') : existingScorePrediction ? t('prediction.update') : t('prediction.save_score')}
             </button>
             {existingScorePrediction && (
               <button
@@ -281,7 +283,7 @@ export function ExactScoreSection({
                 disabled={isSubmitting}
                 className="rounded-lg border border-ps-border px-3 py-1.5 text-xs font-medium text-ps-text-sec transition-colors hover:border-ps-red hover:text-ps-red disabled:opacity-50"
               >
-                Reset prediction
+                {t('prediction.reset')}
               </button>
             )}
             {!existingScorePrediction && (
@@ -294,7 +296,7 @@ export function ExactScoreSection({
                 disabled={isSubmitting}
                 className="text-xs font-medium text-ps-text-ter hover:text-ps-text-sec"
               >
-                Cancel
+                {t('prediction.cancel')}
               </button>
             )}
           </div>
@@ -321,7 +323,7 @@ export function ExactScoreSection({
                 disabled={isSubmitting}
                 className="text-[10px] font-medium text-ps-text-ter hover:text-ps-red transition-colors"
               >
-                Reset prediction
+                {t('prediction.reset')}
               </button>
             )}
             {!existingScorePrediction && (
@@ -334,7 +336,7 @@ export function ExactScoreSection({
                 disabled={isSubmitting}
                 className="text-xs font-medium text-ps-text-ter hover:text-ps-text-sec"
               >
-                Cancel
+                {t('prediction.cancel')}
               </button>
             )}
           </div>

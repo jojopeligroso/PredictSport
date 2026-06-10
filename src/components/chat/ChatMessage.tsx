@@ -3,6 +3,7 @@
 import { useCallback, useRef, useState } from "react";
 import Image from "next/image";
 import { getInitials } from "@/lib/display-name";
+import { useT, useLocale } from "@/lib/i18n";
 import type { ChatMessageWithUser, UseChatMember, ReplyPreview } from "./useRealtimeChat";
 
 const ROLE_RANK: Record<string, number> = {
@@ -30,25 +31,26 @@ interface ChatMessageProps {
 
 const EDIT_WINDOW_MS = 5 * 60 * 1000;
 
-function formatMessageTime(iso: string): string {
+function formatMessageTime(iso: string, locale: string): string {
   const date = new Date(iso);
   const now = new Date();
   const diffMs = now.getTime() - date.getTime();
   const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+  const intlLocale = locale === "es" ? "es-MX" : "en-GB";
 
-  const time = date.toLocaleTimeString("en-GB", {
+  const time = date.toLocaleTimeString(intlLocale, {
     hour: "2-digit",
     minute: "2-digit",
     hour12: false,
   });
 
   if (diffDays === 0) return time;
-  if (diffDays === 1) return `Yesterday ${time}`;
+  if (diffDays === 1) return `${locale === "es" ? "Ayer" : "Yesterday"} ${time}`;
   if (diffDays < 7) {
-    const day = date.toLocaleDateString("en-GB", { weekday: "short" });
+    const day = date.toLocaleDateString(intlLocale, { weekday: "short" });
     return `${day} ${time}`;
   }
-  return date.toLocaleDateString("en-GB", {
+  return date.toLocaleDateString(intlLocale, {
     day: "numeric",
     month: "short",
   }) + ` ${time}`;
@@ -93,6 +95,8 @@ export function ChatMessage({
   onReply,
   onScrollToMessage,
 }: ChatMessageProps) {
+  const t = useT();
+  const { locale } = useLocale();
   const [isEditing, setIsEditing] = useState(false);
   const [editContent, setEditContent] = useState(message.content);
   const [showContextMenu, setShowContextMenu] = useState(false);
@@ -202,7 +206,7 @@ export function ChatMessage({
           </div>
           <div className={`mt-0.5 ${isOwn ? "text-right mr-1" : "ml-1"}`}>
             <span className="text-[10px] text-ps-text-ter">
-              {formatMessageTime(message.created_at)}
+              {formatMessageTime(message.created_at, locale)}
             </span>
           </div>
         </div>
@@ -307,7 +311,7 @@ export function ChatMessage({
                 </p>
                 <p className="text-[11px] text-ps-text-sec truncate">
                   {message.reply_preview.media_type
-                    ? message.reply_preview.media_type === "gif" ? "GIF" : "Photo"
+                    ? message.reply_preview.media_type === "gif" ? t("chat.gif") : t("chat.photo")
                     : message.reply_preview.content}
                 </p>
               </button>
@@ -330,7 +334,7 @@ export function ChatMessage({
                   onClick={handleEditSubmit}
                   className="text-xs text-ps-amber font-semibold"
                 >
-                  Save
+                  {t("chat.save")}
                 </button>
               </div>
             ) : (
@@ -345,7 +349,7 @@ export function ChatMessage({
                     {/* eslint-disable-next-line @next/next/no-img-element */}
                     <img
                       src={message.media_url}
-                      alt={message.media_type === "gif" ? "GIF" : "Photo"}
+                      alt={message.media_type === "gif" ? t("chat.gif") : t("chat.photo")}
                       className="w-full h-auto max-h-[300px] object-contain rounded-lg"
                       loading="lazy"
                     />
@@ -378,7 +382,7 @@ export function ChatMessage({
                     }}
                     className="block w-full text-left px-3 py-1.5 text-xs text-ps-text-sec hover:bg-ps-chip"
                   >
-                    Reply
+                    {t("chat.reply")}
                   </button>
                 )}
                 {canModDelete && (
@@ -389,7 +393,7 @@ export function ChatMessage({
                     }}
                     className="block w-full text-left px-3 py-1.5 text-xs text-ps-red hover:bg-ps-chip"
                   >
-                    Delete message
+                    {t("chat.delete_message")}
                   </button>
                 )}
                 {canMute && (
@@ -400,7 +404,7 @@ export function ChatMessage({
                     }}
                     className="block w-full text-left px-3 py-1.5 text-xs text-ps-text-sec hover:bg-ps-chip"
                   >
-                    Mute this user
+                    {t("chat.mute_user")}
                   </button>
                 )}
               </div>
@@ -416,12 +420,12 @@ export function ChatMessage({
             >
               {showTimestamp && (
                 <span className="text-[10px] text-ps-text-ter">
-                  {formatMessageTime(message.created_at)}
+                  {formatMessageTime(message.created_at, locale)}
                 </span>
               )}
               {isEdited && showTimestamp && (
                 <span className="text-[10px] text-ps-text-ter italic">
-                  (edited)
+                  {t("chat.edited")}
                 </span>
               )}
 
@@ -433,7 +437,7 @@ export function ChatMessage({
                       onClick={() => onReply?.(message)}
                       className="text-[10px] text-ps-text-ter hover:text-ps-text"
                     >
-                      reply
+                      {t("chat.action_reply")}
                     </button>
                   )}
                   {showEditButton && (
@@ -441,7 +445,7 @@ export function ChatMessage({
                       onClick={handleStartEdit}
                       className="text-[10px] text-ps-text-ter hover:text-ps-text"
                     >
-                      edit
+                      {t("chat.action_edit")}
                     </button>
                   )}
                   {canDelete && (
@@ -449,7 +453,7 @@ export function ChatMessage({
                       onClick={() => onDelete?.(message.id)}
                       className="text-[10px] text-ps-text-ter hover:text-ps-red"
                     >
-                      delete
+                      {t("chat.action_delete")}
                     </button>
                   )}
                 </span>
@@ -474,7 +478,7 @@ export function ChatMessage({
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
             src={message.media_url}
-            alt={message.media_type === "gif" ? "GIF" : "Photo"}
+            alt={message.media_type === "gif" ? t("chat.gif") : t("chat.photo")}
             className="max-w-full max-h-[90vh] object-contain rounded-lg"
             onClick={(e) => e.stopPropagation()}
           />

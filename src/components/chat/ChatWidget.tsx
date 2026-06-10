@@ -5,6 +5,7 @@ import { ChatMessage } from "./ChatMessage";
 import { MentionAutocomplete, findAtTrigger } from "./MentionAutocomplete";
 import { useRealtimeChat } from "./useRealtimeChat";
 import type { ChatMessageWithUser } from "./useRealtimeChat";
+import { useT } from "@/lib/i18n";
 
 const MAX_IMAGE_DIMENSION = 1200;
 const ALLOWED_MEDIA_TYPES = ["image/jpeg", "image/png", "image/gif", "image/webp"];
@@ -64,6 +65,7 @@ export function ChatWidget({
   currentUserRole,
   mode,
 }: ChatWidgetProps) {
+  const t = useT();
   const {
     messages,
     members,
@@ -191,14 +193,14 @@ export function ChatWidget({
     e.target.value = "";
 
     if (!ALLOWED_MEDIA_TYPES.includes(file.type)) {
-      setSendError("Only JPEG, PNG, WebP, and GIF files are allowed");
+      setSendError(t('chat.error_file_type'));
       setTimeout(() => setSendError(null), 4000);
       return;
     }
 
     const maxSize = file.type === "image/gif" ? 3 * 1024 * 1024 : 5 * 1024 * 1024;
     if (file.size > maxSize) {
-      setSendError(file.type === "image/gif" ? "GIF must be under 3MB" : "Image must be under 5MB");
+      setSendError(file.type === "image/gif" ? t('chat.error_gif_size') : t('chat.error_image_size'));
       setTimeout(() => setSendError(null), 4000);
       return;
     }
@@ -258,7 +260,7 @@ export function ChatWidget({
         mediaType,
       });
     } catch (err) {
-      const msg = err instanceof Error ? err.message : "Failed to send";
+      const msg = err instanceof Error ? err.message : t('chat.error_send');
       setSendError(msg);
       setInputValue(content); // restore input so user can retry
       setReplyTo(currentReplyTo); // restore reply target
@@ -310,7 +312,7 @@ export function ChatWidget({
   if (isLoading) {
     return (
       <div className={`${mode === "full" ? "h-[75vh]" : ""} flex items-center justify-center`}>
-        <span className="text-xs text-ps-text-ter">Loading chat...</span>
+        <span className="text-xs text-ps-text-ter">{t('chat.loading')}</span>
       </div>
     );
   }
@@ -325,7 +327,7 @@ export function ChatWidget({
       {mode === "full" && (
         <div className="flex items-center justify-between px-3 py-2 border-b border-ps-border">
           <span className="text-xs font-semibold text-ps-text-sec">
-            Chat
+            {t('chat.header')}
           </span>
         </div>
       )}
@@ -342,7 +344,7 @@ export function ChatWidget({
               onClick={loadMore}
               className="text-xs text-ps-amber font-semibold hover:underline"
             >
-              Load older messages
+              {t('chat.load_older')}
             </button>
           </div>
         )}
@@ -350,7 +352,7 @@ export function ChatWidget({
         {displayMessages.length === 0 ? (
           <div className={`flex items-center justify-center ${mode === "mini" ? "py-4" : "h-full"}`}>
             <p className="text-xs text-ps-text-ter">
-              No messages yet. Say something.
+              {t('chat.empty')}
             </p>
           </div>
         ) : (
@@ -383,7 +385,7 @@ export function ChatWidget({
 
         {isMuted ? (
           <div className="text-center py-1.5 text-xs text-ps-text-ter italic">
-            You&apos;re muted for {muteRemainingMin} more minute{muteRemainingMin !== 1 ? "s" : ""}
+            {t('chat.muted', { minutes: muteRemainingMin })}
           </div>
         ) : (
           <>
@@ -406,7 +408,7 @@ export function ChatWidget({
                   </p>
                   <p className="text-[11px] text-ps-text-sec truncate">
                     {replyTo.media_url
-                      ? replyTo.media_type === "gif" ? "GIF" : "Photo"
+                      ? replyTo.media_type === "gif" ? t('chat.gif') : t('chat.photo')
                       : replyTo.content}
                   </p>
                 </div>
@@ -425,7 +427,7 @@ export function ChatWidget({
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img
                   src={mediaPreview.url}
-                  alt="Attachment preview"
+                  alt={t('chat.attach_preview')}
                   className="max-h-32 max-w-[200px] rounded-lg object-contain border border-ps-border"
                 />
                 <button
@@ -444,7 +446,7 @@ export function ChatWidget({
                 onClick={() => fileInputRef.current?.click()}
                 disabled={isUploading}
                 className="flex-shrink-0 rounded-xl p-1.5 text-ps-text-ter hover:text-ps-text hover:bg-ps-chip transition-colors disabled:opacity-40"
-                title="Attach image or GIF"
+                title={t('chat.attach_button')}
               >
                 <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                   <rect x="3" y="3" width="18" height="18" rx="2" ry="2" />
@@ -471,7 +473,7 @@ export function ChatWidget({
                     (e.target as HTMLInputElement).selectionStart ?? 0
                   )
                 }
-                placeholder={replyTo ? "Reply..." : "Type a message..."}
+                placeholder={replyTo ? t('chat.placeholder_reply') : t('chat.placeholder')}
                 maxLength={2000}
                 className="flex-1 rounded-xl border border-ps-border bg-ps-bg px-3 py-1.5 text-sm text-ps-text placeholder:text-ps-text-ter focus:outline-none focus:ring-1 focus:ring-ps-amber"
               />
@@ -480,7 +482,7 @@ export function ChatWidget({
                 disabled={(!inputValue.trim() && !mediaPreview) || isSending || isUploading}
                 className="rounded-xl bg-ps-amber px-3 py-1.5 text-sm font-bold text-ps-bg hover:opacity-90 disabled:opacity-40"
               >
-                {isUploading ? "..." : isSending ? "..." : "Send"}
+                {isUploading ? "..." : isSending ? "..." : t('chat.send')}
               </button>
             </div>
           </>
