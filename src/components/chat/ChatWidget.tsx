@@ -210,7 +210,7 @@ export function ChatWidget({
         )}
 
         {displayMessages.length === 0 ? (
-          <div className="flex items-center justify-center h-full">
+          <div className={`flex items-center justify-center ${mode === "mini" ? "py-4" : "h-full"}`}>
             <p className="text-xs text-ps-text-ter">
               No messages yet. Say something.
             </p>
@@ -276,7 +276,7 @@ export function ChatWidget({
               <button
                 onClick={handleSend}
                 disabled={!inputValue.trim() || isSending}
-                className="rounded-xl bg-ps-amber px-3 py-1.5 text-sm font-bold text-[#1a1208] hover:opacity-90 disabled:opacity-40"
+                className="rounded-xl bg-ps-amber px-3 py-1.5 text-sm font-bold text-ps-bg hover:opacity-90 disabled:opacity-40"
               >
                 {isSending ? "..." : "Send"}
               </button>

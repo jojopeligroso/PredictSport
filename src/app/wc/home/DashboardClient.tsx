@@ -299,23 +299,23 @@ export function DashboardClient({
         <OnboardingSection id="other">
           <section className="mt-2 rounded-xl border border-ps-border bg-ps-surface overflow-hidden">
             {/* Single header: Chat label + full chat link + collapse chevron */}
-            <div className="flex items-center justify-between px-4 py-3">
+            <div className={`flex items-center justify-between px-4 py-3${chatCollapsed ? "" : " border-b border-ps-border"}`}>
               <span className="text-sm font-bold text-ps-text">Chat</span>
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-3">
                 <a
                   href="/wc/leaderboard#chat"
-                  className="text-xs text-ps-text-ter hover:text-ps-text-sec"
+                  className="text-xs font-semibold text-ps-amber hover:opacity-80"
                   onClick={(e) => e.stopPropagation()}
                 >
                   Open full chat &rarr;
                 </a>
                 <button
                   onClick={toggleChatCollapsed}
-                  className="flex h-6 w-6 items-center justify-center rounded text-ps-text-sec hover:text-ps-text"
+                  className="-mr-1 flex h-8 w-8 items-center justify-center rounded-lg text-ps-text-sec transition-colors hover:bg-ps-bg-alt hover:text-ps-text"
                   aria-label={chatCollapsed ? "Expand chat" : "Collapse chat"}
                 >
                   <svg
-                    className={`h-4 w-4 transition-transform ${chatCollapsed ? "" : "rotate-180"}`}
+                    className={`h-4 w-4 transition-transform duration-200 ${chatCollapsed ? "" : "rotate-180"}`}
                     fill="none"
                     viewBox="0 0 24 24"
                     stroke="currentColor"
