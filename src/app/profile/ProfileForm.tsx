@@ -15,6 +15,8 @@ interface NotificationPrefs {
   prediction_reminders: boolean;
   result_notifications: boolean;
   leaderboard_updates: boolean;
+  chat_mentions: boolean;
+  chat_member_join: boolean;
   result_hints: boolean;
   default_sport: SportOption;
 }
@@ -35,6 +37,14 @@ function parseNotificationPrefs(
       typeof raw?.leaderboard_updates === "boolean"
         ? raw.leaderboard_updates
         : false,
+    chat_mentions:
+      typeof raw?.chat_mentions === "boolean"
+        ? raw.chat_mentions
+        : true,
+    chat_member_join:
+      typeof raw?.chat_member_join === "boolean"
+        ? raw.chat_member_join
+        : true,
     result_hints:
       typeof raw?.result_hints === "boolean"
         ? raw.result_hints
@@ -67,6 +77,10 @@ function statesEqual(a: FormState, b: FormState): boolean {
       b.notification_prefs.result_notifications &&
     a.notification_prefs.leaderboard_updates ===
       b.notification_prefs.leaderboard_updates &&
+    a.notification_prefs.chat_mentions ===
+      b.notification_prefs.chat_mentions &&
+    a.notification_prefs.chat_member_join ===
+      b.notification_prefs.chat_member_join &&
     a.notification_prefs.result_hints ===
       b.notification_prefs.result_hints &&
     a.notification_prefs.default_sport ===
@@ -443,6 +457,20 @@ export function ProfileForm({ user }: { user: User }) {
                   onChange={(v) => setNotifPref("leaderboard_updates", v)}
                   label="Leaderboard updates"
                   description="Weekly leaderboard summary"
+                />
+                <Toggle
+                  id="chat_mentions"
+                  checked={form.notification_prefs.chat_mentions}
+                  onChange={(v) => setNotifPref("chat_mentions", v)}
+                  label="Chat @mentions"
+                  description="Notify me when someone mentions me in chat"
+                />
+                <Toggle
+                  id="chat_member_join"
+                  checked={form.notification_prefs.chat_member_join}
+                  onChange={(v) => setNotifPref("chat_member_join", v)}
+                  label="New member alerts"
+                  description="Notify me when someone joins my competition"
                 />
               </div>
             </section>

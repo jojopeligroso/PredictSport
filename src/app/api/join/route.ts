@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { enrollEntrant } from "@/lib/tournament/classification-engine";
 import { requireDisplayName } from "@/lib/require-display-name";
+import { sendPushToUser } from "@/lib/push/send";
 
 export async function POST(request: NextRequest) {
   const supabase = await createClient();
@@ -167,6 +168,45 @@ export async function POST(request: NextRequest) {
 
   // 7. Enroll in classifications (idempotent — no-op for non-tournament competitions)
   await enrollEntrant(supabase, competitionId, user.id);
+
+  // 7b. Fire-and-forget: push notification to existing members about new join
+  {
+    const [{ data: joiner }, { data: existingMembers }, { data: comp }] =
+      await Promise.all([
+        supabase
+          .from("users")
+          .select("display_name")
+          .eq("id", user.id)
+          .single(),
+        supabase
+          .from("competition_members")
+          .select("user_id")
+          .eq("competition_id", competitionId)
+          .neq("user_id", user.id),
+        supabase
+          .from("competitions")
+          .select("name, chat_enabled")
+          .eq("id", competitionId)
+          .single(),
+      ]);
+
+    if (comp?.chat_enabled && existingMembers?.length) {
+      const joinerName = joiner?.display_name ?? "Someone";
+      const compName = comp.name ?? "the competition";
+      for (const member of existingMembers) {
+        sendPushToUser(
+          member.user_id,
+          {
+            title: `${joinerName} joined ${compName}`,
+            body: `${joinerName} is now a member`,
+            url: `/wc/leaderboard`,
+            tag: `chat-join-${competitionId}-${user.id}`,
+          },
+          "chat_member_join"
+        ).catch(() => {}); // best effort
+      }
+    }
+  }
 
   // 8. Increment use_count (only for invite_tokens, not permanent invite_codes)
   if (isInviteToken && invite) {

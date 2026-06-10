@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
+import { sendPushToUser } from "@/lib/push/send";
 
 const MAX_MESSAGE_LENGTH = 2000;
 const PAGE_SIZE = 50;
@@ -204,6 +205,33 @@ export async function POST(request: Request) {
       { error: "Failed to send message", details: error.message },
       { status: 500 }
     );
+  }
+
+  // Fire-and-forget: push notifications for @mentions
+  if (mentionedUserIds.length > 0) {
+    const { data: sender } = await supabase
+      .from("users")
+      .select("display_name")
+      .eq("id", user.id)
+      .single();
+
+    const senderName = sender?.display_name ?? "Someone";
+    const preview =
+      content.length > 80 ? content.slice(0, 77) + "..." : content;
+
+    for (const mentionedId of mentionedUserIds) {
+      if (mentionedId === user.id) continue; // don't notify yourself
+      sendPushToUser(
+        mentionedId,
+        {
+          title: `${senderName} mentioned you`,
+          body: preview,
+          url: `/wc/leaderboard`,
+          tag: `chat-mention-${message!.id}`,
+        },
+        "chat_mentions"
+      ).catch(() => {}); // swallow errors — best effort
+    }
   }
 
   return NextResponse.json({ message }, { status: 201 });

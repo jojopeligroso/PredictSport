@@ -33,7 +33,9 @@ interface PushPayload {
 type NotifCategory =
   | "prediction_reminders"
   | "result_notifications"
-  | "leaderboard_updates";
+  | "leaderboard_updates"
+  | "chat_mentions"
+  | "chat_member_join";
 
 /**
  * Send push notification to a specific user (all their subscribed devices).
@@ -60,6 +62,8 @@ export async function sendPushToUser(
     prediction_reminders: true,
     result_notifications: true,
     leaderboard_updates: false,
+    chat_mentions: true,
+    chat_member_join: true,
   };
   const enabled = prefs?.[category] ?? defaultPrefs[category];
   if (!enabled) return { sent: 0, failed: 0, cleaned: 0 };
