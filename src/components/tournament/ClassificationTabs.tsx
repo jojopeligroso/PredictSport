@@ -210,28 +210,29 @@ export function ClassificationTabs({
           />
         )}
 
-      {/* Pre-kickoff rules */}
-      {kickoffIso && new Date(kickoffIso).getTime() > Date.now() && active && (
+      {/* Rules preview — always show for format, pre-kickoff for others */}
+      {active && (active.classification_key === "format" || (kickoffIso && new Date(kickoffIso).getTime() > Date.now())) && (
         <ClassificationRulesPreview classificationKey={active.classification_key} />
       )}
 
-      {/* Preview cards (pre-kickoff) */}
-      {kickoffIso && new Date(kickoffIso).getTime() > Date.now() && active && (
-        <>
-          {active.classification_key === "format" && (
-            <FormatGroupCard
-              groupData={groupData}
-              displayName={currentDisplayName ?? "You"}
-            />
-          )}
-        </>
+      {/* Format: All groups view (user's group first) OR single-group preview */}
+      {active?.classification_key === "format" && (
+        allGroups?.status === "drawn" && allGroups.groups.length > 0 ? (
+          <div className="mt-4">
+            <AllGroupsView groups={allGroups.groups} myGroupId={allGroups.myGroupId} />
+          </div>
+        ) : (
+          <FormatGroupCard
+            groupData={groupData}
+            displayName={currentDisplayName ?? "You"}
+          />
+        )
       )}
 
-      {/* Standings / All Groups */}
+      {/* Standings (non-format tabs only, or format before groups load) */}
+      {!(active?.classification_key === "format" && allGroups?.status === "drawn" && allGroups.groups.length > 0) && (
       <div className="mt-4 flex flex-1 flex-col">
-        {active?.classification_key === "format" && allGroups?.status === "drawn" && allGroups.groups.length > 0 ? (
-          <AllGroupsView groups={allGroups.groups} myGroupId={allGroups.myGroupId} />
-        ) : isLoading ? (
+        {isLoading ? (
           <div className="flex justify-center py-12">
             <div className="h-5 w-5 animate-spin rounded-full border-2 border-ps-text-ter border-t-ps-text" />
           </div>
@@ -270,6 +271,7 @@ export function ClassificationTabs({
           />
         )}
       </div>
+      )}
 
       {/* Format draw countdown — bottom */}
       {active?.classification_key === "format" &&
