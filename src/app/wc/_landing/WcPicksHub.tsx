@@ -87,15 +87,15 @@ export function WcPicksHub({ md1, fixturesData, groupsData }: WcPicksHubProps) {
           <a
             href="/wc/home"
             aria-label="Home"
-            className="mb-1.5 mr-1 flex-shrink-0"
+            className="mr-1 flex-shrink-0 -translate-y-1 pb-2"
           >
             <svg
-              width="18"
-              height="18"
+              width="32"
+              height="32"
               viewBox="0 0 24 24"
               fill="none"
               stroke="#d4af37"
-              strokeWidth="2.5"
+              strokeWidth="2"
               strokeLinecap="round"
               strokeLinejoin="round"
             >
@@ -113,7 +113,7 @@ export function WcPicksHub({ md1, fixturesData, groupsData }: WcPicksHubProps) {
                 aria-selected={isActive}
                 onClick={() => handleTabChange(id)}
                 className={[
-                  "flex-1 rounded-t-lg px-3 py-2 text-sm font-semibold transition-colors",
+                  "flex-1 rounded-t-lg px-1.5 py-2 text-xs font-semibold transition-colors",
                   isActive
                     ? "border-b-2 border-ps-amber text-ps-text"
                     : "text-ps-text-sec hover:text-ps-text",
