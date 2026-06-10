@@ -1,0 +1,1419 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>User Test Plan — World Cup 2026 Predict (Round 2)</title>
+  <style>
+    /* =====================================================
+       Reset & Base
+       ===================================================== */
+    *, *::before, *::after {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    html {
+      font-size: 16px;
+      -webkit-text-size-adjust: 100%;
+    }
+
+    /* =====================================================
+       Typography & Colours
+       ===================================================== */
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
+                   "Helvetica Neue", Arial, "Noto Sans", sans-serif;
+      font-size: 1rem;
+      font-weight: 400;
+      line-height: 1.7;
+      color: #191512;
+      background-color: #faf9f6;
+    }
+
+    /* =====================================================
+       Layout
+       ===================================================== */
+    .page-wrap {
+      max-width: 820px;
+      margin: 0 auto;
+      padding: 2.5rem 1.5rem 4rem;
+    }
+
+    /* =====================================================
+       Headings
+       ===================================================== */
+    h1 {
+      font-size: clamp(1.6rem, 5vw, 2.25rem);
+      font-weight: 800;
+      line-height: 1.2;
+      letter-spacing: -0.02em;
+      color: #191512;
+      margin-bottom: 0.75rem;
+    }
+
+    h2 {
+      font-size: 1.35rem;
+      font-weight: 700;
+      line-height: 1.3;
+      color: #191512;
+      margin-top: 2.75rem;
+      margin-bottom: 0.75rem;
+      padding-bottom: 0.4rem;
+      border-bottom: 2px solid #efe9de;
+    }
+
+    h3 {
+      font-size: 1.05rem;
+      font-weight: 600;
+      color: #3d3530;
+      margin-top: 1.75rem;
+      margin-bottom: 0.5rem;
+    }
+
+    /* =====================================================
+       Header block
+       ===================================================== */
+    .doc-header {
+      margin-bottom: 2rem;
+    }
+
+    .doc-meta {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.5rem 1.25rem;
+      margin-top: 0.75rem;
+      font-size: 0.875rem;
+      color: #6b5f56;
+    }
+
+    .doc-meta strong {
+      color: #3d3530;
+    }
+
+    /* =====================================================
+       Horizontal rule
+       ===================================================== */
+    hr {
+      border: none;
+      border-top: 1px solid #e0d8cf;
+      margin: 2rem 0;
+    }
+
+    /* =====================================================
+       Paragraphs & lists
+       ===================================================== */
+    p {
+      margin-bottom: 0.9rem;
+    }
+
+    ul, ol {
+      margin: 0.5rem 0 0.9rem 1.5rem;
+    }
+
+    li {
+      margin-bottom: 0.35rem;
+    }
+
+    li > ul, li > ol {
+      margin-top: 0.25rem;
+      margin-bottom: 0.25rem;
+    }
+
+    /* =====================================================
+       Links
+       ===================================================== */
+    a {
+      color: #c07c2a;
+      text-decoration: underline;
+      text-underline-offset: 2px;
+      word-break: break-word;
+    }
+
+    a:hover {
+      color: #a06020;
+    }
+
+    /* =====================================================
+       Inline code
+       ===================================================== */
+    code {
+      font-family: "JetBrains Mono", "Fira Code", "Cascadia Code",
+                   "Consolas", "Menlo", monospace;
+      font-size: 0.85em;
+      background: #eee9e0;
+      color: #333;
+      padding: 0.15em 0.4em;
+      border-radius: 3px;
+      white-space: nowrap;
+    }
+
+    /* =====================================================
+       Code blocks (fenced)
+       ===================================================== */
+    pre {
+      background: #f0ece5;
+      border: 1px solid #ddd5c8;
+      border-radius: 6px;
+      padding: 1rem 1.25rem;
+      overflow-x: auto;
+      margin: 0.75rem 0 1.25rem;
+      font-size: 0.85rem;
+      line-height: 1.6;
+    }
+
+    pre code {
+      background: none;
+      padding: 0;
+      white-space: pre;
+      font-size: inherit;
+      color: #2a2420;
+    }
+
+    /* =====================================================
+       Blockquote / callout
+       ===================================================== */
+    blockquote {
+      border-left: 4px solid #f59e0b;
+      background: #fdf6e3;
+      margin: 1rem 0;
+      padding: 0.75rem 1rem;
+      border-radius: 0 4px 4px 0;
+      font-size: 0.95rem;
+      color: #4a3a20;
+    }
+
+    /* =====================================================
+       Tables
+       ===================================================== */
+    .table-wrap {
+      overflow-x: auto;
+      margin: 1rem 0 1.5rem;
+      border-radius: 6px;
+      border: 1px solid #ddd5c8;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.9rem;
+    }
+
+    thead {
+      background: #ede7dc;
+    }
+
+    thead th {
+      padding: 0.6rem 0.85rem;
+      text-align: left;
+      font-weight: 600;
+      color: #3d3530;
+      white-space: nowrap;
+      border-bottom: 2px solid #d5ccc0;
+    }
+
+    tbody tr:nth-child(odd) {
+      background: #faf9f6;
+    }
+
+    tbody tr:nth-child(even) {
+      background: #f4f0ea;
+    }
+
+    tbody tr:hover {
+      background: #ede7dc;
+    }
+
+    tbody td {
+      padding: 0.55rem 0.85rem;
+      border-bottom: 1px solid #e5ddd4;
+      vertical-align: top;
+    }
+
+    tbody tr:last-child td {
+      border-bottom: none;
+    }
+
+    /* =====================================================
+       Priority badges
+       ===================================================== */
+    .badge {
+      display: inline-block;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
+                   "Helvetica Neue", Arial, sans-serif;
+      font-size: 0.72rem;
+      font-weight: 700;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+      padding: 0.2em 0.55em;
+      border-radius: 4px;
+      white-space: nowrap;
+      vertical-align: middle;
+    }
+
+    .badge-p0 {
+      background: #fde8ea;
+      color: #b91c2c;
+      border: 1px solid #f5a5ab;
+    }
+
+    .badge-p1 {
+      background: #fff0e0;
+      color: #c2520a;
+      border: 1px solid #fbc48a;
+    }
+
+    .badge-p2 {
+      background: #fef9e7;
+      color: #926d00;
+      border: 1px solid #f5d96e;
+    }
+
+    .badge-p3 {
+      background: #f2f2f2;
+      color: #555;
+      border: 1px solid #ccc;
+    }
+
+    /* =====================================================
+       Priority definition cards
+       ===================================================== */
+    .priority-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+      gap: 0.75rem;
+      margin: 1rem 0 1.5rem;
+    }
+
+    .priority-card {
+      border-radius: 6px;
+      padding: 0.75rem 1rem;
+      font-size: 0.9rem;
+    }
+
+    .priority-card .badge {
+      margin-bottom: 0.4rem;
+      display: block;
+      width: fit-content;
+    }
+
+    .priority-card p {
+      margin: 0;
+      line-height: 1.5;
+      color: inherit;
+      font-size: 0.875rem;
+    }
+
+    .priority-card.p0 { background: #fde8ea; border: 1px solid #f5a5ab; color: #7f1d2a; }
+    .priority-card.p1 { background: #fff0e0; border: 1px solid #fbc48a; color: #7c3503; }
+    .priority-card.p2 { background: #fef9e7; border: 1px solid #f5d96e; color: #5a4500; }
+    .priority-card.p3 { background: #f2f2f2; border: 1px solid #ccc;    color: #444;    }
+
+    /* =====================================================
+       Journey sections
+       ===================================================== */
+    .journey-section {
+      background: #fff;
+      border: 1px solid #e0d8cf;
+      border-radius: 8px;
+      padding: 1.25rem 1.5rem;
+      margin-top: 2.25rem;
+    }
+
+    .journey-section h2 {
+      margin-top: 0;
+      border-bottom-color: #e0d8cf;
+    }
+
+    .journey-meta {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.4rem 1.25rem;
+      margin-bottom: 1rem;
+      font-size: 0.875rem;
+      padding: 0.6rem 0.85rem;
+      background: #f7f3ee;
+      border-radius: 5px;
+    }
+
+    .journey-meta span strong {
+      color: #3d3530;
+    }
+
+    /* =====================================================
+       Step items
+       ===================================================== */
+    .step-list {
+      list-style: none;
+      margin: 0.5rem 0 0.75rem;
+      padding: 0;
+    }
+
+    .step-list > li {
+      margin-bottom: 1rem;
+      padding-left: 0;
+    }
+
+    .step-num {
+      display: inline-block;
+      background: #f59e0b;
+      color: #fff;
+      font-size: 0.7rem;
+      font-weight: 700;
+      width: 1.35rem;
+      height: 1.35rem;
+      line-height: 1.35rem;
+      text-align: center;
+      border-radius: 50%;
+      margin-right: 0.5rem;
+      flex-shrink: 0;
+      vertical-align: middle;
+    }
+
+    .step-title {
+      font-weight: 600;
+      color: #191512;
+    }
+
+    .step-body {
+      margin: 0.35rem 0 0 1.85rem;
+      font-size: 0.9rem;
+      color: #3d3530;
+    }
+
+    .step-body .expected {
+      color: #1a6640;
+    }
+
+    .step-body .watchfor {
+      color: #8b3a0f;
+      font-style: italic;
+    }
+
+    .step-body .known-issue {
+      color: #7f1d2a;
+      font-weight: 500;
+    }
+
+    /* =====================================================
+       Known issue callout (inline)
+       ===================================================== */
+    .callout-issue {
+      background: #fde8ea;
+      border-left: 4px solid #e23d4f;
+      border-radius: 0 4px 4px 0;
+      padding: 0.6rem 0.85rem;
+      margin: 0.75rem 0;
+      font-size: 0.875rem;
+      color: #7f1d2a;
+    }
+
+    .callout-issue strong {
+      color: #b91c2c;
+    }
+
+    /* =====================================================
+       Path labels (Path A / Path B)
+       ===================================================== */
+    .path-label {
+      display: inline-block;
+      background: #191512;
+      color: #f59e0b;
+      font-size: 0.75rem;
+      font-weight: 700;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      padding: 0.2em 0.65em;
+      border-radius: 4px;
+      margin-bottom: 0.5rem;
+    }
+
+    /* =====================================================
+       Findings template
+       ===================================================== */
+    .template-block {
+      background: #f0ece5;
+      border: 1px dashed #c5bdb4;
+      border-radius: 6px;
+      padding: 1rem 1.25rem;
+      margin: 0.75rem 0 1.25rem;
+      font-size: 0.875rem;
+      color: #3d3530;
+    }
+
+    .template-block p {
+      margin-bottom: 0.3rem;
+    }
+
+    /* =====================================================
+       Section: Out of Scope
+       ===================================================== */
+    .oos-list {
+      background: #f4f0ea;
+      border: 1px solid #e0d8cf;
+      border-radius: 6px;
+      padding: 0.75rem 1rem 0.75rem 2rem;
+      margin: 0.75rem 0;
+    }
+
+    .oos-list li {
+      color: #5a504a;
+    }
+
+    /* =====================================================
+       Print
+       ===================================================== */
+    @media print {
+      body {
+        background: #fff;
+        font-size: 11pt;
+        color: #000;
+      }
+
+      .page-wrap {
+        max-width: 100%;
+        padding: 0;
+      }
+
+      h2 {
+        page-break-after: avoid;
+      }
+
+      .journey-section {
+        page-break-inside: avoid;
+        border: 1px solid #ccc;
+      }
+
+      a {
+        color: #000;
+        text-decoration: underline;
+      }
+
+      a[href]::after {
+        content: " (" attr(href) ")";
+        font-size: 0.8em;
+        color: #555;
+      }
+
+      pre, .template-block {
+        border: 1px solid #bbb;
+        background: #f8f8f8;
+      }
+
+      .priority-card {
+        border: 1px solid #ccc;
+        background: #f8f8f8 !important;
+      }
+
+      .badge {
+        border: 1px solid #999;
+      }
+    }
+
+    /* =====================================================
+       Responsive tweaks
+       ===================================================== */
+    @media (max-width: 600px) {
+      .page-wrap {
+        padding: 1.5rem 1rem 3rem;
+      }
+
+      h2 {
+        font-size: 1.15rem;
+      }
+
+      .journey-section {
+        padding: 1rem 1rem;
+      }
+
+      .priority-grid {
+        grid-template-columns: 1fr 1fr;
+      }
+
+      pre {
+        font-size: 0.78rem;
+      }
+    }
+
+    @media (max-width: 380px) {
+      .priority-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="page-wrap">
+
+    <!-- ================================================
+         Document header
+         ================================================ -->
+    <div class="doc-header">
+      <h1>User Test Plan</h1>
+      <h1 style="color:#c07c2a; margin-top:0.1rem;">World Cup 2026 Predict — Round 2</h1>
+      <div class="doc-meta">
+        <span><strong>App:</strong> <a href="https://predictsport-rust.vercel.app/wc" target="_blank">https://predictsport-rust.vercel.app/wc</a></span>
+        <span><strong>Date:</strong> June 2026</span>
+        <span><strong>Supersedes:</strong> Previous user test report (pre-UX-overhaul)</span>
+      </div>
+    </div>
+
+    <hr>
+
+    <!-- ================================================
+         Executive Summary
+         ================================================ -->
+    <h2>Executive Summary</h2>
+    <p>This document covers round 2 user testing for the World Cup 2026 Predict app. The app lets friend groups (~12 users) predict World Cup match winners and exact scores for points. Since the previous test round, the onboarding flow, all three prediction surfaces, and several critical bugs have been overhauled. This test validates those changes are working end-to-end before the competition goes live with real users.</p>
+    <p>The test is structured as 8 user journeys in order of how a real user would encounter them, from first anonymous visit through to a returning user editing picks. Most can be run by the developer alone; Journey 2 (join flow) requires a test invite code and ideally two test Google accounts to cover both the logged-in and logged-out paths.</p>
+    <p>The core questions this test is answering:</p>
+    <ol>
+      <li>Can a new user join the competition without hitting any dead ends?</li>
+      <li>Do all three prediction surfaces (Upcoming tab, Dashboard, Fixtures tab) behave consistently?</li>
+      <li>Is the mobile experience usable at 390px without zoom or layout breakage?</li>
+      <li>Does the onboarding sequence feel coherent from landing to first pick?</li>
+    </ol>
+
+    <hr>
+
+    <!-- ================================================
+         Test Prerequisites
+         ================================================ -->
+    <h2>Test Prerequisites</h2>
+
+    <h3>Accounts</h3>
+    <ul>
+      <li><strong>Test account A</strong> — a Google account that is NOT already a competition member. Use this for Journey 2 (join flow) and Journey 3–6 (first-time user experience).</li>
+      <li><strong>Test account B</strong> — a Google account that IS already a member with some predictions made. Use this for Journey 7 (returning user).</li>
+      <li><strong>Admin account</strong> — <a href="mailto:eoinmaleoin@gmail.com">eoinmaleoin@gmail.com</a> or any account with <code>is_super_admin = true</code>. Use this to verify the Admin link appears in the hamburger menu (Journey 6).</li>
+    </ul>
+
+    <h3>Invite Code</h3>
+    <p>Have a valid invite code ready before starting. Either an <code>invite_tokens</code> row or the <code>competitions.invite_code</code> value for the World Cup competition. Confirm it works once before handing to a tester.</p>
+
+    <h3>Devices</h3>
+    <ul>
+      <li><strong>Primary:</strong> Physical iOS or Android device at 390px viewport (iPhone 14 or equivalent). Mobile is the primary test target.</li>
+      <li><strong>Secondary:</strong> Desktop browser at 1280px+ to verify desktop nav and layout.</li>
+      <li><strong>Orientation:</strong> Test portrait first. Check landscape during Journey 8 edge cases.</li>
+    </ul>
+
+    <h3>Network</h3>
+    <p>Use the device's normal mobile connection for most testing. For Journey 8 edge cases, use browser DevTools throttled to "Slow 3G" to verify optimistic update behavior.</p>
+
+    <h3>Before You Start</h3>
+    <ol>
+      <li>Clear browser cookies/session for Test Account A so you start as a genuinely anonymous user.</li>
+      <li>Note that Vercel free tier may queue deploys. If you see a stale build, wait 2–3 minutes and hard-refresh before reporting issues.</li>
+      <li>Groups are not yet drawn (pre-tournament). The Groups tab content will be limited — this is expected.</li>
+    </ol>
+
+    <hr>
+
+    <!-- ================================================
+         Priority Definitions
+         ================================================ -->
+    <h2>Priority Definitions</h2>
+    <div class="priority-grid">
+      <div class="priority-card p0">
+        <span class="badge badge-p0">P0</span>
+        <p><strong>Blocker.</strong> The app cannot launch with this unfixed. Prevents joining, making picks, or seeing core content.</p>
+      </div>
+      <div class="priority-card p1">
+        <span class="badge badge-p1">P1</span>
+        <p><strong>Critical.</strong> Significant user confusion or broken behavior on a main flow. Should be fixed before inviting real users.</p>
+      </div>
+      <div class="priority-card p2">
+        <span class="badge badge-p2">P2</span>
+        <p><strong>Significant.</strong> Noticeable but users can work around it. Fix before tournament starts.</p>
+      </div>
+      <div class="priority-card p3">
+        <span class="badge badge-p3">P3</span>
+        <p><strong>Polish.</strong> Minor visual or copy issues. Fix when convenient.</p>
+      </div>
+    </div>
+
+    <hr>
+
+    <!-- ================================================
+         Journey 1
+         ================================================ -->
+    <div class="journey-section">
+      <h2>Journey 1: First-Time Anonymous Visitor</h2>
+      <div class="journey-meta">
+        <span><strong>Goal:</strong> Verify the landing experience for someone who has not joined yet.</span>
+        <span><strong>Preconditions:</strong> No session / logged out. Navigate to <a href="https://predictsport-rust.vercel.app/wc" target="_blank">https://predictsport-rust.vercel.app/wc</a></span>
+      </div>
+
+      <ol class="step-list">
+        <li>
+          <span class="step-num">1</span>
+          <span class="step-title">Land on /wc.</span>
+          <div class="step-body">
+            <p class="expected"><strong>Expected:</strong> Page loads. A blurred picks preview is visible beneath a join overlay. The overlay should present the competition name, a brief description, and an invite code input.</p>
+            <p class="watchfor"><strong>Watch for:</strong> Layout flash, unblurred picks leaking through before the overlay renders, any console errors.</p>
+          </div>
+        </li>
+        <li>
+          <span class="step-num">2</span>
+          <span class="step-title">Without entering a code, try to click or interact with the blurred picks area.</span>
+          <div class="step-body">
+            <p class="expected"><strong>Expected:</strong> The overlay blocks interaction. The blurred state persists.</p>
+          </div>
+        </li>
+        <li>
+          <span class="step-num">3</span>
+          <span class="step-title">Tap the Fixtures tab (from the overlay or the tab bar if visible).</span>
+          <div class="step-body">
+            <p class="expected"><strong>Expected:</strong> Fixture info cards are visible — venue, date/time, teams. No prediction UI is shown (user is not a member).</p>
+            <p class="watchfor"><strong>Watch for:</strong> "Pick →" CTAs appearing for non-members, which would be misleading.</p>
+          </div>
+        </li>
+        <li>
+          <span class="step-num">4</span>
+          <span class="step-title">Tap the Results tab (if present and has any data).</span>
+          <div class="step-body">
+            <p class="expected"><strong>Expected:</strong> Either shows completed fixtures or an appropriate empty state ("No results yet"). Should not error.</p>
+          </div>
+        </li>
+        <li>
+          <span class="step-num">5</span>
+          <span class="step-title">Tap the Rules link (in nav or on the page).</span>
+          <div class="step-body">
+            <p class="expected"><strong>Expected:</strong> Rules content is readable. No broken layout.</p>
+          </div>
+        </li>
+        <li>
+          <span class="step-num">6</span>
+          <span class="step-title">Scroll down on the landing page to find the "How it works" section.</span>
+          <div class="step-body">
+            <p class="expected"><strong>Expected:</strong> Section is present and readable. Copy makes sense to someone who has never used the app.</p>
+          </div>
+        </li>
+        <li>
+          <span class="step-num">7</span>
+          <span class="step-title">Tap the invite code input on mobile.</span>
+          <div class="step-body">
+            <p class="expected"><strong>Expected:</strong> Keyboard opens. The viewport should NOT zoom in (iOS auto-zoom on inputs smaller than 16px). The overlay should remain usable after the keyboard opens.</p>
+          </div>
+        </li>
+        <li>
+          <span class="step-num">8</span>
+          <span class="step-title">Tap anywhere outside the input (dismiss keyboard).</span>
+          <div class="step-body">
+            <p class="expected"><strong>Expected:</strong> Page returns to normal scroll position. No persistent zoom.</p>
+          </div>
+        </li>
+      </ol>
+
+      <div class="callout-issue">
+        <strong>Known issue to verify is fixed:</strong> Previous test found mobile viewport zoom on invite code input. Confirm this is resolved.
+      </div>
+    </div>
+
+    <!-- ================================================
+         Journey 2
+         ================================================ -->
+    <div class="journey-section">
+      <h2>Journey 2: Join Flow</h2>
+      <div class="journey-meta">
+        <span><strong>Goal:</strong> Walk through the complete join-to-onboarding sequence for a new user.</span>
+        <span><strong>Preconditions:</strong> Test Account A, logged out, on /wc with join overlay visible. Valid invite code ready.</span>
+      </div>
+
+      <span class="path-label">Path A — Logged Out User</span>
+      <ol class="step-list">
+        <li>
+          <span class="step-num">1</span>
+          <span class="step-title">Enter the invite code in the overlay input and submit.</span>
+          <div class="step-body">
+            <p class="expected"><strong>Expected:</strong> Because no session exists, the user is redirected to the Google sign-in page. The invite code or return URL should be preserved so the join completes after auth.</p>
+          </div>
+        </li>
+        <li>
+          <span class="step-num">2</span>
+          <span class="step-title">Complete Google sign-in with Test Account A.</span>
+          <div class="step-body">
+            <p class="expected"><strong>Expected:</strong> After sign-in, the user is redirected back and the join is processed. Should NOT land on a generic dashboard — should continue the join flow.</p>
+          </div>
+        </li>
+        <li>
+          <span class="step-num">3</span>
+          <span class="step-title">Confirm redirect to /wc/home?onboarding=true.</span>
+          <div class="step-body">
+            <p class="expected"><strong>Expected:</strong> URL contains <code>onboarding=true</code>. The onboarding sequence begins immediately.</p>
+          </div>
+        </li>
+      </ol>
+
+      <span class="path-label">Path B — Already Logged In User</span>
+      <p style="font-size:0.875rem; color:#5a504a; margin-bottom:0.75rem;">Run separately with a fresh test account.</p>
+      <ol class="step-list">
+        <li>
+          <span class="step-num">1</span>
+          <span class="step-title">Log in first, then navigate to /wc with the join overlay.</span>
+        </li>
+        <li>
+          <span class="step-num">2</span>
+          <span class="step-title">Enter the invite code and submit.</span>
+          <div class="step-body">
+            <p class="expected"><strong>Expected:</strong> POST /api/join fires. Redirected to /wc/home?onboarding=true immediately, no extra auth step.</p>
+          </div>
+        </li>
+      </ol>
+
+      <h3>Onboarding Sequence (both paths land here)</h3>
+      <ol class="step-list">
+        <li>
+          <span class="step-num">3</span>
+          <span class="step-title">Theme picker step.</span>
+          <div class="step-body">
+            <p class="expected"><strong>Expected:</strong> A light/dark theme toggle is presented. Tap each option — the preview or UI should respond. Confirm selection and proceed.</p>
+            <p class="watchfor"><strong>Watch for:</strong> Theme selection not persisting past this step.</p>
+          </div>
+        </li>
+        <li>
+          <span class="step-num">4</span>
+          <span class="step-title">Display name step.</span>
+          <div class="step-body">
+            <p class="expected"><strong>Expected:</strong> Input for display name. Pre-filled with Google display name or blank. Character limit feedback should be present (50 char max). Enter a valid name and continue.</p>
+          </div>
+        </li>
+        <li>
+          <span class="step-num">5</span>
+          <span class="step-title">Progressive dashboard reveal.</span>
+          <div class="step-body">
+            <p class="expected"><strong>Expected:</strong> Dashboard sections reveal one at a time — picks section first, then group card, then invite banner. Tooltips accompany each reveal. The progression should feel guided, not overwhelming.</p>
+            <p class="watchfor"><strong>Watch for:</strong> All sections appearing at once, tooltips not appearing, sections appearing in wrong order.</p>
+          </div>
+        </li>
+        <li>
+          <span class="step-num">6</span>
+          <span class="step-title">Final step — spotlight on Home nav.</span>
+          <div class="step-body">
+            <p class="expected"><strong>Expected:</strong> A spotlight or visual call-out draws attention to the Home icon (gold house) in the navigation. The user is redirected to /wc (or the spotlight appears on /wc). The Home nav item should be clearly indicated.</p>
+            <p class="watchfor"><strong>Watch for:</strong> Spotlight appearing briefly then disappearing before the user can see it, incorrect element highlighted.</p>
+          </div>
+        </li>
+        <li>
+          <span class="step-num">7</span>
+          <span class="step-title">Dismiss onboarding.</span>
+          <div class="step-body">
+            <p class="expected"><strong>Expected:</strong> User lands on /wc or /wc/home in a normal state, onboarding markers cleared. Refreshing the page should not re-trigger onboarding.</p>
+          </div>
+        </li>
+      </ol>
+    </div>
+
+    <!-- ================================================
+         Journey 3
+         ================================================ -->
+    <div class="journey-section">
+      <h2>Journey 3: Making Predictions on /wc (Upcoming Tab)</h2>
+      <div class="journey-meta">
+        <span><strong>Goal:</strong> Verify the primary picks surface works end-to-end.</span>
+        <span><strong>Preconditions:</strong> Test Account A, joined and onboarding complete, on /wc. At least one upcoming match should be visible.</span>
+      </div>
+
+      <ol class="step-list">
+        <li>
+          <span class="step-num">1</span>
+          <span class="step-title">View the Upcoming tab.</span>
+          <div class="step-body">
+            <p class="expected"><strong>Expected:</strong> Match cards visible. Each shows team names, date/time, and pick UI with team buttons (or a draw option where applicable) plus score inputs.</p>
+          </div>
+        </li>
+        <li>
+          <span class="step-num">2</span>
+          <span class="step-title">Tap a team button to pick a winner.</span>
+          <div class="step-body">
+            <p class="expected"><strong>Expected:</strong> The button highlights immediately (optimistic update). The pick registers without a page reload. The confirmation text appears: "You predicted [Team] to win" or similar.</p>
+            <p class="watchfor"><strong>Watch for:</strong> Double-tap firing two requests, button state not updating until server responds.</p>
+          </div>
+        </li>
+        <li>
+          <span class="step-num">3</span>
+          <span class="step-title">Enter an exact score using the score circles.</span>
+          <div class="step-body">
+            <p class="expected"><strong>Expected:</strong> Score input is tappable. Values increment/decrement correctly. The full prediction confirmation reads "You predicted [Team] to win [X]-[Y]".</p>
+            <p class="watchfor"><strong>Watch for:</strong> Score input not being usable without picking a winner first, or score input resetting after winner pick.</p>
+          </div>
+        </li>
+        <li>
+          <span class="step-num">4</span>
+          <span class="step-title">Check the progress bar.</span>
+          <div class="step-body">
+            <p class="expected"><strong>Expected:</strong> After making a pick, the MD1 PICKS progress bar (or equivalent) increments. The percentage or count should update.</p>
+          </div>
+        </li>
+        <li>
+          <span class="step-num">5</span>
+          <span class="step-title">Check the day pills.</span>
+          <div class="step-body">
+            <p class="expected"><strong>Expected:</strong> The day calendar strip shows the current matchday. The pill for the day you just predicted should show a completion indicator (checkmark, filled dot, or similar).</p>
+          </div>
+        </li>
+        <li>
+          <span class="step-num">6</span>
+          <span class="step-title">Switch between "By date" and "By group" views.</span>
+          <div class="step-body">
+            <p class="expected"><strong>Expected:</strong> Matches reorganize correctly. Picks you already made persist in both views — the same match should show the same confirmed pick state regardless of view mode.</p>
+          </div>
+        </li>
+        <li>
+          <span class="step-num">7</span>
+          <span class="step-title">Tap "Show more matches" (if visible).</span>
+          <div class="step-body">
+            <p class="expected"><strong>Expected:</strong> Additional match cards expand or load below. No full page reload.</p>
+          </div>
+        </li>
+        <li>
+          <span class="step-num">8</span>
+          <span class="step-title">Reset a prediction.</span>
+          <div class="step-body">
+            <p class="expected"><strong>Expected:</strong> Find the reset control on a pick card (button, link, or icon). Tap it. Confirmation of reset, prediction cleared, confirmation text gone, pick buttons return to unpicked state.</p>
+            <p class="watchfor"><strong>Watch for:</strong> Reset control not visible, reset not persisting after page refresh.</p>
+          </div>
+        </li>
+        <li>
+          <span class="step-num">9</span>
+          <span class="step-title">Navigate away and return to /wc.</span>
+          <div class="step-body">
+            <p class="expected"><strong>Expected:</strong> All picks made in this journey are still present. State is server-persisted, not just local.</p>
+          </div>
+        </li>
+      </ol>
+    </div>
+
+    <!-- ================================================
+         Journey 4
+         ================================================ -->
+    <div class="journey-section">
+      <h2>Journey 4: Making Predictions on /wc/home (Dashboard)</h2>
+      <div class="journey-meta">
+        <span><strong>Goal:</strong> Verify the dashboard prediction flow works correctly, including the expand/collapse behavior.</span>
+        <span><strong>Preconditions:</strong> Test Account A, on /wc/home. Some picks already made (from Journey 3) and some upcoming matches still unpicked.</span>
+      </div>
+
+      <ol class="step-list">
+        <li>
+          <span class="step-num">1</span>
+          <span class="step-title">View the dashboard.</span>
+          <div class="step-body">
+            <p class="expected"><strong>Expected:</strong> "At a Glance" stats section shows. Match cards are visible in a condensed format. Unpicked matches show a "Pick →" CTA. Matches already picked show an "Edit" CTA.</p>
+          </div>
+        </li>
+        <li>
+          <span class="step-num">2</span>
+          <span class="step-title">Tap a "Pick →" CTA on an unpicked match card.</span>
+          <div class="step-body">
+            <p class="expected"><strong>Expected:</strong> The card expands inline to reveal the full prediction UI (DashboardPickRow / WindowPickList). No page navigation occurs.</p>
+          </div>
+        </li>
+        <li>
+          <span class="step-num">3</span>
+          <span class="step-title">Make a prediction on the expanded card.</span>
+          <div class="step-body">
+            <p class="expected"><strong>Expected:</strong> Winner button and score input work. Confirmation text appears within the card.</p>
+          </div>
+        </li>
+        <li>
+          <span class="step-num">4</span>
+          <span class="step-title">Tap the CTA on a different match card while the first is still expanded.</span>
+          <div class="step-body">
+            <p class="expected"><strong>Expected:</strong> The previously expanded card collapses. The new card expands. Only one card is expanded at a time.</p>
+          </div>
+        </li>
+        <li>
+          <span class="step-num">5</span>
+          <span class="step-title">Tap "Edit" on a previously picked match.</span>
+          <div class="step-body">
+            <p class="expected"><strong>Expected:</strong> Card expands showing the current pick pre-filled. Changes can be made. Updated confirmation text appears after saving.</p>
+          </div>
+        </li>
+        <li>
+          <span class="step-num">6</span>
+          <span class="step-title">Tap the "Continue to full round →" link (if present).</span>
+          <div class="step-body">
+            <p class="expected"><strong>Expected:</strong> Navigates to the Upcoming tab on /wc or the appropriate picks surface for the current matchday.</p>
+          </div>
+        </li>
+        <li>
+          <span class="step-num">7</span>
+          <span class="step-title">Mock group card.</span>
+          <div class="step-body">
+            <p class="expected"><strong>Expected:</strong> A group card section is visible. Since groups are not yet drawn, this should show an appropriate pre-draw state (placeholder, "Groups announced X date", etc.). It should NOT show broken data or an empty card with no explanation.</p>
+          </div>
+        </li>
+        <li>
+          <span class="step-num">8</span>
+          <span class="step-title">Invite code banner.</span>
+          <div class="step-body">
+            <p class="expected"><strong>Expected:</strong> A banner shows the competition invite code with a copy button (and share button on mobile). Tapping copy should write the invite code to clipboard. On iOS/Android, the share button should open the native share sheet.</p>
+          </div>
+        </li>
+        <li>
+          <span class="step-num">9</span>
+          <span class="step-title">Verify "At a Glance" stats.</span>
+          <div class="step-body">
+            <p class="expected"><strong>Expected:</strong> Stats reflect actual pick data — e.g., how many picks made, current standing. Should not show 0/0 or stale data.</p>
+          </div>
+        </li>
+      </ol>
+    </div>
+
+    <!-- ================================================
+         Journey 5
+         ================================================ -->
+    <div class="journey-section">
+      <h2>Journey 5: Making Predictions on /wc?tab=fixtures</h2>
+      <div class="journey-meta">
+        <span><strong>Goal:</strong> Verify the Fixtures tab pick flow works, especially the card-swap behavior.</span>
+        <span><strong>Preconditions:</strong> Test Account A, navigate to <code>/wc?tab=fixtures</code> (or tap the Fixtures tab). Ensure at least one upcoming fixture is unpicked.</span>
+      </div>
+
+      <ol class="step-list">
+        <li>
+          <span class="step-num">1</span>
+          <span class="step-title">View the Fixtures tab.</span>
+          <div class="step-body">
+            <p class="expected"><strong>Expected:</strong> All fixtures shown in date order. Each card shows: teams, date, time, venue. Upcoming fixtures with no pick yet show a "Pick →" CTA on the right side of the card.</p>
+          </div>
+        </li>
+        <li>
+          <span class="step-num">2</span>
+          <span class="step-title">Verify locked or finished fixtures.</span>
+          <div class="step-body">
+            <p class="expected"><strong>Expected:</strong> Past matches (or matches past lock time) do NOT show a "Pick →" CTA. They may show a result or a locked state indicator.</p>
+          </div>
+        </li>
+        <li>
+          <span class="step-num">3</span>
+          <span class="step-title">Tap "Pick →" on an upcoming, unlocked fixture.</span>
+          <div class="step-body">
+            <p class="expected"><strong>Expected:</strong> The fixture info card swaps out and is replaced by the prediction UI for that match. The transition should be clear — the user should understand they are now in prediction mode.</p>
+          </div>
+        </li>
+        <li>
+          <span class="step-num">4</span>
+          <span class="step-title">Make a prediction.</span>
+          <div class="step-body">
+            <p class="expected"><strong>Expected:</strong> Winner and score input work as expected. Confirmation text appears.</p>
+          </div>
+        </li>
+        <li>
+          <span class="step-num">5</span>
+          <span class="step-title">Tap "Back to fixture info" (or equivalent back control).</span>
+          <div class="step-body">
+            <p class="expected"><strong>Expected:</strong> The card swaps back to the fixture info view, showing the venue/time details again. The pick should still be confirmed — the card may show a small indicator that this match has been picked.</p>
+          </div>
+        </li>
+        <li>
+          <span class="step-num">6</span>
+          <span class="step-title">Tap "Pick →" on a different fixture card.</span>
+          <div class="step-body">
+            <p class="expected"><strong>Expected:</strong> The previously swapped card (if still in pick mode) returns to fixture info mode. Only one card is in pick mode at a time.</p>
+          </div>
+        </li>
+        <li>
+          <span class="step-num">7</span>
+          <span class="step-title">Tap "Pick →" on a match you already picked.</span>
+          <div class="step-body">
+            <p class="expected"><strong>Expected:</strong> Prediction UI opens showing the existing pick pre-filled (effectively the same as "Edit" on the dashboard).</p>
+          </div>
+        </li>
+      </ol>
+    </div>
+
+    <!-- ================================================
+         Journey 6
+         ================================================ -->
+    <div class="journey-section">
+      <h2>Journey 6: Navigation</h2>
+      <div class="journey-meta">
+        <span><strong>Goal:</strong> Confirm all navigation elements work on both mobile and desktop.</span>
+        <span><strong>Preconditions:</strong> Test Account A (member). Test admin account for the Admin link check.</span>
+      </div>
+
+      <h3>Mobile Navigation (hamburger menu)</h3>
+      <ol class="step-list">
+        <li>
+          <span class="step-num">1</span>
+          <span class="step-title">Open the hamburger menu.</span>
+          <div class="step-body">
+            <p class="expected"><strong>Expected:</strong> Menu slides or fades in. Items present: Profile, Leaderboard, Bracket prediction, Theme toggle, Log out. If logged in as admin: Admin link also appears.</p>
+          </div>
+        </li>
+        <li>
+          <span class="step-num">2</span>
+          <span class="step-title">Tap Profile.</span>
+          <div class="step-body">
+            <p class="expected"><strong>Expected:</strong> Navigate to profile page or open profile panel. Display name is correct.</p>
+          </div>
+        </li>
+        <li>
+          <span class="step-num">3</span>
+          <span class="step-title">Tap Leaderboard.</span>
+          <div class="step-body">
+            <p class="expected"><strong>Expected:</strong> Navigate to /wc/leaderboard or equivalent. Standings are visible.</p>
+          </div>
+        </li>
+        <li>
+          <span class="step-num">4</span>
+          <span class="step-title">Tap Bracket prediction.</span>
+          <div class="step-body">
+            <p class="expected"><strong>Expected:</strong> Navigate to /wc/bracket. Bracket UI loads.</p>
+          </div>
+        </li>
+        <li>
+          <span class="step-num">5</span>
+          <span class="step-title">Tap Theme toggle.</span>
+          <div class="step-body">
+            <p class="expected"><strong>Expected:</strong> App switches between light and dark mode. The toggle state reflects the current mode. Preference persists after closing and reopening the menu.</p>
+          </div>
+        </li>
+        <li>
+          <span class="step-num">6</span>
+          <span class="step-title">Log out.</span>
+          <div class="step-body">
+            <p class="expected"><strong>Expected:</strong> Session cleared, redirected to /wc landing or login page. The join overlay is visible again (not logged-in state).</p>
+          </div>
+        </li>
+        <li>
+          <span class="step-num">7</span>
+          <span class="step-title">Log back in and verify with admin account: Admin link in hamburger menu.</span>
+          <div class="step-body">
+            <p class="expected"><strong>Expected:</strong> Admin link is present. Non-admin accounts do not see it.</p>
+          </div>
+        </li>
+      </ol>
+
+      <h3>WC Pill Bar (Home · Matches · Rules)</h3>
+      <ol class="step-list">
+        <li>
+          <span class="step-num">8</span>
+          <span class="step-title">Tap each pill in the Home · Matches · Rules bar.</span>
+          <div class="step-body">
+            <p class="expected"><strong>Expected:</strong> Home navigates to /wc/home. Matches navigates to /wc (Upcoming or Fixtures tab). Rules navigates to /wc/rules or shows rules content. Active pill is visually highlighted.</p>
+          </div>
+        </li>
+      </ol>
+
+      <h3>Home Icon</h3>
+      <ol class="step-list">
+        <li>
+          <span class="step-num">9</span>
+          <span class="step-title">On the /wc tab bar, tap the Home icon (gold house).</span>
+          <div class="step-body">
+            <p class="expected"><strong>Expected:</strong> Navigates to /wc/home dashboard.</p>
+          </div>
+        </li>
+      </ol>
+
+      <h3>Back Buttons</h3>
+      <ol class="step-list">
+        <li>
+          <span class="step-num">10</span>
+          <span class="step-title">On /wc/home dashboard, tap "Back to Home" or "Back to Matches" (if present).</span>
+          <div class="step-body">
+            <p class="expected"><strong>Expected:</strong> Navigate back correctly. No broken or stale back-stack.</p>
+          </div>
+        </li>
+      </ol>
+
+      <h3>Desktop Navigation</h3>
+      <ol class="step-list">
+        <li>
+          <span class="step-num">11</span>
+          <span class="step-title">On desktop (1280px+), verify the nav bar.</span>
+          <div class="step-body">
+            <p class="expected"><strong>Expected:</strong> Nav shows Home, Matches, Rules as inline links. A user dropdown is present (avatar or display name). The WC pill bar is present below the main nav. Layout should not look like a mobile screen centered on a wide viewport — full-width areas (nav, footer) should use the wider container.</p>
+          </div>
+        </li>
+      </ol>
+    </div>
+
+    <!-- ================================================
+         Journey 7
+         ================================================ -->
+    <div class="journey-section">
+      <h2>Journey 7: Returning User</h2>
+      <div class="journey-meta">
+        <span><strong>Goal:</strong> Verify the experience for a user who has already joined and made predictions.</span>
+        <span><strong>Preconditions:</strong> Test Account B (existing member with predictions made). Log in.</span>
+      </div>
+
+      <ol class="step-list">
+        <li>
+          <span class="step-num">1</span>
+          <span class="step-title">Land on /wc/home.</span>
+          <div class="step-body">
+            <p class="expected"><strong>Expected:</strong> Dashboard loads with real data. No onboarding prompt or overlay.</p>
+          </div>
+        </li>
+        <li>
+          <span class="step-num">2</span>
+          <span class="step-title">Check pick status indicators.</span>
+          <div class="step-body">
+            <p class="expected"><strong>Expected:</strong> Match cards show correct state — picks already made show "Edit" CTA (or confirmed state), upcoming unpicked matches show "Pick →", locked matches show locked state. No matches should appear as unpicked if picks were previously submitted.</p>
+          </div>
+        </li>
+        <li>
+          <span class="step-num">3</span>
+          <span class="step-title">Check the progress bar.</span>
+          <div class="step-body">
+            <p class="expected"><strong>Expected:</strong> Progress reflects actual picks submitted, not 0%.</p>
+          </div>
+        </li>
+        <li>
+          <span class="step-num">4</span>
+          <span class="step-title">Navigate to /wc Upcoming tab.</span>
+          <div class="step-body">
+            <p class="expected"><strong>Expected:</strong> Picks made in a previous session are shown as confirmed on their respective cards. Confirmation text ("You predicted X to win Y-Z") is visible.</p>
+          </div>
+        </li>
+        <li>
+          <span class="step-num">5</span>
+          <span class="step-title">Edit an existing prediction (before lock time).</span>
+          <div class="step-body">
+            <p class="expected"><strong>Expected:</strong> Tap Edit on a previously picked match. The current pick is pre-filled. Change the winner or score. Save. Confirmation text updates to reflect the new pick. Refreshing the page shows the updated pick.</p>
+          </div>
+        </li>
+        <li>
+          <span class="step-num">6</span>
+          <span class="step-title">Find a match that is past lock time.</span>
+          <div class="step-body">
+            <p class="expected"><strong>Expected:</strong> The prediction UI is not accessible. The lock state is clearly communicated — no "Pick →" CTA, possibly a lock icon or "Locked" label.</p>
+          </div>
+        </li>
+        <li>
+          <span class="step-num">7</span>
+          <span class="step-title">Attempt to navigate to the join flow.</span>
+          <div class="step-body">
+            <p class="expected"><strong>Expected:</strong> Going to /wc with the join overlay should recognize the user is already a member and not show the overlay (or show an appropriate "already joined" state).</p>
+          </div>
+        </li>
+      </ol>
+    </div>
+
+    <!-- ================================================
+         Journey 8
+         ================================================ -->
+    <div class="journey-section">
+      <h2>Journey 8: Edge Cases</h2>
+      <div class="journey-meta">
+        <span><strong>Goal:</strong> Probe boundary conditions and failure modes.</span>
+        <span><strong>Preconditions:</strong> Test Account A.</span>
+      </div>
+
+      <h3>Display Name — Max Length</h3>
+      <ol class="step-list">
+        <li>
+          <span class="step-num">1</span>
+          <span class="step-title">During onboarding or profile edit, enter a display name of exactly 50 characters.</span>
+          <div class="step-body">
+            <p class="expected"><strong>Expected:</strong> Accepted. Renders correctly in the nav, leaderboard, and pick cards without overflow or truncation.</p>
+          </div>
+        </li>
+        <li>
+          <span class="step-num">2</span>
+          <span class="step-title">Enter a display name of 51 characters.</span>
+          <div class="step-body">
+            <p class="expected"><strong>Expected:</strong> Either blocked by the input (<code>maxlength</code> attribute) or rejected with a clear validation message. Should not silently truncate.</p>
+          </div>
+        </li>
+      </ol>
+
+      <h3>Double-Tap on Mobile</h3>
+      <ol class="step-list">
+        <li>
+          <span class="step-num">3</span>
+          <span class="step-title">Quickly double-tap a team winner button.</span>
+          <div class="step-body">
+            <p class="expected"><strong>Expected:</strong> The pick is made once. No double-submit error. The optimistic UI handles the second tap gracefully (either ignores it or shows no visible glitch).</p>
+          </div>
+        </li>
+      </ol>
+
+      <h3>Landscape Orientation</h3>
+      <ol class="step-list">
+        <li>
+          <span class="step-num">4</span>
+          <span class="step-title">Rotate the device to landscape while on /wc (Upcoming tab).</span>
+          <div class="step-body">
+            <p class="expected"><strong>Expected:</strong> The layout adapts. Match cards are readable. Score inputs are usable. No horizontal overflow or clipped elements.</p>
+          </div>
+        </li>
+        <li>
+          <span class="step-num">5</span>
+          <span class="step-title">Rotate while the hamburger menu is open.</span>
+          <div class="step-body">
+            <p class="expected"><strong>Expected:</strong> Menu either adapts or closes gracefully. No broken layout.</p>
+          </div>
+        </li>
+      </ol>
+
+      <h3>Slow Network — Optimistic Updates</h3>
+      <ol class="step-list">
+        <li>
+          <span class="step-num">6</span>
+          <span class="step-title">Using browser DevTools, throttle to Slow 3G. Make a pick.</span>
+          <div class="step-body">
+            <p class="expected"><strong>Expected:</strong> The pick appears immediately in the UI (optimistic update). A subtle loading indicator may be present. After the server responds, the state remains consistent (no flicker back to unpicked then re-picked).</p>
+          </div>
+        </li>
+        <li>
+          <span class="step-num">7</span>
+          <span class="step-title">Slow 3G — make a pick, then immediately navigate away before the request completes.</span>
+          <div class="step-body">
+            <p class="expected"><strong>Expected:</strong> On returning, the pick should be saved (server eventually got the request) or clearly not saved (if navigation cancelled the in-flight request). There should be no silent data loss without any indication.</p>
+          </div>
+        </li>
+      </ol>
+
+      <h3>Page Refresh Mid-Prediction</h3>
+      <ol class="step-list">
+        <li>
+          <span class="step-num">8</span>
+          <span class="step-title">Start entering a score (type in the score inputs) then refresh the page.</span>
+          <div class="step-body">
+            <p class="expected"><strong>Expected:</strong> In-progress score input is not persisted (expected — no auto-save for partial input). The user is returned to the pick state as of the last completed submission. This should not cause an error.</p>
+          </div>
+        </li>
+      </ol>
+
+      <h3>Back Button After Onboarding</h3>
+      <ol class="step-list">
+        <li>
+          <span class="step-num">9</span>
+          <span class="step-title">Complete onboarding and land on /wc. Immediately tap the browser back button.</span>
+          <div class="step-body">
+            <p class="expected"><strong>Expected:</strong> Either navigates back to a sensible previous page (e.g., landing) or stays on /wc. Should NOT re-trigger the onboarding flow or get stuck in a redirect loop.</p>
+          </div>
+        </li>
+      </ol>
+    </div>
+
+    <hr>
+
+    <!-- ================================================
+         Findings Template
+         ================================================ -->
+    <h2>Findings Template</h2>
+    <p>Use this section to record findings during the test session. Add a row per issue found.</p>
+
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>ID</th>
+            <th>Journey</th>
+            <th>Step</th>
+            <th>Description</th>
+            <th>Priority</th>
+            <th>Status</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>T2-001</td>
+            <td></td>
+            <td></td>
+            <td></td>
+            <td></td>
+            <td>Open</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <h3>Finding Detail Template</h3>
+    <p>For each <span class="badge badge-p0">P0</span> or <span class="badge badge-p1">P1</span> issue, add a detail block:</p>
+    <pre><code>**T2-XXX** — [Short title]
+Journey: X | Step: X
+Priority: P0 / P1
+Device: iPhone 14 / Desktop Chrome / etc.
+Account: Test A / Test B / Admin
+
+Steps to reproduce:
+1.
+2.
+3.
+
+Expected:
+Actual:
+Screenshot/recording: [link or file path]
+Notes:</code></pre>
+
+    <hr>
+
+    <!-- ================================================
+         Regression Check
+         ================================================ -->
+    <h2>Regression Check — Issues from Previous Test</h2>
+    <p>Confirm these previously found issues are resolved. Mark each as Fixed, Partially Fixed, or Regressed.</p>
+
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>Previous Issue</th>
+            <th>Expected Fix</th>
+            <th>Result</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>Join code not working — /api/join only checked <code>invite_tokens</code>, not <code>competitions.invite_code</code></td>
+            <td>/api/join now checks both</td>
+            <td></td>
+          </tr>
+          <tr>
+            <td>"My Competitions" appearing in WC shell (wrong context)</td>
+            <td>Removed from WC shell</td>
+            <td></td>
+          </tr>
+          <tr>
+            <td>No way to reset a prediction</td>
+            <td>Reset control added to pick cards</td>
+            <td></td>
+          </tr>
+          <tr>
+            <td>No confirmation after picking (timer replaced confirmation text)</td>
+            <td>"You predicted X to win Y-Z" text shown after pick</td>
+            <td></td>
+          </tr>
+          <tr>
+            <td>Mobile viewport zoom on invite code input</td>
+            <td>blur handler added, zoom suppressed</td>
+            <td></td>
+          </tr>
+          <tr>
+            <td>Display name change cooldown blocking test users</td>
+            <td>Cooldown removed</td>
+            <td></td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <hr>
+
+    <!-- ================================================
+         Out of Scope
+         ================================================ -->
+    <h2>Out of Scope for This Test</h2>
+    <p>The following are known pre-tournament limitations and are NOT test failures:</p>
+
+    <ul class="oos-list">
+      <li>Groups tab showing limited data — groups not yet drawn.</li>
+      <li>Results tab empty or minimal — no results yet.</li>
+      <li>Bracket prediction feature is bonus/optional; basic smoke test only (Journey 6, step 4).</li>
+      <li>Leaderboard showing limited standings — expected with few test picks.</li>
+      <li>Vercel deploy queue delays — not an app bug.</li>
+    </ul>
+
+  </div><!-- /.page-wrap -->
+</body>
+</html>

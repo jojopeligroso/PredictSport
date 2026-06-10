@@ -4,6 +4,8 @@ import { NavBar } from "@/components/NavBar";
 import { Footer } from "@/components/Footer";
 import { GlobalChromeGuard } from "@/components/GlobalChromeGuard";
 import { PushPromptWrapper } from "@/components/PushPromptWrapper";
+import { ServiceWorkerRegistration } from "@/components/ServiceWorkerRegistration";
+import { InstallPrompt } from "@/components/InstallPrompt";
 import { ThemeProvider, themeInitScript } from "@/components/ThemeProvider";
 import { LocaleProvider } from "@/lib/i18n";
 import { getServerLocale } from "@/lib/i18n/server";
@@ -61,10 +63,14 @@ export default async function RootLayout({
       className={`${inter.variable} ${jetbrainsMono.variable} ${instrumentSerif.variable} ${notoSans.variable} h-full antialiased`}
     >
       <head>
-        <meta name="viewport" content="width=device-width, initial-scale=1" />
+        <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
         <link rel="manifest" href="/manifest.json" />
         <meta name="theme-color" content="#f59e0b" />
-        <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+        <link rel="icon" href="/icon-192.png" type="image/png" />
+        <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+        <meta name="apple-mobile-web-app-capable" content="yes" />
+        <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+        <meta name="apple-mobile-web-app-title" content="sportspredict." />
         <script dangerouslySetInnerHTML={{ __html: themeInitScript }} />
       </head>
       <body className="min-h-full flex flex-col bg-ps-bg text-ps-text">
@@ -84,6 +90,8 @@ export default async function RootLayout({
               </GlobalChromeGuard>
             )}
             <PushPromptWrapper />
+            <ServiceWorkerRegistration />
+            <InstallPrompt />
           </LocaleProvider>
         </ThemeProvider>
       </body>
