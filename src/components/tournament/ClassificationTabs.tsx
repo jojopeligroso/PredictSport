@@ -22,21 +22,22 @@ interface StandingRow {
   eliminated?: boolean;
 }
 
-interface AllGroupsData {
-  status: "drawn" | "no_groups";
-  myGroupId: string | null;
-  groups: Array<{
-    id: string;
-    name: string;
-    groupNumber: number;
-    members: Array<{
-      user_id: string;
-      display_name: string;
-      points: number;
-      is_self: boolean;
-      status: string;
-    }>;
-  }>;
+
+interface GroupMemberData {
+  user_id: string;
+  display_name: string;
+  points: number;
+  predictions_made: number;
+  predictions_total: number;
+  is_self: boolean;
+  status: string;
+}
+
+interface GroupInfo {
+  id: string;
+  name: string;
+  groupNumber: number;
+  members: GroupMemberData[];
 }
 
 interface MyGroupData {
@@ -45,16 +46,10 @@ interface MyGroupData {
   group?: {
     name: string;
     groupNumber: number;
-    members: Array<{
-      user_id: string;
-      display_name: string;
-      points: number;
-      predictions_made: number;
-      predictions_total: number;
-      is_self: boolean;
-      status: string;
-    }>;
+    members: GroupMemberData[];
   } | null;
+  allGroups?: GroupInfo[];
+  myGroupId?: string | null;
   totalMembers?: number;
 }
 
@@ -92,7 +87,6 @@ export function ClassificationTabs({
   const [loadedId, setLoadedId] = useState<string>("");
   const [selfVisibility, setSelfVisibility] = useState<"public" | "private">("public");
   const [groupData, setGroupData] = useState<MyGroupData | null>(null);
-  const [allGroups, setAllGroups] = useState<AllGroupsData | null>(null);
 
   useEffect(() => {
     if (!activeId) return;
@@ -126,32 +120,17 @@ export function ClassificationTabs({
     const active = visibleClassifications.find((c) => c.id === activeId);
     if (active?.classification_key !== "format") {
       setGroupData(null);
-      setAllGroups(null);
       return;
     }
 
     let cancelled = false;
 
-    // Fetch user's own group (triggers lazy draw)
     fetch(
       `/api/tournament/my-group?classificationId=${activeId}&competitionId=${competitionId}`
     )
       .then((res) => res.json())
       .then((data) => {
-        if (!cancelled) {
-          setGroupData(data);
-          // Once drawn, fetch all groups
-          if (data?.status === "drawn") {
-            fetch(
-              `/api/tournament/all-groups?classificationId=${activeId}&competitionId=${competitionId}`
-            )
-              .then((res) => res.json())
-              .then((allData) => {
-                if (!cancelled) setAllGroups(allData);
-              })
-              .catch(() => {});
-          }
-        }
+        if (!cancelled) setGroupData(data);
       })
       .catch(() => {
         if (!cancelled) setGroupData(null);
@@ -217,9 +196,9 @@ export function ClassificationTabs({
 
       {/* Format: All groups view (user's group first) OR single-group preview */}
       {active?.classification_key === "format" && (
-        allGroups?.status === "drawn" && allGroups.groups.length > 0 ? (
+        groupData?.allGroups && groupData.allGroups.length > 0 ? (
           <div className="mt-4">
-            <AllGroupsView groups={allGroups.groups} myGroupId={allGroups.myGroupId} />
+            <AllGroupsView groups={groupData.allGroups} myGroupId={groupData.myGroupId ?? null} />
           </div>
         ) : (
           <FormatGroupCard
@@ -230,7 +209,7 @@ export function ClassificationTabs({
       )}
 
       {/* Standings (non-format tabs only, or format before groups load) */}
-      {!(active?.classification_key === "format" && allGroups?.status === "drawn" && allGroups.groups.length > 0) && (
+      {!(active?.classification_key === "format" && groupData?.allGroups && groupData.allGroups.length > 0) && (
       <div className="mt-4 flex flex-1 flex-col">
         {isLoading ? (
           <div className="flex justify-center py-12">
@@ -783,7 +762,7 @@ function AllGroupsView({
   groups,
   myGroupId,
 }: {
-  groups: AllGroupsData["groups"];
+  groups: GroupInfo[];
   myGroupId: string | null;
 }) {
   const t = useT();

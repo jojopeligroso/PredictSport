@@ -138,138 +138,100 @@ export async function GET(request: NextRequest) {
     }
   }
 
-  // Groups exist (either pre-existing or just drawn) — fetch user's group
-  const { data: membership } = await supabase
-    .from("format_group_memberships")
-    .select("group_id, status")
-    .eq("classification_id", classificationId)
-    .eq("user_id", user.id)
-    .maybeSingle();
-
-  if (!membership) {
-    return NextResponse.json({
-      status: "drawn",
-      group: null,
-      totalMembers: totalMembers ?? 0,
-    });
-  }
-
-  // Fetch group details
-  const { data: group } = await supabase
+  // Groups exist — fetch ALL groups with members for full overview
+  const { data: allGroups } = await supabase
     .from("format_prediction_groups")
     .select("id, group_name, group_number, target_size")
-    .eq("id", membership.group_id)
-    .single();
+    .eq("classification_id", classificationId)
+    .order("group_number", { ascending: true });
 
-  if (!group) {
+  if (!allGroups || allGroups.length === 0) {
     return NextResponse.json({
       status: "drawn",
       group: null,
+      allGroups: [],
       totalMembers: totalMembers ?? 0,
     });
   }
 
-  // Fetch all members of this group with display names
-  const { data: groupMembers } = await supabase
+  // Fetch ALL memberships across all groups
+  const { data: allMemberships } = await supabase
     .from("format_group_memberships")
-    .select("user_id, seed_position, status")
-    .eq("group_id", group.id)
-    .order("seed_position", { ascending: true });
+    .select("group_id, user_id, seed_position, status")
+    .eq("classification_id", classificationId);
 
-  const memberUserIds = (groupMembers ?? []).map((m: { user_id: string }) => m.user_id);
+  const memberships = allMemberships ?? [];
+  const allUserIds = memberships.map((m) => m.user_id);
 
-  // Fetch display names
+  // Fetch display names for everyone
   const { data: users } = await supabase
     .from("users")
     .select("id, display_name")
-    .in("id", memberUserIds);
+    .in("id", allUserIds);
 
   const nameMap = new Map<string, string>();
   for (const u of users ?? []) {
     nameMap.set(u.id, u.display_name || "Unknown");
   }
 
-  // Fetch prediction counts for this round
-  // Find current/next round
-  const { data: currentRound } = await supabase
-    .from("rounds")
-    .select("id")
-    .eq("competition_id", competitionId)
-    .in("status", ["draft", "open", "locked"])
-    .order("round_number", { ascending: true })
-    .limit(1)
-    .maybeSingle();
+  // Aggregate total points per user from all scored predictions
+  const pointsMap = new Map<string, number>();
+  for (const uid of allUserIds) pointsMap.set(uid, 0);
 
-  let predictionsTotal = 0;
-  const predictionsMadeMap = new Map<string, number>();
+  if (allUserIds.length > 0) {
+    const { data: scoredPreds } = await supabase
+      .from("predictions")
+      .select("user_id, points_awarded, events!inner(competition_id)")
+      .in("user_id", allUserIds)
+      .eq("events.competition_id", competitionId)
+      .not("points_awarded", "is", null);
 
-  if (currentRound) {
-    // Count total prediction types in this round
-    const { data: roundEvents } = await supabase
-      .from("events")
-      .select("id")
-      .eq("round_id", currentRound.id);
-
-    const eventIds = (roundEvents ?? []).map((e: { id: string }) => e.id);
-
-    if (eventIds.length > 0) {
-      const { count: eptCount } = await supabase
-        .from("event_prediction_types")
-        .select("id", { count: "exact", head: true })
-        .in("event_id", eventIds);
-
-      predictionsTotal = eptCount ?? 0;
-
-      // Count predictions per group member
-      const { data: predictions } = await supabase
-        .from("predictions")
-        .select("user_id")
-        .in("user_id", memberUserIds)
-        .in("event_id", eventIds);
-
-      for (const p of predictions ?? []) {
-        const current = predictionsMadeMap.get(p.user_id) ?? 0;
-        predictionsMadeMap.set(p.user_id, current + 1);
-      }
+    for (const p of scoredPreds ?? []) {
+      const current = pointsMap.get(p.user_id) ?? 0;
+      pointsMap.set(p.user_id, current + (p.points_awarded ?? 0));
     }
   }
 
-  // Aggregate total points per group member from all scored predictions
-  const pointsMap = new Map<string, number>();
-  for (const uid of memberUserIds) pointsMap.set(uid, 0);
+  // Identify user's group
+  const myMembership = memberships.find((m) => m.user_id === user.id);
+  const myGroupId = myMembership?.group_id ?? null;
+  const myGroup = allGroups.find((g) => g.id === myGroupId);
 
-  const { data: scoredPreds } = await supabase
-    .from("predictions")
-    .select("user_id, points_awarded, events!inner(competition_id)")
-    .in("user_id", memberUserIds)
-    .eq("events.competition_id", competitionId)
-    .not("points_awarded", "is", null);
+  // Build per-group member lists
+  const groupsResponse = allGroups.map((g) => {
+    const gMembers = memberships
+      .filter((m) => m.group_id === g.id)
+      .map((m) => ({
+        user_id: m.user_id,
+        display_name: nameMap.get(m.user_id) ?? "Unknown",
+        points: pointsMap.get(m.user_id) ?? 0,
+        predictions_made: 0,
+        predictions_total: 0,
+        is_self: m.user_id === user.id,
+        status: m.status,
+      }))
+      .sort((a, b) => b.points - a.points);
 
-  for (const p of scoredPreds ?? []) {
-    const current = pointsMap.get(p.user_id) ?? 0;
-    pointsMap.set(p.user_id, current + (p.points_awarded ?? 0));
-  }
+    return {
+      id: g.id,
+      name: g.group_name,
+      groupNumber: g.group_number,
+      members: gMembers,
+    };
+  });
 
-  // Build response — sorted by points descending
-  const members = (groupMembers ?? [])
-    .map((m: { user_id: string; seed_position: number | null; status: string }) => ({
-      user_id: m.user_id,
-      display_name: nameMap.get(m.user_id) ?? "Unknown",
-      points: pointsMap.get(m.user_id) ?? 0,
-      predictions_made: predictionsMadeMap.get(m.user_id) ?? 0,
-      predictions_total: predictionsTotal,
-      is_self: m.user_id === user.id,
-      status: m.status,
-    }))
-    .sort((a, b) => b.points - a.points);
+  // User's own group for backward compat
+  const userGroupData = myGroup
+    ? groupsResponse.find((g) => g.id === myGroupId) ?? null
+    : null;
 
   return NextResponse.json({
     status: "drawn",
-    group: {
-      name: group.group_name,
-      groupNumber: group.group_number,
-      members,
-    },
+    group: userGroupData
+      ? { name: userGroupData.name, groupNumber: userGroupData.groupNumber, members: userGroupData.members }
+      : null,
+    allGroups: groupsResponse,
+    myGroupId,
     totalMembers: totalMembers ?? 0,
   });
 }
