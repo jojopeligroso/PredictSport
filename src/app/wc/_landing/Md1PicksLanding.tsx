@@ -175,6 +175,7 @@ export function Md1PicksLanding(props: Md1PicksLandingProps) {
         dayBeforeCloseIso={dayBeforeCloseIso}
         todayIso={todayIso}
         now={now}
+        hideIndicators={previewMode}
       />
 
       {/* Soft cutoff banner */}

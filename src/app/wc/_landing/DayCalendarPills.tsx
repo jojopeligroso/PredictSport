@@ -41,12 +41,15 @@ export function DayCalendarPills({
   dayBeforeCloseIso,
   todayIso,
   now,
+  hideIndicators,
 }: {
   days: DayBucket[];
   dayBeforeCloseIso: string;
   todayIso?: string;
   /** Current time for status computation. Null during SSR. */
   now: Date | null;
+  /** Hide status indicators and cutoff badges (e.g. for non-members). */
+  hideIndicators?: boolean;
 }) {
   // Group pills by month for label positioning.
   const monthGroups: { month: string; startIdx: number; count: number }[] = [];
@@ -125,8 +128,8 @@ export function DayCalendarPills({
               className="relative flex shrink-0 flex-col items-center text-center"
             >
               {/* Badge above pill: day-before-close warning */}
-              {isDayBefore && <JoinCutoffBadge />}
-              {!isDayBefore && <span className="mb-1 h-4" aria-hidden="true" />}
+              {isDayBefore && !hideIndicators && <JoinCutoffBadge />}
+              {(!isDayBefore || hideIndicators) && <span className="mb-1 h-4" aria-hidden="true" />}
 
               {/* Pill */}
               <span
@@ -146,7 +149,9 @@ export function DayCalendarPills({
               </span>
 
               {/* Status indicator below pill */}
-              <PillStatusIndicator status={status} />
+              {hideIndicators
+                ? <span className="mt-1 h-3.5" aria-hidden="true" />
+                : <PillStatusIndicator status={status} />}
             </a>
           );
         })}
