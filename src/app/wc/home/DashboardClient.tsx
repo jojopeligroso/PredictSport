@@ -271,7 +271,26 @@ export function DashboardClient({
         </section>
       </OnboardingSection>
 
-      {/* ── 5b. Mini Chat ──────────────────────────────────────────── */}
+      {/* ── 5b. Leaderboard link ──────────────────────────────────── */}
+      <OnboardingSection id="other">
+        {isMember && (
+          <section className="mt-2">
+            <Link
+              href="/wc/leaderboard"
+              className="flex items-center justify-between rounded-xl bg-ps-amber px-4 py-3 transition-colors hover:opacity-90"
+            >
+              <span className="text-[13px] font-semibold text-white">
+                Leaderboard
+              </span>
+              <span className="text-[13px] font-semibold text-white">
+                →
+              </span>
+            </Link>
+          </section>
+        )}
+      </OnboardingSection>
+
+      {/* ── 5c. Mini Chat (above leaderboard) ─────────────────────── */}
       {chatEnabled && isMember && currentUserId && !chatClosed && (
         <OnboardingSection id="other">
           <section className="mt-2">
@@ -296,25 +315,6 @@ export function DashboardClient({
           </section>
         </OnboardingSection>
       )}
-
-      {/* ── 6. Leaderboard link ──────────────────────────────────────── */}
-      <OnboardingSection id="other">
-        {isMember && (
-          <section className="mt-2">
-            <Link
-              href="/wc/leaderboard"
-              className="flex items-center justify-between rounded-xl bg-ps-amber px-4 py-3 transition-colors hover:opacity-90"
-            >
-              <span className="text-[13px] font-semibold text-white">
-                Leaderboard
-              </span>
-              <span className="text-[13px] font-semibold text-white">
-                →
-              </span>
-            </Link>
-          </section>
-        )}
-      </OnboardingSection>
 
       {/* ── 7. Recent Results ─────────────────────────────────────────── */}
       <OnboardingSection id="other">

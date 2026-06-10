@@ -163,7 +163,7 @@ export function ChatWidget({
   return (
     <div
       className={`flex flex-col ${
-        mode === "full" ? "h-[75vh]" : "max-h-72"
+        mode === "full" ? "h-[80vh] max-h-[80vh]" : "max-h-72"
       }`}
     >
       {/* Header (mini mode only) */}
