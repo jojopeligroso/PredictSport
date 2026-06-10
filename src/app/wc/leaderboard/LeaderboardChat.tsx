@@ -34,18 +34,14 @@ export function LeaderboardChat({
     [],
   );
 
-  // Expand when user scrolls up within the chat (reading older messages)
-  const handleScroll = useCallback(() => {
-    if (!expanded) setExpanded(true);
-  }, [expanded]);
 
   return (
     <div
       ref={containerRef}
       onFocus={() => setExpanded(true)}
+      onTouchStart={() => { if (!expanded) setExpanded(true); }}
       onBlur={handleBlur}
-      onScroll={handleScroll}
-      className={`flex flex-col transition-[height] duration-300 ease-out ${
+      className={`flex flex-col overflow-hidden transition-[height] duration-300 ease-out ${
         expanded ? "h-[80vh]" : "h-[280px]"
       }`}
     >
