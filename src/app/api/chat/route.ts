@@ -74,12 +74,12 @@ export async function GET(request: NextRequest) {
   // Replace content on tombstoned messages
   const result = page.map((msg) => {
     if (msg.deleted_at) {
+      let tombstone = "This message was deleted";
+      if (msg.deleted_by === "admin") tombstone = "This message was deleted by admin";
+      else if (msg.deleted_by === "mod") tombstone = "This message was deleted by mod";
       return {
         ...msg,
-        content:
-          msg.deleted_by === "admin"
-            ? "This message was deleted by admin"
-            : "This message was deleted",
+        content: tombstone,
         mentioned_user_ids: [],
       };
     }
@@ -141,10 +141,10 @@ export async function POST(request: Request) {
     );
   }
 
-  // Verify membership
+  // Verify membership and check mute status
   const { data: membership } = await supabase
     .from("competition_members")
-    .select("id")
+    .select("id, chat_muted_until")
     .eq("competition_id", body.competitionId)
     .eq("user_id", user.id)
     .single();
@@ -154,6 +154,22 @@ export async function POST(request: Request) {
       { error: "Not a member of this competition" },
       { status: 403 }
     );
+  }
+
+  // Check if user is muted
+  if (membership.chat_muted_until) {
+    const muteEnd = new Date(membership.chat_muted_until);
+    if (muteEnd > new Date()) {
+      const remainingMs = muteEnd.getTime() - Date.now();
+      const remainingMin = Math.ceil(remainingMs / 60000);
+      return NextResponse.json(
+        {
+          error: `You're muted for ${remainingMin} more minute${remainingMin !== 1 ? "s" : ""}`,
+          muted_until: membership.chat_muted_until,
+        },
+        { status: 403 }
+      );
+    }
   }
 
   // Check chat is enabled

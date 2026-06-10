@@ -1,16 +1,25 @@
 "use client";
 
-import { useState } from "react";
+import { useCallback, useRef, useState } from "react";
 import Image from "next/image";
 import { getInitials } from "@/lib/display-name";
-import type { ChatMessageWithUser } from "./useRealtimeChat";
+import type { ChatMessageWithUser, UseChatMember } from "./useRealtimeChat";
+
+const ROLE_RANK: Record<string, number> = {
+  participant: 0,
+  mod: 1,
+  co_admin: 2,
+  admin: 3,
+};
 
 interface ChatMessageProps {
   message: ChatMessageWithUser;
   currentUserId: string;
-  isAdmin: boolean;
+  currentUserRole: string;
+  members: UseChatMember[];
   onDelete?: (messageId: string) => void;
   onEdit?: (messageId: string, content: string) => void;
+  onMute?: (userId: string) => void;
 }
 
 const EDIT_WINDOW_MS = 5 * 60 * 1000;
@@ -68,18 +77,44 @@ function renderContent(content: string): React.ReactNode {
 export function ChatMessage({
   message,
   currentUserId,
-  isAdmin,
+  currentUserRole,
+  members,
   onDelete,
   onEdit,
+  onMute,
 }: ChatMessageProps) {
   const [isEditing, setIsEditing] = useState(false);
   const [editContent, setEditContent] = useState(message.content);
+  const [showContextMenu, setShowContextMenu] = useState(false);
+  const longPressTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const isOwn = message.user_id === currentUserId;
   const isDeleted = !!message.deleted_at;
   const isSystem = message.message_type === "system";
   const isEdited = !!message.updated_at && !isDeleted;
-  const canDelete = isOwn || isAdmin;
+
+  const actorRank = ROLE_RANK[currentUserRole] ?? 0;
+  const targetMember = members.find((m) => m.user_id === message.user_id);
+  const targetRank = ROLE_RANK[targetMember?.role ?? "participant"] ?? 0;
+
+  const canModDelete = !isOwn && actorRank >= ROLE_RANK.mod && actorRank > targetRank;
+  const canDelete = isOwn || canModDelete;
+  const canMute = !isOwn && actorRank >= ROLE_RANK.mod && actorRank > targetRank;
+
+  // Long-press handlers for context menu
+  const handleTouchStart = useCallback(() => {
+    if (!canMute && !canModDelete) return;
+    longPressTimer.current = setTimeout(() => {
+      setShowContextMenu(true);
+    }, 500);
+  }, [canMute, canModDelete]);
+
+  const handleTouchEnd = useCallback(() => {
+    if (longPressTimer.current) {
+      clearTimeout(longPressTimer.current);
+      longPressTimer.current = null;
+    }
+  }, []);
 
   // System messages
   if (isSystem) {
@@ -124,7 +159,7 @@ export function ChatMessage({
 
   return (
     <div
-      className={`group flex gap-2 py-1 ${isOwn ? "flex-row-reverse" : "flex-row"}`}
+      className={`group relative flex gap-2 py-1 ${isOwn ? "flex-row-reverse" : "flex-row"}`}
     >
       {/* Avatar */}
       {!isOwn && (
@@ -162,6 +197,15 @@ export function ChatMessage({
               ? "bg-ps-amber/15 text-ps-text"
               : "bg-ps-chip text-ps-text"
           }`}
+          onTouchStart={handleTouchStart}
+          onTouchEnd={handleTouchEnd}
+          onTouchCancel={handleTouchEnd}
+          onContextMenu={(e) => {
+            if (canMute || canModDelete) {
+              e.preventDefault();
+              setShowContextMenu(true);
+            }
+          }}
         >
           {isEditing ? (
             <div className="flex gap-1">
@@ -189,6 +233,40 @@ export function ChatMessage({
             </p>
           )}
         </div>
+
+        {/* Context menu (long-press / right-click) */}
+        {showContextMenu && (
+          <>
+            <div
+              className="fixed inset-0 z-40"
+              onClick={() => setShowContextMenu(false)}
+            />
+            <div className="absolute z-50 mt-1 rounded-lg border border-ps-border bg-ps-surface shadow-lg py-1 min-w-[140px]">
+              {canModDelete && (
+                <button
+                  onClick={() => {
+                    setShowContextMenu(false);
+                    onDelete?.(message.id);
+                  }}
+                  className="block w-full text-left px-3 py-1.5 text-xs text-ps-red hover:bg-ps-chip"
+                >
+                  Delete message
+                </button>
+              )}
+              {canMute && (
+                <button
+                  onClick={() => {
+                    setShowContextMenu(false);
+                    onMute?.(message.user_id);
+                  }}
+                  className="block w-full text-left px-3 py-1.5 text-xs text-ps-text-sec hover:bg-ps-chip"
+                >
+                  Mute this user
+                </button>
+              )}
+            </div>
+          </>
+        )}
 
         {/* Meta row: time, edited, actions */}
         <div

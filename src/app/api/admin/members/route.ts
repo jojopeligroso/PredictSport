@@ -10,7 +10,14 @@ interface UpdateMemberBody {
   role: UserRole;
 }
 
-const VALID_ROLES: UserRole[] = ["admin", "co_admin", "participant"];
+const VALID_ROLES: UserRole[] = ["admin", "co_admin", "mod", "participant"];
+
+const ROLE_RANK: Record<string, number> = {
+  participant: 0,
+  mod: 1,
+  co_admin: 2,
+  admin: 3,
+};
 
 /**
  * PATCH /api/admin/members
@@ -47,23 +54,54 @@ export async function PATCH(request: Request) {
 
   if (!VALID_ROLES.includes(body.role)) {
     return NextResponse.json(
-      { error: "Invalid role. Must be admin, co_admin, or participant" },
+      { error: "Invalid role. Must be admin, co_admin, mod, or participant" },
       { status: 400 }
     );
   }
 
-  // Verify the requester is an admin
-  const member = await verifyCompetitionAdmin(
-    supabase,
-    user.id,
-    body.competition_id
-  );
-  if (!member) {
+  // Get requester's membership
+  const { data: actorMembership } = await supabase
+    .from("competition_members")
+    .select("id, role")
+    .eq("competition_id", body.competition_id)
+    .eq("user_id", user.id)
+    .single();
+
+  if (!actorMembership) {
+    return NextResponse.json(
+      { error: "Not a member of this competition" },
+      { status: 403 }
+    );
+  }
+
+  const actorRank = ROLE_RANK[actorMembership.role] ?? 0;
+  const targetNewRank = ROLE_RANK[body.role] ?? 0;
+
+  // Only admin/co_admin can change roles
+  if (actorRank < ROLE_RANK.co_admin) {
     return NextResponse.json(
       { error: "You are not an admin of this competition" },
       { status: 403 }
     );
   }
+
+  // co_admin cannot promote to admin or co_admin
+  if (actorMembership.role === "co_admin" && targetNewRank >= ROLE_RANK.co_admin) {
+    return NextResponse.json(
+      { error: "Co-admins can only set roles to mod or participant" },
+      { status: 403 }
+    );
+  }
+
+  // Cannot assign a role higher than your own
+  if (targetNewRank > actorRank) {
+    return NextResponse.json(
+      { error: "Cannot assign a role higher than your own" },
+      { status: 403 }
+    );
+  }
+
+  const member = actorMembership;
 
   // Prevent self-demotion
   if (body.member_user_id === user.id) {

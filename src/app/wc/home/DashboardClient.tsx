@@ -48,6 +48,7 @@ interface DashboardClientProps {
   datePills: DatePillSummary[];
   chatEnabled: boolean;
   isCompetitionAdmin: boolean;
+  memberRole: string;
 }
 
 type PickStatus = "complete" | "urgent" | "unpicked";
@@ -101,6 +102,7 @@ export function DashboardClient({
   datePills,
   chatEnabled,
   isCompetitionAdmin,
+  memberRole,
 }: DashboardClientProps) {
   const [expandedEventId, setExpandedEventId] = useState<string | null>(null);
   const [selectedDate, setSelectedDate] = useState<string | null>(null);
@@ -273,11 +275,20 @@ export function DashboardClient({
       {chatEnabled && isMember && currentUserId && !chatClosed && (
         <OnboardingSection id="other">
           <section className="mt-2">
-            <div className="rounded-xl border border-ps-border bg-ps-surface overflow-hidden">
+            <a
+              href="/wc/leaderboard#chat"
+              className="block rounded-xl border border-ps-border bg-ps-surface overflow-hidden"
+            >
+              <div className="flex items-center justify-between px-4 py-3">
+                <span className="text-sm font-bold text-ps-text">Chat</span>
+                <span className="text-xs text-ps-text-ter">Open full chat &rarr;</span>
+              </div>
+            </a>
+            <div className="mt-1 rounded-xl border border-ps-border bg-ps-surface overflow-hidden">
               <ChatWidget
                 competitionId={competitionId}
                 currentUserId={currentUserId}
-                isAdmin={isCompetitionAdmin}
+                currentUserRole={memberRole}
                 mode="mini"
                 onClose={handleChatClose}
               />

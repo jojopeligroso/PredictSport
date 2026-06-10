@@ -39,7 +39,7 @@ export function ParticipantsSection({
   const [savingCallout, setSavingCallout] = useState(false);
 
   const sortedMembers = [...(members ?? [])].sort((a, b) => {
-    const roleOrder: Record<UserRole, number> = { admin: 0, co_admin: 1, participant: 2 };
+    const roleOrder: Record<UserRole, number> = { admin: 0, co_admin: 1, mod: 2, participant: 3 };
     return (roleOrder[a.role] ?? 2) - (roleOrder[b.role] ?? 2);
   });
 

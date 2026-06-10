@@ -9,7 +9,7 @@ import { Avatar, avatarColor } from "@/components/ui/Avatar";
 interface MemberData {
   id: string;
   user_id: string;
-  role: "admin" | "co_admin" | "participant";
+  role: "admin" | "co_admin" | "mod" | "participant";
   joined_at: string;
   display_name: string;
   email: string;
@@ -301,10 +301,43 @@ function Dashboard({
     setTimeout(() => setCopiedInvite(false), 2000);
   };
 
-  const roleOrder = { admin: 0, co_admin: 1, participant: 2 };
+  const [promotingId, setPromotingId] = useState<string | null>(null);
+
+  const roleOrder = { admin: 0, co_admin: 1, mod: 2, participant: 3 };
   const sortedMembers = [...members].sort(
-    (a, b) => (roleOrder[a.role] ?? 2) - (roleOrder[b.role] ?? 2)
+    (a, b) => (roleOrder[a.role] ?? 3) - (roleOrder[b.role] ?? 3)
   );
+
+  const handleRoleChange = async (
+    memberUserId: string,
+    newRole: "mod" | "participant",
+    displayName: string
+  ) => {
+    const action = newRole === "mod" ? "Promote" : "Demote";
+    if (!confirm(`${action} ${displayName} to ${newRole}?`)) return;
+    setPromotingId(memberUserId);
+
+    try {
+      const res = await fetch("/api/admin/members", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          competition_id: competition.id,
+          member_user_id: memberUserId,
+          role: newRole,
+        }),
+      });
+
+      if (res.ok) {
+        router.refresh();
+      } else {
+        const data = await res.json();
+        alert(data.error || `Failed to ${action.toLowerCase()}`);
+      }
+    } finally {
+      setPromotingId(null);
+    }
+  };
 
   return (
     <div className="mt-6 space-y-5">
@@ -353,7 +386,9 @@ function Dashboard({
             const isCreator = m.user_id === competition.created_by;
             const isSelf = m.user_id === currentUserId;
             const canRemove =
-              !pw1Locked && !isCreator && !isSelf && m.role === "participant";
+              !pw1Locked && !isCreator && !isSelf && (m.role === "participant" || m.role === "mod");
+            const canPromoteToMod = !isCreator && !isSelf && m.role === "participant";
+            const canDemoteFromMod = !isCreator && !isSelf && m.role === "mod";
 
             return (
               <div
@@ -377,27 +412,54 @@ function Dashboard({
                         {m.role === "admin" ? "Admin" : "Co-admin"}
                       </span>
                     )}
+                    {m.role === "mod" && (
+                      <span className="rounded-full bg-[rgba(59,130,246,0.12)] px-1.5 py-px text-[9px] font-extrabold uppercase tracking-wide text-[#3b82f6]">
+                        Mod
+                      </span>
+                    )}
                   </div>
                   <span className="font-mono text-[11px] text-ps-text-ter">
                     Joined {new Date(m.joined_at).toLocaleDateString()}
                   </span>
                 </div>
 
-                {canRemove && (
-                  <button
-                    type="button"
-                    onClick={() => handleRemove(m.user_id, m.display_name)}
-                    disabled={removingId === m.user_id}
-                    className="shrink-0 rounded-lg border border-ps-border px-2.5 py-1 text-[11px] font-semibold text-ps-text-sec transition-colors hover:border-ps-red hover:text-ps-red disabled:opacity-50"
-                  >
-                    {removingId === m.user_id ? "..." : "Remove"}
-                  </button>
-                )}
-                {pw1Locked && !isCreator && !isSelf && m.role === "participant" && (
-                  <span className="text-[10px] font-medium text-ps-text-ter">
-                    Locked
-                  </span>
-                )}
+                <div className="flex items-center gap-1.5 shrink-0">
+                  {canPromoteToMod && (
+                    <button
+                      type="button"
+                      onClick={() => handleRoleChange(m.user_id, "mod", m.display_name)}
+                      disabled={promotingId === m.user_id}
+                      className="rounded-lg border border-ps-border px-2 py-1 text-[11px] font-semibold text-[#3b82f6] transition-colors hover:border-[#3b82f6] disabled:opacity-50"
+                    >
+                      {promotingId === m.user_id ? "..." : "Make Mod"}
+                    </button>
+                  )}
+                  {canDemoteFromMod && (
+                    <button
+                      type="button"
+                      onClick={() => handleRoleChange(m.user_id, "participant", m.display_name)}
+                      disabled={promotingId === m.user_id}
+                      className="rounded-lg border border-ps-border px-2 py-1 text-[11px] font-semibold text-ps-text-ter transition-colors hover:border-ps-text-sec disabled:opacity-50"
+                    >
+                      {promotingId === m.user_id ? "..." : "Remove Mod"}
+                    </button>
+                  )}
+                  {canRemove && (
+                    <button
+                      type="button"
+                      onClick={() => handleRemove(m.user_id, m.display_name)}
+                      disabled={removingId === m.user_id}
+                      className="rounded-lg border border-ps-border px-2 py-1 text-[11px] font-semibold text-ps-text-sec transition-colors hover:border-ps-red hover:text-ps-red disabled:opacity-50"
+                    >
+                      {removingId === m.user_id ? "..." : "Remove"}
+                    </button>
+                  )}
+                  {pw1Locked && !isCreator && !isSelf && (m.role === "participant" || m.role === "mod") && !canRemove && (
+                    <span className="text-[10px] font-medium text-ps-text-ter">
+                      Locked
+                    </span>
+                  )}
+                </div>
               </div>
             );
           })}

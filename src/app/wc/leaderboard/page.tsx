@@ -107,7 +107,7 @@ export default async function LeaderboardPage() {
             <LeaderboardChat
               competitionId={competition.id}
               currentUserId={user.id}
-              isAdmin={isAdmin}
+              currentUserRole={membership?.role ?? "participant"}
             />
           </div>
         </div>

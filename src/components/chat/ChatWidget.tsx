@@ -8,7 +8,7 @@ import { useRealtimeChat } from "./useRealtimeChat";
 interface ChatWidgetProps {
   competitionId: string;
   currentUserId: string;
-  isAdmin: boolean;
+  currentUserRole: string;
   mode: "mini" | "full";
   /** Mini mode: callback when close (X) is tapped */
   onClose?: () => void;
@@ -17,7 +17,7 @@ interface ChatWidgetProps {
 export function ChatWidget({
   competitionId,
   currentUserId,
-  isAdmin,
+  currentUserRole,
   mode,
   onClose,
 }: ChatWidgetProps) {
@@ -30,15 +30,35 @@ export function ChatWidget({
     sendMessage,
     deleteMessage,
     editMessage,
+    muteUser,
     isSending,
-  } = useRealtimeChat({ competitionId, mode });
+    mutedUntil,
+  } = useRealtimeChat({ competitionId, currentUserId, mode });
 
   const [inputValue, setInputValue] = useState("");
   const [cursorPosition, setCursorPosition] = useState(0);
   const [showMentions, setShowMentions] = useState(false);
+  const [muteError, setMuteError] = useState<string | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
   const prevMessageCount = useRef(0);
+
+  // Compute mute remaining time
+  const isMuted = mutedUntil ? new Date(mutedUntil) > new Date() : false;
+  const muteRemainingMin = isMuted
+    ? Math.ceil((new Date(mutedUntil!).getTime() - Date.now()) / 60000)
+    : 0;
+
+  const handleMuteUser = useCallback(
+    async (userId: string) => {
+      const result = await muteUser(competitionId, userId);
+      if (result.error) {
+        setMuteError(result.error);
+        setTimeout(() => setMuteError(null), 3000);
+      }
+    },
+    [competitionId, muteUser]
+  );
 
   // Auto-scroll to bottom on new messages
   useEffect(() => {
@@ -184,9 +204,11 @@ export function ChatWidget({
               key={msg.id}
               message={msg}
               currentUserId={currentUserId}
-              isAdmin={isAdmin}
+              currentUserRole={currentUserRole}
+              members={members}
               onDelete={deleteMessage}
               onEdit={editMessage}
+              onMute={handleMuteUser}
             />
           ))
         )}
@@ -194,40 +216,54 @@ export function ChatWidget({
 
       {/* Input area */}
       <div className="relative border-t border-ps-border px-3 py-2">
-        {showMentions && (
-          <MentionAutocomplete
-            members={members.filter((m) => m.user_id !== currentUserId)}
-            inputValue={inputValue}
-            cursorPosition={cursorPosition}
-            onSelect={handleMentionSelect}
-            onClose={() => setShowMentions(false)}
-          />
+        {muteError && (
+          <div className="mb-2 rounded-lg bg-ps-red/10 px-3 py-1.5 text-xs text-ps-red">
+            {muteError}
+          </div>
         )}
 
-        <div className="flex items-center gap-2">
-          <input
-            ref={inputRef}
-            type="text"
-            value={inputValue}
-            onChange={handleInputChange}
-            onKeyDown={handleKeyDown}
-            onSelect={(e) =>
-              setCursorPosition(
-                (e.target as HTMLInputElement).selectionStart ?? 0
-              )
-            }
-            placeholder="Type a message..."
-            maxLength={2000}
-            className="flex-1 rounded-xl border border-ps-border bg-ps-bg px-3 py-1.5 text-sm text-ps-text placeholder:text-ps-text-ter focus:outline-none focus:ring-1 focus:ring-ps-amber"
-          />
-          <button
-            onClick={handleSend}
-            disabled={!inputValue.trim() || isSending}
-            className="rounded-xl bg-ps-amber px-3 py-1.5 text-sm font-bold text-[#1a1208] hover:opacity-90 disabled:opacity-40"
-          >
-            {isSending ? "..." : "Send"}
-          </button>
-        </div>
+        {isMuted ? (
+          <div className="text-center py-1.5 text-xs text-ps-text-ter italic">
+            You&apos;re muted for {muteRemainingMin} more minute{muteRemainingMin !== 1 ? "s" : ""}
+          </div>
+        ) : (
+          <>
+            {showMentions && (
+              <MentionAutocomplete
+                members={members.filter((m) => m.user_id !== currentUserId)}
+                inputValue={inputValue}
+                cursorPosition={cursorPosition}
+                onSelect={handleMentionSelect}
+                onClose={() => setShowMentions(false)}
+              />
+            )}
+
+            <div className="flex items-center gap-2">
+              <input
+                ref={inputRef}
+                type="text"
+                value={inputValue}
+                onChange={handleInputChange}
+                onKeyDown={handleKeyDown}
+                onSelect={(e) =>
+                  setCursorPosition(
+                    (e.target as HTMLInputElement).selectionStart ?? 0
+                  )
+                }
+                placeholder="Type a message..."
+                maxLength={2000}
+                className="flex-1 rounded-xl border border-ps-border bg-ps-bg px-3 py-1.5 text-sm text-ps-text placeholder:text-ps-text-ter focus:outline-none focus:ring-1 focus:ring-ps-amber"
+              />
+              <button
+                onClick={handleSend}
+                disabled={!inputValue.trim() || isSending}
+                className="rounded-xl bg-ps-amber px-3 py-1.5 text-sm font-bold text-[#1a1208] hover:opacity-90 disabled:opacity-40"
+              >
+                {isSending ? "..." : "Send"}
+              </button>
+            </div>
+          </>
+        )}
       </div>
     </div>
   );

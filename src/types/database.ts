@@ -1,4 +1,4 @@
-export type UserRole = "admin" | "co_admin" | "participant";
+export type UserRole = "admin" | "co_admin" | "mod" | "participant";
 export type CompetitionType = "fixed" | "open" | "personal";
 export type CompetitionVisibility = "public" | "private";
 export type CompetitionStatus = "draft" | "active" | "completed" | "archived";
@@ -11,7 +11,7 @@ export type EventStatus =
   | "cancelled";
 export type NominationStatus = "pending" | "approved" | "rejected";
 export type ChatMessageType = "user" | "system";
-export type ChatDeletedBy = "user" | "admin";
+export type ChatDeletedBy = "user" | "mod" | "admin";
 export type PredictionType =
   | "winner"
   | "top_n"
@@ -84,6 +84,7 @@ export interface CompetitionMember {
   user_id: string;
   role: UserRole;
   callout_label: string | null;
+  chat_muted_until: string | null;
   joined_at: string;
 }
 

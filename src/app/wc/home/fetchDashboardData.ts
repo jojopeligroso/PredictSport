@@ -83,6 +83,8 @@ export interface DashboardData {
   chatEnabled: boolean;
   /** Whether the current user is an admin/co-admin. */
   isCompetitionAdmin: boolean;
+  /** The current user's role in the competition. */
+  memberRole: string;
 }
 
 export type DashboardResult =
@@ -403,6 +405,7 @@ export async function fetchDashboardData(): Promise<DashboardResult> {
     datePills,
     chatEnabled: competition.chat_enabled ?? true,
     isCompetitionAdmin,
+    memberRole: membership?.role ?? "participant",
   };
 }
 

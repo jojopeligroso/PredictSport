@@ -9,6 +9,7 @@ interface UseChatMember {
   user_id: string;
   display_name: string;
   avatar_url: string | null;
+  role: string;
 }
 
 interface ChatMessageWithUser extends ChatMessage {
@@ -18,6 +19,7 @@ interface ChatMessageWithUser extends ChatMessage {
 
 interface UseRealtimeChatOptions {
   competitionId: string;
+  currentUserId: string;
   /** Mini mode only shows recent messages; full mode supports pagination */
   mode?: "mini" | "full";
 }
@@ -31,7 +33,10 @@ interface UseRealtimeChatReturn {
   sendMessage: (content: string, mentionedUserIds?: string[]) => Promise<void>;
   deleteMessage: (messageId: string) => Promise<void>;
   editMessage: (messageId: string, content: string) => Promise<void>;
+  muteUser: (competitionId: string, userId: string) => Promise<{ error?: string; muted_until?: string }>;
   isSending: boolean;
+  /** Current user's muted_until timestamp (null if not muted) */
+  mutedUntil: string | null;
 }
 
 const PAGE_SIZE = 50;
@@ -40,13 +45,14 @@ const MINI_SIZE = 5;
 /** Tombstone content for deleted messages */
 function tombstoneContent(msg: ChatMessage): string {
   if (!msg.deleted_at) return msg.content;
-  return msg.deleted_by === "admin"
-    ? "This message was deleted by admin"
-    : "This message was deleted";
+  if (msg.deleted_by === "admin") return "This message was deleted by admin";
+  if (msg.deleted_by === "mod") return "This message was deleted by mod";
+  return "This message was deleted";
 }
 
 export function useRealtimeChat({
   competitionId,
+  currentUserId,
   mode = "full",
 }: UseRealtimeChatOptions): UseRealtimeChatReturn {
   const [messages, setMessages] = useState<ChatMessageWithUser[]>([]);
@@ -54,6 +60,7 @@ export function useRealtimeChat({
   const [isLoading, setIsLoading] = useState(true);
   const [hasMore, setHasMore] = useState(false);
   const [isSending, setIsSending] = useState(false);
+  const [mutedUntil, setMutedUntil] = useState<string | null>(null);
   const channelRef = useRef<RealtimeChannel | null>(null);
   const supabase = createClient();
 
@@ -75,7 +82,7 @@ export function useRealtimeChat({
     async function fetchMembers() {
       const { data } = await supabase
         .from("competition_members")
-        .select("user_id, users!inner(display_name, avatar_url)")
+        .select("user_id, role, chat_muted_until, users!inner(display_name, avatar_url)")
         .eq("competition_id", competitionId);
 
       if (data) {
@@ -88,16 +95,21 @@ export function useRealtimeChat({
             user_id: row.user_id,
             display_name: u.display_name,
             avatar_url: u.avatar_url,
+            role: row.role,
           };
         });
         memberMap.current = new Map(mapped.map((m) => [m.user_id, m]));
         setMembers(mapped);
+
+        // Track current user's mute status
+        const me = data.find((r) => r.user_id === currentUserId);
+        setMutedUntil(me?.chat_muted_until ?? null);
       }
     }
 
     fetchMembers();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [competitionId]);
+  }, [competitionId, currentUserId]);
 
   // Fetch initial messages
   useEffect(() => {
@@ -287,6 +299,21 @@ export function useRealtimeChat({
     []
   );
 
+  // Mute user
+  const muteUser = useCallback(
+    async (cId: string, userId: string) => {
+      const res = await fetch("/api/chat/mute", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ competitionId: cId, userId }),
+      });
+      const data = await res.json();
+      if (!res.ok) return { error: data.error };
+      return { muted_until: data.muted_until };
+    },
+    []
+  );
+
   return {
     messages,
     members,
@@ -296,7 +323,9 @@ export function useRealtimeChat({
     sendMessage,
     deleteMessage,
     editMessage,
+    muteUser,
     isSending,
+    mutedUntil,
   };
 }
 

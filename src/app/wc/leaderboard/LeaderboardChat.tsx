@@ -6,13 +6,13 @@ import { ChatWidget } from "@/components/chat";
 interface LeaderboardChatProps {
   competitionId: string;
   currentUserId: string;
-  isAdmin: boolean;
+  currentUserRole: string;
 }
 
 export function LeaderboardChat({
   competitionId,
   currentUserId,
-  isAdmin,
+  currentUserRole,
 }: LeaderboardChatProps) {
   // Mark chat as seen when viewing the leaderboard
   useEffect(() => {
@@ -25,7 +25,7 @@ export function LeaderboardChat({
     <ChatWidget
       competitionId={competitionId}
       currentUserId={currentUserId}
-      isAdmin={isAdmin}
+      currentUserRole={currentUserRole}
       mode="full"
     />
   );

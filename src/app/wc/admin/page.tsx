@@ -184,7 +184,7 @@ export default async function AdminPage() {
     return {
       id: m.id,
       user_id: m.user_id,
-      role: m.role as "admin" | "co_admin" | "participant",
+      role: m.role as "admin" | "co_admin" | "mod" | "participant",
       joined_at: m.joined_at,
       display_name: u?.display_name || "Unknown",
       email: u?.email ?? "",

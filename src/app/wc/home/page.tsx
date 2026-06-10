@@ -74,6 +74,7 @@ export default async function WcHomePage({
       datePills={data.datePills}
       chatEnabled={data.chatEnabled}
       isCompetitionAdmin={data.isCompetitionAdmin}
+      memberRole={data.memberRole}
       onboarding={onboarding}
     />
   );
