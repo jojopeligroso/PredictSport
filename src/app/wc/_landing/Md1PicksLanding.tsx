@@ -180,8 +180,8 @@ export function Md1PicksLanding(props: Md1PicksLandingProps) {
       {/* Soft cutoff banner */}
       <JoinCutoffBanner state={cutoffState} closeDateLabel={closeDateLabel} />
 
-      {/* By date / By group */}
-      <ViewToggle value={view} onChange={handleViewChange} />
+      {/* By date / By group — hidden for non-members */}
+      {!previewMode && <ViewToggle value={view} onChange={handleViewChange} />}
 
       {/* Prediction urgency banner — members only */}
       {!previewMode && (
