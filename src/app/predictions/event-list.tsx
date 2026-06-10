@@ -1040,7 +1040,7 @@ function EventCard({
                         eventId={event.id}
                         sport={event.sport}
                         homeTeam={pickOptions[0]?.label ?? "Home"}
-                        awayTeam={pickOptions[1]?.label ?? "Away"}
+                        awayTeam={pickOptions[pickOptions.length - 1]?.label ?? "Away"}
                         ept={exactScoreEpt}
                         winnerOptions={pickOptions.map((o) => o.label)}
                         currentWinnerPick={getPickValue(existingPrediction)}
