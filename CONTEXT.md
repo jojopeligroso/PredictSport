@@ -193,9 +193,23 @@ _Avoid_: Bot message, notification
 
 ---
 
+## Moderator (Mod)
+
+A [[Competition]] member role between [[Co-Admin]] and [[Participant]] in the role hierarchy (`admin > co_admin > mod > participant`). Mods can delete chat messages from lower-role members (tombstoned as "deleted by mod") and mute [[Participant]]s for 15 minutes. Mods cannot act on other mods or above. Promotion to mod generates a [[System Message]].
+_Avoid_: Chat admin, super user
+
+---
+
+## Mute
+
+A 15-minute block preventing a [[Competition]] member from sending [[Competition Chat]] messages. Stored as a `chat_muted_until` timestamp on the membership. Only visible to the muted user ("You're muted for X minutes") when they attempt to send. No system message. Hierarchy-enforced: admins/co-admins can mute anyone below them; mods can mute participants only.
+_Avoid_: Ban, silence, timeout
+
+---
+
 ## Tombstone
 
-The placeholder displayed in [[Competition Chat]] when a message is deleted after the grace window (10 seconds). Shows "This message was deleted by user" or "This message was deleted by admin" depending on who deleted it. Messages deleted within the grace window vanish entirely with no trace.
+The placeholder displayed in [[Competition Chat]] when a message is deleted after the grace window (20 seconds). Shows "This message was deleted" (user), "This message was deleted by mod" ([[Moderator]]), or "This message was deleted by admin" (admin/co-admin) depending on who deleted it. Messages deleted by their author within the grace window vanish entirely with no trace. Moderation deletions (mod/admin) always leave a tombstone regardless of timing.
 
 ---
 
