@@ -558,7 +558,64 @@ function MatchPickRow({
 
   // ── Read-only locked branch ──────────────────────────────────────────────
   if (isLocked) {
-    const lockedBody = (
+    // Card surface locked state mirrors the interactive layout (centered flags
+    // at 29px, team names below) so the blurred preview on the landing page
+    // matches what members see. The compact inline layout is only for the
+    // non-card surface.
+    const lockedBody = useCardSurface ? (
+      <>
+        {/* Team buttons row — same layout as interactive, just non-clickable */}
+        <div className="flex items-center justify-center gap-1.5">
+          <div className="flex flex-1 min-w-0 flex-col items-center gap-1 px-1.5 py-1.5 rounded-lg">
+            <CountryFlag shape="pill" name={home} size={29} />
+            <span className={`max-w-full truncate text-xs font-semibold text-center leading-tight ${currentWinner === home ? "text-white" : "text-white/55"}`}>
+              {home}
+            </span>
+          </div>
+
+          {winnerOptions.some((opt) => slotOf(opt, home, away) === "draw") && (
+            <div className="shrink-0 px-2.5 min-h-[44px] flex items-center rounded-lg text-xs font-medium text-white/45">
+              draw
+            </div>
+          )}
+
+          <div className="flex flex-1 min-w-0 flex-col items-center gap-1 px-1.5 py-1.5 rounded-lg">
+            <CountryFlag shape="pill" name={away} size={29} />
+            <span className={`max-w-full truncate text-xs font-semibold text-center leading-tight ${currentWinner === away ? "text-white" : "text-white/55"}`}>
+              {away}
+            </span>
+          </div>
+        </div>
+        {currentWinner ? (
+          <>
+            <p className="mt-1 text-xs text-white/75">
+              <svg className="inline mr-1 h-3 w-3" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M16.5 10.5V6.75a4.5 4.5 0 10-9 0v3.75m-.75 11.25h10.5a2.25 2.25 0 002.25-2.25v-6.75a2.25 2.25 0 00-2.25-2.25H6.75a2.25 2.25 0 00-2.25 2.25v6.75a2.25 2.25 0 002.25 2.25z" />
+              </svg>
+              Picked:{" "}
+              <span className="font-semibold text-white">{currentWinner}</span>
+            </p>
+            {initialScore && !resetInFlight && (
+              <p className="text-[10px] text-white/55">
+                {getPredictionSummary(
+                  "exact_score",
+                  initialScore.prediction_data,
+                  home,
+                  away,
+                )}
+              </p>
+            )}
+          </>
+        ) : (
+          <p className="mt-1 text-xs text-white/55">
+            <svg className="inline mr-1 h-3 w-3" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" d="M16.5 10.5V6.75a4.5 4.5 0 10-9 0v3.75m-.75 11.25h10.5a2.25 2.25 0 002.25-2.25v-6.75a2.25 2.25 0 00-2.25-2.25H6.75a2.25 2.25 0 00-2.25 2.25v6.75a2.25 2.25 0 002.25 2.25z" />
+            </svg>
+            Locked — no prediction
+          </p>
+        )}
+      </>
+    ) : (
       <>
         <div className="flex items-center justify-between gap-2">
           <span className={`flex items-center gap-1.5 ${theme.lockedText}`}>
@@ -568,22 +625,13 @@ function MatchPickRow({
             <CountryFlag shape="pill" name={away} size={18} />
             {away}
           </span>
-          {/* The status chip uses different background contrast per surface. */}
-          {useCardSurface ? (
-            <span className="rounded-full bg-white/15 px-2 py-0.5 text-[10px] font-semibold uppercase text-white/85">
-              {event.result_confirmed ? "Resulted" : "Locked"}
-            </span>
-          ) : (
-            <span className="rounded-full bg-ps-chip px-2 py-0.5 text-[10px] font-semibold uppercase text-ps-text-sec">
-              {event.result_confirmed ? "Resulted" : "Locked"}
-            </span>
-          )}
+          <span className="rounded-full bg-ps-chip px-2 py-0.5 text-[10px] font-semibold uppercase text-ps-text-sec">
+            {event.result_confirmed ? "Resulted" : "Locked"}
+          </span>
         </div>
         {currentWinner ? (
           <>
-            <p
-              className={`mt-1 text-xs ${useCardSurface ? "text-white/75" : "text-ps-text-sec"}`}
-            >
+            <p className={`mt-1 text-xs text-ps-text-sec`}>
               <svg className="inline mr-1 h-3 w-3" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" d="M16.5 10.5V6.75a4.5 4.5 0 10-9 0v3.75m-.75 11.25h10.5a2.25 2.25 0 002.25-2.25v-6.75a2.25 2.25 0 00-2.25-2.25H6.75a2.25 2.25 0 00-2.25 2.25v6.75a2.25 2.25 0 002.25 2.25z" />
               </svg>
@@ -593,7 +641,7 @@ function MatchPickRow({
               </span>
             </p>
             {initialScore && !resetInFlight && (
-              <p className={`text-[10px] ${useCardSurface ? "text-white/55" : "text-ps-text-ter"}`}>
+              <p className={`text-[10px] text-ps-text-ter`}>
                 {getPredictionSummary(
                   "exact_score",
                   initialScore.prediction_data,
