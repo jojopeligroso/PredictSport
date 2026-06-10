@@ -145,8 +145,8 @@ export function Md1PicksLanding(props: Md1PicksLandingProps) {
         </div>
       </header>
 
-      {/* Progress strip */}
-      <div className="mx-auto mt-4 w-full max-w-[480px] px-4">
+      {/* Progress strip — hidden for non-members */}
+      {!previewMode && <div className="mx-auto mt-4 w-full max-w-[480px] px-4">
         <div className="flex items-center gap-3 rounded-lg border border-ps-border bg-ps-surface px-3.5 py-2.5">
           <span className="font-mono text-[10px] font-bold uppercase tracking-[0.12em] text-ps-text-ter">
             MD1 picks
@@ -167,7 +167,7 @@ export function Md1PicksLanding(props: Md1PicksLandingProps) {
             <span className="font-semibold text-ps-text-ter"> / {total}</span>
           </span>
         </div>
-      </div>
+      </div>}
 
       {/* 8-day calendar pills with month labels */}
       <DayCalendarPills
