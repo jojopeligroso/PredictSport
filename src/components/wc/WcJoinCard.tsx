@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { useT } from "@/lib/i18n";
 
 interface WcJoinCardProps {
   isAuthenticated: boolean;
@@ -29,6 +30,7 @@ export function WcJoinCard({
   className,
 }: WcJoinCardProps) {
   const router = useRouter();
+  const t = useT();
   const [joinError, setJoinError] = useState<string | null>(null);
   const [isJoining, setIsJoining] = useState(false);
 
@@ -72,10 +74,10 @@ export function WcJoinCard({
         .join(" ")}
     >
       <h2 className="font-display text-xl font-extrabold uppercase tracking-tight text-ps-text">
-        Join the World Cup game
+        {t("wc.join_title")}
       </h2>
       <p className="mt-2 text-sm text-ps-text-sec">
-        Free to play. Bragging rights on the line.
+        {t("wc.join_desc")}
       </p>
 
       {firstLockTime && (
@@ -96,14 +98,14 @@ export function WcJoinCard({
           disabled={isJoining}
           className="mt-4 w-full rounded-xl bg-ps-amber px-4 py-3.5 text-base font-semibold text-ps-bg transition-opacity hover:opacity-90 active:opacity-80 disabled:opacity-60"
         >
-          {isJoining ? "Joining..." : "Join the World Cup game"}
+          {isJoining ? t("wc.joining") : t("wc.join_button")}
         </button>
       ) : (
         <Link
           href={joinHref}
           className="mt-4 inline-block w-full rounded-xl bg-ps-amber px-4 py-3.5 text-base font-semibold text-ps-bg transition-opacity hover:opacity-90 active:opacity-80"
         >
-          Join the World Cup game
+          {t("wc.join_button")}
         </Link>
       )}
 
@@ -111,13 +113,14 @@ export function WcJoinCard({
         href={createHref}
         className="mt-3 inline-block text-xs font-medium text-ps-text-ter transition-colors hover:text-ps-text-sec"
       >
-        or create your own competition
+        {t("wc.or_create")}
       </Link>
     </div>
   );
 }
 
 function LockCountdown({ lockTime }: { lockTime: string }) {
+  const t = useT();
   const [display, setDisplay] = useState<string | null>(null);
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
@@ -148,15 +151,21 @@ function LockCountdown({ lockTime }: { lockTime: string }) {
   if (display === null) {
     return (
       <p className="text-xs text-ps-text-sec">
-        Joins close 3 days after kickoff.
+        {t("cta.join_closes")}
       </p>
     );
   }
 
+  // Split the translated string around the {countdown} placeholder so we can
+  // wrap the countdown value in its own styled span.
+  const raw = t("cta.locks_in", { countdown: "\x00" });
+  const [before, after] = raw.split("\x00");
+
   return (
     <p className="text-xs text-ps-text-sec">
-      Picks lock in{" "}
+      {before}
       <span className="font-mono font-bold text-ps-text">{display}</span>
+      {after}
     </p>
   );
 }

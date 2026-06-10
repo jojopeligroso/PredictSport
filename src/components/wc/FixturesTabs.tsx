@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { useT } from "@/lib/i18n";
+import { useT, useLocale } from "@/lib/i18n";
 import { CountryFlag } from "@/components/CountryFlag";
 import { HOST_CITIES, type HostCitySlug } from "@/lib/wc/host-cities";
 import { WindowPickList } from "@/app/wc/picks/[windowId]/WindowPickList";
@@ -59,6 +59,7 @@ interface Props {
 
 export function FixturesTabs({ fixtures, resultsByExternalId, serverDateIso, predictionsByExternalId = {}, mode = "all", windowEventsByExternalId, fixtureByEventId, fullPredictions, competitionId, isMember }: Props) {
   const t = useT();
+  const { locale } = useLocale();
   // Render server-side with the server's idea of "today", then re-derive on
   // mount from the browser. Avoids hydration mismatch on the timezone shift.
   const [todayIso, setTodayIso] = useState(serverDateIso);
@@ -149,13 +150,14 @@ export function FixturesTabs({ fixtures, resultsByExternalId, serverDateIso, pre
     if (mode !== "fixtures") return null;
     const groups: { label: string; dateKey: string; items: WcFixture[] }[] = [];
     let currentKey = "";
+    const intlLocale = locale === "es" ? "es-MX" : "en-GB";
     for (const f of active) {
       const d = new Date(f.kickoffUtc);
       const key = d.toISOString().slice(0, 10);
       if (key !== currentKey) {
         currentKey = key;
         groups.push({
-          label: d.toLocaleDateString("en-GB", { weekday: "short", day: "numeric", month: "short" }),
+          label: d.toLocaleDateString(intlLocale, { weekday: "short", day: "numeric", month: "short" }),
           dateKey: key,
           items: [],
         });
@@ -163,7 +165,7 @@ export function FixturesTabs({ fixtures, resultsByExternalId, serverDateIso, pre
       groups[groups.length - 1].items.push(f);
     }
     return groups;
-  }, [mode, active]);
+  }, [mode, active, locale]);
 
   const showSubTabs = mode === "all";
   const showPredToggles = mode !== "fixtures" && hasPredictions;
@@ -280,6 +282,7 @@ export function FixturesTabs({ fixtures, resultsByExternalId, serverDateIso, pre
                         large={biggerCards}
                         expandable={isExpandable}
                         onExpand={() => setExpandedExternalId(f.externalId)}
+                        locale={locale}
                       />
                     );
                   })}
@@ -294,6 +297,7 @@ export function FixturesTabs({ fixtures, resultsByExternalId, serverDateIso, pre
                 prediction={showPredictions ? effectivePredictions[f.externalId] : undefined}
                 showCorrectness={showPredictions && showCorrectness}
                 large={biggerCards}
+                locale={locale}
               />
             ))}
       </div>
@@ -382,6 +386,7 @@ function FixtureCard({
   large,
   expandable = false,
   onExpand,
+  locale = "en",
 }: {
   fixture: WcFixture;
   result: FixtureResult | undefined;
@@ -390,6 +395,7 @@ function FixtureCard({
   large: boolean;
   expandable?: boolean;
   onExpand?: () => void;
+  locale?: string;
 }) {
   const t = useT();
   const city = HOST_CITIES[fixture.city as HostCitySlug];
@@ -531,10 +537,10 @@ function FixtureCard({
     }
   }
 
-  const cityTime = formatTime(kickoff, city.timezone);
-  const cityDate = formatDateShort(kickoff, city.timezone);
-  const localTime = formatTime(kickoff, undefined);
-  const localTzAbbr = formatTzAbbr(kickoff);
+  const cityTime = formatTime(kickoff, city.timezone, locale);
+  const cityDate = formatDateShort(kickoff, city.timezone, locale);
+  const localTime = formatTime(kickoff, undefined, locale);
+  const localTzAbbr = formatTzAbbr(kickoff, locale);
   const sameClock = cityTime === localTime;
 
   // Size tokens — default vs large
@@ -784,8 +790,8 @@ function stageLabel(stage: WcFixture["stage"], t: (key: string) => string): stri
   }
 }
 
-function formatTime(date: Date, timeZone: string | undefined): string {
-  return new Intl.DateTimeFormat("en-GB", {
+function formatTime(date: Date, timeZone: string | undefined, locale = "en"): string {
+  return new Intl.DateTimeFormat(locale === "es" ? "es-MX" : "en-GB", {
     hour: "2-digit",
     minute: "2-digit",
     hour12: false,
@@ -793,8 +799,8 @@ function formatTime(date: Date, timeZone: string | undefined): string {
   }).format(date);
 }
 
-function formatDateShort(date: Date, timeZone: string | undefined): string {
-  return new Intl.DateTimeFormat("en-GB", {
+function formatDateShort(date: Date, timeZone: string | undefined, locale = "en"): string {
+  return new Intl.DateTimeFormat(locale === "es" ? "es-MX" : "en-GB", {
     weekday: "short",
     day: "numeric",
     month: "short",
@@ -802,8 +808,8 @@ function formatDateShort(date: Date, timeZone: string | undefined): string {
   }).format(date);
 }
 
-function formatTzAbbr(date: Date): string {
-  const parts = new Intl.DateTimeFormat("en-GB", {
+function formatTzAbbr(date: Date, locale = "en"): string {
+  const parts = new Intl.DateTimeFormat(locale === "es" ? "es-MX" : "en-GB", {
     timeZoneName: "short",
   }).formatToParts(date);
   return parts.find((p) => p.type === "timeZoneName")?.value ?? "";

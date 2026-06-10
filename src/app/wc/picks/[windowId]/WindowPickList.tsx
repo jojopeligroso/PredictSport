@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { useRouter } from "next/navigation";
+import { useT } from "@/lib/i18n";
 import { CountryFlag } from "@/components/CountryFlag";
 import { ScoreInput } from "@/components/ScoreInput";
 import { FixtureCardSurface } from "@/components/wc/FixtureCardSurface";
@@ -256,6 +257,7 @@ function MatchPickRow({
   showCardCountdown?: boolean;
 }) {
   const router = useRouter();
+  const t = useT();
 
   // Resolve card-surface mode. If surface="card" was requested but no fixture
   // metadata was supplied, fall back to compact — better to degrade gracefully
@@ -575,7 +577,7 @@ function MatchPickRow({
 
           {winnerOptions.some((opt) => slotOf(opt, home, away) === "draw") && (
             <div className="shrink-0 px-2.5 min-h-[44px] flex items-center rounded-lg text-xs font-medium text-white/45">
-              draw
+              {t("fixtures.draw")}
             </div>
           )}
 
@@ -592,7 +594,7 @@ function MatchPickRow({
               <svg className="inline mr-1 h-3 w-3" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" d="M16.5 10.5V6.75a4.5 4.5 0 10-9 0v3.75m-.75 11.25h10.5a2.25 2.25 0 002.25-2.25v-6.75a2.25 2.25 0 00-2.25-2.25H6.75a2.25 2.25 0 00-2.25 2.25v6.75a2.25 2.25 0 002.25 2.25z" />
               </svg>
-              Picked:{" "}
+              {t("wc.picked_label")}{" "}
               <span className="font-semibold text-white">{currentWinner}</span>
             </p>
             {initialScore && !resetInFlight && (
@@ -611,7 +613,7 @@ function MatchPickRow({
             <svg className="inline mr-1 h-3 w-3" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" d="M16.5 10.5V6.75a4.5 4.5 0 10-9 0v3.75m-.75 11.25h10.5a2.25 2.25 0 002.25-2.25v-6.75a2.25 2.25 0 00-2.25-2.25H6.75a2.25 2.25 0 00-2.25 2.25v6.75a2.25 2.25 0 002.25 2.25z" />
             </svg>
-            Locked — no prediction
+            {t("wc.locked_no_prediction")}
           </p>
         )}
       </>
@@ -635,7 +637,7 @@ function MatchPickRow({
               <svg className="inline mr-1 h-3 w-3" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" d="M16.5 10.5V6.75a4.5 4.5 0 10-9 0v3.75m-.75 11.25h10.5a2.25 2.25 0 002.25-2.25v-6.75a2.25 2.25 0 00-2.25-2.25H6.75a2.25 2.25 0 00-2.25 2.25v6.75a2.25 2.25 0 002.25 2.25z" />
               </svg>
-              Picked:{" "}
+              {t("wc.picked_label")}{" "}
               <span className={theme.lockedPickedText}>
                 {currentWinner}
               </span>
@@ -656,7 +658,7 @@ function MatchPickRow({
             <svg className="inline mr-1 h-3 w-3" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" d="M16.5 10.5V6.75a4.5 4.5 0 10-9 0v3.75m-.75 11.25h10.5a2.25 2.25 0 002.25-2.25v-6.75a2.25 2.25 0 00-2.25-2.25H6.75a2.25 2.25 0 00-2.25 2.25v6.75a2.25 2.25 0 002.25 2.25z" />
             </svg>
-            Locked — no prediction
+            {t("wc.locked_no_prediction")}
           </p>
         )}
       </>
@@ -668,7 +670,7 @@ function MatchPickRow({
           city={fixture.city}
           headerLeft={
             fixture.group && fixture.matchday
-              ? `Group ${fixture.group} · MD${fixture.matchday}`
+              ? t("fixtures.stage_group", { group: fixture.group, matchday: fixture.matchday })
               : event.event_name
           }
           headerRight={formatHeaderRight(fixture.kickoffUtc, showCardCountdown ? event.lock_time : undefined)}
@@ -708,7 +710,7 @@ function MatchPickRow({
             aria-pressed={drawSelected}
             className={theme.drawButton(drawSelected)}
           >
-            draw
+            {t("fixtures.draw")}
           </button>
         )}
 

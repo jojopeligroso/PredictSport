@@ -324,5 +324,15 @@
   "wc.format_explainer": "48 players. Groups of 4. Finish bottom of your group and you're out. Survivors face knockout rounds where the field halves until only one remains. Pick match winners, guess exact scores for bonus points.",
   "wc.full_rules": "Full rules →",
   "wc.by_date": "By date",
-  "wc.by_group": "By group"
+  "wc.by_group": "By group",
+  "wc.join_title": "Join the World Cup game",
+  "wc.join_desc": "Free to play. Bragging rights on the line.",
+  "wc.join_button": "Join the World Cup game",
+  "wc.or_create": "or create your own competition",
+  "wc.joining": "Joining...",
+  "wc.locked_no_prediction": "Locked — no prediction",
+  "wc.picked_label": "Picked:",
+  "wc.banner_pick_locks": "{count} pick locks",
+  "wc.banner_picks_lock": "{count} picks lock",
+  "wc.banner_dismiss": "Dismiss"
 }

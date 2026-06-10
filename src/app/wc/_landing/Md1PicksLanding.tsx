@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { useEffect, useState, useRef, useMemo, useSyncExternalStore } from "react";
-import { useT } from "@/lib/i18n";
+import { useT, useLocale } from "@/lib/i18n";
 import { WindowPickList, type WindowEvent } from "@/app/wc/picks/[windowId]/WindowPickList";
 import type { WcFixture } from "@/lib/wc/fixtures";
 import type { Prediction } from "@/types/database";
@@ -56,6 +56,7 @@ interface Md1PicksLandingProps {
 
 export function Md1PicksLanding(props: Md1PicksLandingProps) {
   const t = useT();
+  const { locale } = useLocale();
   const searchParams = useSearchParams();
   const [view, setView] = useState<ViewMode>(
     () => (searchParams.get("view") === "group" ? "group" : "date"),
@@ -90,13 +91,13 @@ export function Md1PicksLanding(props: Md1PicksLandingProps) {
   // server + client (no timezone-of-runner ambiguity).
   const closeDateLabel = useMemo(() => {
     const d = new Date(WC_JOINS_CLOSE_AT);
-    return new Intl.DateTimeFormat("en-GB", {
+    return new Intl.DateTimeFormat(locale === "es" ? "es-MX" : "en-GB", {
       weekday: "short",
       day: "numeric",
       month: "short",
       timeZone: "UTC",
     }).format(d);
-  }, []);
+  }, [locale]);
 
   const dayBeforeCloseIso = dayBeforeCloseUtcDate();
   const todayIso = useMemo(() => (now ? utcDateIso(now) : undefined), [now]);
@@ -104,8 +105,8 @@ export function Md1PicksLanding(props: Md1PicksLandingProps) {
   // Build day buckets. One per UTC calendar date that has at least one MD1
   // fixture. We derive labels via Intl in UTC to match the seed data.
   const dayBuckets = useMemo<DayBucket[]>(
-    () => buildDayBuckets(props.events, props.predictions),
-    [props.events, props.predictions],
+    () => buildDayBuckets(props.events, props.predictions, locale),
+    [props.events, props.predictions, locale],
   );
 
   // Overall progress — every match needs BOTH winner + exact_score saved to
@@ -128,9 +129,9 @@ export function Md1PicksLanding(props: Md1PicksLandingProps) {
   // pick state survives the toggle.
   const sections = useMemo(() => {
     if (view === "group")
-      return bucketByGroup(props.events, props.fixtureByEventId, props.predictions, now);
-    return bucketByDate(props.events, props.predictions, now);
-  }, [view, props.events, props.fixtureByEventId, props.predictions, now]);
+      return bucketByGroup(props.events, props.fixtureByEventId, props.predictions, now, locale);
+    return bucketByDate(props.events, props.predictions, now, locale);
+  }, [view, props.events, props.fixtureByEventId, props.predictions, now, locale]);
 
   return (
     <div className="pb-16">
@@ -589,6 +590,7 @@ function bucketByDate(
   events: WindowEvent[],
   predictions: Prediction[],
   now: Date | null,
+  locale: string = "en",
 ): Section[] {
   const buckets = new Map<string, WindowEvent[]>();
   for (const e of events) {
@@ -606,7 +608,7 @@ function bucketByDate(
   );
   return sorted.map(([iso, list]) => {
     const d = new Date(iso + "T12:00:00Z");
-    const heading = new Intl.DateTimeFormat("en-GB", {
+    const heading = new Intl.DateTimeFormat(locale === "es" ? "es-MX" : "en-GB", {
       weekday: "short",
       day: "numeric",
       month: "short",
@@ -633,6 +635,7 @@ function bucketByGroup(
   fixtureByEventId: Map<string, WcFixture>,
   predictions: Prediction[],
   now: Date | null,
+  _locale: string = "en",
 ): Section[] {
   const buckets = new Map<string, WindowEvent[]>();
   for (const e of events) {
@@ -769,6 +772,7 @@ function countSectionCompletion(
 function buildDayBuckets(
   events: WindowEvent[],
   predictions: Prediction[],
+  locale: string = "en",
 ): DayBucket[] {
   // Group events by UTC date.
   const dateToEvents = new Map<string, WindowEvent[]>();
@@ -808,11 +812,12 @@ function buildDayBuckets(
       if (winnerByEvent.get(e.id) && scoreByEvent.get(e.id)) fullyComplete++;
     }
     const d = new Date(iso + "T12:00:00Z");
-    const weekday = new Intl.DateTimeFormat("en-GB", {
+    const intlLocale = locale === "es" ? "es-MX" : "en-GB";
+    const weekday = new Intl.DateTimeFormat(intlLocale, {
       weekday: "short",
       timeZone: "UTC",
     }).format(d);
-    const month = new Intl.DateTimeFormat("en-GB", {
+    const month = new Intl.DateTimeFormat(intlLocale, {
       month: "long",
       timeZone: "UTC",
     }).format(d);

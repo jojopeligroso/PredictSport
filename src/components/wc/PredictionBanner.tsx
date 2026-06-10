@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useMemo } from "react";
+import { useT } from "@/lib/i18n";
 import type { WindowEvent } from "@/app/wc/picks/[windowId]/WindowPickList";
 import type { Prediction } from "@/types/database";
 
@@ -51,6 +52,7 @@ interface PredictionBannerProps {
 }
 
 export function PredictionBanner({ events, predictions }: PredictionBannerProps) {
+  const t = useT();
   const [dismissed, setDismissed] = useState(true); // Start dismissed to avoid flash
 
   const urgentEvents = useMemo(
@@ -107,15 +109,16 @@ export function PredictionBanner({ events, predictions }: PredictionBannerProps)
     >
       <p>
         <span className="mr-1">
-          {urgentEvents.length === 1 ? "1 pick" : `${urgentEvents.length} picks`}
+          {urgentEvents.length === 1
+            ? t("wc.banner_pick_locks", { count: 1 })
+            : t("wc.banner_picks_lock", { count: urgentEvents.length })}
         </span>
-        lock{urgentEvents.length === 1 ? "s" : ""}{" "}
         {formatLockLocal(new Date(earliestLock).toISOString())}
       </p>
       <button
         onClick={handleDismiss}
         className="shrink-0 rounded p-0.5 opacity-60 transition-opacity hover:opacity-100"
-        aria-label="Dismiss"
+        aria-label={t("wc.banner_dismiss")}
       >
         <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
           <path
