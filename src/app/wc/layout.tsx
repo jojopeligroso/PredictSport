@@ -7,6 +7,7 @@ import { WcNavLinks } from "@/components/wc/WcNavLinks";
 import { getWcBracketSnapshot } from "@/lib/tournament/bracket-snapshot";
 import { DisplayNameModal } from "@/components/DisplayNameModal";
 import { LanguageToggle } from "@/components/LanguageToggle";
+import { getServerT } from "@/lib/i18n/server";
 
 export default async function WorldCupLayout({
   children,
@@ -85,6 +86,8 @@ export default async function WorldCupLayout({
     isWcAdmin = profile?.is_super_admin === true;
   }
 
+  const t = await getServerT();
+
   const bracketStarted =
     bracket != null && bracket.stage !== "not_started";
   const engaged = bracketStarted || isWcMember;
@@ -124,7 +127,7 @@ export default async function WorldCupLayout({
                 href="/login"
                 className="hidden rounded-lg bg-ps-text px-3 py-1.5 text-sm font-semibold text-ps-bg md:block"
               >
-                Sign in
+                {t('common.sign_in')}
               </Link>
             )}
             <MobileNav

@@ -106,7 +106,7 @@
   "fixtures.in_city": "En {cityName}",
   "fixtures.your_time": "Tu tiempo",
   "fixtures.same_tz": "Igual",
-  "fixtures.stage_group": "Grupo - Partido del Dia",
+  "fixtures.stage_group": "Grupo {group} · J{matchday}",
   "fixtures.stage_r32": "Dieciseisavos de final",
   "fixtures.stage_r16": "Octavos de final",
   "fixtures.stage_qf": "Cuartos de final",
