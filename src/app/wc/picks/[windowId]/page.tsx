@@ -3,6 +3,7 @@ import { redirect, notFound } from "next/navigation";
 import Link from "next/link";
 import { PicksClient } from "./PicksClient";
 import { EmbeddedBracketKoEditor } from "./EmbeddedBracketKoEditor";
+import { PredictionBanner } from "@/components/wc/PredictionBanner";
 import type { WindowEvent } from "./WindowPickList";
 import type { Prediction } from "@/types/database";
 import type { BracketSubmissionData } from "@/types/tournament";
@@ -207,6 +208,10 @@ export default async function WindowPicksPage({
       </div>
 
       <h1 className="mt-3 font-display font-extrabold text-2xl uppercase tracking-tight text-ps-text">{round.name}</h1>
+
+      <div className="mt-3">
+        <PredictionBanner events={events} predictions={predictions} />
+      </div>
 
       {(isFinalised || (isWindowLocked && !isFinalised)) && (
         <div className="mt-2 inline-block rounded-full bg-ps-amber/20 px-3 py-1 text-xs font-semibold text-ps-amber">

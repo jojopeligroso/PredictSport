@@ -11,6 +11,7 @@ import {
   dayBeforeCloseUtcDate,
   joinCutoffWarningState,
 } from "@/lib/wc/join-cutoff";
+import { PredictionBanner } from "@/components/wc/PredictionBanner";
 import {
   computeDayStatus,
   getDailyLockTimes,
@@ -182,6 +183,13 @@ export function Md1PicksLanding(props: Md1PicksLandingProps) {
       {/* By date / By group */}
       <ViewToggle value={view} onChange={handleViewChange} />
 
+      {/* Prediction urgency banner — members only */}
+      {!previewMode && (
+        <div className="mx-auto mt-2 max-w-[480px] px-4">
+          <PredictionBanner events={props.events} predictions={props.predictions} />
+        </div>
+      )}
+
       {/* Sections — blurred for non-members with a tap-to-join overlay */}
       <div className="relative mt-3">
         <div
@@ -203,7 +211,7 @@ export function Md1PicksLanding(props: Md1PicksLandingProps) {
         </div>
 
         {previewMode && (
-          <PreviewOverlay isAuthenticated={props.isAuthenticated} />
+          <PreviewOverlay isAuthenticated={props.isAuthenticated} competitionId={props.competitionId} />
         )}
       </div>
     </div>
@@ -485,39 +493,20 @@ function SectionStatusIcon({ status }: { status: DayPredictionStatus }) {
 
 // ── Preview overlay ─────────────────────────────────────────────────────────
 
-function PreviewOverlay({ isAuthenticated }: { isAuthenticated: boolean }) {
+function PreviewOverlay({
+  isAuthenticated,
+  competitionId,
+}: {
+  isAuthenticated: boolean;
+  competitionId: string;
+}) {
   const router = useRouter();
-  const [code, setCode] = useState("");
   const [joinError, setJoinError] = useState<string | null>(null);
   const [isJoining, setIsJoining] = useState(false);
-  const inputRef = useRef<HTMLInputElement>(null);
 
-  // Dismiss mobile keyboard + viewport zoom on any touch outside the input.
-  // Single tap anywhere else on the page → blur → browser resets zoom to default.
-  useEffect(() => {
-    function handleTouchOutside(e: TouchEvent) {
-      if (
-        inputRef.current &&
-        document.activeElement === inputRef.current &&
-        !inputRef.current.contains(e.target as Node)
-      ) {
-        inputRef.current.blur();
-      }
-    }
-    document.addEventListener("touchstart", handleTouchOutside);
-    return () => document.removeEventListener("touchstart", handleTouchOutside);
-  }, []);
-
-  async function handleJoinSubmit(e: React.FormEvent<HTMLFormElement>) {
-    e.preventDefault();
-    const trimmed = code.trim();
-    if (!trimmed) {
-      setJoinError("Please enter an invite code.");
-      return;
-    }
-
+  async function handleJoin() {
     if (!isAuthenticated) {
-      router.push(`/login?next=/join?token=${encodeURIComponent(trimmed)}`);
+      router.push("/login?next=/wc/join-open");
       return;
     }
 
@@ -527,14 +516,13 @@ function PreviewOverlay({ isAuthenticated }: { isAuthenticated: boolean }) {
       const res = await fetch("/api/join", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ token: trimmed }),
+        body: JSON.stringify({ competitionId }),
       });
       const data = await res.json();
       if (!res.ok) {
         setJoinError(data.error ?? "Failed to join");
         return;
       }
-      // Joined successfully — redirect to dashboard onboarding
       router.push("/wc/home?onboarding=true");
     } catch {
       setJoinError("Something went wrong. Try again.");
@@ -546,102 +534,57 @@ function PreviewOverlay({ isAuthenticated }: { isAuthenticated: boolean }) {
   return (
     <div className="pointer-events-none absolute inset-0 flex items-start justify-center pt-6">
       <div className="mx-4 flex max-w-[360px] flex-col gap-3">
-        {/* Join card — primary CTA, above rules */}
-        <div className="pointer-events-auto rounded-2xl border border-ps-border bg-ps-surface px-5 py-5 text-center shadow-lg">
-          <h2 className="font-display text-lg font-extrabold uppercase tracking-tight text-ps-text">
-            Join the game to pick
-          </h2>
-          <p className="mt-1.5 text-xs text-ps-text-sec">
-            Leaderboard bragging rights. Joins close 3 days after kickoff.
-          </p>
-
-          <form onSubmit={handleJoinSubmit} noValidate className="mt-4 space-y-2.5">
-            <div>
-              <label htmlFor="overlay-invite-code" className="sr-only">
-                Invite code
-              </label>
-              <input
-                ref={inputRef}
-                id="overlay-invite-code"
-                type="text"
-                autoComplete="off"
-                autoCorrect="off"
-                autoCapitalize="none"
-                spellCheck={false}
-                placeholder="Enter invite code"
-                value={code}
-                onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
-                  setCode(e.target.value);
-                  if (joinError) setJoinError(null);
-                }}
-                className="w-full rounded-xl border border-ps-border bg-ps-bg px-4 py-3 text-center text-sm text-ps-text placeholder:text-ps-text-ter focus:border-ps-amber focus:outline-none"
-                aria-describedby={joinError ? "overlay-join-error" : undefined}
-              />
-              {joinError && (
-                <p
-                  id="overlay-join-error"
-                  role="alert"
-                  className="mt-1.5 text-xs text-ps-red"
-                >
-                  {joinError}
-                </p>
-              )}
-            </div>
-            <button
-              type="submit"
-              disabled={isJoining}
-              className="w-full rounded-xl bg-ps-amber px-4 py-3 text-sm font-semibold text-ps-bg transition-opacity hover:opacity-90 active:opacity-80 disabled:opacity-60"
-            >
-              {isJoining ? "Joining..." : "Join"}
-            </button>
-          </form>
-
-          <div className="mt-3 flex items-center gap-3">
-            <div className="h-px flex-1 bg-ps-border" />
-            <span className="text-[10px] font-medium uppercase text-ps-text-ter">or</span>
-            <div className="h-px flex-1 bg-ps-border" />
+        {/* Card 1 — Format explainer */}
+        <div className="pointer-events-auto rounded-2xl border border-ps-border bg-ps-surface px-5 py-4 text-center shadow-lg">
+          <div className="mx-auto mb-2 flex h-10 w-10 items-center justify-center rounded-full bg-ps-amber/15">
+            <svg width="20" height="20" viewBox="0 0 20 20" fill="none" className="text-ps-amber">
+              <path d="M10 2L12.5 7.5L18 8.5L14 12.5L15 18L10 15.5L5 18L6 12.5L2 8.5L7.5 7.5L10 2Z" fill="currentColor" />
+            </svg>
           </div>
-
-          {!isAuthenticated && (
-            <Link
-              href="/login?next=/wc"
-              className="mt-3 block w-full rounded-xl bg-ps-text px-4 py-3 text-sm font-semibold text-ps-bg transition-opacity hover:opacity-90"
-            >
-              Sign in
-            </Link>
-          )}
-          <Link
-            href={isAuthenticated ? "/wc/create" : "/login?next=/wc/create"}
-            className="mt-2 block w-full rounded-xl border border-ps-border px-4 py-3 text-sm font-semibold text-ps-text hover:border-ps-amber/40"
-          >
-            Create your own
-          </Link>
-        </div>
-
-        {/* Rules summary card — secondary, below join */}
-        <div className="rounded-2xl border border-ps-border bg-ps-surface px-5 py-4 text-center shadow-lg">
           <p className="font-mono text-[10px] font-bold uppercase tracking-[0.18em] text-ps-amber-deep">
             How it works
           </p>
-          <ul className="mx-auto mt-2 flex w-fit flex-col space-y-1.5 text-xs text-ps-text-sec">
-            <li className="flex items-start gap-2">
-              <span className="mt-px font-mono font-bold text-ps-amber">1</span>
-              <span>Pick who wins each match</span>
-            </li>
-            <li className="flex items-start gap-2">
-              <span className="mt-px font-mono font-bold text-ps-amber">2</span>
-              <span>Guess the exact score for bonus points</span>
-            </li>
-            <li className="flex items-start gap-2">
-              <span className="mt-px font-mono font-bold text-ps-amber">3</span>
-              <span>Climb the leaderboard</span>
-            </li>
-          </ul>
+          <p className="mt-2 text-xs leading-relaxed text-ps-text-sec">
+            Pick the winner of every match and guess the exact score for bonus
+            points. The group stage locks one matchday at a time — predict before
+            kickoff, then climb the leaderboard.
+          </p>
           <Link
             href="/wc/rules"
-            className="pointer-events-auto mt-3 inline-block w-full rounded-xl border border-ps-border px-4 py-2.5 text-sm font-semibold text-ps-text transition-colors hover:bg-ps-surface"
+            className="mt-2.5 inline-block text-[11px] font-semibold text-ps-amber transition-colors hover:opacity-80"
           >
-            Read the full rules
+            Full rules →
+          </Link>
+        </div>
+
+        {/* Card 2 — Join CTA */}
+        <div className="pointer-events-auto rounded-2xl border border-ps-border bg-ps-surface px-5 py-5 text-center shadow-lg">
+          <h2 className="font-display text-lg font-extrabold uppercase tracking-tight text-ps-text">
+            Join the World Cup game
+          </h2>
+          <p className="mt-1.5 text-xs text-ps-text-sec">
+            Free to play. Bragging rights on the line.
+          </p>
+
+          {joinError && (
+            <p role="alert" className="mt-2 text-xs text-ps-red">
+              {joinError}
+            </p>
+          )}
+
+          <button
+            onClick={handleJoin}
+            disabled={isJoining}
+            className="mt-4 w-full rounded-xl bg-ps-amber px-4 py-3 text-sm font-semibold text-ps-bg transition-opacity hover:opacity-90 active:opacity-80 disabled:opacity-60"
+          >
+            {isJoining ? "Joining..." : "Join the World Cup game"}
+          </button>
+
+          <Link
+            href={isAuthenticated ? "/wc/create" : "/login?next=/wc/create"}
+            className="mt-3 inline-block text-[11px] font-medium text-ps-text-ter transition-colors hover:text-ps-text-sec"
+          >
+            or create your own competition
           </Link>
         </div>
       </div>

@@ -92,8 +92,8 @@ export function computeDayStatus(opts: {
     // Already locked — show whatever state they're in
     return opts.hasAnyOutcome ? "partial" : "upcoming";
   }
-  const TWENTY_FOUR_HOURS = 24 * 60 * 60 * 1000;
-  if (diffMs < TWENTY_FOUR_HOURS && opts.fullyComplete < opts.totalEvents) {
+  const THIRTY_SIX_HOURS = 36 * 60 * 60 * 1000;
+  if (diffMs < THIRTY_SIX_HOURS && opts.fullyComplete < opts.totalEvents) {
     return "urgent";
   }
   if (opts.hasAnyOutcome && opts.fullyComplete < opts.totalEvents) {

@@ -23,7 +23,7 @@ export async function POST(request: NextRequest) {
   if (nameGuard) return nameGuard;
 
   // 2. Parse body
-  let body: { token?: string };
+  let body: { token?: string; competitionId?: string };
   try {
     body = await request.json();
   } catch {
@@ -32,61 +32,92 @@ export async function POST(request: NextRequest) {
       { status: 400 }
     );
   }
-  const { token } = body;
+  const { token, competitionId: openJoinCompId } = body;
 
-  if (!token) {
-    return NextResponse.json(
-      { error: "Invalid invite link" },
-      { status: 404 }
-    );
-  }
-
-  // 3. Look up invite — try invite_tokens first, then competitions.invite_code
-  const trimmedToken = token.trim();
-
-  const { data: invite } = await supabase
-    .from("invite_tokens")
-    .select("*")
-    .eq("token", trimmedToken)
-    .single();
-
+  // 2b. Open join path — WC shell competitions skip invite code validation
   let competitionId: string;
   let isInviteToken = false;
+  let invite: { id: string; competition_id: string; expires_at: string | null; max_uses: number | null; use_count: number } | null = null;
 
-  if (invite) {
-    // Found in invite_tokens — validate expiry and max uses
-    isInviteToken = true;
-    competitionId = invite.competition_id;
-
-    if (invite.expires_at && new Date(invite.expires_at) < new Date()) {
-      return NextResponse.json(
-        { error: "This invite link has expired" },
-        { status: 410 }
-      );
-    }
-
-    if (invite.max_uses !== null && invite.use_count >= invite.max_uses) {
-      return NextResponse.json(
-        { error: "This invite link has reached its maximum uses" },
-        { status: 410 }
-      );
-    }
-  } else {
-    // Not in invite_tokens — try competitions.invite_code (exact match, case-normalized)
+  if (openJoinCompId && !token) {
+    // Verify this competition exists and is a WC shell
     const { data: comp } = await supabase
       .from("competitions")
-      .select("id")
-      .eq("invite_code", trimmedToken.toLowerCase())
+      .select("id, entry_closes_at")
+      .eq("id", openJoinCompId)
+      .eq("product_mode", "world_cup_2026_shell")
       .in("status", ["draft", "active"])
       .single();
 
     if (!comp) {
       return NextResponse.json(
-        { error: "This code doesn't match any active competition" },
+        { error: "Competition not found" },
         { status: 404 }
       );
     }
+
+    if (comp.entry_closes_at && new Date(comp.entry_closes_at) < new Date()) {
+      return NextResponse.json(
+        { error: "Joins are closed for this competition" },
+        { status: 410 }
+      );
+    }
+
     competitionId = comp.id;
+  } else {
+    // Standard invite code path
+    if (!token) {
+      return NextResponse.json(
+        { error: "Invalid invite link" },
+        { status: 404 }
+      );
+    }
+
+    // 3. Look up invite — try invite_tokens first, then competitions.invite_code
+    const trimmedToken = token.trim();
+
+    const { data: inviteRow } = await supabase
+      .from("invite_tokens")
+      .select("*")
+      .eq("token", trimmedToken)
+      .single();
+
+    if (inviteRow) {
+      // Found in invite_tokens — validate expiry and max uses
+      isInviteToken = true;
+      invite = inviteRow;
+      competitionId = inviteRow.competition_id;
+
+      if (inviteRow.expires_at && new Date(inviteRow.expires_at) < new Date()) {
+        return NextResponse.json(
+          { error: "This invite link has expired" },
+          { status: 410 }
+        );
+      }
+
+      if (inviteRow.max_uses !== null && inviteRow.use_count >= inviteRow.max_uses) {
+        return NextResponse.json(
+          { error: "This invite link has reached its maximum uses" },
+          { status: 410 }
+        );
+      }
+    } else {
+      // Not in invite_tokens — try competitions.invite_code (exact match, case-normalized)
+      const { data: comp } = await supabase
+        .from("competitions")
+        .select("id")
+        .eq("invite_code", trimmedToken.toLowerCase())
+        .in("status", ["draft", "active"])
+        .single();
+
+      if (!comp) {
+        return NextResponse.json(
+          { error: "This code doesn't match any active competition" },
+          { status: 404 }
+        );
+      }
+      competitionId = comp.id;
+    }
   }
 
   // 4. Check entrant cap

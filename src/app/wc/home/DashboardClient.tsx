@@ -22,6 +22,7 @@ import type { Prediction } from "@/types/database";
 import type { ResultRow } from "./fetchDashboardData";
 import type { TeamWithStats } from "@/lib/tournament/bracket/types";
 import { ChatWidget } from "@/components/chat";
+import { PredictionBanner } from "@/components/wc/PredictionBanner";
 
 interface DashboardClientProps {
   competitionId: string;
@@ -64,7 +65,7 @@ function getPickStatus(
   // Urgent = < 24h to lock
   const lockMs = new Date(event.lock_time).getTime();
   const nowMs = Date.now();
-  if (lockMs - nowMs < 24 * 60 * 60 * 1000 && lockMs > nowMs) return "urgent";
+  if (lockMs - nowMs < 36 * 60 * 60 * 1000 && lockMs > nowMs) return "urgent";
 
   return "unpicked";
 }
@@ -145,6 +146,11 @@ export function DashboardClient({
 
   const dashboard = (
     <div className="mx-auto max-w-[480px] px-4 pb-8">
+      {/* ── 0. Prediction urgency banner ──────────────────────────────── */}
+      <div className="pt-3">
+        <PredictionBanner events={pillDateEvents} predictions={predictions} />
+      </div>
+
       {/* ── 1. Progress strip ──────────────────────────────────────────── */}
       <OnboardingSection id="other">
         {total > 0 && (
