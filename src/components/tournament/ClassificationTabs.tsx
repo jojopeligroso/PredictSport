@@ -22,6 +22,23 @@ interface StandingRow {
   eliminated?: boolean;
 }
 
+interface AllGroupsData {
+  status: "drawn" | "no_groups";
+  myGroupId: string | null;
+  groups: Array<{
+    id: string;
+    name: string;
+    groupNumber: number;
+    members: Array<{
+      user_id: string;
+      display_name: string;
+      points: number;
+      is_self: boolean;
+      status: string;
+    }>;
+  }>;
+}
+
 interface MyGroupData {
   status: "draw_pending" | "drawn" | "no_classification";
   drawAt?: string | null;
@@ -75,6 +92,7 @@ export function ClassificationTabs({
   const [loadedId, setLoadedId] = useState<string>("");
   const [selfVisibility, setSelfVisibility] = useState<"public" | "private">("public");
   const [groupData, setGroupData] = useState<MyGroupData | null>(null);
+  const [allGroups, setAllGroups] = useState<AllGroupsData | null>(null);
 
   useEffect(() => {
     if (!activeId) return;
@@ -108,16 +126,32 @@ export function ClassificationTabs({
     const active = visibleClassifications.find((c) => c.id === activeId);
     if (active?.classification_key !== "format") {
       setGroupData(null);
+      setAllGroups(null);
       return;
     }
 
     let cancelled = false;
+
+    // Fetch user's own group (triggers lazy draw)
     fetch(
       `/api/tournament/my-group?classificationId=${activeId}&competitionId=${competitionId}`
     )
       .then((res) => res.json())
       .then((data) => {
-        if (!cancelled) setGroupData(data);
+        if (!cancelled) {
+          setGroupData(data);
+          // Once drawn, fetch all groups
+          if (data?.status === "drawn") {
+            fetch(
+              `/api/tournament/all-groups?classificationId=${activeId}&competitionId=${competitionId}`
+            )
+              .then((res) => res.json())
+              .then((allData) => {
+                if (!cancelled) setAllGroups(allData);
+              })
+              .catch(() => {});
+          }
+        }
       })
       .catch(() => {
         if (!cancelled) setGroupData(null);
@@ -193,9 +227,11 @@ export function ClassificationTabs({
         </>
       )}
 
-      {/* Standings */}
+      {/* Standings / All Groups */}
       <div className="mt-4 flex flex-1 flex-col">
-        {isLoading ? (
+        {active?.classification_key === "format" && allGroups?.status === "drawn" && allGroups.groups.length > 0 ? (
+          <AllGroupsView groups={allGroups.groups} myGroupId={allGroups.myGroupId} />
+        ) : isLoading ? (
           <div className="flex justify-center py-12">
             <div className="h-5 w-5 animate-spin rounded-full border-2 border-ps-text-ter border-t-ps-text" />
           </div>
@@ -735,4 +771,95 @@ function daysFromNow(iso: string): number {
   if (!Number.isFinite(target)) return 0;
   const diffMs = target - Date.now();
   return Math.max(0, Math.ceil(diffMs / (1000 * 60 * 60 * 24)));
+}
+
+// ============================================================
+// All Groups View — user's group first, rest alphabetical
+// ============================================================
+
+function AllGroupsView({
+  groups,
+  myGroupId,
+}: {
+  groups: AllGroupsData["groups"];
+  myGroupId: string | null;
+}) {
+  const t = useT();
+
+  // User's group first, then rest by groupNumber
+  const myGroup = myGroupId ? groups.find((g) => g.id === myGroupId) : null;
+  const otherGroups = groups
+    .filter((g) => g.id !== myGroupId)
+    .sort((a, b) => a.groupNumber - b.groupNumber);
+
+  const ordered = myGroup ? [myGroup, ...otherGroups] : otherGroups;
+
+  return (
+    <div className="space-y-3">
+      {ordered.map((group) => {
+        const isMyGroup = group.id === myGroupId;
+        return (
+          <div
+            key={group.id}
+            className={`rounded-xl border bg-ps-surface ${
+              isMyGroup
+                ? "border-ps-amber/40 ring-1 ring-ps-amber/20"
+                : "border-ps-border"
+            }`}
+          >
+            {/* Group header */}
+            <div className={`flex items-center justify-between px-3 py-2 ${
+              isMyGroup ? "bg-ps-amber/5" : ""
+            }`}>
+              <div className="flex items-center gap-2">
+                <h3 className="text-sm font-bold text-ps-text">{group.name}</h3>
+                {isMyGroup && (
+                  <span className="rounded bg-ps-amber/20 px-1.5 py-0.5 text-[10px] font-bold text-ps-amber">
+                    {t('classification.you_label')}
+                  </span>
+                )}
+              </div>
+              <span className="text-[10px] font-medium text-ps-text-ter">
+                {group.members.length} players
+              </span>
+            </div>
+
+            {/* Members */}
+            <div className="divide-y divide-ps-border">
+              {group.members.map((m, i) => {
+                const rank = i + 1;
+                return (
+                  <div
+                    key={m.user_id}
+                    className={`flex items-center px-3 py-2 ${
+                      m.is_self ? "bg-ps-amber/5" : ""
+                    }`}
+                  >
+                    <span className="w-6 text-center font-mono text-xs font-bold text-ps-text-ter">
+                      {rank}
+                    </span>
+                    <span
+                      className={`flex-1 truncate pl-2 text-sm ${
+                        m.is_self ? "font-semibold text-ps-text" : "text-ps-text"
+                      }`}
+                    >
+                      {m.display_name}
+                      {m.is_self && (
+                        <span className="ml-1.5 rounded bg-ps-amber/20 px-1 py-0.5 text-[10px] font-bold text-ps-amber">
+                          {t('classification.you_label')}
+                        </span>
+                      )}
+                    </span>
+                    <span className="w-14 text-right font-mono text-sm font-bold text-ps-text">
+                      {m.points}
+                    </span>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        );
+      })}
+    </div>
+  );
 }
