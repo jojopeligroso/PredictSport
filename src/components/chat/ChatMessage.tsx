@@ -98,7 +98,10 @@ export function ChatMessage({
   const targetRank = ROLE_RANK[targetMember?.role ?? "participant"] ?? 0;
 
   const canModDelete = !isOwn && actorRank >= ROLE_RANK.mod && actorRank > targetRank;
-  const canDelete = isOwn || canModDelete;
+  const messageAge = Date.now() - new Date(message.created_at).getTime();
+  const HARD_DELETE_WINDOW_MS = 20 * 1000;
+  const canOwnDelete = isOwn && messageAge <= HARD_DELETE_WINDOW_MS;
+  const canDelete = canOwnDelete || canModDelete;
   const canMute = !isOwn && actorRank >= ROLE_RANK.mod && actorRank > targetRank;
 
   // Long-press handlers for context menu
@@ -203,12 +206,10 @@ export function ChatMessage({
       <div
         className={`max-w-[75%] ${isOwn ? "items-end" : "items-start"}`}
       >
-        {/* Sender name (others only) */}
-        {!isOwn && (
-          <p className="text-[10px] font-semibold text-ps-text-sec mb-0.5 ml-1">
-            {message.display_name}
-          </p>
-        )}
+        {/* Sender name */}
+        <p className={`text-[10px] font-semibold text-ps-text-sec mb-0.5 ${isOwn ? "text-right mr-1" : "ml-1"}`}>
+          {message.display_name}
+        </p>
 
         <div
           className={`rounded-2xl px-3 py-1.5 text-sm ${
