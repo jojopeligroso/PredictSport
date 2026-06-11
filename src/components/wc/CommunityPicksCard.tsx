@@ -61,17 +61,24 @@ export function CommunityPicksCard({ competitionId }: CommunityPicksCardProps) {
 
   if (loading) {
     return (
-      <div className="flex gap-2">
-        {[0, 1].map((i) => (
-          <div
-            key={i}
-            className="flex-1 rounded-lg border border-ps-border bg-ps-surface p-3"
-          >
-            <div className="h-4 w-20 animate-pulse rounded bg-ps-chip" />
-            <div className="mt-2 h-12 animate-pulse rounded bg-ps-chip" />
-          </div>
-        ))}
-      </div>
+      <section className="mt-3">
+        <div className="mb-2 h-3 w-16 animate-pulse rounded bg-ps-chip" />
+        <div className="flex gap-2">
+          {[0, 1].map((i) => (
+            <div
+              key={i}
+              className="min-w-[100px] flex-1 rounded-lg border border-ps-border bg-ps-surface p-3"
+            >
+              <div className="h-3 w-16 animate-pulse rounded bg-ps-chip" />
+              <div className="mt-2 space-y-1.5">
+                <div className="h-2 animate-pulse rounded bg-ps-chip" />
+                <div className="h-2 w-3/4 animate-pulse rounded bg-ps-chip" />
+                <div className="h-2 w-1/2 animate-pulse rounded bg-ps-chip" />
+              </div>
+            </div>
+          ))}
+        </div>
+      </section>
     );
   }
 
@@ -101,76 +108,79 @@ export function CommunityPicksCard({ competitionId }: CommunityPicksCardProps) {
       <p className="mb-2 text-[11px] font-semibold uppercase tracking-wider text-ps-text-ter">
         {t("dash.the_field")}
       </p>
-    <div className="flex items-stretch gap-2">
-      {/* Card 1: Outcome Split */}
-      <div className="min-w-[100px] flex-1 rounded-lg border border-ps-border bg-ps-surface p-3">
-        <div className="flex items-center gap-1.5 text-[10px] font-semibold uppercase tracking-wider text-ps-text-ter">
-          <CountryFlag name={fixture.home} size={14} shape="pill" />
-          <span>{homeTri}</span>
-          <span className="text-ps-border">v</span>
-          <span>{awayTri}</span>
-          <CountryFlag name={fixture.away} size={14} shape="pill" />
-        </div>
-
-        <div className="mt-2 space-y-1.5">
-          <OutcomeBar
-            label={homeTri}
-            pct={homePct}
-            color="bg-ps-amber"
-          />
-          <OutcomeBar
-            label={t("community.draw")}
-            pct={drawPct}
-            color="bg-ps-text-ter"
-          />
-          <OutcomeBar
-            label={awayTri}
-            pct={awayPct}
-            color="bg-ps-text-sec"
-          />
-        </div>
-      </div>
-
-      {/* Card 2: Popular Score */}
-      <div className="min-w-[100px] flex-1 rounded-lg border border-ps-border bg-ps-surface p-3">
-        <p className="text-[10px] font-semibold uppercase tracking-wider text-ps-text-ter">
-          {t("community.popular_score")}
-        </p>
-
-        {topScores.length > 0 ? (
-          <div className="mt-2 space-y-1">
-            {topScores.map((s, i) => (
-              <div key={`${s.home}-${s.away}`} className="flex items-baseline gap-1.5">
-                <span
-                  className={[
-                    "font-mono tabular-nums",
-                    i === 0
-                      ? "text-lg font-bold text-ps-text"
-                      : "text-[13px] font-semibold text-ps-text-sec",
-                  ].join(" ")}
-                >
-                  {s.home}–{s.away}
-                </span>
-                <span
-                  className={[
-                    "font-mono tabular-nums",
-                    i === 0
-                      ? "text-xs font-semibold text-ps-amber"
-                      : "text-[10px] text-ps-text-ter",
-                  ].join(" ")}
-                >
-                  {s.pct}%
-                </span>
-              </div>
-            ))}
+      <div className="flex items-stretch gap-2">
+        {/* Card 1: Outcome Split */}
+        <div className="min-w-[100px] flex-1 rounded-lg border border-ps-border bg-ps-surface p-3">
+          <div className="flex items-center gap-1.5 text-[10px] font-semibold uppercase tracking-wider text-ps-text-ter">
+            <CountryFlag name={fixture.home} size={14} shape="pill" />
+            <span>{homeTri}</span>
+            <span className="text-ps-text-ter/40">v</span>
+            <span>{awayTri}</span>
+            <CountryFlag name={fixture.away} size={14} shape="pill" />
           </div>
-        ) : (
-          <p className="mt-2 text-xs text-ps-text-ter">
-            {t("community.no_scores")}
+
+          <div className="mt-2 space-y-1.5">
+            <OutcomeBar
+              label={homeTri}
+              pct={homePct}
+              color="bg-ps-amber"
+            />
+            <OutcomeBar
+              label={t("community.draw")}
+              pct={drawPct}
+              color="bg-ps-text-ter"
+            />
+            <OutcomeBar
+              label={awayTri}
+              pct={awayPct}
+              color="bg-ps-text-sec"
+            />
+          </div>
+        </div>
+
+        {/* Card 2: Popular Score */}
+        <div className="min-w-[100px] flex-1 rounded-lg border border-ps-border bg-ps-surface p-3">
+          <p className="text-[10px] font-semibold uppercase tracking-wider text-ps-text-ter">
+            {t("community.popular_score")}
           </p>
-        )}
+
+          {topScores.length > 0 ? (
+            <div className="mt-2 space-y-1">
+              {topScores.map((s, i) => (
+                <div key={`${s.home}-${s.away}`} className="flex items-baseline gap-1.5">
+                  <span className="w-3.5 shrink-0 font-mono text-[9px] tabular-nums text-ps-text-ter">
+                    {i + 1}.
+                  </span>
+                  <span
+                    className={[
+                      "font-mono tabular-nums",
+                      i === 0
+                        ? "text-lg font-bold text-ps-text"
+                        : "text-[13px] font-semibold text-ps-text-sec",
+                    ].join(" ")}
+                  >
+                    {s.home}–{s.away}
+                  </span>
+                  <span
+                    className={[
+                      "font-mono tabular-nums",
+                      i === 0
+                        ? "text-xs font-semibold text-ps-amber"
+                        : "text-[10px] text-ps-text-ter",
+                    ].join(" ")}
+                  >
+                    {s.pct}%
+                  </span>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <p className="mt-2 text-xs text-ps-text-ter">
+              {t("community.no_scores")}
+            </p>
+          )}
+        </div>
       </div>
-    </div>
     </section>
   );
 }
@@ -187,7 +197,7 @@ function OutcomeBar({
 }) {
   return (
     <div className="flex items-center gap-1.5">
-      <span className="w-8 shrink-0 text-[10px] font-semibold text-ps-text-sec">
+      <span className="w-9 shrink-0 text-[10px] font-semibold text-ps-text-sec">
         {label}
       </span>
       <div className="flex-1 overflow-hidden rounded-full bg-ps-chip" style={{ height: 6 }}>
