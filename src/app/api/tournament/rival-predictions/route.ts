@@ -97,7 +97,7 @@ async function handleFixtureList(
   const baseQuery = supabase
     .from("events")
     .select(
-      "id, name, lock_time, pick_reveal_at, start_time, result_confirmed, result_data, external_event_id, sport, rounds(name)",
+      "id, event_name, lock_time, pick_reveal_at, start_time, result_confirmed, result_data, external_event_id, sport, rounds(name)",
     )
     .order("start_time", { ascending: false });
 
@@ -111,7 +111,7 @@ async function handleFixtureList(
     .filter((e) => isRevealed(e))
     .map((e) => ({
       eventId: e.id,
-      name: e.name,
+      name: e.event_name,
       lockTime: e.lock_time,
       pickRevealAt: e.pick_reveal_at,
       startTime: e.start_time,
@@ -138,7 +138,7 @@ async function handleEventPredictions(
   const { data: event } = await supabase
     .from("events")
     .select(
-      "id, name, lock_time, pick_reveal_at, start_time, result_confirmed, result_data, external_event_id, sport, rounds(name)",
+      "id, event_name, lock_time, pick_reveal_at, start_time, result_confirmed, result_data, external_event_id, sport, rounds(name)",
     )
     .eq("id", eventId)
     .single();
@@ -241,7 +241,7 @@ async function handleEventPredictions(
   return NextResponse.json({
     event: {
       eventId: event.id,
-      name: event.name,
+      name: event.event_name,
       lockTime: event.lock_time,
       pickRevealAt: event.pick_reveal_at,
       startTime: event.start_time,
@@ -276,7 +276,7 @@ async function handleTeaser(
   const baseQuery = supabase
     .from("events")
     .select(
-      "id, name, lock_time, pick_reveal_at, start_time, result_confirmed, result_data, external_event_id",
+      "id, event_name, lock_time, pick_reveal_at, start_time, result_confirmed, result_data, external_event_id",
     )
     .order("start_time", { ascending: false });
 
@@ -373,7 +373,7 @@ async function handleTeaser(
   return NextResponse.json({
     event: {
       eventId: revealed.id,
-      name: revealed.name,
+      name: revealed.event_name,
       resultConfirmed: revealed.result_confirmed,
       resultData: revealed.result_data,
       externalEventId: revealed.external_event_id,

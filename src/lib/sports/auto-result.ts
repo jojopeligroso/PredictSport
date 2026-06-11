@@ -180,7 +180,12 @@ export async function autoResolveEvent(
     // 5. Resolve external_event_id
     let resolvedExternalId: string | null = null;
 
-    if (
+    // Check for a previously resolved provider ID stored in result_data
+    const storedProviderId = resultData.provider_event_id as string | undefined;
+
+    if (storedProviderId) {
+      resolvedExternalId = storedProviderId;
+    } else if (
       event.external_event_id &&
       !event.external_event_id.startsWith("manual:")
     ) {
@@ -212,11 +217,12 @@ export async function autoResolveEvent(
         .sort((a, b) => b.score - a.score);
 
       if (scored.length === 1) {
-        // Single confident match — save the external_event_id
+        // Single confident match — cache the provider ID in result_data
+        // (don't overwrite external_event_id — it's the key used by WC2026_FIXTURES)
         resolvedExternalId = scored[0].candidate.external_event_id;
         await supabase
           .from("events")
-          .update({ external_event_id: resolvedExternalId })
+          .update({ result_data: { ...resultData, provider_event_id: resolvedExternalId } })
           .eq("id", event.id);
       } else if (scored.length === 0) {
         return {
