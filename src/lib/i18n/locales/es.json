@@ -349,6 +349,8 @@
   "picks.collapse_card": "Contraer",
   "picks.edit": "Editar",
   "picks.urgent_24h": "< 24H",
+  "picks.live": "EN VIVO",
+  "picks.your_pick": "Tu predicción",
   "picks.tap_to_pick": "{home} vs {away} — toca para pronosticar",
   "display_name.heading": "¿Cómo te llamará la tabla de clasificación?",
   "display_name.subtitle": "Así aparecerás ante todos. Puedes cambiarlo después en tu perfil.",

@@ -9,7 +9,7 @@ import type { WindowEvent } from "@/app/wc/picks/[windowId]/WindowPickList";
 import type { WcFixture } from "@/lib/wc/fixtures";
 import type { Prediction } from "@/types/database";
 
-type PickStatus = "complete" | "urgent" | "unpicked";
+type PickStatus = "complete" | "urgent" | "unpicked" | "in_progress";
 
 interface DashboardPickRowProps {
   fixture: WcFixture;
@@ -32,6 +32,7 @@ interface DashboardPickRowProps {
  * Visual states:
  *  - complete: gold halo + green check / "Edit" CTA
  *  - urgent: violet pulsing border + "< 24H" badge + "Pick →" CTA
+ *  - in_progress: red pulsing "LIVE" badge, auto-expanded, locked prediction
  *  - unpicked: plain card + "Pick →" CTA
  */
 export function DashboardPickRow({
@@ -49,7 +50,12 @@ export function DashboardPickRow({
   const homeTrigram = fifaTrigram(fixture.home) ?? fixture.home.slice(0, 3).toUpperCase();
   const awayTrigram = fifaTrigram(fixture.away) ?? fixture.away.slice(0, 3).toUpperCase();
 
-  const hasPick = status === "complete";
+  // Gold halo for events with complete predictions (including locked in-progress)
+  const eventPreds = predictions.filter((p) => p.event_id === event.id);
+  const hasWinnerAndScore =
+    eventPreds.some((p) => p.prediction_type === "winner") &&
+    eventPreds.some((p) => p.prediction_type === "exact_score");
+  const hasPick = status === "complete" || (status === "in_progress" && hasWinnerAndScore);
 
   // Format kickoff
   const ko = new Date(fixture.kickoffUtc);
@@ -64,6 +70,8 @@ export function DashboardPickRow({
     month: "short",
     timeZone: "UTC",
   });
+
+  const isLive = status === "in_progress";
 
   // When expanded, render only the WindowPickList card (it supplies its own
   // FixtureCardSurface via surface="card").
@@ -80,6 +88,12 @@ export function DashboardPickRow({
           <svg className="h-3 w-3 rotate-180" fill="none" viewBox="0 0 24 24" strokeWidth={2.5} stroke="currentColor">
             <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
           </svg>
+          {isLive && (
+            <span className="mr-1 inline-flex items-center gap-1 rounded-full bg-ps-red/90 px-1.5 py-0.5 text-[9px] font-bold text-white">
+              <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-white" />
+              {t('picks.live')}
+            </span>
+          )}
           {t('picks.collapse_card')}
         </button>
         <div className="animate-in slide-in-from-top-2 duration-200">
@@ -87,7 +101,7 @@ export function DashboardPickRow({
             competitionId={competitionId}
             events={[event]}
             predictions={predictions}
-            windowLocked={windowLocked}
+            windowLocked={isLive || windowLocked}
             surface="card"
             fixtureByEventId={fixtureByEventId}
           />
@@ -101,7 +115,11 @@ export function DashboardPickRow({
     <button
       type="button"
       onClick={onToggle}
-      aria-label={t('picks.tap_to_pick', { home: fixture.home, away: fixture.away })}
+      aria-label={
+        isLive
+          ? `${fixture.home} vs ${fixture.away} — ${t('picks.live')}`
+          : t('picks.tap_to_pick', { home: fixture.home, away: fixture.away })
+      }
       className="w-full text-left"
     >
       <FixtureCardSurface
@@ -148,6 +166,17 @@ export function DashboardPickRow({
               <span className="text-[11px] font-bold text-white">{t('fixtures.pick_cta')}</span>
               <span className="animate-pulse rounded-full bg-ps-purple/80 px-2 py-0.5 text-[10px] font-bold text-white">
                 {t('picks.urgent_24h')}
+              </span>
+            </span>
+          )}
+          {status === "in_progress" && (
+            <span className="flex items-center gap-1.5">
+              {hasWinnerAndScore && (
+                <span className="text-[11px] font-semibold text-white/80">{t('picks.your_pick')}</span>
+              )}
+              <span className="inline-flex items-center gap-1 rounded-full bg-ps-red/90 px-2 py-0.5 text-[10px] font-bold text-white">
+                <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-white" />
+                {t('picks.live')}
               </span>
             </span>
           )}

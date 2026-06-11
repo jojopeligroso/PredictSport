@@ -594,21 +594,21 @@ function DashboardDatePills({
               <span
                 className={[
                   "flex h-12 w-11 flex-col items-center justify-center rounded-md border transition-colors",
-                  isSelected
+                  isSelected || isComplete
                     ? "border-ps-amber bg-ps-amber"
                     : `bg-ps-surface ${borderClass}`,
                 ].join(" ")}
-                style={isSelected ? undefined : pillShadow}
+                style={isSelected || isComplete ? undefined : pillShadow}
               >
                 <span className={[
                   "font-mono text-[9px] font-bold uppercase tracking-[0.10em]",
-                  isSelected ? "text-white" : "text-ps-text-ter",
+                  isSelected || isComplete ? "text-white" : "text-ps-text-ter",
                 ].join(" ")}>
                   {p.weekday}
                 </span>
                 <span className={[
                   "font-display text-base font-extrabold leading-none",
-                  isSelected ? "text-white" : "text-ps-text",
+                  isSelected || isComplete ? "text-white" : "text-ps-text",
                 ].join(" ")}>
                   {p.dayNum}
                 </span>

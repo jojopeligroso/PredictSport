@@ -349,6 +349,8 @@
   "picks.collapse_card": "Collapse",
   "picks.edit": "Edit",
   "picks.urgent_24h": "< 24H",
+  "picks.live": "LIVE",
+  "picks.your_pick": "Your pick",
   "picks.tap_to_pick": "{home} vs {away} — tap to pick",
   "display_name.heading": "What should the leaderboard call you?",
   "display_name.subtitle": "This is how you'll appear to everyone. You can change it later in your profile.",

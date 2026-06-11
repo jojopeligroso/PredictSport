@@ -252,7 +252,18 @@ export async function fetchDashboardData(): Promise<DashboardResult> {
   }
 
   // 4. Filter to next upcoming events (up to 4 from next unlocked day)
+  //    Also include in-progress events (locked but not yet resulted) so
+  //    the dashboard can show the user's locked prediction during a match.
   const now = new Date();
+  const sixHoursAgo = new Date(now.getTime() - 6 * 60 * 60 * 1000);
+  const inProgress = eventRows.filter(
+    (e) =>
+      new Date(e.lock_time) <= now &&
+      new Date(e.start_time) >= sixHoursAgo &&
+      !e.result_confirmed &&
+      e.status !== "cancelled" &&
+      e.status !== "postponed",
+  );
   const unlocked = eventRows.filter(
     (e) => new Date(e.lock_time) > now && e.status !== "completed",
   );
@@ -280,7 +291,8 @@ export async function fetchDashboardData(): Promise<DashboardResult> {
     if (spilledEvents.length >= 2) break;
     if (spilledEvents.length >= 4) break;
   }
-  const nextDayEvents = spilledEvents;
+  // In-progress events appear first (auto-expanded), then upcoming picks
+  const nextDayEvents = [...inProgress, ...spilledEvents];
 
   // Derive which groups play on the next matchday — use ALL first-day events
   // (not the capped hero picks) so the accordion shows complete group data.
