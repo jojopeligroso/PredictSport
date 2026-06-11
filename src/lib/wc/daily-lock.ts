@@ -1,22 +1,24 @@
 /**
- * Daily prediction-window lock-time utilities.
+ * Per-fixture lock-time utilities grouped by day for UI display.
  *
- * The rule: each UTC calendar day locks 10 minutes before the earliest
- * kickoff on that day. All events on the same UTC date share one lock time.
+ * Each fixture locks independently at 10 minutes before its own kickoff.
+ * This module groups fixtures by UTC date for the calendar-pill UI, using
+ * the EARLIEST lock_time on that date as the day's urgency indicator.
  *
  * The single source of truth is `events.lock_time` in the database.
  * Frontend countdowns and backend validation both read the same column.
  * No client-side lock calculation — the client displays, the server enforces.
  */
 
-/** Minutes before the earliest kickoff that a daily window locks. */
-export const DAILY_LOCK_OFFSET_MINUTES = 10;
+/** Minutes before kickoff that each fixture locks. */
+export const LOCK_OFFSET_MINUTES = 10;
 
 /**
  * Given a list of events with start_time and lock_time, group by UTC date
- * and return the daily lock time for each date.
+ * and return the earliest lock time for each date.
  *
- * Used by the UI to show one countdown per day rather than per event.
+ * Used by the calendar-pill UI to show urgency status per day.
+ * Each fixture locks independently — this returns the first lock of the day.
  */
 export function getDailyLockTimes(
   events: { id: string; start_time: string; lock_time: string }[]
@@ -54,7 +56,7 @@ export function computeDailyLockTime(
   const earliest = eventsOnSameDay
     .map((e) => new Date(e.start_time).getTime())
     .reduce((a, b) => Math.min(a, b));
-  return new Date(earliest - DAILY_LOCK_OFFSET_MINUTES * 60_000);
+  return new Date(earliest - LOCK_OFFSET_MINUTES * 60_000);
 }
 
 /** ISO date string from a Date in UTC. */

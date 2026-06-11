@@ -4,7 +4,7 @@ import {
   computeDayStatus,
   formatLockCountdown,
   getDailyLockTimes,
-  DAILY_LOCK_OFFSET_MINUTES,
+  LOCK_OFFSET_MINUTES,
   utcDateIso,
 } from "./daily-lock";
 
@@ -29,7 +29,7 @@ describe("computeDailyLockTime", () => {
   });
 
   it("offset is exactly 10 minutes", () => {
-    expect(DAILY_LOCK_OFFSET_MINUTES).toBe(10);
+    expect(LOCK_OFFSET_MINUTES).toBe(10);
   });
 
   it("throws for empty events array", () => {
