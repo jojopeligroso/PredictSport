@@ -359,7 +359,7 @@ export async function fetchDashboardData(): Promise<DashboardResult> {
   }
   const allWindowDates = [...allWindowByDate.keys()].sort();
 
-  const pillDates = isGroupStage ? allWindowDates : sortedDates.slice(0, 3);
+  const pillDates = isGroupStage ? allWindowDates.slice(0, 3) : sortedDates.slice(0, 3);
   const pillSource = isGroupStage ? allWindowByDate : byDate;
 
   const datePills: DatePillSummary[] = pillDates.map((iso) => {
