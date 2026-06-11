@@ -25,6 +25,7 @@ import type { TeamWithStats } from "@/lib/tournament/bracket/types";
 import { ChatWidget } from "@/components/chat";
 import { PredictionBanner } from "@/components/wc/PredictionBanner";
 import { RivalTeaser } from "@/components/wc/RivalTeaser";
+import { CommunityPicksCard } from "@/components/wc/CommunityPicksCard";
 
 interface DashboardClientProps {
   competitionId: string;
@@ -261,6 +262,18 @@ export function DashboardClient({
           )}
         </section>
       </OnboardingSection>
+
+      {/* ── 4b. Community Picks (competition-wide stats) ──────────────── */}
+      {isMember && (
+        <OnboardingSection id="other">
+          <section className="mt-3">
+            <p className="mb-2 text-[11px] font-semibold uppercase tracking-wider text-ps-text-ter">
+              {t('dash.the_field')}
+            </p>
+            <CommunityPicksCard competitionId={competitionId} />
+          </section>
+        </OnboardingSection>
+      )}
 
       {/* ── 5. Your Prediction Group ──────────────────────────────────── */}
       <OnboardingSection id="group">

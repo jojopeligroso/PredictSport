@@ -567,5 +567,9 @@
   "rivals.see_all_predictions": "See all {count} predictions",
   "rivals.see_what_others": "See what others predicted",
   "rivals.picks_reveal_in": "Picks reveal in {time}",
-  "rivals.locked": "Locked"
+  "rivals.locked": "Locked",
+  "dash.the_field": "The Field",
+  "community.draw": "Draw",
+  "community.popular_score": "Popular Score",
+  "community.no_scores": "No scores yet"
 }

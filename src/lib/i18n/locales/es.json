@@ -567,5 +567,9 @@
   "rivals.see_all_predictions": "Ver los {count} pronósticos",
   "rivals.see_what_others": "Mira lo que otros pronosticaron",
   "rivals.picks_reveal_in": "Pronósticos visibles en {time}",
-  "rivals.locked": "Bloqueado"
+  "rivals.locked": "Bloqueado",
+  "dash.the_field": "El Campo",
+  "community.draw": "Empate",
+  "community.popular_score": "Marcador Popular",
+  "community.no_scores": "Sin marcadores aún"
 }
