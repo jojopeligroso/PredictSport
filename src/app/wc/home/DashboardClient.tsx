@@ -252,6 +252,7 @@ export function DashboardClient({
             <StatsCard
               classificationId={classificationId}
               currentUserId={currentUserId}
+              competitionId={competitionId}
             />
           ) : (
             <div className="rounded-xl border border-ps-border bg-ps-surface px-4 py-5 text-center">
