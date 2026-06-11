@@ -97,6 +97,10 @@ export function CommunityPicksCard({ competitionId }: CommunityPicksCardProps) {
       : 0;
 
   return (
+    <section className="mt-3">
+      <p className="mb-2 text-[11px] font-semibold uppercase tracking-wider text-ps-text-ter">
+        {t("dash.the_field")}
+      </p>
     <div className="flex items-stretch gap-2">
       {/* Card 1: Outcome Split */}
       <div className="min-w-[100px] flex-1 rounded-lg border border-ps-border bg-ps-surface p-3">
@@ -167,6 +171,7 @@ export function CommunityPicksCard({ competitionId }: CommunityPicksCardProps) {
         )}
       </div>
     </div>
+    </section>
   );
 }
 

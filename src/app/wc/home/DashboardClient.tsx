@@ -266,12 +266,7 @@ export function DashboardClient({
       {/* ── 4b. Community Picks (competition-wide stats) ──────────────── */}
       {isMember && (
         <OnboardingSection id="other">
-          <section className="mt-3">
-            <p className="mb-2 text-[11px] font-semibold uppercase tracking-wider text-ps-text-ter">
-              {t('dash.the_field')}
-            </p>
-            <CommunityPicksCard competitionId={competitionId} />
-          </section>
+          <CommunityPicksCard competitionId={competitionId} />
         </OnboardingSection>
       )}
 
