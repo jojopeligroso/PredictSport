@@ -788,7 +788,7 @@ function FixtureCard({
         <div className="bg-ps-surface px-4 py-3.5 text-center dark:bg-ps-chip">
           <a
             href={`/wc/leaderboard?tab=rivals&eventId=${rivalsEventId}`}
-            className="inline-flex items-center gap-1.5 rounded-[10px] border-[1.5px] border-ps-amber bg-transparent px-5 py-2.5 text-sm font-semibold text-ps-amber transition-colors hover:bg-ps-amber hover:text-ps-text"
+            className="inline-flex items-center gap-1.5 rounded-[10px] border-[1.5px] border-ps-amber bg-ps-amber px-5 py-2.5 text-sm font-semibold text-ps-text transition-colors hover:brightness-110"
           >
             {t("rivals.see_what_others")}
             <svg
