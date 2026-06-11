@@ -1,0 +1,1050 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Rival Predictions — Mockup</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
+  <style>
+    /* ── Design tokens ── */
+    :root {
+      --bg:          #efe9de;
+      --surface:     #f7f3ec;
+      --surface-2:   #ffffff;
+      --ink:         #191512;
+      --text-2:      #6b6560;
+      --text-3:      #9c9590;
+      --accent:      #f59e0b;
+      --accent-dim:  #fef3c7;
+      --accent-faint:#fffbeb;
+      --green:       #0aa86d;
+      --green-dim:   #d1fae5;
+      --green-faint: #f0fdf8;
+      --green-bright:#00c87a;
+      --green-exact-dim: #b8f5dc;
+      --red:         #e23d4f;
+      --red-dim:     #ffe4e6;
+      --red-faint:   #fff5f6;
+      --border:      rgba(25,21,18,.10);
+      --border-2:    rgba(25,21,18,.06);
+      --radius-sm:   6px;
+      --radius-md:   10px;
+      --radius-lg:   14px;
+      --radius-xl:   20px;
+      --shadow-sm:   0 1px 3px rgba(25,21,18,.08);
+      --shadow-md:   0 4px 12px rgba(25,21,18,.10);
+    }
+
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'Inter', system-ui, sans-serif;
+      background: #d8d0c5;
+      color: var(--ink);
+      padding: 32px 16px 80px;
+      min-height: 100vh;
+    }
+
+    .mono { font-family: 'JetBrains Mono', monospace; }
+
+    /* ── Page scaffold ── */
+    .page-label {
+      font-size: 11px;
+      font-weight: 600;
+      letter-spacing: .08em;
+      text-transform: uppercase;
+      color: var(--text-3);
+      text-align: center;
+      margin-bottom: 24px;
+    }
+
+    .section-divider {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin: 40px 0 24px;
+    }
+    .section-divider__line {
+      flex: 1;
+      height: 1px;
+      background: var(--border);
+    }
+    .section-divider__label {
+      font-size: 11px;
+      font-weight: 600;
+      letter-spacing: .10em;
+      text-transform: uppercase;
+      color: var(--text-3);
+      white-space: nowrap;
+    }
+
+    /* ── Phone frame ── */
+    .phone {
+      max-width: 390px;
+      margin: 0 auto;
+    }
+
+    /* ── Cards ── */
+    .card {
+      background: var(--surface-2);
+      border-radius: var(--radius-lg);
+      box-shadow: var(--shadow-md);
+      overflow: hidden;
+    }
+
+    .card + .card { margin-top: 12px; }
+
+    /* ── App chrome ── */
+    .app-header {
+      background: var(--surface-2);
+      border-radius: var(--radius-lg) var(--radius-lg) 0 0;
+      padding: 16px 16px 0;
+      border-bottom: 1px solid var(--border-2);
+    }
+
+    .app-header__title {
+      font-size: 18px;
+      font-weight: 700;
+      color: var(--ink);
+      margin-bottom: 14px;
+    }
+
+    /* ── Tab bars ── */
+    .tab-bar {
+      display: flex;
+      gap: 4px;
+      padding: 4px;
+      background: var(--bg);
+      border-radius: var(--radius-xl);
+    }
+
+    .tab-bar--standalone {
+      margin: 0 0 4px;
+    }
+
+    .tab {
+      flex: 1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 7px 8px;
+      border-radius: var(--radius-lg);
+      font-size: 13px;
+      font-weight: 500;
+      color: var(--text-2);
+      cursor: pointer;
+      transition: background .15s, color .15s;
+      white-space: nowrap;
+      text-align: center;
+      line-height: 1.2;
+    }
+
+    .tab--active {
+      background: var(--accent);
+      color: var(--ink);
+      font-weight: 600;
+      box-shadow: var(--shadow-sm);
+    }
+
+    .tab--inactive:hover {
+      color: var(--ink);
+    }
+
+    /* ── Option labels ── */
+    .option-wrap {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .option-label {
+      font-size: 11px;
+      font-weight: 600;
+      letter-spacing: .07em;
+      text-transform: uppercase;
+      color: var(--text-3);
+      margin-bottom: 4px;
+    }
+
+    .option-block {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-md);
+      padding: 12px 12px 10px;
+    }
+
+    /* ── Fixture browser ── */
+    .fixture-browser {
+      padding: 14px 16px 12px;
+      background: var(--surface-2);
+      border-bottom: 1px solid var(--border-2);
+    }
+
+    .round-label {
+      font-size: 10px;
+      font-weight: 700;
+      letter-spacing: .10em;
+      text-transform: uppercase;
+      color: var(--text-3);
+      margin-bottom: 10px;
+    }
+
+    .fixture-nav {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      margin-bottom: 4px;
+    }
+
+    .fixture-nav__chevron {
+      width: 30px;
+      height: 30px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: var(--radius-sm);
+      background: var(--bg);
+      border: 1px solid var(--border);
+      color: var(--text-2);
+      cursor: pointer;
+      flex-shrink: 0;
+      transition: background .12s;
+    }
+
+    .fixture-nav__chevron:hover { background: var(--border); }
+
+    .fixture-nav__chevron svg {
+      width: 14px;
+      height: 14px;
+    }
+
+    .fixture-nav__name {
+      font-size: 15px;
+      font-weight: 700;
+      color: var(--ink);
+      text-align: center;
+      flex: 1;
+    }
+
+    .fixture-nav__meta {
+      text-align: center;
+      margin-top: 2px;
+    }
+
+    .fixture-nav__date {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 11px;
+      color: var(--text-2);
+    }
+
+    .fixture-status {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 5px;
+      margin-top: 8px;
+      padding: 5px 10px;
+      border-radius: var(--radius-sm);
+    }
+
+    .fixture-status--revealed {
+      background: rgba(245,158,11,.10);
+    }
+
+    .fixture-status--final {
+      background: rgba(10,168,109,.10);
+    }
+
+    .fixture-status__dot {
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      flex-shrink: 0;
+    }
+
+    .fixture-status--revealed .fixture-status__dot { background: var(--accent); }
+    .fixture-status--final .fixture-status__dot { background: var(--green); }
+
+    .fixture-status__text {
+      font-size: 11px;
+      font-weight: 600;
+    }
+
+    .fixture-status--revealed .fixture-status__text { color: var(--accent); }
+    .fixture-status--final .fixture-status__text { color: var(--green); }
+
+    .fixture-status__score {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 11px;
+      font-weight: 600;
+      color: var(--green);
+    }
+
+    /* ── Prediction list ── */
+    .pred-list {
+      background: var(--surface-2);
+    }
+
+    .pred-list__header {
+      padding: 10px 16px 8px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      border-bottom: 1px solid var(--border-2);
+    }
+
+    .pred-list__count {
+      font-size: 12px;
+      font-weight: 500;
+      color: var(--text-2);
+    }
+
+    .pred-list__sort {
+      font-size: 11px;
+      font-weight: 600;
+      color: var(--accent);
+      cursor: pointer;
+    }
+
+    .pred-row {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 9px 16px 9px 12px;
+      border-left: 3px solid transparent;
+      transition: background .1s;
+      position: relative;
+    }
+
+    .pred-row + .pred-row {
+      border-top: 1px solid var(--border-2);
+    }
+
+    .pred-row--correct {
+      border-left-color: var(--green);
+      background: var(--green-faint);
+    }
+
+    .pred-row--exact {
+      border-left-color: var(--green-bright);
+      background: rgba(0,200,122,.06);
+    }
+
+    .pred-row--wrong {
+      border-left-color: var(--red);
+      background: var(--red-faint);
+    }
+
+    .pred-row--you {
+      border-left-color: var(--accent);
+      background: var(--accent-faint);
+    }
+
+    .pred-row--pending {
+      border-left-color: transparent;
+      background: transparent;
+    }
+
+    .pred-row--nopick {
+      border-left-color: var(--border);
+      background: transparent;
+    }
+
+    /* Avatar */
+    .avatar {
+      width: 32px;
+      height: 32px;
+      border-radius: 50%;
+      background: var(--bg);
+      border: 1.5px solid var(--border);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 11px;
+      font-weight: 700;
+      color: var(--ink);
+      flex-shrink: 0;
+      letter-spacing: .02em;
+    }
+
+    .avatar--you {
+      border-color: var(--accent);
+      background: var(--accent-dim);
+    }
+
+    /* Name block */
+    .pred-name-block {
+      flex: 1;
+      min-width: 0;
+      display: flex;
+      align-items: center;
+      gap: 5px;
+    }
+
+    .pred-name {
+      font-size: 13px;
+      font-weight: 500;
+      color: var(--ink);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .badge-you {
+      font-size: 9px;
+      font-weight: 700;
+      letter-spacing: .06em;
+      text-transform: uppercase;
+      background: var(--accent);
+      color: var(--ink);
+      padding: 2px 5px;
+      border-radius: 4px;
+      flex-shrink: 0;
+    }
+
+    .badge-group {
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: var(--accent);
+      flex-shrink: 0;
+    }
+
+    /* Prediction value */
+    .pred-value {
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--ink);
+      text-align: right;
+      white-space: nowrap;
+    }
+
+    .pred-value--mono {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 13px;
+    }
+
+    .pred-value--none {
+      font-size: 12px;
+      font-style: italic;
+      color: var(--text-3);
+      font-weight: 400;
+    }
+
+    /* Points pill */
+    .pts-pill {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      min-width: 30px;
+      height: 22px;
+      padding: 0 7px;
+      border-radius: 11px;
+      font-size: 12px;
+      font-weight: 700;
+      flex-shrink: 0;
+    }
+
+    .pts-pill--correct { background: var(--green); color: #fff; }
+    .pts-pill--exact { background: var(--green-bright); color: #fff; }
+    .pts-pill--wrong { background: var(--red); color: #fff; }
+    .pts-pill--none { background: var(--bg); color: var(--text-3); border: 1px solid var(--border); }
+    .pts-pill--pending { background: var(--bg); color: var(--text-3); border: 1px solid var(--border); font-size: 10px; }
+
+    /* ── Scroll hint ── */
+    .scroll-hint {
+      text-align: center;
+      padding: 10px 16px 12px;
+      font-size: 11px;
+      color: var(--text-3);
+      font-weight: 500;
+      border-top: 1px solid var(--border-2);
+    }
+
+    /* ── Dashboard teaser ── */
+    .teaser-card {
+      background: var(--surface-2);
+      border-radius: var(--radius-lg);
+      box-shadow: var(--shadow-md);
+      overflow: hidden;
+    }
+
+    .teaser-header {
+      padding: 12px 14px 8px;
+      border-bottom: 1px solid var(--border-2);
+    }
+
+    .teaser-header__label {
+      font-size: 12px;
+      font-weight: 700;
+      color: var(--text-2);
+    }
+
+    .teaser-header__fixture {
+      font-size: 11px;
+      color: var(--text-3);
+      margin-top: 1px;
+    }
+
+    .teaser-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 8px 14px;
+      border-left: 3px solid transparent;
+    }
+
+    .teaser-row + .teaser-row { border-top: 1px solid var(--border-2); }
+
+    .teaser-row--correct {
+      border-left-color: var(--green);
+      background: var(--green-faint);
+    }
+
+    .teaser-row--wrong {
+      border-left-color: var(--red);
+      background: var(--red-faint);
+    }
+
+    .teaser-row--nopick {
+      border-left-color: var(--border);
+    }
+
+    .teaser-name {
+      font-size: 12px;
+      font-weight: 500;
+      color: var(--ink);
+      flex: 1;
+      min-width: 0;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .teaser-pred {
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--ink);
+    }
+
+    .teaser-pred--none {
+      font-size: 11px;
+      font-style: italic;
+      color: var(--text-3);
+      font-weight: 400;
+    }
+
+    .teaser-pts {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      min-width: 26px;
+      height: 20px;
+      padding: 0 6px;
+      border-radius: 10px;
+      font-size: 11px;
+      font-weight: 700;
+    }
+
+    .teaser-pts--correct { background: var(--green); color: #fff; }
+    .teaser-pts--wrong { background: var(--red); color: #fff; }
+    .teaser-pts--none { background: var(--bg); color: var(--text-3); border: 1px solid var(--border); }
+
+    .teaser-footer {
+      padding: 10px 14px 12px;
+      border-top: 1px solid var(--border-2);
+    }
+
+    .teaser-link {
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--accent);
+      text-decoration: none;
+      display: flex;
+      align-items: center;
+      gap: 4px;
+    }
+
+    /* ── CTA card ── */
+    .result-card {
+      background: var(--surface-2);
+      border-radius: var(--radius-lg);
+      box-shadow: var(--shadow-md);
+      overflow: hidden;
+    }
+
+    .result-header {
+      padding: 16px 16px 14px;
+      background: linear-gradient(135deg, #1c1916 0%, #2d2823 100%);
+    }
+
+    .result-teams {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 12px;
+      margin-bottom: 4px;
+    }
+
+    .result-team {
+      font-size: 15px;
+      font-weight: 700;
+      color: #fff;
+    }
+
+    .result-score {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 22px;
+      font-weight: 700;
+      color: var(--accent);
+      letter-spacing: .04em;
+    }
+
+    .result-meta {
+      text-align: center;
+      font-size: 11px;
+      color: rgba(255,255,255,.45);
+      margin-top: 2px;
+    }
+
+    .result-cta {
+      padding: 14px 16px;
+      text-align: center;
+    }
+
+    .btn-ghost {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 10px 20px;
+      border: 1.5px solid var(--accent);
+      border-radius: var(--radius-md);
+      background: transparent;
+      color: var(--accent);
+      font-size: 14px;
+      font-weight: 600;
+      font-family: 'Inter', sans-serif;
+      cursor: pointer;
+      transition: background .12s, color .12s;
+    }
+
+    .btn-ghost:hover {
+      background: var(--accent);
+      color: var(--ink);
+    }
+
+    /* ── Page scaffold labels ── */
+    .scaffold-label {
+      font-size: 13px;
+      font-weight: 700;
+      color: var(--ink);
+      margin-bottom: 12px;
+      padding-left: 2px;
+    }
+
+    /* ── Rank number ── */
+    .rank-num {
+      font-size: 11px;
+      font-weight: 600;
+      color: var(--text-3);
+      width: 16px;
+      text-align: center;
+      flex-shrink: 0;
+    }
+
+    .rank-num--you { color: var(--accent); }
+
+  </style>
+</head>
+<body>
+
+  <p class="page-label">sportspredict · Rival Predictions — Design Mockup</p>
+
+  <div class="phone">
+
+    <!-- ══════════════════════════════════════════
+         SECTION 1: Tab bar alternatives
+    ══════════════════════════════════════════ -->
+
+    <div class="section-divider">
+      <div class="section-divider__line"></div>
+      <span class="section-divider__label">Section 1 · Tab Bar Alternatives</span>
+      <div class="section-divider__line"></div>
+    </div>
+
+    <div class="option-wrap">
+
+      <!-- Option A: short -->
+      <div class="option-block">
+        <p class="option-label">Option A — short label "Rivals"</p>
+        <div class="tab-bar tab-bar--standalone">
+          <div class="tab tab--inactive">Format</div>
+          <div class="tab tab--inactive">Overall</div>
+          <div class="tab tab--active">Rivals</div>
+        </div>
+      </div>
+
+      <!-- Option B: long -->
+      <div class="option-block">
+        <p class="option-label">Option B — long label "Rival Predictions"</p>
+        <div class="tab-bar tab-bar--standalone">
+          <div class="tab tab--inactive" style="font-size:12px;">Format</div>
+          <div class="tab tab--inactive" style="font-size:12px;">Overall</div>
+          <div class="tab tab--active" style="font-size:12px;">Rival Predictions</div>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- ══════════════════════════════════════════
+         SECTION 2: Fixture Browser
+    ══════════════════════════════════════════ -->
+
+    <div class="section-divider">
+      <div class="section-divider__line"></div>
+      <span class="section-divider__label">Section 2 · Fixture Browser</span>
+      <div class="section-divider__line"></div>
+    </div>
+
+    <p class="scaffold-label">Unresulted (predictions revealed)</p>
+    <div class="card">
+      <!-- App header with tab bar -->
+      <div class="app-header">
+        <p class="app-header__title">sportspredict</p>
+        <div class="tab-bar">
+          <div class="tab tab--inactive">Format</div>
+          <div class="tab tab--inactive">Overall</div>
+          <div class="tab tab--active">Rivals</div>
+        </div>
+      </div>
+      <!-- Fixture browser -->
+      <div class="fixture-browser">
+        <p class="round-label">Matchday 2</p>
+        <div class="fixture-nav">
+          <div class="fixture-nav__chevron" aria-label="Previous fixture">
+            <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M10 12L6 8l4-4"/>
+            </svg>
+          </div>
+          <div>
+            <p class="fixture-nav__name">France vs Argentina</p>
+            <div class="fixture-nav__meta">
+              <span class="fixture-nav__date mono">15 Jun 2026 · 20:00</span>
+            </div>
+          </div>
+          <div class="fixture-nav__chevron" aria-label="Next fixture">
+            <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M6 4l4 4-4 4"/>
+            </svg>
+          </div>
+        </div>
+        <!-- Status: predictions revealed but no result yet -->
+        <div class="fixture-status fixture-status--revealed">
+          <div class="fixture-status__dot"></div>
+          <!-- eye icon -->
+          <svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="#f59e0b" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-right:2px;">
+            <path d="M1 8s2.5-5 7-5 7 5 7 5-2.5 5-7 5-7-5-7-5z"/>
+            <circle cx="8" cy="8" r="2"/>
+          </svg>
+          <span class="fixture-status__text">Predictions revealed</span>
+        </div>
+      </div>
+    </div>
+
+    <p class="scaffold-label" style="margin-top:16px;">Resulted match</p>
+    <div class="card">
+      <div class="fixture-browser" style="border-radius: var(--radius-lg);">
+        <p class="round-label">Matchday 2</p>
+        <div class="fixture-nav">
+          <div class="fixture-nav__chevron">
+            <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M10 12L6 8l4-4"/>
+            </svg>
+          </div>
+          <div>
+            <p class="fixture-nav__name">France vs Argentina</p>
+            <div class="fixture-nav__meta">
+              <span class="fixture-nav__date mono">15 Jun 2026 · 20:00</span>
+            </div>
+          </div>
+          <div class="fixture-nav__chevron">
+            <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M6 4l4 4-4 4"/>
+            </svg>
+          </div>
+        </div>
+        <!-- Status: final result -->
+        <div class="fixture-status fixture-status--final">
+          <div class="fixture-status__dot"></div>
+          <span class="fixture-status__text">Final</span>
+          <span style="color:var(--text-3);font-size:11px;">·</span>
+          <span class="fixture-status__score mono">2 – 1</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- ══════════════════════════════════════════
+         SECTION 3: Rival Predictions List
+    ══════════════════════════════════════════ -->
+
+    <div class="section-divider">
+      <div class="section-divider__line"></div>
+      <span class="section-divider__label">Section 3 · Rival Predictions List</span>
+      <div class="section-divider__line"></div>
+    </div>
+
+    <div class="card">
+      <!-- App header -->
+      <div class="app-header">
+        <p class="app-header__title">sportspredict</p>
+        <div class="tab-bar">
+          <div class="tab tab--inactive">Format</div>
+          <div class="tab tab--inactive">Overall</div>
+          <div class="tab tab--active">Rivals</div>
+        </div>
+      </div>
+
+      <!-- Fixture browser (compact, resulted) -->
+      <div class="fixture-browser">
+        <p class="round-label">Matchday 2</p>
+        <div class="fixture-nav">
+          <div class="fixture-nav__chevron">
+            <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M10 12L6 8l4-4"/>
+            </svg>
+          </div>
+          <div>
+            <p class="fixture-nav__name">France vs Argentina</p>
+            <div class="fixture-nav__meta">
+              <span class="fixture-nav__date mono">15 Jun 2026 · 20:00</span>
+            </div>
+          </div>
+          <div class="fixture-nav__chevron">
+            <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M6 4l4 4-4 4"/>
+            </svg>
+          </div>
+        </div>
+        <div class="fixture-status fixture-status--final">
+          <div class="fixture-status__dot"></div>
+          <span class="fixture-status__text">Final</span>
+          <span style="color:var(--text-3);font-size:11px;">·</span>
+          <span class="fixture-status__score mono">2 – 1</span>
+        </div>
+      </div>
+
+      <!-- List header -->
+      <div class="pred-list__header">
+        <span class="pred-list__count">48 predictions</span>
+        <span class="pred-list__sort">Sort: Points ↓</span>
+      </div>
+
+      <!-- Prediction rows -->
+      <div class="pred-list">
+
+        <!-- Row 1: exact score correct — green-bright border + subtle wash -->
+        <div class="pred-row pred-row--exact">
+          <span class="rank-num">1</span>
+          <div class="avatar">LM</div>
+          <div class="pred-name-block">
+            <span class="pred-name">Lucas Moura</span>
+            <div class="badge-group" title="In your group"></div>
+          </div>
+          <span class="pred-value pred-value--mono">2–1</span>
+          <div class="pts-pill pts-pill--exact">5</div>
+        </div>
+
+        <!-- Row 2: correct winner, wrong score -->
+        <div class="pred-row pred-row--correct">
+          <span class="rank-num">2</span>
+          <div class="avatar">SR</div>
+          <div class="pred-name-block">
+            <span class="pred-name">Sofia Reyes</span>
+          </div>
+          <span class="pred-value">France</span>
+          <div class="pts-pill pts-pill--correct">3</div>
+        </div>
+
+        <!-- Row 3: current user — amber border -->
+        <div class="pred-row pred-row--you">
+          <span class="rank-num rank-num--you">3</span>
+          <div class="avatar avatar--you">EU</div>
+          <div class="pred-name-block">
+            <span class="pred-name">Eoin U.</span>
+            <span class="badge-you">You</span>
+          </div>
+          <span class="pred-value">France</span>
+          <div class="pts-pill pts-pill--correct">3</div>
+        </div>
+
+        <!-- Row 4: wrong -->
+        <div class="pred-row pred-row--wrong">
+          <span class="rank-num">4</span>
+          <div class="avatar">KP</div>
+          <div class="pred-name-block">
+            <span class="pred-name">Kwame Poku</span>
+            <div class="badge-group" title="In your group"></div>
+          </div>
+          <span class="pred-value">Argentina</span>
+          <div class="pts-pill pts-pill--wrong">0</div>
+        </div>
+
+        <!-- Row 5: wrong, exact score attempt -->
+        <div class="pred-row pred-row--wrong">
+          <span class="rank-num">5</span>
+          <div class="avatar">AM</div>
+          <div class="pred-name-block">
+            <span class="pred-name">Ana Müller</span>
+          </div>
+          <span class="pred-value pred-value--mono">1–2</span>
+          <div class="pts-pill pts-pill--wrong">0</div>
+        </div>
+
+        <!-- Row 6: wrong -->
+        <div class="pred-row pred-row--wrong">
+          <span class="rank-num">6</span>
+          <div class="avatar">JS</div>
+          <div class="pred-name-block">
+            <span class="pred-name">Javier Suárez</span>
+          </div>
+          <span class="pred-value">Argentina</span>
+          <div class="pts-pill pts-pill--wrong">0</div>
+        </div>
+
+        <!-- Row 7: no prediction -->
+        <div class="pred-row pred-row--nopick">
+          <span class="rank-num" style="color:var(--text-3);">—</span>
+          <div class="avatar" style="opacity:.5;">TC</div>
+          <div class="pred-name-block">
+            <span class="pred-name" style="color:var(--text-3);">Tariq Chentouf</span>
+          </div>
+          <span class="pred-value--none">No prediction</span>
+          <div class="pts-pill pts-pill--none">0</div>
+        </div>
+
+        <!-- Row 8: pending (not yet resulted — no border, no pts) -->
+        <div class="pred-row pred-row--pending">
+          <span class="rank-num" style="color:var(--text-3);">—</span>
+          <div class="avatar">YN</div>
+          <div class="pred-name-block">
+            <span class="pred-name">Yuki Nakamura</span>
+          </div>
+          <span class="pred-value" style="color:var(--text-2); font-weight:500;">France</span>
+          <div class="pts-pill pts-pill--pending">–</div>
+        </div>
+
+      </div>
+
+      <!-- Scroll hint -->
+      <div class="scroll-hint">+ 40 more predictions · scroll to see all</div>
+
+    </div>
+
+    <!-- ══════════════════════════════════════════
+         SECTION 4: Dashboard Teaser
+    ══════════════════════════════════════════ -->
+
+    <div class="section-divider">
+      <div class="section-divider__line"></div>
+      <span class="section-divider__label">Section 4 · Dashboard Teaser</span>
+      <div class="section-divider__line"></div>
+    </div>
+
+    <!-- Context: sits below the group mini-table on the dashboard -->
+    <div style="background:var(--surface);border-radius:var(--radius-lg);padding:12px;box-shadow:var(--shadow-sm);margin-bottom:10px;">
+      <p style="font-size:11px;font-weight:600;color:var(--text-3);letter-spacing:.06em;text-transform:uppercase;margin-bottom:8px;">Group Mini-Table (context only)</p>
+      <div style="display:flex;flex-direction:column;gap:4px;">
+        <div style="display:flex;align-items:center;justify-content:space-between;padding:5px 8px;background:var(--accent-faint);border-radius:6px;border-left:2px solid var(--accent);">
+          <span style="font-size:12px;font-weight:600;color:var(--ink);">1. Eoin U. <span style="font-size:10px;font-weight:700;color:var(--accent);margin-left:3px;">You</span></span>
+          <span style="font-family:'JetBrains Mono',monospace;font-size:12px;font-weight:600;color:var(--ink);">18 pts</span>
+        </div>
+        <div style="display:flex;align-items:center;justify-content:space-between;padding:5px 8px;border-radius:6px;">
+          <span style="font-size:12px;color:var(--text-2);">2. Lucas Moura</span>
+          <span style="font-family:'JetBrains Mono',monospace;font-size:12px;color:var(--text-2);">16 pts</span>
+        </div>
+        <div style="display:flex;align-items:center;justify-content:space-between;padding:5px 8px;border-radius:6px;">
+          <span style="font-size:12px;color:var(--text-2);">3. Kwame Poku</span>
+          <span style="font-family:'JetBrains Mono',monospace;font-size:12px;color:var(--text-2);">12 pts</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- The actual teaser card -->
+    <div class="teaser-card">
+      <div class="teaser-header">
+        <p class="teaser-header__label">Group picks</p>
+        <p class="teaser-header__fixture">France vs Argentina · Matchday 2</p>
+      </div>
+
+      <!-- Correct -->
+      <div class="teaser-row teaser-row--correct">
+        <span class="teaser-name">Lucas Moura</span>
+        <span class="teaser-pred mono" style="font-family:'JetBrains Mono',monospace;font-size:12px;font-weight:600;margin-right:6px;">2–1</span>
+        <div class="teaser-pts teaser-pts--correct">5</div>
+      </div>
+
+      <!-- Wrong -->
+      <div class="teaser-row teaser-row--wrong">
+        <span class="teaser-name">Kwame Poku</span>
+        <span class="teaser-pred" style="margin-right:6px;">Argentina</span>
+        <div class="teaser-pts teaser-pts--wrong">0</div>
+      </div>
+
+      <!-- No prediction -->
+      <div class="teaser-row teaser-row--nopick">
+        <span class="teaser-name" style="color:var(--text-3);">Tariq Chentouf</span>
+        <span class="teaser-pred--none" style="margin-right:6px;">No prediction</span>
+        <div class="teaser-pts teaser-pts--none">0</div>
+      </div>
+
+      <div class="teaser-footer">
+        <a href="#" class="teaser-link">
+          See all 48 predictions
+          <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M6 4l4 4-4 4"/>
+          </svg>
+        </a>
+      </div>
+    </div>
+
+    <!-- ══════════════════════════════════════════
+         SECTION 5: CTA Button Concept
+    ══════════════════════════════════════════ -->
+
+    <div class="section-divider">
+      <div class="section-divider__line"></div>
+      <span class="section-divider__label">Section 5 · CTA on Results Page</span>
+      <div class="section-divider__line"></div>
+    </div>
+
+    <div class="result-card">
+      <div class="result-header">
+        <div class="result-teams">
+          <span class="result-team">France</span>
+          <span class="result-score mono">2 – 1</span>
+          <span class="result-team">Argentina</span>
+        </div>
+        <p class="result-meta">Full Time · 15 Jun 2026 · Group Stage</p>
+      </div>
+      <div class="result-cta">
+        <button class="btn-ghost">
+          See what others predicted
+          <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M6 4l4 4-4 4"/>
+          </svg>
+        </button>
+      </div>
+    </div>
+
+    <!-- bottom breathing room label -->
+    <div style="margin-top:48px;text-align:center;">
+      <p style="font-size:10px;color:var(--text-3);letter-spacing:.06em;text-transform:uppercase;">sportspredict · rivals mockup · v1</p>
+    </div>
+
+  </div><!-- /phone -->
+
+</body>
+</html>

@@ -289,17 +289,23 @@ export function FixturesTabs({ fixtures, resultsByExternalId, serverDateIso, pre
                 </div>
               </div>
             ))
-          : active.map((f) => (
-              <FixtureCard
-                key={f.externalId}
-                fixture={f}
-                result={resultsByExternalId[f.externalId]}
-                prediction={showPredictions ? effectivePredictions[f.externalId] : undefined}
-                showCorrectness={showPredictions && showCorrectness}
-                large={biggerCards}
-                locale={locale}
-              />
-            ))}
+          : active.map((f) => {
+              const fResult = resultsByExternalId[f.externalId];
+              const fPred = effectivePredictions[f.externalId];
+              const isResulted = !!fResult && (fResult.homeScore !== null || fResult.winner !== null);
+              return (
+                <FixtureCard
+                  key={f.externalId}
+                  fixture={f}
+                  result={fResult}
+                  prediction={showPredictions ? fPred : undefined}
+                  showCorrectness={showPredictions && showCorrectness}
+                  large={biggerCards}
+                  locale={locale}
+                  rivalsEventId={mode === "results" && isResulted && fPred?.eventId ? fPred.eventId : undefined}
+                />
+              );
+            })}
       </div>
     </div>
   );
@@ -387,6 +393,7 @@ function FixtureCard({
   expandable = false,
   onExpand,
   locale = "en",
+  rivalsEventId,
 }: {
   fixture: WcFixture;
   result: FixtureResult | undefined;
@@ -396,6 +403,7 @@ function FixtureCard({
   expandable?: boolean;
   onExpand?: () => void;
   locale?: string;
+  rivalsEventId?: string;
 }) {
   const t = useT();
   const city = HOST_CITIES[fixture.city as HostCitySlug];
@@ -774,6 +782,30 @@ function FixtureCard({
           </dl>
         )}
       </div>
+
+      {/* Rivals CTA — ghost button on resulted matches */}
+      {rivalsEventId && isFinished && (
+        <div className="bg-ps-surface px-4 py-3.5 text-center dark:bg-ps-chip">
+          <a
+            href={`/wc/leaderboard?tab=rivals&eventId=${rivalsEventId}`}
+            className="inline-flex items-center gap-1.5 rounded-[10px] border-[1.5px] border-ps-amber bg-transparent px-5 py-2.5 text-sm font-semibold text-ps-amber transition-colors hover:bg-ps-amber hover:text-ps-text"
+          >
+            {t("rivals.see_what_others")}
+            <svg
+              width="14"
+              height="14"
+              viewBox="0 0 16 16"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2.5"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            >
+              <path d="M6 4l4 4-4 4" />
+            </svg>
+          </a>
+        </div>
+      )}
     </article>
   );
 }

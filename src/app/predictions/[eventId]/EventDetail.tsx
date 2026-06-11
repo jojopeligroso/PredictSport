@@ -56,13 +56,33 @@ interface EventDetailProps {
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
 
-function formatCountdown(lockTime: string): string {
-  const diff = new Date(lockTime).getTime() - Date.now();
-  if (diff <= 0) return "LOCKED";
-  const d = Math.floor(diff / 86400000);
-  const h = Math.floor((diff / 3600000) % 24);
-  const m = Math.floor((diff / 60000) % 60);
-  return [d > 0 ? `${d}d` : "", `${h}h`, `${m}m`].filter(Boolean).join(" ");
+function formatCountdown(lockTime: string, pickRevealAt?: string): { label: string; value: string } {
+  const now = Date.now();
+  const lockDiff = new Date(lockTime).getTime() - now;
+
+  if (lockDiff > 0) {
+    const d = Math.floor(lockDiff / 86400000);
+    const h = Math.floor((lockDiff / 3600000) % 24);
+    const m = Math.floor((lockDiff / 60000) % 60);
+    const value = [d > 0 ? `${d}d` : "", `${h}h`, `${m}m`].filter(Boolean).join(" ");
+    return { label: "Locks in", value };
+  }
+
+  const revealTime = pickRevealAt
+    ? new Date(pickRevealAt)
+    : new Date(new Date(lockTime).getTime() + 5 * 60_000);
+  const revealDiff = revealTime.getTime() - now;
+
+  if (revealDiff > 0) {
+    const d = Math.floor(revealDiff / 86400000);
+    const h = Math.floor((revealDiff / 3600000) % 24);
+    const m = Math.floor((revealDiff / 60000) % 60);
+    const s = Math.floor((revealDiff / 1000) % 60);
+    const parts = [d > 0 ? `${d}d` : "", h > 0 || d > 0 ? `${h}h` : "", `${m}m`, d === 0 ? `${s}s` : ""].filter(Boolean);
+    return { label: "Picks reveal in", value: parts.join(" ") };
+  }
+
+  return { label: "Locked", value: "LOCKED" };
 }
 
 function getPickOptions(
@@ -467,23 +487,30 @@ export function EventDetail({
         style={{ boxShadow: "0 4px 14px rgba(40,30,20,0.06)" }}
       >
         <div>
-          <p
-            style={{
-              fontSize: 9,
-              fontWeight: 800,
-              letterSpacing: 1.2,
-              textTransform: "uppercase",
-            }}
-            className="text-ps-text-sec"
-          >
-            {isLocked ? "Locked" : "Locks in"}
-          </p>
-          <p
-            className="mt-0.5 font-display font-extrabold text-ps-amber-deep"
-            style={{ fontSize: 18, letterSpacing: 0.6 }}
-          >
-            {isLocked ? "LOCKED" : formatCountdown(event.lock_time)}
-          </p>
+          {(() => {
+            const cd = formatCountdown(event.lock_time, event.pick_reveal_at ?? undefined);
+            return (
+              <>
+                <p
+                  style={{
+                    fontSize: 9,
+                    fontWeight: 800,
+                    letterSpacing: 1.2,
+                    textTransform: "uppercase",
+                  }}
+                  className="text-ps-text-sec"
+                >
+                  {cd.label}
+                </p>
+                <p
+                  className="mt-0.5 font-display font-extrabold text-ps-amber-deep"
+                  style={{ fontSize: 18, letterSpacing: 0.6 }}
+                >
+                  {cd.value}
+                </p>
+              </>
+            );
+          })()}
         </div>
         <div className="flex items-center gap-1.5">
           <span

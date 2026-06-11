@@ -554,5 +554,18 @@
   "standings.day_singular": "día",
   "standings.day_plural": "días",
   "standings.will_appear": "Los resultados aparecerán aquí una vez que haya partidos resueltos.",
-  "standings.bring_rival": "Invita a un rival antes del inicio."
+  "standings.bring_rival": "Invita a un rival antes del inicio.",
+  "rivals.tab_label": "Pronósticos rivales",
+  "rivals.predictions_revealed": "Pronósticos revelados",
+  "rivals.final": "Final",
+  "rivals.predictions_count": "{count} pronósticos",
+  "rivals.sort_points": "Orden: Puntos ↓",
+  "rivals.no_prediction": "Sin pronóstico",
+  "rivals.scroll_more": "+ {count} más · desplaza para ver",
+  "rivals.no_revealed": "Aún no hay pronósticos revelados. Aparecen 5 minutos después de que cada partido se bloquea.",
+  "rivals.group_picks": "Pronósticos del grupo",
+  "rivals.see_all_predictions": "Ver los {count} pronósticos",
+  "rivals.see_what_others": "Mira lo que otros pronosticaron",
+  "rivals.picks_reveal_in": "Pronósticos visibles en {time}",
+  "rivals.locked": "Bloqueado"
 }

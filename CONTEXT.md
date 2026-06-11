@@ -304,3 +304,17 @@ _Avoid_: Rebalancing, redistribution, merge
 
 A [[Prediction Group]] whose size changed from 4 to 5 after absorbing a [[Remainder]] participant during [[Reconciliation]]. Third place in an Expanded Group auto-qualifies for the next stage (instead of entering the best-third pool as in a standard group of 4).
 _Avoid_: Oversized group, inflated group
+
+---
+
+## Rival Predictions
+
+The feature surface where participants view other members' predictions for revealed events. Two manifestations: a **dashboard teaser** (group-scoped, single most-recent fixture, one row per [[Prediction Group]] rival) and a **leaderboard tab** (competition-scoped, all members' predictions for one browsable fixture at a time). Predictions are only visible after [[Pick Reveal]] time — never before.
+_Avoid_: Community predictions (that term is used for aggregated poll-style data, not per-member views), other people's picks
+
+---
+
+## Pick Reveal
+
+The moment after which other participants' predictions for an [[Event]] become visible. Computed as `pick_reveal_at` if explicitly set by an admin, otherwise `lock_time + 5 minutes`. This gap between lock and reveal prevents last-second gaming — a participant cannot see rivals' predictions immediately after their own submission window closes. Enforced at the database level via RLS on the `predictions` table; no application-level bypass exists.
+_Avoid_: Unlock, unspoiler

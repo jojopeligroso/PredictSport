@@ -1,7 +1,9 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { useSearchParams } from "next/navigation";
 import { useT, useLocale, type Locale } from "@/lib/i18n";
+import { RivalPredictionsTab } from "@/components/wc/RivalPredictionsTab";
 
 interface Classification {
   id: string;
@@ -77,13 +79,19 @@ export function ClassificationTabs({
   currentDisplayName?: string;
 }) {
   const t = useT();
+  const searchParams = useSearchParams();
+  const RIVALS_TAB = "__rivals__";
+  const initialRivalEventId = searchParams.get("eventId");
+  const shouldStartOnRivals = searchParams.get("tab") === "rivals";
+
   const visibleClassifications = classifications.filter((c) => c.status !== "draft");
   const formatClassification = visibleClassifications.find(
     (c) => c.classification_key === "format"
   );
-  const [activeId, setActiveId] = useState<string>(
-    formatClassification?.id ?? visibleClassifications[0]?.id ?? ""
-  );
+  const [activeId, setActiveId] = useState<string>(() => {
+    if (shouldStartOnRivals) return RIVALS_TAB;
+    return formatClassification?.id ?? visibleClassifications[0]?.id ?? "";
+  });
   const [standings, setStandings] = useState<StandingRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [loadedId, setLoadedId] = useState<string>("");
@@ -170,10 +178,33 @@ export function ClassificationTabs({
             {shortLabel(cls.classification_key, t)}
           </button>
         ))}
+        {/* Rival Predictions tab — standalone, not tied to a classification */}
+        <button
+          key={RIVALS_TAB}
+          onClick={() => { setActiveId(RIVALS_TAB); }}
+          className={`whitespace-nowrap rounded-md px-3 py-1.5 text-xs font-semibold transition-colors ${
+            activeId === RIVALS_TAB
+              ? "bg-ps-amber text-ps-text shadow-sm"
+              : "text-ps-text-sec hover:text-ps-text"
+          }`}
+        >
+          {t("rivals.tab_label")}
+        </button>
       </div>
 
+      {/* ── Rival Predictions tab content ── */}
+      {activeId === RIVALS_TAB && (
+        <div className="mt-4 flex flex-1 flex-col">
+          <RivalPredictionsTab
+            competitionId={competitionId}
+            currentUserId={currentUserId}
+            initialEventId={initialRivalEventId}
+          />
+        </div>
+      )}
+
       {/* Entrant counter */}
-      {memberCount !== undefined && (
+      {activeId !== RIVALS_TAB && memberCount !== undefined && (
         <EntrantCounter
           count={memberCount}
           max={maxEntrants ?? null}
@@ -181,94 +212,99 @@ export function ClassificationTabs({
         />
       )}
 
-      {/* Format draw countdown — top */}
-      {active?.classification_key === "format" &&
-        groupData?.status === "draw_pending" &&
-        groupData.drawAt && (
-          <FormatDrawBanner
-            drawAt={groupData.drawAt}
-            label={t('classification.format_draw_in')}
-          />
-        )}
+      {/* ── Classification content (hidden when Rival Predictions tab is active) ── */}
+      {activeId !== RIVALS_TAB && (
+        <>
+          {/* Format draw countdown — top */}
+          {active?.classification_key === "format" &&
+            groupData?.status === "draw_pending" &&
+            groupData.drawAt && (
+              <FormatDrawBanner
+                drawAt={groupData.drawAt}
+                label={t('classification.format_draw_in')}
+              />
+            )}
 
-      {/* Rules preview — always show for format, pre-kickoff for others */}
-      {active && (active.classification_key === "format" || (kickoffIso && new Date(kickoffIso).getTime() > Date.now())) && (
-        <ClassificationRulesPreview classificationKey={active.classification_key} />
-      )}
+          {/* Rules preview — always show for format, pre-kickoff for others */}
+          {active && (active.classification_key === "format" || (kickoffIso && new Date(kickoffIso).getTime() > Date.now())) && (
+            <ClassificationRulesPreview classificationKey={active.classification_key} />
+          )}
 
-      {/* Format: Your Group card + All groups view, OR single-group preview */}
-      {active?.classification_key === "format" && (
-        groupData?.allGroups && groupData.allGroups.length > 0 ? (
-          <div className="mt-4">
-            {groupData.myGroupId && (() => {
-              const myGroup = groupData.allGroups!.find((g) => g.id === groupData.myGroupId);
-              return myGroup ? <YourGroupCard group={myGroup} /> : null;
-            })()}
-            <div className={groupData.myGroupId ? "mt-3" : ""}>
-              <AllGroupsView groups={groupData.allGroups} myGroupId={groupData.myGroupId ?? null} />
-            </div>
+          {/* Format: Your Group card + All groups view, OR single-group preview */}
+          {active?.classification_key === "format" && (
+            groupData?.allGroups && groupData.allGroups.length > 0 ? (
+              <div className="mt-4">
+                {groupData.myGroupId && (() => {
+                  const myGroup = groupData.allGroups!.find((g) => g.id === groupData.myGroupId);
+                  return myGroup ? <YourGroupCard group={myGroup} /> : null;
+                })()}
+                <div className={groupData.myGroupId ? "mt-3" : ""}>
+                  <AllGroupsView groups={groupData.allGroups} myGroupId={groupData.myGroupId ?? null} />
+                </div>
+              </div>
+            ) : (
+              <FormatGroupCard
+                groupData={groupData}
+                displayName={currentDisplayName ?? "You"}
+              />
+            )
+          )}
+
+          {/* Standings (non-format tabs only, or format before groups load) */}
+          {!(active?.classification_key === "format" && groupData?.allGroups && groupData.allGroups.length > 0) && (
+          <div className="mt-4 flex flex-1 flex-col">
+            {isLoading ? (
+              <div className="flex justify-center py-12">
+                <div className="h-5 w-5 animate-spin rounded-full border-2 border-ps-text-ter border-t-ps-text" />
+              </div>
+            ) : standings.length === 0 ? (
+              <div className="flex flex-1 items-center justify-center pb-[10%]">
+                <EmptyStandings
+                  isDraft={active?.status === "draft"}
+                  inviteCode={inviteCode ?? null}
+                  kickoffIso={kickoffIso ?? null}
+                />
+              </div>
+            ) : (
+              <StandingsTable
+                standings={standings}
+                currentUserId={currentUserId}
+                classificationType={active?.classification_type ?? "leaderboard"}
+                selfVisibility={selfVisibility}
+                onToggleVisibility={async (next) => {
+                  const prev = selfVisibility;
+                  setSelfVisibility(next);
+                  try {
+                    const res = await fetch("/api/tournament/visibility", {
+                      method: "POST",
+                      headers: { "Content-Type": "application/json" },
+                      body: JSON.stringify({ classificationId: activeId, visibility: next }),
+                    });
+                    if (!res.ok) throw new Error("toggle failed");
+                    const data = await fetch(
+                      `/api/tournament/standings?classificationId=${activeId}&competitionId=${competitionId}`,
+                    ).then((r) => r.json());
+                    setStandings(data?.standings ?? []);
+                  } catch {
+                    setSelfVisibility(prev);
+                  }
+                }}
+              />
+            )}
           </div>
-        ) : (
-          <FormatGroupCard
-            groupData={groupData}
-            displayName={currentDisplayName ?? "You"}
-          />
-        )
-      )}
+          )}
 
-      {/* Standings (non-format tabs only, or format before groups load) */}
-      {!(active?.classification_key === "format" && groupData?.allGroups && groupData.allGroups.length > 0) && (
-      <div className="mt-4 flex flex-1 flex-col">
-        {isLoading ? (
-          <div className="flex justify-center py-12">
-            <div className="h-5 w-5 animate-spin rounded-full border-2 border-ps-text-ter border-t-ps-text" />
-          </div>
-        ) : standings.length === 0 ? (
-          <div className="flex flex-1 items-center justify-center pb-[10%]">
-            <EmptyStandings
-              isDraft={active?.status === "draft"}
-              inviteCode={inviteCode ?? null}
-              kickoffIso={kickoffIso ?? null}
-            />
-          </div>
-        ) : (
-          <StandingsTable
-            standings={standings}
-            currentUserId={currentUserId}
-            classificationType={active?.classification_type ?? "leaderboard"}
-            selfVisibility={selfVisibility}
-            onToggleVisibility={async (next) => {
-              const prev = selfVisibility;
-              setSelfVisibility(next);
-              try {
-                const res = await fetch("/api/tournament/visibility", {
-                  method: "POST",
-                  headers: { "Content-Type": "application/json" },
-                  body: JSON.stringify({ classificationId: activeId, visibility: next }),
-                });
-                if (!res.ok) throw new Error("toggle failed");
-                const data = await fetch(
-                  `/api/tournament/standings?classificationId=${activeId}&competitionId=${competitionId}`,
-                ).then((r) => r.json());
-                setStandings(data?.standings ?? []);
-              } catch {
-                setSelfVisibility(prev);
-              }
-            }}
-          />
-        )}
-      </div>
+          {/* Format draw countdown — bottom */}
+          {active?.classification_key === "format" &&
+            groupData?.status === "draw_pending" &&
+            groupData.drawAt && (
+              <FormatDrawBanner
+                drawAt={groupData.drawAt}
+                label={t('classification.know_group_in')}
+              />
+            )}
+        </>
       )}
-
-      {/* Format draw countdown — bottom */}
-      {active?.classification_key === "format" &&
-        groupData?.status === "draw_pending" &&
-        groupData.drawAt && (
-          <FormatDrawBanner
-            drawAt={groupData.drawAt}
-            label={t('classification.know_group_in')}
-          />
-        )}
     </div>
   );
 }

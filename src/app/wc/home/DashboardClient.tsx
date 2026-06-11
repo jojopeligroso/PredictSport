@@ -24,6 +24,7 @@ import type { ResultRow } from "./fetchDashboardData";
 import type { TeamWithStats } from "@/lib/tournament/bracket/types";
 import { ChatWidget } from "@/components/chat";
 import { PredictionBanner } from "@/components/wc/PredictionBanner";
+import { RivalTeaser } from "@/components/wc/RivalTeaser";
 
 interface DashboardClientProps {
   competitionId: string;
@@ -274,6 +275,15 @@ export function DashboardClient({
           )}
         </section>
       </OnboardingSection>
+
+      {/* ── 5a. Rival Predictions teaser ─────────────────────────── */}
+      {isMember && (
+        <OnboardingSection id="other">
+          <section className="mt-2">
+            <RivalTeaser competitionId={competitionId} />
+          </section>
+        </OnboardingSection>
+      )}
 
       {/* ── 5b. Leaderboard link ──────────────────────────────────── */}
       <OnboardingSection id="other">

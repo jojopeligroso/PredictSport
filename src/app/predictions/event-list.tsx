@@ -118,17 +118,35 @@ function getPointsSummary(predictions: Prediction[]): string | null {
   return `${total} pts`;
 }
 
-function formatCountdownText(lockTime: string): string {
+function formatCountdownText(lockTime: string, pickRevealAt?: string): string {
   const diff = new Date(lockTime).getTime() - Date.now();
-  if (diff <= 0) return "Locked";
-  const days = Math.floor(diff / (1000 * 60 * 60 * 24));
-  const hours = Math.floor((diff / (1000 * 60 * 60)) % 24);
-  const minutes = Math.floor((diff / (1000 * 60)) % 60);
-  const parts: string[] = [];
-  if (days > 0) parts.push(`${days}d`);
-  if (hours > 0 || days > 0) parts.push(`${hours}h`);
-  parts.push(`${minutes}m`);
-  return `Locks in ${parts.join(" ")}`;
+  if (diff > 0) {
+    const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+    const hours = Math.floor((diff / (1000 * 60 * 60)) % 24);
+    const minutes = Math.floor((diff / (1000 * 60)) % 60);
+    const parts: string[] = [];
+    if (days > 0) parts.push(`${days}d`);
+    if (hours > 0 || days > 0) parts.push(`${hours}h`);
+    parts.push(`${minutes}m`);
+    return `Locks in ${parts.join(" ")}`;
+  }
+  const revealTime = pickRevealAt
+    ? new Date(pickRevealAt)
+    : new Date(new Date(lockTime).getTime() + 5 * 60_000);
+  const revealDiff = revealTime.getTime() - Date.now();
+  if (revealDiff > 0) {
+    const days = Math.floor(revealDiff / (1000 * 60 * 60 * 24));
+    const hours = Math.floor((revealDiff / (1000 * 60 * 60)) % 24);
+    const minutes = Math.floor((revealDiff / (1000 * 60)) % 60);
+    const seconds = Math.floor((revealDiff / 1000) % 60);
+    const parts: string[] = [];
+    if (days > 0) parts.push(`${days}d`);
+    if (hours > 0 || days > 0) parts.push(`${hours}h`);
+    parts.push(`${minutes}m`);
+    if (days === 0) parts.push(`${seconds}s`);
+    return `Picks reveal in ${parts.join(" ")}`;
+  }
+  return "Locked";
 }
 
 function formatResult(resultData: Record<string, unknown>): string {
@@ -840,12 +858,17 @@ function EventCard({
           <div className="flex items-center gap-1.5">
             {event.status === "upcoming" && lockDiff > 0 ? (
               <CountdownChip
-                text={formatCountdownText(event.lock_time)}
+                text={formatCountdownText(event.lock_time, event.pick_reveal_at ?? undefined)}
                 urgent={isUrgent}
               />
-            ) : event.status !== "upcoming" ? (
+            ) : event.status === "upcoming" ? (
+              <CountdownChip
+                text={formatCountdownText(event.lock_time, event.pick_reveal_at ?? undefined)}
+                urgent={false}
+              />
+            ) : (
               <StatusBadge status={event.status} />
-            ) : null}
+            )}
             <SendToThread
               variant="icon"
               defaultText={psDefaultSheetCopy(event.event_name)}
@@ -893,7 +916,7 @@ function EventCard({
         {/* Live countdown for upcoming events */}
         {event.status === "upcoming" && (
           <div className="mt-2">
-            <Countdown lockTime={event.lock_time} />
+            <Countdown lockTime={event.lock_time} pickRevealAt={event.pick_reveal_at ?? undefined} />
           </div>
         )}
 

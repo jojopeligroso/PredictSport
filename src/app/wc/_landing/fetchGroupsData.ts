@@ -29,7 +29,7 @@ export async function fetchGroupsData() {
   const { data: eventsRaw } = await supabase
     .from("events")
     .select(
-      `id, event_name, sport, start_time, lock_time, status, result_confirmed, external_event_id,
+      `id, event_name, sport, start_time, lock_time, pick_reveal_at, status, result_confirmed, external_event_id,
        event_prediction_types (id, event_id, prediction_type, points, partial_points, config)`,
     )
     .eq("competition_id", competition.id)

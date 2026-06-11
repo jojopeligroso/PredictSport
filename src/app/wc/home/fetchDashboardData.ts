@@ -2,10 +2,14 @@ import { createClient } from "@/lib/supabase/server";
 import { WC2026_FIXTURES, type WcFixture } from "@/lib/wc/fixtures";
 import { describeDraftProgress } from "@/lib/bracket/bracket-progress";
 import { computeGroupStandings } from "@/lib/wc/compute-group-standings";
+import { utcDateIso } from "@/lib/wc/daily-lock";
 import type { WindowEvent } from "@/app/wc/picks/[windowId]/WindowPickList";
 import type { Prediction } from "@/types/database";
 import type { BracketSubmissionData } from "@/types/tournament";
 import type { TeamWithStats } from "@/lib/tournament/bracket/types";
+
+/** Number of fixture-days visible in the sliding window. */
+const WINDOW_SIZE_DAYS = 8;
 
 type EventRowWithExternal = WindowEvent & { external_event_id: string | null };
 
@@ -171,17 +175,70 @@ export async function fetchDashboardData(): Promise<DashboardResult> {
 
   if (!currentRound) return { ready: false };
 
-  // 3. Fetch events for the current round
-  const { data: eventsRaw } = await supabase
-    .from("events")
-    .select(
-      `id, event_name, sport, start_time, lock_time, status, result_confirmed, external_event_id,
-       event_prediction_types (id, event_id, prediction_type, points, partial_points, config)`,
-    )
-    .eq("round_id", currentRound.id)
-    .order("start_time", { ascending: true });
+  // 3. Fetch events — sliding window for group stage, full round for knockout
+  const isGroupStage = currentRound.round_number <= 3;
+  let eventRows: EventRowWithExternal[];
 
-  const eventRows = (eventsRaw ?? []) as EventRowWithExternal[];
+  if (isGroupStage) {
+    // Fetch ALL group-stage events across rounds 1-3
+    const { data: groupRounds } = await supabase
+      .from("rounds")
+      .select("id")
+      .eq("competition_id", competition.id)
+      .lte("round_number", 3);
+
+    const groupRoundIds = (groupRounds ?? []).map((r: { id: string }) => r.id);
+
+    const { data: allGroupEventsRaw } = await supabase
+      .from("events")
+      .select(
+        `id, event_name, sport, start_time, lock_time, pick_reveal_at, status, result_confirmed, external_event_id,
+         event_prediction_types (id, event_id, prediction_type, points, partial_points, config)`,
+      )
+      .in("round_id", groupRoundIds)
+      .order("start_time", { ascending: true });
+
+    const allGroupEvents = (allGroupEventsRaw ?? []) as EventRowWithExternal[];
+
+    // Group by date, find earliest date with unconfirmed fixtures
+    const eventsByDate = new Map<string, EventRowWithExternal[]>();
+    for (const e of allGroupEvents) {
+      const iso = utcDateIso(new Date(e.start_time));
+      const list = eventsByDate.get(iso) ?? [];
+      list.push(e);
+      eventsByDate.set(iso, list);
+    }
+
+    const allDates = [...eventsByDate.keys()].sort();
+    const windowStartIso = allDates.find((iso) =>
+      (eventsByDate.get(iso) ?? []).some((e) => !e.result_confirmed),
+    );
+
+    if (windowStartIso) {
+      const windowStartIdx = allDates.indexOf(windowStartIso);
+      const windowDates = new Set(
+        allDates.slice(windowStartIdx, windowStartIdx + WINDOW_SIZE_DAYS),
+      );
+      eventRows = allGroupEvents.filter((e) =>
+        windowDates.has(utcDateIso(new Date(e.start_time))),
+      );
+    } else {
+      // All group fixtures confirmed — fall back to current round events
+      eventRows = [];
+    }
+  } else {
+    // Knockout: fetch all events for the current round
+    const { data: eventsRaw } = await supabase
+      .from("events")
+      .select(
+        `id, event_name, sport, start_time, lock_time, pick_reveal_at, status, result_confirmed, external_event_id,
+         event_prediction_types (id, event_id, prediction_type, points, partial_points, config)`,
+      )
+      .eq("round_id", currentRound.id)
+      .order("start_time", { ascending: true });
+
+    eventRows = (eventsRaw ?? []) as EventRowWithExternal[];
+  }
 
   // Build fixture map
   const fixtureByExternalId = new Map<string, WcFixture>();
@@ -278,9 +335,23 @@ export async function fetchDashboardData(): Promise<DashboardResult> {
     predictions = (predRows ?? []) as Prediction[];
   }
 
-  // Build date pill summaries for the first 3 unlocked dates
-  const datePills: DatePillSummary[] = sortedDates.slice(0, 3).map((iso) => {
-    const dayEvents = byDate.get(iso) ?? [];
+  // Build date pill summaries for the window.
+  // Group stage: ALL dates in the 8-day window (including locked-but-unconfirmed).
+  // Knockout: first 3 unlocked dates (original behavior).
+  const allWindowByDate = new Map<string, EventRowWithExternal[]>();
+  for (const e of eventRows) {
+    const iso = utcDateIso(new Date(e.start_time));
+    const list = allWindowByDate.get(iso) ?? [];
+    list.push(e);
+    allWindowByDate.set(iso, list);
+  }
+  const allWindowDates = [...allWindowByDate.keys()].sort();
+
+  const pillDates = isGroupStage ? allWindowDates : sortedDates.slice(0, 3);
+  const pillSource = isGroupStage ? allWindowByDate : byDate;
+
+  const datePills: DatePillSummary[] = pillDates.map((iso) => {
+    const dayEvents = pillSource.get(iso) ?? [];
     const dayEventIds = new Set(dayEvents.map((e) => e.id));
     const dayPreds = predictions.filter((p) => dayEventIds.has(p.event_id));
 
@@ -310,8 +381,8 @@ export async function fetchDashboardData(): Promise<DashboardResult> {
   });
 
   // All events for pill dates (client-side date filtering)
-  const pillDateEvents: WindowEvent[] = sortedDates.slice(0, 3).flatMap((iso) =>
-    (byDate.get(iso) ?? []).map((row) => ({
+  const pillDateEvents: WindowEvent[] = pillDates.flatMap((iso) =>
+    (pillSource.get(iso) ?? []).map((row) => ({
       id: row.id,
       event_name: row.event_name,
       sport: row.sport,
@@ -330,8 +401,11 @@ export async function fetchDashboardData(): Promise<DashboardResult> {
   ]);
   const groupStandings = Object.fromEntries(standingsMap);
 
-  const windowLocked =
-    currentRound.status === "locked" || currentRound.status === "scored";
+  // Group stage: per-fixture locking via lock_time, no round-level lock.
+  // Knockout: round-level lock as before.
+  const windowLocked = isGroupStage
+    ? false
+    : currentRound.status === "locked" || currentRound.status === "scored";
 
   // 7. Bracket progress
   // Group picks must be counted across ALL group-stage events for the

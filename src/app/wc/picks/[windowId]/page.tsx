@@ -90,7 +90,7 @@ export default async function WindowPicksPage({
   const { data: eventsRaw } = await supabase
     .from("events")
     .select(`
-      id, event_name, sport, start_time, lock_time, status, result_confirmed,
+      id, event_name, sport, start_time, lock_time, pick_reveal_at, status, result_confirmed,
       event_prediction_types (id, event_id, prediction_type, points, partial_points, config)
     `)
     .eq("round_id", windowId)

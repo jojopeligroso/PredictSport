@@ -554,5 +554,18 @@
   "standings.day_singular": "day",
   "standings.day_plural": "days",
   "standings.will_appear": "Standings will appear here once results land.",
-  "standings.bring_rival": "Bring a rival before kickoff."
+  "standings.bring_rival": "Bring a rival before kickoff.",
+  "rivals.tab_label": "Rival Predictions",
+  "rivals.predictions_revealed": "Predictions revealed",
+  "rivals.final": "Final",
+  "rivals.predictions_count": "{count} predictions",
+  "rivals.sort_points": "Sort: Points ↓",
+  "rivals.no_prediction": "No prediction",
+  "rivals.scroll_more": "+ {count} more · scroll to see all",
+  "rivals.no_revealed": "No predictions revealed yet. They appear 5 minutes after each match locks.",
+  "rivals.group_picks": "Group picks",
+  "rivals.see_all_predictions": "See all {count} predictions",
+  "rivals.see_what_others": "See what others predicted",
+  "rivals.picks_reveal_in": "Picks reveal in {time}",
+  "rivals.locked": "Locked"
 }

@@ -1,15 +1,24 @@
 import { createClient } from "@/lib/supabase/server";
 import { WC2026_FIXTURES, type WcFixture } from "@/lib/wc/fixtures";
+import { utcDateIso } from "@/lib/wc/daily-lock";
 import type { WindowEvent } from "@/app/wc/picks/[windowId]/WindowPickList";
 import type { Prediction } from "@/types/database";
 
 type EventRowWithExternal = WindowEvent & { external_event_id: string | null };
 
+/** Number of fixture-days visible in the sliding window. */
+const WINDOW_SIZE_DAYS = 8;
+
 /**
- * Fetch all data needed to render the MD1 picks-first landing.
+ * Fetch events for the picks-first /wc landing.
  *
- * Shared between /wc and /wc/picks so they render identically
- * even if /wc changes in the future.
+ * Group stage (rounds 1-3): 8-day sliding window across all group rounds.
+ * The window starts at the earliest UTC date with at least one unconfirmed
+ * fixture and includes the next 8 calendar days that have fixtures.
+ * When all fixtures on the earliest visible day are confirmed, the window
+ * slides forward automatically.
+ *
+ * Knockout (round 4+): all fixtures for the current round (no sliding).
  */
 export async function fetchMd1PicksData() {
   const supabase = await createClient();
@@ -27,27 +36,77 @@ export async function fetchMd1PicksData() {
 
   if (!competition) return { ready: false as const };
 
-  const { data: md1Round } = await supabase
+  // Fetch all group-stage rounds (round_number 1-3)
+  const { data: groupRounds } = await supabase
     .from("rounds")
-    .select("id, status")
+    .select("id, status, round_number")
     .eq("competition_id", competition.id)
-    .eq("round_number", 1)
-    .order("id", { ascending: true })
-    .limit(1)
-    .maybeSingle();
+    .lte("round_number", 3)
+    .order("round_number", { ascending: true });
 
-  if (!md1Round) return { ready: false as const };
+  if (!groupRounds?.length) return { ready: false as const };
 
-  const { data: eventsRaw } = await supabase
-    .from("events")
-    .select(
-      `id, event_name, sport, start_time, lock_time, status, result_confirmed, external_event_id,
-       event_prediction_types (id, event_id, prediction_type, points, partial_points, config)`,
-    )
-    .eq("round_id", md1Round.id)
-    .order("start_time", { ascending: true });
+  // Check if we're still in group stage (at least one non-scored group round)
+  const hasActiveGroupRound = groupRounds.some((r) => r.status !== "scored");
 
-  const eventRows = (eventsRaw ?? []) as EventRowWithExternal[];
+  let eventRows: EventRowWithExternal[];
+  let windowLocked: boolean;
+
+  if (hasActiveGroupRound) {
+    // ── Group stage: 8-day sliding window ────────────────────────────
+    const groupRoundIds = groupRounds.map((r) => r.id);
+
+    const { data: allEventsRaw } = await supabase
+      .from("events")
+      .select(
+        `id, event_name, sport, start_time, lock_time, pick_reveal_at, status, result_confirmed, external_event_id,
+         event_prediction_types (id, event_id, prediction_type, points, partial_points, config)`,
+      )
+      .in("round_id", groupRoundIds)
+      .order("start_time", { ascending: true });
+
+    const allGroupEvents = (allEventsRaw ?? []) as EventRowWithExternal[];
+
+    // Group events by UTC date and find dates with unconfirmed fixtures
+    const eventsByDate = new Map<string, EventRowWithExternal[]>();
+    for (const e of allGroupEvents) {
+      const iso = utcDateIso(new Date(e.start_time));
+      const list = eventsByDate.get(iso) ?? [];
+      list.push(e);
+      eventsByDate.set(iso, list);
+    }
+
+    // Window start: earliest date with at least one unconfirmed fixture
+    const sortedDates = [...eventsByDate.keys()].sort();
+    const windowStartIso = sortedDates.find((iso) => {
+      const dayEvents = eventsByDate.get(iso) ?? [];
+      return dayEvents.some((e) => !e.result_confirmed);
+    });
+
+    if (!windowStartIso) {
+      // All group fixtures confirmed — fall through to knockout below
+      return fetchKnockoutFallback(supabase, competition.id, user);
+    }
+
+    // Take 8 fixture-dates from window_start (skipping dates with no fixtures)
+    const windowStartIdx = sortedDates.indexOf(windowStartIso);
+    const windowDates = new Set(
+      sortedDates.slice(windowStartIdx, windowStartIdx + WINDOW_SIZE_DAYS),
+    );
+
+    // Filter events to the window
+    eventRows = allGroupEvents.filter((e) => {
+      const iso = utcDateIso(new Date(e.start_time));
+      return windowDates.has(iso);
+    });
+
+    // Per-fixture locking — no round-level lock
+    windowLocked = false;
+  } else {
+    // All group rounds scored — fall through to knockout
+    return fetchKnockoutFallback(supabase, competition.id, user);
+  }
+
   const events: WindowEvent[] = eventRows.map((row) => ({
     id: row.id,
     event_name: row.event_name,
@@ -93,12 +152,99 @@ export async function fetchMd1PicksData() {
     if (fixture) fixtureByEventId.set(row.id, fixture);
   }
 
-  const windowLocked =
-    md1Round.status === "locked" || md1Round.status === "scored";
-
   return {
     ready: true as const,
     competitionId: competition.id,
+    events,
+    predictions,
+    fixtureByEventId,
+    isMember,
+    isAuthenticated: Boolean(user),
+    windowLocked,
+  };
+}
+
+/**
+ * Fallback: all group rounds scored → fetch the first actionable knockout round.
+ */
+async function fetchKnockoutFallback(
+  supabase: Awaited<ReturnType<typeof createClient>>,
+  competitionId: string,
+  user: { id: string } | null,
+) {
+  const { data: koRound } = await supabase
+    .from("rounds")
+    .select("id, status")
+    .eq("competition_id", competitionId)
+    .gt("round_number", 3)
+    .in("status", ["draft", "open", "locked"])
+    .order("round_number", { ascending: true })
+    .limit(1)
+    .maybeSingle();
+
+  if (!koRound) return { ready: false as const };
+
+  const { data: eventsRaw } = await supabase
+    .from("events")
+    .select(
+      `id, event_name, sport, start_time, lock_time, pick_reveal_at, status, result_confirmed, external_event_id,
+       event_prediction_types (id, event_id, prediction_type, points, partial_points, config)`,
+    )
+    .eq("round_id", koRound.id)
+    .order("start_time", { ascending: true });
+
+  const eventRows = (eventsRaw ?? []) as EventRowWithExternal[];
+  const events: WindowEvent[] = eventRows.map((row) => ({
+    id: row.id,
+    event_name: row.event_name,
+    sport: row.sport,
+    start_time: row.start_time,
+    lock_time: row.lock_time,
+    status: row.status,
+    result_confirmed: row.result_confirmed,
+    event_prediction_types: row.event_prediction_types,
+  }));
+
+  const fixtureByExternalId = new Map<string, WcFixture>();
+  for (const f of WC2026_FIXTURES) fixtureByExternalId.set(f.externalId, f);
+
+  const fixtureByEventId = new Map<string, WcFixture>();
+  for (const row of eventRows) {
+    if (!row.external_event_id) continue;
+    const fixture = fixtureByExternalId.get(row.external_event_id);
+    if (fixture) fixtureByEventId.set(row.id, fixture);
+  }
+
+  let isMember = false;
+  let predictions: Prediction[] = [];
+  if (user) {
+    const { data: membership } = await supabase
+      .from("competition_members")
+      .select("id")
+      .eq("competition_id", competitionId)
+      .eq("user_id", user.id)
+      .maybeSingle();
+    isMember = Boolean(membership);
+
+    if (isMember && events.length > 0) {
+      const eventIds = events.map((e) => e.id);
+      const { data: predRows } = await supabase
+        .from("predictions")
+        .select(
+          "id, event_prediction_type_id, event_id, user_id, prediction_type, prediction_data, is_correct, is_partial, points_awarded, note_text, note_visibility, submitted_at, updated_at",
+        )
+        .eq("user_id", user.id)
+        .in("event_id", eventIds);
+      predictions = (predRows ?? []) as Prediction[];
+    }
+  }
+
+  const windowLocked =
+    koRound.status === "locked" || koRound.status === "scored";
+
+  return {
+    ready: true as const,
+    competitionId,
     events,
     predictions,
     fixtureByEventId,

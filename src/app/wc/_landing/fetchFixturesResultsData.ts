@@ -37,7 +37,7 @@ export async function fetchFixturesResultsData() {
     const { data: events } = await supabase
       .from("events")
       .select(
-        `id, external_event_id, event_name, sport, start_time, lock_time, status, result_data, result_confirmed, round_id,
+        `id, external_event_id, event_name, sport, start_time, lock_time, pick_reveal_at, status, result_data, result_confirmed, round_id,
          event_prediction_types (id, event_id, prediction_type, points, partial_points, config)`,
       )
       .eq("competition_id", competition.id)

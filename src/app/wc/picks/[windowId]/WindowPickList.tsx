@@ -43,6 +43,7 @@ export interface WindowEvent {
   sport: string;
   start_time: string;
   lock_time: string;
+  pick_reveal_at?: string | null;
   status: string;
   result_confirmed: boolean;
   event_prediction_types: EventPredictionType[];
@@ -675,7 +676,7 @@ function MatchPickRow({
               ? t("fixtures.stage_group", { group: fixture.group, matchday: fixture.matchday })
               : event.event_name
           }
-          headerRight={formatHeaderRight(fixture.kickoffUtc, showCardCountdown ? event.lock_time : undefined)}
+          headerRight={formatHeaderRight(fixture.kickoffUtc, showCardCountdown ? event.lock_time : undefined, event.pick_reveal_at)}
           hasPick={currentWinner !== null}
         >
           <div className={theme.lockedReadOnly}>{lockedBody}</div>
@@ -794,7 +795,7 @@ function MatchPickRow({
             ? `Group ${fixture.group} · MD${fixture.matchday}`
             : event.event_name
         }
-        headerRight={formatHeaderRight(fixture.kickoffUtc, showCardCountdown ? event.lock_time : undefined)}
+        headerRight={formatHeaderRight(fixture.kickoffUtc, showCardCountdown ? event.lock_time : undefined, event.pick_reveal_at)}
         hasPick={currentWinner !== null}
       >
         {interactiveBody}
@@ -815,7 +816,7 @@ function MatchPickRow({
  * local-time conversion is intentionally NOT shown here (that lives on
  * /wc/results which is the canonical fixture-detail surface).
  */
-function formatHeaderRight(kickoffUtc: string, lockTime?: string): ReactNode {
+function formatHeaderRight(kickoffUtc: string, lockTime?: string, pickRevealAt?: string | null): ReactNode {
   const d = new Date(kickoffUtc);
   const time = new Intl.DateTimeFormat("en-GB", {
     hour: "2-digit",
@@ -835,39 +836,69 @@ function formatHeaderRight(kickoffUtc: string, lockTime?: string): ReactNode {
       <span className="block text-[0.65rem] font-medium text-white/55">
         {date}
       </span>
-      {lockTime && <CardCountdown lockTime={lockTime} />}
+      {lockTime && <CardCountdown lockTime={lockTime} pickRevealAt={pickRevealAt ?? undefined} />}
     </>
   );
 }
 
-function CardCountdown({ lockTime }: { lockTime: string }) {
-  const [text, setText] = useState<string | null>(() => fmtCardDdHhMmSs(lockTime));
+function CardCountdown({
+  lockTime,
+  pickRevealAt,
+}: {
+  lockTime: string;
+  pickRevealAt?: string | null;
+}) {
+  const t = useT();
+  const revealIso =
+    pickRevealAt ?? new Date(new Date(lockTime).getTime() + 5 * 60_000).toISOString();
+
+  const [lockText, setLockText] = useState<string | null>(() => fmtDdHhMmSs(lockTime));
+  const [revealText, setRevealText] = useState<string | null>(() => fmtDdHhMmSs(revealIso));
 
   useEffect(() => {
     const tick = () => {
-      const next = fmtCardDdHhMmSs(lockTime);
-      setText(next);
-      if (!next) clearInterval(id);
+      const lt = fmtDdHhMmSs(lockTime);
+      const rt = fmtDdHhMmSs(revealIso);
+      setLockText(lt);
+      setRevealText(rt);
+      if (!lt && !rt) clearInterval(id);
     };
     const id = setInterval(tick, 1000);
     return () => clearInterval(id);
-  }, [lockTime]);
+  }, [lockTime, revealIso]);
 
-  if (!text) return null;
+  // Before lock: show lock countdown
+  if (lockText) {
+    return (
+      <span
+        className="mt-0.5 block font-mono text-[0.6rem] font-semibold tabular-nums text-white/70"
+        role="timer"
+        aria-live="off"
+      >
+        {lockText}
+      </span>
+    );
+  }
 
-  return (
-    <span
-      className="mt-0.5 block font-mono text-[0.6rem] font-semibold tabular-nums text-white/70"
-      role="timer"
-      aria-live="off"
-    >
-      {text}
-    </span>
-  );
+  // Between lock and reveal: show reveal countdown
+  if (revealText) {
+    return (
+      <span
+        className="mt-0.5 block text-[0.55rem] font-semibold text-amber-300/80"
+        role="timer"
+        aria-live="off"
+      >
+        {t("rivals.picks_reveal_in", { time: revealText })}
+      </span>
+    );
+  }
+
+  // After reveal: nothing
+  return null;
 }
 
-function fmtCardDdHhMmSs(lockTime: string): string | null {
-  const diff = new Date(lockTime).getTime() - Date.now();
+function fmtDdHhMmSs(target: string): string | null {
+  const diff = new Date(target).getTime() - Date.now();
   if (diff <= 0) return null;
   const dd = Math.floor(diff / 86400000);
   const hh = Math.floor((diff % 86400000) / 3600000);

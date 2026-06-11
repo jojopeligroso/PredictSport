@@ -87,7 +87,7 @@ export default async function EventDetailPage({ params }: PageProps) {
   const isLocked = now >= lockTime || event.status !== "upcoming";
   const revealTime = event.pick_reveal_at
     ? new Date(event.pick_reveal_at)
-    : lockTime;
+    : new Date(lockTime.getTime() + 5 * 60_000);
   const picksRevealed = event.result_confirmed || now >= revealTime;
 
   return (
