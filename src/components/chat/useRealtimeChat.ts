@@ -58,7 +58,7 @@ interface UseRealtimeChatReturn {
 }
 
 const PAGE_SIZE = 50;
-const MINI_SIZE = 5;
+export const MINI_SIZE = 20;
 
 /** Tombstone content for deleted messages */
 function tombstoneContent(msg: ChatMessage, t: (k: string) => string): string {
@@ -378,7 +378,7 @@ export function useRealtimeChat({
       });
     };
 
-    const interval = setInterval(poll, 1000);
+    const interval = setInterval(poll, mode === "mini" ? 5000 : 2000);
     return () => clearInterval(interval);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [competitionId, mode, members]);

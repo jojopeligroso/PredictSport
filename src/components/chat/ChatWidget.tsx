@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { ChatMessage } from "./ChatMessage";
 import { MentionAutocomplete, findAtTrigger } from "./MentionAutocomplete";
-import { useRealtimeChat } from "./useRealtimeChat";
+import { useRealtimeChat, MINI_SIZE } from "./useRealtimeChat";
 import type { ChatMessageWithUser } from "./useRealtimeChat";
 import { useT } from "@/lib/i18n";
 
@@ -184,14 +184,8 @@ export function ChatWidget({
     }
   }, []);
 
-  // Handle file selection
-  const handleFileSelect = useCallback(async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-
-    // Reset file input so same file can be re-selected
-    e.target.value = "";
-
+  // Validate and stage a media file (shared by file input and paste)
+  const stageMediaFile = useCallback(async (file: File) => {
     if (!ALLOWED_MEDIA_TYPES.includes(file.type)) {
       setSendError(t('chat.error_file_type'));
       setTimeout(() => setSendError(null), 4000);
@@ -205,11 +199,32 @@ export function ChatWidget({
       return;
     }
 
-    // Compress image (skips GIFs)
     const compressed = await compressImage(file);
     const previewUrl = URL.createObjectURL(compressed);
     setMediaPreview({ file: compressed, url: previewUrl });
-  }, []);
+  }, [t]);
+
+  // Handle file selection from file input
+  const handleFileSelect = useCallback(async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    e.target.value = "";
+    stageMediaFile(file);
+  }, [stageMediaFile]);
+
+  // Handle paste — extract image from clipboard
+  const handlePaste = useCallback((e: React.ClipboardEvent<HTMLInputElement>) => {
+    const items = e.clipboardData?.items;
+    if (!items) return;
+    for (let i = 0; i < items.length; i++) {
+      if (items[i].type.startsWith("image/")) {
+        e.preventDefault();
+        const file = items[i].getAsFile();
+        if (file) stageMediaFile(file);
+        return;
+      }
+    }
+  }, [stageMediaFile]);
 
   // Clear media preview
   const clearMedia = useCallback(() => {
@@ -287,7 +302,7 @@ export function ChatWidget({
 
   // Mini mode: show limited messages
   const displayMessages =
-    mode === "mini" ? messages.slice(-5) : messages;
+    mode === "mini" ? messages.slice(-MINI_SIZE) : messages;
 
   // Compute grouping: consecutive messages from the same sender within 10 min
   const GROUP_WINDOW_MS = 10 * 60 * 1000;
@@ -320,7 +335,7 @@ export function ChatWidget({
   return (
     <div
       className={`flex flex-col overflow-hidden ${
-        mode === "full" ? "h-full" : "max-h-72"
+        mode === "full" ? "h-full" : "max-h-[480px]"
       }`}
     >
       {/* Header (full mode only — mini mode header is provided by parent) */}
@@ -468,6 +483,7 @@ export function ChatWidget({
                 value={inputValue}
                 onChange={handleInputChange}
                 onKeyDown={handleKeyDown}
+                onPaste={handlePaste}
                 onSelect={(e) =>
                   setCursorPosition(
                     (e.target as HTMLInputElement).selectionStart ?? 0

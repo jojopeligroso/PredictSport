@@ -109,17 +109,15 @@ export function DashboardClient({
   const [expandedEventId, setExpandedEventId] = useState<string | null>(null);
   const [selectedDate, setSelectedDate] = useState<string | null>(null);
 
-  // Collapsible mini chat: persisted in localStorage
-  const chatStorageKey = `chat-collapsed-${competitionId}`;
   const [chatCollapsed, setChatCollapsed] = useState(() => {
     if (typeof window === "undefined") return false;
-    try { return localStorage.getItem(chatStorageKey) === "1"; } catch { return false; }
+    try { return localStorage.getItem(`chat-collapsed-${competitionId}`) === "1"; } catch { return false; }
   });
 
   const toggleChatCollapsed = () => {
     setChatCollapsed((prev) => {
       const next = !prev;
-      try { localStorage.setItem(chatStorageKey, next ? "1" : "0"); } catch { /* ignore */ }
+      try { localStorage.setItem(`chat-collapsed-${competitionId}`, next ? "1" : "0"); } catch { /* ignore */ }
       return next;
     });
   };
