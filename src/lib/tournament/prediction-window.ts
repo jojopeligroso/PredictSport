@@ -122,3 +122,70 @@ export async function getWindowsToLock(
 
   return toLock;
 }
+
+// ============================================================
+// Classifications that need undersized-group reconciliation.
+// Returns classifications where: groups are drawn, the first
+// event has locked, and reconciliation hasn't run yet.
+// ============================================================
+
+export async function getClassificationsNeedingReconciliation(
+  supabase: SupabaseClient,
+  competitionId: string,
+): Promise<{ classificationId: string }[]> {
+  // Find active format_elimination classifications
+  const { data: classifications, error: clsError } = await supabase
+    .from("classifications")
+    .select("id, config")
+    .eq("competition_id", competitionId)
+    .eq("classification_type", "format_elimination")
+    .eq("status", "active");
+
+  if (clsError) throw new Error(`Failed to fetch classifications: ${clsError.message}`);
+  if (!classifications || classifications.length === 0) return [];
+
+  // Check if first event in the competition has locked
+  const { data: allRounds } = await supabase
+    .from("rounds")
+    .select("id")
+    .eq("competition_id", competitionId);
+
+  if (!allRounds || allRounds.length === 0) return [];
+
+  const roundIds = allRounds.map((r: { id: string }) => r.id);
+
+  const { data: firstEvent } = await supabase
+    .from("events")
+    .select("lock_time")
+    .in("round_id", roundIds)
+    .not("status", "in", '("cancelled","postponed")')
+    .order("lock_time", { ascending: true })
+    .limit(1)
+    .maybeSingle();
+
+  if (!firstEvent?.lock_time) return [];
+
+  const now = new Date().toISOString();
+  if (firstEvent.lock_time > now) return []; // competition hasn't started
+
+  // Filter to classifications that have groups but haven't been reconciled
+  const result: { classificationId: string }[] = [];
+
+  for (const cls of classifications) {
+    const config = (cls.config ?? {}) as Record<string, unknown>;
+    if (config.groups_reconciled_at) continue; // already done
+
+    // Check groups exist
+    const { data: groupCheck } = await supabase
+      .from("format_prediction_groups")
+      .select("id")
+      .eq("classification_id", cls.id)
+      .limit(1);
+
+    if (groupCheck && groupCheck.length > 0) {
+      result.push({ classificationId: cls.id });
+    }
+  }
+
+  return result;
+}

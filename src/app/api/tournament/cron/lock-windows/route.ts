@@ -3,7 +3,9 @@ import { createClient } from "@supabase/supabase-js";
 import {
   getWindowsToLock,
   lockPredictionWindow,
+  getClassificationsNeedingReconciliation,
 } from "@/lib/tournament/prediction-window";
+import { reconcileUndersizedGroups } from "@/lib/tournament/format/group-allocation";
 
 export const dynamic = "force-dynamic";
 
@@ -49,9 +51,52 @@ export async function GET(request: Request) {
   }
 
   const locked: string[] = [];
+  const reconciled: string[] = [];
   const errors: string[] = [];
 
   for (const comp of competitions ?? []) {
+    // Reconcile undersized groups when first event locks
+    try {
+      const needsReconciliation = await getClassificationsNeedingReconciliation(
+        supabase, comp.id,
+      );
+      for (const cls of needsReconciliation) {
+        try {
+          const result = await reconcileUndersizedGroups(supabase, cls.classificationId);
+
+          // Stamp groups_reconciled_at so we don't re-check
+          const { data: clsRow } = await supabase
+            .from("classifications")
+            .select("config")
+            .eq("id", cls.classificationId)
+            .single();
+
+          const config = ((clsRow?.config ?? {}) as Record<string, unknown>);
+          config.groups_reconciled_at = new Date().toISOString();
+
+          await supabase
+            .from("classifications")
+            .update({ config })
+            .eq("id", cls.classificationId);
+
+          if (result && result.movedMembers > 0) {
+            reconciled.push(
+              `${comp.name}: dissolved ${result.dissolved.join(", ")} → ${result.modified.join(", ")}`,
+            );
+          } else {
+            reconciled.push(`${comp.name}: all groups viable, stamped`);
+          }
+        } catch (err) {
+          const msg = err instanceof Error ? err.message : "Unknown error";
+          console.error(`lock-windows cron: group reconciliation failed: ${msg}`);
+          errors.push(`${comp.name} (reconcile)`);
+        }
+      }
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : "Unknown error";
+      console.error(`lock-windows cron: reconciliation check failed for ${comp.name}: ${msg}`);
+    }
+
     try {
       const windowsToLock = await getWindowsToLock(supabase, comp.id);
 
@@ -77,6 +122,7 @@ export async function GET(request: Request) {
     checked_at: new Date().toISOString(),
     competitions_checked: (competitions ?? []).length,
     locked,
+    reconciled: reconciled.length > 0 ? reconciled : undefined,
     errors: errors.length > 0 ? errors : undefined,
   });
 }

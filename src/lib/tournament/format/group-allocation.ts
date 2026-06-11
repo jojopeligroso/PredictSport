@@ -241,19 +241,19 @@ export async function addLateEntrant(
     sizeCounts.set(m.group_id, current + 1);
   }
 
-  // Find groups under 4 members first (fill to 4 before creating new groups)
-  const underFour = Array.from(sizeCounts.entries())
-    .filter(([, count]) => count < 4);
+  // Fill groups to max 5 before creating new overflow groups
+  const underMax = Array.from(sizeCounts.entries())
+    .filter(([, count]) => count < 5);
 
   let chosenGroupId: string;
 
-  if (underFour.length > 0) {
+  if (underMax.length > 0) {
     // Always fill the most recently created group first
     // to preserve competitive integrity of earlier groups
-    const underFourGroups = underFour
+    const underMaxGroups = underMax
       .map(([id]) => groupList.find((g) => g.id === id)!)
       .sort((a, b) => b.group_number - a.group_number);
-    chosenGroupId = underFourGroups[0].id;
+    chosenGroupId = underMaxGroups[0].id;
   } else {
     // All groups are at 4+. Create a new group for this user.
     const maxGroupNumber = Math.max(...groupList.map((g) => g.group_number));
@@ -291,6 +291,128 @@ export async function addLateEntrant(
 
   if (insertError) throw new Error(`Failed to add late entrant: ${insertError.message}`);
   return inserted as FormatGroupMembership;
+}
+
+// ============================================================
+// Dissolve undersized groups at lock time
+// Groups with < 3 members are absorbed into the newest viable
+// groups (highest group_number, max 5 members).
+// ============================================================
+
+export interface ReconciliationResult {
+  dissolved: string[];
+  modified: string[];
+  movedMembers: number;
+}
+
+export async function reconcileUndersizedGroups(
+  supabase: SupabaseClient,
+  classificationId: string,
+): Promise<ReconciliationResult | null> {
+  // Load all groups
+  const { data: groups, error: groupError } = await supabase
+    .from("format_prediction_groups")
+    .select("id, group_name, group_number, target_size")
+    .eq("classification_id", classificationId)
+    .order("group_number", { ascending: true });
+
+  if (groupError) throw new Error(`Failed to fetch groups: ${groupError.message}`);
+  if (!groups || groups.length === 0) return null;
+
+  // Load all active memberships
+  const { data: memberships, error: mbError } = await supabase
+    .from("format_group_memberships")
+    .select("id, group_id, user_id")
+    .eq("classification_id", classificationId)
+    .eq("status", "active");
+
+  if (mbError) throw new Error(`Failed to fetch memberships: ${mbError.message}`);
+
+  // Build member counts per group
+  const membersByGroup = new Map<string, string[]>();
+  for (const g of groups) membersByGroup.set(g.id, []);
+  for (const m of memberships ?? []) {
+    const list = membersByGroup.get(m.group_id);
+    if (list) list.push(m.user_id);
+  }
+
+  // Identify undersized (< 3) and viable (>= 3) groups
+  const undersized = groups.filter((g) => (membersByGroup.get(g.id)?.length ?? 0) < 3);
+  if (undersized.length === 0) return null;
+
+  const viable = groups.filter((g) => (membersByGroup.get(g.id)?.length ?? 0) >= 3);
+  if (viable.length === 0) {
+    throw new Error("All groups are undersized — cannot reconcile");
+  }
+
+  // Collect orphans from undersized groups
+  const orphans: string[] = [];
+  for (const g of undersized) {
+    orphans.push(...(membersByGroup.get(g.id) ?? []));
+  }
+
+  if (orphans.length === 0) return null;
+
+  // Distribute orphans into viable groups (highest group_number first, max 5)
+  // Track which viable groups receive members
+  const viableSizes = new Map<string, number>();
+  for (const g of viable) viableSizes.set(g.id, membersByGroup.get(g.id)?.length ?? 0);
+
+  const viableSorted = [...viable].sort((a, b) => b.group_number - a.group_number);
+  const moves: { userId: string; targetGroupId: string }[] = [];
+  const modifiedGroupIds = new Set<string>();
+
+  for (const userId of orphans) {
+    const target = viableSorted.find((g) => (viableSizes.get(g.id) ?? 0) < 5);
+    if (!target) {
+      throw new Error("No viable group has room (< 5) to absorb orphan");
+    }
+    moves.push({ userId, targetGroupId: target.id });
+    viableSizes.set(target.id, (viableSizes.get(target.id) ?? 0) + 1);
+    modifiedGroupIds.add(target.id);
+  }
+
+  // Execute: move memberships
+  for (const move of moves) {
+    const { error } = await supabase
+      .from("format_group_memberships")
+      .update({ group_id: move.targetGroupId })
+      .eq("classification_id", classificationId)
+      .eq("user_id", move.userId);
+
+    if (error) throw new Error(`Failed to move member ${move.userId}: ${error.message}`);
+  }
+
+  // Update target_size on modified groups
+  for (const groupId of modifiedGroupIds) {
+    const newSize = viableSizes.get(groupId) ?? 0;
+    await supabase
+      .from("format_prediction_groups")
+      .update({ target_size: newSize })
+      .eq("id", groupId);
+  }
+
+  // Delete dissolved groups
+  const dissolvedIds = undersized.map((g) => g.id);
+  await supabase
+    .from("format_prediction_groups")
+    .delete()
+    .in("id", dissolvedIds);
+
+  const dissolvedNames = undersized.map((g) => g.group_name);
+  const modifiedNames = viable
+    .filter((g) => modifiedGroupIds.has(g.id))
+    .map((g) => g.group_name);
+
+  console.log(
+    `[reconcile] Dissolved ${dissolvedNames.join(", ")} → absorbed into ${modifiedNames.join(", ")} (${moves.length} members moved)`,
+  );
+
+  return {
+    dissolved: dissolvedNames,
+    modified: modifiedNames,
+    movedMembers: moves.length,
+  };
 }
 
 // ============================================================
