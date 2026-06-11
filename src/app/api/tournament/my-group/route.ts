@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
+import { createServiceClient } from "@/lib/supabase/service";
 import { allocatePredictionGroups } from "@/lib/tournament/format/group-allocation";
 import { getEliminationCurve } from "@/lib/tournament/format/elimination";
 import type { Classification } from "@/types/tournament";
@@ -127,7 +128,8 @@ export async function GET(request: NextRequest) {
       const firstElimination = curveSteps[1];
       const survivorTarget = firstElimination?.remaining ?? memberCount;
 
-      await allocatePredictionGroups(supabase, classificationId, survivorTarget);
+      const svc = createServiceClient();
+      await allocatePredictionGroups(svc, classificationId, survivorTarget);
     } catch (err) {
       console.error("[my-group] Draw FAILED:", (err as Error).message);
       return NextResponse.json({

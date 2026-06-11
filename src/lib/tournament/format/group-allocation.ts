@@ -248,10 +248,12 @@ export async function addLateEntrant(
   let chosenGroupId: string;
 
   if (underFour.length > 0) {
-    // Pick the smallest under-4 group (random tie-break)
-    const minSize = Math.min(...underFour.map(([, c]) => c));
-    const candidates = underFour.filter(([, c]) => c === minSize).map(([id]) => id);
-    chosenGroupId = cryptoChoice(candidates);
+    // Always fill the most recently created group first
+    // to preserve competitive integrity of earlier groups
+    const underFourGroups = underFour
+      .map(([id]) => groupList.find((g) => g.id === id)!)
+      .sort((a, b) => b.group_number - a.group_number);
+    chosenGroupId = underFourGroups[0].id;
   } else {
     // All groups are at 4+. Create a new group for this user.
     const maxGroupNumber = Math.max(...groupList.map((g) => g.group_number));

@@ -7,6 +7,7 @@
  */
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
+import { createServiceClient } from "@/lib/supabase/service";
 import { enrollEntrant } from "@/lib/tournament/classification-engine";
 import { addLateEntrant } from "@/lib/tournament/format/group-allocation";
 import { requireDisplayName } from "@/lib/require-display-name";
@@ -83,7 +84,8 @@ export default async function WcJoinOpenPage() {
 
       if (existingGroups && existingGroups.length > 0) {
         try {
-          await addLateEntrant(supabase, formatCls.id, user.id);
+          const svc = createServiceClient();
+          await addLateEntrant(svc, formatCls.id, user.id);
         } catch (err) {
           console.error("[join-open] Failed to add late entrant to group:", (err as Error).message);
         }
