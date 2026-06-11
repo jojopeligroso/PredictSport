@@ -37,7 +37,7 @@ function parseNotificationPrefs(
     leaderboard_updates:
       typeof raw?.leaderboard_updates === "boolean"
         ? raw.leaderboard_updates
-        : false,
+        : true,
     chat_mentions:
       typeof raw?.chat_mentions === "boolean"
         ? raw.chat_mentions

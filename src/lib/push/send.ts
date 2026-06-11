@@ -57,11 +57,11 @@ export async function sendPushToUser(
     .single();
 
   const prefs = user?.notification_prefs as Record<string, boolean> | null;
-  // Default to true for reminders and results, false for leaderboard
+  // Default all categories to true (opt-out model — users disable what they don't want)
   const defaultPrefs: Record<NotifCategory, boolean> = {
     prediction_reminders: true,
     result_notifications: true,
-    leaderboard_updates: false,
+    leaderboard_updates: true,
     chat_mentions: true,
     chat_member_join: true,
   };
