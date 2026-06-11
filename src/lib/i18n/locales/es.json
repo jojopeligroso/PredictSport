@@ -89,6 +89,8 @@
   "stats.points": "Puntos",
   "stats.accuracy": "Aciertos",
   "stats.your_accuracy": "Tu Acierto",
+  "stats.outcome": "Resultado",
+  "stats.exact_score": "Marcador exacto",
   "stats.correct_of_total": "{correct} de {total} correctos",
   "stats.after_first_results": "después de los primeros resultados",
   "stats.tap_for_field": "Toca para ver el campo",

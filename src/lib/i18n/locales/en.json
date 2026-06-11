@@ -89,6 +89,8 @@
   "stats.points": "Points",
   "stats.accuracy": "Accuracy",
   "stats.your_accuracy": "Your Accuracy",
+  "stats.outcome": "Outcome",
+  "stats.exact_score": "Exact Score",
   "stats.correct_of_total": "{correct} of {total} correct",
   "stats.after_first_results": "after first results",
   "stats.tap_for_field": "Tap for the field",
