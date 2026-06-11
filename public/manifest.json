@@ -2,7 +2,7 @@
   "name": "sportspredict.",
   "short_name": "sportspredict.",
   "description": "Social sports predictions for friend groups",
-  "start_url": "/",
+  "start_url": "/wc",
   "display": "standalone",
   "background_color": "#efe9de",
   "theme_color": "#f59e0b",
