@@ -613,28 +613,30 @@ function DashboardDatePills({
 
           const isSelected = selectedDate === p.iso;
 
+          const pillBorder = isSelected
+            ? "border-ps-amber"
+            : isComplete
+              ? "border-ps-amber"
+              : borderClass;
+          const selectedShadow = isSelected || isComplete
+            ? { boxShadow: "0 2px 6px -3px rgba(212,175,55,0.5)" }
+            : pillShadow;
+
           return (
             <button key={p.iso} onClick={() => onSelectDate(p.iso)} className="flex shrink-0 flex-col items-center">
               <span className="mb-1 h-4" aria-hidden="true" />
               <span
                 className={[
-                  "flex h-12 w-11 flex-col items-center justify-center rounded-md border transition-colors",
-                  isSelected || isComplete
-                    ? "border-ps-amber bg-ps-amber"
-                    : `bg-ps-surface ${borderClass}`,
+                  "flex h-12 w-11 flex-col items-center justify-center rounded-md border bg-ps-surface transition-colors",
+                  "hover:bg-ps-bg-alt",
+                  pillBorder,
                 ].join(" ")}
-                style={isSelected || isComplete ? undefined : pillShadow}
+                style={selectedShadow}
               >
-                <span className={[
-                  "font-mono text-[9px] font-bold uppercase tracking-[0.10em]",
-                  isSelected || isComplete ? "text-white" : "text-ps-text-ter",
-                ].join(" ")}>
+                <span className="font-mono text-[9px] font-bold uppercase tracking-[0.10em] text-ps-text-ter">
                   {p.weekday}
                 </span>
-                <span className={[
-                  "font-display text-base font-extrabold leading-none",
-                  isSelected || isComplete ? "text-white" : "text-ps-text",
-                ].join(" ")}>
+                <span className="font-display text-base font-extrabold leading-none text-ps-text">
                   {p.dayNum}
                 </span>
               </span>
