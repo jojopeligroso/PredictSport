@@ -328,6 +328,8 @@ function PredictionRow({
   hasResult: boolean;
 }) {
   const t = useT();
+  const [flipped, setFlipped] = useState(false);
+
   const noPick = row.winner === null;
   const isPending = !noPick && row.winnerCorrect === null;
   const isExact = row.scoreCorrect === true;
@@ -346,35 +348,6 @@ function PredictionRow({
     rowClass = "border-l-ps-red bg-[#fff5f6]";
   } else if (noPick) {
     rowClass = "border-l-ps-border bg-transparent";
-  }
-
-  // Display value:
-  // - Exact score correct → show score in mono (e.g., "2–1")
-  // - Winner correct → show team name
-  // - Wrong → show result type they picked (team name / draw), NOT the score
-  // - Pending (not yet resulted) → show what they picked (team name / score)
-  // - No prediction → italic "No prediction"
-  let displayValue: string | null = null;
-  let displayMono = false;
-
-  if (noPick) {
-    displayValue = null; // handled separately
-  } else if (isExact && row.exactScore) {
-    displayValue = `${row.exactScore.home}–${row.exactScore.away}`;
-    displayMono = true;
-  } else if (isCorrect) {
-    displayValue = row.winner;
-  } else if (isWrong) {
-    // User said: lead with result type (team name), not exact score
-    displayValue = row.winner;
-  } else if (isPending) {
-    // Not yet resulted — show what they picked
-    if (row.exactScore) {
-      displayValue = `${row.exactScore.home}–${row.exactScore.away}`;
-      displayMono = true;
-    } else {
-      displayValue = row.winner;
-    }
   }
 
   // Points pill
@@ -400,72 +373,168 @@ function PredictionRow({
     .slice(0, 2)
     .toUpperCase();
 
+  // Can flip: only if they made a prediction
+  const canFlip = !noPick;
+
   return (
     <div
-      className={`flex items-center gap-2.5 border-l-[3px] px-3 py-2.5 ${rowClass} ${rank > 1 ? "border-t border-t-ps-border/40" : ""}`}
+      className="relative"
+      style={{ perspective: "600px" }}
     >
-      {/* Rank */}
-      <span
-        className={`w-4 shrink-0 text-center text-[11px] font-semibold ${
-          row.isSelf ? "text-ps-amber" : "text-ps-text-ter"
-        }`}
-      >
-        {rankDisplay}
-      </span>
-
-      {/* Avatar */}
       <div
-        className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-[11px] font-bold ${
-          row.isSelf
-            ? "border-[1.5px] border-ps-amber bg-[#fef3c7] text-ps-text"
-            : "border-[1.5px] border-ps-border bg-ps-bg text-ps-text"
-        } ${noPick ? "opacity-50" : ""}`}
+        className={`transition-transform duration-300 ${canFlip ? "cursor-pointer" : ""}`}
+        style={{
+          transformStyle: "preserve-3d",
+          transform: flipped ? "rotateX(180deg)" : "rotateX(0deg)",
+        }}
+        onClick={canFlip ? () => setFlipped((f) => !f) : undefined}
       >
-        {initials}
-      </div>
-
-      {/* Name + badges */}
-      <div className="flex min-w-0 flex-1 items-center gap-1.5">
-        <span
-          className={`truncate text-[13px] font-medium ${
-            noPick ? "text-ps-text-ter" : "text-ps-text"
-          }`}
+        {/* ── Front face ──────────────────────────────────────────── */}
+        <div
+          className={`flex items-center gap-2.5 border-l-[3px] px-3 py-2.5 ${rowClass} ${rank > 1 ? "border-t border-t-ps-border/40" : ""}`}
+          style={{ backfaceVisibility: "hidden" }}
         >
-          {row.displayName}
-        </span>
-        {row.isSelf && (
-          <span className="shrink-0 rounded bg-ps-amber px-1.5 py-px text-[9px] font-bold uppercase tracking-[0.06em] text-ps-text">
-            You
-          </span>
-        )}
-        {row.isGroupMember && !row.isSelf && (
+          {/* Rank */}
           <span
-            className="h-1.5 w-1.5 shrink-0 rounded-full bg-ps-amber"
-            title="In your group"
-          />
-        )}
-      </div>
+            className={`w-4 shrink-0 text-center text-[11px] font-semibold ${
+              row.isSelf ? "text-ps-amber" : "text-ps-text-ter"
+            }`}
+          >
+            {rankDisplay}
+          </span>
 
-      {/* Prediction value */}
-      {noPick ? (
-        <span className="text-xs italic text-ps-text-ter">
-          {t("rivals.no_prediction")}
-        </span>
-      ) : (
-        <span
-          className={`text-[13px] font-semibold ${
-            isPending ? "font-medium text-ps-text-sec" : "text-ps-text"
-          } ${displayMono ? "font-mono" : ""}`}
+          {/* Avatar */}
+          <div
+            className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-[11px] font-bold ${
+              row.isSelf
+                ? "border-[1.5px] border-ps-amber bg-[#fef3c7] text-ps-text"
+                : "border-[1.5px] border-ps-border bg-ps-bg text-ps-text"
+            } ${noPick ? "opacity-50" : ""}`}
+          >
+            {initials}
+          </div>
+
+          {/* Name + badges */}
+          <div className="flex min-w-0 flex-1 items-center gap-1.5">
+            <span
+              className={`truncate text-[13px] font-medium ${
+                noPick ? "text-ps-text-ter" : "text-ps-text"
+              }`}
+            >
+              {row.displayName}
+            </span>
+            {row.isSelf && (
+              <span className="shrink-0 rounded bg-ps-amber px-1.5 py-px text-[9px] font-bold uppercase tracking-[0.06em] text-ps-text">
+                You
+              </span>
+            )}
+            {row.isGroupMember && !row.isSelf && (
+              <span
+                className="h-1.5 w-1.5 shrink-0 rounded-full bg-ps-amber"
+                title="In your group"
+              />
+            )}
+          </div>
+
+          {/* Prediction value — always show the team name on front */}
+          {noPick ? (
+            <span className="text-xs italic text-ps-text-ter">
+              {t("rivals.no_prediction")}
+            </span>
+          ) : (
+            <span
+              className={`text-[13px] font-semibold ${
+                isPending ? "font-medium text-ps-text-sec" : "text-ps-text"
+              }`}
+            >
+              {row.winner}
+            </span>
+          )}
+
+          {/* Points pill */}
+          <div
+            className={`flex h-[22px] min-w-[30px] shrink-0 items-center justify-center rounded-full px-1.5 text-xs font-bold ${pillClass}`}
+          >
+            {isPending ? "–" : row.totalPoints}
+          </div>
+        </div>
+
+        {/* ── Back face ───────────────────────────────────────────── */}
+        <div
+          className={`absolute inset-0 flex items-center gap-2.5 border-l-[3px] px-3 py-2.5 ${rowClass} ${rank > 1 ? "border-t border-t-ps-border/40" : ""}`}
+          style={{
+            backfaceVisibility: "hidden",
+            transform: "rotateX(180deg)",
+          }}
         >
-          {displayValue}
-        </span>
-      )}
+          {/* Outcome icon */}
+          <div className="flex h-8 w-8 shrink-0 items-center justify-center">
+            {isExact ? (
+              <svg width="20" height="20" viewBox="0 0 20 20" fill="#00c87a" aria-label="Exact score">
+                <path d="M10 1.5l2.47 5.01 5.53.8-4 3.9.94 5.49L10 14.27 5.06 16.7 6 11.21l-4-3.9 5.53-.8z" />
+              </svg>
+            ) : isCorrect ? (
+              <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+                <circle cx="10" cy="10" r="9" stroke="#22c55e" strokeWidth="2" />
+                <path d="M6 10.5l2.5 2.5L14 8" stroke="#22c55e" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+              </svg>
+            ) : isWrong ? (
+              <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+                <circle cx="10" cy="10" r="9" stroke="#ef4444" strokeWidth="2" />
+                <path d="M7 7l6 6M13 7l-6 6" stroke="#ef4444" strokeWidth="2" strokeLinecap="round" />
+              </svg>
+            ) : (
+              <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+                <circle cx="10" cy="10" r="9" stroke="#9ca3af" strokeWidth="2" />
+                <path d="M6 10h8" stroke="#9ca3af" strokeWidth="2" strokeLinecap="round" />
+              </svg>
+            )}
+          </div>
 
-      {/* Points pill */}
-      <div
-        className={`flex h-[22px] min-w-[30px] shrink-0 items-center justify-center rounded-full px-1.5 text-xs font-bold ${pillClass}`}
-      >
-        {isPending ? "–" : row.totalPoints}
+          {/* Outcome label */}
+          <span
+            className={`text-[12px] font-semibold ${
+              isExact
+                ? "text-[#00c87a]"
+                : isCorrect
+                  ? "text-ps-green"
+                  : isWrong
+                    ? "text-ps-red"
+                    : "text-ps-text-sec"
+            }`}
+          >
+            {isExact
+              ? t("rivals.exact_score")
+              : isCorrect
+                ? t("rivals.correct")
+                : isWrong
+                  ? t("rivals.incorrect")
+                  : t("rivals.pending")}
+          </span>
+
+          <div className="flex-1" />
+
+          {/* Predicted score */}
+          {row.exactScore ? (
+            <div className="flex items-center gap-1.5">
+              <span className="text-[11px] text-ps-text-sec">{t("rivals.predicted_score")}</span>
+              <span className="font-mono text-[15px] font-bold text-ps-text">
+                {row.exactScore.home}–{row.exactScore.away}
+              </span>
+            </div>
+          ) : (
+            <span className="text-[12px] text-ps-text-ter italic">
+              {t("rivals.no_score_predicted")}
+            </span>
+          )}
+
+          {/* Points pill (same as front) */}
+          <div
+            className={`flex h-[22px] min-w-[30px] shrink-0 items-center justify-center rounded-full px-1.5 text-xs font-bold ${pillClass}`}
+          >
+            {isPending ? "–" : row.totalPoints}
+          </div>
+        </div>
       </div>
     </div>
   );
