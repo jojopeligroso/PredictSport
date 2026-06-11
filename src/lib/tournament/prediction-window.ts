@@ -125,25 +125,21 @@ export async function getWindowsToLock(
 
 // ============================================================
 // Classifications that need undersized-group reconciliation.
-// Returns classifications where: groups are drawn, the first
-// event has locked, and reconciliation hasn't run yet.
+// Triggers when the first event in the competition has locked
+// (competition has started). Runs every cron cycle — idempotent,
+// no-op when no undersized groups exist. This handles both the
+// initial reconciliation and any late joiners who create new
+// undersized groups after the first reconciliation.
+//
+// Note: entry_closes_at and first-event lock are independent.
+// Entry can close significantly after the first event locks.
+// Reconciliation triggers on first-event lock, not entry close.
 // ============================================================
 
 export async function getClassificationsNeedingReconciliation(
   supabase: SupabaseClient,
   competitionId: string,
 ): Promise<{ classificationId: string }[]> {
-  // Find active format_elimination classifications
-  const { data: classifications, error: clsError } = await supabase
-    .from("classifications")
-    .select("id, config")
-    .eq("competition_id", competitionId)
-    .eq("classification_type", "format_elimination")
-    .eq("status", "active");
-
-  if (clsError) throw new Error(`Failed to fetch classifications: ${clsError.message}`);
-  if (!classifications || classifications.length === 0) return [];
-
   // Check if first event in the competition has locked
   const { data: allRounds } = await supabase
     .from("rounds")
@@ -168,12 +164,21 @@ export async function getClassificationsNeedingReconciliation(
   const now = new Date().toISOString();
   if (firstEvent.lock_time > now) return []; // competition hasn't started
 
-  // Filter to classifications that have groups but haven't been reconciled
+  // Find active format_elimination classifications
+  const { data: classifications, error: clsError } = await supabase
+    .from("classifications")
+    .select("id")
+    .eq("competition_id", competitionId)
+    .eq("classification_type", "format_elimination")
+    .eq("status", "active");
+
+  if (clsError) throw new Error(`Failed to fetch classifications: ${clsError.message}`);
+  if (!classifications || classifications.length === 0) return [];
+
+  // Filter to classifications that have groups (draw has happened)
   const result: { classificationId: string }[] = [];
 
   for (const cls of classifications) {
-    const config = (cls.config ?? {}) as Record<string, unknown>;
-    if (config.groups_reconciled_at) continue; // already done
 
     // Check groups exist
     const { data: groupCheck } = await supabase

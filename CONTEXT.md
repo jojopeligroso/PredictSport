@@ -269,3 +269,38 @@ _Avoid_: Competition type, variant
 
 The fully automatic instantiation of a new [[Competition Instance]] from a [[Tournament Blueprint]] when all active Instances reach their entrant cap. No human approval gate. New Instance starts Active, inherits all Blueprint defaults, Super Administrator is notified. Joining user is placed into the new Instance in a single request.
 _Avoid_: Clone, fork, spin-up
+
+---
+
+## Prediction Group
+
+A mini-leaderboard of participants within a [[Format Classification]]. The standard group size is 4. Groups are drawn randomly when the draw window opens and are immutable once drawn — participants are never moved between existing groups. Late entrants are placed into the most recently created group or a new group. Group composition follows modular-4 arithmetic: `N mod 4` determines whether the final group has 0, 1, 2, or 3 remainder participants.
+_Avoid_: Team, pod, pool
+
+---
+
+## Remainder
+
+The count of participants (0, 1, 2, or 3) that do not fill a complete [[Prediction Group]] of 4 after dividing the total entrant count by 4. Formally: `N mod 4`. A remainder of 0 is ideal (all groups of 4). A remainder of 3 forms a viable group. A remainder of 1 or 2 produces an [[Undersized Group]] that requires [[Reconciliation]] at lock time. At most 1 group of 3 and at most 2 groups of 5 can exist after reconciliation.
+_Avoid_: Dangler, leftover, overflow
+
+---
+
+## Undersized Group
+
+A [[Prediction Group]] with fewer than 3 members at lock time. Not viable for competitive play — both members would auto-qualify with no elimination pressure. Dissolved during [[Reconciliation]]; its members are absorbed into the nearest viable groups.
+_Avoid_: Incomplete group, short group
+
+---
+
+## Reconciliation
+
+The automatic, one-time process that runs when the first [[Event]] in the competition locks. Resolves [[Undersized Group]]s by absorbing their members into the nearest viable [[Prediction Group]]s (highest group_number first, preserving earlier groups). A remainder of 1 produces one [[Expanded Group]]. A remainder of 2 produces two Expanded Groups. A remainder of 3 is left as a valid group of 3. Idempotent — stamps `groups_reconciled_at` in the classification config after execution.
+_Avoid_: Rebalancing, redistribution, merge
+
+---
+
+## Expanded Group
+
+A [[Prediction Group]] whose size changed from 4 to 5 after absorbing a [[Remainder]] participant during [[Reconciliation]]. Third place in an Expanded Group auto-qualifies for the next stage (instead of entering the best-third pool as in a standard group of 4).
+_Avoid_: Oversized group, inflated group

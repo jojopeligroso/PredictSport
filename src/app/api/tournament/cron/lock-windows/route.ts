@@ -62,29 +62,15 @@ export async function GET(request: Request) {
       );
       for (const cls of needsReconciliation) {
         try {
+          // Idempotent: no-op when no undersized groups exist.
+          // Runs every cron cycle to catch late joiners who create
+          // new undersized groups after the initial reconciliation.
           const result = await reconcileUndersizedGroups(supabase, cls.classificationId);
-
-          // Stamp groups_reconciled_at so we don't re-check
-          const { data: clsRow } = await supabase
-            .from("classifications")
-            .select("config")
-            .eq("id", cls.classificationId)
-            .single();
-
-          const config = ((clsRow?.config ?? {}) as Record<string, unknown>);
-          config.groups_reconciled_at = new Date().toISOString();
-
-          await supabase
-            .from("classifications")
-            .update({ config })
-            .eq("id", cls.classificationId);
 
           if (result && result.movedMembers > 0) {
             reconciled.push(
               `${comp.name}: dissolved ${result.dissolved.join(", ")} → ${result.modified.join(", ")}`,
             );
-          } else {
-            reconciled.push(`${comp.name}: all groups viable, stamped`);
           }
         } catch (err) {
           const msg = err instanceof Error ? err.message : "Unknown error";

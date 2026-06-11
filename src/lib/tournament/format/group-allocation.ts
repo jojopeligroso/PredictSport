@@ -241,21 +241,22 @@ export async function addLateEntrant(
     sizeCounts.set(m.group_id, current + 1);
   }
 
-  // Fill groups to max 5 before creating new overflow groups
-  const underMax = Array.from(sizeCounts.entries())
-    .filter(([, count]) => count < 5);
+  // Fill groups to standard size of 4 before creating new groups.
+  // Mod-4 remainder (1-3 members in newest group) is resolved at lock time.
+  const underFour = Array.from(sizeCounts.entries())
+    .filter(([, count]) => count < 4);
 
   let chosenGroupId: string;
 
-  if (underMax.length > 0) {
+  if (underFour.length > 0) {
     // Always fill the most recently created group first
     // to preserve competitive integrity of earlier groups
-    const underMaxGroups = underMax
+    const underFourGroups = underFour
       .map(([id]) => groupList.find((g) => g.id === id)!)
       .sort((a, b) => b.group_number - a.group_number);
-    chosenGroupId = underMaxGroups[0].id;
+    chosenGroupId = underFourGroups[0].id;
   } else {
-    // All groups are at 4+. Create a new group for this user.
+    // All groups are at 4. Create a new group (starts a new remainder cycle).
     const maxGroupNumber = Math.max(...groupList.map((g) => g.group_number));
     const newGroupNumber = maxGroupNumber + 1;
     const newGroupName = `Group ${numberToLetter(newGroupNumber)}`;
@@ -294,9 +295,17 @@ export async function addLateEntrant(
 }
 
 // ============================================================
-// Dissolve undersized groups at lock time
-// Groups with < 3 members are absorbed into the newest viable
-// groups (highest group_number, max 5 members).
+// Lock-time Reconciliation (mod-4 remainder resolution)
+//
+// Groups follow modular-4 arithmetic: standard size is 4.
+// At lock time, the Remainder Group (newest group) may have
+// < 3 members (an Undersized Group). Reconciliation absorbs
+// those members into the nearest viable groups:
+//   Remainder 1 → absorbed into highest-numbered group of 4 (→ Expanded Group of 5)
+//   Remainder 2 → each absorbed into a separate group of 4 (→ 2 Expanded Groups of 5)
+//   Remainder 3 → viable group, left alone
+//   Remainder 0 → all groups of 4, nothing to do
+// Max 1 group of 3, max 2 groups of 5 after reconciliation.
 // ============================================================
 
 export interface ReconciliationResult {
