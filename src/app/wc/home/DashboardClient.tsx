@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useMemo, useState, useSyncExternalStore, useRef } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useT } from "@/lib/i18n";
 import { computeDayStatus, formatLockCountdown } from "@/lib/wc/daily-lock";
 import { CHROME_PALETTE } from "@/app/wc/_landing/brand-palette";
@@ -54,12 +54,17 @@ interface DashboardClientProps {
   memberRole: string;
 }
 
-type PickStatus = "complete" | "urgent" | "unpicked";
+type PickStatus = "complete" | "urgent" | "unpicked" | "in_progress";
 
 function getPickStatus(
   event: WindowEvent,
   predictions: Prediction[],
 ): PickStatus {
+  // In-progress: locked but not yet resulted — show locked prediction
+  const lockMs = new Date(event.lock_time).getTime();
+  const nowMs = Date.now();
+  if (lockMs <= nowMs && !event.result_confirmed) return "in_progress";
+
   const eventPreds = predictions.filter((p) => p.event_id === event.id);
   // "Complete" = has both winner and exact_score predictions
   const hasWinner = eventPreds.some((p) => p.prediction_type === "winner");
@@ -67,11 +72,18 @@ function getPickStatus(
   if (hasWinner && hasScore) return "complete";
 
   // Urgent = < 24h to lock
-  const lockMs = new Date(event.lock_time).getTime();
-  const nowMs = Date.now();
   if (lockMs - nowMs < 36 * 60 * 60 * 1000 && lockMs > nowMs) return "urgent";
 
   return "unpicked";
+}
+
+/** Check if user has both winner + exact_score predictions for an event. */
+function hasCompletePick(event: WindowEvent, predictions: Prediction[]): boolean {
+  const eventPreds = predictions.filter((p) => p.event_id === event.id);
+  return (
+    eventPreds.some((p) => p.prediction_type === "winner") &&
+    eventPreds.some((p) => p.prediction_type === "exact_score")
+  );
 }
 
 /**
@@ -110,6 +122,8 @@ export function DashboardClient({
   const t = useT();
   const [expandedEventId, setExpandedEventId] = useState<string | null>(null);
   const [selectedDate, setSelectedDate] = useState<string | null>(null);
+  // In-progress events auto-expand; track which ones the user manually collapsed
+  const [collapsedLiveIds, setCollapsedLiveIds] = useState<Set<string>>(new Set());
 
   const [chatCollapsed, setChatCollapsed] = useState(() => {
     if (typeof window === "undefined") return false;
@@ -136,11 +150,13 @@ export function DashboardClient({
     });
   }, [nextEvents, pillDateEvents, selectedDate]);
 
-  // Count picks progress
+  // Count picks progress (in-progress events with complete picks still count as picked)
   const { picked, total } = useMemo(() => {
     let picked = 0;
     for (const e of filteredEvents) {
-      if (getPickStatus(e, predictions) === "complete") picked++;
+      const status = getPickStatus(e, predictions);
+      if (status === "complete") picked++;
+      else if (status === "in_progress" && hasCompletePick(e, predictions)) picked++;
     }
     return { picked, total: filteredEvents.length };
   }, [filteredEvents, predictions]);
@@ -196,6 +212,9 @@ export function DashboardClient({
                 const fixture = fixtureByEventId.get(event.id);
                 if (!fixture) return null;
                 const status = getPickStatus(event, predictions);
+                // In-progress events auto-expand unless manually collapsed
+                const isLiveExpanded =
+                  status === "in_progress" && !collapsedLiveIds.has(event.id);
                 return (
                   <DashboardPickRow
                     key={event.id}
@@ -206,12 +225,21 @@ export function DashboardClient({
                     competitionId={competitionId}
                     fixtureByEventId={fixtureByEventId}
                     windowLocked={windowLocked}
-                    expanded={expandedEventId === event.id}
-                    onToggle={() =>
-                      setExpandedEventId((prev) =>
-                        prev === event.id ? null : event.id,
-                      )
-                    }
+                    expanded={isLiveExpanded || expandedEventId === event.id}
+                    onToggle={() => {
+                      if (status === "in_progress") {
+                        setCollapsedLiveIds((prev) => {
+                          const next = new Set(prev);
+                          if (next.has(event.id)) next.delete(event.id);
+                          else next.add(event.id);
+                          return next;
+                        });
+                      } else {
+                        setExpandedEventId((prev) =>
+                          prev === event.id ? null : event.id,
+                        );
+                      }
+                    }}
                   />
                 );
               })}
@@ -694,12 +722,22 @@ function TodayResultRow({ result }: { result: ResultRow }) {
   );
 }
 
-/** Hydration-safe "now" — null on server, stable Date after mount. */
+/**
+ * Hydration-safe "now" — null on server, Date after mount.
+ * Updates when the page regains visibility so pick statuses
+ * (urgent/locked/in_progress) recompute after PWA resume.
+ */
 function useNowAfterMount(): Date | null {
-  const nowRef = useRef<Date | null>(null);
-  return useSyncExternalStore(
-    () => () => {},
-    () => (nowRef.current ??= new Date()),
-    () => null,
-  );
+  const [now, setNow] = useState<Date | null>(null);
+
+  useEffect(() => {
+    setNow(new Date());
+    const onVisible = () => {
+      if (document.visibilityState === "visible") setNow(new Date());
+    };
+    document.addEventListener("visibilitychange", onVisible);
+    return () => document.removeEventListener("visibilitychange", onVisible);
+  }, []);
+
+  return now;
 }

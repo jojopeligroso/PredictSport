@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useT } from "@/lib/i18n";
 import { CountryFlag } from "@/components/CountryFlag";
 import { fifaTrigram } from "@/lib/tournament/fifa-codes";
@@ -43,21 +43,28 @@ export function CommunityPicksCard({ competitionId }: CommunityPicksCardProps) {
   const [data, setData] = useState<CommunityData | null>(null);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    async function load() {
-      try {
-        const res = await fetch(
-          `/api/tournament/community-picks?competitionId=${competitionId}`,
-        );
-        if (!res.ok) return;
-        const json = await res.json();
-        setData(json);
-      } finally {
-        setLoading(false);
-      }
+  const fetchData = useCallback(async () => {
+    try {
+      const res = await fetch(
+        `/api/tournament/community-picks?competitionId=${competitionId}`,
+      );
+      if (!res.ok) return;
+      const json = await res.json();
+      setData(json);
+    } finally {
+      setLoading(false);
     }
-    load();
   }, [competitionId]);
+
+  // Initial fetch + refetch when PWA regains focus (new fixture may have revealed)
+  useEffect(() => {
+    fetchData();
+    const onVisible = () => {
+      if (document.visibilityState === "visible") fetchData();
+    };
+    document.addEventListener("visibilitychange", onVisible);
+    return () => document.removeEventListener("visibilitychange", onVisible);
+  }, [fetchData]);
 
   if (loading) {
     return (
