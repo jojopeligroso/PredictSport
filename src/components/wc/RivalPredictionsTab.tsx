@@ -3,6 +3,12 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useT, useLocale } from "@/lib/i18n";
 
+function numOrNull(v: unknown): number | null {
+  if (v === null || v === undefined) return null;
+  const n = Number(v);
+  return isNaN(n) ? null : n;
+}
+
 // ── Types ───────────────────────────────────────────────────────────────────
 
 interface RevealedFixture {
@@ -150,11 +156,14 @@ export function RivalPredictionsTab({
   }
 
   // Result data for the selected fixture
-  const resultData = eventMeta?.resultData ?? selectedFixture?.resultData;
+  // Two formats: NormalizedResult { score: { home_score, away_score }, winner }
+  //              or flat { home_score, away_score, winner }
+  const rd = (eventMeta?.resultData ?? selectedFixture?.resultData) as Record<string, unknown> | null;
   const resultConfirmed = eventMeta?.resultConfirmed ?? selectedFixture?.resultConfirmed ?? false;
-  const homeScore = resultData ? Number((resultData as Record<string, unknown>).home_score ?? (resultData as Record<string, unknown>).homeScore) : null;
-  const awayScore = resultData ? Number((resultData as Record<string, unknown>).away_score ?? (resultData as Record<string, unknown>).awayScore) : null;
-  const hasResult = resultConfirmed && homeScore != null && !isNaN(homeScore);
+  const scoreNested = rd?.score as Record<string, unknown> | undefined;
+  const homeScore = rd ? numOrNull(scoreNested?.home_score ?? rd.home_score ?? rd.homeScore) : null;
+  const awayScore = rd ? numOrNull(scoreNested?.away_score ?? rd.away_score ?? rd.awayScore) : null;
+  const hasResult = resultConfirmed && homeScore !== null;
 
   const intlLocale = locale === "es" ? "es-MX" : "en-GB";
   const fixtureDate = selectedFixture
