@@ -217,6 +217,11 @@ export function RulesContent({
               <li>{t("rules.fourth_place")}</li>
             </ul>
           </div>
+
+          {/* Group sizing rule */}
+          <p className="mt-3 text-xs leading-relaxed text-ps-text-ter">
+            {t("group.sizing_rule")}
+          </p>
         </div>
 
         {/* ── Knockout Rounds ── */}

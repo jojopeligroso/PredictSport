@@ -10,12 +10,14 @@ import { createClient } from "@/lib/supabase/server";
 import { createServiceClient } from "@/lib/supabase/service";
 import { enrollEntrant } from "@/lib/tournament/classification-engine";
 import { addLateEntrant } from "@/lib/tournament/format/group-allocation";
+import { findOrProvisionInstance } from "@/lib/tournament/auto-provision";
 import { requireDisplayName } from "@/lib/require-display-name";
 
 export const dynamic = "force-dynamic";
 
 export default async function WcJoinOpenPage() {
   const supabase = await createClient();
+  const svc = createServiceClient();
   const {
     data: { user },
   } = await supabase.auth.getUser();
@@ -27,7 +29,7 @@ export default async function WcJoinOpenPage() {
   // Find the WC shell competition
   const { data: comp } = await supabase
     .from("competitions")
-    .select("id, entry_closes_at")
+    .select("id, entry_closes_at, max_entrants, tournament_id, instance_type")
     .eq("product_mode", "world_cup_2026_shell")
     .in("status", ["draft", "active"])
     .single();
@@ -47,35 +49,55 @@ export default async function WcJoinOpenPage() {
     // User needs a display name — the home page onboarding handles this
   }
 
-  // Check if already a member
-  const { data: existing } = await supabase
+  // Resolve target competition — auto-provision if this instance is full
+  let competitionId = comp.id;
+
+  if (comp.max_entrants) {
+    const { count } = await svc
+      .from("competition_members")
+      .select("id", { count: "exact", head: true })
+      .eq("competition_id", comp.id);
+
+    if ((count ?? 0) >= comp.max_entrants) {
+      if (comp.tournament_id) {
+        // Tournament instance full — find or create a new one
+        competitionId = await findOrProvisionInstance(
+          svc,
+          comp.tournament_id,
+          (comp.instance_type as "full" | "knockout_only") ?? "full",
+          user.id
+        );
+      } else {
+        // Non-tournament shell with hard cap — competition is full
+        redirect("/wc");
+      }
+    }
+  }
+
+  // Check if already a member (of the resolved competition)
+  const { data: existing } = await svc
     .from("competition_members")
     .select("id")
-    .eq("competition_id", comp.id)
+    .eq("competition_id", competitionId)
     .eq("user_id", user.id)
     .maybeSingle();
 
   if (!existing) {
     // Join the competition
-    await supabase.from("competition_members").insert({
-      competition_id: comp.id,
+    await svc.from("competition_members").insert({
+      competition_id: competitionId,
       user_id: user.id,
       role: "participant",
     });
 
     // Enroll in classifications
-    await enrollEntrant(supabase, comp.id, user.id);
+    await enrollEntrant(svc, competitionId, user.id);
 
     // If format groups already drawn, slot this user into a group.
-    // Use service client for ALL queries here — the anon client's RLS
-    // requires competition membership which was just inserted and may
-    // not be visible yet in the user's session context.
-    const svc = createServiceClient();
-
     const { data: formatCls } = await svc
       .from("classifications")
       .select("id")
-      .eq("competition_id", comp.id)
+      .eq("competition_id", competitionId)
       .eq("classification_type", "format_elimination")
       .eq("status", "active")
       .maybeSingle();

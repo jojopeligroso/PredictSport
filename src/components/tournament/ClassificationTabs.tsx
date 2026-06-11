@@ -37,6 +37,7 @@ interface GroupInfo {
   id: string;
   name: string;
   groupNumber: number;
+  targetSize?: number;
   members: GroupMemberData[];
 }
 
@@ -916,6 +917,18 @@ function YourGroupCard({
           {t('group.players_count', { count: groupSize })}
         </span>
       </div>
+
+      {/* Consolidation / remainder notices */}
+      {(group.targetSize ?? 4) > 4 && (
+        <p className="border-b border-ps-border bg-ps-chip px-4 py-2 text-xs text-ps-text-sec">
+          {t('group.consolidated')}
+        </p>
+      )}
+      {groupSize < 3 && (
+        <p className="border-b border-ps-border bg-ps-amber/10 px-4 py-2 text-xs text-ps-amber">
+          {t('group.remainder_hint')}
+        </p>
+      )}
 
       {/* Members with zone indicators */}
       <div className="divide-y divide-ps-border">

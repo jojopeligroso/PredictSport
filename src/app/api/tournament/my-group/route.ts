@@ -233,6 +233,7 @@ export async function GET(request: NextRequest) {
       id: g.id,
       name: g.group_name,
       groupNumber: g.group_number,
+      targetSize: g.target_size,
       members: gMembers,
     };
   });
