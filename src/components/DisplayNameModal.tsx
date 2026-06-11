@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useRef, useEffect } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { validateDisplayName, DISPLAY_NAME_MAX } from "@/lib/display-name";
 import { useT } from "@/lib/i18n";
 
@@ -12,6 +12,7 @@ interface DisplayNameModalProps {
 export function DisplayNameModal({ suggestedName }: DisplayNameModalProps) {
   const t = useT();
   const router = useRouter();
+  const searchParams = useSearchParams();
   const inputRef = useRef<HTMLInputElement>(null);
   const [name, setName] = useState(suggestedName);
   const [error, setError] = useState("");
@@ -53,8 +54,14 @@ export function DisplayNameModal({ suggestedName }: DisplayNameModalProps) {
         return;
       }
 
-      // Re-render server components so the guard sees the updated display_name
-      router.refresh();
+      // If a `next` param exists (e.g. from join-open redirect), navigate there.
+      // Otherwise re-render server components so the guard sees the updated name.
+      const next = searchParams.get("next");
+      if (next && next.startsWith("/")) {
+        router.push(next);
+      } else {
+        router.refresh();
+      }
     } catch {
       setError(t('display_name.error_network'));
       setSubmitting(false);

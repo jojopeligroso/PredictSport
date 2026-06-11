@@ -43,10 +43,11 @@ export default async function WcJoinOpenPage() {
     redirect("/wc");
   }
 
-  // Check display name — if missing, redirect to home which has the onboarding flow
+  // Check display name — if missing, redirect to home which has the onboarding flow.
+  // Home shows the DisplayNameModal; after setting a name the user can retry join-open.
   const nameGuard = await requireDisplayName(supabase, user.id);
   if (nameGuard) {
-    // User needs a display name — the home page onboarding handles this
+    redirect("/wc/home?onboarding=true&next=/wc/join-open");
   }
 
   // Resolve target competition — auto-provision if this instance is full
