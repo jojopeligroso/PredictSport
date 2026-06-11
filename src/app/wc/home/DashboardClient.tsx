@@ -169,16 +169,16 @@ export function DashboardClient({
       : "https://predictsport-rust.vercel.app";
 
   const dashboard = (
-    <div className="mx-auto max-w-[480px] px-4 pb-8">
+    <div className="mx-auto max-w-[480px] px-3 pb-8">
       {/* ── 0. Prediction urgency banner ──────────────────────────────── */}
-      <div className="pt-3">
+      <div className="pt-2">
         <PredictionBanner events={pillDateEvents} predictions={predictions} />
       </div>
 
       {/* ── 1. Progress strip ──────────────────────────────────────────── */}
       <OnboardingSection id="other">
         {total > 0 && (
-          <div className="pt-3 pb-1 text-center">
+          <div className="ps-panel mt-2 text-center">
             {datePills.length > 0 && (
               <DashboardDatePills
                 pills={datePills}
@@ -187,7 +187,7 @@ export function DashboardClient({
                 onSelectDate={(iso) => setSelectedDate((prev) => prev === iso ? null : iso)}
               />
             )}
-            <p className="text-[11px] font-semibold uppercase tracking-wider text-ps-text-sec">
+            <p className="mt-1 text-[11px] font-semibold uppercase tracking-wider text-ps-text-sec">
               {t('dash.picks_progress', { picked, total })}
             </p>
             <div className="mx-auto mt-1.5 h-1 max-w-[200px] overflow-hidden rounded-full bg-ps-border">
@@ -200,14 +200,14 @@ export function DashboardClient({
         )}
       </OnboardingSection>
 
-      {/* ── 2. Next picks (hero cards) ─────────────────────────────────── */}
+      {/* ── 2. Next picks (hero cards — on floor, no panel) ────────────── */}
       <OnboardingSection id="picks">
         {filteredEvents.length > 0 && (
-          <section className="mt-3">
-            <p className="mb-2 text-[11px] font-semibold uppercase tracking-wider text-ps-text-ter">
+          <section className="mt-2">
+            <p className="mb-1.5 text-[11px] font-semibold uppercase tracking-wider text-ps-text-ter">
               {t('dash.your_picks')}
             </p>
-            <div className="flex flex-col gap-2">
+            <div className="flex flex-col gap-1.5">
               {filteredEvents.map((event) => {
                 const fixture = fixtureByEventId.get(event.id);
                 if (!fixture) return null;
@@ -259,7 +259,7 @@ export function DashboardClient({
       {/* ── 3. Invite Friends ──────────────────────────────────────────── */}
       <OnboardingSection id="invite">
         {inviteCode && (
-          <section className="mt-2">
+          <section className="ps-panel mt-2">
             <InviteCodeBanner
               inviteCode={inviteCode}
               competitionName="WC Predict"
@@ -272,8 +272,8 @@ export function DashboardClient({
 
       {/* ── 4. At a Glance (horizontal scroll) ────────────────────────── */}
       <OnboardingSection id="other">
-        <section className="mt-4">
-          <p className="mb-2 text-[11px] font-semibold uppercase tracking-wider text-ps-text-ter">
+        <section className="ps-panel mt-2">
+          <p className="mb-1.5 text-[11px] font-semibold uppercase tracking-wider text-ps-text-ter">
             {t('dash.at_a_glance')}
           </p>
           {classificationId && currentUserId ? (
@@ -295,13 +295,15 @@ export function DashboardClient({
       {/* ── 4b. Community Picks (competition-wide stats) ──────────────── */}
       {isMember && (
         <OnboardingSection id="other">
-          <CommunityPicksCard competitionId={competitionId} />
+          <div className="ps-panel mt-2">
+            <CommunityPicksCard competitionId={competitionId} />
+          </div>
         </OnboardingSection>
       )}
 
       {/* ── 5. Your Prediction Group ──────────────────────────────────── */}
       <OnboardingSection id="group">
-        <section className="mt-4">
+        <section className="ps-panel mt-2">
           {classificationId ? (
             <GroupMiniTable
               classificationId={classificationId}
@@ -316,7 +318,7 @@ export function DashboardClient({
       {/* ── 5a. Rival Predictions teaser ─────────────────────────── */}
       {isMember && (
         <OnboardingSection id="other">
-          <section className="mt-2">
+          <section className="ps-panel mt-2">
             <RivalTeaser competitionId={competitionId} />
           </section>
         </OnboardingSection>
