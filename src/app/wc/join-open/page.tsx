@@ -66,8 +66,13 @@ export default async function WcJoinOpenPage() {
     // Enroll in classifications
     await enrollEntrant(supabase, comp.id, user.id);
 
-    // If format groups already drawn, slot this user into the smallest group
-    const { data: formatCls } = await supabase
+    // If format groups already drawn, slot this user into a group.
+    // Use service client for ALL queries here — the anon client's RLS
+    // requires competition membership which was just inserted and may
+    // not be visible yet in the user's session context.
+    const svc = createServiceClient();
+
+    const { data: formatCls } = await svc
       .from("classifications")
       .select("id")
       .eq("competition_id", comp.id)
@@ -76,7 +81,7 @@ export default async function WcJoinOpenPage() {
       .maybeSingle();
 
     if (formatCls) {
-      const { data: existingGroups } = await supabase
+      const { data: existingGroups } = await svc
         .from("format_prediction_groups")
         .select("id")
         .eq("classification_id", formatCls.id)
@@ -84,7 +89,6 @@ export default async function WcJoinOpenPage() {
 
       if (existingGroups && existingGroups.length > 0) {
         try {
-          const svc = createServiceClient();
           await addLateEntrant(svc, formatCls.id, user.id);
         } catch (err) {
           console.error("[join-open] Failed to add late entrant to group:", (err as Error).message);

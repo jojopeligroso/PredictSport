@@ -425,6 +425,85 @@ export async function reconcileUndersizedGroups(
 }
 
 // ============================================================
+// Group integrity health check — runs every cron cycle.
+// Catches three classes of issue:
+//   1. Ungrouped members (in classification but not in any group)
+//   2. target_size mismatches (actual count != stored target_size)
+//   3. Undersized groups (< 3 members, delegated to reconcile)
+// ============================================================
+
+export interface IntegrityResult {
+  placed: number;
+  targetSizeFixed: number;
+  reconciliation: ReconciliationResult | null;
+}
+
+export async function ensureGroupIntegrity(
+  supabase: SupabaseClient,
+  classificationId: string,
+): Promise<IntegrityResult> {
+  const result: IntegrityResult = { placed: 0, targetSizeFixed: 0, reconciliation: null };
+
+  // 1. Find ungrouped classification members and place them
+  const { data: classMembers } = await supabase
+    .from("classification_memberships")
+    .select("user_id")
+    .eq("classification_id", classificationId)
+    .eq("status", "active");
+
+  const { data: groupMembers } = await supabase
+    .from("format_group_memberships")
+    .select("user_id")
+    .eq("classification_id", classificationId);
+
+  const groupedSet = new Set((groupMembers ?? []).map((m) => m.user_id));
+  const ungrouped = (classMembers ?? []).filter((m) => !groupedSet.has(m.user_id));
+
+  for (const member of ungrouped) {
+    try {
+      await addLateEntrant(supabase, classificationId, member.user_id);
+      result.placed++;
+    } catch (err) {
+      console.error(`[integrity] Failed to place ${member.user_id}: ${(err as Error).message}`);
+    }
+  }
+
+  // 2. Fix target_size mismatches on all groups
+  const { data: groups } = await supabase
+    .from("format_prediction_groups")
+    .select("id, group_name, target_size")
+    .eq("classification_id", classificationId);
+
+  const { data: allMemberships } = await supabase
+    .from("format_group_memberships")
+    .select("group_id")
+    .eq("classification_id", classificationId);
+
+  const actualCounts = new Map<string, number>();
+  for (const g of groups ?? []) actualCounts.set(g.id, 0);
+  for (const m of allMemberships ?? []) {
+    actualCounts.set(m.group_id, (actualCounts.get(m.group_id) ?? 0) + 1);
+  }
+
+  for (const g of groups ?? []) {
+    const actual = actualCounts.get(g.id) ?? 0;
+    if (actual !== g.target_size && actual > 0) {
+      await supabase
+        .from("format_prediction_groups")
+        .update({ target_size: actual })
+        .eq("id", g.id);
+      result.targetSizeFixed++;
+      console.log(`[integrity] ${g.group_name}: target_size ${g.target_size} → ${actual}`);
+    }
+  }
+
+  // 3. Run undersized group reconciliation (delegates to existing function)
+  result.reconciliation = await reconcileUndersizedGroups(supabase, classificationId);
+
+  return result;
+}
+
+// ============================================================
 // Can the draw be regenerated?
 // True if first prediction window hasn't locked yet.
 // ============================================================

@@ -5,7 +5,7 @@ import {
   lockPredictionWindow,
   getClassificationsNeedingReconciliation,
 } from "@/lib/tournament/prediction-window";
-import { reconcileUndersizedGroups } from "@/lib/tournament/format/group-allocation";
+import { ensureGroupIntegrity } from "@/lib/tournament/format/group-allocation";
 
 export const dynamic = "force-dynamic";
 
@@ -62,15 +62,19 @@ export async function GET(request: Request) {
       );
       for (const cls of needsReconciliation) {
         try {
-          // Idempotent: no-op when no undersized groups exist.
-          // Runs every cron cycle to catch late joiners who create
-          // new undersized groups after the initial reconciliation.
-          const result = await reconcileUndersizedGroups(supabase, cls.classificationId);
+          // Comprehensive health check: place ungrouped members,
+          // fix target_size mismatches, reconcile undersized groups.
+          // Idempotent — no-op when everything is healthy.
+          const result = await ensureGroupIntegrity(supabase, cls.classificationId);
 
-          if (result && result.movedMembers > 0) {
-            reconciled.push(
-              `${comp.name}: dissolved ${result.dissolved.join(", ")} → ${result.modified.join(", ")}`,
-            );
+          const parts: string[] = [];
+          if (result.placed > 0) parts.push(`placed ${result.placed} ungrouped`);
+          if (result.targetSizeFixed > 0) parts.push(`fixed ${result.targetSizeFixed} target_sizes`);
+          if (result.reconciliation?.movedMembers) {
+            parts.push(`dissolved ${result.reconciliation.dissolved.join(", ")} → ${result.reconciliation.modified.join(", ")}`);
+          }
+          if (parts.length > 0) {
+            reconciled.push(`${comp.name}: ${parts.join("; ")}`);
           }
         } catch (err) {
           const msg = err instanceof Error ? err.message : "Unknown error";
