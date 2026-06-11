@@ -42,17 +42,21 @@ export async function GET(request: Request) {
   const supabase = getServiceClient();
   const now = new Date();
 
-  // Query: locked events from the last 7 days that haven't been result-confirmed
+  // Query: events from the last 7 days that are past lock_time and not yet confirmed.
+  // Uses lock_time < now() instead of status = "locked" because WC events use
+  // per-fixture locking (lock_time is authoritative) and stay status "upcoming"
+  // until resulted — nothing transitions them to "locked" at the event level.
   const sevenDaysAgo = new Date(now.getTime() - 7 * 24 * 3600000);
 
   const { data: events, error } = await supabase
     .from("events")
     .select(
-      "id, event_name, sport, start_time, external_event_id, provider_league, result_data, competition_id"
+      "id, event_name, sport, start_time, lock_time, external_event_id, provider_league, result_data, competition_id"
     )
-    .eq("status", "locked")
     .eq("result_confirmed", false)
-    .gte("start_time", sevenDaysAgo.toISOString());
+    .lte("lock_time", now.toISOString())
+    .gte("start_time", sevenDaysAgo.toISOString())
+    .not("status", "in", '("cancelled","postponed")');
 
   if (error) {
     console.error("Results cron: failed to fetch events:", error.message);
@@ -63,17 +67,20 @@ export async function GET(request: Request) {
   const candidates = (events ?? []).filter((e) => {
     const rd = e.result_data as Record<string, unknown> | null;
 
-    // Skip events with no result_data (admin-UI-created events without auto-result setup)
-    if (!rd) return false;
+    // Skip events with no result_data AND no external_event_id —
+    // these are admin-UI-created events without auto-result setup.
+    // Events with external_event_id (including manual:wc2026-*) CAN be
+    // auto-resolved via provider search even with null result_data.
+    if (!rd && !e.external_event_id) return false;
 
     // Skip if already terminal
-    const autoStatus = rd.auto_result_status as string | undefined;
+    const autoStatus = rd?.auto_result_status as string | undefined;
     if (autoStatus === "window_expired" || autoStatus === "confirmed") {
       return false;
     }
 
     // Skip if too early (quick check before calling autoResolveEvent)
-    const checkAfter = rd.auto_result_check_after as string | undefined;
+    const checkAfter = rd?.auto_result_check_after as string | undefined;
     if (checkAfter && now.toISOString() < checkAfter) {
       return false;
     }
