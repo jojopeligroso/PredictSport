@@ -30,16 +30,32 @@ export async function GET(request: NextRequest) {
     );
   }
 
-  // Find the most recently revealed fixture: pick_reveal_at < now, most recent first
+  // Find the most recently revealed fixture.
+  // pick_reveal_at defaults to lock_time when null, so we fetch all locked
+  // events and find the one with the most recent effective reveal time.
   const now = new Date().toISOString();
-  const { data: revealedEvent } = await supabase
+  const { data: lockedEvents } = await supabase
     .from("events")
-    .select("id, event_name, pick_reveal_at, external_event_id")
+    .select("id, event_name, lock_time, pick_reveal_at, external_event_id")
     .eq("competition_id", competitionId)
-    .lt("pick_reveal_at", now)
-    .order("pick_reveal_at", { ascending: false })
-    .limit(1)
-    .maybeSingle();
+    .lt("lock_time", now)
+    .order("lock_time", { ascending: false })
+    .limit(20);
+
+  // Filter to events where effective reveal time (pick_reveal_at ?? lock_time) < now
+  const revealed = (lockedEvents ?? []).filter((e) => {
+    const revealAt = e.pick_reveal_at ?? e.lock_time;
+    return new Date(revealAt) < new Date(now);
+  });
+
+  // Sort by effective reveal time descending, pick the most recent
+  revealed.sort((a, b) => {
+    const aReveal = new Date(a.pick_reveal_at ?? a.lock_time).getTime();
+    const bReveal = new Date(b.pick_reveal_at ?? b.lock_time).getTime();
+    return bReveal - aReveal;
+  });
+
+  const revealedEvent = revealed[0] ?? null;
 
   if (!revealedEvent) {
     return NextResponse.json({ fixture: null });
