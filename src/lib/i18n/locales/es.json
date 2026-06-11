@@ -242,6 +242,7 @@
   "predictions.comp_not_found": "No se encontró la competición. Selecciona otra arriba.",
   "common.you": "Tu",
   "common.pts": "puntos",
+  "common.anonymous": "Jugador",
   "common.points": "puntos",
   "common.players_joined": "{count} jugadores se han unido.",
   "common.collapse": "contraer",

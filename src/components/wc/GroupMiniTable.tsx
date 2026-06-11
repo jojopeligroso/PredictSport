@@ -161,7 +161,7 @@ export function GroupMiniTable({
                 m.is_self ? "font-semibold text-ps-text" : "font-medium text-ps-text-sec",
               ].join(" ")}
             >
-              {m.display_name}
+              {m.display_name || t('common.anonymous')}
             </span>
             <span
               className={[

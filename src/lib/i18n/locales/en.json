@@ -242,6 +242,7 @@
   "predictions.comp_not_found": "Competition not found. Select a different one above.",
   "common.you": "YOU",
   "common.pts": "pts",
+  "common.anonymous": "Player",
   "common.points": "points",
   "common.players_joined": "{count} players joined.",
   "common.collapse": "Collapse",
