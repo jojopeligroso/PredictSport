@@ -193,14 +193,66 @@ p, h1, h2, h3, h4, h5, h6 {
 }
 
 /* ── Live island — inverts theme for focal contrast ───────────────────── */
+/* The island opposes the surrounding theme so child components that use
+   ps-* tokens automatically pick up inverted colors. */
 .ps-island {
   background: var(--ps-live-island-bg);
   border-radius: 14px;
   padding: 10px;
 }
 
-html[data-theme="dark"] .ps-island {
+/* WC dark theme (default) → island uses WC light tokens */
+.wc-theme .ps-island {
   background: #efe9de;
+  --ps-surface: #ffffff;
+  --ps-text: #0a0f0a;
+  --ps-text-sec: #4a5a4a;
+  --ps-text-ter: #7a8a7a;
+  --ps-border: rgba(0, 104, 71, 0.18);
+  --ps-chip: rgba(0, 104, 71, 0.06);
+}
+
+/* WC light theme → island uses WC dark tokens */
+html[data-theme="light"] .wc-theme .ps-island {
+  background: #141c14;
+  --ps-surface: #1a231a;
+  --ps-text: #f1ece2;
+  --ps-text-sec: #a8a090;
+  --ps-text-ter: #706858;
+  --ps-border: rgba(212, 175, 55, 0.10);
+  --ps-chip: rgba(212, 175, 55, 0.06);
+}
+
+/* Non-WC dark theme → island uses light tokens */
+html[data-theme="dark"] .ps-island:not(.wc-theme .ps-island) {
+  background: #efe9de;
+  --ps-surface: #ffffff;
+  --ps-text: #191512;
+  --ps-text-sec: #5e554a;
+  --ps-text-ter: #8b8275;
+  --ps-border: rgba(40, 30, 20, 0.10);
+  --ps-chip: rgba(40, 30, 20, 0.04);
+}
+
+/* ── Surface sheen — dimensional lighting on match cards ──────────────── */
+.ps-sheen {
+  position: relative;
+}
+.ps-sheen::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background:
+    radial-gradient(ellipse at 15% 65%, rgba(255,255,255,0.08) 0%, transparent 55%),
+    radial-gradient(ellipse at 85% 15%, rgba(0,0,0,0.15) 0%, transparent 50%),
+    linear-gradient(155deg, rgba(255,255,255,0.04) 0%, transparent 55%);
+  pointer-events: none;
+  z-index: 1;
+}
+.ps-sheen > * {
+  position: relative;
+  z-index: 2;
 }
 
 /* ── Live pill pulse ──────────────────────────────────────────────────── */

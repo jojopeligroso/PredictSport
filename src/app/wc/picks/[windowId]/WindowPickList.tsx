@@ -203,20 +203,20 @@ const CARD_THEME: SurfaceTheme = {
       "flex-1 min-w-0 flex flex-col items-center gap-1 px-1.5 py-1.5 rounded-lg transition-all duration-150 cursor-pointer",
       "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ps-amber/50",
       selected
-        ? "bg-white/12 shadow-[inset_0_0_0_2px_rgba(245,158,11,0.7)]"
+        ? "bg-white/12 shadow-[inset_0_0_0_2px_rgba(212,175,55,0.45)]"
         : "hover:bg-white/10",
     ].join(" "),
   teamLabel: (selected) =>
     [
       "max-w-full truncate text-xs font-semibold text-center leading-tight",
-      selected ? "text-white" : "text-white/55",
+      selected ? "text-white" : "text-white/45",
     ].join(" "),
   drawButton: (selected) =>
     [
       "shrink-0 px-2.5 min-h-[44px] flex items-center rounded-lg text-xs font-medium transition-all duration-150",
       "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ps-amber/50",
       selected
-        ? "bg-white/12 text-white shadow-[inset_0_0_0_2px_rgba(245,158,11,0.7)]"
+        ? "bg-white/12 text-white shadow-[inset_0_0_0_2px_rgba(212,175,55,0.45)]"
         : "text-white/45 hover:bg-white/10 hover:text-white/65",
     ].join(" "),
   scoreInput: (filled) =>

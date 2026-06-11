@@ -27,6 +27,8 @@ interface CommunityData {
 
 interface CommunityPicksCardProps {
   competitionId: string;
+  /** When true, suppress outer section wrapper and header — island provides these. */
+  island?: boolean;
 }
 
 /**
@@ -38,7 +40,7 @@ interface CommunityPicksCardProps {
  *
  * Only renders after pick_reveal_at has passed.
  */
-export function CommunityPicksCard({ competitionId }: CommunityPicksCardProps) {
+export function CommunityPicksCard({ competitionId, island = false }: CommunityPicksCardProps) {
   const t = useT();
   const [data, setData] = useState<CommunityData | null>(null);
   const [loading, setLoading] = useState(true);
@@ -67,24 +69,28 @@ export function CommunityPicksCard({ competitionId }: CommunityPicksCardProps) {
   }, [fetchData]);
 
   if (loading) {
+    const skeleton = (
+      <div className="flex gap-2">
+        {[0, 1].map((i) => (
+          <div
+            key={i}
+            className="min-w-[100px] flex-1 rounded-lg border border-ps-border bg-ps-surface p-3"
+          >
+            <div className="h-3 w-16 animate-pulse rounded bg-ps-chip" />
+            <div className="mt-2 space-y-1.5">
+              <div className="h-2 animate-pulse rounded bg-ps-chip" />
+              <div className="h-2 w-3/4 animate-pulse rounded bg-ps-chip" />
+              <div className="h-2 w-1/2 animate-pulse rounded bg-ps-chip" />
+            </div>
+          </div>
+        ))}
+      </div>
+    );
+    if (island) return skeleton;
     return (
       <section className="mt-3">
         <div className="mb-2 h-3 w-16 animate-pulse rounded bg-ps-chip" />
-        <div className="flex gap-2">
-          {[0, 1].map((i) => (
-            <div
-              key={i}
-              className="min-w-[100px] flex-1 rounded-lg border border-ps-border bg-ps-surface p-3"
-            >
-              <div className="h-3 w-16 animate-pulse rounded bg-ps-chip" />
-              <div className="mt-2 space-y-1.5">
-                <div className="h-2 animate-pulse rounded bg-ps-chip" />
-                <div className="h-2 w-3/4 animate-pulse rounded bg-ps-chip" />
-                <div className="h-2 w-1/2 animate-pulse rounded bg-ps-chip" />
-              </div>
-            </div>
-          ))}
-        </div>
+        {skeleton}
       </section>
     );
   }
@@ -110,14 +116,10 @@ export function CommunityPicksCard({ competitionId }: CommunityPicksCardProps) {
       ? Math.round((outcomeSplit.away / outcomeSplit.total) * 100)
       : 0;
 
-  return (
-    <section className="mt-3">
-      <p className="mb-2 text-[11px] font-semibold uppercase tracking-wider text-ps-text-ter">
-        {t("dash.the_field")}
-      </p>
-      <div className="flex items-stretch gap-2">
-        {/* Card 1: Outcome Split */}
-        <div className="min-w-[100px] flex-1 rounded-lg border border-ps-border bg-ps-surface p-3">
+  const cards = (
+    <div className="flex items-stretch gap-2">
+      {/* Card 1: Outcome Split */}
+      <div className="min-w-[100px] flex-1 rounded-lg border border-ps-border bg-ps-surface p-3">
           <div className="flex items-center gap-1.5 text-[10px] font-semibold uppercase tracking-wider text-ps-text-ter">
             <CountryFlag name={fixture.home} size={14} shape="pill" />
             <span>{homeTri}</span>
@@ -188,6 +190,16 @@ export function CommunityPicksCard({ competitionId }: CommunityPicksCardProps) {
           )}
         </div>
       </div>
+  );
+
+  if (island) return cards;
+
+  return (
+    <section className="mt-3">
+      <p className="mb-2 text-[11px] font-semibold uppercase tracking-wider text-ps-text-ter">
+        {t("dash.the_field")}
+      </p>
+      {cards}
     </section>
   );
 }

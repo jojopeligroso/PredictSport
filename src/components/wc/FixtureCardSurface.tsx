@@ -66,19 +66,19 @@ export function FixtureCardSurface({
   return (
     <article
       className={[
-        "overflow-hidden rounded-xl text-white transition-all",
+        "ps-sheen overflow-hidden rounded-xl text-white transition-all",
         haloClass,
       ].join(" ")}
       style={{ backgroundColor: cityMeta.color, ...haloStyle }}
     >
-      <header className="flex items-center justify-between gap-2 px-4 pt-3 text-[0.7rem] font-bold uppercase tracking-wide text-white/85">
+      <header className="flex items-center justify-between gap-2 px-2.5 pt-2.5 text-[0.7rem] font-bold uppercase tracking-wide text-white/85">
         <span className="shrink-0">{headerLeft}</span>
         <span className="min-w-0 truncate text-right font-mono normal-case tracking-normal text-white/85">
           {headerRight}
         </span>
       </header>
 
-      <div className="px-3 pb-3.5 pt-2">{children}</div>
+      <div className="px-2.5 pb-2.5 pt-1.5">{children}</div>
     </article>
   );
 }

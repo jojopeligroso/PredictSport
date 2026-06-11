@@ -4,6 +4,7 @@ import { UserMenu } from "@/components/UserMenu";
 import { MobileNav } from "@/components/MobileNav";
 import { BrandMark } from "@/components/BrandMark";
 import { WcNavLinks } from "@/components/wc/WcNavLinks";
+import { TabBar } from "@/components/wc/TabBar";
 import { getWcBracketSnapshot } from "@/lib/tournament/bracket-snapshot";
 import { DisplayNameModal } from "@/components/DisplayNameModal";
 import { LanguageToggle } from "@/components/LanguageToggle";
@@ -147,7 +148,7 @@ export default async function WorldCupLayout({
       </nav>
 
       {needsDisplayName && <DisplayNameModal suggestedName={suggestedName} />}
-      <div className="flex-1">{children}</div>
+      <div className="flex-1 pb-[68px]">{children}</div>
 
       {/* Footer brand mark — Section 21 */}
       <footer className="flex justify-center py-8">
@@ -155,6 +156,8 @@ export default async function WorldCupLayout({
           <BrandMark className="h-6 w-auto" />
         </Link>
       </footer>
+
+      {engaged && <TabBar />}
     </div>
   );
 }

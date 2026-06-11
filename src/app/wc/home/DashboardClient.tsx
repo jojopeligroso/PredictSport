@@ -150,6 +150,12 @@ export function DashboardClient({
     });
   }, [nextEvents, pillDateEvents, selectedDate]);
 
+  // Detect live state — any in-progress event triggers island mode
+  const hasLiveEvent = useMemo(
+    () => filteredEvents.some((e) => getPickStatus(e, predictions) === "in_progress"),
+    [filteredEvents, predictions],
+  );
+
   // Count picks progress (in-progress events with complete picks still count as picked)
   const { picked, total } = useMemo(() => {
     let picked = 0;
@@ -270,30 +276,45 @@ export function DashboardClient({
         )}
       </OnboardingSection>
 
-      {/* ── 4. At a Glance (horizontal scroll) ────────────────────────── */}
+      {/* ── 4. At a Glance / The Field (live state swaps content) ──── */}
       <OnboardingSection id="other">
-        <section className="ps-panel mt-2">
-          <p className="mb-1.5 text-[11px] font-semibold uppercase tracking-wider text-ps-text-ter">
-            {t('dash.at_a_glance')}
-          </p>
-          {classificationId && currentUserId ? (
-            <StatsCard
-              classificationId={classificationId}
-              currentUserId={currentUserId}
-              competitionId={competitionId}
-            />
-          ) : (
-            <div className="rounded-xl border border-ps-border bg-ps-surface px-4 py-5 text-center">
-              <p className="text-xs text-ps-text-ter">
-                {t('dash.stats_placeholder')}
-              </p>
-            </div>
-          )}
-        </section>
+        {hasLiveEvent ? (
+          /* Live: island with community picks (THE FIELD) */
+          <section className="ps-island mt-2">
+            <p className="mb-1.5 flex items-center gap-2 text-[11px] font-semibold uppercase tracking-wider text-ps-text-ter">
+              {t('dash.the_field')}
+              <span className="inline-flex items-center gap-1 rounded-full bg-ps-red/90 px-1.5 py-0.5 text-[9px] font-bold normal-case text-white">
+                <span className="h-1.5 w-1.5 rounded-full bg-white" style={{ animation: "pulse-live 2s infinite" }} />
+                {t('picks.live')}
+              </span>
+            </p>
+            <CommunityPicksCard competitionId={competitionId} island />
+          </section>
+        ) : (
+          /* Idle: stats panel */
+          <section className="ps-panel mt-2">
+            <p className="mb-1.5 text-[11px] font-semibold uppercase tracking-wider text-ps-text-ter">
+              {t('dash.at_a_glance')}
+            </p>
+            {classificationId && currentUserId ? (
+              <StatsCard
+                classificationId={classificationId}
+                currentUserId={currentUserId}
+                competitionId={competitionId}
+              />
+            ) : (
+              <div className="rounded-xl border border-ps-border bg-ps-surface px-4 py-5 text-center">
+                <p className="text-xs text-ps-text-ter">
+                  {t('dash.stats_placeholder')}
+                </p>
+              </div>
+            )}
+          </section>
+        )}
       </OnboardingSection>
 
-      {/* ── 4b. Community Picks (competition-wide stats) ──────────────── */}
-      {isMember && (
+      {/* ── 4b. Community Picks (hidden during live — merged into island) */}
+      {isMember && !hasLiveEvent && (
         <OnboardingSection id="other">
           <div className="ps-panel mt-2">
             <CommunityPicksCard competitionId={competitionId} />
@@ -346,7 +367,8 @@ export function DashboardClient({
       {/* ── 5c. Mini Chat (above leaderboard) ─────────────────────── */}
       {chatEnabled && isMember && currentUserId && (
         <OnboardingSection id="other">
-          <section className="mt-2 rounded-xl border border-ps-border bg-ps-surface overflow-hidden">
+          <section className="ps-panel mt-2">
+            <div className="rounded-xl border border-ps-border bg-ps-surface overflow-hidden">
             {/* Single header: Chat label + full chat link + collapse chevron */}
             <div className={`flex items-center justify-between px-4 py-3${chatCollapsed ? "" : " border-b border-ps-border"}`}>
               <span className="text-sm font-bold text-ps-text">{t('dash.chat')}</span>
@@ -383,13 +405,14 @@ export function DashboardClient({
                 mode="mini"
               />
             )}
+            </div>
           </section>
         </OnboardingSection>
       )}
 
       {/* ── 7. Recent Results ─────────────────────────────────────────── */}
       <OnboardingSection id="other">
-        <section className="mt-2">
+        <section className="ps-panel mt-2">
           {recentResults.length > 0 ? (
             <div className="rounded-xl border border-ps-border bg-ps-surface p-4">
               <div className="flex items-center justify-between">
@@ -419,8 +442,8 @@ export function DashboardClient({
       {/* ── 8. Today's WC Match Groups ──────────────────────────────── */}
       <OnboardingSection id="other">
         {todayGroups.length > 0 && (
-          <section className="mt-4">
-            <p className="mb-2 text-[11px] font-semibold uppercase tracking-wider text-ps-text-ter">
+          <section className="ps-panel mt-2">
+            <p className="mb-1.5 text-[11px] font-semibold uppercase tracking-wider text-ps-text-ter">
               {t('dash.todays_groups')}
             </p>
             <FifaGroupsGrid
