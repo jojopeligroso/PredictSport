@@ -578,7 +578,7 @@ function FixtureCard({
 
   // Size tokens — default vs large
   const flagSize = large ? 36 : 24;
-  const flagSizeRo = large ? 26 : 18;
+  const flagSizeRo = large ? 32 : 24;
   const teamText = large ? "text-sm" : "text-xs";
   const scoreSize = large ? "w-[40px] h-[38px] text-lg" : "w-[30px] h-[28px] text-sm";
   const drawSize = large ? "px-3.5 py-2 text-sm" : "px-2.5 py-1.5 text-xs";
@@ -740,17 +740,17 @@ function FixtureCard({
 
         {/* ── Read-only teams + result (finished) ── */}
         {isFinished && (
-          <div className="flex items-center justify-between gap-3">
-            {/* Home team — left */}
-            <div className="flex flex-1 min-w-0 items-center gap-1.5">
+          <div className="flex items-start justify-between gap-2">
+            {/* Home team — left, flag above name */}
+            <div className="flex flex-1 min-w-0 flex-col items-center gap-1">
               <CountryFlag shape="pill" name={fixture.home} size={flagSizeRo} />
-              <span className={`${large ? "text-sm" : "text-xs"} font-semibold text-white/90 truncate`}>
+              <span className={`${large ? "text-sm" : "text-xs"} font-bold text-white text-center leading-tight max-w-full truncate`}>
                 {fixture.home}
               </span>
             </div>
 
             {/* Score + status — center */}
-            <div className="flex shrink-0 flex-col items-center gap-1.5">
+            <div className="flex shrink-0 flex-col items-center gap-1.5 pt-1">
               <span className={`rounded-lg bg-white/22 px-3 py-1 font-mono ${large ? "text-xl" : "text-base"} font-extrabold tabular-nums leading-none whitespace-nowrap`}>
                 {result?.homeScore !== null && result?.awayScore !== null
                   ? `${result.homeScore} – ${result.awayScore}`
@@ -766,12 +766,12 @@ function FixtureCard({
               </span>
             </div>
 
-            {/* Away team — right */}
-            <div className="flex flex-1 min-w-0 items-center justify-end gap-1.5">
-              <span className={`${large ? "text-sm" : "text-xs"} font-semibold text-white/90 truncate`}>
+            {/* Away team — right, flag above name */}
+            <div className="flex flex-1 min-w-0 flex-col items-center gap-1">
+              <CountryFlag shape="pill" name={fixture.away} size={flagSizeRo} />
+              <span className={`${large ? "text-sm" : "text-xs"} font-bold text-white text-center leading-tight max-w-full truncate`}>
                 {fixture.away}
               </span>
-              <CountryFlag shape="pill" name={fixture.away} size={flagSizeRo} />
             </div>
           </div>
         )}
