@@ -63,7 +63,6 @@ function getPickStatus(
 ): PickStatus {
   // In-progress (LIVE): match has started but not yet resulted.
   // Only active between start_time and start_time + 6h to prevent stuck live state.
-  // Events that are locked but not yet started show as complete (prediction submitted).
   const lockMs = new Date(event.lock_time).getTime();
   const startMs = new Date(event.start_time).getTime();
   const nowMs = Date.now();
@@ -71,13 +70,17 @@ function getPickStatus(
   if (startMs <= nowMs && !event.result_confirmed && nowMs < startMs + SIX_HOURS)
     return "in_progress";
 
+  // Locked: past lock_time but match hasn't started (or 6h window expired).
+  // No further action possible — treat as complete regardless of pick state.
+  if (lockMs <= nowMs && !event.result_confirmed) return "complete";
+
   const eventPreds = predictions.filter((p) => p.event_id === event.id);
   // "Complete" = has both winner and exact_score predictions
   const hasWinner = eventPreds.some((p) => p.prediction_type === "winner");
   const hasScore = eventPreds.some((p) => p.prediction_type === "exact_score");
   if (hasWinner && hasScore) return "complete";
 
-  // Urgent = < 24h to lock
+  // Urgent = < 36h to lock
   if (lockMs - nowMs < 36 * 60 * 60 * 1000 && lockMs > nowMs) return "urgent";
 
   return "unpicked";
