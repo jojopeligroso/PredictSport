@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { requireDisplayName } from "@/lib/require-display-name";
+import { deriveWinnerFromScore } from "@/lib/score-format";
 
 interface PredictionRequestBody {
   event_id?: string;
@@ -88,7 +89,7 @@ export async function POST(request: NextRequest) {
   const { data: ept, error: eptError } = await supabase
     .from("event_prediction_types")
     .select(
-      "id, event:events!inner(id, competition_id, tournament_id, lock_time, status)"
+      "id, event:events!inner(id, competition_id, tournament_id, lock_time, status, sport)"
     )
     .eq("event_id", event_id)
     .eq("prediction_type", prediction_type)
@@ -102,7 +103,7 @@ export async function POST(request: NextRequest) {
   }
 
   const eptEvent = (ept as unknown as {
-    event: { id: string; competition_id: string; tournament_id: string | null; lock_time: string; status: string };
+    event: { id: string; competition_id: string; tournament_id: string | null; lock_time: string; status: string; sport: string };
   }).event;
 
   if (eptEvent.competition_id !== competition_id) {
@@ -202,6 +203,41 @@ export async function POST(request: NextRequest) {
       },
       { status: isRlsReject ? 403 : 500 }
     );
+  }
+
+  // Score is source of truth — when an exact_score is saved, atomically
+  // derive and upsert the winner prediction so they can never contradict.
+  // This prevents the lock-boundary race where the client-side winner sync
+  // call arrives after lock_time and gets rejected.
+  if (prediction_type === "exact_score") {
+    const { data: winnerEpt } = await supabase
+      .from("event_prediction_types")
+      .select("id, config")
+      .eq("event_id", event_id)
+      .eq("prediction_type", "winner")
+      .maybeSingle();
+
+    if (winnerEpt) {
+      const opts = (winnerEpt.config as Record<string, unknown> | null)?.options as string[] | undefined;
+      const winnerOptions = opts && opts.length > 0 ? opts : [];
+      const implied = deriveWinnerFromScore(prediction_data, eptEvent.sport, winnerOptions);
+
+      if (implied) {
+        await supabase
+          .from("predictions")
+          .upsert(
+            {
+              event_prediction_type_id: winnerEpt.id,
+              event_id,
+              user_id: user.id,
+              prediction_type: "winner",
+              prediction_data: { value: implied },
+              updated_at: new Date().toISOString(),
+            },
+            { onConflict: "event_prediction_type_id,user_id" }
+          );
+      }
+    }
   }
 
   return NextResponse.json({ prediction: saved });
