@@ -158,9 +158,9 @@ export class ESPNProvider extends BaseProvider {
   async searchEvents(
     sport: Sport,
     query: string,
-    options?: { date?: string; limit?: number }
+    options?: { date?: string; limit?: number; providerLeague?: string }
   ): Promise<SearchableEvent[]> {
-    const sportPath = SPORT_PATHS[sport];
+    const sportPath = options?.providerLeague ?? SPORT_PATHS[sport];
     if (!sportPath) return [];
 
     const params: Record<string, string> = {};

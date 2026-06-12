@@ -9,7 +9,7 @@ import { getProvidersForSport } from "./registry";
 export async function searchEvents(
   sport: Sport,
   query: string,
-  options?: { date?: string; dateTo?: string; limit?: number }
+  options?: { date?: string; dateTo?: string; limit?: number; providerLeague?: string }
 ): Promise<SearchableEvent[]> {
   const providers = getProvidersForSport(sport);
 
@@ -20,6 +20,7 @@ export async function searchEvents(
       const results = await provider.searchEvents(sport, query, {
         date: options?.date,
         limit: options?.limit,
+        providerLeague: options?.providerLeague,
       });
 
       if (results.length > 0) {

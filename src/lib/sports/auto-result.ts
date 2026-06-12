@@ -198,7 +198,7 @@ export async function autoResolveEvent(
       const candidates = await searchEvents(
         event.sport as Sport,
         event.event_name,
-        { date: startDate }
+        { date: startDate, providerLeague: event.provider_league ?? undefined }
       );
 
       // Score and filter candidates

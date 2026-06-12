@@ -73,7 +73,7 @@ export class TheSportsDBProvider extends BaseProvider {
   async searchEvents(
     sport: Sport,
     query: string,
-    options?: { date?: string; limit?: number }
+    options?: { date?: string; limit?: number; providerLeague?: string }
   ): Promise<SearchableEvent[]> {
     const data = await this.apiFetch<TSDBSearchResponse>(
       "searchevents.php",

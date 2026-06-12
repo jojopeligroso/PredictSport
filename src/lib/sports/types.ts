@@ -100,6 +100,6 @@ export interface SportsProvider {
   searchEvents(
     sport: Sport,
     query: string,
-    options?: { date?: string; limit?: number }
+    options?: { date?: string; limit?: number; providerLeague?: string }
   ): Promise<SearchableEvent[]>;
 }
