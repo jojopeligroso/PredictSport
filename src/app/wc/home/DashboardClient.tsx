@@ -61,13 +61,14 @@ function getPickStatus(
   event: WindowEvent,
   predictions: Prediction[],
 ): PickStatus {
-  // In-progress: locked but not yet resulted — show locked prediction
-  // Expires 6 hours after start_time to prevent permanently stuck live state
+  // In-progress (LIVE): match has started but not yet resulted.
+  // Only active between start_time and start_time + 6h to prevent stuck live state.
+  // Events that are locked but not yet started show as complete (prediction submitted).
   const lockMs = new Date(event.lock_time).getTime();
   const startMs = new Date(event.start_time).getTime();
   const nowMs = Date.now();
   const SIX_HOURS = 6 * 60 * 60 * 1000;
-  if (lockMs <= nowMs && !event.result_confirmed && nowMs < startMs + SIX_HOURS)
+  if (startMs <= nowMs && !event.result_confirmed && nowMs < startMs + SIX_HOURS)
     return "in_progress";
 
   const eventPreds = predictions.filter((p) => p.event_id === event.id);
@@ -143,10 +144,9 @@ export function DashboardClient({
     // Poll every 60s while there are live events, so result confirmations
     // clear the live state even if the user keeps the tab open.
     const hasLive = nextEvents.some((e) => {
-      const lockMs = new Date(e.lock_time).getTime();
       const startMs = new Date(e.start_time).getTime();
       const nowMs = Date.now();
-      return lockMs <= nowMs && !e.result_confirmed && nowMs < startMs + 6 * 60 * 60 * 1000;
+      return startMs <= nowMs && !e.result_confirmed && nowMs < startMs + 6 * 60 * 60 * 1000;
     });
     const interval = hasLive ? setInterval(refreshData, 60_000) : undefined;
 
