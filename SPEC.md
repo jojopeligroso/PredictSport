@@ -19,7 +19,7 @@ Social sports prediction platform. Admin builds competitions with rounds of mixe
 
 ### In MVP
 
-- All 9 prediction types (see §6)
+- All 10 prediction types (see §6)
 - Configurable scoring per competition with preset templates
 - Sports API integration (9 providers) — reduces admin burden
 - Google OAuth + Magic Link auth (Supabase free tier)
@@ -56,7 +56,7 @@ Social sports prediction platform. Admin builds competitions with rounds of mixe
 2. Login page shows Google button + magic link input
 3. On successful auth, Supabase creates `auth.users` row
 4. Database trigger `handle_new_user()` auto-creates `public.users` row with `display_name` from Google metadata (or email prefix) and `avatar_url`
-5. Auth callback redirects to `/` which redirects authenticated users to `/predictions`
+5. Auth callback redirects to `/` which redirects authenticated users to `/wc`
 6. If user arrived via invite link (`/join?code=xxx`), redirect to join flow after auth
 
 ### Session Management
@@ -228,7 +228,7 @@ Source of truth for per-event prediction configuration. Each row = one predictio
 event_prediction_types
   id                uuid PK
   event_id          uuid FK events
-  prediction_type   text (one of the 9 types)
+  prediction_type   text (one of the 10 types)
   points            integer (default 10) — full credit
   partial_points    integer (default 0) — partial credit
   config            jsonb nullable — type-specific configuration
@@ -365,12 +365,23 @@ Each leaderboard row expands to show the user's individual predictions vs correc
 
 ### Navigation
 
+**Primary navigation (TabBar)** — fixed bottom tab bar on the `/wc` surface, visible to all engaged users:
+
+| Tab | Route | Description |
+|-----|-------|-------------|
+| Home | `/wc/home` | Dashboard overview — matchday cards, rival teaser, stats |
+| Picks | `/wc` or `/wc/picks` | Current prediction window with inline pick inputs |
+| Board | `/wc/leaderboard` | Leaderboard, classification tabs, rival predictions |
+| Chat | `/wc/leaderboard#chat` | Competition chat (currently anchored to leaderboard; planned: dedicated `/wc/chat` route) |
+
+**Generic route navigation** — used by non-WC competition surfaces (secondary, will adopt `/wc` patterns):
+
 | Label | Route | Description |
 |-------|-------|-------------|
 | The Round | `/predictions` | Current round's events with prediction inputs |
 | Results | `/predictions` (tab) | Resulted events with score breakdown |
 | The Table | `/leaderboard` | Leaderboard |
-| Match Day Desk | `/admin` | Admin panel |
+| Competitions | `/competitions` | Competition management hub (admin redirects here) |
 
 ### "The Round" View
 

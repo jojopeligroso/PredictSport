@@ -20,13 +20,47 @@ No test framework configured yet.
 
 **Path alias:** `@/*` maps to `./src/*`
 
+### Primary Product Surface: `/wc`
+
+The active product is the `/wc` surface. All real users interact here. Generic routes (`/predictions`, `/leaderboard`, `/competitions`) exist as platform infrastructure for future non-WC competitions but are secondary — they will adopt `/wc` design decisions when built out.
+
+**Two separate layout/navigation systems exist:**
+
+| Surface | Layout | Top Chrome | Bottom Chrome | Guard |
+|---------|--------|------------|---------------|-------|
+| `/wc/*` (primary) | `src/app/wc/layout.tsx` | WC-branded nav (BrandMark, WcNavLinks, UserMenu, MobileNav) | **TabBar** — fixed bottom, 4 tabs | N/A |
+| Generic routes | `src/app/layout.tsx` | NavBar + Footer | None | `GlobalChromeGuard` hides this chrome on `/wc` |
+
+**TabBar** (`src/components/wc/TabBar.tsx`) — the primary navigation for all engaged users on `/wc`:
+
+| Tab | Icon | Route | Active when |
+|-----|------|-------|-------------|
+| Home | House | `/wc/home` | path starts with `/wc/home` |
+| Picks | Crosshair | `/wc` | path is `/wc` or starts with `/wc/picks` |
+| Board | Trophy | `/wc/leaderboard` | path starts with `/wc/leaderboard` |
+| Chat | Speech bubble | `/wc/leaderboard#chat` | never (hardcoded `false` — no dedicated route yet) |
+
+Rendered in `wc/layout.tsx:160` as `{engaged && <TabBar />}` — visible to all authenticated competition members across every `/wc` page. Fixed position, 52px height + safe-area-inset-bottom, z-40.
+
+**Other infrastructure components rendered by layouts:**
+- `DisplayNameModal` — blocks interaction until display name is set (z-60)
+- `PushNotificationPrompt` — push notification opt-in (z-50, auto-triggers after 800ms)
+- `InstallPrompt` / `PwaInstallGuide` — PWA install prompts (z-50)
+- `ServiceWorkerRegistration` — registers `/sw.js` for PWA
+- `ThemeProvider` / `LocaleProvider` — theme and i18n context
+
 ### Key Directories
 
-- `src/app/` — Pages and API routes
-- `src/components/` — Shared components
+- `src/app/wc/` — Primary product pages (home, picks, leaderboard, bracket, chat, admin)
+- `src/app/` — Generic routes + API routes
+- `src/components/wc/` — WC-specific components (TabBar, RivalPredictionsTab, JoinFlow, OnboardingFlow, etc.)
+- `src/components/chat/` — Chat components (ChatWidget, ChatMessage, useRealtimeChat)
+- `src/components/tournament/` — Tournament components (ClassificationTabs, bracket wizard)
+- `src/components/ui/` — Shared UI primitives (Avatar, PickButton, CountdownChip, etc.)
+- `src/components/` — Shared infrastructure (NavBar, Footer, MobileNav, ThemeProvider)
 - `src/lib/supabase/` — Supabase clients (browser, server, proxy)
 - `src/lib/sports/` — Sports data provider abstraction
-- `src/lib/scoring.ts` — Scoring engine (6 prediction types)
+- `src/lib/scoring.ts` — Scoring engine (10 prediction types)
 - `src/types/database.ts` — TypeScript types mirroring schema
 - `supabase/migrations/` — SQL migrations
 - `docs/` — Spec docs (read when working on relevant area)
@@ -61,7 +95,7 @@ Provider abstraction in `src/lib/sports/`. `BaseProvider` handles fetch, rate li
 | Provider | Sports | Key Needed | Cost |
 |----------|--------|------------|------|
 | OpenF1 | F1 | No | Free |
-| API-Football | Soccer | `API_FOOTBALL_KEY` | Free (4/hr cap) |
+| API-Football | Soccer | `API_FOOTBALL_KEY` | Free (100 req/day) |
 | TheSportsDB | Soccer, Golf, Rugby, Tennis | No | Free |
 | ESPN | NFL, NHL, NBA, MLB, Soccer, Rugby, Golf, Tennis, Snooker | No | Free (unofficial) |
 | BallDontLie | NBA (+paid: NFL, MLB, NHL) | `BALLDONTLIE_KEY` | Free NBA |
@@ -127,7 +161,7 @@ See `design/README.md` for full brand brief and asset references.
 
 **Personality:** "Confident, cheeky, craftsman-warm." — pub chalkboard vibe. Culturally inferred, never explicit.
 
-**Layout container:** `layout.tsx` does NOT wrap children in a container. Each page provides its own `max-w-[480px]` wrapper. Landing page is full-width hero. NavBar/Footer use `max-w-3xl`.
+**Layout container:** Layout files do NOT wrap children in a container. Each page provides its own `max-w-[480px]` wrapper. Landing page is full-width hero. The generic NavBar/Footer use `max-w-3xl`. The `/wc` surface uses its own branded top nav + fixed TabBar (see Architecture above).
 
 ## Conventions
 

@@ -13,13 +13,13 @@ An admin-defined prediction contest. Contains rounds, has a lifecycle (draft →
 
 ## Round
 
-An admin-defined grouping of events within a competition. Rounds can mix sports. A round has an authoring lifecycle: `draft → open → finalised → scored`. The lifecycle is about admin authoring, not about user prediction availability — predictions are gated per-[[Event]] by that event's `lock_time`, never by `round.status`.
+An admin-defined grouping of events within a competition. Rounds can mix sports. A round has an authoring lifecycle: `draft → open → locked → scored`. The lifecycle is about admin authoring, not about user prediction availability — predictions are gated per-[[Event]] by that event's `lock_time`, never by `round.status`.
 
 ---
 
-## Finalised (Round status)
+## Locked (Round status)
 
-Admin authoring is complete: the round's structure (events, prediction types, points) is frozen as a design artefact. Distinct from "locked for predictions" — individual events in a finalised round can still accept predictions until their own `lock_time` passes. A [[Super Administrator]] or [[Competition Admin]] may unfinalise the round (return to `open`) only to edit events that have not yet started; events past their `lock_time` remain frozen. Renames the previous `locked` status, which was misleading.
+Admin authoring is complete: the round's structure (events, prediction types, points) is frozen as a design artefact. Distinct from "locked for predictions" — individual events in a locked round can still accept predictions until their own `lock_time` passes.
 
 ---
 
@@ -176,6 +176,13 @@ The user-chosen name shown on leaderboards, standings, and to other participants
 ## The Cut
 
 The R32 Classification, renamed. Measures how many of the 32 knockout-stage teams the user correctly predicted from their Full Bracket group stage picks. Not path-sensitive — only checks whether each team made the knockouts, regardless of position. Short label: "The Cut". Full title: "Who Made the Cut". No question mark.
+
+---
+
+## Tab Bar
+
+The fixed bottom navigation bar on the `/wc` surface. Four tabs: Home, Picks, Board, Chat. Visible to all engaged (authenticated, competition-joined) users across every `/wc` page. This is the primary navigation for the product. Generic competition routes will adopt the same pattern when built out.
+_Avoid_: Bottom nav, navigation bar (ambiguous with the top NavBar)
 
 ---
 
