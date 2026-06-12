@@ -103,8 +103,8 @@ export function StatsCard({
         <p className="font-display text-lg font-extrabold tabular-nums leading-tight text-ps-amber">
           {rank != null ? `${rank}${rankSuffix}` : "—"}
         </p>
-        <p className="text-[9px] font-medium text-ps-text-sec">{t('stats.your_rank')}</p>
-        <p className="font-mono text-[8px] text-ps-text-ter">/ {totalPlayers}</p>
+        <p className="text-xs font-medium text-ps-text-sec">{t('stats.your_rank')}</p>
+        <p className="font-mono text-xs text-ps-text-ter">/ {totalPlayers}</p>
       </div>
 
       {/* Points — compact, with available */}
@@ -112,9 +112,9 @@ export function StatsCard({
         <p className="font-display text-lg font-extrabold tabular-nums leading-tight text-ps-text">
           {points}
         </p>
-        <p className="text-[9px] font-medium text-ps-text-sec">{t('stats.points')}</p>
+        <p className="text-xs font-medium text-ps-text-sec">{t('stats.points')}</p>
         {availablePoints > 0 && (
-          <p className="font-mono text-[8px] text-ps-text-ter">/ {availablePoints}</p>
+          <p className="font-mono text-xs text-ps-text-ter">/ {availablePoints}</p>
         )}
       </div>
 
@@ -131,18 +131,18 @@ export function StatsCard({
               <p className="font-display text-lg font-extrabold tabular-nums leading-tight text-ps-green">
                 {accuracy.user!.pct}%
               </p>
-              <p className="text-[9px] font-medium text-ps-text-sec">
+              <p className="text-xs font-medium text-ps-text-sec">
                 {t('stats.outcome')}
               </p>
-              <p className="font-mono text-[8px] text-ps-text-ter">
+              <p className="font-mono text-xs text-ps-text-ter">
                 {accuracy.user!.correct}/{accuracy.user!.total}
               </p>
             </>
           ) : (
             <>
               <p className="font-display text-lg font-extrabold tabular-nums leading-tight text-ps-green">—</p>
-              <p className="text-[9px] font-medium text-ps-text-sec">{t('stats.outcome')}</p>
-              <p className="text-[8px] text-ps-text-ter">{t('stats.after_first_results')}</p>
+              <p className="text-xs font-medium text-ps-text-sec">{t('stats.outcome')}</p>
+              <p className="text-xs text-ps-text-ter">{t('stats.after_first_results')}</p>
             </>
           )
         ) : (
@@ -152,18 +152,18 @@ export function StatsCard({
               <p className="font-display text-lg font-extrabold tabular-nums leading-tight text-ps-amber">
                 {accuracy.userScore!.pct}%
               </p>
-              <p className="text-[9px] font-medium text-ps-text-sec">
+              <p className="text-xs font-medium text-ps-text-sec">
                 {t('stats.exact_score')}
               </p>
-              <p className="font-mono text-[8px] text-ps-text-ter">
+              <p className="font-mono text-xs text-ps-text-ter">
                 {accuracy.userScore!.correct}/{accuracy.userScore!.total}
               </p>
             </>
           ) : (
             <>
               <p className="font-display text-lg font-extrabold tabular-nums leading-tight text-ps-amber">—</p>
-              <p className="text-[9px] font-medium text-ps-text-sec">{t('stats.exact_score')}</p>
-              <p className="text-[8px] text-ps-text-ter">{t('stats.after_first_results')}</p>
+              <p className="text-xs font-medium text-ps-text-sec">{t('stats.exact_score')}</p>
+              <p className="text-xs text-ps-text-ter">{t('stats.after_first_results')}</p>
             </>
           )
         )}
