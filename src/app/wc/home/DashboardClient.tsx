@@ -1,7 +1,8 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useMemo, useState } from "react";
+import { useRouter } from "next/navigation";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { useT } from "@/lib/i18n";
 import { computeDayStatus, formatLockCountdown } from "@/lib/wc/daily-lock";
 import { CHROME_PALETTE } from "@/app/wc/_landing/brand-palette";
@@ -61,9 +62,13 @@ function getPickStatus(
   predictions: Prediction[],
 ): PickStatus {
   // In-progress: locked but not yet resulted — show locked prediction
+  // Expires 6 hours after start_time to prevent permanently stuck live state
   const lockMs = new Date(event.lock_time).getTime();
+  const startMs = new Date(event.start_time).getTime();
   const nowMs = Date.now();
-  if (lockMs <= nowMs && !event.result_confirmed) return "in_progress";
+  const SIX_HOURS = 6 * 60 * 60 * 1000;
+  if (lockMs <= nowMs && !event.result_confirmed && nowMs < startMs + SIX_HOURS)
+    return "in_progress";
 
   const eventPreds = predictions.filter((p) => p.event_id === event.id);
   // "Complete" = has both winner and exact_score predictions
@@ -120,10 +125,36 @@ export function DashboardClient({
   memberRole,
 }: DashboardClientProps) {
   const t = useT();
+  const router = useRouter();
   const [expandedEventId, setExpandedEventId] = useState<string | null>(null);
   const [selectedDate, setSelectedDate] = useState<string | null>(null);
   // In-progress events auto-expand; track which ones the user manually collapsed
   const [collapsedLiveIds, setCollapsedLiveIds] = useState<Set<string>>(new Set());
+
+  // Auto-refresh: refetch server data on visibility change + every 60s while
+  // live events exist, so result_confirmed updates propagate and live state clears.
+  const refreshData = useCallback(() => router.refresh(), [router]);
+  useEffect(() => {
+    const onVisible = () => {
+      if (document.visibilityState === "visible") refreshData();
+    };
+    document.addEventListener("visibilitychange", onVisible);
+
+    // Poll every 60s while there are live events, so result confirmations
+    // clear the live state even if the user keeps the tab open.
+    const hasLive = nextEvents.some((e) => {
+      const lockMs = new Date(e.lock_time).getTime();
+      const startMs = new Date(e.start_time).getTime();
+      const nowMs = Date.now();
+      return lockMs <= nowMs && !e.result_confirmed && nowMs < startMs + 6 * 60 * 60 * 1000;
+    });
+    const interval = hasLive ? setInterval(refreshData, 60_000) : undefined;
+
+    return () => {
+      document.removeEventListener("visibilitychange", onVisible);
+      if (interval) clearInterval(interval);
+    };
+  }, [refreshData, nextEvents]);
 
   const [chatCollapsed, setChatCollapsed] = useState(() => {
     if (typeof window === "undefined") return false;
