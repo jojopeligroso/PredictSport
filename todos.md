@@ -301,16 +301,23 @@ See `SPORTS-ARCHITECTURE.md` for detailed spec (TBD).
 
 ### Phase CH-C — Integration
 
-- [ ] **CH-C1 — Mini chat on dashboard** — Add ChatWidget (mini mode) to DashboardClient.tsx. Position: below group fixtures section (section 5), above leaderboard link. Smart close: closed state in localStorage, reappears when new message arrives after close timestamp.
-- [ ] **CH-C2 — Full chat on leaderboard** — Add ChatWidget (full mode) to leaderboard page. Overall leaderboard collapses to show user + ~4 above/below. Chat takes remaining ~75% of screen.
+- [x] **CH-C1 — Mini chat on dashboard** — Add ChatWidget (mini mode) to DashboardClient.tsx. Position: below group fixtures section (section 5), above leaderboard link. Smart close: closed state in localStorage, reappears when new message arrives after close timestamp.
+- [x] **CH-C2 — Full chat on leaderboard** — Add ChatWidget (full mode) to leaderboard page. Overall leaderboard collapses to show user + ~4 above/below. Chat takes remaining ~75% of screen.
 - [ ] **CH-C3 — Move leaderboard link up on dashboard** — Reorder dashboard sections: leaderboard link moves to after group fixtures (section 5 → section 6), displacing current position.
-- [ ] **CH-C4 — Unread badge on nav** — Compare user's last-seen timestamp against latest message timestamp. Show dot/badge on leaderboard nav item.
+- [ ] **CH-C4 — Unread badge on tab bar** — Compare user's last-seen timestamp against latest message timestamp. Show red dot on Chat tab. localStorage-based for now; migrate to `chat_read_receipts` table later for cross-device support.
+- [ ] **CH-C5 — Dedicated /wc/chat page** — Full-screen chat page accessible exclusively via tab bar. Top: leaderboard classification pills (Overall, Format, Rival Predictions) that navigate to `/wc/leaderboard` with the corresponding tab active. Main content: ChatWidget in full mode at ~90% viewport height. Update TabBar to point Chat tab to `/wc/chat` and highlight when active. Keep existing mini/full widgets on dashboard and leaderboard.
 
 ### Phase CH-D — Notifications
 
 - [x] **CH-D1 — Push notification for @mentions** — When a message contains @mention, send push to mentioned user (if opted in).
 - [x] **CH-D2 — Push notification for new member join** — When system message "X joined" fires, push to all competition members (if opted in).
 - [x] **CH-D3 — Notification settings** — Add chat notification preferences to user settings: @mention alerts (on/off), new member alerts (on/off).
+
+### Phase CH-E — System Notifications in Chat
+
+- [ ] **CH-E1 — Result confirmed system message** — In `/api/admin/confirm-result`, after scoring, insert a system message: "Results are in for {event_name}" into competition chat. Use `message_type: 'system'`.
+- [ ] **CH-E2 — System message styling** — Style system messages distinctly in ChatWidget: centered text, muted color, no avatar, no reply/edit/delete actions. Differentiate from existing join/mod system messages visually.
+- [ ] **CH-E3 — Additional system events** — Extend system messages to: round opened ("Round {n} is open for predictions"), draw completed ("Groups have been drawn"), competition status changes. Each gated behind `chat_enabled`.
 
 ## Prediction Visibility Revisit
 
