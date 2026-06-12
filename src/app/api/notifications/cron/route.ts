@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 import { notifyDeadline } from "@/lib/telegram/notify";
 import { revealPredictions } from "@/lib/telegram/predictions";
-import { sendPushToUser, getUserReminderLead } from "@/lib/push/send";
+import { sendPushToUser, getUserReminderLead, alreadyNotifiedWithTag } from "@/lib/push/send";
 
 /**
  * GET /api/notifications/cron
@@ -231,10 +231,18 @@ export async function GET(request: Request) {
           : `${names.join(", ")} +${incomplete.length - 3} more lock soon`;
     }
 
-    // Use the first event's ID as the dedup key — sendPushToUser checks
-    // per-event dedup so the same batch won't fire twice for the same
-    // earliest event.
-    const dedupEventId = incomplete[0].id;
+    // Dedup: one reminder per user per calendar day (UTC).
+    // Previously used the first event's ID, which shifted when the user
+    // completed that event between cron runs — causing repeat notifications.
+    // Now: stable daily tag checked server-side before sending.
+    const todayIso = now.toISOString().slice(0, 10);
+    const dailyTag = `deadline-${todayIso}`;
+
+    const alreadySent = await alreadyNotifiedWithTag(supabase, userId, dailyTag);
+    if (alreadySent) {
+      pushThrottled++;
+      continue;
+    }
 
     try {
       const result = await sendPushToUser(
@@ -246,10 +254,9 @@ export async function GET(request: Request) {
               : `${incomplete.length} matches closing soon`,
           body,
           url,
-          tag: `deadline-batch-${dedupEventId}`,
+          tag: dailyTag,
         },
-        "prediction_reminders",
-        { eventId: dedupEventId }
+        "prediction_reminders"
       );
       pushSent += result.sent;
       if (result.throttled) pushThrottled++;

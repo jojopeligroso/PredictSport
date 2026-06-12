@@ -210,6 +210,12 @@ This project runs on **Vercel Hobby (free)**. These limits bite silently:
 3. **100 deploys/day** — each push to `master` triggers a deploy. Multi-session days can burn through this fast. If deploys stop triggering, this limit may be the cause.
 4. **6000 build min/month** — Next.js builds take ~1–2 min each. At 20+ deploys/day this adds up. No way to check remaining minutes via API.
 
+## Gotchas — Notification Dedup
+
+1. **Don't call `notifyResultConfirmed` from routes that delegate to `autoResolveEvent`** — `autoResolveEvent` already calls it internally. Adding a second call in the caller causes duplicate chat messages and double push notifications. The admin confirm-result route correctly calls `notifyResultConfirmed` because it does its own scoring and does NOT go through `autoResolveEvent`.
+
+2. **Batch reminder dedup keys must be stable across cron runs** — the notification cron batches incomplete events per user. If the dedup key is the first event's ID, completing that event between cron runs shifts the key and the dedup check passes, causing repeat notifications. Use a date-based tag (`deadline-YYYY-MM-DD`) so each user gets at most one reminder per day.
+
 ## Multi-Session Warning
 
 **NEVER run `npm run dev` or port-binding commands without explicit user confirmation.**

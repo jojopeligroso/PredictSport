@@ -125,6 +125,20 @@ async function logNotification(
   });
 }
 
+export async function alreadyNotifiedWithTag(
+  supabase: SupabaseServiceClient,
+  userId: string,
+  tag: string,
+): Promise<boolean> {
+  const { count } = await supabase
+    .from("push_notification_log")
+    .select("id", { count: "exact", head: true })
+    .eq("user_id", userId)
+    .eq("tag", tag);
+
+  return (count ?? 0) > 0;
+}
+
 async function alreadyNotifiedForEvent(
   supabase: SupabaseServiceClient,
   userId: string,
