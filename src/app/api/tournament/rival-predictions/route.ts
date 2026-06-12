@@ -151,7 +151,7 @@ async function handleEventPredictions(
   const revealTime = computeRevealTime(event.lock_time, event.pick_reveal_at);
 
   // Parallel: fetch predictions (RLS handles visibility) + members + group
-  const [predsResult, membersResult, groupMemberIds] = await Promise.all([
+  const [predsResult, membersResult, groupMemberships] = await Promise.all([
     supabase
       .from("predictions")
       .select(
@@ -162,7 +162,7 @@ async function handleEventPredictions(
       .from("competition_members")
       .select("user_id, users(display_name)")
       .eq("competition_id", competitionId),
-    getGroupMemberIds(supabase, competitionId, userId),
+    getAllGroupMemberships(supabase, competitionId, userId),
   ]);
 
   const predictions = predsResult.data ?? [];
@@ -225,8 +225,10 @@ async function handleEventPredictions(
       winnerCorrect: pred?.winnerCorrect ?? null,
       scoreCorrect: pred?.scoreCorrect ?? null,
       totalPoints: (pred?.winnerPoints ?? 0) + (pred?.scorePoints ?? 0),
-      isGroupMember: groupMemberIds.includes(m.user_id),
+      isGroupMember: groupMemberships.get(m.user_id)?.isUserGroup ?? false,
       isSelf: m.user_id === userId,
+      groupName: groupMemberships.get(m.user_id)?.groupName ?? null,
+      groupId: groupMemberships.get(m.user_id)?.groupId ?? null,
     };
   });
 
@@ -267,7 +269,10 @@ async function handleTeaser(
   userId: string,
 ) {
   // Get group member IDs first — if no group, nothing to show
-  const groupMemberIds = await getGroupMemberIds(supabase, competitionId, userId);
+  const allMemberships = await getAllGroupMemberships(supabase, competitionId, userId);
+  const groupMemberIds = [...allMemberships.entries()]
+    .filter(([, info]) => info.isUserGroup)
+    .map(([uid]) => uid);
   if (groupMemberIds.length === 0) {
     return NextResponse.json({ event: null, predictions: [] });
   }
@@ -383,13 +388,21 @@ async function handleTeaser(
   });
 }
 
-// ── Helper: get user's prediction group member IDs ──────────────────────────
+// ── Helper: get ALL group memberships for the competition ───────────────────
 
-async function getGroupMemberIds(
+interface GroupInfo {
+  groupId: string;
+  groupName: string;
+  isUserGroup: boolean;
+}
+
+async function getAllGroupMemberships(
   supabase: SupabaseClient,
   competitionId: string,
   userId: string,
-): Promise<string[]> {
+): Promise<Map<string, GroupInfo>> {
+  const result = new Map<string, GroupInfo>();
+
   const { data: formatClass } = await supabase
     .from("classifications")
     .select("id")
@@ -397,21 +410,36 @@ async function getGroupMemberIds(
     .eq("classification_key", "format")
     .maybeSingle();
 
-  if (!formatClass) return [];
+  if (!formatClass) return result;
 
-  const { data: myMembership } = await supabase
-    .from("format_group_memberships")
-    .select("group_id")
-    .eq("classification_id", formatClass.id)
-    .eq("user_id", userId)
-    .maybeSingle();
+  // Fetch all groups + all memberships in parallel
+  const [groupsResult, membershipsResult] = await Promise.all([
+    supabase
+      .from("format_prediction_groups")
+      .select("id, group_name")
+      .eq("classification_id", formatClass.id),
+    supabase
+      .from("format_group_memberships")
+      .select("user_id, group_id")
+      .eq("classification_id", formatClass.id),
+  ]);
 
-  if (!myMembership?.group_id) return [];
+  const groups = groupsResult.data ?? [];
+  const memberships = membershipsResult.data ?? [];
 
-  const { data: groupMembers } = await supabase
-    .from("format_group_memberships")
-    .select("user_id")
-    .eq("group_id", myMembership.group_id);
+  const groupNameById = new Map(groups.map((g) => [g.id, g.group_name]));
 
-  return (groupMembers ?? []).map((m) => m.user_id);
+  // Find the current user's group
+  const userMembership = memberships.find((m) => m.user_id === userId);
+  const userGroupId = userMembership?.group_id ?? null;
+
+  for (const m of memberships) {
+    result.set(m.user_id, {
+      groupId: m.group_id,
+      groupName: groupNameById.get(m.group_id) ?? "Unknown",
+      isUserGroup: m.group_id === userGroupId,
+    });
+  }
+
+  return result;
 }

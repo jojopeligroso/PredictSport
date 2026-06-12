@@ -35,6 +35,8 @@ interface RivalPrediction {
   totalPoints: number;
   isGroupMember: boolean;
   isSelf: boolean;
+  groupName: string | null;
+  groupId: string | null;
 }
 
 interface EventMeta {
@@ -133,10 +135,47 @@ export function RivalPredictionsTab({
 
   const sortedPredictions = useMemo(() => {
     if (sortMode === "points") return predictions;
-    const group = predictions.filter((r) => r.isGroupMember || r.isSelf);
-    const rest = predictions.filter((r) => !r.isGroupMember && !r.isSelf);
-    return [...group, ...rest];
+    // Flat list sorted: user's group first, then other groups alphabetically
+    const userGroupId = predictions.find((r) => r.isSelf)?.groupId;
+    const grouped = new Map<string, RivalPrediction[]>();
+    const ungrouped: RivalPrediction[] = [];
+    for (const r of predictions) {
+      if (!r.groupId) { ungrouped.push(r); continue; }
+      if (!grouped.has(r.groupId)) grouped.set(r.groupId, []);
+      grouped.get(r.groupId)!.push(r);
+    }
+    // Sort group keys: user's group first, rest alphabetically by name
+    const sortedKeys = [...grouped.keys()].sort((a, b) => {
+      if (a === userGroupId) return -1;
+      if (b === userGroupId) return 1;
+      const nameA = grouped.get(a)![0]?.groupName ?? "";
+      const nameB = grouped.get(b)![0]?.groupName ?? "";
+      return nameA.localeCompare(nameB);
+    });
+    const result: RivalPrediction[] = [];
+    for (const key of sortedKeys) result.push(...grouped.get(key)!);
+    result.push(...ungrouped);
+    return result;
   }, [predictions, sortMode]);
+
+  // Group headers for "group" sort mode — maps first row index of each group to its name
+  const groupHeaders = useMemo(() => {
+    if (sortMode !== "group") return new Map<number, string>();
+    const headers = new Map<number, string>();
+    let lastGroupId: string | null = null;
+    for (let i = 0; i < sortedPredictions.length; i++) {
+      const r = sortedPredictions[i];
+      if (r.groupId && r.groupId !== lastGroupId) {
+        const isUserGroup = r.isGroupMember || r.isSelf;
+        headers.set(i, isUserGroup ? `${r.groupName} (You)` : r.groupName!);
+        lastGroupId = r.groupId;
+      } else if (!r.groupId && lastGroupId !== "ungrouped") {
+        headers.set(i, "Ungrouped");
+        lastGroupId = "ungrouped";
+      }
+    }
+    return headers;
+  }, [sortMode, sortedPredictions]);
 
   const goPrev = useCallback(() => {
     setFixtureIdx((i) => Math.max(0, i - 1));
@@ -306,12 +345,20 @@ export function RivalPredictionsTab({
         ) : (
           <div>
             {sortedPredictions.map((row, i) => (
-              <PredictionRow
-                key={row.userId}
-                row={row}
-                rank={i + 1}
-                hasResult={hasResult}
-              />
+              <div key={row.userId}>
+                {groupHeaders.has(i) && (
+                  <div className="border-t border-ps-border/50 bg-ps-bg px-4 py-1.5">
+                    <span className="font-mono text-[10px] font-bold uppercase tracking-[0.12em] text-ps-text-ter">
+                      {groupHeaders.get(i)}
+                    </span>
+                  </div>
+                )}
+                <PredictionRow
+                  row={row}
+                  rank={i + 1}
+                  hasResult={hasResult}
+                />
+              </div>
             ))}
 
             {/* Scroll hint when list is long */}
