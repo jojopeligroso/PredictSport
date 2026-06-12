@@ -383,6 +383,10 @@ See `SPORTS-ARCHITECTURE.md` for detailed spec (TBD).
 - [ ] **H-P2.4 — Bracket comparison** — Compare your bracket vs friends, highlight differences.
 - [ ] **H-P2.5 — "What if" simulator** — Change one match result, see cascading bracket impact.
 
+**Multi-Instance UX:**
+- [ ] **MI.1 — Block auto-provision on invite code** — When a user joins via invite code and the target competition is full, don't silently redirect to a new instance. Show a message ("This competition is full") and offer to join another or create their own.
+- [ ] **MI.2 — Instance navigation UI** — Users in multiple WC instances have no way to switch between them. Add a competition switcher to the WC surface.
+
 ## Tournament Brackets (Future — Needs Design)
 
 > **Run `/grill-with-docs` before any implementation.** Critical design decisions: (1) predict-as-you-go vs. fill-your-bracket-upfront; (2) how to handle GAA backdoor/qualifier systems vs pure single elimination; (3) automatic winner advancement vs admin-triggered; (4) whether bracket is a `CompetitionType` or a setting on existing competitions.
