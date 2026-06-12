@@ -740,40 +740,40 @@ function FixtureCard({
 
         {/* ── Read-only teams + result (finished) ── */}
         {isFinished && (
-          <>
-            {result?.homeScore !== null && result?.awayScore !== null ? (
-              <h3 className={`flex flex-wrap items-center gap-1.5 ${large ? "text-lg" : "text-base"} font-bold text-white`}>
-                <CountryFlag shape="pill" name={fixture.home} size={flagSizeRo} />
-                <span>{fixture.home}</span>
-                <span className="mx-0.5 font-mono tabular-nums">{result.homeScore} – {result.awayScore}</span>
-                <CountryFlag shape="pill" name={fixture.away} size={flagSizeRo} />
-                <span>{fixture.away}</span>
-              </h3>
-            ) : (
-              <h3 className={`flex flex-wrap items-center gap-1.5 ${large ? "text-lg" : "text-base"} font-bold text-white`}>
-                <CountryFlag shape="pill" name={fixture.home} size={flagSizeRo} />
-                <span>{fixture.home}</span>
-                <span className="mx-0.5 text-white/70">v</span>
-                <CountryFlag shape="pill" name={fixture.away} size={flagSizeRo} />
-                <span>{fixture.away}</span>
-              </h3>
-            )}
-            <div className="mt-2 inline-flex items-center gap-2">
-              {!(result?.homeScore !== null && result?.awayScore !== null) && (
-                <span className={`rounded-md bg-white/15 px-2.5 py-1 font-mono ${large ? "text-base" : "text-sm"} font-bold tabular-nums`}>
-                  {result?.winner ?? "Result"}
-                </span>
-              )}
+          <div className="flex items-center justify-between gap-2">
+            {/* Home team — left */}
+            <div className="flex flex-1 min-w-0 items-center gap-1.5">
+              <CountryFlag shape="pill" name={fixture.home} size={flagSizeRo} />
+              <span className={`${large ? "text-sm" : "text-xs"} font-extrabold text-white truncate`}>
+                {fixture.home}
+              </span>
+            </div>
+
+            {/* Score + status — center */}
+            <div className="flex shrink-0 flex-col items-center gap-1">
+              <span className={`rounded-md bg-white/15 px-2.5 py-0.5 font-mono ${large ? "text-base" : "text-sm"} font-bold tabular-nums leading-none whitespace-nowrap`}>
+                {result?.homeScore !== null && result?.awayScore !== null
+                  ? `${result.homeScore} – ${result.awayScore}`
+                  : (result?.winner ?? "Result")}
+              </span>
               <span
                 className={[
-                  "rounded-full px-1.5 py-px text-[0.65rem] uppercase tracking-wide",
+                  "rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider leading-none",
                   result?.isFinalised ? "bg-emerald-500/90 text-white" : "bg-amber-500/90 text-white",
                 ].join(" ")}
               >
                 {result?.isFinalised ? t('fixtures.result_final') : t('fixtures.result_provisional')}
               </span>
             </div>
-          </>
+
+            {/* Away team — right */}
+            <div className="flex flex-1 min-w-0 items-center justify-end gap-1.5">
+              <span className={`${large ? "text-sm" : "text-xs"} font-extrabold text-white truncate text-right`}>
+                {fixture.away}
+              </span>
+              <CountryFlag shape="pill" name={fixture.away} size={flagSizeRo} />
+            </div>
+          </div>
         )}
 
         {/* ── Read-only teams (upcoming but locked / no prediction context) ── */}
