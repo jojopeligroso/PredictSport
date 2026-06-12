@@ -171,7 +171,7 @@ export function TabBar({ latestChatAt }: TabBarProps) {
               aria-label={t(tab.key)}
               aria-current={active ? "page" : undefined}
               className={[
-                "relative flex flex-1 flex-col items-center justify-center gap-[3px] transition-colors",
+                "relative flex flex-1 flex-col items-center justify-center gap-[3px] transition-all duration-100 active:scale-90 active:opacity-70",
                 active ? "text-ps-amber" : "text-ps-text-ter",
               ].join(" ")}
             >

@@ -123,7 +123,7 @@ export default async function WorldCupLayout({
     <div className="wc-theme min-h-screen bg-ps-bg">
       <div className="h-1 w-full" style={{ background: "#006847" }} />
       {/* WC Shell nav */}
-      <nav className="bg-ps-bg border-b border-ps-border" style={{ borderTop: "2px solid #006847" }}>
+      <nav className="bg-ps-bg border-b border-ps-border pb-0.5" style={{ borderTop: "2px solid #006847" }}>
         <div className="mx-auto flex h-12 w-full max-w-[480px] items-center justify-between px-4">
           <Link href="/wc" className="flex items-center gap-1.5">
             <BrandMark className="h-7 w-auto shrink-0" />
