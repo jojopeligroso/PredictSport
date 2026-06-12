@@ -274,7 +274,7 @@ function JoinCutoffBadge() {
               type="button"
               onClick={() => {
                 navigator.clipboard?.writeText(
-                  window.location.origin + "/wc/join",
+                  window.location.origin + "/wc",
                 );
                 setOpen(false);
               }}
