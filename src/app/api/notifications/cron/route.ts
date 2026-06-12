@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 import { notifyDeadline } from "@/lib/telegram/notify";
 import { revealPredictions } from "@/lib/telegram/predictions";
-import { sendPushToUser } from "@/lib/push/send";
+import { sendPushToUser, getUserReminderLead } from "@/lib/push/send";
 
 /**
  * GET /api/notifications/cron
@@ -51,10 +51,13 @@ export async function GET(request: Request) {
   const telegramGroupId = process.env.TELEGRAM_GROUP_CHAT_ID;
 
   const now = new Date();
-  const twoHoursFromNow = new Date(now.getTime() + 2 * 60 * 60 * 1000);
+  // 4-hour lookahead covers the longest user-configurable lead time (240min).
+  // Per-user filtering happens below so users with shorter leads skip events.
+  const maxLookaheadMs = 4 * 60 * 60 * 1000;
+  const lookaheadEnd = new Date(now.getTime() + maxLookaheadMs);
 
-  // Find events that lock within the next 2 hours, joined to their competition
-  // so we can filter out personal comps and pick the right destination URL.
+  // Find events that lock within the max lookahead window, joined to their
+  // competition so we can filter out personal comps and pick the right URL.
   const { data: rawEvents, error } = await supabase
     .from("events")
     .select(
@@ -62,7 +65,7 @@ export async function GET(request: Request) {
     )
     .eq("status", "upcoming")
     .gt("lock_time", now.toISOString())
-    .lte("lock_time", twoHoursFromNow.toISOString());
+    .lte("lock_time", lookaheadEnd.toISOString());
 
   if (error) {
     console.error("Cron: failed to fetch events:", error.message);
@@ -112,10 +115,15 @@ export async function GET(request: Request) {
   }
 
   // ── Web Push deadline reminders to competition members ─────────────
-  // Scoped to actual members of the locking event's competition so users
-  // never receive pings for competitions they can't access.
+  // Batched: each user gets at most ONE notification listing all events
+  // that fall within their configured reminder lead time. sendPushToUser
+  // handles quiet hours, daily cap, and per-event dedup internally.
   let pushSent = 0;
+  let pushThrottled = 0;
   const memberCache = new Map<string, string[]>();
+
+  // Build userId → [events] map: which events each user should hear about
+  const userEvents = new Map<string, EventRow[]>();
 
   for (const event of events) {
     let userIds = memberCache.get(event.competition_id);
@@ -127,30 +135,126 @@ export async function GET(request: Request) {
       userIds = (members ?? []).map((m) => m.user_id);
       memberCache.set(event.competition_id, userIds);
     }
+    for (const uid of userIds) {
+      const list = userEvents.get(uid) ?? [];
+      list.push(event);
+      userEvents.set(uid, list);
+    }
+  }
 
-    if (userIds.length === 0) continue;
+  // Fetch notification_prefs for all affected users in one query
+  const allUserIds = Array.from(userEvents.keys());
+  const userPrefsMap = new Map<string, Record<string, unknown> | null>();
+  if (allUserIds.length > 0) {
+    const { data: userRows } = await supabase
+      .from("users")
+      .select("id, notification_prefs")
+      .in("id", allUserIds);
+    for (const u of userRows ?? []) {
+      userPrefsMap.set(u.id, u.notification_prefs as Record<string, unknown> | null);
+    }
+  }
 
-    const lockTime = new Date(event.lock_time);
-    const leadTime = formatLeadTime(lockTime, now);
-    const isWc = event.competitions?.product_mode === WC_PRODUCT_MODE;
-    const url = isWc ? "/wc" : `/predictions/${event.id}`;
+  // ── Prediction completeness check ──────────────────────────────────
+  // Only remind users who haven't fully predicted the locking events.
+  // For each event, count the required prediction types vs what the user
+  // has submitted. Skip users who are fully done.
+  const allEventIds = events.map((e) => e.id);
 
-    for (const userId of userIds) {
-      try {
-        const result = await sendPushToUser(
-          userId,
-          {
-            title: "Predictions closing soon",
-            body: `${event.event_name} locks in ~${leadTime} — submit your picks!`,
-            url,
-            tag: `deadline-${event.id}`,
-          },
-          "prediction_reminders"
-        );
-        pushSent += result.sent;
-      } catch (err) {
-        console.error(`Push: failed for ${event.event_name}/${userId}:`, err);
-      }
+  // How many prediction types each event requires
+  const requiredCountByEvent = new Map<string, number>();
+  if (allEventIds.length > 0) {
+    const { data: eptRows } = await supabase
+      .from("event_prediction_types")
+      .select("event_id")
+      .in("event_id", allEventIds);
+    for (const row of eptRows ?? []) {
+      requiredCountByEvent.set(
+        row.event_id,
+        (requiredCountByEvent.get(row.event_id) ?? 0) + 1
+      );
+    }
+  }
+
+  // What each user has already predicted for these events
+  // Map of `userId:eventId` → count of submitted predictions
+  const submittedMap = new Map<string, number>();
+  if (allEventIds.length > 0 && allUserIds.length > 0) {
+    const { data: predRows } = await supabase
+      .from("predictions")
+      .select("user_id, event_id")
+      .in("event_id", allEventIds)
+      .in("user_id", allUserIds);
+    for (const row of predRows ?? []) {
+      const key = `${row.user_id}:${row.event_id}`;
+      submittedMap.set(key, (submittedMap.get(key) ?? 0) + 1);
+    }
+  }
+
+  // Send batched notification per user — only for events they haven't
+  // fully predicted
+  for (const [userId, allEvents] of userEvents) {
+    const prefs = userPrefsMap.get(userId) ?? null;
+    const leadMinutes = getUserReminderLead(prefs);
+
+    // Filter to events within this user's lead time
+    const cutoff = new Date(now.getTime() + leadMinutes * 60 * 1000);
+    const inWindow = allEvents.filter((e) => new Date(e.lock_time) <= cutoff);
+    if (inWindow.length === 0) continue;
+
+    // Only keep events where the user's predictions are incomplete
+    const incomplete = inWindow.filter((e) => {
+      const required = requiredCountByEvent.get(e.id) ?? 0;
+      if (required === 0) return false; // no prediction types configured
+      const submitted = submittedMap.get(`${userId}:${e.id}`) ?? 0;
+      return submitted < required;
+    });
+    if (incomplete.length === 0) continue;
+
+    // Pick the URL for the notification tap target
+    const firstWc = incomplete.find(
+      (e) => e.competitions?.product_mode === WC_PRODUCT_MODE
+    );
+    const url = firstWc ? "/wc" : `/predictions/${incomplete[0].id}`;
+
+    // Build message body
+    let body: string;
+    if (incomplete.length === 1) {
+      const lt = formatLeadTime(new Date(incomplete[0].lock_time), now);
+      body = `${incomplete[0].event_name} locks in ~${lt} — submit your picks!`;
+    } else {
+      const names = incomplete.slice(0, 3).map((e) => e.event_name);
+      const lt = formatLeadTime(new Date(incomplete[0].lock_time), now);
+      body =
+        incomplete.length <= 3
+          ? `${names.join(", ")} lock within ~${lt}`
+          : `${names.join(", ")} +${incomplete.length - 3} more lock soon`;
+    }
+
+    // Use the first event's ID as the dedup key — sendPushToUser checks
+    // per-event dedup so the same batch won't fire twice for the same
+    // earliest event.
+    const dedupEventId = incomplete[0].id;
+
+    try {
+      const result = await sendPushToUser(
+        userId,
+        {
+          title:
+            incomplete.length === 1
+              ? "Predictions closing soon"
+              : `${incomplete.length} matches closing soon`,
+          body,
+          url,
+          tag: `deadline-batch-${dedupEventId}`,
+        },
+        "prediction_reminders",
+        { eventId: dedupEventId }
+      );
+      pushSent += result.sent;
+      if (result.throttled) pushThrottled++;
+    } catch (err) {
+      console.error(`Push: failed for batch/${userId}:`, err);
     }
   }
 
@@ -182,6 +286,7 @@ export async function GET(request: Request) {
     checked_at: now.toISOString(),
     events_found: events.length,
     push_sent: pushSent,
+    push_throttled: pushThrottled,
     telegram_sent: telegramSent,
     predictions_revealed: revealed,
     telegram_configured: !!telegramGroupId,

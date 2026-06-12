@@ -60,10 +60,14 @@ const CATEGORIES: CategoryDef[] = [
 
 async function savePrefsToServer(prefs: Record<string, boolean>) {
   try {
+    const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
     await fetch("/api/profile", {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ notification_prefs: prefs }),
+      body: JSON.stringify({
+        notification_prefs: prefs,
+        ...(timezone ? { timezone } : {}),
+      }),
     });
   } catch {
     // Silent — prefs will use server defaults until next profile save

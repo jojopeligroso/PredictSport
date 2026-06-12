@@ -11,6 +11,7 @@ interface ProfileUpdateBody {
   avatar_url?: string | null;
   notification_prefs?: Record<string, unknown>;
   favourite_team?: { sport: string; team_name: string; provider_id: string | null } | null;
+  timezone?: string;
 }
 
 export async function PATCH(request: NextRequest) {
@@ -47,6 +48,8 @@ export async function PATCH(request: NextRequest) {
     update.notification_prefs = body.notification_prefs;
   if (body.favourite_team !== undefined)
     update.favourite_team = body.favourite_team;
+  if (body.timezone !== undefined)
+    update.timezone = body.timezone;
 
   // Cooldown check — runs only when a display_name change is requested
   if (body.display_name !== undefined) {
