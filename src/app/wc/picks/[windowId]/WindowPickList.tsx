@@ -335,13 +335,28 @@ function MatchPickRow({
   // latest tap is what gets persisted even if the earlier one was slow.
   const winnerAbortRef = useRef<AbortController | null>(null);
 
-  const currentWinner = winnerValue(winnerPred ?? undefined);
+  const rawWinner = winnerValue(winnerPred ?? undefined);
 
   const winnerOptions = useMemo<string[]>(() => {
     const opts = winnerEpt?.config?.options as string[] | undefined;
     if (opts && opts.length > 0) return opts;
     return away ? [home, "Draw", away] : [home];
   }, [winnerEpt, home, away]);
+
+  // Score is source of truth — if both predictions exist, derive the display
+  // winner from the score to prevent contradictory display (e.g. "Picked: Czechia"
+  // but "South Korea 2-0") caused by the lock-boundary race condition.
+  const currentWinner = useMemo(() => {
+    if (initialScore && rawWinner) {
+      const implied = deriveWinnerFromScore(
+        initialScore.prediction_data as Record<string, unknown>,
+        event.sport,
+        winnerOptions,
+      );
+      if (implied) return implied;
+    }
+    return rawWinner;
+  }, [initialScore, rawWinner, event.sport, winnerOptions]);
 
   // Find the draw option from winnerOptions.
   const drawOption = useMemo(
