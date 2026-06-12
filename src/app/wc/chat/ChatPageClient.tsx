@@ -29,7 +29,7 @@ export function ChatPageClient({
   }, [markSeen]);
 
   return (
-    <div className="mx-auto flex h-[calc(100dvh-3.5rem-52px-env(safe-area-inset-bottom))] max-w-[480px] flex-col">
+    <div className="mx-auto flex h-[calc(100dvh-3.5rem-56px-env(safe-area-inset-bottom))] max-w-[480px] flex-col">
       {/* Header */}
       <div className="flex items-center justify-between border-b border-ps-border px-4 py-3">
         <h1 className="text-sm font-bold text-ps-text">{competitionName}</h1>

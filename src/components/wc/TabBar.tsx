@@ -10,12 +10,12 @@ import { useUnreadChat } from "@/hooks/useUnreadChat";
 function IconHome() {
   return (
     <svg
-      width={22}
-      height={22}
+      width={24}
+      height={24}
       viewBox="0 0 24 24"
       fill="none"
       stroke="currentColor"
-      strokeWidth={1.5}
+      strokeWidth={1.75}
       strokeLinecap="round"
       strokeLinejoin="round"
       aria-hidden
@@ -29,12 +29,12 @@ function IconHome() {
 function IconCrosshair() {
   return (
     <svg
-      width={22}
-      height={22}
+      width={24}
+      height={24}
       viewBox="0 0 24 24"
       fill="none"
       stroke="currentColor"
-      strokeWidth={1.5}
+      strokeWidth={1.75}
       strokeLinecap="round"
       aria-hidden
     >
@@ -50,12 +50,12 @@ function IconCrosshair() {
 function IconTrophy() {
   return (
     <svg
-      width={22}
-      height={22}
+      width={24}
+      height={24}
       viewBox="0 0 24 24"
       fill="none"
       stroke="currentColor"
-      strokeWidth={1.5}
+      strokeWidth={1.75}
       strokeLinecap="round"
       strokeLinejoin="round"
       aria-hidden
@@ -72,12 +72,12 @@ function IconTrophy() {
 function IconChat() {
   return (
     <svg
-      width={22}
-      height={22}
+      width={24}
+      height={24}
       viewBox="0 0 24 24"
       fill="none"
       stroke="currentColor"
-      strokeWidth={1.5}
+      strokeWidth={1.75}
       strokeLinecap="round"
       strokeLinejoin="round"
       aria-hidden
@@ -161,7 +161,7 @@ export function TabBar({ latestChatAt }: TabBarProps) {
       }}
       className="border-t border-ps-border bg-ps-bg"
     >
-      <div className="mx-auto flex h-[52px] max-w-[480px] items-stretch">
+      <div className="mx-auto flex h-[56px] max-w-[480px] items-stretch">
         {tabs.map((tab) => {
           const active = tab.isActive(pathname);
           return (
@@ -171,10 +171,20 @@ export function TabBar({ latestChatAt }: TabBarProps) {
               aria-label={t(tab.key)}
               aria-current={active ? "page" : undefined}
               className={[
-                "relative flex flex-1 flex-col items-center justify-center gap-[3px] transition-all duration-100 active:scale-90 active:opacity-70",
+                "group relative flex flex-1 flex-col items-center justify-center gap-px transition-colors duration-150",
                 active ? "text-ps-amber" : "text-ps-text-ter",
               ].join(" ")}
             >
+              {/* Background pill — visible on active tab + press */}
+              <span
+                className={[
+                  "absolute inset-x-2 inset-y-1 rounded-xl transition-colors duration-150",
+                  active
+                    ? "bg-ps-amber/10"
+                    : "bg-transparent group-active:bg-ps-text/10",
+                ].join(" ")}
+                aria-hidden
+              />
               <span className="relative">
                 {tab.icon}
                 {!!tab.badge && tab.badge > 0 && (
@@ -184,16 +194,10 @@ export function TabBar({ latestChatAt }: TabBarProps) {
                 )}
               </span>
               <span
-                className="text-[10px] font-semibold uppercase tracking-wider leading-none"
+                className="relative text-[11px] font-semibold uppercase tracking-wider leading-none"
               >
                 {t(tab.key)}
               </span>
-              {active && (
-                <span
-                  aria-hidden
-                  className="absolute bottom-0 left-1/2 h-[4px] w-[4px] -translate-x-1/2 rounded-full bg-ps-amber"
-                />
-              )}
             </Link>
           );
         })}

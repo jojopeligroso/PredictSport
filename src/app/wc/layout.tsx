@@ -164,7 +164,7 @@ export default async function WorldCupLayout({
       </nav>
 
       {needsDisplayName && <DisplayNameModal suggestedName={suggestedName} />}
-      <div className="flex-1" style={{ paddingBottom: 'calc(52px + env(safe-area-inset-bottom, 0px) + 16px)' }}>{children}</div>
+      <div className="flex-1" style={{ paddingBottom: 'calc(56px + env(safe-area-inset-bottom, 0px) + 16px)' }}>{children}</div>
 
       {/* Footer brand mark — Section 21 */}
       <footer className="flex justify-center py-8">
