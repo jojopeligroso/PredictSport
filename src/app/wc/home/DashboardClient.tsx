@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useT } from "@/lib/i18n";
 import { computeDayStatus, formatLockCountdown } from "@/lib/wc/daily-lock";
 import { CHROME_PALETTE } from "@/app/wc/_landing/brand-palette";
@@ -280,6 +280,7 @@ export function DashboardClient({
                 {t('dash.continue_round')}
               </Link>
             </div>
+            <CheckResultButton events={filteredEvents} />
           </section>
         )}
       </OnboardingSection>
@@ -761,6 +762,79 @@ function TodayResultRow({ result }: { result: ResultRow }) {
         <div className="mt-1 pl-4.5">
           <span className="text-[11px] text-ps-text-ter">{t('dash.no_prediction')}</span>
         </div>
+      )}
+    </div>
+  );
+}
+
+/**
+ * "Check for results" button — appears when any displayed event is
+ * 2+ hours past start_time and not yet confirmed. Calls the user-triggered
+ * result check endpoint for each eligible event.
+ */
+function CheckResultButton({ events }: { events: WindowEvent[] }) {
+  const t = useT();
+  const router = useRouter();
+  const [checking, setChecking] = useState(false);
+  const [result, setResult] = useState<"idle" | "confirmed" | "not_ready">("idle");
+
+  const TWO_HOURS = 2 * 60 * 60 * 1000;
+  const eligibleEvents = events.filter((e) => {
+    const startMs = new Date(e.start_time).getTime();
+    return !e.result_confirmed && Date.now() - startMs >= TWO_HOURS;
+  });
+
+  if (eligibleEvents.length === 0) return null;
+
+  async function handleCheck() {
+    setChecking(true);
+    setResult("idle");
+    let anyConfirmed = false;
+
+    for (const event of eligibleEvents) {
+      try {
+        const res = await fetch("/api/results/check", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ event_id: event.id }),
+        });
+        const data = await res.json();
+        if (data.status === "confirmed" || data.status === "already_confirmed") {
+          anyConfirmed = true;
+        }
+      } catch {
+        // swallow — best effort
+      }
+    }
+
+    setChecking(false);
+    setResult(anyConfirmed ? "confirmed" : "not_ready");
+
+    if (anyConfirmed) {
+      // Refresh the page to show updated results
+      setTimeout(() => router.refresh(), 500);
+    }
+  }
+
+  return (
+    <div className="mt-3 text-center">
+      {result === "confirmed" ? (
+        <span className="text-xs font-semibold text-ps-green">
+          {t("dash.result_found")}
+        </span>
+      ) : result === "not_ready" ? (
+        <span className="text-xs text-ps-text-ter">
+          {t("dash.result_not_ready")}
+        </span>
+      ) : (
+        <button
+          type="button"
+          onClick={handleCheck}
+          disabled={checking}
+          className="text-xs font-semibold text-ps-amber hover:opacity-80 disabled:opacity-50"
+        >
+          {checking ? t("dash.checking_result") : t("dash.check_result")}
+        </button>
       )}
     </div>
   );

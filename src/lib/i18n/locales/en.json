@@ -612,5 +612,9 @@
   "chat.member_count": "{count} members",
   "chat.new_message": "New message in chat",
   "chat.something_to_say": "Have something to say?",
-  "dash.chat_preview": "Latest in chat"
+  "dash.chat_preview": "Latest in chat",
+  "dash.check_result": "Check for result",
+  "dash.checking_result": "Checking...",
+  "dash.result_found": "Result confirmed!",
+  "dash.result_not_ready": "Result not available yet"
 }
