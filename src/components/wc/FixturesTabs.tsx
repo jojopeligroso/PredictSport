@@ -230,8 +230,8 @@ export function FixturesTabs({ fixtures, resultsByExternalId, serverDateIso, pre
             className={[
               "w-full rounded-lg px-3.5 py-2.5 text-xs font-semibold transition-colors",
               showConcluded
-                ? "bg-ps-text text-ps-bg dark:bg-ps-bg dark:text-ps-text dark:border dark:border-ps-border"
-                : "bg-ps-text text-ps-bg dark:bg-ps-bg dark:text-ps-text dark:border dark:border-ps-border",
+                ? "bg-ps-text text-ps-bg dark:bg-ps-bg dark:text-ps-text"
+                : "border border-ps-border bg-ps-surface text-ps-text-sec",
             ].join(" ")}
           >
             {showConcluded ? t('fixtures.hide_concluded') : t('fixtures.show_concluded')}
@@ -578,7 +578,7 @@ function FixtureCard({
 
   // Size tokens — default vs large
   const flagSize = large ? 36 : 24;
-  const flagSizeRo = large ? 26 : 20;
+  const flagSizeRo = large ? 26 : 18;
   const teamText = large ? "text-sm" : "text-xs";
   const scoreSize = large ? "w-[40px] h-[38px] text-lg" : "w-[30px] h-[28px] text-sm";
   const drawSize = large ? "px-3.5 py-2 text-sm" : "px-2.5 py-1.5 text-xs";
@@ -740,18 +740,18 @@ function FixtureCard({
 
         {/* ── Read-only teams + result (finished) ── */}
         {isFinished && (
-          <div className="flex items-center justify-between gap-2">
+          <div className="flex items-center justify-between gap-3">
             {/* Home team — left */}
             <div className="flex flex-1 min-w-0 items-center gap-1.5">
               <CountryFlag shape="pill" name={fixture.home} size={flagSizeRo} />
-              <span className={`${large ? "text-sm" : "text-xs"} font-extrabold text-white truncate`}>
+              <span className={`${large ? "text-sm" : "text-xs"} font-semibold text-white/90 truncate`}>
                 {fixture.home}
               </span>
             </div>
 
             {/* Score + status — center */}
-            <div className="flex shrink-0 flex-col items-center gap-1">
-              <span className={`rounded-md bg-white/15 px-2.5 py-0.5 font-mono ${large ? "text-base" : "text-sm"} font-bold tabular-nums leading-none whitespace-nowrap`}>
+            <div className="flex shrink-0 flex-col items-center gap-1.5">
+              <span className={`rounded-lg bg-white/22 px-3 py-1 font-mono ${large ? "text-xl" : "text-base"} font-extrabold tabular-nums leading-none whitespace-nowrap`}>
                 {result?.homeScore !== null && result?.awayScore !== null
                   ? `${result.homeScore} – ${result.awayScore}`
                   : (result?.winner ?? "Result")}
@@ -759,7 +759,7 @@ function FixtureCard({
               <span
                 className={[
                   "rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider leading-none",
-                  result?.isFinalised ? "bg-emerald-500/90 text-white" : "bg-amber-500/90 text-white",
+                  result?.isFinalised ? "bg-ps-green/80 text-white" : "bg-white/20 text-white border border-white/30",
                 ].join(" ")}
               >
                 {result?.isFinalised ? t('fixtures.result_final') : t('fixtures.result_provisional')}
@@ -768,7 +768,7 @@ function FixtureCard({
 
             {/* Away team — right */}
             <div className="flex flex-1 min-w-0 items-center justify-end gap-1.5">
-              <span className={`${large ? "text-sm" : "text-xs"} font-extrabold text-white truncate text-right`}>
+              <span className={`${large ? "text-sm" : "text-xs"} font-semibold text-white/90 truncate`}>
                 {fixture.away}
               </span>
               <CountryFlag shape="pill" name={fixture.away} size={flagSizeRo} />
