@@ -72,6 +72,12 @@ export function Md1PicksLanding(props: Md1PicksLandingProps) {
     window.history.replaceState(null, "", qs ? `/wc?${qs}` : "/wc");
   };
 
+  // Filter out concluded events — they belong on the Results tab, not here.
+  const activeEvents = useMemo(
+    () => props.events.filter((e) => e.status !== "resulted"),
+    [props.events],
+  );
+
   // The picks UI is only interactive for members. Anon + non-member visitors
   // see the surface in read-only/blurred mode with a tap-to-join overlay.
   const previewMode = !props.isMember;
@@ -105,33 +111,33 @@ export function Md1PicksLanding(props: Md1PicksLandingProps) {
   // Build day buckets. One per UTC calendar date that has at least one MD1
   // fixture. We derive labels via Intl in UTC to match the seed data.
   const dayBuckets = useMemo<DayBucket[]>(
-    () => buildDayBuckets(props.events, props.predictions, locale),
-    [props.events, props.predictions, locale],
+    () => buildDayBuckets(activeEvents, props.predictions, locale),
+    [activeEvents, props.predictions, locale],
   );
 
   // Overall progress — every match needs BOTH winner + exact_score saved to
   // count as "done", matching the day-pill ✓ accent rule.
   const { picked, total } = useMemo(
-    () => countFullyPicked(props.events, props.predictions),
-    [props.events, props.predictions],
+    () => countFullyPicked(activeEvents, props.predictions),
+    [activeEvents, props.predictions],
   );
 
   // Earliest lock time for the countdown on the join card.
   const firstLockTime = useMemo(() => {
-    if (props.events.length === 0) return null;
-    return props.events.reduce((min, e) =>
+    if (activeEvents.length === 0) return null;
+    return activeEvents.reduce((min, e) =>
       e.lock_time < min ? e.lock_time : min,
-    props.events[0].lock_time);
-  }, [props.events]);
+    activeEvents[0].lock_time);
+  }, [activeEvents]);
 
   // Bucket events for the chosen view. The card surface picks logic key is
   // `event.id`, so re-bucketing parents does not unmount rows — optimistic
   // pick state survives the toggle.
   const sections = useMemo(() => {
     if (view === "group")
-      return bucketByGroup(props.events, props.fixtureByEventId, props.predictions, now, locale);
-    return bucketByDate(props.events, props.predictions, now, locale);
-  }, [view, props.events, props.fixtureByEventId, props.predictions, now, locale]);
+      return bucketByGroup(activeEvents, props.fixtureByEventId, props.predictions, now, locale);
+    return bucketByDate(activeEvents, props.predictions, now, locale);
+  }, [view, activeEvents, props.fixtureByEventId, props.predictions, now, locale]);
 
   return (
     <div className="pb-16">
@@ -199,7 +205,7 @@ export function Md1PicksLanding(props: Md1PicksLandingProps) {
       {/* Prediction urgency banner — members only */}
       {!previewMode && (
         <div className="mx-auto mt-2 max-w-[480px] px-4">
-          <PredictionBanner events={props.events} predictions={props.predictions} />
+          <PredictionBanner events={activeEvents} predictions={props.predictions} />
         </div>
       )}
 

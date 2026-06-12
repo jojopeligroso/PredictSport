@@ -105,6 +105,8 @@
   "fixtures.show_correct_wrong": "Show correct / wrong",
   "fixtures.on": "On",
   "fixtures.off": "Off",
+  "fixtures.show_concluded": "Show concluded",
+  "fixtures.hide_concluded": "Hide concluded",
   "fixtures.no_fixtures": "No fixtures scheduled.",
   "fixtures.no_results": "No results yet.",
   "fixtures.no_today": "No matches today.",

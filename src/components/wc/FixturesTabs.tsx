@@ -90,6 +90,7 @@ export function FixturesTabs({ fixtures, resultsByExternalId, serverDateIso, pre
   );
 
   const [expandedExternalId, setExpandedExternalId] = useState<string | null>(null);
+  const [showConcluded, setShowConcluded] = useState(false);
   const canExpandToPick = mode === "fixtures" && isMember === true && !!windowEventsByExternalId && !!competitionId;
 
   // Smart default: on first client render, pick best non-empty tab
@@ -137,13 +138,20 @@ export function FixturesTabs({ fixtures, resultsByExternalId, serverDateIso, pre
   const active = useMemo(() => {
     if (mode === "fixtures") {
       // All fixtures in chronological order — the tournament schedule
-      return [...fixtures].sort((a, b) => a.kickoffUtc.localeCompare(b.kickoffUtc));
+      const sorted = [...fixtures].sort((a, b) => a.kickoffUtc.localeCompare(b.kickoffUtc));
+      if (!showConcluded) {
+        return sorted.filter((f) => {
+          const r = resultsByExternalId[f.externalId];
+          return !(r && (r.homeScore !== null || r.winner !== null));
+        });
+      }
+      return sorted;
     }
     if (mode === "results") {
       return buckets.results;
     }
     return buckets[tab];
-  }, [mode, fixtures, buckets, tab]);
+  }, [mode, fixtures, buckets, tab, showConcluded, resultsByExternalId]);
 
   // Group fixtures by date for "fixtures" mode
   const dateGroups = useMemo(() => {
@@ -211,6 +219,23 @@ export function FixturesTabs({ fixtures, resultsByExternalId, serverDateIso, pre
               />
             </div>
           )}
+        </div>
+      )}
+
+      {mode === "fixtures" && (
+        <div className="mt-3">
+          <button
+            type="button"
+            onClick={() => setShowConcluded((v) => !v)}
+            className={[
+              "w-full rounded-lg px-3.5 py-2.5 text-xs font-semibold transition-colors",
+              showConcluded
+                ? "bg-ps-text text-ps-bg dark:bg-ps-bg dark:text-ps-text dark:border dark:border-ps-border"
+                : "bg-ps-text text-ps-bg dark:bg-ps-bg dark:text-ps-text dark:border dark:border-ps-border",
+            ].join(" ")}
+          >
+            {showConcluded ? t('fixtures.hide_concluded') : t('fixtures.show_concluded')}
+          </button>
         </div>
       )}
 
@@ -716,17 +741,29 @@ function FixtureCard({
         {/* ── Read-only teams + result (finished) ── */}
         {isFinished && (
           <>
-            <h3 className={`flex flex-wrap items-center gap-1.5 ${large ? "text-lg" : "text-base"} font-bold text-white`}>
-              <CountryFlag shape="pill" name={fixture.home} size={flagSizeRo} />
-              <span>{fixture.home}</span>
-              <span className="mx-0.5 text-white/70">v</span>
-              <CountryFlag shape="pill" name={fixture.away} size={flagSizeRo} />
-              <span>{fixture.away}</span>
-            </h3>
-            <div className={`mt-2 inline-flex items-center gap-2 rounded-md bg-white/15 px-2.5 py-1 font-mono ${large ? "text-base" : "text-sm"} font-bold tabular-nums`}>
-              {result?.homeScore !== null && result?.awayScore !== null
-                ? `${result?.homeScore} – ${result?.awayScore}`
-                : (result?.winner ?? "Result")}
+            {result?.homeScore !== null && result?.awayScore !== null ? (
+              <h3 className={`flex flex-wrap items-center gap-1.5 ${large ? "text-lg" : "text-base"} font-bold text-white`}>
+                <CountryFlag shape="pill" name={fixture.home} size={flagSizeRo} />
+                <span>{fixture.home}</span>
+                <span className="mx-0.5 font-mono tabular-nums">{result.homeScore} – {result.awayScore}</span>
+                <CountryFlag shape="pill" name={fixture.away} size={flagSizeRo} />
+                <span>{fixture.away}</span>
+              </h3>
+            ) : (
+              <h3 className={`flex flex-wrap items-center gap-1.5 ${large ? "text-lg" : "text-base"} font-bold text-white`}>
+                <CountryFlag shape="pill" name={fixture.home} size={flagSizeRo} />
+                <span>{fixture.home}</span>
+                <span className="mx-0.5 text-white/70">v</span>
+                <CountryFlag shape="pill" name={fixture.away} size={flagSizeRo} />
+                <span>{fixture.away}</span>
+              </h3>
+            )}
+            <div className="mt-2 inline-flex items-center gap-2">
+              {!(result?.homeScore !== null && result?.awayScore !== null) && (
+                <span className={`rounded-md bg-white/15 px-2.5 py-1 font-mono ${large ? "text-base" : "text-sm"} font-bold tabular-nums`}>
+                  {result?.winner ?? "Result"}
+                </span>
+              )}
               <span
                 className={[
                   "rounded-full px-1.5 py-px text-[0.65rem] uppercase tracking-wide",

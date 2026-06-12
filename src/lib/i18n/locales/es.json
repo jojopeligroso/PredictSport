@@ -105,6 +105,8 @@
   "fixtures.show_correct_wrong": "Mostrar aciertos / errores",
   "fixtures.on": "Activado",
   "fixtures.off": "Desactivado",
+  "fixtures.show_concluded": "Mostrar concluidos",
+  "fixtures.hide_concluded": "Ocultar concluidos",
   "fixtures.no_fixtures": "No hay partidos programados",
   "fixtures.no_results": "Sin resultados aún",
   "fixtures.no_today": "No hay partidos hoy.",
