@@ -341,7 +341,7 @@ function Sections({
             predictions.some((p) => p.event_id === e.id),
           ).length;
           return (
-            <section key={s.domId} id={s.domId} className="mt-5 scroll-mt-20">
+            <section key={s.domId} id={s.domId} className="mt-2 scroll-mt-20">
               <button
                 onClick={() =>
                   setExpandedCompleted((prev) => new Set(prev).add(s.domId))
