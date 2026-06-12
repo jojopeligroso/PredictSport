@@ -21,9 +21,8 @@ import {
 import type { WindowEvent } from "@/app/wc/picks/[windowId]/WindowPickList";
 import type { WcFixture } from "@/lib/wc/fixtures";
 import type { Prediction } from "@/types/database";
-import type { ResultRow } from "./fetchDashboardData";
+import type { ResultRow, LastChatMessage } from "./fetchDashboardData";
 import type { TeamWithStats } from "@/lib/tournament/bracket/types";
-import { ChatWidget } from "@/components/chat";
 import { PredictionBanner } from "@/components/wc/PredictionBanner";
 import { RivalTeaser } from "@/components/wc/RivalTeaser";
 import { CommunityPicksCard } from "@/components/wc/CommunityPicksCard";
@@ -53,6 +52,7 @@ interface DashboardClientProps {
   chatEnabled: boolean;
   isCompetitionAdmin: boolean;
   memberRole: string;
+  lastChatMessage: LastChatMessage | null;
 }
 
 type PickStatus = "complete" | "urgent" | "unpicked" | "in_progress";
@@ -127,6 +127,7 @@ export function DashboardClient({
   chatEnabled,
   isCompetitionAdmin,
   memberRole,
+  lastChatMessage,
 }: DashboardClientProps) {
   const t = useT();
   const router = useRouter();
@@ -158,19 +159,6 @@ export function DashboardClient({
       if (interval) clearInterval(interval);
     };
   }, [refreshData, nextEvents]);
-
-  const [chatCollapsed, setChatCollapsed] = useState(() => {
-    if (typeof window === "undefined") return false;
-    try { return localStorage.getItem(`chat-collapsed-${competitionId}`) === "1"; } catch { return false; }
-  });
-
-  const toggleChatCollapsed = () => {
-    setChatCollapsed((prev) => {
-      const next = !prev;
-      try { localStorage.setItem(`chat-collapsed-${competitionId}`, next ? "1" : "0"); } catch { /* ignore */ }
-      return next;
-    });
-  };
 
   // Filter events by selected date pill
   // No pill selected → original capped nextEvents (unchanged deploy behavior)
@@ -398,48 +386,43 @@ export function DashboardClient({
         )}
       </OnboardingSection>
 
-      {/* ── 5c. Mini Chat (above leaderboard) ─────────────────────── */}
-      {chatEnabled && isMember && currentUserId && (
+      {/* ── 5c. Chat notification card ──────────────────────────── */}
+      {chatEnabled && isMember && lastChatMessage && (
         <OnboardingSection id="other">
-          <section className="ps-panel mt-2">
-            <div className="rounded-xl border border-ps-border bg-ps-surface overflow-hidden">
-            {/* Single header: Chat label + full chat link + collapse chevron */}
-            <div className={`flex items-center justify-between px-4 py-3${chatCollapsed ? "" : " border-b border-ps-border"}`}>
-              <span className="text-sm font-bold text-ps-text">{t('dash.chat')}</span>
-              <div className="flex items-center gap-3">
-                <a
-                  href="/wc/leaderboard#chat"
-                  className="text-xs font-semibold text-ps-amber hover:opacity-80"
-                  onClick={(e) => e.stopPropagation()}
-                >
-                  {t('dash.open_full_chat')} →
-                </a>
-                <button
-                  onClick={toggleChatCollapsed}
-                  className="-mr-1 flex h-8 w-8 items-center justify-center rounded-lg text-ps-text-sec transition-colors hover:bg-ps-bg-alt hover:text-ps-text"
-                  aria-label={chatCollapsed ? t('dash.expand_chat') : t('dash.collapse_chat')}
-                >
-                  <svg
-                    className={`h-4 w-4 transition-transform duration-200 ${chatCollapsed ? "" : "rotate-180"}`}
-                    fill="none"
-                    viewBox="0 0 24 24"
-                    stroke="currentColor"
-                  >
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                  </svg>
-                </button>
+          <section className="mt-2">
+            <Link
+              href="/wc/chat"
+              className="flex items-center gap-3 rounded-xl border border-ps-border bg-ps-surface px-4 py-3 transition-colors hover:bg-ps-chip"
+            >
+              {/* Avatar */}
+              {lastChatMessage.senderAvatar ? (
+                <img
+                  src={lastChatMessage.senderAvatar}
+                  alt=""
+                  className="h-8 w-8 shrink-0 rounded-full"
+                  referrerPolicy="no-referrer"
+                />
+              ) : (
+                <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-ps-chip text-xs font-bold text-ps-text-sec">
+                  {lastChatMessage.senderName.charAt(0).toUpperCase()}
+                </div>
+              )}
+              {/* Message preview */}
+              <div className="min-w-0 flex-1">
+                <span className="text-xs font-semibold text-ps-text">
+                  {lastChatMessage.senderName}
+                </span>
+                <p className="truncate text-xs text-ps-text-sec">
+                  {lastChatMessage.content.length > 60
+                    ? lastChatMessage.content.slice(0, 57) + "..."
+                    : lastChatMessage.content}
+                </p>
               </div>
-            </div>
-            {/* Collapsible body */}
-            {!chatCollapsed && (
-              <ChatWidget
-                competitionId={competitionId}
-                currentUserId={currentUserId}
-                currentUserRole={memberRole}
-                mode="mini"
-              />
-            )}
-            </div>
+              {/* Arrow */}
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="shrink-0 text-ps-text-ter">
+                <path d="M9 18l6-6-6-6" />
+              </svg>
+            </Link>
           </section>
         </OnboardingSection>
       )}

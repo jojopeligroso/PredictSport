@@ -38,7 +38,7 @@ The active product is the `/wc` surface. All real users interact here. Generic r
 | Home | House | `/wc/home` | path starts with `/wc/home` |
 | Picks | Crosshair | `/wc` | path is `/wc` or starts with `/wc/picks` |
 | Board | Trophy | `/wc/leaderboard` | path starts with `/wc/leaderboard` |
-| Chat | Speech bubble | `/wc/leaderboard#chat` | never (hardcoded `false` — no dedicated route yet) |
+| Chat | Speech bubble | `/wc/chat` | path starts with `/wc/chat` |
 
 Rendered in `wc/layout.tsx:160` as `{engaged && <TabBar />}` — visible to all authenticated competition members across every `/wc` page. Fixed position, 52px height + safe-area-inset-bottom, z-40.
 

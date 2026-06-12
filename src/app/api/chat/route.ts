@@ -267,7 +267,7 @@ export async function POST(request: Request) {
         {
           title: `${senderName} mentioned you`,
           body: preview,
-          url: `/wc/leaderboard`,
+          url: `/wc/chat`,
           tag: `chat-mention-${message!.id}`,
         },
         "chat_mentions"

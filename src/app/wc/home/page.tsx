@@ -75,6 +75,7 @@ export default async function WcHomePage({
       chatEnabled={data.chatEnabled}
       isCompetitionAdmin={data.isCompetitionAdmin}
       memberRole={data.memberRole}
+      lastChatMessage={data.lastChatMessage}
       onboarding={onboarding}
     />
   );

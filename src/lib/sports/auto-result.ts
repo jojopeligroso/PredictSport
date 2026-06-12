@@ -5,6 +5,7 @@ import { getTimingForSport } from "./timing";
 import { scorePrediction } from "@/lib/scoring";
 import type { PredictionType, EventPredictionType } from "@/types/database";
 import type { Sport } from "./types";
+import { notifyResultConfirmed } from "@/lib/notifications/result-confirmed";
 
 // ---------------------------------------------------------------------------
 // Types
@@ -355,6 +356,14 @@ export async function autoResolveEvent(
         })
         .eq("id", prediction.id);
     }
+
+    // Notify all members (chat message + push) — fire-and-forget
+    notifyResultConfirmed(
+      event.id,
+      event.competition_id,
+      event.event_name,
+      finalResultData,
+    ).catch(() => {});
 
     return {
       ...base,

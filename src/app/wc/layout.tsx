@@ -87,6 +87,21 @@ export default async function WorldCupLayout({
     isWcAdmin = profile?.is_super_admin === true;
   }
 
+  // Latest non-join chat message (for unread badge on TabBar + MobileNav)
+  let latestChatAt: string | null = null;
+  if (authUser && wcComp?.id) {
+    const { data: latestMsg } = await supabase
+      .from("chat_messages")
+      .select("created_at")
+      .eq("competition_id", wcComp.id)
+      .neq("message_type", "system_join")
+      .is("deleted_at", null)
+      .order("created_at", { ascending: false })
+      .limit(1)
+      .maybeSingle();
+    latestChatAt = latestMsg?.created_at ?? null;
+  }
+
   const t = await getServerT();
 
   const bracketStarted =
@@ -140,6 +155,7 @@ export default async function WorldCupLayout({
                 { href: "/wc/bracket", label: "Bracket prediction" },
                 ...(isWcAdmin ? [{ href: "/wc/admin", label: "Admin" }] : []),
               ]}
+              latestChatAt={latestChatAt}
             />
           </div>
         </div>
@@ -157,7 +173,7 @@ export default async function WorldCupLayout({
         </Link>
       </footer>
 
-      {engaged && <TabBar />}
+      {engaged && <TabBar latestChatAt={latestChatAt} />}
     </div>
   );
 }

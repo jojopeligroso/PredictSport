@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useT } from "@/lib/i18n";
+import { useUnreadChat } from "@/hooks/useUnreadChat";
 
 /* ── Icons ──────────────────────────────────────────────────────────── */
 
@@ -93,9 +94,15 @@ type TabDef = {
   href: string;
   icon: React.ReactNode;
   isActive: (pathname: string) => boolean;
+  badge?: number;
 };
 
 /* ── Component ──────────────────────────────────────────────────────── */
+
+interface TabBarProps {
+  /** ISO timestamp of the latest chat message (for unread badge). */
+  latestChatAt?: string | null;
+}
 
 /**
  * Fixed bottom tab bar for the /wc section.
@@ -103,11 +110,12 @@ type TabDef = {
  * Usage:
  *   import { TabBar } from "@/components/wc/TabBar";
  *   // Place inside the /wc layout, outside any scrolling container
- *   <TabBar />
+ *   <TabBar latestChatAt={latestChatAt} />
  */
-export function TabBar() {
+export function TabBar({ latestChatAt }: TabBarProps) {
   const pathname = usePathname();
   const t = useT();
+  const { unreadCount } = useUnreadChat(latestChatAt);
 
   const tabs: TabDef[] = [
     {
@@ -130,10 +138,10 @@ export function TabBar() {
     },
     {
       key: "tab.chat",
-      href: "/wc/leaderboard#chat",
+      href: "/wc/chat",
       icon: <IconChat />,
-      // Chat navigates to a hash anchor — never auto-active via pathname
-      isActive: () => false,
+      isActive: (p) => p.startsWith("/wc/chat"),
+      badge: unreadCount,
     },
   ];
 
@@ -164,7 +172,14 @@ export function TabBar() {
                 active ? "text-ps-amber" : "text-ps-text-ter",
               ].join(" ")}
             >
-              {tab.icon}
+              <span className="relative">
+                {tab.icon}
+                {!!tab.badge && tab.badge > 0 && (
+                  <span className="absolute -right-2 -top-1 flex h-3.5 min-w-[14px] items-center justify-center rounded-full bg-ps-amber px-0.5 text-[9px] font-bold leading-none text-white">
+                    {tab.badge > 9 ? "9+" : tab.badge}
+                  </span>
+                )}
+              </span>
               <span
                 className="text-[9px] font-semibold uppercase tracking-wider leading-none"
               >

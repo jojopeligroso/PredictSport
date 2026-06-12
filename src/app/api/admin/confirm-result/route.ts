@@ -4,6 +4,7 @@ import { verifyCompetitionAdmin } from "@/lib/admin";
 import { scorePrediction } from "@/lib/scoring";
 import { requireDisplayName } from "@/lib/require-display-name";
 import type { PredictionType, EventPredictionType } from "@/types/database";
+import { notifyResultConfirmed } from "@/lib/notifications/result-confirmed";
 
 interface ConfirmResultBody {
   event_id: string;
@@ -174,6 +175,14 @@ export async function POST(request: Request) {
       scored++;
     }
   }
+
+  // Notify competition members (chat + push — fire-and-forget)
+  notifyResultConfirmed(
+    body.event_id,
+    competitionId,
+    event.event_name as string,
+    resultData as Record<string, unknown>,
+  ).catch(() => {});
 
   // Notify Telegram group (fire-and-forget — don't block the response)
   const telegramGroupId = process.env.TELEGRAM_GROUP_CHAT_ID;

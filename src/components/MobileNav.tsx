@@ -5,6 +5,7 @@ import Link from "next/link";
 import { LogoutButton } from "./LogoutButton";
 import { useTheme } from "./ThemeProvider";
 import { useT } from "@/lib/i18n";
+import { useUnreadChat } from "@/hooks/useUnreadChat";
 
 interface MobileNavLink {
   href: string;
@@ -26,21 +27,13 @@ export function MobileNav({ isLoggedIn, displayName, avatarUrl, isAdmin, extraLi
   const menuRef = useRef<HTMLDivElement>(null);
   const { theme, cycleTheme } = useTheme();
   const t = useT();
+  const { hasUnread, markSeen } = useUnreadChat(latestChatAt);
 
   const themeLabel = {
     light: t("onboarding.theme_light"),
     dark: t("onboarding.theme_dark"),
     system: t("onboarding.theme_system"),
   }[theme];
-
-  // Unread badge: compare latest chat message with localStorage last-seen
-  const [hasUnread, setHasUnread] = useState(() => {
-    if (typeof window === "undefined" || !latestChatAt) return false;
-    try {
-      const lastSeen = localStorage.getItem("chat-last-seen");
-      return !lastSeen || new Date(latestChatAt) > new Date(lastSeen);
-    } catch { return false; }
-  });
 
   // Close on outside tap
   useEffect(() => {
@@ -136,16 +129,20 @@ export function MobileNav({ isLoggedIn, displayName, avatarUrl, isAdmin, extraLi
                   </Link>
                   <Link
                     href="/wc/leaderboard"
+                    onClick={() => setIsOpen(false)}
+                    className="block rounded-md px-3 py-2 text-sm font-medium text-ps-text-sec transition-colors hover:bg-ps-chip hover:text-ps-text"
+                  >
+                    {t("nav.leaderboard")}
+                  </Link>
+                  <Link
+                    href="/wc/chat"
                     onClick={() => {
                       setIsOpen(false);
-                      setHasUnread(false);
-                      try {
-                        localStorage.setItem("chat-last-seen", new Date().toISOString());
-                      } catch { /* ignore */ }
+                      markSeen();
                     }}
                     className="flex items-center gap-1.5 rounded-md px-3 py-2 text-sm font-medium text-ps-text-sec transition-colors hover:bg-ps-chip hover:text-ps-text"
                   >
-                    {t("nav.leaderboard")}
+                    {t("dash.chat")}
                     {hasUnread && (
                       <span className="h-2 w-2 rounded-full bg-ps-amber" aria-label="New chat messages" />
                     )}

@@ -3,7 +3,6 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { ClassificationTabs } from "@/components/tournament/ClassificationTabs";
 import { InviteCodeBanner } from "@/components/InviteCodeBanner";
-import { LeaderboardChat } from "./LeaderboardChat";
 import { getServerT } from "@/lib/i18n/server";
 
 export const dynamic = "force-dynamic";
@@ -101,19 +100,6 @@ export default async function LeaderboardPage() {
           currentDisplayName={profile?.display_name || t('common.you')}
         />
       </div>
-
-      {/* Full chat widget */}
-      {competition.chat_enabled && membership && (
-        <div className="mt-4">
-          <div className="rounded-xl border border-ps-border bg-ps-surface overflow-hidden">
-            <LeaderboardChat
-              competitionId={competition.id}
-              currentUserId={user.id}
-              currentUserRole={membership?.role ?? "participant"}
-            />
-          </div>
-        </div>
-      )}
 
       {/* Invite code banner — below table */}
       {showInvite && (

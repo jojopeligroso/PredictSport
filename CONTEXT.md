@@ -188,14 +188,14 @@ _Avoid_: Bottom nav, navigation bar (ambiguous with the top NavBar)
 
 ## Competition Chat
 
-A per-competition messaging feature scoped to members of a single [[Competition]]. Async-first — designed for users who dip in and out around their lives, not for synchronous group presence. Messages persist in the database. The [[Competition Admin]] can enable or disable chat; disabling hides the entire chat surface but preserves messages in storage.
+A per-competition messaging feature scoped to members of a single [[Competition]]. Async-first — designed for users who dip in and out around their lives, not for synchronous group presence. Messages persist in the database. The [[Competition Admin]] can enable or disable chat; disabling hides the entire chat surface but preserves messages in storage. Lives at `/wc/chat` as a dedicated page; the [[Tab Bar]] Chat tab links there. A notification card on the dashboard shows unread count + last sender when messages are unread (hidden when caught up).
 _Avoid_: Group chat, channel, thread
 
 ---
 
 ## System Message
 
-An auto-generated [[Competition Chat]] message triggered by a competition event. Currently limited to member joins ("X joined the competition"). System messages never reveal prediction content — no spoilers.
+An auto-generated [[Competition Chat]] message triggered by a competition event. Two types: member joins ("X joined the competition") and result confirmations ("France 2-1 Mexico — result confirmed"). System messages never reveal prediction content — no spoilers. Result confirmation messages count toward the unread badge; join messages do not.
 _Avoid_: Bot message, notification
 
 ---
@@ -325,3 +325,10 @@ _Avoid_: Community predictions (that term is used for aggregated poll-style data
 
 The moment after which other participants' predictions for an [[Event]] become visible. Computed as `pick_reveal_at` if explicitly set by an admin, otherwise `lock_time + 5 minutes`. This gap between lock and reveal prevents last-second gaming — a participant cannot see rivals' predictions immediately after their own submission window closes. Enforced at the database level via RLS on the `predictions` table; no application-level bypass exists.
 _Avoid_: Unlock, unspoiler
+
+---
+
+## Result Notification
+
+A two-part signal fired when an [[Event]] result is confirmed (whether by the auto-result cron or manual admin confirmation). Consists of: (1) a [[System Message]] in [[Competition Chat]] with the score ("France 2-1 Mexico — result confirmed"), and (2) a push notification to all [[Competition]] members ("France 2-1 Mexico" / "How did you do? Check your score."). Uses the `result_notifications` push category. Both paths (cron and admin) invoke the same shared notification function.
+_Avoid_: Score alert, result update

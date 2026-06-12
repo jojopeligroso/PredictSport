@@ -608,5 +608,9 @@
   "dash.the_field": "The Field",
   "community.draw": "Draw",
   "community.popular_score": "Popular Score",
-  "community.no_scores": "No scores yet"
+  "community.no_scores": "No scores yet",
+  "chat.member_count": "{count} members",
+  "chat.new_message": "New message in chat",
+  "chat.something_to_say": "Have something to say?",
+  "dash.chat_preview": "Latest in chat"
 }

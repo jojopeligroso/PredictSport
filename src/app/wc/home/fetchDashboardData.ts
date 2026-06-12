@@ -44,6 +44,13 @@ export interface ResultRow {
   scorePoints: number;
 }
 
+export interface LastChatMessage {
+  senderName: string;
+  senderAvatar: string | null;
+  content: string;
+  createdAt: string;
+}
+
 export interface DashboardData {
   ready: true;
   competitionId: string;
@@ -89,6 +96,8 @@ export interface DashboardData {
   isCompetitionAdmin: boolean;
   /** The current user's role in the competition. */
   memberRole: string;
+  /** Last non-join chat message for the notification card. */
+  lastChatMessage: LastChatMessage | null;
 }
 
 export type DashboardResult =
@@ -474,6 +483,35 @@ export async function fetchDashboardData(): Promise<DashboardResult> {
   const entryOpen = !competitionFull && (!entryClosesAt || new Date(entryClosesAt) > now);
   const inviteCode = entryOpen ? (competition.invite_code ?? null) : null;
 
+  // Last chat message for notification card (non-join, non-deleted)
+  let lastChatMessage: LastChatMessage | null = null;
+  if (competition.chat_enabled) {
+    const { data: msg } = await supabase
+      .from("chat_messages")
+      .select("content, created_at, user_id")
+      .eq("competition_id", competition.id)
+      .neq("message_type", "system_join")
+      .is("deleted_at", null)
+      .order("created_at", { ascending: false })
+      .limit(1)
+      .maybeSingle();
+
+    if (msg) {
+      const { data: sender } = await supabase
+        .from("users")
+        .select("display_name, avatar_url")
+        .eq("id", msg.user_id)
+        .single();
+
+      lastChatMessage = {
+        senderName: sender?.display_name ?? "Someone",
+        senderAvatar: sender?.avatar_url ?? null,
+        content: msg.content,
+        createdAt: msg.created_at,
+      };
+    }
+  }
+
   return {
     ready: true,
     competitionId: competition.id,
@@ -498,6 +536,7 @@ export async function fetchDashboardData(): Promise<DashboardResult> {
     chatEnabled: competition.chat_enabled ?? true,
     isCompetitionAdmin,
     memberRole: membership?.role ?? "participant",
+    lastChatMessage,
   };
 }
 

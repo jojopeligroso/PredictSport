@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
+import Link from "next/link";
 import { useT, useLocale } from "@/lib/i18n";
 
 function numOrNull(v: unknown): number | null {
@@ -311,6 +312,16 @@ export function RivalPredictionsTab({
             )}
           </div>
         )}
+
+        {/* Chat CTA */}
+        <div className="border-t border-ps-border/50 px-4 py-3 text-center">
+          <Link
+            href="/wc/chat"
+            className="text-xs text-ps-text-sec hover:text-ps-text hover:underline"
+          >
+            {t("chat.something_to_say")}
+          </Link>
+        </div>
       </div>
     </div>
   );
