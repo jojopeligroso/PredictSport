@@ -594,6 +594,7 @@
   "rivals.final": "Final",
   "rivals.predictions_count": "{count} predictions",
   "rivals.sort_points": "Sort: Points ↓",
+  "rivals.sort_group": "Sort: Group ↓",
   "rivals.no_prediction": "No prediction",
   "rivals.scroll_more": "+ {count} more · scroll to see all",
   "rivals.no_revealed": "No predictions revealed yet. They appear 5 minutes after each match locks.",

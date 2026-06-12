@@ -594,6 +594,7 @@
   "rivals.final": "Final",
   "rivals.predictions_count": "{count} pronósticos",
   "rivals.sort_points": "Orden: Puntos ↓",
+  "rivals.sort_group": "Orden: Grupo ↓",
   "rivals.no_prediction": "Sin pronóstico",
   "rivals.scroll_more": "+ {count} más · desplaza para ver",
   "rivals.no_revealed": "Aún no hay pronósticos revelados. Aparecen 5 minutos después de que cada partido se bloquea.",

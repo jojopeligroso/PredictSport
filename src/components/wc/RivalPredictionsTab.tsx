@@ -73,6 +73,7 @@ export function RivalPredictionsTab({
   const [loading, setLoading] = useState(true);
   const [predLoading, setPredLoading] = useState(false);
   const [eventMeta, setEventMeta] = useState<EventMeta | null>(null);
+  const [sortMode, setSortMode] = useState<"points" | "group">("points");
 
   // Fetch revealed fixtures
   useEffect(() => {
@@ -129,6 +130,13 @@ export function RivalPredictionsTab({
       cancelled = true;
     };
   }, [competitionId, selectedFixture?.eventId]);
+
+  const sortedPredictions = useMemo(() => {
+    if (sortMode === "points") return predictions;
+    const group = predictions.filter((r) => r.isGroupMember || r.isSelf);
+    const rest = predictions.filter((r) => !r.isGroupMember && !r.isSelf);
+    return [...group, ...rest];
+  }, [predictions, sortMode]);
 
   const goPrev = useCallback(() => {
     setFixtureIdx((i) => Math.max(0, i - 1));
@@ -201,7 +209,7 @@ export function RivalPredictionsTab({
               onClick={goPrev}
               disabled={fixtureIdx === 0}
               aria-label="Previous fixture"
-              className="flex h-[30px] w-[30px] shrink-0 items-center justify-center rounded-md border border-ps-border bg-ps-bg text-ps-text-sec transition-colors hover:bg-ps-chip disabled:opacity-30"
+              className="flex h-[36px] w-[36px] shrink-0 items-center justify-center rounded-md border border-ps-border bg-ps-bg text-ps-text-sec transition-colors hover:bg-ps-chip disabled:opacity-30"
             >
               <svg
                 width="14"
@@ -231,7 +239,7 @@ export function RivalPredictionsTab({
               onClick={goNext}
               disabled={fixtureIdx === fixtures.length - 1}
               aria-label="Next fixture"
-              className="flex h-[30px] w-[30px] shrink-0 items-center justify-center rounded-md border border-ps-border bg-ps-bg text-ps-text-sec transition-colors hover:bg-ps-chip disabled:opacity-30"
+              className="flex h-[36px] w-[36px] shrink-0 items-center justify-center rounded-md border border-ps-border bg-ps-bg text-ps-text-sec transition-colors hover:bg-ps-chip disabled:opacity-30"
             >
               <svg
                 width="14"
@@ -281,9 +289,13 @@ export function RivalPredictionsTab({
           <span className="text-xs font-medium text-ps-text-sec">
             {t("rivals.predictions_count", { count: totalMembers })}
           </span>
-          <span className="text-[11px] font-semibold text-ps-amber">
-            {t("rivals.sort_points")}
-          </span>
+          <button
+            type="button"
+            onClick={() => setSortMode((m) => (m === "points" ? "group" : "points"))}
+            className="text-[11px] font-semibold text-ps-amber"
+          >
+            {sortMode === "points" ? t("rivals.sort_points") : t("rivals.sort_group")}
+          </button>
         </div>
 
         {/* Prediction rows */}
@@ -293,7 +305,7 @@ export function RivalPredictionsTab({
           </div>
         ) : (
           <div>
-            {predictions.map((row, i) => (
+            {sortedPredictions.map((row, i) => (
               <PredictionRow
                 key={row.userId}
                 row={row}
@@ -303,7 +315,7 @@ export function RivalPredictionsTab({
             ))}
 
             {/* Scroll hint when list is long */}
-            {predictions.length > 8 && (
+            {sortedPredictions.length > 8 && (
               <div className="border-t border-ps-border/50 px-4 py-2.5 text-center text-[11px] font-medium text-ps-text-ter">
                 {t("rivals.scroll_more", {
                   count: predictions.length - 8,
