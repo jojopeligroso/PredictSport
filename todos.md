@@ -284,20 +284,20 @@ See `SPORTS-ARCHITECTURE.md` for detailed spec (TBD).
 
 ### Phase CH-A — Schema & API
 
-- [ ] **CH-A1 — chat_messages table migration** — `chat_messages` (id uuid, competition_id FK, user_id FK, content text, message_type enum('user','system'), mentioned_user_ids uuid[], created_at, updated_at, deleted_at, deleted_by enum('user','admin') null). RLS: read/write scoped to competition members. Realtime publication enabled.
-- [ ] **CH-A2 — Chat toggle on competitions** — Add `chat_enabled boolean default true` to `competitions`. Admin UI checkbox in competition settings.
-- [ ] **CH-A3 — Send message API** — `POST /api/chat` — validates membership, rate limiting (standard), max message length, inserts row.
-- [ ] **CH-A4 — List messages API** — `GET /api/chat?competitionId=X&cursor=Y` — cursor-based pagination, newest first, tombstones for deleted messages.
-- [ ] **CH-A5 — Delete message API** — `DELETE /api/chat/:id` — user can delete own; admin can delete any. Within 10s: hard delete. After 10s: soft delete (set deleted_at + deleted_by).
-- [ ] **CH-A6 — Edit message API** — `PATCH /api/chat/:id` — user can edit own within 5 minutes. Sets updated_at. Returns 403 after window.
-- [ ] **CH-A7 — System message on join** — Trigger: when a new `competition_members` row is inserted, insert a system message "X joined the competition".
+- [x] **CH-A1 — chat_messages table migration** — `chat_messages` (id uuid, competition_id FK, user_id FK, content text, message_type enum('user','system'), mentioned_user_ids uuid[], created_at, updated_at, deleted_at, deleted_by enum('user','admin') null). RLS: read/write scoped to competition members. Realtime publication enabled.
+- [x] **CH-A2 — Chat toggle on competitions** — Add `chat_enabled boolean default true` to `competitions`. Admin UI checkbox in competition settings.
+- [x] **CH-A3 — Send message API** — `POST /api/chat` — validates membership, rate limiting (standard), max message length, inserts row.
+- [x] **CH-A4 — List messages API** — `GET /api/chat?competitionId=X&cursor=Y` — cursor-based pagination, newest first, tombstones for deleted messages.
+- [x] **CH-A5 — Delete message API** — `DELETE /api/chat/:id` — user can delete own; admin can delete any. Within 10s: hard delete. After 10s: soft delete (set deleted_at + deleted_by).
+- [x] **CH-A6 — Edit message API** — `PATCH /api/chat/:id` — user can edit own within 5 minutes. Sets updated_at. Returns 403 after window.
+- [x] **CH-A7 — System message on join** — Trigger: when a new `competition_members` row is inserted, insert a system message "X joined the competition".
 
 ### Phase CH-B — Components
 
-- [ ] **CH-B1 — ChatMessage component** — Renders a single message: display name, content, timestamp, "(edited)" indicator, tombstone state. @mention highlighted + tappable (no-op v1, future: scroll to profile).
-- [ ] **CH-B2 — ChatWidget component** — Shared component with mini/full modes. Mini: last 3 messages (5 if user sent one), single input field, close button (X). Full: ~75% iPhone screen height, full input, scroll to load history.
-- [ ] **CH-B3 — MentionAutocomplete component** — Triggered by `@` in input. Dropdown of competition members by display name. Inserts `@DisplayName` into message text.
-- [ ] **CH-B4 — Realtime subscription** — Subscribe to `postgres_changes` on `chat_messages` filtered by `competition_id`. Append new messages, handle edits/deletes live.
+- [x] **CH-B1 — ChatMessage component** — Renders a single message: display name, content, timestamp, "(edited)" indicator, tombstone state. @mention highlighted + tappable (no-op v1, future: scroll to profile).
+- [x] **CH-B2 — ChatWidget component** — Shared component with mini/full modes. Mini: last 3 messages (5 if user sent one), single input field, close button (X). Full: ~75% iPhone screen height, full input, scroll to load history.
+- [x] **CH-B3 — MentionAutocomplete component** — Triggered by `@` in input. Dropdown of competition members by display name. Inserts `@DisplayName` into message text.
+- [x] **CH-B4 — Realtime subscription** — Subscribe to `postgres_changes` on `chat_messages` filtered by `competition_id`. Append new messages, handle edits/deletes live.
 
 ### Phase CH-C — Integration
 
