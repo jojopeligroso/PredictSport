@@ -117,6 +117,7 @@
   "fixtures.score_aria": "{team} score",
   "fixtures.result_final": "Final",
   "fixtures.result_provisional": "Provisional",
+  "fixtures.you_predicted": "You predicted:",
   "fixtures.in_city": "In {cityName}",
   "fixtures.your_time": "Your time",
   "fixtures.same_tz": "Same",

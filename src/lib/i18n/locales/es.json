@@ -117,6 +117,7 @@
   "fixtures.score_aria": "Puntuaje de {team}",
   "fixtures.result_final": "Resultado Final",
   "fixtures.result_provisional": "Temporal",
+  "fixtures.you_predicted": "Predijiste:",
   "fixtures.in_city": "En {cityName}",
   "fixtures.your_time": "Tu tiempo",
   "fixtures.same_tz": "Igual",

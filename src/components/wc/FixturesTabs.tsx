@@ -199,21 +199,27 @@ export function FixturesTabs({ fixtures, resultsByExternalId, serverDateIso, pre
         <div className="mt-3 space-y-0 rounded-lg border border-ps-border bg-ps-surface px-3 py-2">
           <div className="flex items-center justify-between">
             <span className="text-xs text-ps-text-sec">
-              {showPredictions ? t('fixtures.show_picks') : t('fixtures.hide_picks')}
+              {showPredictions ? t('fixtures.hide_picks') : t('fixtures.show_picks')}
             </span>
             <ToggleSwitch
-              label={showPredictions ? t('fixtures.hide_picks') : t('fixtures.show_picks')}
+              label=""
               checked={showPredictions}
               onChange={() => setShowPredictions((v) => !v)}
             />
           </div>
           {showPredictions && hasResults && (
             <div className="flex items-center justify-between border-t border-ps-border/50 pt-2 mt-2">
-              <span className="text-xs text-ps-text-sec">
-                {t('fixtures.show_correct_wrong')}
-              </span>
+              <div className="flex items-center gap-1.5">
+                <span className="flex gap-0.5">
+                  <span className="block h-2.5 w-2.5 rounded-sm bg-ps-green/70" />
+                  <span className="block h-2.5 w-2.5 rounded-sm bg-ps-red/70" />
+                </span>
+                <span className="text-xs text-ps-text-sec">
+                  {t('fixtures.show_correct_wrong')}
+                </span>
+              </div>
               <ToggleSwitch
-                label={showCorrectness ? t('fixtures.on') : t('fixtures.off')}
+                label=""
                 checked={showCorrectness}
                 onChange={() => setShowCorrectness((v) => !v)}
               />
@@ -559,8 +565,8 @@ function FixtureCard({
       if (showCorrectness && actualWinner) {
         ringClass =
           currentWinner === actualWinner
-            ? "ring-2 ring-ps-green"
-            : "ring-2 ring-ps-red";
+            ? "ring-[3px] ring-ps-green/85"
+            : "ring-[3px] ring-ps-red/85";
       } else {
         ringClass = "ring-2 ring-ps-amber/50";
       }
@@ -740,40 +746,56 @@ function FixtureCard({
 
         {/* ── Read-only teams + result (finished) ── */}
         {isFinished && (
-          <div className="flex items-start justify-between gap-2">
-            {/* Home team — left, flag above name */}
-            <div className="flex flex-1 min-w-0 flex-col items-center gap-1">
-              <CountryFlag shape="pill" name={fixture.home} size={flagSizeRo} />
-              <span className={`${large ? "text-sm" : "text-xs"} font-bold text-white text-center leading-tight max-w-full truncate`}>
-                {fixture.home}
-              </span>
+          <>
+            {/* Inset scoreboard panel */}
+            <div className={`rounded-xl bg-black/30 ${large ? "px-5 py-3" : "px-4 py-2.5"} shadow-[inset_0_1px_0_rgba(255,255,255,0.08),inset_0_-1px_0_rgba(0,0,0,0.25)] ring-1 ring-inset ring-black/20`}>
+              <div className="flex items-start justify-between gap-2">
+                {/* Home team — left, flag above name */}
+                <div className="flex flex-1 min-w-0 flex-col items-center gap-1">
+                  <CountryFlag shape="pill" name={fixture.home} size={flagSizeRo} />
+                  <span className={`${large ? "text-sm" : "text-xs"} font-bold text-white text-center leading-tight max-w-full truncate`}>
+                    {fixture.home}
+                  </span>
+                </div>
+
+                {/* Score + status — center */}
+                <div className="flex shrink-0 flex-col items-center gap-1.5">
+                  <span className={`font-mono ${large ? "text-xl" : "text-lg"} font-extrabold tabular-nums leading-none whitespace-nowrap text-white drop-shadow-[0_1px_2px_rgba(0,0,0,0.5)]`}>
+                    {result?.homeScore !== null && result?.awayScore !== null
+                      ? `${result.homeScore} – ${result.awayScore}`
+                      : (result?.winner ?? "Result")}
+                  </span>
+                  <span
+                    className={[
+                      "rounded-full px-2 py-0.5 text-[9px] font-bold uppercase tracking-[0.10em] leading-none",
+                      result?.isFinalised ? "bg-ps-green/80 text-white" : "bg-black/25 text-white/75 ring-1 ring-inset ring-white/15",
+                    ].join(" ")}
+                  >
+                    {result?.isFinalised ? t('fixtures.result_final') : t('fixtures.result_provisional')}
+                  </span>
+                </div>
+
+                {/* Away team — right, flag above name */}
+                <div className="flex flex-1 min-w-0 flex-col items-center gap-1">
+                  <CountryFlag shape="pill" name={fixture.away} size={flagSizeRo} />
+                  <span className={`${large ? "text-sm" : "text-xs"} font-bold text-white text-center leading-tight max-w-full truncate`}>
+                    {fixture.away}
+                  </span>
+                </div>
+              </div>
             </div>
 
-            {/* Score + status — center */}
-            <div className="flex shrink-0 flex-col items-center gap-1.5 pt-1">
-              <span className={`rounded-lg bg-white/22 px-3 py-1 font-mono ${large ? "text-xl" : "text-base"} font-extrabold tabular-nums leading-none whitespace-nowrap`}>
-                {result?.homeScore !== null && result?.awayScore !== null
-                  ? `${result.homeScore} – ${result.awayScore}`
-                  : (result?.winner ?? "Result")}
-              </span>
-              <span
-                className={[
-                  "rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider leading-none",
-                  result?.isFinalised ? "bg-ps-green/80 text-white" : "bg-white/20 text-white border border-white/30",
-                ].join(" ")}
-              >
-                {result?.isFinalised ? t('fixtures.result_final') : t('fixtures.result_provisional')}
-              </span>
-            </div>
-
-            {/* Away team — right, flag above name */}
-            <div className="flex flex-1 min-w-0 flex-col items-center gap-1">
-              <CountryFlag shape="pill" name={fixture.away} size={flagSizeRo} />
-              <span className={`${large ? "text-sm" : "text-xs"} font-bold text-white text-center leading-tight max-w-full truncate`}>
-                {fixture.away}
-              </span>
-            </div>
-          </div>
+            {/* Your prediction — shown when prediction context exists */}
+            {hasPrediction && prediction && (
+              <p className="mt-1.5 text-center text-[11px] font-medium text-white/70">
+                {t('fixtures.you_predicted')}{" "}
+                <span className="font-bold text-white/90">
+                  {currentWinner}
+                  {homeScore !== "" && awayScore !== "" ? ` (${homeScore}–${awayScore})` : ""}
+                </span>
+              </p>
+            )}
+          </>
         )}
 
         {/* ── Read-only teams (upcoming but locked / no prediction context) ── */}
