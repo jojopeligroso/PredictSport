@@ -108,11 +108,33 @@ export async function GET(request: NextRequest) {
       pointsMap.set(p.user_id, current + (p.points_awarded ?? 0));
     }
 
-    // Get display names
-    const { data: users } = await supabase
-      .from("users")
-      .select("id, display_name")
-      .in("id", userIds);
+    // Get display names + available points (max possible from confirmed events)
+    const eventsFilter = compForTournament?.tournament_id
+      ? supabase
+          .from("events")
+          .select("id")
+          .eq("tournament_id", compForTournament.tournament_id)
+          .eq("result_confirmed", true)
+      : supabase
+          .from("events")
+          .select("id")
+          .eq("competition_id", classification.competition_id)
+          .eq("result_confirmed", true);
+
+    const [{ data: users }, { data: confirmedEvents }] = await Promise.all([
+      supabase.from("users").select("id, display_name").in("id", userIds),
+      eventsFilter,
+    ]);
+
+    let availablePoints = 0;
+    const confirmedEventIds = (confirmedEvents ?? []).map((e: { id: string }) => e.id);
+    if (confirmedEventIds.length > 0) {
+      const { data: epts } = await supabase
+        .from("event_prediction_types")
+        .select("points")
+        .in("event_id", confirmedEventIds);
+      availablePoints = (epts ?? []).reduce((sum: number, r: { points: number }) => sum + r.points, 0);
+    }
 
     const nameMap = new Map(
       (users ?? []).map((u: { id: string; display_name: string }) => [u.id, u.display_name])
@@ -136,7 +158,7 @@ export async function GET(request: NextRequest) {
       user.id,
     );
 
-    return NextResponse.json({ standings, provisional: true, selfVisibility });
+    return NextResponse.json({ standings, provisional: true, selfVisibility, availablePoints });
   }
 
   // Return latest finalised snapshot

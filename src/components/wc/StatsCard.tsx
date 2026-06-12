@@ -32,6 +32,7 @@ export function StatsCard({
   const t = useT();
   const [rank, setRank] = useState<number | null>(null);
   const [points, setPoints] = useState<number>(0);
+  const [availablePoints, setAvailablePoints] = useState<number>(0);
   const [totalPlayers, setTotalPlayers] = useState<number>(0);
   const [accuracy, setAccuracy] = useState<AccuracyData | null>(null);
   const [loading, setLoading] = useState(true);
@@ -53,6 +54,7 @@ export function StatsCard({
           const data = await standingsRes.json();
           const standings = (data.standings ?? []) as StandingRow[];
           setTotalPlayers(standings.length);
+          setAvailablePoints(data.availablePoints ?? 0);
           const self = standings.find((s) => s.user_id === currentUserId);
           if (self) {
             setRank(self.rank);
@@ -105,12 +107,15 @@ export function StatsCard({
         <p className="font-mono text-[8px] text-ps-text-ter">/ {totalPlayers}</p>
       </div>
 
-      {/* Points — compact */}
+      {/* Points — compact, with available */}
       <div className="w-[72px] shrink-0 rounded-lg border border-ps-border bg-ps-surface px-2 py-1.5">
         <p className="font-display text-lg font-extrabold tabular-nums leading-tight text-ps-text">
           {points}
         </p>
         <p className="text-[9px] font-medium text-ps-text-sec">{t('stats.points')}</p>
+        {availablePoints > 0 && (
+          <p className="font-mono text-[8px] text-ps-text-ter">/ {availablePoints}</p>
+        )}
       </div>
 
       {/* Accuracy — flippable (tap to toggle outcome / exact score) */}
