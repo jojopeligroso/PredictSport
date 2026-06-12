@@ -77,14 +77,14 @@ export function StatsCard({
     return (
       <div className="flex gap-1.5">
         {[0, 1].map((i) => (
-          <div key={i} className="w-[72px] shrink-0 rounded-lg border border-ps-border bg-ps-surface px-2 py-1.5">
-            <div className="h-5 w-10 animate-pulse rounded bg-ps-chip" />
-            <div className="mt-1 h-3 w-full animate-pulse rounded bg-ps-chip" />
+          <div key={i} className="w-[88px] shrink-0 rounded-lg border border-ps-border bg-ps-surface px-2.5 py-2">
+            <div className="h-7 w-12 animate-pulse rounded bg-ps-chip" />
+            <div className="mt-1 h-4 w-full animate-pulse rounded bg-ps-chip" />
           </div>
         ))}
-        <div className="min-w-0 flex-1 rounded-lg border border-ps-border bg-ps-surface px-2.5 py-1.5">
-          <div className="h-5 w-14 animate-pulse rounded bg-ps-chip" />
-          <div className="mt-1 h-3 w-20 animate-pulse rounded bg-ps-chip" />
+        <div className="min-w-0 flex-1 rounded-lg border border-ps-border bg-ps-surface px-3 py-2">
+          <div className="h-7 w-16 animate-pulse rounded bg-ps-chip" />
+          <div className="mt-1 h-4 w-20 animate-pulse rounded bg-ps-chip" />
         </div>
       </div>
     );
@@ -99,8 +99,8 @@ export function StatsCard({
   return (
     <div className="flex gap-1.5">
       {/* Rank — compact */}
-      <div className="w-[72px] shrink-0 rounded-lg border border-ps-border bg-ps-surface px-2 py-1.5">
-        <p className="font-display text-lg font-extrabold tabular-nums leading-tight text-ps-amber">
+      <div className="w-[88px] shrink-0 rounded-lg border border-ps-border bg-ps-surface px-2.5 py-2">
+        <p className="font-display text-2xl font-extrabold tabular-nums leading-tight text-ps-amber">
           {rank != null ? `${rank}${rankSuffix}` : "—"}
         </p>
         <p className="text-xs font-medium text-ps-text-sec">{t('stats.your_rank')}</p>
@@ -108,8 +108,8 @@ export function StatsCard({
       </div>
 
       {/* Points — compact, with available */}
-      <div className="w-[72px] shrink-0 rounded-lg border border-ps-border bg-ps-surface px-2 py-1.5">
-        <p className="font-display text-lg font-extrabold tabular-nums leading-tight text-ps-text">
+      <div className="w-[88px] shrink-0 rounded-lg border border-ps-border bg-ps-surface px-2.5 py-2">
+        <p className="font-display text-2xl font-extrabold tabular-nums leading-tight text-ps-text">
           {points}
         </p>
         <p className="text-xs font-medium text-ps-text-sec">{t('stats.points')}</p>
@@ -122,13 +122,13 @@ export function StatsCard({
       <button
         type="button"
         onClick={() => setFlipped((f) => !f)}
-        className="min-w-0 flex-1 rounded-lg border border-ps-border bg-ps-surface px-2.5 py-1.5 text-left transition-colors active:bg-ps-chip"
+        className="min-w-0 flex-1 rounded-lg border border-ps-border bg-ps-surface px-3 py-2 text-left transition-colors active:bg-ps-chip"
       >
         {!flipped ? (
           /* Front: Outcome accuracy */
           hasOutcome ? (
             <>
-              <p className="font-display text-lg font-extrabold tabular-nums leading-tight text-ps-green">
+              <p className="font-display text-2xl font-extrabold tabular-nums leading-tight text-ps-green">
                 {accuracy.user!.pct}%
               </p>
               <p className="text-xs font-medium text-ps-text-sec">
@@ -140,7 +140,7 @@ export function StatsCard({
             </>
           ) : (
             <>
-              <p className="font-display text-lg font-extrabold tabular-nums leading-tight text-ps-green">—</p>
+              <p className="font-display text-2xl font-extrabold tabular-nums leading-tight text-ps-green">—</p>
               <p className="text-xs font-medium text-ps-text-sec">{t('stats.outcome')}</p>
               <p className="text-xs text-ps-text-ter">{t('stats.after_first_results')}</p>
             </>
@@ -149,7 +149,7 @@ export function StatsCard({
           /* Back: Exact score accuracy */
           hasScore ? (
             <>
-              <p className="font-display text-lg font-extrabold tabular-nums leading-tight text-ps-amber">
+              <p className="font-display text-2xl font-extrabold tabular-nums leading-tight text-ps-amber">
                 {accuracy.userScore!.pct}%
               </p>
               <p className="text-xs font-medium text-ps-text-sec">
@@ -161,7 +161,7 @@ export function StatsCard({
             </>
           ) : (
             <>
-              <p className="font-display text-lg font-extrabold tabular-nums leading-tight text-ps-amber">—</p>
+              <p className="font-display text-2xl font-extrabold tabular-nums leading-tight text-ps-amber">—</p>
               <p className="text-xs font-medium text-ps-text-sec">{t('stats.exact_score')}</p>
               <p className="text-xs text-ps-text-ter">{t('stats.after_first_results')}</p>
             </>
