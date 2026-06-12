@@ -1,6 +1,7 @@
 "use client";
 
-import { useCallback, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import { useT, useLocale } from "@/lib/i18n";
 import type { ChatMessageWithUser, UseChatMember, ReplyPreview } from "./useRealtimeChat";
 
@@ -99,10 +100,12 @@ export function ChatMessage({
   const [editContent, setEditContent] = useState(message.content);
   const [showContextMenu, setShowContextMenu] = useState(false);
   const [showImageLightbox, setShowImageLightbox] = useState(false);
+  const [pressing, setPressing] = useState(false);
   const longPressTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const swipeStartX = useRef<number | null>(null);
   const swipeOffset = useRef(0);
   const messageEl = useRef<HTMLDivElement>(null);
+  const bubbleEl = useRef<HTMLDivElement>(null);
 
   const isOwn = message.user_id === currentUserId;
   const isDeleted = !!message.deleted_at;
@@ -119,17 +122,32 @@ export function ChatMessage({
   const canOwnDelete = isOwn && messageAge <= HARD_DELETE_WINDOW_MS;
   const canDelete = canOwnDelete || canModDelete;
   const canMute = !isOwn && actorRank >= ROLE_RANK.mod && actorRank > targetRank;
+  const canReply = !isDeleted && !isSystem && !!onReply;
+  const canEdit = isOwn && !isEditing && (Date.now() - new Date(message.created_at).getTime()) <= EDIT_WINDOW_MS;
+  const hasAnyAction = canReply || canEdit || canDelete || canMute || canModDelete;
+
+  // Cancel any active long-press visual + timer
+  const cancelPress = useCallback(() => {
+    if (longPressTimer.current) {
+      clearTimeout(longPressTimer.current);
+      longPressTimer.current = null;
+    }
+    setPressing(false);
+  }, []);
 
   // Long-press handlers for context menu
   const handleTouchStart = useCallback(
     (e: React.TouchEvent) => {
       swipeStartX.current = e.touches[0].clientX;
-      if (!canMute && !canModDelete) return;
+      if (!hasAnyAction) return;
+      // Immediate visual feedback
+      setPressing(true);
       longPressTimer.current = setTimeout(() => {
+        setPressing(false);
         setShowContextMenu(true);
-      }, 500);
+      }, 400);
     },
-    [canMute, canModDelete]
+    [hasAnyAction]
   );
 
   const handleTouchMove = useCallback(
@@ -137,9 +155,8 @@ export function ChatMessage({
       if (swipeStartX.current === null) return;
       const dx = e.touches[0].clientX - swipeStartX.current;
       // Cancel long-press on any significant move
-      if (Math.abs(dx) > 10 && longPressTimer.current) {
-        clearTimeout(longPressTimer.current);
-        longPressTimer.current = null;
+      if (Math.abs(dx) > 10) {
+        cancelPress();
       }
       // Only allow right swipe for reply (non-deleted, non-system)
       if (dx > 0 && !isDeleted && !isSystem && onReply) {
@@ -150,14 +167,11 @@ export function ChatMessage({
         }
       }
     },
-    [isDeleted, isSystem, onReply]
+    [isDeleted, isSystem, onReply, cancelPress]
   );
 
   const handleTouchEnd = useCallback(() => {
-    if (longPressTimer.current) {
-      clearTimeout(longPressTimer.current);
-      longPressTimer.current = null;
-    }
+    cancelPress();
     // If swiped far enough, trigger reply
     if (swipeOffset.current >= 60 && onReply && !isDeleted && !isSystem) {
       onReply(message);
@@ -169,7 +183,7 @@ export function ChatMessage({
     }
     swipeStartX.current = null;
     swipeOffset.current = 0;
-  }, [message, onReply, isDeleted, isSystem]);
+  }, [message, onReply, isDeleted, isSystem, cancelPress]);
 
   // System messages
   if (isSystem) {
@@ -221,13 +235,8 @@ export function ChatMessage({
     setIsEditing(true);
   };
 
-  // Show edit button only within the 5-minute edit window
-  const showEditButton = isOwn && !isEditing && messageAge <= EDIT_WINDOW_MS;
-
   const showName = isFirstInGroup;
   const showTimestamp = isLastInGroup;
-
-  const canReply = !isDeleted && !isSystem && !!onReply;
 
   return (
     <>
@@ -253,13 +262,16 @@ export function ChatMessage({
           )}
 
           <div
-            className={`rounded-2xl px-3 py-1.5 text-sm ${
+            ref={bubbleEl}
+            className={`rounded-2xl px-3 py-1.5 text-sm transition-all duration-150 ${
+              pressing ? "scale-[0.97] opacity-80" : ""
+            } ${
               isOwn
                 ? "bg-ps-amber/15 text-ps-text"
                 : "bg-ps-chip text-ps-text"
             }`}
             onContextMenu={(e) => {
-              if (canMute || canModDelete || canReply) {
+              if (hasAnyAction) {
                 e.preventDefault();
                 setShowContextMenu(true);
               }
@@ -334,53 +346,10 @@ export function ChatMessage({
             )}
           </div>
 
-          {/* Context menu (long-press / right-click) */}
-          {showContextMenu && (
-            <>
-              <div
-                className="fixed inset-0 z-40"
-                onClick={() => setShowContextMenu(false)}
-              />
-              <div className="absolute z-50 mt-1 rounded-lg border border-ps-border bg-ps-surface shadow-lg py-1 min-w-[140px]">
-                {canReply && (
-                  <button
-                    onClick={() => {
-                      setShowContextMenu(false);
-                      onReply?.(message);
-                    }}
-                    className="block w-full text-left px-3 py-1.5 text-xs text-ps-text-sec hover:bg-ps-chip"
-                  >
-                    {t("chat.reply")}
-                  </button>
-                )}
-                {canModDelete && (
-                  <button
-                    onClick={() => {
-                      setShowContextMenu(false);
-                      onDelete?.(message.id);
-                    }}
-                    className="block w-full text-left px-3 py-1.5 text-xs text-ps-red hover:bg-ps-chip"
-                  >
-                    {t("chat.delete_message")}
-                  </button>
-                )}
-                {canMute && (
-                  <button
-                    onClick={() => {
-                      setShowContextMenu(false);
-                      onMute?.(message.user_id);
-                    }}
-                    className="block w-full text-left px-3 py-1.5 text-xs text-ps-text-sec hover:bg-ps-chip"
-                  >
-                    {t("chat.mute_user")}
-                  </button>
-                )}
-              </div>
-            </>
-          )}
+          {/* Action sheet rendered via portal — see bottom of component */}
 
           {/* Meta row: time, edited, actions — only on last in group (or when actions available) */}
-          {(showTimestamp || showEditButton || canDelete || canReply) && (
+          {(showTimestamp || canEdit || canDelete || canReply) && (
             <div
               className={`flex items-center gap-1.5 mt-0.5 ${
                 isOwn ? "justify-end mr-1" : "ml-1"
@@ -398,7 +367,7 @@ export function ChatMessage({
               )}
 
               {/* Actions — visible on hover */}
-              {(showEditButton || canDelete || canReply) && (
+              {(canEdit || canDelete || canReply) && (
                 <span className="opacity-0 group-hover:opacity-100 transition-opacity flex gap-1">
                   {canReply && (
                     <button
@@ -408,7 +377,7 @@ export function ChatMessage({
                       {t("chat.action_reply")}
                     </button>
                   )}
-                  {showEditButton && (
+                  {canEdit && (
                     <button
                       onClick={handleStartEdit}
                       className="text-[10px] text-ps-text-ter hover:text-ps-text"
@@ -430,6 +399,25 @@ export function ChatMessage({
           )}
         </div>
       </div>
+
+      {/* Action sheet (bottom drawer) — portalled to body */}
+      {showContextMenu && typeof document !== "undefined" &&
+        createPortal(
+          <ChatActionSheet
+            message={message}
+            canReply={canReply}
+            canEdit={canEdit}
+            canDelete={canDelete}
+            canMute={canMute}
+            onReply={() => { setShowContextMenu(false); onReply?.(message); }}
+            onEdit={() => { setShowContextMenu(false); handleStartEdit(); }}
+            onDelete={() => { setShowContextMenu(false); onDelete?.(message.id); }}
+            onMute={() => { setShowContextMenu(false); onMute?.(message.user_id); }}
+            onDismiss={() => setShowContextMenu(false)}
+          />,
+          document.body
+        )
+      }
 
       {/* Image lightbox */}
       {showImageLightbox && message.media_url && (
@@ -453,5 +441,194 @@ export function ChatMessage({
         </div>
       )}
     </>
+  );
+}
+
+/* ── Action Sheet (bottom drawer) ──────────────────────────────────── */
+
+interface ChatActionSheetProps {
+  message: ChatMessageWithUser;
+  canReply: boolean;
+  canEdit: boolean;
+  canDelete: boolean;
+  canMute: boolean;
+  onReply: () => void;
+  onEdit: () => void;
+  onDelete: () => void;
+  onMute: () => void;
+  onDismiss: () => void;
+}
+
+function ChatActionSheet({
+  message,
+  canReply,
+  canEdit,
+  canDelete,
+  canMute,
+  onReply,
+  onEdit,
+  onDelete,
+  onMute,
+  onDismiss,
+}: ChatActionSheetProps) {
+  const t = useT();
+  const [visible, setVisible] = useState(false);
+  const sheetRef = useRef<HTMLDivElement>(null);
+
+  // Animate in on mount
+  useEffect(() => {
+    requestAnimationFrame(() => setVisible(true));
+  }, []);
+
+  const dismiss = useCallback(() => {
+    setVisible(false);
+    setTimeout(onDismiss, 200);
+  }, [onDismiss]);
+
+  const preview = message.media_url
+    ? message.media_type === "gif" ? t("chat.gif") : t("chat.photo")
+    : message.content.length > 80
+      ? message.content.slice(0, 80) + "..."
+      : message.content;
+
+  return (
+    <div
+      className="fixed inset-0 z-[90]"
+      style={{ touchAction: "manipulation" }}
+    >
+      {/* Dimmed backdrop */}
+      <div
+        className="absolute inset-0 transition-opacity duration-200"
+        style={{ backgroundColor: visible ? "rgba(0,0,0,0.4)" : "rgba(0,0,0,0)" }}
+        onClick={dismiss}
+      />
+
+      {/* Sheet */}
+      <div
+        ref={sheetRef}
+        className="absolute bottom-0 left-0 right-0 mx-auto max-w-[480px] rounded-t-2xl border-t border-ps-border bg-ps-surface"
+        style={{
+          transform: visible ? "translateY(0)" : "translateY(100%)",
+          transition: "transform 250ms cubic-bezier(0.32, 0.72, 0, 1)",
+          paddingBottom: "env(safe-area-inset-bottom, 0px)",
+        }}
+      >
+        {/* Drag handle */}
+        <div className="flex justify-center pt-2.5 pb-1">
+          <div className="h-1 w-10 rounded-full bg-ps-text-ter/30" />
+        </div>
+
+        {/* Message preview */}
+        <div className="mx-4 mb-2 rounded-xl bg-ps-chip/50 px-3 py-2">
+          <p className="text-[11px] font-semibold text-ps-text-sec truncate">
+            {message.display_name}
+          </p>
+          <p className="text-xs text-ps-text-ter truncate mt-0.5">
+            {preview}
+          </p>
+        </div>
+
+        {/* Action buttons */}
+        <div className="px-2 pb-2">
+          {canReply && (
+            <ActionSheetButton
+              icon={<IconReply />}
+              label={t("chat.reply")}
+              onClick={onReply}
+            />
+          )}
+          {canEdit && (
+            <ActionSheetButton
+              icon={<IconEdit />}
+              label={t("chat.action_edit")}
+              onClick={onEdit}
+            />
+          )}
+          {canDelete && (
+            <ActionSheetButton
+              icon={<IconTrash />}
+              label={t("chat.delete_message")}
+              onClick={onDelete}
+              destructive
+            />
+          )}
+          {canMute && (
+            <ActionSheetButton
+              icon={<IconMute />}
+              label={t("chat.mute_user")}
+              onClick={onMute}
+              destructive
+            />
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function ActionSheetButton({
+  icon,
+  label,
+  onClick,
+  destructive = false,
+}: {
+  icon: React.ReactNode;
+  label: string;
+  onClick: () => void;
+  destructive?: boolean;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className={`flex w-full items-center gap-3 rounded-xl px-4 py-3 text-sm font-medium transition-colors active:bg-ps-chip ${
+        destructive ? "text-ps-red" : "text-ps-text"
+      }`}
+      style={{ touchAction: "manipulation", minHeight: 48 }}
+    >
+      <span className="flex h-5 w-5 items-center justify-center shrink-0">{icon}</span>
+      {label}
+    </button>
+  );
+}
+
+/* ── Action Sheet Icons ────────────────────────────────────────────── */
+
+function IconReply() {
+  return (
+    <svg width={18} height={18} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+      <polyline points="9 17 4 12 9 7" />
+      <path d="M20 18v-2a4 4 0 0 0-4-4H4" />
+    </svg>
+  );
+}
+
+function IconEdit() {
+  return (
+    <svg width={18} height={18} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+      <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
+      <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
+    </svg>
+  );
+}
+
+function IconTrash() {
+  return (
+    <svg width={18} height={18} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+      <polyline points="3 6 5 6 21 6" />
+      <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
+    </svg>
+  );
+}
+
+function IconMute() {
+  return (
+    <svg width={18} height={18} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+      <line x1="1" y1="1" x2="23" y2="23" />
+      <path d="M9 9v3a3 3 0 0 0 5.12 2.12M15 9.34V4a3 3 0 0 0-5.94-.6" />
+      <path d="M17 16.95A7 7 0 0 1 5 12v-2m14 0v2c0 .76-.12 1.49-.34 2.18" />
+      <line x1="12" y1="19" x2="12" y2="23" />
+      <line x1="8" y1="23" x2="16" y2="23" />
+    </svg>
   );
 }
