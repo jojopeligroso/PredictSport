@@ -636,13 +636,61 @@ function ClassificationRulesPreview({
   classificationKey: string;
 }) {
   const t = useT();
+  const storageKey = `rules-dismissed-${classificationKey}`;
+  const [dismissed, setDismissed] = useState(() => {
+    if (typeof window === "undefined") return false;
+    try { return localStorage.getItem(storageKey) === "1"; } catch { return false; }
+  });
 
+  const heading =
+    classificationKey === "format" ? t('rules_preview.format_heading')
+    : classificationKey === "overall" ? t('rules_preview.overall_heading')
+    : classificationKey === "full_bracket" ? t('rules_preview.bracket_heading')
+    : classificationKey === "knockout_bracket" ? t('rules_preview.ko_bracket_heading')
+    : null;
+
+  if (!heading) return null;
+
+  function toggleDismissed() {
+    setDismissed((prev) => {
+      const next = !prev;
+      try { localStorage.setItem(storageKey, next ? "1" : "0"); } catch { /* ignore */ }
+      return next;
+    });
+  }
+
+  // Collapsed: just show the heading with a tap-to-expand chevron
+  if (dismissed) {
+    return (
+      <div className="mt-4 rounded-xl border border-ps-border bg-ps-surface px-4 py-3">
+        <button
+          type="button"
+          onClick={toggleDismissed}
+          className="flex w-full items-center justify-between"
+        >
+          <h3 className="text-sm font-bold text-ps-text">{heading}</h3>
+          <svg className="h-4 w-4 text-ps-text-ter" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+          </svg>
+        </button>
+      </div>
+    );
+  }
+
+  // Expanded: full card with collapse chevron
   if (classificationKey === "format") {
     return (
       <div className="mt-4 rounded-xl border border-ps-border bg-ps-surface p-4">
         <div className="flex items-center justify-between">
-          <h3 className="text-sm font-bold text-ps-text">{t('rules_preview.format_heading')}</h3>
-          <FlagToggle />
+          <h3 className="text-sm font-bold text-ps-text">{heading}</h3>
+          <div className="flex items-center gap-2">
+            <FlagToggle />
+            <button type="button" onClick={toggleDismissed} className="flex h-6 w-6 items-center justify-center rounded text-ps-text-ter hover:text-ps-text" aria-label="Collapse">
+              <svg className="h-4 w-4 rotate-180" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+              </svg>
+            </button>
+          </div>
         </div>
         <div className="mt-3 space-y-2">
           <ScoringRow label={t('rules_preview.format_scoring_winner')} points={t('rules_preview.format_scoring_winner_pts')} />
@@ -666,8 +714,15 @@ function ClassificationRulesPreview({
     return (
       <div className="mt-4 rounded-xl border border-ps-border bg-ps-surface p-4">
         <div className="flex items-center justify-between">
-          <h3 className="text-sm font-bold text-ps-text">{t('rules_preview.overall_heading')}</h3>
-          <FlagToggle />
+          <h3 className="text-sm font-bold text-ps-text">{heading}</h3>
+          <div className="flex items-center gap-2">
+            <FlagToggle />
+            <button type="button" onClick={toggleDismissed} className="flex h-6 w-6 items-center justify-center rounded text-ps-text-ter hover:text-ps-text" aria-label="Collapse">
+              <svg className="h-4 w-4 rotate-180" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+              </svg>
+            </button>
+          </div>
         </div>
         <p className="mt-1 font-serif text-xs italic text-ps-text-sec">
           {t('rules_preview.overall_tagline')}
@@ -687,7 +742,14 @@ function ClassificationRulesPreview({
   if (classificationKey === "full_bracket") {
     return (
       <div className="mt-4 rounded-xl border border-ps-border bg-ps-surface p-4">
-        <h3 className="text-sm font-bold text-ps-text">{t('rules_preview.bracket_heading')}</h3>
+        <div className="flex items-center justify-between">
+          <h3 className="text-sm font-bold text-ps-text">{heading}</h3>
+          <button type="button" onClick={toggleDismissed} className="flex h-6 w-6 items-center justify-center rounded text-ps-text-ter hover:text-ps-text" aria-label="Collapse">
+            <svg className="h-4 w-4 rotate-180" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+            </svg>
+          </button>
+        </div>
         <p className="mt-2 text-xs leading-relaxed text-ps-text-sec">
           {t('rules_preview.bracket_p1')}
         </p>
@@ -698,7 +760,14 @@ function ClassificationRulesPreview({
   if (classificationKey === "knockout_bracket") {
     return (
       <div className="mt-4 rounded-xl border border-ps-border bg-ps-surface p-4">
-        <h3 className="text-sm font-bold text-ps-text">{t('rules_preview.ko_bracket_heading')}</h3>
+        <div className="flex items-center justify-between">
+          <h3 className="text-sm font-bold text-ps-text">{heading}</h3>
+          <button type="button" onClick={toggleDismissed} className="flex h-6 w-6 items-center justify-center rounded text-ps-text-ter hover:text-ps-text" aria-label="Collapse">
+            <svg className="h-4 w-4 rotate-180" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+            </svg>
+          </button>
+        </div>
         <p className="mt-2 text-xs leading-relaxed text-ps-text-sec">
           {t('rules_preview.ko_bracket_p1')}
         </p>
