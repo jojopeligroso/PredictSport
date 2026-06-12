@@ -479,13 +479,40 @@ function MatchPickRow({
         router.refresh();
 
         // Score is source of truth — always align the winner to match it.
+        // Bypass handlePickWinner (which has an isLocked guard) because this
+        // auto-derivation is part of the same atomic score submission, not a
+        // separate user action. Without this, a race with lock_time silently
+        // drops the winner update, leaving contradictory predictions.
         if (winnerEpt) {
           const implied = deriveWinnerFromScore(
             { home: homeNum, away: awayNum },
             event.sport,
             winnerOptions,
           );
-          if (implied && implied !== currentWinner) handlePickWinner(implied);
+          if (implied && implied !== currentWinner) {
+            const optimistic: Prediction = {
+              ...(winnerPred ??
+                ({
+                  id: `optimistic-${event.id}`,
+                  event_prediction_type_id: winnerEpt.id,
+                  event_id: event.id,
+                  user_id: "",
+                  prediction_type: "winner",
+                  is_correct: null,
+                  is_partial: null,
+                  points_awarded: null,
+                  note_text: null,
+                  note_visibility: "private",
+                  submitted_at: new Date().toISOString(),
+                  updated_at: new Date().toISOString(),
+                } as unknown as Prediction)),
+              prediction_data: { value: implied },
+            };
+            setWinnerPred(optimistic);
+            submitPrediction("winner", { value: implied }).then((saved) => {
+              if (saved) setWinnerPred(saved);
+            }).catch(() => {});
+          }
         }
       } catch {
         // Silently ignore score submission errors.
@@ -496,10 +523,11 @@ function MatchPickRow({
       submitPrediction,
       router,
       currentWinner,
+      winnerPred,
       winnerEpt,
       winnerOptions,
       event.sport,
-      handlePickWinner,
+      event.id,
     ],
   );
 
