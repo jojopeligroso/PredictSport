@@ -144,7 +144,7 @@ export function Md1PicksLanding(props: Md1PicksLandingProps) {
             alt="FIFA World Cup 2026"
             width={44}
             height={44}
-            className="h-11 w-auto shrink-0"
+            className="wc-mark h-11 w-auto shrink-0"
           />
           <div className="-mt-1 flex-1">
             <h1 className="mt-0.5 font-display text-2xl font-extrabold uppercase tracking-tight text-ps-text">

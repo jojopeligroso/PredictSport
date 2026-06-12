@@ -49,7 +49,7 @@ export function WcBrandedTitle({
           alt="FIFA World Cup 2026"
           width={44}
           height={44}
-          className="h-11 w-auto shrink-0"
+          className="wc-mark h-11 w-auto shrink-0"
         />
         <div className="-mt-1 flex-1">
           <h1 className="font-display text-xl font-extrabold leading-tight text-ps-text">

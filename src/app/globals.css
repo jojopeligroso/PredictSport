@@ -316,6 +316,14 @@ html[data-theme="dark"] .ps-island:not(.wc-theme .ps-island) {
    Active when the user has chosen Light explicitly. Dark remains the default
    WC look (set in .wc-theme above), and is also forced when the user picks
    Dark or when no theme is set and the OS prefers dark. */
+/* WC mark icon — gold glow so it doesn't vanish on dark backgrounds */
+.wc-theme .wc-mark {
+  filter: drop-shadow(0 0 3px rgba(212, 175, 55, 0.5));
+}
+html[data-theme="light"] .wc-theme .wc-mark {
+  filter: none;
+}
+
 html[data-theme="light"] .wc-theme {
   --ps-floor: #ddd7cc;
   --ps-bg: #efe9de;
