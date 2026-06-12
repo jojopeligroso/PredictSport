@@ -339,13 +339,13 @@ function PredictionRow({
   // Row variant classes
   let rowClass = "border-l-transparent bg-transparent"; // pending / default
   if (row.isSelf) {
-    rowClass = "border-l-ps-amber bg-[#fffbeb]";
+    rowClass = "border-l-ps-amber bg-ps-amber-soft";
   } else if (isExact) {
-    rowClass = "border-l-[#00c87a] bg-[rgba(0,200,122,0.06)]";
+    rowClass = "border-l-[#00c87a] bg-ps-green-soft";
   } else if (isCorrect) {
-    rowClass = "border-l-ps-green bg-[#f0fdf8]";
+    rowClass = "border-l-ps-green bg-ps-green-soft";
   } else if (isWrong) {
-    rowClass = "border-l-ps-red bg-[#fff5f6]";
+    rowClass = "border-l-ps-red bg-ps-red-soft";
   } else if (noPick) {
     rowClass = "border-l-ps-border bg-transparent";
   }
@@ -407,7 +407,7 @@ function PredictionRow({
           <div
             className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-[11px] font-bold ${
               row.isSelf
-                ? "border-[1.5px] border-ps-amber bg-[#fef3c7] text-ps-text"
+                ? "border-[1.5px] border-ps-amber bg-ps-amber-soft text-ps-text"
                 : "border-[1.5px] border-ps-border bg-ps-bg text-ps-text"
             } ${noPick ? "opacity-50" : ""}`}
           >

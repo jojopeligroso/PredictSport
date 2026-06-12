@@ -83,8 +83,8 @@ export function RivalTeaser({ competitionId }: Props) {
         const isWrong = row.winnerCorrect === false;
 
         let rowClass = "border-l-transparent";
-        if (isExact || isCorrect) rowClass = "border-l-ps-green bg-[#f0fdf8]";
-        else if (isWrong) rowClass = "border-l-ps-red bg-[#fff5f6]";
+        if (isExact || isCorrect) rowClass = "border-l-ps-green bg-ps-green-soft";
+        else if (isWrong) rowClass = "border-l-ps-red bg-ps-red-soft";
         else if (noPick) rowClass = "border-l-ps-border";
 
         // Display value: exact correct → score, winner correct → team, wrong → team (not score)
