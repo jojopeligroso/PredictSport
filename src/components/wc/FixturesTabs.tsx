@@ -565,8 +565,8 @@ function FixtureCard({
       if (showCorrectness && actualWinner) {
         ringClass =
           currentWinner === actualWinner
-            ? "ring-[3px] ring-ps-green/85"
-            : "ring-[3px] ring-ps-red/85";
+            ? "ring-[6px] ring-ps-green/85"
+            : "ring-[6px] ring-ps-red/85";
       } else {
         ringClass = "ring-2 ring-ps-amber/50";
       }
