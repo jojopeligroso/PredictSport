@@ -10,8 +10,8 @@ import { useUnreadChat } from "@/hooks/useUnreadChat";
 function IconHome() {
   return (
     <svg
-      width={20}
-      height={20}
+      width={22}
+      height={22}
       viewBox="0 0 24 24"
       fill="none"
       stroke="currentColor"
@@ -29,8 +29,8 @@ function IconHome() {
 function IconCrosshair() {
   return (
     <svg
-      width={20}
-      height={20}
+      width={22}
+      height={22}
       viewBox="0 0 24 24"
       fill="none"
       stroke="currentColor"
@@ -50,8 +50,8 @@ function IconCrosshair() {
 function IconTrophy() {
   return (
     <svg
-      width={20}
-      height={20}
+      width={22}
+      height={22}
       viewBox="0 0 24 24"
       fill="none"
       stroke="currentColor"
@@ -72,8 +72,8 @@ function IconTrophy() {
 function IconChat() {
   return (
     <svg
-      width={20}
-      height={20}
+      width={22}
+      height={22}
       viewBox="0 0 24 24"
       fill="none"
       stroke="currentColor"
@@ -155,6 +155,9 @@ export function TabBar({ latestChatAt }: TabBarProps) {
         right: 0,
         zIndex: 40,
         paddingBottom: "env(safe-area-inset-bottom)",
+        touchAction: "manipulation",
+        userSelect: "none",
+        WebkitTapHighlightColor: "transparent",
       }}
       className="border-t border-ps-border bg-ps-bg"
     >
@@ -181,7 +184,7 @@ export function TabBar({ latestChatAt }: TabBarProps) {
                 )}
               </span>
               <span
-                className="text-[9px] font-semibold uppercase tracking-wider leading-none"
+                className="text-[10px] font-semibold uppercase tracking-wider leading-none"
               >
                 {t(tab.key)}
               </span>
