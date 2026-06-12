@@ -5,7 +5,6 @@ import {
   autoResolveEvent,
   type AutoResultEvent,
 } from "@/lib/sports/auto-result";
-import { notifyResultConfirmed } from "@/lib/notifications/result-confirmed";
 
 /**
  * POST /api/results/check
@@ -13,6 +12,9 @@ import { notifyResultConfirmed } from "@/lib/notifications/result-confirmed";
  * User-triggered result check for a single event. Runs the same
  * autoResolveEvent logic as the cron, but for one event only.
  * Requires the user to be a member of the event's competition.
+ *
+ * Notifications (chat message + push) are handled inside
+ * autoResolveEvent — do NOT call notifyResultConfirmed here.
  */
 export async function POST(request: Request) {
   const supabase = await createClient();
@@ -31,15 +33,27 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Invalid JSON" }, { status: 400 });
   }
 
-  if (!body.event_id) {
+  if (!body.event_id || typeof body.event_id !== "string") {
     return NextResponse.json({ error: "event_id required" }, { status: 400 });
   }
 
-  // Fetch the event
+  // Verify membership first, then fetch event details
+  const { data: membership } = await supabase
+    .from("competition_members")
+    .select("competition_id")
+    .eq("user_id", user.id)
+    .limit(1)
+    .maybeSingle();
+
+  if (!membership) {
+    return NextResponse.json({ error: "Not a member" }, { status: 403 });
+  }
+
+  // Fetch the event (RLS scopes to visible events)
   const { data: event, error: eventError } = await supabase
     .from("events")
     .select(
-      "id, event_name, sport, start_time, lock_time, external_event_id, provider_league, result_data, competition_id, result_confirmed, status"
+      "id, event_name, sport, start_time, external_event_id, provider_league, result_data, competition_id, result_confirmed"
     )
     .eq("id", body.event_id)
     .single();
@@ -48,29 +62,15 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Event not found" }, { status: 404 });
   }
 
-  // Already confirmed — nothing to do
   if (event.result_confirmed) {
     return NextResponse.json({ status: "already_confirmed" });
   }
 
-  // Must be past start time
   if (new Date(event.start_time) > new Date()) {
     return NextResponse.json(
       { error: "Match has not started yet" },
       { status: 400 }
     );
-  }
-
-  // Verify user is a competition member
-  const { data: membership } = await supabase
-    .from("competition_members")
-    .select("id")
-    .eq("competition_id", event.competition_id)
-    .eq("user_id", user.id)
-    .maybeSingle();
-
-  if (!membership) {
-    return NextResponse.json({ error: "Not a member" }, { status: 403 });
   }
 
   // Use service client for autoResolveEvent (needs write access)
@@ -89,24 +89,6 @@ export async function POST(request: Request) {
     event as AutoResultEvent,
     new Date()
   );
-
-  // If confirmed, fire notifications
-  if (outcome.status === "confirmed") {
-    const resultData = (
-      await serviceClient
-        .from("events")
-        .select("result_data")
-        .eq("id", event.id)
-        .single()
-    ).data?.result_data as Record<string, unknown>;
-
-    notifyResultConfirmed(
-      event.id,
-      event.competition_id,
-      event.event_name,
-      resultData ?? {},
-    ).catch(() => {});
-  }
 
   return NextResponse.json({
     status: outcome.status,

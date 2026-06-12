@@ -612,9 +612,5 @@
   "chat.member_count": "{count} miembros",
   "chat.new_message": "Nuevo mensaje en el chat",
   "chat.something_to_say": "Algo que decir?",
-  "dash.chat_preview": "Lo ultimo en el chat",
-  "dash.check_result": "Buscar resultado",
-  "dash.checking_result": "Buscando...",
-  "dash.result_found": "Resultado confirmado!",
-  "dash.result_not_ready": "Resultado no disponible aun"
+  "dash.chat_preview": "Lo ultimo en el chat"
 }

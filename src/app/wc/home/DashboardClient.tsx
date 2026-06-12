@@ -160,6 +160,43 @@ export function DashboardClient({
     };
   }, [refreshData, nextEvents]);
 
+  // Silent result check on mount: for events 2+ hours past start that aren't
+  // confirmed, call the user-triggered result check. If any confirm, refresh.
+  // Intentionally runs once on mount only — deps are captured at initial render.
+  const checkedRef = useRef(false);
+  useEffect(() => {
+    if (checkedRef.current) return;
+    checkedRef.current = true;
+
+    const TWO_HOURS = 2 * 60 * 60 * 1000;
+    const eligible = nextEvents.filter((e) => {
+      const startMs = new Date(e.start_time).getTime();
+      return !e.result_confirmed && Date.now() - startMs >= TWO_HOURS;
+    });
+    if (eligible.length === 0) return;
+
+    (async () => {
+      let anyConfirmed = false;
+      for (const event of eligible) {
+        try {
+          const res = await fetch("/api/results/check", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ event_id: event.id }),
+          });
+          const data = await res.json();
+          if (data.status === "confirmed" || data.status === "already_confirmed") {
+            anyConfirmed = true;
+          }
+        } catch (err) {
+          console.warn("[check-result]", event.id, err);
+        }
+      }
+      if (anyConfirmed) router.refresh();
+    })();
+  // eslint-disable-next-line react-hooks/exhaustive-deps -- one-shot on mount
+  }, []);
+
   // Filter events by selected date pill
   // No pill selected → original capped nextEvents (unchanged deploy behavior)
   // Pill selected → all events for that date from pillDateEvents
@@ -280,7 +317,6 @@ export function DashboardClient({
                 {t('dash.continue_round')}
               </Link>
             </div>
-            <CheckResultButton events={filteredEvents} />
           </section>
         )}
       </OnboardingSection>
@@ -762,79 +798,6 @@ function TodayResultRow({ result }: { result: ResultRow }) {
         <div className="mt-1 pl-4.5">
           <span className="text-[11px] text-ps-text-ter">{t('dash.no_prediction')}</span>
         </div>
-      )}
-    </div>
-  );
-}
-
-/**
- * "Check for results" button — appears when any displayed event is
- * 2+ hours past start_time and not yet confirmed. Calls the user-triggered
- * result check endpoint for each eligible event.
- */
-function CheckResultButton({ events }: { events: WindowEvent[] }) {
-  const t = useT();
-  const router = useRouter();
-  const [checking, setChecking] = useState(false);
-  const [result, setResult] = useState<"idle" | "confirmed" | "not_ready">("idle");
-
-  const TWO_HOURS = 2 * 60 * 60 * 1000;
-  const eligibleEvents = events.filter((e) => {
-    const startMs = new Date(e.start_time).getTime();
-    return !e.result_confirmed && Date.now() - startMs >= TWO_HOURS;
-  });
-
-  if (eligibleEvents.length === 0) return null;
-
-  async function handleCheck() {
-    setChecking(true);
-    setResult("idle");
-    let anyConfirmed = false;
-
-    for (const event of eligibleEvents) {
-      try {
-        const res = await fetch("/api/results/check", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ event_id: event.id }),
-        });
-        const data = await res.json();
-        if (data.status === "confirmed" || data.status === "already_confirmed") {
-          anyConfirmed = true;
-        }
-      } catch {
-        // swallow — best effort
-      }
-    }
-
-    setChecking(false);
-    setResult(anyConfirmed ? "confirmed" : "not_ready");
-
-    if (anyConfirmed) {
-      // Refresh the page to show updated results
-      setTimeout(() => router.refresh(), 500);
-    }
-  }
-
-  return (
-    <div className="mt-3 text-center">
-      {result === "confirmed" ? (
-        <span className="text-xs font-semibold text-ps-green">
-          {t("dash.result_found")}
-        </span>
-      ) : result === "not_ready" ? (
-        <span className="text-xs text-ps-text-ter">
-          {t("dash.result_not_ready")}
-        </span>
-      ) : (
-        <button
-          type="button"
-          onClick={handleCheck}
-          disabled={checking}
-          className="text-xs font-semibold text-ps-amber hover:opacity-80 disabled:opacity-50"
-        >
-          {checking ? t("dash.checking_result") : t("dash.check_result")}
-        </button>
       )}
     </div>
   );
