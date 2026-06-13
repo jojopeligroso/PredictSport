@@ -89,10 +89,22 @@ export function ChatWidget({
   const [replyTo, setReplyTo] = useState<ChatMessageWithUser | null>(null);
   const [mediaPreview, setMediaPreview] = useState<{ file: File; url: string } | null>(null);
   const [isUploading, setIsUploading] = useState(false);
-  const inputRef = useRef<HTMLInputElement>(null);
+  const inputRef = useRef<HTMLTextAreaElement>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const prevMessageCount = useRef(0);
+
+  const autosizeInput = useCallback(() => {
+    const el = inputRef.current;
+    if (!el) return;
+    el.style.height = "auto";
+    const max = 5 * 24; // ~5 lines at line-height 24px; overflow scrolls internally
+    el.style.height = `${Math.min(el.scrollHeight, max)}px`;
+  }, []);
+
+  useEffect(() => {
+    autosizeInput();
+  }, [inputValue, replyTo, mediaPreview, autosizeInput]);
 
   // Compute mute remaining time
   const isMuted = mutedUntil ? new Date(mutedUntil) > new Date() : false;
@@ -120,7 +132,7 @@ export function ChatWidget({
   }, [messages.length]);
 
   // Handle input changes
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleInputChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
     const val = e.target.value;
     const pos = e.target.selectionStart ?? val.length;
     setInputValue(val);
@@ -213,7 +225,7 @@ export function ChatWidget({
   }, [stageMediaFile]);
 
   // Handle paste — extract image from clipboard
-  const handlePaste = useCallback((e: React.ClipboardEvent<HTMLInputElement>) => {
+  const handlePaste = useCallback((e: React.ClipboardEvent<HTMLTextAreaElement>) => {
     const items = e.clipboardData?.items;
     if (!items) return;
     for (let i = 0; i < items.length; i++) {
@@ -283,7 +295,7 @@ export function ChatWidget({
     }
   };
 
-  const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
     // Let mention autocomplete handle arrow/enter/tab when visible
     if (showMentions && ["ArrowDown", "ArrowUp", "Tab"].includes(e.key)) {
       return; // MentionAutocomplete handles these via its own onKeyDown
@@ -303,6 +315,27 @@ export function ChatWidget({
   // Mini mode: show limited messages
   const displayMessages =
     mode === "mini" ? messages.slice(-MINI_SIZE) : messages;
+
+  // Date separator key — local YYYY-MM-DD
+  const localDateKey = (iso: string) => {
+    const d = new Date(iso);
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+  };
+
+  const formatDateSeparator = (iso: string): string => {
+    const d = new Date(iso);
+    const now = new Date();
+    const startOfDay = (x: Date) => new Date(x.getFullYear(), x.getMonth(), x.getDate()).getTime();
+    const diffDays = Math.round((startOfDay(now) - startOfDay(d)) / (24 * 60 * 60 * 1000));
+    if (diffDays === 0) return t('chat.date_today');
+    if (diffDays === 1) return t('chat.date_yesterday');
+    // Same year: "Mon 9 Jun" — different year: include year
+    const opts: Intl.DateTimeFormatOptions =
+      d.getFullYear() === now.getFullYear()
+        ? { weekday: "short", day: "numeric", month: "short" }
+        : { day: "numeric", month: "short", year: "numeric" };
+    return d.toLocaleDateString(undefined, opts);
+  };
 
   // Compute grouping: consecutive messages from the same sender within 10 min
   const GROUP_WINDOW_MS = 10 * 60 * 1000;
@@ -371,22 +404,35 @@ export function ChatWidget({
             </p>
           </div>
         ) : (
-          displayMessages.map((msg, i) => (
-            <ChatMessage
-              key={msg.id}
-              message={msg}
-              currentUserId={currentUserId}
-              currentUserRole={currentUserRole}
-              members={members}
-              isFirstInGroup={groupPositions[i].isFirstInGroup}
-              isLastInGroup={groupPositions[i].isLastInGroup}
-              onDelete={deleteMessage}
-              onEdit={editMessage}
-              onMute={handleMuteUser}
-              onReply={handleReply}
-              onScrollToMessage={handleScrollToMessage}
-            />
-          ))
+          displayMessages.map((msg, i) => {
+            const prev = i > 0 ? displayMessages[i - 1] : null;
+            const showDateSeparator =
+              !prev || localDateKey(prev.created_at) !== localDateKey(msg.created_at);
+            return (
+              <div key={msg.id}>
+                {showDateSeparator && (
+                  <div className="flex items-center justify-center py-2">
+                    <span className="text-[10px] uppercase tracking-wide text-ps-text-ter">
+                      {formatDateSeparator(msg.created_at)}
+                    </span>
+                  </div>
+                )}
+                <ChatMessage
+                  message={msg}
+                  currentUserId={currentUserId}
+                  currentUserRole={currentUserRole}
+                  members={members}
+                  isFirstInGroup={groupPositions[i].isFirstInGroup}
+                  isLastInGroup={groupPositions[i].isLastInGroup}
+                  onDelete={deleteMessage}
+                  onEdit={editMessage}
+                  onMute={handleMuteUser}
+                  onReply={handleReply}
+                  onScrollToMessage={handleScrollToMessage}
+                />
+              </div>
+            );
+          })
         )}
       </div>
 
@@ -454,13 +500,13 @@ export function ChatWidget({
               </div>
             )}
 
-            <div className="flex items-center gap-2">
+            <div className="flex items-end gap-2">
               {/* Media upload button */}
               <button
                 type="button"
                 onClick={() => fileInputRef.current?.click()}
                 disabled={isUploading}
-                className="flex-shrink-0 rounded-xl p-1.5 text-ps-text-ter hover:text-ps-text hover:bg-ps-chip transition-colors disabled:opacity-40"
+                className="self-end flex-shrink-0 rounded-xl p-1.5 text-ps-text-ter hover:text-ps-text hover:bg-ps-chip transition-colors disabled:opacity-40"
                 title={t('chat.attach_button')}
               >
                 <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -477,26 +523,26 @@ export function ChatWidget({
                 onChange={handleFileSelect}
               />
 
-              <input
+              <textarea
                 ref={inputRef}
-                type="text"
+                rows={1}
                 value={inputValue}
                 onChange={handleInputChange}
                 onKeyDown={handleKeyDown}
                 onPaste={handlePaste}
                 onSelect={(e) =>
                   setCursorPosition(
-                    (e.target as HTMLInputElement).selectionStart ?? 0
+                    (e.target as HTMLTextAreaElement).selectionStart ?? 0
                   )
                 }
                 placeholder={replyTo ? t('chat.placeholder_reply') : t('chat.placeholder')}
                 maxLength={2000}
-                className="flex-1 rounded-xl border border-ps-border bg-ps-bg px-3 py-1.5 text-sm text-ps-text placeholder:text-ps-text-ter focus:outline-none focus:ring-1 focus:ring-ps-amber"
+                className="flex-1 resize-none overflow-y-auto rounded-xl border border-ps-border bg-ps-bg px-3 py-1.5 text-sm leading-6 text-ps-text placeholder:text-ps-text-ter focus:outline-none focus:ring-1 focus:ring-ps-amber"
               />
               <button
                 onClick={handleSend}
                 disabled={(!inputValue.trim() && !mediaPreview) || isSending || isUploading}
-                className="rounded-xl bg-ps-amber px-3 py-1.5 text-sm font-bold text-ps-bg hover:opacity-90 disabled:opacity-40"
+                className="self-end rounded-xl bg-ps-amber px-3 py-1.5 text-sm font-bold text-ps-bg hover:opacity-90 disabled:opacity-40"
               >
                 {isUploading ? "..." : isSending ? "..." : t('chat.send')}
               </button>

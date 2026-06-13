@@ -530,6 +530,8 @@
   "chat.action_edit": "edit",
   "chat.action_delete": "delete",
   "chat.error_send_message": "Failed to send message",
+  "chat.date_today": "Today",
+  "chat.date_yesterday": "Yesterday",
   "prediction.you_predicted_win": "You predicted {team} to win {score}",
   "prediction.you_predicted_draw": "You predicted {homeTeam} and {awayTeam} to draw {score}",
   "prediction.you_predicted_draw_simple": "You predicted a draw",

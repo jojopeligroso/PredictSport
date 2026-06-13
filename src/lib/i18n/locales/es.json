@@ -530,6 +530,8 @@
   "chat.action_edit": "editar",
   "chat.action_delete": "eliminar",
   "chat.error_send_message": "Error al enviar mensaje",
+  "chat.date_today": "Hoy",
+  "chat.date_yesterday": "Ayer",
   "prediction.you_predicted_win": "Pronosticaste que {team} ganaría {score}",
   "prediction.you_predicted_draw": "Pronosticaste empate {score} entre {homeTeam} y {awayTeam}",
   "prediction.you_predicted_draw_simple": "Pronosticaste un empate",
