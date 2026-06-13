@@ -111,7 +111,12 @@ function scoreWinner(
 ): ScoringResult {
   // Accept both { winner: "X" } and { value: "X" } shapes
   const predicted = normalizeStr(prediction.winner ?? prediction.value);
-  const allowDraw = config?.allow_draw === true;
+  // Draws are valid whenever the EPT either explicitly opts in via allow_draw
+  // OR offers "Draw" as a selectable option. The admin path sets options but
+  // doesn't always set allow_draw; without this fallback, draw results void.
+  const options = Array.isArray(config?.options) ? (config.options as unknown[]) : [];
+  const optionsHaveDraw = options.some((o) => normalizeStr(o) === "draw");
+  const allowDraw = config?.allow_draw === true || optionsHaveDraw;
 
   let actual: string;
   if (result.winner) {
@@ -325,7 +330,11 @@ function scoreHeadToHead(
   config: Record<string, unknown> | null
 ): ScoringResult {
   const predicted = normalizeStr(prediction.winner ?? prediction.selection);
-  const allowDraw = config?.allow_draw === true;
+  // Mirror scoreWinner: if "Draw" is in options, treat draws as scoreable
+  // even when allow_draw isn't explicitly set on the EPT config.
+  const options = Array.isArray(config?.options) ? (config.options as unknown[]) : [];
+  const optionsHaveDraw = options.some((o) => normalizeStr(o) === "draw");
+  const allowDraw = config?.allow_draw === true || optionsHaveDraw;
   const drawPoints = Number(config?.draw_points ?? fullPoints);
 
   let actual: string;

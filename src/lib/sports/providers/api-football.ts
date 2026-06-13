@@ -121,14 +121,14 @@ export class ApiFootballProvider extends BaseProvider {
     const awayScore = fixture.goals.away ?? 0;
     const hasScore = fixture.goals.home !== null;
 
+    const isFinal = fixture.fixture.status.short === "FT";
+
     let winner: string | null = null;
     if (hasScore) {
       if (homeScore > awayScore) winner = fixture.teams.home.name;
       else if (awayScore > homeScore) winner = fixture.teams.away.name;
-      // Draw: winner stays null
+      else if (isFinal) winner = "draw";
     }
-
-    const isFinal = fixture.fixture.status.short === "FT";
 
     const periods: Record<string, { home: number; away: number }> = {};
     if (fixture.score.halftime.home !== null) {

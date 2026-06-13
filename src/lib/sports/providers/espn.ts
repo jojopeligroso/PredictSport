@@ -298,9 +298,11 @@ export class ESPNProvider extends BaseProvider {
     const homeName = home?.team?.displayName ?? home?.athlete?.displayName ?? "Home";
     const awayName = away?.team?.displayName ?? away?.athlete?.displayName ?? "Away";
 
+    const isFinal = event.status.type.completed === true || event.status.type.state === "post";
     let winner: string | null = null;
     if (home?.winner) winner = homeName;
     else if (away?.winner) winner = awayName;
+    else if (isFinal && homeScore === awayScore) winner = "draw";
 
     return {
       provider: this.name,

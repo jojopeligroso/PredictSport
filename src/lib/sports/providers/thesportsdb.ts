@@ -110,6 +110,7 @@ export class TheSportsDBProvider extends BaseProvider {
     if (hasScore) {
       if (homeScore > awayScore) winner = event.strHomeTeam;
       else if (awayScore > homeScore) winner = event.strAwayTeam;
+      else if (isFinal) winner = "draw";
       margin = Math.abs(homeScore - awayScore);
       stats.total_goals = homeScore + awayScore;
     }
