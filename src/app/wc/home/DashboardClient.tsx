@@ -169,22 +169,24 @@ export function DashboardClient({
     };
   }, [refreshData, nextEvents]);
 
-  // Silent result check on mount: for events 2+ hours past start that aren't
-  // confirmed, call the user-triggered result check. If any confirm, refresh.
-  // Intentionally runs once on mount only — deps are captured at initial render.
-  const checkedRef = useRef(false);
+  // Active result check: for unconfirmed events past their expected match
+  // duration (checkAfterHours), call /api/results/check to try to confirm.
+  // Runs on mount and repeats every 5 min while eligible events exist.
+  // This makes every user with the dashboard open a result-resolution trigger,
+  // so even if the pg_cron and sibling propagation both fail, results still
+  // get confirmed as long as anyone is looking at the dashboard.
+  const checkInFlight = useRef(false);
   useEffect(() => {
-    if (checkedRef.current) return;
-    checkedRef.current = true;
+    async function checkResults() {
+      const eligible = nextEvents.filter((e) => {
+        if (e.result_confirmed) return false;
+        const { checkAfterHours } = getTimingForSport(e.sport);
+        const startMs = new Date(e.start_time).getTime();
+        return Date.now() - startMs >= checkAfterHours * 3600000;
+      });
+      if (eligible.length === 0 || checkInFlight.current) return;
 
-    const TWO_HOURS = 2 * 60 * 60 * 1000;
-    const eligible = nextEvents.filter((e) => {
-      const startMs = new Date(e.start_time).getTime();
-      return !e.result_confirmed && Date.now() - startMs >= TWO_HOURS;
-    });
-    if (eligible.length === 0) return;
-
-    (async () => {
+      checkInFlight.current = true;
       let anyConfirmed = false;
       for (const event of eligible) {
         try {
@@ -201,10 +203,14 @@ export function DashboardClient({
           console.warn("[check-result]", event.id, err);
         }
       }
+      checkInFlight.current = false;
       if (anyConfirmed) router.refresh();
-    })();
-  // eslint-disable-next-line react-hooks/exhaustive-deps -- one-shot on mount
-  }, []);
+    }
+
+    checkResults();
+    const interval = setInterval(checkResults, 5 * 60_000);
+    return () => clearInterval(interval);
+  }, [nextEvents, router]);
 
   // Filter events by selected date pill
   // No pill selected → original capped nextEvents (unchanged deploy behavior)
