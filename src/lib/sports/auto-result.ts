@@ -311,51 +311,8 @@ export async function autoResolveEvent(
       };
     }
 
-    // Fetch event_prediction_types
-    const { data: eptRows } = await supabase
-      .from("event_prediction_types")
-      .select("*")
-      .eq("event_id", event.id);
-
-    const eptMap = new Map<string, EventPredictionType>();
-    for (const row of eptRows ?? []) {
-      eptMap.set(row.prediction_type, row as EventPredictionType);
-    }
-
-    // Fetch all predictions
-    const { data: predictions } = await supabase
-      .from("predictions")
-      .select("*")
-      .eq("event_id", event.id);
-
-    // Score each prediction
-    for (const prediction of predictions ?? []) {
-      const predType = prediction.prediction_type as PredictionType;
-      const ept = eptMap.get(predType);
-
-      const eptData = ept ?? {
-        points: 10,
-        partial_points: 0,
-        config: null,
-      };
-
-      const scoreResult = scorePrediction(
-        predType,
-        prediction.prediction_data as Record<string, unknown>,
-        finalResultData as Record<string, unknown>,
-        eptData
-      );
-
-      await supabase
-        .from("predictions")
-        .update({
-          is_correct: scoreResult.is_correct,
-          is_partial: scoreResult.is_partial,
-          points_awarded: scoreResult.points_awarded,
-          updated_at: new Date().toISOString(),
-        })
-        .eq("id", prediction.id);
-    }
+    // Score predictions for the confirmed event
+    await scoreEventPredictions(supabase, event.id, finalResultData);
 
     // Notify all members (chat message + push) — fire-and-forget
     notifyResultConfirmed(
@@ -364,6 +321,17 @@ export async function autoResolveEvent(
       event.event_name,
       finalResultData,
     ).catch(() => {});
+
+    // Propagate result to sibling events (same fixture across other
+    // competition instances). One real-world match = one result,
+    // regardless of how many instances were created from the blueprint.
+    await propagateResultToSiblings(
+      supabase,
+      event.id,
+      event.external_event_id,
+      event.event_name,
+      finalResultData,
+    );
 
     return {
       ...base,
@@ -380,6 +348,122 @@ export async function autoResolveEvent(
 // ---------------------------------------------------------------------------
 // Helpers
 // ---------------------------------------------------------------------------
+
+/** Strip the `manual:` prefix to get the canonical fixture identifier. */
+function normalizeExternalId(id: string | null): string | null {
+  if (!id) return null;
+  return id.startsWith("manual:") ? id.slice(7) : id;
+}
+
+/**
+ * Score all predictions for a single event against confirmed result data.
+ */
+async function scoreEventPredictions(
+  supabase: SupabaseClient,
+  eventId: string,
+  resultData: Record<string, unknown>,
+): Promise<void> {
+  const { data: eptRows } = await supabase
+    .from("event_prediction_types")
+    .select("*")
+    .eq("event_id", eventId);
+
+  const eptMap = new Map<string, EventPredictionType>();
+  for (const row of eptRows ?? []) {
+    eptMap.set(row.prediction_type, row as EventPredictionType);
+  }
+
+  const { data: predictions } = await supabase
+    .from("predictions")
+    .select("*")
+    .eq("event_id", eventId);
+
+  for (const prediction of predictions ?? []) {
+    const predType = prediction.prediction_type as PredictionType;
+    const ept = eptMap.get(predType);
+    const eptData = ept ?? { points: 10, partial_points: 0, config: null };
+
+    const scoreResult = scorePrediction(
+      predType,
+      prediction.prediction_data as Record<string, unknown>,
+      resultData,
+      eptData,
+    );
+
+    await supabase
+      .from("predictions")
+      .update({
+        is_correct: scoreResult.is_correct,
+        is_partial: scoreResult.is_partial,
+        points_awarded: scoreResult.points_awarded,
+        updated_at: new Date().toISOString(),
+      })
+      .eq("id", prediction.id);
+  }
+}
+
+/**
+ * Propagate a confirmed result to all sibling events across competition
+ * instances that share the same fixture (normalized external_event_id).
+ *
+ * One real-world match produces one result. The blueprint/instance model
+ * means multiple competition instances can reference the same fixture.
+ * When the result is confirmed for any one instance, every other instance
+ * gets the same result_data, scoring, and notifications.
+ */
+async function propagateResultToSiblings(
+  supabase: SupabaseClient,
+  confirmedEventId: string,
+  externalEventId: string | null,
+  eventName: string,
+  resultData: Record<string, unknown>,
+): Promise<void> {
+  const canonicalId = normalizeExternalId(externalEventId);
+  if (!canonicalId) return;
+
+  // Find all unconfirmed events that share this fixture.
+  // Match both `manual:xyz` and bare `xyz` forms.
+  const { data: siblings } = await supabase
+    .from("events")
+    .select("id, competition_id, external_event_id")
+    .eq("result_confirmed", false)
+    .neq("id", confirmedEventId)
+    .or(`external_event_id.eq.${canonicalId},external_event_id.eq.manual:${canonicalId}`);
+
+  if (!siblings || siblings.length === 0) return;
+
+  for (const sibling of siblings) {
+    // Confirm the sibling event
+    const { data: updated } = await supabase
+      .from("events")
+      .update({
+        result_data: resultData,
+        result_confirmed: true,
+        status: "resulted",
+      })
+      .eq("id", sibling.id)
+      .eq("result_confirmed", false)
+      .select("id")
+      .maybeSingle();
+
+    if (!updated) continue; // already confirmed by concurrent process
+
+    // Score predictions for this instance
+    await scoreEventPredictions(supabase, sibling.id, resultData);
+
+    // Notify this competition's members
+    notifyResultConfirmed(
+      sibling.id,
+      sibling.competition_id,
+      eventName,
+      resultData,
+    ).catch(() => {});
+
+    console.log(
+      `[auto-result] propagated result to sibling ${sibling.id} (competition ${sibling.competition_id})`,
+    );
+  }
+}
 
 /**
  * Convert a NormalizedResult to a plain JSON object suitable for result_data,
