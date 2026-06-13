@@ -111,7 +111,7 @@ export function WcJoinCard({
 
       <Link
         href={createHref}
-        className="mt-3 inline-block text-xs font-medium text-ps-text-ter transition-colors hover:text-ps-text-sec"
+        className="mt-3 inline-block px-2 py-1.5 text-xs font-medium text-ps-text-ter transition-colors hover:text-ps-text-sec"
       >
         {t("wc.or_create")}
       </Link>

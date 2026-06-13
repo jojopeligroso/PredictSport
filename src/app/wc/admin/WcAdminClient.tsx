@@ -364,7 +364,7 @@ function Dashboard({
           <button
             type="button"
             onClick={copyInviteLink}
-            className="shrink-0 rounded-lg bg-ps-amber px-3 py-2 text-xs font-bold text-[#1a1208] transition-opacity hover:opacity-90"
+            className="shrink-0 rounded-lg bg-ps-amber px-3.5 py-2.5 text-xs font-bold text-[#1a1208] transition-opacity hover:opacity-90"
           >
             {copiedInvite ? "Copied" : "Copy Link"}
           </button>
@@ -429,7 +429,7 @@ function Dashboard({
                       type="button"
                       onClick={() => handleRoleChange(m.user_id, "mod", m.display_name)}
                       disabled={promotingId === m.user_id}
-                      className="rounded-lg border border-ps-border px-2 py-1 text-[11px] font-semibold text-[#3b82f6] transition-colors hover:border-[#3b82f6] disabled:opacity-50"
+                      className="rounded-lg border border-ps-border px-2.5 py-1.5 text-[11px] font-semibold text-[#3b82f6] transition-colors hover:border-[#3b82f6] disabled:opacity-50"
                     >
                       {promotingId === m.user_id ? "..." : "Make Mod"}
                     </button>
@@ -439,7 +439,7 @@ function Dashboard({
                       type="button"
                       onClick={() => handleRoleChange(m.user_id, "participant", m.display_name)}
                       disabled={promotingId === m.user_id}
-                      className="rounded-lg border border-ps-border px-2 py-1 text-[11px] font-semibold text-ps-text-ter transition-colors hover:border-ps-text-sec disabled:opacity-50"
+                      className="rounded-lg border border-ps-border px-2.5 py-1.5 text-[11px] font-semibold text-ps-text-ter transition-colors hover:border-ps-text-sec disabled:opacity-50"
                     >
                       {promotingId === m.user_id ? "..." : "Remove Mod"}
                     </button>
@@ -449,7 +449,7 @@ function Dashboard({
                       type="button"
                       onClick={() => handleRemove(m.user_id, m.display_name)}
                       disabled={removingId === m.user_id}
-                      className="rounded-lg border border-ps-border px-2 py-1 text-[11px] font-semibold text-ps-text-sec transition-colors hover:border-ps-red hover:text-ps-red disabled:opacity-50"
+                      className="rounded-lg border border-ps-border px-2.5 py-1.5 text-[11px] font-semibold text-ps-text-sec transition-colors hover:border-ps-red hover:text-ps-red disabled:opacity-50"
                     >
                       {removingId === m.user_id ? "..." : "Remove"}
                     </button>

@@ -114,7 +114,7 @@ export function JoinFlow({
           type="button"
           onClick={handleJoin}
           disabled={submitting || !nameValid}
-          className="mt-5 w-full rounded-lg bg-ps-amber px-4 py-2.5 text-sm font-bold text-[#1a1208] transition-opacity disabled:opacity-50"
+          className="mt-5 w-full rounded-lg bg-ps-amber px-4 py-3 text-sm font-bold text-[#1a1208] transition-opacity disabled:opacity-50"
         >
           {submitting ? t('join.button_loading') : t('join.button')}
         </button>

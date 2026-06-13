@@ -188,7 +188,7 @@ export function PredictionBanner({ events, predictions }: PredictionBannerProps)
       </p>
       <button
         onClick={handleDismiss}
-        className="shrink-0 rounded p-0.5 opacity-60 transition-opacity hover:opacity-100"
+        className="shrink-0 rounded p-2 opacity-60 transition-opacity hover:opacity-100"
         aria-label={t("wc.banner_dismiss")}
       >
         <svg width="14" height="14" viewBox="0 0 14 14" fill="none">

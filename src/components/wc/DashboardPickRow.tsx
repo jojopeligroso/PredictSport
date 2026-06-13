@@ -83,7 +83,7 @@ export function DashboardPickRow({
           type="button"
           onClick={onToggle}
           aria-label={t('picks.collapse_card')}
-          className="mb-1 w-full text-left text-[10px] font-semibold uppercase tracking-wider text-ps-text-ter flex items-center gap-1"
+          className="mb-1 w-full py-1.5 text-left text-[10px] font-semibold uppercase tracking-wider text-ps-text-ter flex items-center gap-1"
         >
           <svg className="h-3 w-3 rotate-180" fill="none" viewBox="0 0 24 24" strokeWidth={2.5} stroke="currentColor">
             <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />

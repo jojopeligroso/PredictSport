@@ -87,7 +87,7 @@ export function WcMoreMenu({ variant, isWcAdmin }: WcMoreMenuProps) {
           onClick={() => setIsOpen((v) => !v)}
           aria-haspopup="menu"
           aria-expanded={isOpen}
-          className="rounded-md px-3 py-1.5 text-sm font-medium text-ps-text-sec transition-colors hover:bg-ps-chip hover:text-ps-text"
+          className="rounded-md px-3 py-2 text-sm font-medium text-ps-text-sec transition-colors hover:bg-ps-chip hover:text-ps-text"
         >
           {t('nav.more')}
         </button>
@@ -110,7 +110,7 @@ export function WcMoreMenu({ variant, isWcAdmin }: WcMoreMenuProps) {
         onClick={() => setIsOpen((v) => !v)}
         aria-haspopup="menu"
         aria-expanded={isOpen}
-        className="px-3 py-2 text-xs font-semibold text-ps-text-sec transition-colors hover:text-ps-text"
+        className="px-3 py-2.5 text-xs font-semibold text-ps-text-sec transition-colors hover:text-ps-text"
       >
         {t('nav.more')}
       </button>

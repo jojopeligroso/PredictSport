@@ -418,7 +418,7 @@ export function OnboardingHomeSpotlight() {
             <button
               type="button"
               onClick={dismiss}
-              className="rounded-full bg-ps-amber px-4 py-1.5 text-xs font-semibold text-[#191512] transition-opacity hover:opacity-90 active:opacity-80"
+              className="rounded-full bg-ps-amber px-4 py-2 text-xs font-semibold text-[#191512] transition-opacity hover:opacity-90 active:opacity-80"
             >
               {t("onboarding.next")}
             </button>

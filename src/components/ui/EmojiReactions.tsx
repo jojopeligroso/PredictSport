@@ -49,7 +49,7 @@ export function EmojiReactions({ reactions, onReact }: EmojiReactionsProps) {
           key={emoji}
           type="button"
           onClick={() => onReact(emoji)}
-          className="inline-flex items-center gap-0.5 px-2 py-0.5 rounded-full border border-ps-border bg-ps-amber-soft text-ps-text transition-colors hover:border-ps-amber"
+          className="inline-flex items-center gap-0.5 px-2.5 py-1.5 rounded-full border border-ps-border bg-ps-amber-soft text-ps-text transition-colors hover:border-ps-amber"
           style={{ fontSize: 13 }}
           aria-label={`React with ${emoji}, ${count} reaction${count !== 1 ? 's' : ''}`}
         >
@@ -66,7 +66,7 @@ export function EmojiReactions({ reactions, onReact }: EmojiReactionsProps) {
         onClick={() => setPickerOpen((v) => !v)}
         aria-label="Add reaction"
         aria-expanded={pickerOpen}
-        className="inline-flex items-center justify-center w-7 h-7 rounded-full border border-ps-border bg-ps-chip text-ps-text-sec hover:border-ps-border-strong hover:text-ps-text transition-colors"
+        className="inline-flex items-center justify-center w-8 h-8 rounded-full border border-ps-border bg-ps-chip text-ps-text-sec hover:border-ps-border-strong hover:text-ps-text transition-colors"
         style={{ fontSize: 14 }}
       >
         +

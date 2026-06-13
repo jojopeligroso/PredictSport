@@ -96,7 +96,7 @@ export function PickNote({
               onClick={() => handleVisibilityChange(v)}
               aria-pressed={visibility === v}
               className={[
-                'px-2.5 py-0.5 font-semibold uppercase transition-colors',
+                'px-2.5 py-1 font-semibold uppercase transition-colors',
                 visibility === v
                   ? 'bg-ps-amber text-white'
                   : 'text-ps-text-sec hover:text-ps-text',
