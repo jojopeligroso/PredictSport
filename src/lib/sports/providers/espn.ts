@@ -214,11 +214,14 @@ export class ESPNProvider extends BaseProvider {
       }
     } else {
       if (options?.date) {
-        // ESPN scoreboard is single-day by default — extend to a 14-day window
-        // starting from dateFrom so off-day searches still find upcoming fixtures.
-        // search-events.ts and the client-side filter trim to the user's dateTo.
-        const start = options.date.replace(/-/g, "");
-        const rangeEnd = new Date(new Date(options.date).getTime() + 14 * 86_400_000);
+        // ESPN scoreboard is single-day by default — extend to a 14-day window.
+        // Start 1 day BEFORE the requested date because ESPN indexes events by
+        // local venue date, not UTC. A match at 01:00 UTC Jun 13 (6pm Pacific
+        // Jun 12) is indexed under Jun 12 — a range starting Jun 13 misses it.
+        const dateMs = new Date(options.date).getTime();
+        const rangeStart = new Date(dateMs - 86_400_000);
+        const start = rangeStart.toISOString().slice(0, 10).replace(/-/g, "");
+        const rangeEnd = new Date(dateMs + 14 * 86_400_000);
         const end = rangeEnd.toISOString().slice(0, 10).replace(/-/g, "");
         params.dates = `${start}-${end}`;
       } else {
