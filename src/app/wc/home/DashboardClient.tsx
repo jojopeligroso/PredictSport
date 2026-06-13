@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useT } from "@/lib/i18n";
 import { computeDayStatus, formatLockCountdown } from "@/lib/wc/daily-lock";
+import { getTimingForSport } from "@/lib/sports/timing";
 import { CHROME_PALETTE } from "@/app/wc/_landing/brand-palette";
 import type { DatePillSummary } from "./fetchDashboardData";
 import { DashboardPickRow } from "@/components/wc/DashboardPickRow";
@@ -57,20 +58,28 @@ interface DashboardClientProps {
 
 type PickStatus = "complete" | "urgent" | "unpicked" | "in_progress";
 
+/** Max live window per sport: expected match duration + 1h buffer for result confirmation. */
+function getLiveWindowMs(sport: string): number {
+  const { checkAfterHours } = getTimingForSport(sport);
+  return (checkAfterHours + 1) * 60 * 60 * 1000;
+}
+
 function getPickStatus(
   event: WindowEvent,
   predictions: Prediction[],
 ): PickStatus {
   // In-progress (LIVE): match has started but not yet resulted.
-  // Only active between start_time and start_time + 6h to prevent stuck live state.
+  // Capped at sport-specific duration (checkAfterHours + 1h buffer) so the
+  // dashboard reverts to idle even if auto-resolve fails completely.
+  // Soccer: 3h, rugby: 3.5h, golf: 9h, etc.
   const lockMs = new Date(event.lock_time).getTime();
   const startMs = new Date(event.start_time).getTime();
   const nowMs = Date.now();
-  const SIX_HOURS = 6 * 60 * 60 * 1000;
-  if (startMs <= nowMs && !event.result_confirmed && nowMs < startMs + SIX_HOURS)
+  const liveWindow = getLiveWindowMs(event.sport);
+  if (startMs <= nowMs && !event.result_confirmed && nowMs < startMs + liveWindow)
     return "in_progress";
 
-  // Locked: past lock_time but match hasn't started (or 6h window expired).
+  // Locked: past lock_time but match hasn't started (or live window expired).
   // No further action possible — treat as complete regardless of pick state.
   if (lockMs <= nowMs && !event.result_confirmed) return "complete";
 
@@ -150,7 +159,7 @@ export function DashboardClient({
     const hasLive = nextEvents.some((e) => {
       const startMs = new Date(e.start_time).getTime();
       const nowMs = Date.now();
-      return startMs <= nowMs && !e.result_confirmed && nowMs < startMs + 6 * 60 * 60 * 1000;
+      return startMs <= nowMs && !e.result_confirmed && nowMs < startMs + getLiveWindowMs(e.sport);
     });
     const interval = hasLive ? setInterval(refreshData, 60_000) : undefined;
 
