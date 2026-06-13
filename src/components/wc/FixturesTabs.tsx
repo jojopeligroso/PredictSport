@@ -245,7 +245,7 @@ export function FixturesTabs({ fixtures, resultsByExternalId, serverDateIso, pre
         </div>
       )}
 
-      <div className="mt-4 space-y-3">
+      <div className="mt-4 flex flex-col gap-3">
         {active.length === 0 && (
           <p className="rounded-xl border border-ps-border bg-ps-surface px-4 py-8 text-center text-sm text-ps-text-sec">
             {mode === "fixtures"

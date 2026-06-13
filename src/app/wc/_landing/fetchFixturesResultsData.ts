@@ -72,8 +72,8 @@ export async function fetchFixturesResultsData() {
       if (!row.external_event_id) continue;
       const data = row.result_data ?? {};
       const score = (typeof data.score === "object" && data.score !== null ? data.score : {}) as Record<string, unknown>;
-      const homeScore = numOrNull(data.home_score ?? data.homeScore ?? score.home_score ?? score.homeScore);
-      const awayScore = numOrNull(data.away_score ?? data.awayScore ?? score.away_score ?? score.awayScore);
+      const homeScore = numOrNull(data.home_score ?? data.homeScore ?? score.home_score ?? score.homeScore ?? score.home);
+      const awayScore = numOrNull(data.away_score ?? data.awayScore ?? score.away_score ?? score.awayScore ?? score.away);
       const winner =
         typeof data.winner === "string" && data.winner ? data.winner : null;
 
