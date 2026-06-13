@@ -291,6 +291,10 @@ function Sections({
   const [expandedCompleted, setExpandedCompleted] = useState<Set<string>>(
     () => new Set(),
   );
+  // 1C: Manual collapse for non-complete sections (user toggles)
+  const [manuallyCollapsed, setManuallyCollapsed] = useState<Set<string>>(
+    () => new Set(),
+  );
 
   // Compute visible section count based on batches.
   // Auto-extend if all visible sections are complete so there's always
@@ -334,14 +338,16 @@ function Sections({
       {visibleSections.map((s) => {
         const status = s.status ?? "upcoming";
         const isComplete = status === "complete";
-        const isCollapsed = isComplete && !expandedCompleted.has(s.domId);
+        const isCollapsed =
+          (isComplete && !expandedCompleted.has(s.domId)) ||
+          (!isComplete && manuallyCollapsed.has(s.domId));
         const eligible =
           now &&
           s.lockTime &&
           !isComplete &&
           new Date(s.lockTime).getTime() > now.getTime();
 
-        // 1B: Slim collapsed card for completed days
+        // Slim collapsed card for collapsed sections (complete auto-collapse + manual collapse)
         if (isCollapsed) {
           const pickedCount = s.events.filter((e) =>
             predictions.some((p) => p.event_id === e.id),
@@ -349,19 +355,33 @@ function Sections({
           return (
             <section key={s.domId} id={s.domId} className="mt-2 scroll-mt-20">
               <button
-                onClick={() =>
-                  setExpandedCompleted((prev) => new Set(prev).add(s.domId))
-                }
+                onClick={() => {
+                  if (isComplete) {
+                    setExpandedCompleted((prev) => new Set(prev).add(s.domId));
+                  } else {
+                    setManuallyCollapsed((prev) => {
+                      const next = new Set(prev);
+                      next.delete(s.domId);
+                      return next;
+                    });
+                  }
+                }}
                 className="flex w-full items-center justify-between rounded-lg border border-ps-border bg-ps-surface px-3 py-2.5"
               >
                 <div className="flex items-center gap-2">
-                  <SectionStatusIcon status="complete" />
+                  <SectionStatusIcon status={status} />
                   <span className="font-mono text-[11px] font-extrabold uppercase tracking-[0.12em] text-ps-text">
                     {s.heading}
                   </span>
-                  <span className="font-mono text-[10px] text-ps-green">
-                    {t('wc.picked', { count: String(pickedCount), total: String(s.events.length) })}
-                  </span>
+                  {pickedCount > 0 ? (
+                    <span className={`font-mono text-[10px] ${isComplete ? "text-ps-green" : "text-ps-text-ter"}`}>
+                      {t('wc.picked', { count: String(pickedCount), total: String(s.events.length) })}
+                    </span>
+                  ) : (
+                    <span className="font-mono text-[10px] text-ps-text-ter">
+                      {s.sub}
+                    </span>
+                  )}
                 </div>
                 <svg
                   className="h-4 w-4 text-ps-text-sec"
@@ -392,33 +412,36 @@ function Sections({
                 </h2>
               </div>
               <div className="flex items-center gap-2">
-                {/* Collapse button for expanded completed sections */}
-                {isComplete && expandedCompleted.has(s.domId) && (
-                  <button
-                    onClick={() =>
+                {/* Collapse button — always available */}
+                <button
+                  onClick={() => {
+                    if (isComplete) {
                       setExpandedCompleted((prev) => {
                         const next = new Set(prev);
                         next.delete(s.domId);
                         return next;
-                      })
+                      });
+                    } else {
+                      setManuallyCollapsed((prev) => new Set(prev).add(s.domId));
                     }
-                    className="text-ps-text-sec"
+                  }}
+                  className="p-2 -m-2 text-ps-text-sec"
+                  aria-label={t('picks.collapse_card')}
+                >
+                  <svg
+                    className="h-4 w-4 rotate-180"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
                   >
-                    <svg
-                      className="h-4 w-4 rotate-180"
-                      fill="none"
-                      viewBox="0 0 24 24"
-                      stroke="currentColor"
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={2}
-                        d="M19 9l-7 7-7-7"
-                      />
-                    </svg>
-                  </button>
-                )}
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M19 9l-7 7-7-7"
+                    />
+                  </svg>
+                </button>
                 {/* Partial: "Exact score needed" label */}
                 {status === "partial" && (
                   <span
