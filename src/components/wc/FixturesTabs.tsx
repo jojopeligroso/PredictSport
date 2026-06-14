@@ -333,7 +333,11 @@ export function FixturesTabs({ fixtures, resultsByExternalId, serverDateIso, pre
                   showCorrectness={showPredictions && showCorrectness}
                   large={biggerCards}
                   locale={locale}
-                  rivalsEventId={mode === "results" && isResulted && fPred?.eventId ? fPred.eventId : undefined}
+                  rivalsEventId={
+                    mode === "results" && isResulted && showPredictions && fPred?.eventId
+                      ? fPred.eventId
+                      : undefined
+                  }
                 />
               );
             })}
@@ -400,14 +404,14 @@ function ToggleSwitch({
       {label}
       <span
         className={[
-          "relative inline-flex h-4 w-7 items-center rounded-full transition-colors",
+          "relative inline-flex h-5 w-9 items-center rounded-full transition-colors",
           checked ? "bg-ps-amber" : "bg-ps-border",
         ].join(" ")}
       >
         <span
           className={[
-            "inline-block h-3 w-3 rounded-full bg-white transition-transform",
-            checked ? "translate-x-3.5" : "translate-x-0.5",
+            "inline-block h-4 w-4 rounded-full bg-white transition-transform",
+            checked ? "translate-x-[18px]" : "translate-x-0.5",
           ].join(" ")}
         />
       </span>
