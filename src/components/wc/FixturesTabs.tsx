@@ -78,8 +78,31 @@ export function FixturesTabs({ fixtures, resultsByExternalId, serverDateIso, pre
 
   const [tab, setTab] = useState<TabId>("today");
   const hasPredictions = Object.keys(predictionsByExternalId).length > 0;
-  const [showPredictions, setShowPredictions] = useState(hasPredictions);
-  const [showCorrectness, setShowCorrectness] = useState(true);
+  // Sticky toggles: persist the user's choice across sessions. If they've
+  // never set the toggle, fall back to the smart default (showPredictions
+  // mirrors hasPredictions; showCorrectness defaults on).
+  const [showPredictions, setShowPredictions] = useState(() => {
+    if (typeof window === "undefined") return hasPredictions;
+    const stored = localStorage.getItem("ps-show-picks");
+    if (stored === "true") return true;
+    if (stored === "false") return false;
+    return hasPredictions;
+  });
+  const [showCorrectness, setShowCorrectness] = useState(() => {
+    if (typeof window === "undefined") return true;
+    const stored = localStorage.getItem("ps-show-correctness");
+    if (stored === "true") return true;
+    if (stored === "false") return false;
+    return true;
+  });
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    localStorage.setItem("ps-show-picks", String(showPredictions));
+  }, [showPredictions]);
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    localStorage.setItem("ps-show-correctness", String(showCorrectness));
+  }, [showCorrectness]);
   const [biggerCards, setBiggerCards] = useState(() => {
     if (typeof window === "undefined") return false;
     return localStorage.getItem("ps-bigger-cards") === "true";
