@@ -131,7 +131,7 @@ export async function POST(request: Request) {
       lock_time: lockTime.toISOString(),
       status: "upcoming",
       external_event_id: `manual:wc2026-grp-${f.group}-md${f.matchday}-${f.matchInGroup}`,
-      provider_league: "FIFA World Cup 2026",
+      provider_league: "soccer/fifa.world",
     };
   });
 
