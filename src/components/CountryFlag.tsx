@@ -127,7 +127,8 @@ export function CountryFlag({
           <img
             src={url}
             alt={`${label} flag`}
-            loading="lazy"
+            loading="eager"
+            decoding="async"
             width={innerW}
             height={innerH}
             className="absolute inset-0 h-full w-full object-cover"
@@ -169,7 +170,8 @@ export function CountryFlag({
       <img
         src={url}
         alt={`${label} flag`}
-        loading="lazy"
+        loading="eager"
+        decoding="async"
         width={size}
         height={size}
         className="absolute inset-0 h-full w-full object-cover"

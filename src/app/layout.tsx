@@ -65,6 +65,7 @@ export default async function RootLayout({
       <head>
         <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
         <link rel="manifest" href="/manifest.json" />
+        <link rel="preconnect" href="https://flagcdn.com" crossOrigin="anonymous" />
         <meta name="theme-color" content="#f59e0b" />
         <link rel="icon" href="/icon-192.png" type="image/png" />
         <link rel="apple-touch-icon" href="/apple-touch-icon.png" />

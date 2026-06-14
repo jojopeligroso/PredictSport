@@ -5,12 +5,14 @@
  * BracketWizard data) to ISO 3166-1 alpha-2 codes. Returns `null` for
  * TBD/playoff placeholders and any unrecognised name.
  *
- * Codes are lowercase to match flagcdn.com URLs directly:
- *   https://flagcdn.com/<code>.svg
+ * Codes are lowercase, matching the SVG filenames we self-host under
+ * `/public/flags/<code>.svg` (originally pulled from flagcdn.com). Hosting
+ * locally avoids a third-party round-trip per flag, lets the service worker
+ * cache them, and gives us deterministic load times on flag-dense pages
+ * (groups grid, bracket wizard, fixtures).
  *
  * England and Scotland use ISO 3166-2 subdivision codes (gb-eng, gb-sct)
- * — flagcdn supports these and renders the St George / Saltire crosses
- * rather than the Union Jack.
+ * so we render the St George / Saltire crosses rather than the Union Jack.
  */
 
 const COUNTRY_CODES: Record<string, string> = {
@@ -109,5 +111,5 @@ export function flagCodeFor(name: string | null | undefined): string | null {
 }
 
 export function flagUrl(code: string | null): string | null {
-  return code ? `https://flagcdn.com/${code}.svg` : null;
+  return code ? `/flags/${code}.svg` : null;
 }
