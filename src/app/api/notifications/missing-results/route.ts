@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
-import { sendPushToUser } from "@/lib/push/send";
+import { sendPushToUser, getMutedCompetitionIds } from "@/lib/push/send";
 
 /**
  * GET /api/notifications/missing-results
@@ -78,7 +78,10 @@ export async function GET(request: Request) {
     : { data: [] };
 
   // Build per-user notification: aggregate all their admin competitions' overdue counts
-  const userNotifs = new Map<string, { competitions: { name: string; count: number }[] }>();
+  const userNotifs = new Map<
+    string,
+    { competitions: { id: string; name: string; count: number }[] }
+  >();
   for (const m of adminMembers ?? []) {
     if (!activeCompIds.has(m.competition_id)) continue;
     const events = byComp.get(m.competition_id);
@@ -86,16 +89,41 @@ export async function GET(request: Request) {
 
     const existing = userNotifs.get(m.user_id) ?? { competitions: [] };
     existing.competitions.push({
+      id: m.competition_id,
       name: compNameMap.get(m.competition_id) ?? "Competition",
       count: events.length,
     });
     userNotifs.set(m.user_id, existing);
   }
 
+  // Fetch notification_prefs for all affected users so we can drop muted comps
+  // from the per-user summary before composing the message body.
+  const allNotifUserIds = Array.from(userNotifs.keys());
+  const mutedByUser = new Map<string, Set<string>>();
+  if (allNotifUserIds.length > 0) {
+    const { data: userRows } = await supabase
+      .from("users")
+      .select("id, notification_prefs")
+      .in("id", allNotifUserIds);
+    for (const u of userRows ?? []) {
+      mutedByUser.set(
+        u.id,
+        getMutedCompetitionIds(u.notification_prefs as Record<string, unknown> | null),
+      );
+    }
+  }
+
   let notified = 0;
   for (const [userId, data] of userNotifs) {
-    const totalOverdue = data.competitions.reduce((sum, c) => sum + c.count, 0);
-    const compSummary = data.competitions
+    const muted = mutedByUser.get(userId) ?? new Set<string>();
+    const visibleComps =
+      muted.size === 0
+        ? data.competitions
+        : data.competitions.filter((c) => !muted.has(c.id));
+    if (visibleComps.length === 0) continue;
+
+    const totalOverdue = visibleComps.reduce((sum, c) => sum + c.count, 0);
+    const compSummary = visibleComps
       .map((c) => `${c.name} (${c.count})`)
       .join(", ");
 

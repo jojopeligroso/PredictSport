@@ -66,6 +66,7 @@ export async function notifyResultConfirmed(
     for (const member of members ?? []) {
       sendPushToUser(member.user_id, pushPayload, "result_notifications", {
         eventId,
+        competitionId,
       }).catch(() => {});
     }
   } catch (err) {

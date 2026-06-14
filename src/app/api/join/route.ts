@@ -245,7 +245,8 @@ export async function POST(request: NextRequest) {
             url: `/wc/leaderboard`,
             tag: `chat-join-${competitionId}-${user.id}`,
           },
-          "chat_member_join"
+          "chat_member_join",
+          { competitionId },
         ).catch(() => {}); // best effort
       }
     }

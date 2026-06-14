@@ -270,7 +270,8 @@ export async function POST(request: Request) {
           url: `/wc/chat`,
           tag: `chat-mention-${message!.id}`,
         },
-        "chat_mentions"
+        "chat_mentions",
+        { competitionId: body.competitionId },
       ).catch(() => {}); // swallow errors — best effort
     }
   }

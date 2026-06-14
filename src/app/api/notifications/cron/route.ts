@@ -2,7 +2,12 @@ import { NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 import { notifyDeadline } from "@/lib/telegram/notify";
 import { revealPredictions } from "@/lib/telegram/predictions";
-import { sendPushToUser, getUserReminderLead, alreadyNotifiedWithTag } from "@/lib/push/send";
+import {
+  sendPushToUser,
+  getUserReminderLead,
+  alreadyNotifiedWithTag,
+  getMutedCompetitionIds,
+} from "@/lib/push/send";
 
 /**
  * GET /api/notifications/cron
@@ -203,12 +208,20 @@ export async function GET(request: Request) {
     if (inWindow.length === 0) continue;
 
     // Only keep events where the user's predictions are incomplete
-    const incomplete = inWindow.filter((e) => {
+    const incompleteRaw = inWindow.filter((e) => {
       const required = requiredCountByEvent.get(e.id) ?? 0;
       if (required === 0) return false; // no prediction types configured
       const submitted = submittedMap.get(`${userId}:${e.id}`) ?? 0;
       return submitted < required;
     });
+    // Drop events from competitions the user has muted in their settings.
+    // This is a batched cross-competition reminder, so we can't gate it inside
+    // sendPushToUser via a single competitionId — filter upstream instead.
+    const mutedComps = getMutedCompetitionIds(prefs);
+    const incomplete =
+      mutedComps.size === 0
+        ? incompleteRaw
+        : incompleteRaw.filter((e) => !mutedComps.has(e.competition_id));
     if (incomplete.length === 0) continue;
 
     // Pick the URL for the notification tap target

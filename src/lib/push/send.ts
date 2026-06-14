@@ -65,6 +65,21 @@ function getUserDailyCap(prefs: Record<string, unknown> | null): number | null {
   return null; // no limit
 }
 
+/**
+ * Competitions the user has muted in their profile settings. Stored as an
+ * array of UUIDs under notification_prefs.muted_competition_ids. Any push
+ * tagged with a muted competition_id is silently dropped server-side.
+ *
+ * Returned as a Set for O(1) lookup; never null — missing/invalid yields {}.
+ */
+export function getMutedCompetitionIds(
+  prefs: Record<string, unknown> | null,
+): Set<string> {
+  const raw = prefs?.muted_competition_ids;
+  if (!Array.isArray(raw)) return new Set();
+  return new Set(raw.filter((v): v is string => typeof v === "string"));
+}
+
 interface QuietHoursConfig {
   enabled: boolean;
   start: number; // 0-23
@@ -163,7 +178,7 @@ export async function sendPushToUser(
   userId: string,
   payload: PushPayload,
   category: NotifCategory,
-  options?: { eventId?: string; skipThrottle?: boolean }
+  options?: { eventId?: string; competitionId?: string; skipThrottle?: boolean }
 ): Promise<{ sent: number; failed: number; cleaned: number; throttled?: string }> {
   ensureVapid();
   const supabase = getServiceClient();
@@ -188,6 +203,15 @@ export async function sendPushToUser(
   };
   const enabled = prefs?.[category] ?? defaultPrefs[category];
   if (!enabled) return { sent: 0, failed: 0, cleaned: 0 };
+
+  if (options?.competitionId) {
+    const muted = getMutedCompetitionIds(
+      userRow?.notification_prefs as Record<string, unknown> | null,
+    );
+    if (muted.has(options.competitionId)) {
+      return { sent: 0, failed: 0, cleaned: 0, throttled: "muted_competition" };
+    }
+  }
 
   if (!options?.skipThrottle) {
     // Quiet hours check — user-configurable, defaults to 22:00-07:00

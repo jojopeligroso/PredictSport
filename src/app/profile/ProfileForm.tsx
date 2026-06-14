@@ -1,10 +1,16 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import type { User } from "@/types/database";
+import type { User, CompetitionType } from "@/types/database";
 import { useTheme, type ThemePref } from "@/components/ThemeProvider";
 import { validateDisplayName, DISPLAY_NAME_MAX } from "@/lib/display-name";
 import { useT } from "@/lib/i18n";
+
+export interface CompetitionRef {
+  id: string;
+  name: string;
+  type: CompetitionType;
+}
 
 const SPORT_OPTIONS = [
   "Soccer", "GAA", "Rugby", "US Sports", "Motorsport", "Tennis", "Cricket", "Other",
@@ -30,6 +36,8 @@ interface NotificationPrefs {
   quiet_hours_start: number; // 0-23
   quiet_hours_end: number;   // 0-23
   daily_cap: DailyCap;
+  // Competitions the user has silenced. Server treats empty/missing as "none muted".
+  muted_competition_ids: string[];
 }
 
 function parseNotificationPrefs(
@@ -88,6 +96,11 @@ function parseNotificationPrefs(
       ([5, 8, 12, 20, 0] as const).includes(raw?.daily_cap as DailyCap)
         ? (raw!.daily_cap as DailyCap)
         : 0,
+    muted_competition_ids: Array.isArray(raw?.muted_competition_ids)
+      ? (raw!.muted_competition_ids as unknown[]).filter(
+          (v): v is string => typeof v === "string",
+        )
+      : [],
   };
 }
 
@@ -101,6 +114,13 @@ function stateFromUser(user: User): FormState {
     display_name: user.display_name ?? "",
     notification_prefs: parseNotificationPrefs(user.notification_prefs),
   };
+}
+
+function setsEqual(a: string[], b: string[]): boolean {
+  if (a.length !== b.length) return false;
+  const sa = new Set(a);
+  for (const x of b) if (!sa.has(x)) return false;
+  return true;
 }
 
 function statesEqual(a: FormState, b: FormState): boolean {
@@ -131,7 +151,11 @@ function statesEqual(a: FormState, b: FormState): boolean {
     a.notification_prefs.quiet_hours_end ===
       b.notification_prefs.quiet_hours_end &&
     a.notification_prefs.daily_cap ===
-      b.notification_prefs.daily_cap
+      b.notification_prefs.daily_cap &&
+    setsEqual(
+      a.notification_prefs.muted_competition_ids,
+      b.notification_prefs.muted_competition_ids,
+    )
   );
 }
 
@@ -275,7 +299,13 @@ function nameChangeLockedUntil(updatedAt: string | null): Date | null {
   return d > new Date() ? d : null;
 }
 
-export function ProfileForm({ user }: { user: User }) {
+export function ProfileForm({
+  user,
+  competitions = [],
+}: {
+  user: User;
+  competitions?: CompetitionRef[];
+}) {
   const t = useT();
   const initial = stateFromUser(user);
   const [form, setForm] = useState<FormState>(initial);
@@ -326,6 +356,22 @@ export function ProfileForm({ user }: { user: User }) {
       ...prev,
       notification_prefs: { ...prev.notification_prefs, [key]: value },
     }));
+    setFeedback(null);
+  }
+
+  function toggleCompMute(compId: string, mute: boolean) {
+    setForm((prev) => {
+      const current = prev.notification_prefs.muted_competition_ids;
+      const next = mute
+        ? current.includes(compId)
+          ? current
+          : [...current, compId]
+        : current.filter((id) => id !== compId);
+      return {
+        ...prev,
+        notification_prefs: { ...prev.notification_prefs, muted_competition_ids: next },
+      };
+    });
     setFeedback(null);
   }
 
@@ -681,6 +727,41 @@ export function ProfileForm({ user }: { user: User }) {
                 </div>
               </div>
               </div>
+
+              {/* Per-competition mute */}
+              {competitions.length > 0 && (
+                <div className="border-t border-ps-border pt-3">
+                  <p className="text-sm font-medium text-ps-text">
+                    {t('profile.per_comp_heading')}
+                  </p>
+                  <p className="mt-0.5 text-xs text-ps-text-ter">
+                    {t('profile.per_comp_desc')}
+                  </p>
+                  <div className="mt-1 divide-y divide-ps-border">
+                    {competitions.map((comp) => {
+                      const isMuted = form.notification_prefs.muted_competition_ids.includes(comp.id);
+                      const label =
+                        comp.type === "personal"
+                          ? t('profile.per_comp_personal')
+                          : comp.name;
+                      return (
+                        <Toggle
+                          key={comp.id}
+                          id={`mute_${comp.id}`}
+                          checked={!isMuted}
+                          onChange={(v) => toggleCompMute(comp.id, !v)}
+                          label={label}
+                          description={
+                            isMuted
+                              ? t('profile.per_comp_muted')
+                              : t('profile.per_comp_subscribed')
+                          }
+                        />
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
             </section>
 
             {/* Display */}

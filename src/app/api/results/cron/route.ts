@@ -155,7 +155,8 @@ export async function GET(request: Request) {
             url: `${appUrl}/competitions/${evt.competition_id}`,
             tag: `result-needed-${evt.id}`,
           },
-          "result_notifications"
+          "result_notifications",
+          { competitionId: evt.competition_id },
         );
         manualAlertsSent++;
       } catch (err) {
