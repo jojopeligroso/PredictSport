@@ -273,7 +273,7 @@ See `SPORTS-ARCHITECTURE.md` for detailed spec (TBD).
 > 510 EN/ES keys wired (2026-06-10). Coverage is comprehensive but quality needs a native-speaker pass.
 
 - [ ] **i18n-PR1 — Native speaker proofread of es.json** — Full review of all 510 Spanish translations for grammar, tone, and natural phrasing. Many were machine-translated or rough from the original translator. Key areas: prediction summaries ("Pronosticaste que X ganaría"), chat strings, profile/settings labels, rules page copy. Fix any awkward phrasing, missing accents, or overly literal translations.
-- [ ] **i18n-PR2 — ClassificationRulesPreview content** — ~40 strings in ClassificationTabs.tsx rules preview sections (How Format works, How Overall works, How Bracket works, How KO Bracket works) are still hardcoded English. Need keys + translations.
+- [x] **i18n-PR2 — ClassificationRulesPreview content** — Done. All rules-preview strings now use `t()` keys (`rules_preview.*`) at ClassificationTabs.tsx:633-779. (Audited 2026-06-14.)
 - [ ] **i18n-PR3 — Country name localisation** — Country names on fixture cards come from DB data. Would need a country-name lookup table keyed by locale to translate (e.g. "Germany" → "Alemania").
 
 ## Competition Chat
@@ -303,9 +303,9 @@ See `SPORTS-ARCHITECTURE.md` for detailed spec (TBD).
 
 - [x] **CH-C1 — Mini chat on dashboard** — Add ChatWidget (mini mode) to DashboardClient.tsx. Position: below group fixtures section (section 5), above leaderboard link. Smart close: closed state in localStorage, reappears when new message arrives after close timestamp.
 - [x] **CH-C2 — Full chat on leaderboard** — Add ChatWidget (full mode) to leaderboard page. Overall leaderboard collapses to show user + ~4 above/below. Chat takes remaining ~75% of screen.
-- [ ] **CH-C3 — Move leaderboard link up on dashboard** — Reorder dashboard sections: leaderboard link moves to after group fixtures (section 5 → section 6), displacing current position.
-- [ ] **CH-C4 — Unread badge on tab bar** — Compare user's last-seen timestamp against latest message timestamp. Show red dot on Chat tab. localStorage-based for now; migrate to `chat_read_receipts` table later for cross-device support.
-- [ ] **CH-C5 — Dedicated /wc/chat page** — Full-screen chat page accessible exclusively via tab bar. Top: leaderboard classification pills (Overall, Format, Rival Predictions) that navigate to `/wc/leaderboard` with the corresponding tab active. Main content: ChatWidget in full mode at ~90% viewport height. Update TabBar to point Chat tab to `/wc/chat` and highlight when active. Keep existing mini/full widgets on dashboard and leaderboard.
+- [ ] **CH-C3 — Move leaderboard link up on dashboard** — Reorder dashboard sections: leaderboard link moves to after group fixtures (section 5 → section 6), displacing current position. *(2026-06-14: leaderboard link still at 5b in `DashboardClient.tsx:253-565`; reorder not started.)*
+- [x] **CH-C4 — Unread badge on tab bar** — Done via `useUnreadChat()` hook (`src/hooks/useUnreadChat.ts:48-79`) consumed in `TabBar.tsx:115-145`. Capped at 9+, localStorage-backed. (Audited 2026-06-14.)
+- [ ] **CH-C5 — Dedicated /wc/chat page** — Full-screen chat page accessible exclusively via tab bar. Top: leaderboard classification pills (Overall, Format, Rival Predictions) that navigate to `/wc/leaderboard` with the corresponding tab active. Main content: ChatWidget in full mode at ~90% viewport height. Update TabBar to point Chat tab to `/wc/chat` and highlight when active. Keep existing mini/full widgets on dashboard and leaderboard. *(2026-06-14: route + ChatWidget full mode already at `src/app/wc/chat/ChatPageClient.tsx:31-52`; only the top classification pills remain.)*
 
 ### Phase CH-D — Notifications
 
@@ -315,15 +315,15 @@ See `SPORTS-ARCHITECTURE.md` for detailed spec (TBD).
 
 ### Phase CH-E — System Notifications in Chat
 
-- [ ] **CH-E1 — Result confirmed system message** — In `/api/admin/confirm-result`, after scoring, insert a system message: "Results are in for {event_name}" into competition chat. Use `message_type: 'system'`.
-- [ ] **CH-E2 — System message styling** — Style system messages distinctly in ChatWidget: centered text, muted color, no avatar, no reply/edit/delete actions. Differentiate from existing join/mod system messages visually.
+- [x] **CH-E1 — Result confirmed system message** — Done. `notifyResultConfirmed()` at `src/lib/notifications/result-confirmed.ts:45-51` inserts a `message_type: 'system_result'` row; called from confirm-result/route.ts:180. Copy is "{team} {score} {team} — result confirmed." (Audited 2026-06-14.)
+- [x] **CH-E2 — System message styling** — Done. System messages render centered, italic, muted (`text-xs text-ps-text-ter italic`) with no avatar and reply/edit/delete suppressed (`!isSystem` gate) at `ChatMessage.tsx:189-196`. (Audited 2026-06-14.)
 - [ ] **CH-E3 — Additional system events** — Extend system messages to: round opened ("Round {n} is open for predictions"), draw completed ("Groups have been drawn"), competition status changes. Each gated behind `chat_enabled`.
 
 ## Prediction Visibility Revisit
 
 > **Run `/grill-with-docs` before any implementation.** Raised during chat feature design (2026-06-10). Currently predictions are hidden behind `pick_reveal_at` (defaults to `lock_time`). Questions to resolve: (1) Should other competition members see *what* you predicted after lock, or only *that* you predicted? (2) If visible, when — at lock, after result, or never? (3) How does this interact with chat (no prediction spoilers in system messages — already decided)? (4) Does the leaderboard or any social surface expose individual picks?
 
-- [ ] **PV-1 — Design spike (grill session)** — Run `/grill-with-docs`. Define visibility rules for predictions across all surfaces: chat, leaderboard, match cards, profile. Do not change code until this is complete.
+- [ ] **PV-1 — Design spike (grill session)** — Run `/grill-with-docs`. Define visibility rules for predictions across all surfaces: chat, leaderboard, match cards, profile. Do not change code until this is complete. *(2026-06-14: ADR 0011 covers per-classification leaderboard visibility — remaining scope is chat / match cards / profile.)*
 
 ## Provisional Groups & Admin Redraw
 
@@ -340,7 +340,7 @@ See `SPORTS-ARCHITECTURE.md` for detailed spec (TBD).
 ### Phase PG-B — Auto-Redraw Logic
 
 - [ ] **PG-B1 — Redraw evaluation function** — `shouldRedrawGroups(classificationId)`: compares current member count vs `entrant_count_at_draw`. Returns true if delta >= `redraw_threshold` AND `canRegenerateDraw()` (before first window lock).
-- [ ] **PG-B2 — Lazy redraw in my-group endpoint** — Extend `GET /api/tournament/my-group` to call `shouldRedrawGroups()` before returning existing groups. If true, re-run `allocatePredictionGroups()` (which already deletes + recreates). Update draw metadata.
+- [ ] **PG-B2 — Lazy redraw in my-group endpoint** — Extend `GET /api/tournament/my-group` to call `shouldRedrawGroups()` before returning existing groups. If true, re-run `allocatePredictionGroups()` (which already deletes + recreates). Update draw metadata. *(2026-06-14: route + allocate call already wired at `my-group/route.ts:132`; only the `shouldRedrawGroups()` gate is missing — depends on PG-B1.)*
 - [ ] **PG-B3 — Admin redraw API** — `POST /api/admin/redraw-groups` — admin can force a redraw for a classification. Validates `canRegenerateDraw()`. Returns new group allocation.
 
 ### Phase PG-C — UI
@@ -368,7 +368,7 @@ See `SPORTS-ARCHITECTURE.md` for detailed spec (TBD).
 - [ ] **H8.1 — Add Full Bracket step to onboarding** — After Classifications Overview, show "Want to fill out your bracket now?" with [Start] / [Skip] options.
 - [ ] **H8.2 — Skip flow** — If user skips, exclude from Full Bracket and R32 classifications, proceed to Format enrollment.
 - [ ] **H8.3 — Champion pick (UI warmer)** — Add "Who takes home all the biscuits?" step early in onboarding. Copy: "Just because you love them doesn't mean that's what your head wants to pick."
-- [ ] **H8.4 — Privacy settings** — Add leaderboard visibility choice: public / anonymous (Player #N) / private-only.
+- [ ] **H8.4 — Privacy settings** — Add leaderboard visibility choice: public / anonymous (Player #N) / private-only. *(2026-06-14: DB schema, API, and standings masking all done — migration `20260525000000_classification_display_visibility.sql`, `src/app/api/tournament/visibility/route.ts`, `applyVisibility()` in standings/route.ts. Only the UI toggle in profile/leaderboard is missing.)*
 
 **WC-H9: Data Model & API**
 - [x] **H9.1 — Bracket submission schema** — `bracket_prediction_submissions` table in `20260521400000_bracket_system.sql`.
@@ -384,7 +384,7 @@ See `SPORTS-ARCHITECTURE.md` for detailed spec (TBD).
 - [ ] **H-P2.5 — "What if" simulator** — Change one match result, see cascading bracket impact.
 
 **Multi-Instance UX:**
-- [ ] **MI.1 — Block auto-provision on invite code** — When a user joins via invite code and the target competition is full, don't silently redirect to a new instance. Show a message ("This competition is full") and offer to join another or create their own.
+- [ ] **MI.1 — Block auto-provision on invite code** — When a user joins via invite code and the target competition is full, don't silently redirect to a new instance. Show a message ("This competition is full") and offer to join another or create their own. *(2026-06-14: capacity check already in `join/route.ts:124-156`; non-tournament path returns 403 "Competition is full", but tournament path at lines 138-146 still silently auto-provisions via `findOrProvisionInstance()` — that's the bit to change.)*
 - [ ] **MI.2 — Instance navigation UI** — Users in multiple WC instances have no way to switch between them. Add a competition switcher to the WC surface.
 
 ## Tournament Brackets (Future — Needs Design)
@@ -408,7 +408,7 @@ See `SPORTS-ARCHITECTURE.md` for detailed spec (TBD).
 
 ### Phase J — Participant Bracket View
 
-- [ ] **J1 — Bracket visualisation component** — `src/components/BracketTree.tsx`: renders a competition's bracket as a horizontal tree (rounds as columns, matches as nodes). Each node shows: team A vs team B (or TBA), lock status, user's pick (if any), result. Mobile-friendly — scrolls horizontally. Uses `buildBracketTree()` from H3.
+- [ ] **J1 — Bracket visualisation component** — `src/components/BracketTree.tsx`: renders a competition's bracket as a horizontal tree (rounds as columns, matches as nodes). Each node shows: team A vs team B (or TBA), lock status, user's pick (if any), result. Mobile-friendly — scrolls horizontally. Uses `buildBracketTree()` from H3. **⚠ Name collision:** a WC-hardcoded `BracketTree.tsx` already exists at `src/components/tournament/bracket/BracketTree.tsx` (imports `WC2026_KNOCKOUT_ROUNDS`). The generic J1 component lives at a different path (`src/components/BracketTree.tsx`) and must be template-driven, not WC-specific.
 - [ ] **J2 — Bracket page** — `/competitions/[id]/bracket` route. Shows `BracketTree` for bracket-enabled competitions. Linked from competition nav alongside "The Round" and leaderboard. Non-bracket competitions don't show this tab.
 - [ ] **J3 — Inline prediction in bracket view** — Tapping a node in the bracket tree opens a prediction sheet (same prediction flow as existing). Locked/TBA nodes are non-interactive with clear visual state.
 
@@ -433,8 +433,10 @@ Fixtures with unknown participants (TBA / TBC team names from providers) should 
 > **Design complete:** `docs/DESIGN-F1-ALL-COMPETITIONS-DASHBOARD.md` (2026-05-22, grill session). Decision record: `docs/adr/0010-cached-non-authoritative-standings.md`. The dashboard answers "how am I doing" across all of a user's competitions via a top "Your form" card + a per-card rank line on `/competitions`.
 
 - [x] **F1 — Design spike (grill session)** — ✅ Done. Produced `DESIGN-F1-ALL-COMPETITIONS-DASHBOARD.md`, ADR-0010, and four `CONTEXT.md` terms. Primary job = "how am I doing"; cached non-authoritative `competition_standings`; lazy read-through write path; scheduled job built dormant.
-- [ ] **F2 — Dashboard card on /competitions** — Build per the design doc §3–§4: (a) migration for `competition_standings` cache table + RLS; (b) extract `computeStandings()` from `leaderboard/page.tsx` into `src/lib/leaderboard.ts`; (c) `src/lib/standings-cache.ts` with `recomputeStandings()` + read-through `getCachedStandings()`; (d) dormant `/api/cron/recompute-standings` route (NOT in `vercel.json`); (e) top "Your form" card with three display modes (empty / single-competition / full), gated to ≥1 group competition; (f) per-card rank line. Card expansion: 1 line → 5 results (stop there — F4 is the deeper target).
-- [ ] **F3 — Global stats** — Global Hit Rate: aggregate correct ÷ resolved across ALL the user's competitions (personal + group). The headline number of F2's top card. Not a separate page. Distinct from the personal-stats hit rate (which is personal-competition-only). See design doc §3.7.
+- [ ] **F2a — Standings cache layer** — Finish the cache plumbing per design doc §3–§4: (c) implement the bodies of `recomputeStandings()` + `getCachedStandings()` in `src/lib/standings-cache.ts` (both currently throw "not impl"); (d) add dormant `/api/cron/recompute-standings` route (NOT in `vercel.json`). *(2026-06-14: (a) migration `20260522500000_competition_standings_cache.sql` and (b) `computeStandings()` extraction at `src/lib/leaderboard.ts:77-280+` are already done.)*
+- [ ] **F2b — Dashboard UI card on /competitions** — Build per design doc §3–§4: (e) top "Your form" card with three display modes (empty / single-competition / full), gated to ≥1 group competition; (f) per-card rank line. Card expansion: 1 line → 5 results (stop there — F4 is the deeper target). Depends on F2a + F3a.
+- [ ] **F3a — `computeGlobalHitRate()` implementation** — Implement the body of `computeGlobalHitRate(userId)` at `src/lib/leaderboard.ts:370` (currently throws "not impl"). Aggregates correct ÷ resolved across ALL the user's competitions (personal + group). See design doc §3.7.
+- [ ] **F3b — Surface global hit rate in dashboard card** — Wire `computeGlobalHitRate()` into the F2b "Your form" card as the headline number. Distinct from the personal-stats hit rate (which is personal-competition-only).
 - [ ] **F4 — Cross-competition results page** — *(new — added by F1 spike)* `/competitions/results`: every resolved prediction across all the user's competitions, with sport/competition filtering. The real target of the dashboard card's second expansion (F2 stops at 5 results because this page doesn't exist yet). Note: today's only `ResultsTab` lives inside `PersonalFixtureBrowser` and is personal-only.
 
 ## WC Dashboard State — Design Sessions
@@ -443,7 +445,7 @@ Fixtures with unknown participants (TBA / TBC team names from providers) should 
 > Three-part design. Section A (state machine, card stacks, derivation rules) complete.
 
 - [x] **DS-A — Dashboard State Machine (Section A)** — Grill session complete (2026-05-25). Defined 5 dashboard states, card stack ordering, bracket card visibility rules, derivation logic, data contract (`WcDashboardState` interface), Full Bracket eligibility rule (sealed at PW1 lock), leaderboard state awareness. ADR 0012 accepted. CONTEXT.md updated with "Dashboard State" term.
-- [ ] **DS-B — Format Classification Hero Surface (Section B)** — Design the Format Classification hero card and onboarding experience. What the user sees when Format is the primary dashboard. Includes: format group display, standings within group, elimination danger indicators, rules presentation, participant count + share/invite CTA, animated demo concept (noted, not implemented). Also: KO Bracket onboarding copy ("this bracket is borderline impossible — a second one opens after groups"). R32 classification rename. Read `docs/DESIGN-WC-DASHBOARD-STATE.md` Section 9 for all noted items.
-- [ ] **DS-C — Surface-Wide Polish (Section C)** — Copy tone audit across all `/wc` pages. Fixture card naming ("Fixtures" → "Fixtures & Results" → "Results"). Brand mark usage rules (mono variants, host city colorways). Nav redesign via mockups. Inline prediction reminder on fixture cards. Remove filler copy that doesn't establish tone.
+- [x] **DS-B — Format Classification Hero Surface (Section B)** — Done. Captured in `docs/DESIGN-WC-DASHBOARD-STATE.md` §11–17 (lines 301–498): two-mode hero card (weigh-in / survival), group roster display, qualification shading, elimination curve, knockout neighbourhood view, enriched leaderboard detail page. (Audited 2026-06-14.) Implementation tasks not yet broken out.
+- [x] **DS-C — Surface-Wide Polish (Section C)** — Done. Captured in `docs/DESIGN-WC-DASHBOARD-STATE.md` §18–22 (lines 501+): copy tone tiers, naming conventions (Matchday/Stage, "The Cut" for R32), fixture card anatomy, brand mark placement rules, visitor narrative flow. (Audited 2026-06-14.) Implementation tasks not yet broken out.
 
 *(PV-1, Competition Chat, and Provisional Groups moved to Active Sprint above.)*
