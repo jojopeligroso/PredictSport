@@ -692,12 +692,12 @@ function FixtureCard({
                   onBlur={() => handleScoreBlur(homeScore, awayScore)}
                   aria-label={`${fixture.home} score`}
                   className={[
-                    `${scoreSize} rounded-full border text-center font-mono font-semibold text-white outline-none transition-all duration-150 shrink-0`,
+                    `${scoreSize} rounded-full border text-center font-mono font-semibold tabular-nums text-white outline-none transition-all duration-150 shrink-0`,
                     homeScore !== ""
-                      ? "bg-white/18 border-ps-amber/70"
-                      : "bg-white/8 border-white/25",
-                    "focus:border-ps-amber/80 focus:bg-white/15",
-                    "placeholder:text-white/30",
+                      ? "bg-black/30 border-ps-amber"
+                      : "bg-black/20 border-white/30",
+                    "focus:border-ps-amber focus:bg-black/35",
+                    "placeholder:text-white/40",
                   ].join(" ")}
                 />
               )}
@@ -732,12 +732,12 @@ function FixtureCard({
                   onBlur={() => handleScoreBlur(homeScore, awayScore)}
                   aria-label={`${fixture.away} score`}
                   className={[
-                    `${scoreSize} rounded-full border text-center font-mono font-semibold text-white outline-none transition-all duration-150 shrink-0`,
+                    `${scoreSize} rounded-full border text-center font-mono font-semibold tabular-nums text-white outline-none transition-all duration-150 shrink-0`,
                     awayScore !== ""
-                      ? "bg-white/18 border-ps-amber/70"
-                      : "bg-white/8 border-white/25",
-                    "focus:border-ps-amber/80 focus:bg-white/15",
-                    "placeholder:text-white/30",
+                      ? "bg-black/30 border-ps-amber"
+                      : "bg-black/20 border-white/30",
+                    "focus:border-ps-amber focus:bg-black/35",
+                    "placeholder:text-white/40",
                   ].join(" ")}
                 />
               )}

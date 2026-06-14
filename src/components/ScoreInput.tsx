@@ -237,12 +237,12 @@ export function ScoreInput({
           disabled={disabled}
           aria-label={`${homeLabel} score`}
           className={[
-            "w-[34px] h-[32px] rounded-full border text-center font-mono text-base font-semibold text-white outline-none transition-all duration-150 shrink-0 placeholder:text-white/30",
-            home !== "" ? "bg-white/18 border-ps-amber/70" : "bg-white/8 border-white/25",
-            "focus:border-ps-amber/80 focus:bg-white/15",
+            "w-[34px] h-[32px] rounded-full border text-center font-mono text-base font-semibold tabular-nums text-white outline-none transition-all duration-150 shrink-0 placeholder:text-white/40",
+            home !== "" ? "bg-black/30 border-ps-amber" : "bg-black/20 border-white/30",
+            "focus:border-ps-amber focus:bg-black/35",
           ].join(" ")}
         />
-        <span className="text-xs text-white/40">&ndash;</span>
+        <span className="font-mono text-sm font-bold text-white/70">&ndash;</span>
         <input
           ref={awayRef}
           type="text"
@@ -256,9 +256,9 @@ export function ScoreInput({
           disabled={disabled}
           aria-label={`${awayLabel} score`}
           className={[
-            "w-[34px] h-[32px] rounded-full border text-center font-mono text-base font-semibold text-white outline-none transition-all duration-150 shrink-0 placeholder:text-white/30",
-            away !== "" ? "bg-white/18 border-ps-amber/70" : "bg-white/8 border-white/25",
-            "focus:border-ps-amber/80 focus:bg-white/15",
+            "w-[34px] h-[32px] rounded-full border text-center font-mono text-base font-semibold tabular-nums text-white outline-none transition-all duration-150 shrink-0 placeholder:text-white/40",
+            away !== "" ? "bg-black/30 border-ps-amber" : "bg-black/20 border-white/30",
+            "focus:border-ps-amber focus:bg-black/35",
           ].join(" ")}
         />
       </div>
