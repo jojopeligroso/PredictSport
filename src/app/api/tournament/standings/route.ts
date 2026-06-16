@@ -85,29 +85,21 @@ export async function GET(request: NextRequest) {
       .eq("id", classification.competition_id)
       .single();
 
-    const { data: predictions } = compForTournament?.tournament_id
-      ? await supabase
-          .from("predictions")
-          .select("user_id, points_awarded, events!inner(tournament_id)")
-          .in("user_id", userIds)
-          .eq("events.tournament_id", compForTournament.tournament_id)
-          .not("points_awarded", "is", null)
-          .limit(10000)
-      : await supabase
-          .from("predictions")
-          .select("user_id, points_awarded, events!inner(competition_id)")
-          .in("user_id", userIds)
-          .eq("events.competition_id", classification.competition_id)
-          .not("points_awarded", "is", null)
-          .limit(10000);
+    // Sum scored prediction points per user in the database. Aggregating in
+    // SQL returns one row per user (~50 rows) instead of every prediction row,
+    // so it can never hit PostgREST's max-rows cap. See migration
+    // 20260616140000_sum_prediction_points_rpc.sql.
+    const { data: pointRows } = await supabase.rpc("sum_prediction_points", {
+      p_user_ids: userIds,
+      p_tournament_id: compForTournament?.tournament_id ?? null,
+      p_competition_id: classification.competition_id,
+    });
 
-    // Aggregate points
     const pointsMap = new Map<string, number>();
     for (const uid of userIds) pointsMap.set(uid, 0);
 
-    for (const p of predictions ?? []) {
-      const current = pointsMap.get(p.user_id) ?? 0;
-      pointsMap.set(p.user_id, current + (p.points_awarded ?? 0));
+    for (const r of (pointRows ?? []) as Array<{ user_id: string; total_points: number }>) {
+      pointsMap.set(r.user_id, r.total_points ?? 0);
     }
 
     // Get display names + available points (max possible from confirmed events)
