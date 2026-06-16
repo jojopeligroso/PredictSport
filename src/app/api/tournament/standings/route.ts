@@ -92,12 +92,14 @@ export async function GET(request: NextRequest) {
           .in("user_id", userIds)
           .eq("events.tournament_id", compForTournament.tournament_id)
           .not("points_awarded", "is", null)
+          .limit(10000)
       : await supabase
           .from("predictions")
           .select("user_id, points_awarded, events!inner(competition_id)")
           .in("user_id", userIds)
           .eq("events.competition_id", classification.competition_id)
-          .not("points_awarded", "is", null);
+          .not("points_awarded", "is", null)
+          .limit(10000);
 
     // Aggregate points
     const pointsMap = new Map<string, number>();

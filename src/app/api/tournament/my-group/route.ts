@@ -196,12 +196,14 @@ export async function GET(request: NextRequest) {
           .in("user_id", allUserIds)
           .eq("events.tournament_id", comp.tournament_id)
           .not("points_awarded", "is", null)
+          .limit(10000)
       : await supabase
           .from("predictions")
           .select("user_id, points_awarded, events!inner(competition_id)")
           .in("user_id", allUserIds)
           .eq("events.competition_id", competitionId)
-          .not("points_awarded", "is", null);
+          .not("points_awarded", "is", null)
+          .limit(10000);
 
     for (const p of scoredPreds ?? []) {
       const current = pointsMap.get(p.user_id) ?? 0;
