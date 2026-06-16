@@ -422,6 +422,7 @@ async function generateWindowSnapshot(
         .select("user_id, points_awarded, is_correct, prediction_type")
         .in("event_id", eventIds)
         .not("is_correct", "is", null)
+        .limit(10000)
     : { data: [] };
 
   // Aggregate points per user

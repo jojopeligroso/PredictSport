@@ -86,6 +86,7 @@ export async function getClassificationStandings(
           .in("user_id", userIds)
           .in("event_id", compEventIds)
           .order("submitted_at", { ascending: true })
+          .limit(10000)
       : { data: [], error: null };
 
     if (predError) throw new Error(`Failed to fetch predictions: ${predError.message}`);

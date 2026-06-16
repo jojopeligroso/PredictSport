@@ -142,7 +142,8 @@ export async function computeStandings(
         .select(
           "id, event_id, user_id, prediction_data, is_correct, is_partial, points_awarded, submitted_at",
         )
-        .in("event_id", allEventIds),
+        .in("event_id", allEventIds)
+        .limit(10000),
     ]);
     eventPredictionTypeList = epts ?? [];
     predictionList = predictions ?? [];

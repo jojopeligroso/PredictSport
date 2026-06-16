@@ -105,7 +105,8 @@ export async function computeFormatGroupStandings(
     .select("user_id, points_awarded, is_correct, prediction_type, submitted_at, event_id")
     .in("user_id", userIds)
     .in("event_id", eventIds)
-    .order("submitted_at", { ascending: true });
+    .order("submitted_at", { ascending: true })
+    .limit(10000);
 
   if (predError) throw new Error(`Failed to fetch predictions: ${predError.message}`);
 

@@ -72,6 +72,7 @@ export async function generateStandingsSnapshot(
           .in("user_id", userIds)
           .in("event_id", compEventIds)
           .order("submitted_at", { ascending: true })
+          .limit(10000)
       : { data: [], error: null };
 
     if (predError) throw new Error(`Failed to fetch predictions: ${predError.message}`);
@@ -101,6 +102,7 @@ export async function generateStandingsSnapshot(
           .in("user_id", userIds)
           .in("event_id", stageEventIds)
           .order("submitted_at", { ascending: true })
+          .limit(10000)
       : { data: [], error: null };
 
     if (predError) throw new Error(`Failed to fetch predictions: ${predError.message}`);
