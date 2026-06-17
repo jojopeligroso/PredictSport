@@ -349,6 +349,12 @@ See `SPORTS-ARCHITECTURE.md` for detailed spec (TBD).
 - [ ] **PG-C2 — Admin redraw button** — Add "Redraw Groups" button to WC admin dashboard, visible only when `canRegenerateDraw()` is true. Confirmation dialog explaining all current groups will be dissolved.
 - [ ] **PG-C3 — Draw history indicator** — Show "Draw #N" or "Last redrawn at [time]" in group header. Helps participants understand that groups have changed.
 
+## Scoring Hardening Follow-ups
+
+- [ ] **SH-1 — Broadcast scores_updated from auto-resolve path** — `autoResolveEvent` in `src/lib/sports/auto-result.ts` does not broadcast on the `scoring_events` Realtime channel after scoring. Cron-resolved events won't trigger the leaderboard auto-refresh added in `bf8c9f7`. Add `supabase.channel("scoring_events").send(...)` after the batch scoring call, matching the pattern in `confirm-result/route.ts:203`.
+- [ ] **SH-2 — Investigate competition_id scoping for multi-instance leaderboards** — All 72 WC events have `competition_id = 1a4448e5` (first instance only). The `sum_prediction_points` RPC uses `tournament_id` for scoping, which is correct because events are shared. However, if a future blueprint creates per-instance events (not shared), the RPC would need a `competition_id` path on the predictions table. Document the assumption or add a `competition_id` FK to predictions when multi-instance divergence is needed.
+- [ ] **SH-3 — Clean up orphaned migration history entries** — `supabase migration list` shows orphaned entries (duplicate `20260527000000` timestamps, unlinked local migrations). Cosmetic only — doesn't affect runtime — but `supabase db push` requires `--include-all` as a workaround.
+
 ---
 
 ## Backlog
