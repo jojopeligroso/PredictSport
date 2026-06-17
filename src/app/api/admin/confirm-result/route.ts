@@ -137,15 +137,19 @@ export async function POST(request: Request) {
     );
   }
 
-  // Score each prediction
-  let scored = 0;
-  let errors = 0;
+  // Score each prediction in memory, then batch-update in a single transaction.
+  // If any row fails, the entire batch rolls back — no partially scored events.
+  const scores: Array<{
+    id: string;
+    is_correct: boolean | null;
+    is_partial: boolean;
+    points_awarded: number;
+  }> = [];
 
   for (const prediction of predictions ?? []) {
     const predType = prediction.prediction_type as PredictionType;
     const ept = eptMap.get(predType);
 
-    // Use event_prediction_types row if available, otherwise fall back to defaults
     const eptData = ept ?? {
       points: 10,
       partial_points: 0,
@@ -159,22 +163,48 @@ export async function POST(request: Request) {
       eptData
     );
 
-    const { error: scoreError } = await supabase
-      .from("predictions")
-      .update({
-        is_correct: result.is_correct,
-        is_partial: result.is_partial,
-        points_awarded: result.points_awarded,
-        updated_at: new Date().toISOString(),
-      })
-      .eq("id", prediction.id);
-
-    if (scoreError) {
-      errors++;
-    } else {
-      scored++;
-    }
+    scores.push({
+      id: prediction.id as string,
+      is_correct: result.is_correct,
+      is_partial: result.is_partial,
+      points_awarded: result.points_awarded,
+    });
   }
+
+  let scored = 0;
+  let errors = 0;
+
+  if (scores.length > 0) {
+    const { data: batchResult, error: batchError } = await supabase.rpc(
+      "batch_score_predictions",
+      { p_scores: scores }
+    );
+
+    if (batchError) {
+      // Transaction failed — event is confirmed but no predictions scored.
+      // Roll back the event confirmation so admin can retry.
+      await supabase
+        .from("events")
+        .update({ result_confirmed: false, status: "live" })
+        .eq("id", body.event_id);
+
+      return NextResponse.json(
+        { error: "Failed to score predictions — event rolled back", details: batchError.message },
+        { status: 500 }
+      );
+    }
+
+    const result = (batchResult as Array<{ scored: number; errors: number }>)?.[0];
+    scored = result?.scored ?? scores.length;
+    errors = result?.errors ?? 0;
+  }
+
+  // Broadcast scoring update so leaderboard clients can refetch
+  await supabase.channel("scoring_events").send({
+    type: "broadcast",
+    event: "scores_updated",
+    payload: { competition_id: competitionId, event_id: body.event_id },
+  }).catch(() => {});
 
   // Notify competition members (chat + push — fire-and-forget)
   notifyResultConfirmed(

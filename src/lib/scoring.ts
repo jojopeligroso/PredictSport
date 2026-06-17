@@ -266,8 +266,8 @@ function scoreTopN(
     };
   }
 
-  // In top N, no partial configured — full points
-  return { is_correct: true, is_partial: false, points_awarded: fullPoints };
+  // In top N but not winner, no partial credit configured — no points
+  return { is_correct: false, is_partial: false, points_awarded: 0 };
 }
 
 function scoreFinalStandings(

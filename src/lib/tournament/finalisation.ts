@@ -76,8 +76,13 @@ async function scoreEventPredictions(
     .select("*")
     .eq("event_id", eventId);
 
-  let scored = 0;
-  let errors = 0;
+  // Score in memory, then batch-update in a single transaction
+  const scores: Array<{
+    id: string;
+    is_correct: boolean | null;
+    is_partial: boolean;
+    points_awarded: number;
+  }> = [];
 
   for (const prediction of predictions ?? []) {
     const predType = prediction.prediction_type as PredictionType;
@@ -86,21 +91,26 @@ async function scoreEventPredictions(
 
     const result = scorePrediction(predType, prediction.prediction_data, resultData, eptData);
 
-    const { error } = await supabase
-      .from("predictions")
-      .update({
-        is_correct: result.is_correct,
-        is_partial: result.is_partial,
-        points_awarded: result.points_awarded,
-        updated_at: new Date().toISOString(),
-      })
-      .eq("id", prediction.id);
-
-    if (error) errors++;
-    else scored++;
+    scores.push({
+      id: prediction.id as string,
+      is_correct: result.is_correct,
+      is_partial: result.is_partial,
+      points_awarded: result.points_awarded,
+    });
   }
 
-  return { scored, errors };
+  if (scores.length === 0) return { scored: 0, errors: 0 };
+
+  const { error: batchError } = await supabase.rpc(
+    "batch_score_predictions",
+    { p_scores: scores }
+  );
+
+  if (batchError) {
+    throw new Error(`Batch scoring failed: ${batchError.message}`);
+  }
+
+  return { scored: scores.length, errors: 0 };
 }
 
 /**

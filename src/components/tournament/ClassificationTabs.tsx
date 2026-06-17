@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import { useSearchParams } from "next/navigation";
 import { useT, useLocale, type Locale } from "@/lib/i18n";
 import { RivalPredictionsTab } from "@/components/wc/RivalPredictionsTab";
+import { createClient } from "@/lib/supabase/client";
 
 interface Classification {
   id: string;
@@ -97,6 +98,23 @@ export function ClassificationTabs({
   const [loadedId, setLoadedId] = useState<string>("");
   const [selfVisibility, setSelfVisibility] = useState<"public" | "private">("public");
   const [groupData, setGroupData] = useState<MyGroupData | null>(null);
+  const [fetchKey, setFetchKey] = useState(0);
+
+  // Listen for scoring broadcasts to auto-refresh standings
+  useEffect(() => {
+    const supabase = createClient();
+    const channel = supabase
+      .channel("scoring_events")
+      .on("broadcast", { event: "scores_updated" }, (payload) => {
+        const data = payload.payload as { competition_id?: string } | undefined;
+        if (!data?.competition_id || data.competition_id === competitionId) {
+          setFetchKey((k) => k + 1);
+        }
+      })
+      .subscribe();
+
+    return () => { supabase.removeChannel(channel); };
+  }, [competitionId]);
 
   useEffect(() => {
     if (!activeId) return;
@@ -123,7 +141,7 @@ export function ClassificationTabs({
       });
 
     return () => { cancelled = true; };
-  }, [activeId, competitionId]);
+  }, [activeId, competitionId, fetchKey]);
 
   // Fetch group data when format tab is active
   useEffect(() => {

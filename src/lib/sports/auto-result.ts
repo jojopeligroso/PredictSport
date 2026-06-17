@@ -378,6 +378,13 @@ async function scoreEventPredictions(
     .select("*")
     .eq("event_id", eventId);
 
+  const scores: Array<{
+    id: string;
+    is_correct: boolean | null;
+    is_partial: boolean;
+    points_awarded: number;
+  }> = [];
+
   for (const prediction of predictions ?? []) {
     const predType = prediction.prediction_type as PredictionType;
     const ept = eptMap.get(predType);
@@ -390,15 +397,16 @@ async function scoreEventPredictions(
       eptData,
     );
 
-    await supabase
-      .from("predictions")
-      .update({
-        is_correct: scoreResult.is_correct,
-        is_partial: scoreResult.is_partial,
-        points_awarded: scoreResult.points_awarded,
-        updated_at: new Date().toISOString(),
-      })
-      .eq("id", prediction.id);
+    scores.push({
+      id: prediction.id as string,
+      is_correct: scoreResult.is_correct,
+      is_partial: scoreResult.is_partial,
+      points_awarded: scoreResult.points_awarded,
+    });
+  }
+
+  if (scores.length > 0) {
+    await supabase.rpc("batch_score_predictions", { p_scores: scores });
   }
 }
 
