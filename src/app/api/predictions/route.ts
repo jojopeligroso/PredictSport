@@ -36,7 +36,7 @@ export async function POST(request: NextRequest) {
   if (!user) {
     return NextResponse.json(
       { error: "Authentication required" },
-      { status: 401 }
+      { status: 401 },
     );
   }
 
@@ -50,11 +50,18 @@ export async function POST(request: NextRequest) {
   } catch {
     return NextResponse.json(
       { error: "Invalid request body" },
-      { status: 400 }
+      { status: 400 },
     );
   }
 
-  const { event_id, competition_id, prediction_type, prediction_data, note_text, note_visibility } = body;
+  const {
+    event_id,
+    competition_id,
+    prediction_type,
+    prediction_data,
+    note_text,
+    note_visibility,
+  } = body;
 
   // Validate required fields
   if (!event_id || !competition_id || !prediction_type || !prediction_data) {
@@ -63,19 +70,19 @@ export async function POST(request: NextRequest) {
         error:
           "Missing required fields: event_id, competition_id, prediction_type, prediction_data",
       },
-      { status: 400 }
+      { status: 400 },
     );
   }
 
   // Validate prediction type
   if (
     !VALID_PREDICTION_TYPES.includes(
-      prediction_type as (typeof VALID_PREDICTION_TYPES)[number]
+      prediction_type as (typeof VALID_PREDICTION_TYPES)[number],
     )
   ) {
     return NextResponse.json(
       { error: `Invalid prediction type: ${prediction_type}` },
-      { status: 400 }
+      { status: 400 },
     );
   }
 
@@ -89,7 +96,7 @@ export async function POST(request: NextRequest) {
   const { data: ept, error: eptError } = await supabase
     .from("event_prediction_types")
     .select(
-      "id, event:events!inner(id, competition_id, tournament_id, lock_time, status, sport)"
+      "id, event:events!inner(id, competition_id, tournament_id, lock_time, status, sport)",
     )
     .eq("event_id", event_id)
     .eq("prediction_type", prediction_type)
@@ -97,21 +104,32 @@ export async function POST(request: NextRequest) {
 
   if (eptError || !ept) {
     return NextResponse.json(
-      { error: `Prediction type "${prediction_type}" is not configured for this event` },
-      { status: 400 }
+      {
+        error: `Prediction type "${prediction_type}" is not configured for this event`,
+      },
+      { status: 400 },
     );
   }
 
-  const eptEvent = (ept as unknown as {
-    event: { id: string; competition_id: string; tournament_id: string | null; lock_time: string; status: string; sport: string };
-  }).event;
+  const eptEvent = (
+    ept as unknown as {
+      event: {
+        id: string;
+        competition_id: string;
+        tournament_id: string | null;
+        lock_time: string;
+        status: string;
+        sport: string;
+      };
+    }
+  ).event;
 
   if (eptEvent.competition_id !== competition_id) {
     // For tournament events, verify user's competition shares the same blueprint
     if (!eptEvent.tournament_id) {
       return NextResponse.json(
         { error: "Event not found in this competition" },
-        { status: 404 }
+        { status: 404 },
       );
     }
     const { data: userComp } = await supabase
@@ -122,15 +140,17 @@ export async function POST(request: NextRequest) {
     if (userComp?.tournament_id !== eptEvent.tournament_id) {
       return NextResponse.json(
         { error: "Event not found in this competition" },
-        { status: 404 }
+        { status: 404 },
       );
     }
   }
 
   if (new Date(eptEvent.lock_time) <= new Date()) {
     return NextResponse.json(
-      { error: "This event is locked. Predictions can no longer be submitted." },
-      { status: 403 }
+      {
+        error: "This event is locked. Predictions can no longer be submitted.",
+      },
+      { status: 403 },
     );
   }
 
@@ -139,7 +159,7 @@ export async function POST(request: NextRequest) {
       {
         error: `Event status is "${eptEvent.status}". Predictions can only be submitted for upcoming events.`,
       },
-      { status: 403 }
+      { status: 403 },
     );
   }
 
@@ -159,7 +179,7 @@ export async function POST(request: NextRequest) {
     if (deleteError) {
       return NextResponse.json(
         { error: "Failed to delete prediction" },
-        { status: 500 }
+        { status: 500 },
       );
     }
 
@@ -184,7 +204,7 @@ export async function POST(request: NextRequest) {
         ...(note_visibility && { note_visibility }),
         updated_at: new Date().toISOString(),
       },
-      { onConflict: "event_prediction_type_id,user_id" }
+      { onConflict: "event_prediction_type_id,user_id" },
     )
     .select()
     .single();
@@ -201,7 +221,7 @@ export async function POST(request: NextRequest) {
           ? "Can't save that pick — the match may have locked or updates are disabled for this competition."
           : "Couldn't save that pick. Please try again.",
       },
-      { status: isRlsReject ? 403 : 500 }
+      { status: isRlsReject ? 403 : 500 },
     );
   }
 
@@ -218,12 +238,17 @@ export async function POST(request: NextRequest) {
       .maybeSingle();
 
     if (winnerEpt) {
-      const opts = (winnerEpt.config as Record<string, unknown> | null)?.options as string[] | undefined;
+      const opts = (winnerEpt.config as Record<string, unknown> | null)
+        ?.options as string[] | undefined;
       const winnerOptions = opts && opts.length > 0 ? opts : [];
-      const implied = deriveWinnerFromScore(prediction_data, eptEvent.sport, winnerOptions);
+      const implied = deriveWinnerFromScore(
+        prediction_data,
+        eptEvent.sport,
+        winnerOptions,
+      );
 
       if (implied) {
-        await supabase
+        const { error: winnerUpsertError } = await supabase
           .from("predictions")
           .upsert(
             {
@@ -234,8 +259,16 @@ export async function POST(request: NextRequest) {
               prediction_data: { value: implied },
               updated_at: new Date().toISOString(),
             },
-            { onConflict: "event_prediction_type_id,user_id" }
+            { onConflict: "event_prediction_type_id,user_id" },
           );
+        if (winnerUpsertError) {
+          console.error("[predictions] auto-derive winner upsert failed:", {
+            event_id,
+            user_id: user.id,
+            implied,
+            error: winnerUpsertError,
+          });
+        }
       }
     }
   }

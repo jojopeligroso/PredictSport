@@ -1,6 +1,13 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
+import {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  type ReactNode,
+} from "react";
 import { useRouter } from "next/navigation";
 import { useT } from "@/lib/i18n";
 import { CountryFlag } from "@/components/CountryFlag";
@@ -8,6 +15,7 @@ import { ScoreInput } from "@/components/ScoreInput";
 import { FixtureCardSurface } from "@/components/wc/FixtureCardSurface";
 import { deriveWinnerFromScore } from "@/lib/score-format";
 import { getPredictionSummary } from "@/lib/prediction-summary";
+import { CHROME_PALETTE } from "@/app/wc/_landing/brand-palette";
 import type { WcFixture } from "@/lib/wc/fixtures";
 import type {
   EventPredictionType,
@@ -181,8 +189,7 @@ const COMPACT_THEME: SurfaceTheme = {
       "focus:border-ps-amber focus:bg-white",
     ].join(" "),
   errorText: "mt-1 text-[11px] font-medium text-ps-red",
-  lockedReadOnly:
-    "rounded-lg border border-ps-border bg-ps-surface px-3 py-2",
+  lockedReadOnly: "rounded-lg border border-ps-border bg-ps-surface px-3 py-2",
   lockedText: "text-sm font-semibold text-ps-text",
   lockedPickedText: "font-semibold text-ps-text",
   lockedMutedText: "text-ps-text-ter",
@@ -313,12 +320,18 @@ function MatchPickRow({
 
   // Track whether a score prediction has been committed so we can show a
   // confirmation summary below the ScoreInput without waiting for a page reload.
-  const [hasCommittedScore, setHasCommittedScore] = useState(initialScore !== null);
+  const [hasCommittedScore, setHasCommittedScore] = useState(
+    initialScore !== null,
+  );
   const [committedHome, setCommittedHome] = useState<number | null>(
-    initialScore?.prediction_data?.home != null ? Number(initialScore.prediction_data.home) : null,
+    initialScore?.prediction_data?.home != null
+      ? Number(initialScore.prediction_data.home)
+      : null,
   );
   const [committedAway, setCommittedAway] = useState<number | null>(
-    initialScore?.prediction_data?.away != null ? Number(initialScore.prediction_data.away) : null,
+    initialScore?.prediction_data?.away != null
+      ? Number(initialScore.prediction_data.away)
+      : null,
   );
 
   // Key incremented on reset to force ScoreInput to remount and clear its
@@ -360,9 +373,30 @@ function MatchPickRow({
 
   // Find the draw option from winnerOptions.
   const drawOption = useMemo(
-    () => winnerOptions.find((opt) => slotOf(opt, home, away) === "draw") ?? "Draw",
+    () =>
+      winnerOptions.find((opt) => slotOf(opt, home, away) === "draw") ?? "Draw",
     [winnerOptions, home, away],
   );
+
+  // Detect contradiction: committed score implies a different winner than rawWinner (DB value).
+  const hasContradiction = useMemo(() => {
+    if (!hasCommittedScore || committedHome === null || committedAway === null)
+      return false;
+    if (!rawWinner) return false;
+    const implied = deriveWinnerFromScore(
+      { home: committedHome, away: committedAway },
+      event.sport,
+      winnerOptions,
+    );
+    return implied !== null && implied !== rawWinner;
+  }, [
+    hasCommittedScore,
+    committedHome,
+    committedAway,
+    rawWinner,
+    event.sport,
+    winnerOptions,
+  ]);
 
   const submitPrediction = useCallback(
     async (
@@ -460,7 +494,7 @@ function MatchPickRow({
           setWinnerPred(previousPred);
           if (!hadWinner) onWinnerLanded(event.id, false);
           setErrorMsg(
-            err instanceof Error ? err.message : t('prediction.error_save'),
+            err instanceof Error ? err.message : t("prediction.error_save"),
           );
         });
     },
@@ -492,58 +526,11 @@ function MatchPickRow({
         setCommittedHome(homeNum);
         setCommittedAway(awayNum);
         router.refresh();
-
-        // Score is source of truth — always align the winner to match it.
-        // Bypass handlePickWinner (which has an isLocked guard) because this
-        // auto-derivation is part of the same atomic score submission, not a
-        // separate user action. Without this, a race with lock_time silently
-        // drops the winner update, leaving contradictory predictions.
-        if (winnerEpt) {
-          const implied = deriveWinnerFromScore(
-            { home: homeNum, away: awayNum },
-            event.sport,
-            winnerOptions,
-          );
-          if (implied && implied !== currentWinner) {
-            const optimistic: Prediction = {
-              ...(winnerPred ??
-                ({
-                  id: `optimistic-${event.id}`,
-                  event_prediction_type_id: winnerEpt.id,
-                  event_id: event.id,
-                  user_id: "",
-                  prediction_type: "winner",
-                  is_correct: null,
-                  is_partial: null,
-                  points_awarded: null,
-                  note_text: null,
-                  note_visibility: "private",
-                  submitted_at: new Date().toISOString(),
-                  updated_at: new Date().toISOString(),
-                } as unknown as Prediction)),
-              prediction_data: { value: implied },
-            };
-            setWinnerPred(optimistic);
-            submitPrediction("winner", { value: implied }).then((saved) => {
-              if (saved) setWinnerPred(saved);
-            }).catch(() => {});
-          }
-        }
       } catch {
         // Silently ignore score submission errors.
       }
     },
-    [
-      scoreEpt,
-      submitPrediction,
-      router,
-      currentWinner,
-      winnerPred,
-      winnerEpt,
-      winnerOptions,
-      event.sport,
-      event.id,
-    ],
+    [scoreEpt, submitPrediction, router],
   );
 
   /**
@@ -588,7 +575,7 @@ function MatchPickRow({
       }
       setResetInFlight(false);
       if (hadWinner) onWinnerLanded(event.id, true);
-      setErrorMsg(t('prediction.error_reset'));
+      setErrorMsg(t("prediction.error_reset"));
     }
   }, [
     isLocked,
@@ -614,7 +601,9 @@ function MatchPickRow({
         <div className="flex items-center justify-center gap-1.5">
           <div className="flex flex-1 min-w-0 flex-col items-center gap-1 px-1.5 py-1.5 rounded-lg">
             <CountryFlag shape="pill" name={home} size={29} />
-            <span className={`max-w-full truncate text-xs font-semibold text-center leading-tight ${currentWinner === home ? "text-white" : "text-white/55"}`}>
+            <span
+              className={`max-w-full truncate text-xs font-semibold text-center leading-tight ${currentWinner === home ? "text-white" : "text-white/55"}`}
+            >
               {home}
             </span>
           </div>
@@ -627,7 +616,9 @@ function MatchPickRow({
 
           <div className="flex flex-1 min-w-0 flex-col items-center gap-1 px-1.5 py-1.5 rounded-lg">
             <CountryFlag shape="pill" name={away} size={29} />
-            <span className={`max-w-full truncate text-xs font-semibold text-center leading-tight ${currentWinner === away ? "text-white" : "text-white/55"}`}>
+            <span
+              className={`max-w-full truncate text-xs font-semibold text-center leading-tight ${currentWinner === away ? "text-white" : "text-white/55"}`}
+            >
               {away}
             </span>
           </div>
@@ -635,8 +626,18 @@ function MatchPickRow({
         {currentWinner ? (
           <>
             <p className="mt-1 text-xs text-white/75">
-              <svg className="inline mr-1 h-3 w-3" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" d="M16.5 10.5V6.75a4.5 4.5 0 10-9 0v3.75m-.75 11.25h10.5a2.25 2.25 0 002.25-2.25v-6.75a2.25 2.25 0 00-2.25-2.25H6.75a2.25 2.25 0 00-2.25 2.25v6.75a2.25 2.25 0 002.25 2.25z" />
+              <svg
+                className="inline mr-1 h-3 w-3"
+                fill="none"
+                viewBox="0 0 24 24"
+                strokeWidth={2}
+                stroke="currentColor"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  d="M16.5 10.5V6.75a4.5 4.5 0 10-9 0v3.75m-.75 11.25h10.5a2.25 2.25 0 002.25-2.25v-6.75a2.25 2.25 0 00-2.25-2.25H6.75a2.25 2.25 0 00-2.25 2.25v6.75a2.25 2.25 0 002.25 2.25z"
+                />
               </svg>
               {t("wc.picked_label")}{" "}
               <span className="font-semibold text-white">{currentWinner}</span>
@@ -655,8 +656,18 @@ function MatchPickRow({
           </>
         ) : (
           <p className="mt-1 text-xs text-white/55">
-            <svg className="inline mr-1 h-3 w-3" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" d="M16.5 10.5V6.75a4.5 4.5 0 10-9 0v3.75m-.75 11.25h10.5a2.25 2.25 0 002.25-2.25v-6.75a2.25 2.25 0 00-2.25-2.25H6.75a2.25 2.25 0 00-2.25 2.25v6.75a2.25 2.25 0 002.25 2.25z" />
+            <svg
+              className="inline mr-1 h-3 w-3"
+              fill="none"
+              viewBox="0 0 24 24"
+              strokeWidth={2}
+              stroke="currentColor"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                d="M16.5 10.5V6.75a4.5 4.5 0 10-9 0v3.75m-.75 11.25h10.5a2.25 2.25 0 002.25-2.25v-6.75a2.25 2.25 0 00-2.25-2.25H6.75a2.25 2.25 0 00-2.25 2.25v6.75a2.25 2.25 0 002.25 2.25z"
+              />
             </svg>
             {t("wc.locked_no_prediction")}
           </p>
@@ -673,19 +684,29 @@ function MatchPickRow({
             {away}
           </span>
           <span className="rounded-full bg-ps-chip px-2 py-0.5 text-[10px] font-semibold uppercase text-ps-text-sec">
-            {event.result_confirmed ? t('prediction.resulted') : t('prediction.locked')}
+            {event.result_confirmed
+              ? t("prediction.resulted")
+              : t("prediction.locked")}
           </span>
         </div>
         {currentWinner ? (
           <>
             <p className={`mt-1 text-xs text-ps-text-sec`}>
-              <svg className="inline mr-1 h-3 w-3" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" d="M16.5 10.5V6.75a4.5 4.5 0 10-9 0v3.75m-.75 11.25h10.5a2.25 2.25 0 002.25-2.25v-6.75a2.25 2.25 0 00-2.25-2.25H6.75a2.25 2.25 0 00-2.25 2.25v6.75a2.25 2.25 0 002.25 2.25z" />
+              <svg
+                className="inline mr-1 h-3 w-3"
+                fill="none"
+                viewBox="0 0 24 24"
+                strokeWidth={2}
+                stroke="currentColor"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  d="M16.5 10.5V6.75a4.5 4.5 0 10-9 0v3.75m-.75 11.25h10.5a2.25 2.25 0 002.25-2.25v-6.75a2.25 2.25 0 00-2.25-2.25H6.75a2.25 2.25 0 00-2.25 2.25v6.75a2.25 2.25 0 002.25 2.25z"
+                />
               </svg>
               {t("wc.picked_label")}{" "}
-              <span className={theme.lockedPickedText}>
-                {currentWinner}
-              </span>
+              <span className={theme.lockedPickedText}>{currentWinner}</span>
             </p>
             {initialScore && !resetInFlight && (
               <p className={`text-[10px] text-ps-text-ter`}>
@@ -701,8 +722,18 @@ function MatchPickRow({
           </>
         ) : (
           <p className={`mt-1 text-xs ${theme.lockedMutedText}`}>
-            <svg className="inline mr-1 h-3 w-3" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" d="M16.5 10.5V6.75a4.5 4.5 0 10-9 0v3.75m-.75 11.25h10.5a2.25 2.25 0 002.25-2.25v-6.75a2.25 2.25 0 00-2.25-2.25H6.75a2.25 2.25 0 00-2.25 2.25v6.75a2.25 2.25 0 002.25 2.25z" />
+            <svg
+              className="inline mr-1 h-3 w-3"
+              fill="none"
+              viewBox="0 0 24 24"
+              strokeWidth={2}
+              stroke="currentColor"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                d="M16.5 10.5V6.75a4.5 4.5 0 10-9 0v3.75m-.75 11.25h10.5a2.25 2.25 0 002.25-2.25v-6.75a2.25 2.25 0 00-2.25-2.25H6.75a2.25 2.25 0 00-2.25 2.25v6.75a2.25 2.25 0 002.25 2.25z"
+              />
             </svg>
             {t("wc.locked_no_prediction")}
           </p>
@@ -716,10 +747,17 @@ function MatchPickRow({
           city={fixture.city}
           headerLeft={
             fixture.group && fixture.matchday
-              ? t("fixtures.stage_group", { group: fixture.group, matchday: fixture.matchday })
+              ? t("fixtures.stage_group", {
+                  group: fixture.group,
+                  matchday: fixture.matchday,
+                })
               : event.event_name
           }
-          headerRight={formatHeaderRight(fixture.kickoffUtc, showCardCountdown ? event.lock_time : undefined, event.pick_reveal_at)}
+          headerRight={formatHeaderRight(
+            fixture.kickoffUtc,
+            showCardCountdown ? event.lock_time : undefined,
+            event.pick_reveal_at,
+          )}
           hasPick={currentWinner !== null}
         >
           <div className={theme.lockedReadOnly}>{lockedBody}</div>
@@ -771,17 +809,22 @@ function MatchPickRow({
         </button>
       </div>
 
-      {isKnockout && winnerOptions.some((opt) => slotOf(opt, home, away) === "draw") && (
-        <p className={`mt-1 text-center text-xs ${useCardSurface ? "text-white/55" : "text-ps-text-ter"}`}>
-          Draw = goes to pens. Pick who advances below.
-        </p>
-      )}
+      {isKnockout &&
+        winnerOptions.some((opt) => slotOf(opt, home, away) === "draw") && (
+          <p
+            className={`mt-1 text-center text-xs ${useCardSurface ? "text-white/55" : "text-ps-text-ter"}`}
+          >
+            Draw = goes to pens. Pick who advances below.
+          </p>
+        )}
 
       {/* Score input row */}
       {scoreEpt && (
         <div className="mt-2 flex flex-col items-center">
           {!hasCommittedScore && (
-            <p className={`mb-1 text-xs ${useCardSurface ? "text-white/55" : "text-ps-text-ter"}`}>
+            <p
+              className={`mb-1 text-xs ${useCardSurface ? "text-white/55" : "text-ps-text-ter"}`}
+            >
               Exact score = +3 bonus pts
             </p>
           )}
@@ -789,8 +832,20 @@ function MatchPickRow({
             key={scoreResetKey}
             homeLabel={home}
             awayLabel={away}
-            initialHome={resetInFlight ? undefined : (initialScore?.prediction_data?.home != null ? String(initialScore.prediction_data.home) : undefined)}
-            initialAway={resetInFlight ? undefined : (initialScore?.prediction_data?.away != null ? String(initialScore.prediction_data.away) : undefined)}
+            initialHome={
+              resetInFlight
+                ? undefined
+                : initialScore?.prediction_data?.home != null
+                  ? String(initialScore.prediction_data.home)
+                  : undefined
+            }
+            initialAway={
+              resetInFlight
+                ? undefined
+                : initialScore?.prediction_data?.away != null
+                  ? String(initialScore.prediction_data.away)
+                  : undefined
+            }
             onCommit={handleScoreCommit}
             disabled={false}
             variant={useCardSurface ? "card" : "compact"}
@@ -798,16 +853,59 @@ function MatchPickRow({
         </div>
       )}
 
-      {hasCommittedScore && committedHome !== null && committedAway !== null && (
-        <p className={`mt-1.5 text-center text-[11px] ${useCardSurface ? "text-white/65" : "text-ps-text-sec"}`}>
-          {getPredictionSummary("exact_score", { home: committedHome, away: committedAway }, home, away, t)}
-          <span className={`ml-1 inline-block ${useCardSurface ? "text-white/40" : "text-ps-text-ter"}`}>
-            <svg className="inline h-3 w-3" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L10.582 16.07a4.5 4.5 0 01-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 011.13-1.897l8.932-8.931zm0 0L19.5 7.125" />
-            </svg>
-          </span>
-        </p>
-      )}
+      {hasCommittedScore &&
+        committedHome !== null &&
+        committedAway !== null &&
+        (hasContradiction ? (
+          <p
+            className="mt-1.5 text-center text-[11px]"
+            style={{ color: CHROME_PALETTE.attention }}
+          >
+            <span
+              className="mr-1 inline-flex h-3.5 w-3.5 items-center justify-center rounded-full text-[9px] font-extrabold leading-none text-white"
+              style={{ background: CHROME_PALETTE.attention }}
+              aria-label={t("prediction.contradiction")}
+            >
+              !
+            </span>
+            {t("prediction.score_saved_as", {
+              home,
+              homeScore: committedHome,
+              awayScore: committedAway,
+              away,
+            })}{" "}
+            {t("prediction.your_pick_was", { team: rawWinner! })}
+          </p>
+        ) : (
+          <p
+            className={`mt-1.5 text-center text-[11px] ${useCardSurface ? "text-white/65" : "text-ps-text-sec"}`}
+          >
+            {getPredictionSummary(
+              "exact_score",
+              { home: committedHome, away: committedAway },
+              home,
+              away,
+              t,
+            )}
+            <span
+              className={`ml-1 inline-block ${useCardSurface ? "text-white/40" : "text-ps-text-ter"}`}
+            >
+              <svg
+                className="inline h-3 w-3"
+                fill="none"
+                viewBox="0 0 24 24"
+                strokeWidth={2}
+                stroke="currentColor"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L10.582 16.07a4.5 4.5 0 01-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 011.13-1.897l8.932-8.931zm0 0L19.5 7.125"
+                />
+              </svg>
+            </span>
+          </p>
+        ))}
 
       {currentWinner && (
         <div className="mt-1 flex justify-center">
@@ -820,7 +918,7 @@ function MatchPickRow({
                 : "text-ps-text-ter hover:text-ps-red"
             }`}
           >
-            {t('prediction.reset')}
+            {t("prediction.reset")}
           </button>
         </div>
       )}
@@ -838,7 +936,11 @@ function MatchPickRow({
             ? `Group ${fixture.group} · MD${fixture.matchday}`
             : event.event_name
         }
-        headerRight={formatHeaderRight(fixture.kickoffUtc, showCardCountdown ? event.lock_time : undefined, event.pick_reveal_at)}
+        headerRight={formatHeaderRight(
+          fixture.kickoffUtc,
+          showCardCountdown ? event.lock_time : undefined,
+          event.pick_reveal_at,
+        )}
         hasPick={currentWinner !== null}
       >
         {interactiveBody}
@@ -859,7 +961,11 @@ function MatchPickRow({
  * local-time conversion is intentionally NOT shown here (that lives on
  * /wc/results which is the canonical fixture-detail surface).
  */
-function formatHeaderRight(kickoffUtc: string, lockTime?: string, pickRevealAt?: string | null): ReactNode {
+function formatHeaderRight(
+  kickoffUtc: string,
+  lockTime?: string,
+  pickRevealAt?: string | null,
+): ReactNode {
   const d = new Date(kickoffUtc);
   const time = new Intl.DateTimeFormat("en-GB", {
     hour: "2-digit",
@@ -879,7 +985,12 @@ function formatHeaderRight(kickoffUtc: string, lockTime?: string, pickRevealAt?:
       <span className="block text-[0.65rem] font-medium text-white/55">
         {date}
       </span>
-      {lockTime && <CardCountdown lockTime={lockTime} pickRevealAt={pickRevealAt ?? undefined} />}
+      {lockTime && (
+        <CardCountdown
+          lockTime={lockTime}
+          pickRevealAt={pickRevealAt ?? undefined}
+        />
+      )}
     </>
   );
 }
@@ -893,10 +1004,15 @@ function CardCountdown({
 }) {
   const t = useT();
   const revealIso =
-    pickRevealAt ?? new Date(new Date(lockTime).getTime() + 5 * 60_000).toISOString();
+    pickRevealAt ??
+    new Date(new Date(lockTime).getTime() + 5 * 60_000).toISOString();
 
-  const [lockText, setLockText] = useState<string | null>(() => fmtDdHhMmSs(lockTime));
-  const [revealText, setRevealText] = useState<string | null>(() => fmtDdHhMmSs(revealIso));
+  const [lockText, setLockText] = useState<string | null>(() =>
+    fmtDdHhMmSs(lockTime),
+  );
+  const [revealText, setRevealText] = useState<string | null>(() =>
+    fmtDdHhMmSs(revealIso),
+  );
 
   useEffect(() => {
     const tick = () => {

@@ -210,6 +210,12 @@ This project runs on **Vercel Hobby (free)**. These limits bite silently:
 3. **100 deploys/day** — each push to `master` triggers a deploy. Multi-session days can burn through this fast. If deploys stop triggering, this limit may be the cause.
 4. **6000 build min/month** — Next.js builds take ~1–2 min each. At 20+ deploys/day this adds up. No way to check remaining minutes via API.
 
+## Gotchas — Supabase PostgREST Row Limits
+
+1. **PostgREST silently caps query results at 1,000 rows.** Supabase's hosted PostgREST returns a maximum of 1,000 rows by default (`PGRST_DB_MAX_ROWS`). No error, no warning — the result is simply truncated. Any `.select()` query that could exceed 1,000 rows **MUST** include `.limit(N)` or `.range(from, to)`. This caused zero points on the leaderboard when scored predictions exceeded 1,000 rows — the JS aggregation loop only summed what PostgREST returned.
+
+2. **Never aggregate in JavaScript what the database can aggregate in SQL.** Fetching individual rows and summing in a JS loop means (a) you hit the row limit silently, (b) you transfer orders of magnitude more data than needed, (c) you burn serverless CPU on work Postgres does in milliseconds. **Use a Postgres RPC with `SUM() GROUP BY`** so the database returns one row per group, not one row per input record. The current `.limit(10000)` band-aid works at 48 users but the proper fix is an RPC.
+
 ## Gotchas — Notification Dedup
 
 1. **Don't call `notifyResultConfirmed` from routes that delegate to `autoResolveEvent`** — `autoResolveEvent` already calls it internally. Adding a second call in the caller causes duplicate chat messages and double push notifications. The admin confirm-result route correctly calls `notifyResultConfirmed` because it does its own scoring and does NOT go through `autoResolveEvent`.
