@@ -161,7 +161,14 @@ export function DashboardClient({
       const nowMs = Date.now();
       return startMs <= nowMs && !e.result_confirmed && nowMs < startMs + getLiveWindowMs(e.sport);
     });
-    const interval = hasLive ? setInterval(refreshData, 60_000) : undefined;
+    // Slow live poll (180s) and only refresh while the tab is foregrounded.
+    // Returning to the tab triggers an immediate refresh via onVisible above,
+    // so the interval only needs to cover users actively watching.
+    const interval = hasLive
+      ? setInterval(() => {
+          if (document.visibilityState === "visible") refreshData();
+        }, 180_000)
+      : undefined;
 
     return () => {
       document.removeEventListener("visibilitychange", onVisible);
@@ -178,6 +185,8 @@ export function DashboardClient({
   const checkInFlight = useRef(false);
   useEffect(() => {
     async function checkResults() {
+      // Backstop only — don't poll while the tab is backgrounded.
+      if (document.visibilityState !== "visible") return;
       const eligible = nextEvents.filter((e) => {
         if (e.result_confirmed) return false;
         const { checkAfterHours } = getTimingForSport(e.sport);
@@ -186,29 +195,36 @@ export function DashboardClient({
       });
       if (eligible.length === 0 || checkInFlight.current) return;
 
+      // Check only the single soonest-finished eligible event. The 15-min
+      // server cron (/api/results/cron) is the primary confirmation path; this
+      // client check is just a safety net, so one event per cycle is enough.
+      const target = [...eligible].sort(
+        (a, b) =>
+          new Date(a.start_time).getTime() - new Date(b.start_time).getTime(),
+      )[0];
+
       checkInFlight.current = true;
       let anyConfirmed = false;
-      for (const event of eligible) {
-        try {
-          const res = await fetch("/api/results/check", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ event_id: event.id }),
-          });
-          const data = await res.json();
-          if (data.status === "confirmed" || data.status === "already_confirmed") {
-            anyConfirmed = true;
-          }
-        } catch (err) {
-          console.warn("[check-result]", event.id, err);
+      try {
+        const res = await fetch("/api/results/check", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ event_id: target.id }),
+        });
+        const data = await res.json();
+        if (data.status === "confirmed" || data.status === "already_confirmed") {
+          anyConfirmed = true;
         }
+      } catch (err) {
+        console.warn("[check-result]", target.id, err);
       }
       checkInFlight.current = false;
       if (anyConfirmed) router.refresh();
     }
 
     checkResults();
-    const interval = setInterval(checkResults, 5 * 60_000);
+    // 15-min cadence, matching the server cron — client is a backstop.
+    const interval = setInterval(checkResults, 15 * 60_000);
     return () => clearInterval(interval);
   }, [nextEvents, router]);
 
