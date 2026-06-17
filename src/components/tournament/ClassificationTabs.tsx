@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useSearchParams } from "next/navigation";
 import { useT, useLocale, type Locale } from "@/lib/i18n";
 import { RivalPredictionsTab } from "@/components/wc/RivalPredictionsTab";
@@ -85,7 +85,13 @@ export function ClassificationTabs({
   const initialRivalEventId = searchParams.get("eventId");
   const shouldStartOnRivals = searchParams.get("tab") === "rivals";
 
-  const visibleClassifications = classifications.filter((c) => c.status !== "draft");
+  // Memoized so the reference is stable across renders — otherwise the
+  // my-group fetch effect below (which depends on it) re-runs on every render
+  // and refetches in a tight network-throttled loop.
+  const visibleClassifications = useMemo(
+    () => classifications.filter((c) => c.status !== "draft"),
+    [classifications],
+  );
   const formatClassification = visibleClassifications.find(
     (c) => c.classification_key === "format"
   );
