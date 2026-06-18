@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import type { User, CompetitionType } from "@/types/database";
 import { useTheme, type ThemePref } from "@/components/ThemeProvider";
 import { validateDisplayName, DISPLAY_NAME_MAX } from "@/lib/display-name";
+import { useLiveModePreference } from "@/hooks/useLiveMode";
 import { useT } from "@/lib/i18n";
 
 export interface CompetitionRef {
@@ -236,6 +237,28 @@ function BiggerCardsToggle() {
           onChange={handleChange}
           label={t('profile.bigger_cards')}
           description={t('profile.bigger_cards_desc')}
+        />
+      </div>
+    </section>
+  );
+}
+
+function LiveModeSection() {
+  const t = useT();
+  const { alwaysOff, setAlwaysOff } = useLiveModePreference();
+
+  return (
+    <section className="rounded-xl border border-ps-border bg-ps-surface p-6">
+      <h2 className="mb-1 text-xs font-semibold uppercase tracking-widest text-ps-text-sec">
+        {t('profile.live_mode_heading')}
+      </h2>
+      <div className="divide-y divide-ps-border">
+        <Toggle
+          id="live_mode_always_off"
+          checked={alwaysOff}
+          onChange={setAlwaysOff}
+          label={t('profile.live_mode_always_off')}
+          description={t('profile.live_mode_always_off_desc')}
         />
       </div>
     </section>
@@ -766,6 +789,9 @@ export function ProfileForm({
 
             {/* Display */}
             <BiggerCardsToggle />
+
+            {/* Live mode */}
+            <LiveModeSection />
 
             {/* Predictions */}
             <section className="rounded-xl border border-ps-border bg-ps-surface p-6">

@@ -27,6 +27,8 @@ import type { TeamWithStats } from "@/lib/tournament/bracket/types";
 import { PredictionBanner } from "@/components/wc/PredictionBanner";
 import { RivalTeaser } from "@/components/wc/RivalTeaser";
 import { CommunityPicksCard } from "@/components/wc/CommunityPicksCard";
+import { LiveModeToggle } from "@/components/wc/LiveModeToggle";
+import { useLiveModeToggle } from "@/hooks/useLiveMode";
 
 interface DashboardClientProps {
   competitionId: string;
@@ -64,19 +66,30 @@ function getLiveWindowMs(sport: string): number {
   return (checkAfterHours + 1) * 60 * 60 * 1000;
 }
 
+/** Is this event currently live: started, unresolved, and within its sport's live window? */
+function isEventLive(event: WindowEvent): boolean {
+  const startMs = new Date(event.start_time).getTime();
+  const nowMs = Date.now();
+  return startMs <= nowMs && !event.result_confirmed && nowMs < startMs + getLiveWindowMs(event.sport);
+}
+
 function getPickStatus(
   event: WindowEvent,
   predictions: Prediction[],
+  liveEnabled: boolean,
 ): PickStatus {
   // In-progress (LIVE): match has started but not yet resulted.
   // Capped at sport-specific duration (checkAfterHours + 1h buffer) so the
   // dashboard reverts to idle even if auto-resolve fails completely.
   // Soccer: 3h, rugby: 3.5h, golf: 9h, etc.
+  // When the user has turned Live mode off, skip this branch so the event
+  // falls through to the locked/"complete" treatment below (the prediction is
+  // already locked because the match is past lock_time — no regression).
   const lockMs = new Date(event.lock_time).getTime();
   const startMs = new Date(event.start_time).getTime();
   const nowMs = Date.now();
   const liveWindow = getLiveWindowMs(event.sport);
-  if (startMs <= nowMs && !event.result_confirmed && nowMs < startMs + liveWindow)
+  if (liveEnabled && startMs <= nowMs && !event.result_confirmed && nowMs < startMs + liveWindow)
     return "in_progress";
 
   // Locked: past lock_time but match hasn't started (or live window expired).
@@ -145,7 +158,17 @@ export function DashboardClient({
   // In-progress events auto-expand; track which ones the user manually collapsed
   const [collapsedLiveIds, setCollapsedLiveIds] = useState<Set<string>>(new Set());
 
-  // Auto-refresh: refetch server data on visibility change + every 60s while
+  // Raw "is any match live right now" check (ignores the toggle + date filter) —
+  // drives both the Live-mode toggle hook and the live poll gating.
+  const liveEventExistsRaw = useMemo(
+    () => nextEvents.some(isEventLive),
+    [nextEvents],
+  );
+
+  const { liveEnabled, toggle, showPrompt, acceptAlwaysOff, declinePrompt } =
+    useLiveModeToggle(liveEventExistsRaw);
+
+  // Auto-refresh: refetch server data on visibility change + every 180s while
   // live events exist, so result_confirmed updates propagate and live state clears.
   const refreshData = useCallback(() => router.refresh(), [router]);
   useEffect(() => {
@@ -154,13 +177,10 @@ export function DashboardClient({
     };
     document.addEventListener("visibilitychange", onVisible);
 
-    // Poll every 60s while there are live events, so result confirmations
-    // clear the live state even if the user keeps the tab open.
-    const hasLive = nextEvents.some((e) => {
-      const startMs = new Date(e.start_time).getTime();
-      const nowMs = Date.now();
-      return startMs <= nowMs && !e.result_confirmed && nowMs < startMs + getLiveWindowMs(e.sport);
-    });
+    // Poll every 180s while there are live events AND the user hasn't turned
+    // Live mode off, so result confirmations clear the live state even if the
+    // user keeps the tab open. Turning Live mode off stops the polling.
+    const hasLive = liveEnabled && nextEvents.some(isEventLive);
     // Slow live poll (180s) and only refresh while the tab is foregrounded.
     // Returning to the tab triggers an immediate refresh via onVisible above,
     // so the interval only needs to cover users actively watching.
@@ -174,7 +194,7 @@ export function DashboardClient({
       document.removeEventListener("visibilitychange", onVisible);
       if (interval) clearInterval(interval);
     };
-  }, [refreshData, nextEvents]);
+  }, [refreshData, nextEvents, liveEnabled]);
 
   // Active result check: for unconfirmed events past their expected match
   // duration (checkAfterHours), call /api/results/check to try to confirm.
@@ -240,22 +260,27 @@ export function DashboardClient({
     });
   }, [nextEvents, pillDateEvents, selectedDate]);
 
-  // Detect live state — any in-progress event triggers island mode
-  const hasLiveEvent = useMemo(
-    () => filteredEvents.some((e) => getPickStatus(e, predictions) === "in_progress"),
+  // Does a live event exist in the current view (ignores the toggle)? Drives
+  // whether the Live-mode toggle is shown.
+  const liveEventExists = useMemo(
+    () => filteredEvents.some((e) => getPickStatus(e, predictions, true) === "in_progress"),
     [filteredEvents, predictions],
   );
+
+  // Effective live treatment — only when a live event exists AND the user
+  // hasn't turned Live mode off. Replaces the old `hasLiveEvent` flag.
+  const liveMode = liveEventExists && liveEnabled;
 
   // Count picks progress (in-progress events with complete picks still count as picked)
   const { picked, total } = useMemo(() => {
     let picked = 0;
     for (const e of filteredEvents) {
-      const status = getPickStatus(e, predictions);
+      const status = getPickStatus(e, predictions, liveEnabled);
       if (status === "complete") picked++;
       else if (status === "in_progress" && hasCompletePick(e, predictions)) picked++;
     }
     return { picked, total: filteredEvents.length };
-  }, [filteredEvents, predictions]);
+  }, [filteredEvents, predictions, liveEnabled]);
 
   const now = useNowAfterMount();
 
@@ -307,7 +332,7 @@ export function DashboardClient({
               {filteredEvents.map((event) => {
                 const fixture = fixtureByEventId.get(event.id);
                 if (!fixture) return null;
-                const status = getPickStatus(event, predictions);
+                const status = getPickStatus(event, predictions, liveEnabled);
                 // In-progress events auto-expand unless manually collapsed
                 const isLiveExpanded =
                   status === "in_progress" && !collapsedLiveIds.has(event.id);
@@ -366,9 +391,20 @@ export function DashboardClient({
         )}
       </OnboardingSection>
 
+      {/* ── Live-mode toggle — only while a match is live ──────────────── */}
+      {liveEventExists && (
+        <LiveModeToggle
+          liveEnabled={liveEnabled}
+          onToggle={toggle}
+          showPrompt={showPrompt}
+          onAcceptAlwaysOff={acceptAlwaysOff}
+          onDeclinePrompt={declinePrompt}
+        />
+      )}
+
       {/* ── 4. At a Glance / The Field (live state swaps content) ──── */}
       <OnboardingSection id="other">
-        {hasLiveEvent ? (
+        {liveMode ? (
           /* Live: island with community picks (THE FIELD) */
           <section className="ps-island mt-2">
             <p className="mb-1.5 flex items-center gap-2 text-[11px] font-semibold uppercase tracking-wider text-ps-text-ter">
@@ -404,7 +440,7 @@ export function DashboardClient({
       </OnboardingSection>
 
       {/* ── 4b. Community Picks (hidden during live — merged into island) */}
-      {isMember && !hasLiveEvent && (
+      {isMember && !liveMode && (
         <OnboardingSection id="other">
           <div className="ps-panel mt-2">
             <CommunityPicksCard competitionId={competitionId} />
