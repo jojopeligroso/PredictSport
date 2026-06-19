@@ -305,7 +305,7 @@ See `SPORTS-ARCHITECTURE.md` for detailed spec (TBD).
 - [x] **CH-C2 — Full chat on leaderboard** — Add ChatWidget (full mode) to leaderboard page. Overall leaderboard collapses to show user + ~4 above/below. Chat takes remaining ~75% of screen.
 - [ ] **CH-C3 — Move leaderboard link up on dashboard** — Reorder dashboard sections: leaderboard link moves to after group fixtures (section 5 → section 6), displacing current position. *(2026-06-14: leaderboard link still at 5b in `DashboardClient.tsx:253-565`; reorder not started.)*
 - [x] **CH-C4 — Unread badge on tab bar** — Done via `useUnreadChat()` hook (`src/hooks/useUnreadChat.ts:48-79`) consumed in `TabBar.tsx:115-145`. Capped at 9+, localStorage-backed. (Audited 2026-06-14.)
-- [ ] **CH-C5 — Dedicated /wc/chat page** — Full-screen chat page accessible exclusively via tab bar. Top: leaderboard classification pills (Overall, Format, Rival Predictions) that navigate to `/wc/leaderboard` with the corresponding tab active. Main content: ChatWidget in full mode at ~90% viewport height. Update TabBar to point Chat tab to `/wc/chat` and highlight when active. Keep existing mini/full widgets on dashboard and leaderboard. *(2026-06-14: route + ChatWidget full mode already at `src/app/wc/chat/ChatPageClient.tsx:31-52`; only the top classification pills remain.)*
+- [ ] **CH-C5 — Dedicated /wc/chat page** — Full-screen chat page accessible exclusively via tab bar. Top: leaderboard classification pills (Overall, Format, Rival Predictions) that navigate to `/wc/leaderboard` with the corresponding tab active. Main content: ChatWidget in full mode at ~90% viewport height. Update TabBar to point Chat tab to `/wc/chat` and highlight when active. Keep existing mini/full widgets on dashboard and leaderboard. *(2026-06-19: route + ChatWidget full mode + TabBar all done at `ChatPageClient.tsx:33`. Only remaining: classification pills at top of chat page linking to leaderboard tabs.)*
 
 ### Phase CH-D — Notifications
 
@@ -323,7 +323,7 @@ See `SPORTS-ARCHITECTURE.md` for detailed spec (TBD).
 
 > **Run `/grill-with-docs` before any implementation.** Raised during chat feature design (2026-06-10). Currently predictions are hidden behind `pick_reveal_at` (defaults to `lock_time`). Questions to resolve: (1) Should other competition members see *what* you predicted after lock, or only *that* you predicted? (2) If visible, when — at lock, after result, or never? (3) How does this interact with chat (no prediction spoilers in system messages — already decided)? (4) Does the leaderboard or any social surface expose individual picks?
 
-- [ ] **PV-1 — Design spike (grill session)** — Run `/grill-with-docs`. Define visibility rules for predictions across all surfaces: chat, leaderboard, match cards, profile. Do not change code until this is complete. *(2026-06-14: ADR 0011 covers per-classification leaderboard visibility — remaining scope is chat / match cards / profile.)*
+- [ ] **PV-1 — Design spike (grill session)** — Run `/grill-with-docs`. Define visibility rules for predictions across all surfaces: chat, leaderboard, match cards, profile. Do not change code until this is complete. *(2026-06-19: ADR 0011 + ADR 0018 (pick-reveal offsets) cover leaderboard visibility. Remaining scope: chat / match cards / profile visibility rules.)*
 
 ## Provisional Groups & Admin Redraw
 
@@ -352,8 +352,8 @@ See `SPORTS-ARCHITECTURE.md` for detailed spec (TBD).
 ## Scoring Hardening Follow-ups
 
 - [ ] **SH-1 — Broadcast scores_updated from auto-resolve path** — `autoResolveEvent` in `src/lib/sports/auto-result.ts` does not broadcast on the `scoring_events` Realtime channel after scoring. Cron-resolved events won't trigger the leaderboard auto-refresh added in `bf8c9f7`. Add `supabase.channel("scoring_events").send(...)` after the batch scoring call, matching the pattern in `confirm-result/route.ts:203`.
-- [ ] **SH-2 — Investigate competition_id scoping for multi-instance leaderboards** — All 72 WC events have `competition_id = 1a4448e5` (first instance only). The `sum_prediction_points` RPC uses `tournament_id` for scoping, which is correct because events are shared. However, if a future blueprint creates per-instance events (not shared), the RPC would need a `competition_id` path on the predictions table. Document the assumption or add a `competition_id` FK to predictions when multi-instance divergence is needed.
-- [ ] **SH-3 — Clean up orphaned migration history entries** — `supabase migration list` shows orphaned entries (duplicate `20260527000000` timestamps, unlinked local migrations). Cosmetic only — doesn't affect runtime — but `supabase db push` requires `--include-all` as a workaround.
+- [x] **SH-2 — Investigate competition_id scoping for multi-instance leaderboards** — All 72 WC events have `competition_id = 1a4448e5` (first instance only). The `sum_prediction_points` RPC uses `tournament_id` for scoping, which is correct because events are shared. However, if a future blueprint creates per-instance events (not shared), the RPC would need a `competition_id` path on the predictions table. Document the assumption or add a `competition_id` FK to predictions when multi-instance divergence is needed. *(Audited 2026-06-19: RPC handles both tournament_id and competition_id via CASE branch at `20260616140000_sum_prediction_points_rpc.sql:33`.)*
+- [ ] **SH-3 — Clean up orphaned migration history entries** — `supabase migration list` shows orphaned entries (duplicate `20260527000000` timestamps, unlinked local migrations). Cosmetic only — doesn't affect runtime — but `supabase db push` requires `--include-all` as a workaround. *(2026-06-19: 3 migrations share timestamp `20260527000000`: display_name_onboarding, entrant_caps, wc_entry_closes_at_soft_72h. Needs manual rename to unique timestamps.)*
 
 ---
 
@@ -362,7 +362,7 @@ See `SPORTS-ARCHITECTURE.md` for detailed spec (TBD).
 **WC-H6: R32 Classification (Automatic)**
 - [x] **H6.1 — R32 team extraction** — `extractR32Teams()` in `r32-classification.ts`. 24 from groups + 8 from bestThirdPicks.
 - [x] **H6.2 — R32 scoring logic** — `scoreR32Classification()` in `r32-classification.ts`. 1 point per correct team, path-insensitive.
-- [ ] **H6.3 — R32 leaderboard** — Standings display: "Alice 31/32 (96.9%)". Ranked by score, ties broken by submission timestamp. *(Scoring logic exists, UI not built. Blocked: needs real group stage results.)*
+- [ ] **H6.3 — R32 leaderboard** — Standings display: "Alice 31/32 (96.9%)". Ranked by score, ties broken by submission timestamp. *(2026-06-19: Scoring engine exists — `scoreR32Classification`, `formatStagePickScore` producing "24/32 teams (75%)". Leaderboard page explicitly filters OUT bracket classifications at `page.tsx:72`. UI tab not built. Blocked: needs real group stage results.)*
 - [ ] **H6.4 — Dashboard widget** — "You correctly predicted 29 of the final 32 teams!" *(Not built. Blocked: needs real group stage results.)*
 
 **WC-H7: FAQ Page**
@@ -374,7 +374,7 @@ See `SPORTS-ARCHITECTURE.md` for detailed spec (TBD).
 - [ ] **H8.1 — Add Full Bracket step to onboarding** — After Classifications Overview, show "Want to fill out your bracket now?" with [Start] / [Skip] options.
 - [ ] **H8.2 — Skip flow** — If user skips, exclude from Full Bracket and R32 classifications, proceed to Format enrollment.
 - [ ] **H8.3 — Champion pick (UI warmer)** — Add "Who takes home all the biscuits?" step early in onboarding. Copy: "Just because you love them doesn't mean that's what your head wants to pick."
-- [ ] **H8.4 — Privacy settings** — Add leaderboard visibility choice: public / anonymous (Player #N) / private-only. *(2026-06-14: DB schema, API, and standings masking all done — migration `20260525000000_classification_display_visibility.sql`, `src/app/api/tournament/visibility/route.ts`, `applyVisibility()` in standings/route.ts. Only the UI toggle in profile/leaderboard is missing.)*
+- [x] **H8.4 — Privacy settings** — Add leaderboard visibility choice: public / anonymous (Player #N) / private-only. *(Audited 2026-06-19: API at `tournament/visibility/route.ts:9`, VisibilityToggle inline on leaderboard rows at `ClassificationTabs.tsx:436`, pseudonym system via `ensurePseudonym()`. Fully shipped.)*
 
 **WC-H9: Data Model & API**
 - [x] **H9.1 — Bracket submission schema** — `bracket_prediction_submissions` table in `20260521400000_bracket_system.sql`.
@@ -401,21 +401,21 @@ See `SPORTS-ARCHITECTURE.md` for detailed spec (TBD).
 
 ### Phase H — Data Model
 
-- [ ] **H1 — Design spike (grill session)** — Run `/grill-with-docs`. Define: bracket prediction mode (match-by-match vs. upfront bracket fill), GAA backdoor handling, winner propagation trigger, bracket type vs competition setting, bye handling. Do not write code until this is complete.
-- [ ] **H2 — Bracket schema migration** — Add to `events`: `bracket_slot integer` (position in bracket tree, 1-indexed per round), `advances_to_event_id uuid references events(id)`, `advances_to_slot text check (in ('home','away'))`. Add `bracket_enabled boolean default false` to `competitions`. Add `bracket_round_label text` to `rounds` (e.g. "Round of 64", "Quarter-Final", "Final"). All nullable/false by default — no change to existing behaviour.
+- [x] **H1 — Design spike (grill session)** — Run `/grill-with-docs`. Define: bracket prediction mode (match-by-match vs. upfront bracket fill), GAA backdoor handling, winner propagation trigger, bracket type vs competition setting, bye handling. Do not write code until this is complete. *(Audited 2026-06-19: ADR 0003 at `docs/adr/0003-versioned-bracket-snapshots.md`, plus `docs/research-tournament-formats.md` and `docs/DESIGN-PROMPT-WC2026-BRACKET.md`. WC bracket architecture designed and shipped. GAA backdoor not yet designed — separate scope under K3.)*
+- [x] **H2 — Bracket schema migration** — *(Audited 2026-06-19: Implementation took a different architectural path — JSON-based bracket templates + versioned snapshot predictions (`20260521400000_bracket_system.sql`) instead of relational event-linking. The original columns (bracket_slot, advances_to_event_id) were superseded by this design. Marking done — the schema need is met, just differently.)*
 - [ ] **H3 — Bracket slot ordering util** — `src/lib/bracket.ts`: `buildBracketTree(rounds, events)` — takes flat rounds + events, returns a tree structure `BracketNode[]` suitable for rendering. Handles byes (null participants). Validates that advancement links are consistent.
 
 ### Phase I — Admin Bracket Builder
 
-- [ ] **I1 — Bracket template definitions** — `src/lib/bracket-templates.ts`: define standard bracket shapes as slot-count-per-round arrays. Built-in templates: `single_elim_4`, `single_elim_8`, `single_elim_16`, `single_elim_32`, `single_elim_64`, `gaa_all_ireland_hurling` (QF×4 → SF×2 → F), `gaa_all_ireland_football` (QF×4 → SF×2 → F). Templates describe slot count per round and how slot winners advance — not teams.
+- [ ] **I1 — Bracket template definitions** — `src/lib/bracket-templates.ts`: define standard bracket shapes as slot-count-per-round arrays. Built-in templates: `single_elim_4`, `single_elim_8`, `single_elim_16`, `single_elim_32`, `single_elim_64`, `gaa_all_ireland_hurling` (QF×4 → SF×2 → F), `gaa_all_ireland_football` (QF×4 → SF×2 → F). Templates describe slot count per round and how slot winners advance — not teams. *(2026-06-19: Template registry exists at `src/lib/tournament/bracket/templates/index.ts` with WC2026 registered. GAA templates are commented-out placeholders at line 15. Remaining: generic single_elim templates + GAA templates.)*
 - [ ] **I2 — Bracket competition wizard** — New admin flow for creating bracket-style competitions. Selects a template → auto-creates rounds with correct `bracket_round_label` values + placeholder events with `is_bracket_placeholder=true`. Admin fills in known teams; TBA slots remain as placeholders until rounds progress.
 - [ ] **I3 — Winner advancement UI** — After admin confirms a bracket event result, show "Advance winner to next round" action. Pre-fills the winner's name into the correct slot (`advances_to_slot`) of the target event. If target event now has both teams confirmed, it becomes predictionable (clears TBA flag).
 - [ ] **I4 — Bracket event management** — Extend existing admin event editing to show bracket context: which event this advances from, which event it advances to. Block deletion of events that have downstream advancement links.
 
 ### Phase J — Participant Bracket View
 
-- [ ] **J1 — Bracket visualisation component** — `src/components/BracketTree.tsx`: renders a competition's bracket as a horizontal tree (rounds as columns, matches as nodes). Each node shows: team A vs team B (or TBA), lock status, user's pick (if any), result. Mobile-friendly — scrolls horizontally. Uses `buildBracketTree()` from H3. **⚠ Name collision:** a WC-hardcoded `BracketTree.tsx` already exists at `src/components/tournament/bracket/BracketTree.tsx` (imports `WC2026_KNOCKOUT_ROUNDS`). The generic J1 component lives at a different path (`src/components/BracketTree.tsx`) and must be template-driven, not WC-specific.
-- [ ] **J2 — Bracket page** — `/competitions/[id]/bracket` route. Shows `BracketTree` for bracket-enabled competitions. Linked from competition nav alongside "The Round" and leaderboard. Non-bracket competitions don't show this tab.
+- [ ] **J1 — Bracket visualisation component** — `src/components/BracketTree.tsx`: renders a competition's bracket as a horizontal tree (rounds as columns, matches as nodes). Each node shows: team A vs team B (or TBA), lock status, user's pick (if any), result. Mobile-friendly — scrolls horizontally. Uses `buildBracketTree()` from H3. **⚠ Name collision:** WC-hardcoded `BracketTree.tsx` exists at `src/components/tournament/bracket/BracketTree.tsx` (imports `WC2026_KNOCKOUT_ROUNDS`). The generic J1 component must be template-driven, not WC-specific. *(2026-06-19: WC version confirmed at existing path. Generic version not started.)*
+- [ ] **J2 — Bracket page** — `/competitions/[id]/bracket` route. Shows `BracketTree` for bracket-enabled competitions. Linked from competition nav alongside "The Round" and leaderboard. Non-bracket competitions don't show this tab. *(2026-06-19: WC-specific `/wc/bracket` exists. Generic `/competitions/[id]/bracket` not built.)*
 - [ ] **J3 — Inline prediction in bracket view** — Tapping a node in the bracket tree opens a prediction sheet (same prediction flow as existing). Locked/TBA nodes are non-interactive with clear visual state.
 
 ### Phase K — GAA-Specific Templates
