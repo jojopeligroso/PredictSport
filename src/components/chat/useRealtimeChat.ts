@@ -515,40 +515,54 @@ export function useRealtimeChat({
   // Delete message — update state immediately (don't rely on realtime)
   const deleteMessage = useCallback(async (messageId: string) => {
     const res = await fetch(`/api/chat/${messageId}`, { method: "DELETE" });
-    if (res.ok) {
-      const data = await res.json();
-      if (data.type === "hard") {
-        // Remove from state
-        setMessages((prev) => prev.filter((m) => m.id !== messageId));
-      } else {
-        // Soft delete — show tombstone
-        setMessages((prev) =>
-          prev.map((m) =>
-            m.id === messageId
-              ? {
-                  ...m,
-                  content: t("chat.deleted"),
-                  deleted_at: new Date().toISOString(),
-                  deleted_by: "user",
-                  mentioned_user_ids: [],
-                }
-              : m
-          )
-        );
-      }
+    if (!res.ok) {
+      const body = await res.json().catch(() => ({}));
+      throw new Error((body as { error?: string }).error || t("chat.error_delete"));
+    }
+    const data = await res.json();
+    if (data.type === "hard") {
+      // Remove from state
+      setMessages((prev) => prev.filter((m) => m.id !== messageId));
+    } else {
+      // Soft delete — show tombstone
+      setMessages((prev) =>
+        prev.map((m) =>
+          m.id === messageId
+            ? {
+                ...m,
+                content: t("chat.deleted"),
+                deleted_at: new Date().toISOString(),
+                deleted_by: "user",
+                mentioned_user_ids: [],
+              }
+            : m
+        )
+      );
     }
   }, [t]);
 
   // Edit message
   const editMessage = useCallback(
     async (messageId: string, content: string) => {
-      await fetch(`/api/chat/${messageId}`, {
+      const res = await fetch(`/api/chat/${messageId}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ content }),
       });
+      if (!res.ok) {
+        const body = await res.json().catch(() => ({}));
+        throw new Error((body as { error?: string }).error || t("chat.error_edit"));
+      }
+      // Update local state on success
+      setMessages((prev) =>
+        prev.map((m) =>
+          m.id === messageId
+            ? { ...m, content, updated_at: new Date().toISOString() }
+            : m
+        )
+      );
     },
-    []
+    [t]
   );
 
   // Mute user

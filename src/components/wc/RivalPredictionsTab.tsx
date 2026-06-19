@@ -74,6 +74,7 @@ export function RivalPredictionsTab({
   const [totalMembers, setTotalMembers] = useState(0);
   const [loading, setLoading] = useState(true);
   const [predLoading, setPredLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const [eventMeta, setEventMeta] = useState<EventMeta | null>(null);
   const [sortMode, setSortMode] = useState<"points" | "group">("points");
 
@@ -98,7 +99,10 @@ export function RivalPredictionsTab({
         setLoading(false);
       })
       .catch(() => {
-        if (!cancelled) setLoading(false);
+        if (!cancelled) {
+          setError(t("rivals.error_load"));
+          setLoading(false);
+        }
       });
     return () => {
       cancelled = true;
@@ -125,7 +129,10 @@ export function RivalPredictionsTab({
         setPredLoading(false);
       })
       .catch(() => {
-        if (!cancelled) setPredLoading(false);
+        if (!cancelled) {
+          setError(t("rivals.error_load"));
+          setPredLoading(false);
+        }
       });
 
     return () => {
@@ -190,6 +197,15 @@ export function RivalPredictionsTab({
     return (
       <div className="mt-4 flex justify-center py-12">
         <div className="h-5 w-5 animate-spin rounded-full border-2 border-ps-text-ter border-t-ps-text" />
+      </div>
+    );
+  }
+
+  // ── Error state ─────────────────────────────────────────────────────────
+  if (error && fixtures.length === 0) {
+    return (
+      <div className="mt-4 rounded-xl border border-ps-border bg-ps-surface px-4 py-8 text-center">
+        <p className="text-sm text-ps-red">{error}</p>
       </div>
     );
   }

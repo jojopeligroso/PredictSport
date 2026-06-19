@@ -15,7 +15,7 @@ interface GroupMember {
 }
 
 interface GroupData {
-  status: "drawn" | "draw_pending";
+  status: "drawn" | "draw_pending" | "draw_error";
   group?: {
     name: string;
     groupNumber: number;
@@ -71,6 +71,17 @@ export function GroupMiniTable({
             <div key={i} className="h-3 animate-pulse rounded bg-ps-chip" />
           ))}
         </div>
+      </div>
+    );
+  }
+
+  if (data?.status === "draw_error") {
+    return (
+      <div className="rounded-xl border border-ps-border bg-ps-surface p-4">
+        <div className="flex items-center justify-between">
+          <h3 className="text-base font-bold text-ps-text">{t('dash.your_group')}</h3>
+        </div>
+        <p className="mt-2 text-xs text-ps-red">{t('group.draw_failed')}</p>
       </div>
     );
   }

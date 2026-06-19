@@ -562,8 +562,8 @@ function FixtureCard({
         handlePickWinner(implied);
       }
 
-      submitPrediction("exact_score", { home: h, away: a }).catch(() => {
-        // Score save failed silently — winner was already set
+      submitPrediction("exact_score", { home: h, away: a }).catch((err: unknown) => {
+        setError(err instanceof Error ? err.message : t("prediction.error_save"));
       });
     },
     [canPredict, prediction, fixture.home, fixture.away, drawOption, currentWinner, handlePickWinner, submitPrediction],
