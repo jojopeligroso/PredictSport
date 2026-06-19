@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { requireDisplayName } from "@/lib/require-display-name";
-import { deriveWinnerFromScore } from "@/lib/score-format";
 
 interface PredictionRequestBody {
   event_id?: string;
@@ -188,11 +187,102 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ deleted: true });
   }
 
-  // Safe upsert via RPC with timestamp-based CAS guard.
-  // When expected_updated_at is provided (client has prior state), the write
-  // only succeeds if no concurrent modification happened since the client's read.
-  // When omitted (first pick, no prior state), always succeeds — backwards-compatible.
-  // SECURITY INVOKER preserves RLS (lock_time, membership, competition status).
+  // ── Match predictions (winner / exact_score): atomic RPC ──────────────
+  // The upsert_match_prediction RPC handles winner+score as a pair inside
+  // one transaction with row-level locking. Score is always source of truth:
+  //   - set_winner: re-derives from existing score if one exists
+  //   - set_score: atomically writes score + derived winner
+  // Eliminates the TOCTOU race the old re-derivation chain had.
+  if (prediction_type === "winner" || prediction_type === "exact_score") {
+    // Fetch both EPTs for this event so the RPC can lock/write both rows.
+    const { data: matchEpts } = await supabase
+      .from("event_prediction_types")
+      .select("id, prediction_type, config")
+      .eq("event_id", event_id)
+      .in("prediction_type", ["winner", "exact_score"]);
+
+    const winnerEptRow = matchEpts?.find(
+      (e) => e.prediction_type === "winner",
+    );
+    const scoreEptRow = matchEpts?.find(
+      (e) => e.prediction_type === "exact_score",
+    );
+
+    if (!winnerEptRow) {
+      return NextResponse.json(
+        { error: "Winner prediction type not configured for this event" },
+        { status: 400 },
+      );
+    }
+
+    const opts = (winnerEptRow.config as Record<string, unknown> | null)
+      ?.options as string[] | undefined;
+    const winnerOptions = opts && opts.length > 0 ? opts : [];
+
+    const operation =
+      prediction_type === "winner" ? "set_winner" : "set_score";
+
+    const { data: result, error: rpcError } = await supabase.rpc(
+      "upsert_match_prediction",
+      {
+        p_event_id: event_id,
+        p_user_id: user.id,
+        p_winner_ept_id: winnerEptRow.id,
+        p_score_ept_id: scoreEptRow?.id ?? null,
+        p_winner_options: winnerOptions,
+        p_operation: operation,
+        p_winner_value:
+          prediction_type === "winner"
+            ? (prediction_data as { value: string }).value
+            : null,
+        p_home_score:
+          prediction_type === "exact_score"
+            ? Number(prediction_data.home)
+            : null,
+        p_away_score:
+          prediction_type === "exact_score"
+            ? Number(prediction_data.away)
+            : null,
+      },
+    );
+
+    if (rpcError) {
+      console.error("[predictions] upsert_match_prediction failed:", {
+        event_id,
+        user_id: user.id,
+        operation,
+        error: rpcError,
+      });
+      return NextResponse.json(
+        { error: "Couldn't save that pick. Please try again." },
+        { status: 500 },
+      );
+    }
+
+    const rpcResult = result as Record<string, unknown> | null;
+
+    if (!rpcResult || rpcResult.blocked) {
+      return NextResponse.json(
+        {
+          error:
+            "Can't save that pick — the match may have locked or updates are disabled.",
+        },
+        { status: 403 },
+      );
+    }
+
+    // Return the primary prediction + correction metadata for conflict UX.
+    const primaryPrediction =
+      prediction_type === "winner" ? rpcResult.winner : rpcResult.score;
+
+    return NextResponse.json({
+      prediction: primaryPrediction,
+      corrected: rpcResult.corrected ?? false,
+      server_winner: rpcResult.server_winner ?? null,
+    });
+  }
+
+  // ── All other prediction types: existing safe_upsert path ─────────────
   const { data: rpcRows, error: upsertError } = await supabase.rpc(
     "safe_upsert_prediction",
     {
@@ -217,131 +307,11 @@ export async function POST(request: NextRequest) {
   const saved = Array.isArray(rpcRows) ? rpcRows[0] : rpcRows;
 
   if (!saved) {
-    // No row returned: either CAS failure (concurrent edit) or RLS rejection (lock passed).
     const status = expected_updated_at ? 409 : 403;
     const error = expected_updated_at
       ? "Your pick was modified in another session. Please refresh and try again."
       : "Can't save that pick — the match may have locked or updates are disabled for this competition.";
     return NextResponse.json({ error }, { status });
-  }
-
-  // Score-contradicted winner guard: if this is a winner POST and the user
-  // already has an exact_score, re-derive from the score. Prevents the race
-  // where a stale winner tap overwrites the correct score-derived value.
-  if (prediction_type === "winner") {
-    const { data: existingScore } = await supabase
-      .from("predictions")
-      .select("prediction_data")
-      .eq("event_id", event_id)
-      .eq("user_id", user.id)
-      .eq("prediction_type", "exact_score")
-      .maybeSingle();
-
-    if (existingScore?.prediction_data) {
-      // Resolve winner options from this EPT's config
-      const { data: winnerEptRow } = await supabase
-        .from("event_prediction_types")
-        .select("config")
-        .eq("id", event_prediction_type_id)
-        .single();
-      const opts = (winnerEptRow?.config as Record<string, unknown> | null)
-        ?.options as string[] | undefined;
-      const winnerOptions = opts && opts.length > 0 ? opts : [];
-
-      const implied = deriveWinnerFromScore(
-        existingScore.prediction_data as Record<string, unknown>,
-        eptEvent.sport,
-        winnerOptions,
-      );
-
-      // Knockout guard: don't override with "Draw" unless it's a valid option
-      const shouldOverride =
-        implied !== null &&
-        (implied !== "Draw" || winnerOptions.includes("Draw"));
-
-      if (
-        shouldOverride &&
-        implied !== (prediction_data as { value: string }).value
-      ) {
-        // Stale tap contradicts existing score — re-derive
-        const { error: rederiveError } = await supabase
-          .from("predictions")
-          .upsert(
-            {
-              event_prediction_type_id,
-              event_id,
-              user_id: user.id,
-              prediction_type: "winner",
-              prediction_data: { value: implied },
-              updated_at: new Date().toISOString(),
-            },
-            { onConflict: "event_prediction_type_id,user_id" },
-          );
-        if (rederiveError) {
-          console.error(
-            "[predictions] re-derive from existing score failed:",
-            {
-              event_id,
-              user_id: user.id,
-              implied,
-              error: rederiveError,
-            },
-          );
-        }
-        // Return the corrected prediction to the client
-        return NextResponse.json({
-          prediction: { ...saved, prediction_data: { value: implied } },
-        });
-      }
-    }
-  }
-
-  // Score is source of truth — when an exact_score is saved, atomically
-  // derive and upsert the winner prediction so they can never contradict.
-  // This prevents the lock-boundary race where the client-side winner sync
-  // call arrives after lock_time and gets rejected.
-  if (prediction_type === "exact_score") {
-    const { data: winnerEpt } = await supabase
-      .from("event_prediction_types")
-      .select("id, config")
-      .eq("event_id", event_id)
-      .eq("prediction_type", "winner")
-      .maybeSingle();
-
-    if (winnerEpt) {
-      const opts = (winnerEpt.config as Record<string, unknown> | null)
-        ?.options as string[] | undefined;
-      const winnerOptions = opts && opts.length > 0 ? opts : [];
-      const implied = deriveWinnerFromScore(
-        prediction_data,
-        eptEvent.sport,
-        winnerOptions,
-      );
-
-      if (implied) {
-        const { error: winnerUpsertError } = await supabase
-          .from("predictions")
-          .upsert(
-            {
-              event_prediction_type_id: winnerEpt.id,
-              event_id,
-              user_id: user.id,
-              prediction_type: "winner",
-              prediction_data: { value: implied },
-              updated_at: new Date().toISOString(),
-            },
-            { onConflict: "event_prediction_type_id,user_id" },
-          );
-        if (winnerUpsertError) {
-          console.error("[predictions] auto-derive winner upsert failed:", {
-            event_id,
-            user_id: user.id,
-            implied,
-            error: winnerUpsertError,
-          });
-        }
-      }
-    }
   }
 
   return NextResponse.json({ prediction: saved });
@@ -356,9 +326,8 @@ export async function DELETE(request: NextRequest) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   const body = await request.json();
-  const { event_id, competition_id } = body as {
+  const { event_id } = body as {
     event_id?: string;
-    competition_id?: string;
   };
 
   if (!event_id) {
@@ -380,23 +349,45 @@ export async function DELETE(request: NextRequest) {
     return NextResponse.json({ error: "Event is locked" }, { status: 403 });
   }
 
-  // Delete all predictions for this event/user (or scoped to competition if provided)
-  let query = supabase
-    .from("predictions")
-    .delete()
+  // Fetch both match EPTs so the atomic RPC can delete both rows
+  const { data: matchEpts } = await supabase
+    .from("event_prediction_types")
+    .select("id, prediction_type")
     .eq("event_id", event_id)
-    .eq("user_id", user.id);
+    .in("prediction_type", ["winner", "exact_score"]);
 
-  // If competition_id provided, scope deletion (for shared events across competitions)
-  if (competition_id) {
-    query = query.eq("competition_id", competition_id);
-  }
+  const winnerEpt = matchEpts?.find((e) => e.prediction_type === "winner");
+  const scoreEpt = matchEpts?.find((e) => e.prediction_type === "exact_score");
 
-  const { error } = await query;
+  if (winnerEpt) {
+    // Use atomic RPC to delete both winner + score in one transaction
+    const { error: rpcError } = await supabase.rpc(
+      "upsert_match_prediction",
+      {
+        p_event_id: event_id,
+        p_user_id: user.id,
+        p_winner_ept_id: winnerEpt.id,
+        p_score_ept_id: scoreEpt?.id ?? null,
+        p_operation: "reset",
+      },
+    );
 
-  if (error) {
-    console.error("Failed to reset prediction:", error);
-    return NextResponse.json({ error: "Failed to reset" }, { status: 500 });
+    if (rpcError) {
+      console.error("Failed to reset prediction:", rpcError);
+      return NextResponse.json({ error: "Failed to reset" }, { status: 500 });
+    }
+  } else {
+    // No winner EPT — fall back to direct delete for non-match events
+    const { error } = await supabase
+      .from("predictions")
+      .delete()
+      .eq("event_id", event_id)
+      .eq("user_id", user.id);
+
+    if (error) {
+      console.error("Failed to reset prediction:", error);
+      return NextResponse.json({ error: "Failed to reset" }, { status: 500 });
+    }
   }
 
   return NextResponse.json({ success: true });

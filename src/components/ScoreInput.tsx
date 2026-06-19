@@ -8,6 +8,8 @@ interface ScoreInputProps {
   initialHome?: string;
   initialAway?: string;
   onCommit: (home: number, away: number) => void | Promise<void>;
+  /** Fires on every keystroke with the current (uncommitted) values. */
+  onChange?: (home: string, away: string) => void;
   disabled?: boolean;
   variant: "compact" | "card" | "standard";
 }
@@ -32,6 +34,7 @@ export function ScoreInput({
   initialHome,
   initialAway,
   onCommit,
+  onChange,
   disabled = false,
   variant,
 }: ScoreInputProps) {
@@ -54,9 +57,6 @@ export function ScoreInput({
   const homeValueRef = useRef(initialHome ?? "");
   const awayValueRef = useRef(initialAway ?? "");
 
-  // Guard against double-commit with identical values.
-  const lastCommitted = useRef<{ home: number; away: number } | null>(null);
-
   // ── Auto-commit timer ──────────────────────────────────────────────────
   const resetTimer = useCallback(() => {
     if (timerRef.current) clearTimeout(timerRef.current);
@@ -78,21 +78,15 @@ export function ScoreInput({
   }, []);
 
   // ── Commit logic (called on blur) ─────────────────────────────────────
+  // Dedup is handled by the parent (usePredictionState compares against
+  // scoreDisplay), so ScoreInput always fires onCommit when both values
+  // are valid. This ensures re-entry after a reset always works.
   const tryCommit = useCallback(
     (h: string, a: string) => {
       const hNum = parseInt(h, 10);
       const aNum = parseInt(a, 10);
       if (h === "" || a === "" || isNaN(hNum) || isNaN(aNum) || hNum < 0 || aNum < 0) return;
 
-      // Skip if identical to last committed values.
-      if (
-        lastCommitted.current &&
-        lastCommitted.current.home === hNum &&
-        lastCommitted.current.away === aNum
-      ) {
-        return;
-      }
-      lastCommitted.current = { home: hNum, away: aNum };
       setIsSaving(true);
       const result = onCommit(hNum, aNum);
       if (result instanceof Promise) {
@@ -127,6 +121,7 @@ export function ScoreInput({
       const val = raw === "" ? "" : String(parseInt(raw, 10));
       homeValueRef.current = val;
       setHome(val);
+      onChange?.(val, awayValueRef.current);
       resetTimer();
       // Clear any pending single-digit advance timer on each keystroke.
       if (advanceTimerRef.current) clearTimeout(advanceTimerRef.current);
@@ -140,7 +135,7 @@ export function ScoreInput({
         }, 750);
       }
     },
-    [resetTimer],
+    [onChange, resetTimer],
   );
 
   const handleAwayChange = useCallback(
@@ -149,9 +144,10 @@ export function ScoreInput({
       const val = raw === "" ? "" : String(parseInt(raw, 10));
       awayValueRef.current = val;
       setAway(val);
+      onChange?.(homeValueRef.current, val);
       resetTimer();
     },
-    [resetTimer],
+    [onChange, resetTimer],
   );
 
   const handleHomeBlur = useCallback(() => {

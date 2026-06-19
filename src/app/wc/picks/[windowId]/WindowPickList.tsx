@@ -8,19 +8,15 @@ import {
   useState,
   type ReactNode,
 } from "react";
-import { useRouter } from "next/navigation";
 import { useT } from "@/lib/i18n";
 import { CountryFlag } from "@/components/CountryFlag";
 import { ScoreInput } from "@/components/ScoreInput";
 import { FixtureCardSurface } from "@/components/wc/FixtureCardSurface";
 import { deriveWinnerFromScore } from "@/lib/score-format";
 import { getPredictionSummary } from "@/lib/prediction-summary";
+import { usePredictionState } from "@/hooks/usePredictionState";
 import type { WcFixture } from "@/lib/wc/fixtures";
-import type {
-  EventPredictionType,
-  Prediction,
-  PredictionType,
-} from "@/types/database";
+import type { EventPredictionType, Prediction } from "@/types/database";
 
 /**
  * WindowPickList — compact interactive pick UI for one World Cup matchday window.
@@ -263,7 +259,6 @@ function MatchPickRow({
   /** Show countdown in card header (group view only). */
   showCardCountdown?: boolean;
 }) {
-  const router = useRouter();
   const t = useT();
 
   // Resolve card-surface mode. If surface="card" was requested but no fixture
@@ -304,287 +299,44 @@ function MatchPickRow({
     [event.event_name],
   );
 
-  const initialWinner =
-    initialPredictions.find((p) => p.prediction_type === "winner") ?? null;
-  const initialScore =
-    initialPredictions.find((p) => p.prediction_type === "exact_score") ?? null;
-
-  const [winnerPred, setWinnerPred] = useState<Prediction | null>(
-    initialWinner,
-  );
-  // scorePred tracks the latest saved score prediction — used for CAS guard
-  // (expected_updated_at) and to seed score input values on re-mount.
-  const [scorePred, setScorePred] = useState<Prediction | null>(initialScore);
-  const [errorMsg, setErrorMsg] = useState<string | null>(null);
-
-  // Track whether a score prediction has been committed so we can show a
-  // confirmation summary below the ScoreInput without waiting for a page reload.
-  const [hasCommittedScore, setHasCommittedScore] = useState(
-    initialScore !== null,
-  );
-  const [committedHome, setCommittedHome] = useState<number | null>(
-    initialScore?.prediction_data?.home != null
-      ? Number(initialScore.prediction_data.home)
-      : null,
-  );
-  const [committedAway, setCommittedAway] = useState<number | null>(
-    initialScore?.prediction_data?.away != null
-      ? Number(initialScore.prediction_data.away)
-      : null,
-  );
-
-  // Key incremented on reset to force ScoreInput to remount and clear its
-  // internal input state.
-  const [scoreResetKey, setScoreResetKey] = useState(0);
-
-  // Guards the score display after reset: when true, ScoreInput ignores
-  // initialScore props (which still hold stale server data until
-  // router.refresh() delivers fresh props). Cleared when new props arrive
-  // with a null score (reset confirmed server-side).
-  const [resetInFlight, setResetInFlight] = useState(false);
-
-  // Unified abort ref: any prediction write for this event cancels any
-  // in-flight write (winner tap, score commit, or reset). Prevents stale
-  // responses from overwriting the latest user intent.
-  const predictionAbortRef = useRef<AbortController | null>(null);
-
-  const abortAndReplace = useCallback((): AbortController => {
-    predictionAbortRef.current?.abort();
-    const controller = new AbortController();
-    predictionAbortRef.current = controller;
-    return controller;
-  }, []);
-
-  const rawWinner = winnerValue(winnerPred ?? undefined);
-
   const winnerOptions = useMemo<string[]>(() => {
     const opts = winnerEpt?.config?.options as string[] | undefined;
     if (opts && opts.length > 0) return opts;
     return away ? [home, "Draw", away] : [home];
   }, [winnerEpt, home, away]);
 
-  // Score is source of truth — if both predictions exist, derive the display
-  // winner from the score to prevent contradictory display (e.g. "Picked: Czechia"
-  // but "South Korea 2-0") caused by the lock-boundary race condition.
-  const currentWinner = useMemo(() => {
-    if (initialScore && rawWinner) {
-      const implied = deriveWinnerFromScore(
-        initialScore.prediction_data as Record<string, unknown>,
-        event.sport,
-        winnerOptions,
-      );
-      if (implied) return implied;
-    }
-    return rawWinner;
-  }, [initialScore, rawWinner, event.sport, winnerOptions]);
-
-  // Find the draw option from winnerOptions.
   const drawOption = useMemo(
     () =>
       winnerOptions.find((opt) => slotOf(opt, home, away) === "draw") ?? "Draw",
     [winnerOptions, home, away],
   );
 
-  const submitPrediction = useCallback(
-    async (
-      predictionType: PredictionType,
-      predictionData: Record<string, unknown>,
-      signal?: AbortSignal,
-      expectedUpdatedAt?: string | null,
-    ): Promise<Prediction | null> => {
-      const res = await fetch("/api/predictions", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          event_id: event.id,
-          competition_id: competitionId,
-          prediction_type: predictionType,
-          prediction_data: predictionData,
-          ...(expectedUpdatedAt && { expected_updated_at: expectedUpdatedAt }),
-        }),
-        signal,
-      });
-      const body = await res.json().catch(() => ({}));
-      if (!res.ok) {
-        throw new Error(
-          (body as { error?: string }).error ??
-            "Failed to save pick. Try again.",
-        );
-      }
-      if ((body as { deleted?: boolean }).deleted) return null;
-      return (body as { prediction?: Prediction }).prediction ?? null;
-    },
-    [event.id, competitionId],
-  );
+  // Prediction state hook
+  const {
+    currentWinner, scoreDisplay, feedback, error: errorMsg,
+    scoreResetKey, resetInFlight, initialScore,
+    pickWinner, commitScore, resetAll, acceptCorrection, clearFeedback,
+  } = usePredictionState({
+    initialPredictions, eventId: event.id, competitionId,
+    sport: event.sport, winnerEptId: winnerEpt?.id,
+    winnerOptions, scoreEptId: scoreEpt?.id,
+    isLocked, onWinnerLanded,
+  });
 
-  /**
-   * Optimistic W/D/L tap.
-   *
-   * 1. Immediately reflect the new pick in local state.
-   * 2. Abort any in-flight POST so a fresh, slow request can't overwrite the
-   *    latest tap.
-   * 3. Fire the new POST. On success, sync the canonical row back. On error,
-   *    revert the optimistic state and show a small inline error.
-   *
-   * We deliberately do NOT disable the buttons during the request. Disabling
-   * eats taps when the user changes their mind quickly and is the main reason
-   * the old UI felt unresponsive.
-   */
-  const handlePickWinner = useCallback(
-    (value: string) => {
-      if (isLocked || !winnerEpt) return;
-      if (value === currentWinner) return;
+  // Live score values for the hint
+  const [liveScore, setLiveScore] = useState({ home: "", away: "" });
+  const handleScoreChange = useCallback((h: string, a: string) => {
+    setLiveScore({ home: h, away: a });
+  }, []);
 
-      const previousPred = winnerPred;
-      const hadWinner = currentWinner !== null;
+  const liveImpliedWinner = useMemo(() => {
+    const h = parseInt(liveScore.home, 10);
+    const a = parseInt(liveScore.away, 10);
+    if (isNaN(h) || isNaN(a)) return null;
+    return deriveWinnerFromScore({ home: h, away: a }, event.sport, winnerOptions);
+  }, [liveScore, event.sport, winnerOptions]);
 
-      // Optimistic local prediction so the UI updates instantly.
-      const optimistic: Prediction = {
-        ...(previousPred ??
-          ({
-            id: `optimistic-${event.id}`,
-            event_prediction_type_id: winnerEpt.id,
-            event_id: event.id,
-            user_id: "",
-            prediction_type: "winner",
-            is_correct: null,
-            is_partial: null,
-            points_awarded: null,
-            note_text: null,
-            note_visibility: "private",
-            submitted_at: new Date().toISOString(),
-            updated_at: new Date().toISOString(),
-          } as unknown as Prediction)),
-        prediction_data: { value },
-      };
-      setWinnerPred(optimistic);
-      setErrorMsg(null);
-
-      if (!hadWinner) onWinnerLanded(event.id, true);
-
-      const controller = abortAndReplace();
-
-      submitPrediction("winner", { value }, controller.signal, previousPred?.updated_at)
-        .then((saved) => {
-          // A stale tap finished after a newer tap aborted it.
-          if (controller.signal.aborted) return;
-          if (saved) setWinnerPred(saved);
-        })
-        .catch((err: unknown) => {
-          if (
-            err instanceof Error &&
-            (err.name === "AbortError" || controller.signal.aborted)
-          ) {
-            return;
-          }
-          // Revert.
-          setWinnerPred(previousPred);
-          if (!hadWinner) onWinnerLanded(event.id, false);
-          setErrorMsg(
-            err instanceof Error ? err.message : t("prediction.error_save"),
-          );
-        });
-    },
-    [
-      isLocked,
-      winnerEpt,
-      currentWinner,
-      winnerPred,
-      event.id,
-      abortAndReplace,
-      submitPrediction,
-      onWinnerLanded,
-    ],
-  );
-
-  /**
-   * Commit handler for ScoreInput — receives parsed numbers directly.
-   * Submits the score prediction and auto-derives the winner.
-   */
-  const handleScoreCommit = useCallback(
-    async (homeNum: number, awayNum: number) => {
-      if (!scoreEpt) return;
-      try {
-        const controller = abortAndReplace();
-
-        const saved = await submitPrediction(
-          "exact_score",
-          { home: homeNum, away: awayNum },
-          controller.signal,
-          scorePred?.updated_at,
-        );
-        setScorePred(saved);
-        setHasCommittedScore(true);
-        setCommittedHome(homeNum);
-        setCommittedAway(awayNum);
-        router.refresh();
-      } catch {
-        // CAS conflict or transient error — refresh to get latest state.
-        router.refresh();
-      }
-    },
-    [scoreEpt, scorePred, abortAndReplace, submitPrediction, router],
-  );
-
-  /**
-   * Reset all predictions for this event — optimistic clear, DELETE request,
-   * revert on failure.
-   */
-  const handleReset = useCallback(async () => {
-    if (isLocked) return;
-
-    // Cancel any in-flight prediction write before DELETE to prevent
-    // it arriving after the DELETE and re-creating the prediction
-    predictionAbortRef.current?.abort();
-
-    const previousWinner = winnerPred;
-    const previousHome = committedHome;
-    const previousAway = committedAway;
-    const hadWinner = currentWinner !== null;
-
-    // Optimistic: clear everything immediately.
-    setWinnerPred(null);
-    setHasCommittedScore(false);
-    setCommittedHome(null);
-    setCommittedAway(null);
-    setScoreResetKey((k) => k + 1);
-    setResetInFlight(true);
-    setErrorMsg(null);
-    if (hadWinner) onWinnerLanded(event.id, false);
-
-    try {
-      await fetch("/api/predictions", {
-        method: "DELETE",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          event_id: event.id,
-          competition_id: competitionId,
-        }),
-      });
-      router.refresh();
-    } catch {
-      // Revert on error.
-      setWinnerPred(previousWinner);
-      if (previousHome !== null && previousAway !== null) {
-        setHasCommittedScore(true);
-        setCommittedHome(previousHome);
-        setCommittedAway(previousAway);
-      }
-      setResetInFlight(false);
-      if (hadWinner) onWinnerLanded(event.id, true);
-      setErrorMsg(t("prediction.error_reset"));
-    }
-  }, [
-    isLocked,
-    winnerPred,
-    committedHome,
-    committedAway,
-    currentWinner,
-    event.id,
-    competitionId,
-    router,
-    onWinnerLanded,
-  ]);
+  const showScoreHint = liveImpliedWinner !== null && currentWinner !== null && liveImpliedWinner !== currentWinner;
 
   // ── Read-only locked branch ──────────────────────────────────────────────
   if (isLocked) {
@@ -765,6 +517,73 @@ function MatchPickRow({
     return <div className={theme.lockedReadOnly}>{lockedBody}</div>;
   }
 
+  // ── Conflict mode: replaces interactive body when score contradicts pick ──
+  if (feedback.type === "conflict") {
+    const conflictBody = (
+      <div role="alert" aria-live="assertive" className="flex flex-col items-center gap-2 py-4 px-3">
+        <svg className={`h-5 w-5 ${useCardSurface ? "text-red-300" : "text-ps-red"}`} fill="none" viewBox="0 0 24 24" strokeWidth={2.5} stroke="currentColor">
+          <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+        </svg>
+        <p className={`text-[13px] font-semibold ${useCardSurface ? "text-white" : "text-ps-text"}`}>
+          {t("prediction.contradiction")}
+        </p>
+        <p className={`text-xs text-center max-w-[260px] ${useCardSurface ? "text-white/70" : "text-ps-text-sec"}`}>
+          {t("prediction.conflict_body", {
+            homeScore: String(feedback.score.home),
+            awayScore: String(feedback.score.away),
+            serverWinner: feedback.serverWinner,
+            enteredPick: feedback.enteredPick,
+          })}
+        </p>
+        <button
+          type="button"
+          onClick={resetAll}
+          autoFocus
+          className={`w-full max-w-[240px] rounded-full px-4 py-2.5 text-sm font-semibold transition-colors ${
+            useCardSurface
+              ? "bg-red-500/80 text-white hover:bg-red-500/90"
+              : "bg-ps-red text-white hover:bg-ps-red/90"
+          }`}
+        >
+          {t("prediction.try_again")}
+        </button>
+        <button
+          type="button"
+          onClick={acceptCorrection}
+          className={`py-3 -my-2 text-[11px] font-medium transition-colors ${
+            useCardSurface
+              ? "text-white/40 hover:text-white/65"
+              : "text-ps-text-ter hover:text-ps-text-sec"
+          }`}
+        >
+          {t("prediction.conflict_accept", {
+            winner: feedback.serverWinner,
+            homeScore: String(feedback.score.home),
+            awayScore: String(feedback.score.away),
+          })}
+        </button>
+      </div>
+    );
+
+    if (useCardSurface && fixture) {
+      return (
+        <FixtureCardSurface
+          city={fixture.city}
+          headerLeft={fixture.group && fixture.matchday ? `Group ${fixture.group} · MD${fixture.matchday}` : event.event_name}
+          headerRight={formatHeaderRight(fixture.kickoffUtc, showCardCountdown ? event.lock_time : undefined, event.pick_reveal_at)}
+          hasPick={currentWinner !== null}
+        >
+          {conflictBody}
+        </FixtureCardSurface>
+      );
+    }
+    return (
+      <div className={`${theme.outerWrapper(currentWinner !== null)} animate-[ps-shutter-conflict_1.5s_ease-out]`}>
+        {conflictBody}
+      </div>
+    );
+  }
+
   // ── Interactive branch ──────────────────────────────────────────────────
   const homeSelected = currentWinner === home;
   const awaySelected = currentWinner === away;
@@ -776,7 +595,7 @@ function MatchPickRow({
       <div className="flex items-center justify-center gap-1.5">
         <button
           type="button"
-          onClick={() => handlePickWinner(home)}
+          onClick={() => pickWinner(home)}
           aria-pressed={homeSelected}
           className={theme.teamButton(homeSelected)}
         >
@@ -787,7 +606,7 @@ function MatchPickRow({
         {winnerOptions.some((opt) => slotOf(opt, home, away) === "draw") && (
           <button
             type="button"
-            onClick={() => handlePickWinner(drawOption)}
+            onClick={() => pickWinner(drawOption)}
             aria-pressed={drawSelected}
             className={theme.drawButton(drawSelected)}
           >
@@ -797,7 +616,7 @@ function MatchPickRow({
 
         <button
           type="button"
-          onClick={() => handlePickWinner(away)}
+          onClick={() => pickWinner(away)}
           aria-pressed={awaySelected}
           className={theme.teamButton(awaySelected)}
         >
@@ -818,7 +637,7 @@ function MatchPickRow({
       {/* Score input row */}
       {scoreEpt && (
         <div className="mt-2 flex flex-col items-center">
-          {!hasCommittedScore && (
+          {scoreDisplay.status !== "committed" && (
             <p
               className={`mb-1 text-xs ${useCardSurface ? "text-white/55" : "text-ps-text-ter"}`}
             >
@@ -843,22 +662,27 @@ function MatchPickRow({
                   ? String(initialScore.prediction_data.away)
                   : undefined
             }
-            onCommit={handleScoreCommit}
+            onCommit={commitScore}
+            onChange={handleScoreChange}
             disabled={false}
             variant={useCardSurface ? "card" : "compact"}
           />
         </div>
       )}
 
-      {hasCommittedScore &&
-        committedHome !== null &&
-        committedAway !== null && (
+      {showScoreHint && (
+        <p className={`mt-1 text-center text-[11px] font-medium ${useCardSurface ? "text-amber-300" : "text-ps-amber"}`}>
+          {t("prediction.score_implies", { outcome: liveImpliedWinner })}
+        </p>
+      )}
+
+      {scoreDisplay.status === "committed" && (
           <p
             className={`mt-1.5 text-center text-[11px] ${useCardSurface ? "text-white/65" : "text-ps-text-sec"}`}
           >
             {getPredictionSummary(
               "exact_score",
-              { home: committedHome, away: committedAway },
+              { home: scoreDisplay.home, away: scoreDisplay.away },
               home,
               away,
               t,
@@ -887,11 +711,11 @@ function MatchPickRow({
         <div className="mt-1 flex justify-center">
           <button
             type="button"
-            onClick={handleReset}
-            className={`text-[10px] font-medium transition-colors ${
+            onClick={resetAll}
+            className={`text-[11px] font-medium rounded-full border px-2.5 py-1 min-h-[28px] transition-colors ${
               useCardSurface
-                ? "text-white/40 hover:text-red-200"
-                : "text-ps-text-ter hover:text-ps-red"
+                ? "border-white/20 text-white/45 hover:border-red-300/50 hover:text-red-200"
+                : "border-ps-border text-ps-text-ter hover:border-ps-red/40 hover:text-ps-red"
             }`}
           >
             {t("prediction.reset")}
@@ -903,29 +727,37 @@ function MatchPickRow({
     </>
   );
 
+  const feedbackClass = feedback.type === "success" ? " animate-[ps-flash-success_0.8s_ease-out]" : "";
+  const feedbackClassCard = feedback.type === "success" ? " animate-[ps-flash-success-card_0.8s_ease-out]" : "";
+
   if (useCardSurface && fixture) {
     return (
-      <FixtureCardSurface
-        city={fixture.city}
-        headerLeft={
-          fixture.group && fixture.matchday
-            ? `Group ${fixture.group} · MD${fixture.matchday}`
-            : event.event_name
-        }
-        headerRight={formatHeaderRight(
-          fixture.kickoffUtc,
-          showCardCountdown ? event.lock_time : undefined,
-          event.pick_reveal_at,
-        )}
-        hasPick={currentWinner !== null}
-      >
-        {interactiveBody}
-      </FixtureCardSurface>
+      <div className={feedbackClassCard || undefined} onAnimationEnd={clearFeedback}>
+        <FixtureCardSurface
+          city={fixture.city}
+          headerLeft={
+            fixture.group && fixture.matchday
+              ? `Group ${fixture.group} · MD${fixture.matchday}`
+              : event.event_name
+          }
+          headerRight={formatHeaderRight(
+            fixture.kickoffUtc,
+            showCardCountdown ? event.lock_time : undefined,
+            event.pick_reveal_at,
+          )}
+          hasPick={currentWinner !== null}
+        >
+          {interactiveBody}
+        </FixtureCardSurface>
+      </div>
     );
   }
 
   return (
-    <div className={theme.outerWrapper(currentWinner !== null)}>
+    <div
+      className={`${theme.outerWrapper(currentWinner !== null)}${feedbackClass}`}
+      onAnimationEnd={clearFeedback}
+    >
       {interactiveBody}
     </div>
   );
