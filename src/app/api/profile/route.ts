@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
-import { validateDisplayName } from "@/lib/display-name";
+import { validateDisplayName, DISPLAY_NAME_MAX } from "@/lib/display-name";
 
 // Display-name change cooldown. Set to 0 to effectively disable.
 // Infrastructure kept for future tightening if abuse emerges.
@@ -33,9 +33,13 @@ export async function PATCH(request: NextRequest) {
   // Validate display_name
   if (body.display_name !== undefined) {
     const name = body.display_name.trim();
-    const error = validateDisplayName(name);
-    if (error) {
-      return NextResponse.json({ error }, { status: 400 });
+    const errorKey = validateDisplayName(name);
+    if (errorKey) {
+      const msgs: Record<string, string> = {
+        "display_name.error_empty": "You need a name for the leaderboard.",
+        "display_name.error_too_long": `${DISPLAY_NAME_MAX} characters max.`,
+      };
+      return NextResponse.json({ error: msgs[errorKey] ?? errorKey }, { status: 400 });
     }
     body.display_name = name;
   }

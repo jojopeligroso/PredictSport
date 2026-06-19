@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Avatar, avatarColor } from "@/components/ui/Avatar";
+import { useT } from "@/lib/i18n";
 
 // --- Types ---
 
@@ -265,6 +266,7 @@ function Dashboard({
   pw1Locked,
   currentUserId,
 }: Extract<WcAdminProps, { mode: "dashboard" }>) {
+  const t = useT();
   const router = useRouter();
   const [removingId, setRemovingId] = useState<string | null>(null);
   const [copiedInvite, setCopiedInvite] = useState(false);
@@ -347,7 +349,7 @@ function Dashboard({
         <div className="mt-2 flex items-center gap-3">
           <StatusBadge status={competition.status} />
           <span className="font-mono text-xs text-ps-text-ter">
-            {members.length} entrant{members.length !== 1 ? "s" : ""}
+            {t("admin.entrants_count", { count: members.length })}
           </span>
         </div>
       </div>
@@ -355,7 +357,7 @@ function Dashboard({
       {/* Invite & share */}
       <div className="rounded-xl border border-ps-border bg-ps-surface p-4">
         <h3 className="text-xs font-bold uppercase tracking-wider text-ps-text-ter">
-          Invite Link
+          {t("admin.invite_link")}
         </h3>
         <div className="mt-2 flex items-center gap-2">
           <code className="flex-1 rounded-lg bg-ps-bg px-3 py-2 font-mono text-xs text-ps-text-sec">
@@ -366,7 +368,7 @@ function Dashboard({
             onClick={copyInviteLink}
             className="shrink-0 rounded-lg bg-ps-amber px-3.5 py-2.5 text-xs font-bold text-[#1a1208] transition-opacity hover:opacity-90"
           >
-            {copiedInvite ? "Copied" : "Copy Link"}
+            {copiedInvite ? t("admin.copied") : t("admin.copy_link")}
           </button>
         </div>
       </div>
@@ -374,13 +376,13 @@ function Dashboard({
       {/* Entrants */}
       <div>
         <h3 className="text-xs font-bold uppercase tracking-wider text-ps-text-ter">
-          Entrants
+          {t("admin.entrants")}
         </h3>
         <div className="mt-2 overflow-hidden rounded-xl border border-ps-border bg-ps-surface">
           {sortedMembers.map((m, i) => {
             const initials = m.display_name
               .split(" ")
-              .map((w) => w[0])
+              .map((w) => Array.from(w)[0] ?? "")
               .join("")
               .slice(0, 2);
             const isCreator = m.user_id === competition.created_by;
@@ -419,7 +421,7 @@ function Dashboard({
                     )}
                   </div>
                   <span className="font-mono text-[11px] text-ps-text-ter">
-                    Joined {new Date(m.joined_at).toLocaleDateString()}
+                    {t("admin.joined")} {new Date(m.joined_at).toLocaleDateString()}
                   </span>
                 </div>
 
@@ -431,7 +433,7 @@ function Dashboard({
                       disabled={promotingId === m.user_id}
                       className="rounded-lg border border-ps-border px-2.5 py-1.5 text-[11px] font-semibold text-[#3b82f6] transition-colors hover:border-[#3b82f6] disabled:opacity-50"
                     >
-                      {promotingId === m.user_id ? "..." : "Make Mod"}
+                      {promotingId === m.user_id ? "..." : t("admin.make_mod")}
                     </button>
                   )}
                   {canDemoteFromMod && (
@@ -441,7 +443,7 @@ function Dashboard({
                       disabled={promotingId === m.user_id}
                       className="rounded-lg border border-ps-border px-2.5 py-1.5 text-[11px] font-semibold text-ps-text-ter transition-colors hover:border-ps-text-sec disabled:opacity-50"
                     >
-                      {promotingId === m.user_id ? "..." : "Remove Mod"}
+                      {promotingId === m.user_id ? "..." : t("admin.remove_mod")}
                     </button>
                   )}
                   {canRemove && (
@@ -451,12 +453,12 @@ function Dashboard({
                       disabled={removingId === m.user_id}
                       className="rounded-lg border border-ps-border px-2.5 py-1.5 text-[11px] font-semibold text-ps-text-sec transition-colors hover:border-ps-red hover:text-ps-red disabled:opacity-50"
                     >
-                      {removingId === m.user_id ? "..." : "Remove"}
+                      {removingId === m.user_id ? "..." : t("admin.remove")}
                     </button>
                   )}
                   {pw1Locked && !isCreator && !isSelf && (m.role === "participant" || m.role === "mod") && !canRemove && (
                     <span className="text-[10px] font-medium text-ps-text-ter">
-                      Locked
+                      {t("admin.locked")}
                     </span>
                   )}
                 </div>
@@ -465,7 +467,7 @@ function Dashboard({
           })}
           {sortedMembers.length === 0 && (
             <p className="px-4 py-6 text-center text-sm text-ps-text-sec">
-              No entrants yet. Share the invite link.
+              {t("admin.no_entrants")}
             </p>
           )}
         </div>

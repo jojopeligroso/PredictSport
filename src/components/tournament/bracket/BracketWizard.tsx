@@ -2,6 +2,7 @@
 
 import { useState, useCallback, useEffect, useMemo, useRef } from "react";
 import Link from "next/link";
+import { useT } from "@/lib/i18n";
 import type { BracketSubmissionData } from "@/types/tournament";
 import {
   WC2026_KNOCKOUT_ROUNDS,
@@ -106,17 +107,20 @@ const FULL_STEPS: Step[] = [
 ];
 const KO_STEPS: Step[] = ["r32", "r16", "qf", "sf", "final", "review"];
 
-const STEP_LABELS: Record<Step, string> = {
-  groups: "Groups",
-  tiebreakers: "Tiebreakers",
-  third_place: "Best thirds",
-  r32: "Round of 32",
-  r16: "Round of 16",
-  qf: "Quarter-finals",
-  sf: "Semi-finals",
-  final: "Final",
-  review: "Review",
-};
+function stepLabel(step: Step, t: (key: string) => string): string {
+  const keys: Record<Step, string> = {
+    groups: "bracket.step_groups",
+    tiebreakers: "bracket.step_tiebreakers",
+    third_place: "bracket.step_best_thirds",
+    r32: "bracket.step_r32",
+    r16: "bracket.step_r16",
+    qf: "bracket.step_qf",
+    sf: "bracket.step_sf",
+    final: "bracket.step_final",
+    review: "bracket.step_review",
+  };
+  return t(keys[step]);
+}
 
 // ---------------------------------------------------------------------------
 // Component
@@ -131,6 +135,7 @@ export function BracketWizard({
   initialGroups,
   eventIdByMatchId,
 }: BracketWizardProps) {
+  const t = useT();
   const steps = mode === "full" ? FULL_STEPS : KO_STEPS;
 
   const [stepIndex, setStepIndex] = useState(() =>
@@ -699,14 +704,14 @@ export function BracketWizard({
         currentStep === "sf") && (
         <KnockoutStageStep
           roundKey={currentStep}
-          roundName={STEP_LABELS[currentStep]}
+          roundName={stepLabel(currentStep, t)}
           slotIds={slotIdsFor(currentStep)}
           matchups={allMatchups}
           picks={knockoutPicks}
           nextRoundName={
             currentStep === "sf"
-              ? "the Final"
-              : STEP_LABELS[steps[stepIndex + 1]]
+              ? stepLabel("final", t)
+              : stepLabel(steps[stepIndex + 1], t)
           }
           onPick={pickKnockout}
           onContinue={continueToNext}
@@ -800,6 +805,7 @@ function StepNav({
   showReset: boolean;
   onReset: () => void;
 }) {
+  const t = useT();
   const step = steps[stepIndex];
   return (
     <div className="space-y-2">
@@ -826,7 +832,7 @@ function StepNav({
                     ? "bg-ps-chip text-ps-text-sec hover:bg-ps-text/20"
                     : "bg-ps-chip/40 text-ps-text-ter/30",
               ].join(" ")}
-              aria-label={`Step ${i + 1}: ${STEP_LABELS[s]}`}
+              aria-label={`Step ${i + 1}: ${stepLabel(s, t)}`}
               aria-current={isCurrent ? "step" : undefined}
             >
               {i + 1}
@@ -838,7 +844,7 @@ function StepNav({
       {/* Step label + save status */}
       <div className="flex items-center justify-between">
         <p className="font-mono text-[10px] font-bold uppercase tracking-widest text-ps-text-ter">
-          {STEP_LABELS[step]}
+          {stepLabel(step, t)}
         </p>
         <div className="flex items-center gap-2 text-[11px] text-ps-text-sec">
           {showReset && (

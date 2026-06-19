@@ -33,7 +33,7 @@ export function DisplayNameModal({ suggestedName }: DisplayNameModalProps) {
 
     const validationError = validateDisplayName(trimmed);
     if (validationError) {
-      setError(validationError);
+      setError(t(validationError));
       return;
     }
 

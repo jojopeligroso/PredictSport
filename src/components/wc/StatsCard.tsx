@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useT } from "@/lib/i18n";
+import { useT, useLocale } from "@/lib/i18n";
 
 interface StandingRow {
   rank: number;
@@ -24,14 +24,15 @@ interface StatsCardProps {
   competitionId: string;
 }
 
-function ordinalSuffix(n: number): string {
+function formatOrdinal(n: number, locale: string): string {
+  if (locale === "es") return `${n}.\u00BA`;
   const mod100 = n % 100;
-  if (mod100 >= 11 && mod100 <= 13) return "th";
+  if (mod100 >= 11 && mod100 <= 13) return `${n}th`;
   const mod10 = n % 10;
-  if (mod10 === 1) return "st";
-  if (mod10 === 2) return "nd";
-  if (mod10 === 3) return "rd";
-  return "th";
+  if (mod10 === 1) return `${n}st`;
+  if (mod10 === 2) return `${n}nd`;
+  if (mod10 === 3) return `${n}rd`;
+  return `${n}th`;
 }
 
 const CARD_BASE =
@@ -43,6 +44,7 @@ export function StatsCard({
   competitionId,
 }: StatsCardProps) {
   const t = useT();
+  const { locale } = useLocale();
   const [rank, setRank] = useState<number | null>(null);
   const [points, setPoints] = useState<number>(0);
   const [availablePoints, setAvailablePoints] = useState<number>(0);
@@ -114,7 +116,7 @@ export function StatsCard({
       {/* Rank */}
       <div className={`w-[88px] shrink-0 ${CARD_BASE}`}>
         <p className="font-display text-2xl font-extrabold tabular-nums leading-none text-ps-amber">
-          {rank != null ? `${rank}${ordinalSuffix(rank)}` : "\u2014"}
+          {rank != null ? formatOrdinal(rank, locale) : "\u2014"}
         </p>
         <p className="mt-1 text-xs font-medium text-ps-text-sec">{t('stats.your_rank')}</p>
         <p className="font-mono text-xs text-ps-text-ter">/ {totalPlayers}</p>

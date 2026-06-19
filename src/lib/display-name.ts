@@ -55,10 +55,10 @@ export const DISPLAY_NAME_MAX = 50;
 export function validateDisplayName(raw: string): string | null {
   const trimmed = raw.trim();
   if (trimmed.length < DISPLAY_NAME_MIN) {
-    return "You need a name for the leaderboard.";
+    return "display_name.error_empty";
   }
   if (trimmed.length > DISPLAY_NAME_MAX) {
-    return `${DISPLAY_NAME_MAX} characters max.`;
+    return "display_name.error_too_long";
   }
   return null;
 }
