@@ -15,7 +15,6 @@ import { ScoreInput } from "@/components/ScoreInput";
 import { FixtureCardSurface } from "@/components/wc/FixtureCardSurface";
 import { deriveWinnerFromScore } from "@/lib/score-format";
 import { getPredictionSummary } from "@/lib/prediction-summary";
-import { CHROME_PALETTE } from "@/app/wc/_landing/brand-palette";
 import type { WcFixture } from "@/lib/wc/fixtures";
 import type {
   EventPredictionType,
@@ -313,9 +312,9 @@ function MatchPickRow({
   const [winnerPred, setWinnerPred] = useState<Prediction | null>(
     initialWinner,
   );
-  // scorePred is kept to initialise the score input values above; setScorePred
-  // syncs it after a successful save so a re-mount sees the latest values.
-  const [, setScorePred] = useState<Prediction | null>(initialScore);
+  // scorePred tracks the latest saved score prediction — used for CAS guard
+  // (expected_updated_at) and to seed score input values on re-mount.
+  const [scorePred, setScorePred] = useState<Prediction | null>(initialScore);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
   // Track whether a score prediction has been committed so we can show a
@@ -378,42 +377,12 @@ function MatchPickRow({
     [winnerOptions, home, away],
   );
 
-  // Detect contradiction: committed score implies a different winner than rawWinner (DB value).
-  const hasContradiction = useMemo(() => {
-    if (!hasCommittedScore || committedHome === null || committedAway === null)
-      return false;
-    if (!rawWinner) return false;
-    const implied = deriveWinnerFromScore(
-      { home: committedHome, away: committedAway },
-      event.sport,
-      winnerOptions,
-    );
-    return implied !== null && implied !== rawWinner;
-  }, [
-    hasCommittedScore,
-    committedHome,
-    committedAway,
-    rawWinner,
-    event.sport,
-    winnerOptions,
-  ]);
-
-  // Derive the implied winner for the contradiction CTA message
-  const contradictionImplied = useMemo(() => {
-    if (!hasCommittedScore || committedHome === null || committedAway === null)
-      return null;
-    return deriveWinnerFromScore(
-      { home: committedHome, away: committedAway },
-      event.sport,
-      winnerOptions,
-    );
-  }, [hasCommittedScore, committedHome, committedAway, event.sport, winnerOptions]);
-
   const submitPrediction = useCallback(
     async (
       predictionType: PredictionType,
       predictionData: Record<string, unknown>,
       signal?: AbortSignal,
+      expectedUpdatedAt?: string | null,
     ): Promise<Prediction | null> => {
       const res = await fetch("/api/predictions", {
         method: "POST",
@@ -423,6 +392,7 @@ function MatchPickRow({
           competition_id: competitionId,
           prediction_type: predictionType,
           prediction_data: predictionData,
+          ...(expectedUpdatedAt && { expected_updated_at: expectedUpdatedAt }),
         }),
         signal,
       });
@@ -488,7 +458,7 @@ function MatchPickRow({
       const controller = new AbortController();
       winnerAbortRef.current = controller;
 
-      submitPrediction("winner", { value }, controller.signal)
+      submitPrediction("winner", { value }, controller.signal, previousPred?.updated_at)
         .then((saved) => {
           // A stale tap finished after a newer tap aborted it.
           if (controller.signal.aborted) return;
@@ -531,20 +501,23 @@ function MatchPickRow({
         // Cancel any in-flight winner POST — score is source of truth
         winnerAbortRef.current?.abort();
 
-        const saved = await submitPrediction("exact_score", {
-          home: homeNum,
-          away: awayNum,
-        });
+        const saved = await submitPrediction(
+          "exact_score",
+          { home: homeNum, away: awayNum },
+          undefined,
+          scorePred?.updated_at,
+        );
         setScorePred(saved);
         setHasCommittedScore(true);
         setCommittedHome(homeNum);
         setCommittedAway(awayNum);
         router.refresh();
       } catch {
-        // Silently ignore score submission errors.
+        // CAS conflict or transient error — refresh to get latest state.
+        router.refresh();
       }
     },
-    [scoreEpt, submitPrediction, router],
+    [scoreEpt, scorePred, submitPrediction, router],
   );
 
   /**
@@ -873,61 +846,7 @@ function MatchPickRow({
 
       {hasCommittedScore &&
         committedHome !== null &&
-        committedAway !== null &&
-        (hasContradiction ? (
-          <div className="mt-2 flex flex-col items-center gap-1.5">
-            <div
-              className="flex items-center gap-1.5 rounded-lg px-3 py-1.5"
-              style={{ backgroundColor: "rgba(168, 85, 247, 0.12)" }}
-              role="alert"
-            >
-              <span
-                className="inline-flex h-4 w-4 shrink-0 items-center justify-center rounded-full text-[10px] font-extrabold leading-none text-white"
-                style={{ background: CHROME_PALETTE.attention }}
-                aria-hidden="true"
-              >
-                !
-              </span>
-              <span
-                className="text-[11px] font-medium leading-snug"
-                style={{ color: CHROME_PALETTE.attention }}
-              >
-                {t("prediction.contradiction_detail", {
-                  home,
-                  homeScore: committedHome,
-                  awayScore: committedAway,
-                  away,
-                  implied: contradictionImplied!,
-                  team: rawWinner!,
-                })}
-              </span>
-            </div>
-            <button
-              type="button"
-              onClick={handleReset}
-              className="animate-[contradiction-attention_1.5s_ease-out] inline-flex items-center gap-1.5 rounded-full px-4 py-2 text-xs font-bold text-white transition-all duration-200 hover:brightness-110 active:scale-[0.97]"
-              style={{
-                background: CHROME_PALETTE.attention,
-                boxShadow: "0 0 12px rgba(168, 85, 247, 0.35)",
-              }}
-            >
-              <svg
-                className="h-3.5 w-3.5"
-                fill="none"
-                viewBox="0 0 24 24"
-                strokeWidth={2.5}
-                stroke="currentColor"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.992 0l3.181 3.183a8.25 8.25 0 0013.803-3.7M4.031 9.865a8.25 8.25 0 0113.803-3.7l3.181 3.182"
-                />
-              </svg>
-              {t("prediction.fix_prediction")}
-            </button>
-          </div>
-        ) : (
+        committedAway !== null && (
           <p
             className={`mt-1.5 text-center text-[11px] ${useCardSurface ? "text-white/65" : "text-ps-text-sec"}`}
           >
@@ -956,9 +875,9 @@ function MatchPickRow({
               </svg>
             </span>
           </p>
-        ))}
+        )}
 
-      {currentWinner && !hasContradiction && (
+      {currentWinner && (
         <div className="mt-1 flex justify-center">
           <button
             type="button"
