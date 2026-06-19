@@ -72,7 +72,7 @@ export function RivalTeaser({ competitionId }: Props) {
         <p className="text-xs font-bold text-ps-text-sec">
           {t("rivals.group_picks")}
         </p>
-        <p className="mt-px text-[11px] text-ps-text-ter">{fixtureName}</p>
+        <p className="mt-px truncate text-[11px] text-ps-text-ter">{fixtureName}</p>
       </div>
 
       {/* Prediction rows — group members only (excluding self) */}

@@ -513,7 +513,7 @@ export function DashboardClient({
               )}
               {/* Message preview */}
               <div className="min-w-0 flex-1">
-                <span className="text-xs font-semibold text-ps-text">
+                <span className="truncate text-xs font-semibold text-ps-text">
                   {lastChatMessage.senderName}
                 </span>
                 <p className="truncate text-xs text-ps-text-sec">

@@ -256,7 +256,7 @@ export function ChatMessage({
         >
           {/* Sender name — only on first in group */}
           {showName && (
-            <p className={`text-[10px] font-semibold text-ps-text-sec mb-0.5 ${isOwn ? "text-right mr-1" : "ml-1"}`}>
+            <p className={`truncate text-[10px] font-semibold text-ps-text-sec mb-0.5 ${isOwn ? "text-right mr-1" : "ml-1"}`}>
               {message.display_name}
             </p>
           )}

@@ -454,7 +454,7 @@ function PredictionRow({
   // Initials
   const initials = row.displayName
     .split(" ")
-    .map((w) => w[0])
+    .map((w) => Array.from(w)[0] ?? "")
     .join("")
     .slice(0, 2)
     .toUpperCase();
