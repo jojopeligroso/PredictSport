@@ -49,7 +49,7 @@ export function PickButton({
       )}
 
       <span
-        className="block font-bold text-ps-text leading-tight"
+        className="block truncate font-bold text-ps-text leading-tight"
         style={{ fontSize: 12.5 }}
       >
         {label}

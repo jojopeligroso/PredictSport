@@ -265,7 +265,7 @@ export function RivalPredictionsTab({
             </button>
 
             <div className="min-w-0 flex-1 text-center">
-              <p className="text-[15px] font-bold text-ps-text">
+              <p className="truncate text-[15px] font-bold text-ps-text">
                 {selectedFixture?.name}
               </p>
               <p className="mt-0.5 font-mono text-[11px] text-ps-text-sec">
@@ -508,12 +508,12 @@ function PredictionRow({
 
           {/* Prediction value — always show the team name on front */}
           {noPick ? (
-            <span className="text-xs italic text-ps-text-ter">
+            <span className="shrink-0 text-xs italic text-ps-text-ter">
               {t("rivals.no_prediction")}
             </span>
           ) : (
             <span
-              className={`text-[13px] font-semibold ${
+              className={`max-w-[120px] truncate text-[13px] font-semibold ${
                 isPending ? "font-medium text-ps-text-sec" : "text-ps-text"
               }`}
             >
