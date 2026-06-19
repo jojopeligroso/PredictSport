@@ -43,6 +43,13 @@ export function LocaleProvider({ children }: { children: ReactNode }) {
     document.cookie = `locale=${l};path=/;max-age=${365 * 24 * 60 * 60};SameSite=Lax`;
     // Update <html lang> for accessibility
     document.documentElement.lang = l;
+    // Persist to notification_prefs so server-side code (push notifications)
+    // can send messages in the user's language.
+    fetch('/api/profile', {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ locale: l }),
+    }).catch(() => {});
   }, []);
 
   return (

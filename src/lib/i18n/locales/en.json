@@ -671,5 +671,10 @@
   "bracket.step_qf": "Quarter-finals",
   "bracket.step_sf": "Semi-finals",
   "bracket.step_final": "Final",
-  "bracket.step_review": "Review"
+  "bracket.step_review": "Review",
+  "push.single_event_title": "Predictions closing soon",
+  "push.single_event_body": "{event} locks in ~{time} — submit your picks!",
+  "push.multi_event_title": "{count} matches closing soon",
+  "push.multi_event_body": "{events} lock within ~{time}",
+  "push.multi_event_more_body": "{events} +{extra} more lock soon"
 }

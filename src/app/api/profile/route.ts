@@ -12,6 +12,7 @@ interface ProfileUpdateBody {
   notification_prefs?: Record<string, unknown>;
   favourite_team?: { sport: string; team_name: string; provider_id: string | null } | null;
   timezone?: string;
+  locale?: string;
 }
 
 export async function PATCH(request: NextRequest) {
@@ -54,6 +55,25 @@ export async function PATCH(request: NextRequest) {
     update.favourite_team = body.favourite_team;
   if (body.timezone !== undefined)
     update.timezone = body.timezone;
+
+  // Persist locale into notification_prefs so server-side code (push
+  // notifications, cron) can send messages in the user's language.
+  if (body.locale === "en" || body.locale === "es") {
+    // Read current prefs to avoid overwriting existing notification settings
+    if (!update.notification_prefs) {
+      const { data: row } = await supabase
+        .from("users")
+        .select("notification_prefs")
+        .eq("id", user.id)
+        .single();
+      update.notification_prefs = {
+        ...((row?.notification_prefs as Record<string, unknown>) ?? {}),
+        locale: body.locale,
+      };
+    } else {
+      (update.notification_prefs as Record<string, unknown>).locale = body.locale;
+    }
+  }
 
   // Cooldown check — runs only when a display_name change is requested
   if (body.display_name !== undefined) {

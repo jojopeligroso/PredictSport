@@ -671,5 +671,10 @@
   "bracket.step_qf": "Cuartos de final",
   "bracket.step_sf": "Semifinales",
   "bracket.step_final": "Final",
-  "bracket.step_review": "Revisión"
+  "bracket.step_review": "Revisión",
+  "push.single_event_title": "Pronósticos por cerrar",
+  "push.single_event_body": "{event} cierra en ~{time} — envía tus pronósticos!",
+  "push.multi_event_title": "{count} partidos por cerrar",
+  "push.multi_event_body": "{events} cierran en ~{time}",
+  "push.multi_event_more_body": "{events} +{extra} más cierran pronto"
 }

@@ -8,6 +8,8 @@ import {
   alreadyNotifiedWithTag,
   getMutedCompetitionIds,
 } from "@/lib/push/send";
+import { serverT } from "@/lib/i18n/server";
+import type { Locale } from "@/lib/i18n";
 
 /**
  * GET /api/notifications/cron
@@ -230,18 +232,26 @@ export async function GET(request: Request) {
     );
     const url = firstWc ? "/wc" : `/predictions/${incomplete[0].id}`;
 
+    // Resolve user's locale for translated push text
+    const userLocale: Locale = prefs?.locale === "es" ? "es" : "en";
+    const t = (key: string, vars?: Record<string, string | number>) =>
+      serverT(userLocale, key, vars);
+
     // Build message body
     let body: string;
     if (incomplete.length === 1) {
       const lt = formatLeadTime(new Date(incomplete[0].lock_time), now);
-      body = `${incomplete[0].event_name} locks in ~${lt} — submit your picks!`;
+      body = t("push.single_event_body", { event: incomplete[0].event_name, time: lt });
     } else {
       const names = incomplete.slice(0, 3).map((e) => e.event_name);
       const lt = formatLeadTime(new Date(incomplete[0].lock_time), now);
       body =
         incomplete.length <= 3
-          ? `${names.join(", ")} lock within ~${lt}`
-          : `${names.join(", ")} +${incomplete.length - 3} more lock soon`;
+          ? t("push.multi_event_body", { events: names.join(", "), time: lt })
+          : t("push.multi_event_more_body", {
+              events: names.join(", "),
+              extra: incomplete.length - 3,
+            });
     }
 
     // Dedup: one reminder per user per calendar day (UTC).
@@ -263,8 +273,8 @@ export async function GET(request: Request) {
         {
           title:
             incomplete.length === 1
-              ? "Predictions closing soon"
-              : `${incomplete.length} matches closing soon`,
+              ? t("push.single_event_title")
+              : t("push.multi_event_title", { count: incomplete.length }),
           body,
           url,
           tag: dailyTag,

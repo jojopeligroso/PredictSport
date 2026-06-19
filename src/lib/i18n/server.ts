@@ -33,3 +33,21 @@ export async function getServerT() {
     return text;
   };
 }
+
+/**
+ * Translate a key for a specific locale without request context.
+ * Used by cron jobs and other server-side code that knows the user's locale.
+ */
+export function serverT(
+  locale: Locale,
+  key: string,
+  vars?: Record<string, string | number>,
+): string {
+  let text = messages[locale]?.[key] ?? messages.en[key] ?? key;
+  if (vars) {
+    for (const [k, v] of Object.entries(vars)) {
+      text = text.replaceAll(`{${k}}`, String(v));
+    }
+  }
+  return text;
+}
