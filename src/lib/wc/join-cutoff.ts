@@ -29,6 +29,9 @@ export const WC_FIRST_KICKOFF_UTC = "2026-06-11T19:00:00Z";
 /** Soft join cutoff: first kickoff + 72h. End of day Sun 14 Jun 2026 UTC. */
 export const WC_JOINS_CLOSE_AT = "2026-06-14T19:00:00Z";
 
+/** Days after cutoff before the "closed" banner auto-expires from the UI. */
+const BANNER_EXPIRY_DAYS = 3;
+
 /** The ISO date (YYYY-MM-DD) immediately before the cutoff. Sat 13 Jun 2026. */
 export function dayBeforeCloseUtcDate(): string {
   // One day earlier than the close date. Hard-coded UTC date arithmetic to keep
@@ -55,7 +58,10 @@ export function joinCutoffWarningState(now: Date): JoinCutoffWarningState {
   const closeMs = new Date(WC_JOINS_CLOSE_AT).getTime();
   const nowMs = now.getTime();
 
-  if (nowMs >= closeMs) return "closed";
+  if (nowMs >= closeMs) {
+    const expiryMs = closeMs + BANNER_EXPIRY_DAYS * 24 * 60 * 60 * 1000;
+    return nowMs >= expiryMs ? "none" : "closed";
+  }
 
   const nowIso = utcDateIso(now);
   const closeIso = utcDateIso(new Date(closeMs));

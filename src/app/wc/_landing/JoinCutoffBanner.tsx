@@ -1,3 +1,6 @@
+"use client";
+
+import { useState, useEffect } from "react";
 import { CHROME_PALETTE } from "./brand-palette";
 import type { JoinCutoffWarningState } from "@/lib/wc/join-cutoff";
 
@@ -10,6 +13,9 @@ import type { JoinCutoffWarningState } from "@/lib/wc/join-cutoff";
  * Copy follows the pub-chalkboard personality rule in design/DESIGN-RULES.md
  * — cheeky, confident, never corporate-apologetic.
  */
+const LS_KEY = "ps:joinClosed:dismissCount";
+const MAX_DISMISSALS = 3;
+
 export function JoinCutoffBanner({
   state,
   closeDateLabel,
@@ -19,13 +25,38 @@ export function JoinCutoffBanner({
    *  client component (no Intl locale drift across hydration). */
   closeDateLabel: string;
 }) {
+  const [dismissed, setDismissed] = useState(false);
+  const [exhausted, setExhausted] = useState(false);
+
+  useEffect(() => {
+    if (state !== "closed") return;
+    try {
+      const count = parseInt(localStorage.getItem(LS_KEY) ?? "0", 10);
+      if (count >= MAX_DISMISSALS) setExhausted(true);
+    } catch {
+      // localStorage unavailable (incognito, etc.) — show the banner
+    }
+  }, [state]);
+
   if (state === "none") return null;
 
   if (state === "closed") {
+    if (dismissed || exhausted) return null;
+
+    const handleDismiss = () => {
+      setDismissed(true);
+      try {
+        const prev = parseInt(localStorage.getItem(LS_KEY) ?? "0", 10);
+        localStorage.setItem(LS_KEY, String(prev + 1));
+      } catch {
+        // localStorage unavailable — dismissed for this session only
+      }
+    };
+
     return (
       <div className="mx-auto mt-3 w-full max-w-[480px] px-4">
         <div
-          className="flex gap-2.5 rounded-md border-l-[3px] px-3 py-2.5 text-xs leading-snug"
+          className="relative flex gap-2.5 rounded-md border-l-[3px] px-3 py-2.5 pr-8 text-xs leading-snug"
           style={{
             background: "rgba(40, 30, 20, 0.04)",
             borderColor: "var(--ps-text-ter, #8b8275)",
@@ -38,6 +69,15 @@ export function JoinCutoffBanner({
             shut on {closeDateLabel}. Existing members keep picking; no new
             faces from here.
           </p>
+          <button
+            type="button"
+            onClick={handleDismiss}
+            className="absolute right-2 top-2 flex h-5 w-5 items-center justify-center rounded-full text-[10px] opacity-40 transition-opacity hover:opacity-70"
+            style={{ color: "var(--ps-text-sec, #5e554a)" }}
+            aria-label="Dismiss"
+          >
+            ✕
+          </button>
         </div>
       </div>
     );
