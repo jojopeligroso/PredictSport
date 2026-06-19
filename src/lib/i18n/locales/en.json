@@ -567,7 +567,6 @@
   "prediction.contradiction": "Score and pick don't match",
   "prediction.conflict_body": "Your score ({homeScore}\u2013{awayScore}) means {serverWinner} wins, but you picked {enteredPick}.",
   "prediction.try_again": "Try again",
-  "prediction.conflict_accept": "Keep {winner} win + {homeScore}\u2013{awayScore}? Accept \u2192",
   "prediction.score_implies": "Score implies: {outcome}",
   "prediction.score_saved_as": "Score saved as {home} {homeScore}-{awayScore} {away}.",
   "prediction.your_pick_was": "Your pick was {team}.",

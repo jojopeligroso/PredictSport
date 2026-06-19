@@ -333,20 +333,6 @@ export function usePredictionState({
     t,
   ]);
 
-  // ── Accept correction ──────────────────────────────────────────────
-
-  const acceptCorrection = useCallback(() => {
-    if (feedback.type !== "conflict") return;
-    const correctedWinner = feedback.serverWinner;
-    setWinnerPred((prev) =>
-      prev
-        ? { ...prev, prediction_data: { value: correctedWinner } }
-        : prev,
-    );
-    setFeedback({ type: "idle" });
-    router.refresh();
-  }, [feedback, router]);
-
   // ── Clear feedback ─────────────────────────────────────────────────
 
   const clearFeedback = useCallback(() => {
@@ -364,7 +350,6 @@ export function usePredictionState({
     pickWinner,
     commitScore,
     resetAll,
-    acceptCorrection,
     clearFeedback,
   };
 }

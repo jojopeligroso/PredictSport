@@ -8,7 +8,7 @@ import {
   useState,
   type ReactNode,
 } from "react";
-import { useT } from "@/lib/i18n";
+import { useT, useLocale } from "@/lib/i18n";
 import { CountryFlag } from "@/components/CountryFlag";
 import { ScoreInput } from "@/components/ScoreInput";
 import { FixtureCardSurface } from "@/components/wc/FixtureCardSurface";
@@ -260,6 +260,7 @@ function MatchPickRow({
   showCardCountdown?: boolean;
 }) {
   const t = useT();
+  const { locale } = useLocale();
 
   // Resolve card-surface mode. If surface="card" was requested but no fixture
   // metadata was supplied, fall back to compact — better to degrade gracefully
@@ -315,7 +316,7 @@ function MatchPickRow({
   const {
     currentWinner, scoreDisplay, feedback, error: errorMsg,
     scoreResetKey, resetInFlight, initialScore,
-    pickWinner, commitScore, resetAll, acceptCorrection, clearFeedback,
+    pickWinner, commitScore, resetAll, clearFeedback,
   } = usePredictionState({
     initialPredictions, eventId: event.id, competitionId,
     sport: event.sport, winnerEptId: winnerEpt?.id,
@@ -506,6 +507,7 @@ function MatchPickRow({
             fixture.kickoffUtc,
             showCardCountdown ? event.lock_time : undefined,
             event.pick_reveal_at,
+            locale,
           )}
           hasPick={currentWinner !== null}
         >
@@ -547,21 +549,6 @@ function MatchPickRow({
         >
           {t("prediction.try_again")}
         </button>
-        <button
-          type="button"
-          onClick={acceptCorrection}
-          className={`py-3 -my-2 text-[11px] font-medium transition-colors ${
-            useCardSurface
-              ? "text-white/40 hover:text-white/65"
-              : "text-ps-text-ter hover:text-ps-text-sec"
-          }`}
-        >
-          {t("prediction.conflict_accept", {
-            winner: feedback.serverWinner,
-            homeScore: String(feedback.score.home),
-            awayScore: String(feedback.score.away),
-          })}
-        </button>
       </div>
     );
 
@@ -570,7 +557,7 @@ function MatchPickRow({
         <FixtureCardSurface
           city={fixture.city}
           headerLeft={fixture.group && fixture.matchday ? `Group ${fixture.group} · MD${fixture.matchday}` : event.event_name}
-          headerRight={formatHeaderRight(fixture.kickoffUtc, showCardCountdown ? event.lock_time : undefined, event.pick_reveal_at)}
+          headerRight={formatHeaderRight(fixture.kickoffUtc, showCardCountdown ? event.lock_time : undefined, event.pick_reveal_at, locale)}
           hasPick={currentWinner !== null}
         >
           {conflictBody}
@@ -744,6 +731,7 @@ function MatchPickRow({
             fixture.kickoffUtc,
             showCardCountdown ? event.lock_time : undefined,
             event.pick_reveal_at,
+            locale,
           )}
           hasPick={currentWinner !== null}
         >
@@ -773,19 +761,21 @@ function formatHeaderRight(
   kickoffUtc: string,
   lockTime?: string,
   pickRevealAt?: string | null,
+  locale: string = "en",
 ): ReactNode {
   const d = new Date(kickoffUtc);
-  const time = new Intl.DateTimeFormat("en-GB", {
+  const intlLocale = locale === "es" ? "es-MX" : "en-GB";
+  // Omit timeZone to use the browser's local timezone — Intl handles DST
+  // automatically via the IANA tz database.
+  const time = new Intl.DateTimeFormat(intlLocale, {
     hour: "2-digit",
     minute: "2-digit",
     hour12: false,
-    timeZone: "UTC",
   }).format(d);
-  const date = new Intl.DateTimeFormat("en-GB", {
+  const date = new Intl.DateTimeFormat(intlLocale, {
     weekday: "short",
     day: "numeric",
     month: "short",
-    timeZone: "UTC",
   }).format(d);
   return (
     <>
