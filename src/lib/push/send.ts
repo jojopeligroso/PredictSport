@@ -43,10 +43,23 @@ export type NotifCategory =
 /** Default reminder lead time in minutes. Users can override in notification_prefs. */
 export const DEFAULT_REMINDER_LEAD_MINUTES = 60;
 
-export function getUserReminderLead(prefs: Record<string, unknown> | null): number {
+const VALID_LEADS = [30, 60, 120, 240, 720, 1440];
+
+/** Returns the user's reminder lead times as a sorted array of minutes. */
+export function getUserReminderLeads(prefs: Record<string, unknown> | null): number[] {
   const val = prefs?.reminder_lead_minutes;
-  if (typeof val === "number" && [30, 60, 120, 240].includes(val)) return val;
-  return DEFAULT_REMINDER_LEAD_MINUTES;
+  if (Array.isArray(val)) {
+    const valid = val.filter((v): v is number => typeof v === "number" && VALID_LEADS.includes(v));
+    return valid.length > 0 ? valid.sort((a, b) => a - b) : [DEFAULT_REMINDER_LEAD_MINUTES];
+  }
+  // Legacy: single number
+  if (typeof val === "number" && VALID_LEADS.includes(val)) return [val];
+  return [DEFAULT_REMINDER_LEAD_MINUTES];
+}
+
+/** @deprecated Use getUserReminderLeads — returns max lead for backwards compat. */
+export function getUserReminderLead(prefs: Record<string, unknown> | null): number {
+  return Math.max(...getUserReminderLeads(prefs));
 }
 
 export type LeaderboardTrigger = "rising" | "any_change";

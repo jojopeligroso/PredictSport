@@ -468,6 +468,8 @@
   "profile.reminder_1h": "1 hora",
   "profile.reminder_2h": "2 horas",
   "profile.reminder_4h": "4 horas",
+  "profile.reminder_12h": "12 horas",
+  "profile.reminder_1d": "1 día",
   "profile.quiet_hours": "Horas de silencio",
   "profile.quiet_hours_desc": "Sin notificaciones durante estas horas (tu hora local)",
   "profile.quiet_hours_start": "Desde",

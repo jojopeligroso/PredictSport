@@ -20,7 +20,7 @@ const SPORT_OPTIONS = [
 
 type SportOption = typeof SPORT_OPTIONS[number];
 
-type ReminderLead = 30 | 60 | 120 | 240;
+type ReminderLead = 30 | 60 | 120 | 240 | 720 | 1440;
 type DailyCap = 5 | 8 | 12 | 20 | 0; // 0 = no limit
 type LeaderboardTrigger = "rising" | "any_change";
 
@@ -32,7 +32,7 @@ interface NotificationPrefs {
   chat_member_join: boolean;
   result_hints: boolean;
   default_sport: SportOption;
-  reminder_lead_minutes: ReminderLead;
+  reminder_lead_minutes: ReminderLead[];
   leaderboard_trigger: LeaderboardTrigger;
   quiet_hours_enabled: boolean;
   quiet_hours_start: number; // 0-23
@@ -40,6 +40,23 @@ interface NotificationPrefs {
   daily_cap: DailyCap;
   // Competitions the user has silenced. Server treats empty/missing as "none muted".
   muted_competition_ids: string[];
+}
+
+const VALID_LEADS: readonly ReminderLead[] = [30, 60, 120, 240, 720, 1440];
+
+/** Parse reminder_lead_minutes — handles both legacy single number and new array format. */
+function parseReminderLeads(raw: unknown): ReminderLead[] {
+  if (Array.isArray(raw)) {
+    const valid = raw.filter((v): v is ReminderLead =>
+      typeof v === "number" && VALID_LEADS.includes(v as ReminderLead),
+    );
+    return valid.length > 0 ? valid : [60];
+  }
+  // Legacy: single number
+  if (typeof raw === "number" && VALID_LEADS.includes(raw as ReminderLead)) {
+    return [raw as ReminderLead];
+  }
+  return [60];
 }
 
 function parseNotificationPrefs(
@@ -74,10 +91,7 @@ function parseNotificationPrefs(
       SPORT_OPTIONS.includes(raw?.default_sport as SportOption)
         ? (raw!.default_sport as SportOption)
         : "Soccer",
-    reminder_lead_minutes:
-      ([30, 60, 120, 240] as const).includes(raw?.reminder_lead_minutes as ReminderLead)
-        ? (raw!.reminder_lead_minutes as ReminderLead)
-        : 60,
+    reminder_lead_minutes: parseReminderLeads(raw?.reminder_lead_minutes),
     leaderboard_trigger:
       raw?.leaderboard_trigger === "rising" || raw?.leaderboard_trigger === "any_change"
         ? (raw.leaderboard_trigger as LeaderboardTrigger)
@@ -142,8 +156,10 @@ function statesEqual(a: FormState, b: FormState): boolean {
       b.notification_prefs.result_hints &&
     a.notification_prefs.default_sport ===
       b.notification_prefs.default_sport &&
-    a.notification_prefs.reminder_lead_minutes ===
-      b.notification_prefs.reminder_lead_minutes &&
+    setsEqual(
+      a.notification_prefs.reminder_lead_minutes.map(String),
+      b.notification_prefs.reminder_lead_minutes.map(String),
+    ) &&
     a.notification_prefs.leaderboard_trigger ===
       b.notification_prefs.leaderboard_trigger &&
     a.notification_prefs.quiet_hours_enabled ===
@@ -635,7 +651,7 @@ export function ProfileForm({
                 label={t('profile.prediction_reminders')}
                 description={t('profile.prediction_reminders_desc')}
               />
-              {/* Reminder timing — indented, inline under reminders */}
+              {/* Reminder timing — multi-select pills, indented under reminders */}
               {form.notification_prefs.prediction_reminders && (
                 <div className="flex flex-wrap gap-2 pb-3 pl-4" role="group" aria-label="Reminder timing">
                   {([
@@ -643,14 +659,23 @@ export function ProfileForm({
                     { value: 60 as ReminderLead, label: t('profile.reminder_1h') },
                     { value: 120 as ReminderLead, label: t('profile.reminder_2h') },
                     { value: 240 as ReminderLead, label: t('profile.reminder_4h') },
+                    { value: 720 as ReminderLead, label: t('profile.reminder_12h') },
+                    { value: 1440 as ReminderLead, label: t('profile.reminder_1d') },
                   ]).map((opt) => {
-                    const active = form.notification_prefs.reminder_lead_minutes === opt.value;
+                    const active = form.notification_prefs.reminder_lead_minutes.includes(opt.value);
                     return (
                       <button
                         key={opt.value}
                         type="button"
                         aria-pressed={active}
-                        onClick={() => setNotifPref("reminder_lead_minutes", opt.value)}
+                        onClick={() => {
+                          const current = form.notification_prefs.reminder_lead_minutes;
+                          const next = active
+                            ? current.filter((v) => v !== opt.value)
+                            : [...current, opt.value].sort((a, b) => a - b);
+                          // Must keep at least one selected
+                          if (next.length > 0) setNotifPref("reminder_lead_minutes", next);
+                        }}
                         className={`rounded-lg px-3 py-1.5 text-xs font-semibold transition-colors active:scale-[0.95] ${
                           active
                             ? "bg-ps-amber-deep text-[#1a1208] hover:opacity-90"
