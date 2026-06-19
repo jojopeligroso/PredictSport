@@ -89,17 +89,45 @@ export async function GET(request: NextRequest) {
     // SQL returns one row per user (~50 rows) instead of every prediction row,
     // so it can never hit PostgREST's max-rows cap. See migration
     // 20260616140000_sum_prediction_points_rpc.sql.
-    const { data: pointRows } = await supabase.rpc("sum_prediction_points", {
-      p_user_ids: userIds,
-      p_tournament_id: compForTournament?.tournament_id ?? null,
-      p_competition_id: classification.competition_id,
-    });
+    const [{ data: pointRows }, { data: accuracyRows }] = await Promise.all([
+      supabase.rpc("sum_prediction_points", {
+        p_user_ids: userIds,
+        p_tournament_id: compForTournament?.tournament_id ?? null,
+        p_competition_id: classification.competition_id,
+      }),
+      supabase.rpc("prediction_accuracy_stats", {
+        p_user_ids: userIds,
+        p_tournament_id: compForTournament?.tournament_id ?? null,
+        p_competition_id: classification.competition_id,
+      }),
+    ]);
 
     const pointsMap = new Map<string, number>();
     for (const uid of userIds) pointsMap.set(uid, 0);
 
     for (const r of (pointRows ?? []) as Array<{ user_id: string; total_points: number }>) {
       pointsMap.set(r.user_id, r.total_points ?? 0);
+    }
+
+    const accuracyMap = new Map<string, {
+      outcome: { correct: number; total: number; pct: number } | null;
+      exact: { correct: number; total: number; pct: number } | null;
+    }>();
+    for (const r of (accuracyRows ?? []) as Array<{
+      user_id: string;
+      winner_correct: number;
+      winner_total: number;
+      score_correct: number;
+      score_total: number;
+    }>) {
+      accuracyMap.set(r.user_id, {
+        outcome: r.winner_total > 0
+          ? { correct: r.winner_correct, total: r.winner_total, pct: Math.round((r.winner_correct / r.winner_total) * 100) }
+          : null,
+        exact: r.score_total > 0
+          ? { correct: r.score_correct, total: r.score_total, pct: Math.round((r.score_correct / r.score_total) * 100) }
+          : null,
+      });
     }
 
     // Get display names + available points (max possible from confirmed events)
@@ -143,6 +171,7 @@ export async function GET(request: NextRequest) {
         points,
         status: memberships.find((m: { user_id: string }) => m.user_id === userId)?.status ?? "active",
         eliminated: memberships.find((m: { user_id: string }) => m.user_id === userId)?.status === "eliminated",
+        accuracy: accuracyMap.get(userId) ?? { outcome: null, exact: null },
       }));
 
     const standings = applyVisibility(

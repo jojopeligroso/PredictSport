@@ -14,6 +14,12 @@ interface Classification {
   status: string;
 }
 
+interface AccuracyStat {
+  correct: number;
+  total: number;
+  pct: number;
+}
+
 interface StandingRow {
   rank: number;
   user_id: string;
@@ -23,6 +29,10 @@ interface StandingRow {
   tie_break_values?: Record<string, number>;
   movement?: number;
   eliminated?: boolean;
+  accuracy?: {
+    outcome: AccuracyStat | null;
+    exact: AccuracyStat | null;
+  };
 }
 
 
@@ -362,6 +372,166 @@ function FormatDrawBanner({
   );
 }
 
+function FlipRow({
+  row,
+  isMe,
+  isEliminated,
+  isFormat,
+  isBracket,
+  selfVisibility,
+  onToggleVisibility,
+}: {
+  row: StandingRow;
+  isMe: boolean;
+  isEliminated: boolean;
+  isFormat: boolean;
+  isBracket: boolean;
+  selfVisibility: "public" | "private";
+  onToggleVisibility: (next: "public" | "private") => void;
+}) {
+  const t = useT();
+  const [flipped, setFlipped] = useState(false);
+  const hasAccuracy = row.accuracy?.outcome != null || row.accuracy?.exact != null;
+  const canFlip = hasAccuracy && !isBracket;
+
+  // Opaque backgrounds needed for backface-visibility to work.
+  // Semi-transparent amber bleeds through, so pre-compute the opaque equivalent.
+  const faceBg = isMe ? "bg-[#fef7e8]" : "bg-ps-surface";
+
+  return (
+    <div
+      className={`${isEliminated ? "opacity-50" : ""}`}
+      onClick={canFlip ? () => setFlipped((f) => !f) : undefined}
+      style={canFlip ? { cursor: "pointer", WebkitTapHighlightColor: "transparent" } : undefined}
+    >
+      <div className="relative" style={{ perspective: "600px" }}>
+        <div
+          className="transition-transform duration-300"
+          style={{
+            transformStyle: "preserve-3d",
+            transform: flipped ? "rotateX(180deg)" : "rotateX(0deg)",
+          }}
+        >
+          {/* ── Front face ── */}
+          <div
+            className={`flex items-center px-3 py-2.5 ${faceBg}`}
+            style={{ backfaceVisibility: "hidden" }}
+          >
+            <span className="w-8 shrink-0 text-center font-mono text-xs font-bold text-ps-text-ter">
+              {row.rank}
+            </span>
+            <div className="flex flex-1 items-center gap-2 pl-2 min-w-0">
+              <span
+                className={`truncate text-sm ${isMe ? "font-bold text-ps-text" : "text-ps-text"}`}
+              >
+                {row.display_name}
+              </span>
+              {isMe && (
+                <span className="shrink-0 rounded bg-ps-amber/20 px-1 py-0.5 text-[10px] font-bold text-ps-amber">
+                  {t('classification.you_label')}
+                </span>
+              )}
+              {isMe && !isFormat && (
+                <span onClick={(e) => e.stopPropagation()}>
+                  <VisibilityToggle
+                    visibility={selfVisibility}
+                    onToggle={onToggleVisibility}
+                  />
+                </span>
+              )}
+              {isEliminated && (
+                <span className="shrink-0 rounded bg-ps-red/15 px-1 py-0.5 text-[10px] font-bold text-ps-red">
+                  {row.status === "dead" ? t('classification.dead') : t('classification.out')}
+                </span>
+              )}
+              {row.movement !== undefined && row.movement !== 0 && !isEliminated && (
+                <span
+                  className={`shrink-0 text-[10px] font-bold ${
+                    row.movement > 0 ? "text-ps-green" : "text-ps-red"
+                  }`}
+                >
+                  {row.movement > 0 ? `+${row.movement}` : row.movement}
+                </span>
+              )}
+            </div>
+            <span className="w-16 shrink-0 text-right font-mono text-sm font-bold text-ps-text">
+              {row.points}
+            </span>
+            {canFlip && isMe && (
+              <svg
+                className="ml-1 h-3.5 w-3.5 shrink-0 text-ps-text-ter"
+                viewBox="0 0 16 16"
+                fill="none"
+                aria-hidden="true"
+              >
+                <path d="M4 6.5h8M4 9.5h8" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+              </svg>
+            )}
+          </div>
+
+          {/* ── Back face ── */}
+          <div
+            className={`absolute inset-0 flex items-center px-3 py-2.5 ${faceBg}`}
+            style={{
+              backfaceVisibility: "hidden",
+              transform: "rotateX(180deg)",
+            }}
+          >
+            <div className="flex flex-1 items-center">
+              {/* Outcome */}
+              <div className="flex flex-1 items-center gap-1.5 min-w-0">
+                <span className="shrink-0 text-xl font-extrabold tabular-nums leading-none tracking-tight text-ps-green">
+                  {row.accuracy?.outcome ? `${row.accuracy.outcome.pct}%` : "\u2014"}
+                </span>
+                <div className="flex flex-col min-w-0">
+                  <span className="text-[11px] font-semibold text-ps-text-sec leading-tight">
+                    {t('stats.outcome')}
+                  </span>
+                  <span className="font-mono text-[11px] text-ps-text-ter leading-tight">
+                    {row.accuracy?.outcome
+                      ? `${row.accuracy.outcome.correct}/${row.accuracy.outcome.total}`
+                      : ""}
+                  </span>
+                </div>
+              </div>
+
+              {/* Divider */}
+              <div className="mx-2.5 h-6 w-px shrink-0 bg-ps-border-strong" />
+
+              {/* Exact Score */}
+              <div className="flex flex-1 items-center gap-1.5 min-w-0">
+                <span className="shrink-0 text-xl font-extrabold tabular-nums leading-none tracking-tight text-ps-amber">
+                  {row.accuracy?.exact ? `${row.accuracy.exact.pct}%` : "\u2014"}
+                </span>
+                <div className="flex flex-col min-w-0">
+                  <span className="text-[11px] font-semibold text-ps-text-sec leading-tight">
+                    {t('stats.exact_score')}
+                  </span>
+                  <span className="font-mono text-[11px] text-ps-text-ter leading-tight">
+                    {row.accuracy?.exact
+                      ? `${row.accuracy.exact.correct}/${row.accuracy.exact.total}`
+                      : ""}
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            {/* Flip-back icon */}
+            <svg
+              className="ml-2 h-3.5 w-3.5 shrink-0 rotate-180 text-ps-text-ter"
+              viewBox="0 0 16 16"
+              fill="none"
+              aria-hidden="true"
+            >
+              <path d="M4 6.5h8M4 9.5h8" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+            </svg>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function StandingsTable({
   standings,
   currentUserId,
@@ -395,51 +565,16 @@ function StandingsTable({
         const isEliminated = row.eliminated || row.status === "eliminated" || row.status === "dead";
 
         return (
-          <div
+          <FlipRow
             key={row.user_id}
-            className={`flex items-center px-3 py-2.5 ${
-              isMe ? "bg-ps-amber/5" : ""
-            } ${isEliminated ? "opacity-50" : ""}`}
-          >
-            <span className="w-8 text-center font-mono text-xs font-bold text-ps-text-ter">
-              {row.rank}
-            </span>
-            <div className="flex flex-1 items-center gap-2 pl-2">
-              <span
-                className={`text-sm ${isMe ? "font-bold text-ps-text" : "text-ps-text"}`}
-              >
-                {row.display_name}
-              </span>
-              {isMe && (
-                <span className="rounded bg-ps-amber/20 px-1 py-0.5 text-[10px] font-bold text-ps-amber">
-                  {t('classification.you_label')}
-                </span>
-              )}
-              {isMe && !isFormat && (
-                <VisibilityToggle
-                  visibility={selfVisibility}
-                  onToggle={onToggleVisibility}
-                />
-              )}
-              {isEliminated && (
-                <span className="rounded bg-ps-red/15 px-1 py-0.5 text-[10px] font-bold text-ps-red">
-                  {row.status === "dead" ? t('classification.dead') : t('classification.out')}
-                </span>
-              )}
-              {row.movement !== undefined && row.movement !== 0 && !isEliminated && (
-                <span
-                  className={`text-[10px] font-bold ${
-                    row.movement > 0 ? "text-ps-green" : "text-ps-red"
-                  }`}
-                >
-                  {row.movement > 0 ? `+${row.movement}` : row.movement}
-                </span>
-              )}
-            </div>
-            <span className="w-16 text-right font-mono text-sm font-bold text-ps-text">
-              {row.points}
-            </span>
-          </div>
+            row={row}
+            isMe={isMe}
+            isEliminated={isEliminated}
+            isFormat={isFormat}
+            isBracket={isBracket}
+            selfVisibility={selfVisibility}
+            onToggleVisibility={onToggleVisibility}
+          />
         );
       })}
     </div>
