@@ -310,23 +310,18 @@ async function handleUpdate(
     }
   }
 
-  const now = new Date().toISOString();
-  const newHistory = tournamentStarted
-    ? [...history, { pick: newPick, changed_at: now }]
-    : [{ pick: newPick, changed_at: now }]; // Pre-start: replace history entirely
-
-  const { data: updated, error: updateError } = await supabase
-    .from("predictions")
-    .update({
-      prediction_data: {
-        value: newPick,
-        change_history: newHistory,
-      },
-      updated_at: now,
-    })
-    .eq("id", prediction.id)
-    .select()
-    .single();
+  // Atomic update via RPC — appends to change_history in Postgres with a
+  // history-length CAS guard. Prevents two concurrent changes from both
+  // reading the same history, both appending, and one entry being lost.
+  const { data: rpcRows, error: updateError } = await supabase.rpc(
+    "safe_update_outright",
+    {
+      p_prediction_id: prediction.id,
+      p_new_pick: newPick,
+      p_expected_history_length: history.length,
+      p_tournament_started: tournamentStarted,
+    },
+  );
 
   if (updateError) {
     return NextResponse.json(
@@ -335,10 +330,23 @@ async function handleUpdate(
     );
   }
 
+  const updated = Array.isArray(rpcRows) ? rpcRows[0] : rpcRows;
+
+  if (!updated) {
+    return NextResponse.json(
+      { error: "Pick was modified in another session. Please refresh and try again." },
+      { status: 409 },
+    );
+  }
+
+  const updatedHistory = (
+    (updated.prediction_data as Record<string, unknown>)?.change_history ?? []
+  ) as ChangeEntry[];
+
   return NextResponse.json({
     event_id: eventId,
     prediction: updated,
-    changes_remaining: computeRemaining(newHistory, tournamentStarted),
+    changes_remaining: computeRemaining(updatedHistory, tournamentStarted),
     created: false,
   });
 }

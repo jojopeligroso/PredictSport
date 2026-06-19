@@ -343,9 +343,17 @@ function MatchPickRow({
   // with a null score (reset confirmed server-side).
   const [resetInFlight, setResetInFlight] = useState(false);
 
-  // Abort the previous in-flight winner POST when a new tap arrives so the
-  // latest tap is what gets persisted even if the earlier one was slow.
-  const winnerAbortRef = useRef<AbortController | null>(null);
+  // Unified abort ref: any prediction write for this event cancels any
+  // in-flight write (winner tap, score commit, or reset). Prevents stale
+  // responses from overwriting the latest user intent.
+  const predictionAbortRef = useRef<AbortController | null>(null);
+
+  const abortAndReplace = useCallback((): AbortController => {
+    predictionAbortRef.current?.abort();
+    const controller = new AbortController();
+    predictionAbortRef.current = controller;
+    return controller;
+  }, []);
 
   const rawWinner = winnerValue(winnerPred ?? undefined);
 
@@ -454,9 +462,7 @@ function MatchPickRow({
 
       if (!hadWinner) onWinnerLanded(event.id, true);
 
-      winnerAbortRef.current?.abort();
-      const controller = new AbortController();
-      winnerAbortRef.current = controller;
+      const controller = abortAndReplace();
 
       submitPrediction("winner", { value }, controller.signal, previousPred?.updated_at)
         .then((saved) => {
@@ -485,6 +491,7 @@ function MatchPickRow({
       currentWinner,
       winnerPred,
       event.id,
+      abortAndReplace,
       submitPrediction,
       onWinnerLanded,
     ],
@@ -498,13 +505,12 @@ function MatchPickRow({
     async (homeNum: number, awayNum: number) => {
       if (!scoreEpt) return;
       try {
-        // Cancel any in-flight winner POST — score is source of truth
-        winnerAbortRef.current?.abort();
+        const controller = abortAndReplace();
 
         const saved = await submitPrediction(
           "exact_score",
           { home: homeNum, away: awayNum },
-          undefined,
+          controller.signal,
           scorePred?.updated_at,
         );
         setScorePred(saved);
@@ -517,7 +523,7 @@ function MatchPickRow({
         router.refresh();
       }
     },
-    [scoreEpt, scorePred, submitPrediction, router],
+    [scoreEpt, scorePred, abortAndReplace, submitPrediction, router],
   );
 
   /**
@@ -527,9 +533,9 @@ function MatchPickRow({
   const handleReset = useCallback(async () => {
     if (isLocked) return;
 
-    // Cancel any in-flight winner POST before DELETE to prevent
-    // the POST arriving after the DELETE and re-creating the prediction
-    winnerAbortRef.current?.abort();
+    // Cancel any in-flight prediction write before DELETE to prevent
+    // it arriving after the DELETE and re-creating the prediction
+    predictionAbortRef.current?.abort();
 
     const previousWinner = winnerPred;
     const previousHome = committedHome;
