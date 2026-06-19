@@ -184,10 +184,15 @@ export function FixturesTabs({ fixtures, resultsByExternalId, serverDateIso, pre
     const intlLocale = locale === "es" ? "es-MX" : "en-GB";
     for (const f of active) {
       const d = new Date(f.kickoffUtc);
-      const key = d.toISOString().slice(0, 10);
+      // Use browser-local date for grouping key (matches localDateIso used
+      // by the bucket logic). toISOString().slice(0,10) would use UTC, which
+      // misgroups fixtures near midnight for users west of UTC.
+      const key = localDateIso(d);
       if (key !== currentKey) {
         currentKey = key;
         groups.push({
+          // Omit timeZone to use the browser's local timezone — Intl handles
+          // DST automatically via the IANA tz database.
           label: d.toLocaleDateString(intlLocale, { weekday: "short", day: "numeric", month: "short" }),
           dateKey: key,
           items: [],

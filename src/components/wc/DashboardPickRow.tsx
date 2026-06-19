@@ -1,6 +1,6 @@
 "use client";
 
-import { useT } from "@/lib/i18n";
+import { useT, useLocale } from "@/lib/i18n";
 import { CountryFlag } from "@/components/CountryFlag";
 import { FixtureCardSurface } from "@/components/wc/FixtureCardSurface";
 import { WindowPickList } from "@/app/wc/picks/[windowId]/WindowPickList";
@@ -47,6 +47,7 @@ export function DashboardPickRow({
   onToggle,
 }: DashboardPickRowProps) {
   const t = useT();
+  const { locale } = useLocale();
   const homeTrigram = fifaTrigram(fixture.home) ?? fixture.home.slice(0, 3).toUpperCase();
   const awayTrigram = fifaTrigram(fixture.away) ?? fixture.away.slice(0, 3).toUpperCase();
 
@@ -57,18 +58,19 @@ export function DashboardPickRow({
     eventPreds.some((p) => p.prediction_type === "exact_score");
   const hasPick = status === "complete" || (status === "in_progress" && hasWinnerAndScore);
 
-  // Format kickoff
+  // Format kickoff in the user's local timezone (Intl defaults to browser tz
+  // when timeZone is omitted, which correctly handles DST transitions).
   const ko = new Date(fixture.kickoffUtc);
-  const timeStr = ko.toLocaleTimeString("en-GB", {
+  const intlLocale = locale === "es" ? "es-MX" : "en-GB";
+  const timeStr = ko.toLocaleTimeString(intlLocale, {
     hour: "2-digit",
     minute: "2-digit",
-    timeZone: "UTC",
+    hour12: false,
   });
-  const dateStr = ko.toLocaleDateString("en-GB", {
+  const dateStr = ko.toLocaleDateString(intlLocale, {
     weekday: "short",
     day: "numeric",
     month: "short",
-    timeZone: "UTC",
   });
 
   const isLive = status === "in_progress";
