@@ -48,6 +48,38 @@
   --ps-wa-green: #25d366;
   --ps-wa-green-dark: #128c4d;
   --ps-wa-green-soft: rgba(37, 211, 102, 0.14);
+
+  /* Display size tokens — default (normal) */
+  --ps-size-text-xs: 0.75rem;     /* 12px */
+  --ps-size-text-sm: 0.875rem;    /* 14px */
+  --ps-size-text-base: 1rem;      /* 16px */
+  --ps-size-text-lg: 1.125rem;    /* 18px */
+  --ps-size-pad-card: 16px;
+  --ps-size-pad-card-lg: 20px;
+  --ps-size-gap-row: 6px;
+  --ps-size-radius-card: 12px;
+  --ps-size-flag: 24px;
+  --ps-size-flag-lg: 32px;
+  --ps-size-target-min: 28px;
+  --ps-size-input-h: 28px;
+  --ps-size-input-w: 30px;
+}
+
+/* Display size: large — toggled via data-display="large" on <html> */
+html[data-display="large"] {
+  --ps-size-text-xs: 0.875rem;    /* 14px (was 12) */
+  --ps-size-text-sm: 1rem;        /* 16px (was 14) */
+  --ps-size-text-base: 1.125rem;  /* 18px (was 16) */
+  --ps-size-text-lg: 1.25rem;     /* 20px (was 18) */
+  --ps-size-pad-card: 20px;
+  --ps-size-pad-card-lg: 24px;
+  --ps-size-gap-row: 8px;
+  --ps-size-radius-card: 16px;
+  --ps-size-flag: 36px;
+  --ps-size-flag-lg: 40px;
+  --ps-size-target-min: 38px;
+  --ps-size-input-h: 38px;
+  --ps-size-input-w: 40px;
 }
 
 /* Dark mode tokens — applied when html[data-theme="dark"] OR when no explicit

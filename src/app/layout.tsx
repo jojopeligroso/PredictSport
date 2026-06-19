@@ -7,6 +7,9 @@ import { PushPromptWrapper } from "@/components/PushPromptWrapper";
 import { ServiceWorkerRegistration } from "@/components/ServiceWorkerRegistration";
 import { InstallPrompt } from "@/components/InstallPrompt";
 import { ThemeProvider, themeInitScript } from "@/components/ThemeProvider";
+
+/** Synchronous script to set data-display before first paint (prevents size flash). */
+const displayInitScript = `(function(){try{if(localStorage.getItem('ps-bigger-cards')==='true'){document.documentElement.dataset.display='large';}}catch(e){}})();`;
 import { LocaleProvider } from "@/lib/i18n";
 import { getServerLocale } from "@/lib/i18n/server";
 import { isWorldCupShell } from "@/lib/product-mode";
@@ -73,6 +76,7 @@ export default async function RootLayout({
         <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
         <meta name="apple-mobile-web-app-title" content="sportspredict." />
         <script dangerouslySetInnerHTML={{ __html: themeInitScript }} />
+        <script dangerouslySetInnerHTML={{ __html: displayInitScript }} />
       </head>
       <body className="min-h-full flex flex-col bg-ps-bg text-ps-text">
         <ThemeProvider>

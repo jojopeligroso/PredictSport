@@ -5,6 +5,7 @@ import type { User, CompetitionType } from "@/types/database";
 import { useTheme, type ThemePref } from "@/components/ThemeProvider";
 import { validateDisplayName, DISPLAY_NAME_MAX } from "@/lib/display-name";
 import { useLiveModePreference } from "@/hooks/useLiveMode";
+import { LogoutButton } from "@/components/LogoutButton";
 import { useT } from "@/lib/i18n";
 
 export interface CompetitionRef {
@@ -240,6 +241,7 @@ function YourExperienceSection() {
   function handleBiggerChange(checked: boolean) {
     setBigger(checked);
     localStorage.setItem("ps-bigger-cards", String(checked));
+    document.documentElement.dataset.display = checked ? "large" : "";
   }
 
   return (
@@ -281,13 +283,13 @@ function YourExperienceSection() {
 
         <div className="border-t border-ps-border" />
 
-        {/* Bigger cards */}
+        {/* Display size */}
         <Toggle
-          id="bigger_cards"
+          id="display_size"
           checked={bigger}
           onChange={handleBiggerChange}
-          label={t('profile.bigger_cards')}
-          description={t('profile.bigger_cards_desc')}
+          label={t('profile.display_size')}
+          description={t('profile.display_size_desc')}
         />
 
         <div className="border-t border-ps-border" />
@@ -303,13 +305,6 @@ function YourExperienceSection() {
       </div>
     </div>
   );
-}
-
-type Tab = "profile" | "settings";
-
-function readTabFromHash(): Tab {
-  if (typeof window === "undefined") return "profile";
-  return window.location.hash === "#settings" ? "settings" : "profile";
 }
 
 const COOLDOWN_DAYS = 7;
@@ -336,7 +331,6 @@ export function ProfileForm({
     type: "success" | "error";
     message: string;
   } | null>(null);
-  const [tab, setTab] = useState<Tab>("profile");
   const nameLockDate = nameChangeLockedUntil(user.display_name_updated_at);
 
   // Collapsible "More notification options"
@@ -352,16 +346,9 @@ export function ProfileForm({
     });
   }
 
-  // Auto-save indicator for settings tab
+  // Auto-save indicator for notification prefs
   const [autoSaveStatus, setAutoSaveStatus] = useState<"idle" | "saving" | "saved" | "error">("idle");
   const autoSaveTimer = useRef<ReturnType<typeof setTimeout>>(undefined);
-
-  useEffect(() => {
-    setTab(readTabFromHash());
-    const onHash = () => setTab(readTabFromHash());
-    window.addEventListener("hashchange", onHash);
-    return () => window.removeEventListener("hashchange", onHash);
-  }, []);
 
   // Auto-detect and persist timezone if not already set
   useEffect(() => {
@@ -375,15 +362,7 @@ export function ProfileForm({
     }).catch(() => {});
   }, [user.timezone]);
 
-  function switchTab(next: Tab) {
-    setTab(next);
-    const target = next === "settings" ? "#settings" : "#profile";
-    if (window.location.hash !== target) {
-      history.replaceState(null, "", target);
-    }
-  }
-
-  // --- Auto-save for notification_prefs (Settings tab) ---
+  // --- Auto-save for notification_prefs ---
   const autoSavePrefs = useCallback(
     async (prefs: NotificationPrefs) => {
       setAutoSaveStatus("saving");
@@ -499,157 +478,92 @@ export function ProfileForm({
   }
 
   return (
-    <div className="flex flex-col gap-4">
-      {/* Tabs */}
-      <div
-        className="inline-flex self-start rounded-lg border border-ps-border bg-ps-chip p-0.5"
-        role="tablist"
-        aria-label="Profile sections"
-      >
-        {(["profile", "settings"] as const).map((value) => {
-          const active = tab === value;
-          return (
-            <button
-              key={value}
-              type="button"
-              role="tab"
-              aria-selected={active}
-              onClick={() => switchTab(value)}
-              className={`rounded-md px-4 py-1.5 text-sm font-semibold capitalize transition-colors ${
-                active
-                  ? "bg-ps-surface text-ps-text shadow-sm"
-                  : "text-ps-text-sec hover:text-ps-text"
-              }`}
-            >
-              {value}
-            </button>
-          );
-        })}
-      </div>
-
-      {/* ── Profile tab (explicit save) ─────────────────────────────── */}
-      {tab === "profile" && (
-        <form onSubmit={handleProfileSubmit} noValidate className="flex flex-col gap-4">
-          {/* Display Name */}
-          <div>
-            <SectionLabel>{t('profile.display_name')}</SectionLabel>
-            <section className="rounded-xl border border-ps-border bg-ps-surface px-4 py-4">
-              <label htmlFor="display_name" className="sr-only">
-                Display name
-              </label>
-              {nameLockDate ? (
-                <>
-                  <input
-                    id="display_name"
-                    type="text"
-                    disabled
-                    value={form.display_name}
-                    className="w-full rounded-xl border border-ps-border bg-ps-chip p-3 text-sm text-ps-text-sec cursor-not-allowed"
-                  />
-                  <p className="mt-2 text-xs text-ps-text-ter">
-                    {t('profile.name_locked', { date: nameLockDate.toLocaleDateString(undefined, {
-                      month: "short",
-                      day: "numeric",
-                      year: "numeric",
-                    }) })}
-                  </p>
-                </>
-              ) : (
-                <>
-                  <input
-                    id="display_name"
-                    type="text"
-                    required
-                    minLength={1}
-                    maxLength={50}
-                    value={form.display_name}
-                    onChange={(e) => {
-                      setForm((prev) => ({
-                        ...prev,
-                        display_name: e.target.value,
-                      }));
-                      setFeedback(null);
-                    }}
-                    placeholder={t('profile.name_placeholder')}
-                    className="w-full rounded-xl border border-ps-border bg-ps-surface p-3 text-sm text-ps-text placeholder:text-ps-text-ter focus:border-ps-text-sec focus:outline-none"
-                  />
-                  {form.display_name.trim().length > DISPLAY_NAME_MAX && (
-                    <p className="mt-2 text-xs text-ps-red" role="alert">
-                      {t('profile.name_max_error', { max: DISPLAY_NAME_MAX })}
-                    </p>
-                  )}
-                </>
-              )}
-            </section>
-          </div>
-
-          {/* Avatar */}
-          <div>
-            <SectionLabel>{t('profile.avatar')}</SectionLabel>
-            <section className="rounded-xl border border-ps-border bg-ps-surface px-4 py-4">
-              <div className="flex items-center gap-4">
-                {user.avatar_url ? (
-                  <img
-                    src={user.avatar_url}
-                    alt={`${user.display_name} avatar`}
-                    className="h-16 w-16 rounded-full object-cover ring-1 ring-ps-border"
-                    referrerPolicy="no-referrer"
-                  />
-                ) : (
-                  <div
-                    className="flex h-16 w-16 items-center justify-center rounded-full bg-ps-chip text-xl font-semibold uppercase text-ps-text"
-                    aria-label="Default avatar"
-                  >
-                    {(user.display_name ?? user.email ?? "?")[0]}
-                  </div>
-                )}
-                <div>
-                  <p className="text-sm text-ps-text">
-                    {user.avatar_url
-                      ? t('profile.avatar_google')
-                      : t('profile.avatar_none')}
-                  </p>
-                  <p className="mt-0.5 text-xs text-ps-text-ter">
-                    {t('profile.avatar_upload')}
-                  </p>
-                </div>
-              </div>
-            </section>
-          </div>
-
-          {/* Profile feedback */}
-          {feedback && (
+    <div className="flex flex-col gap-5">
+      {/* ── Header: Avatar + Display Name ──────────────────────────── */}
+      <form onSubmit={handleProfileSubmit} noValidate>
+        <div className="flex items-center gap-4">
+          {user.avatar_url ? (
+            <img
+              src={user.avatar_url}
+              alt={`${user.display_name} avatar`}
+              className="h-14 w-14 shrink-0 rounded-full object-cover ring-1 ring-ps-border"
+              referrerPolicy="no-referrer"
+            />
+          ) : (
             <div
-              role="status"
-              aria-live="polite"
-              className={`rounded-xl border p-3 text-sm ${
-                feedback.type === "success"
-                  ? "border-ps-green bg-ps-surface text-ps-green"
-                  : "border-ps-red bg-ps-red-soft text-ps-red"
-              }`}
+              className="flex h-14 w-14 shrink-0 items-center justify-center rounded-full bg-ps-chip text-lg font-semibold uppercase text-ps-text"
+              aria-label="Default avatar"
             >
-              {feedback.message}
+              {(user.display_name ?? user.email ?? "?")[0]}
             </div>
           )}
-
-          {/* Save (profile tab only) */}
-          <div className="flex justify-end">
-            <button
-              type="submit"
-              disabled={!canSaveProfile}
-              className="rounded-xl bg-ps-text px-4 py-3 text-sm font-semibold text-ps-bg transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50"
-            >
-              {submitting ? t('profile.saving') : t('profile.save')}
-            </button>
+          <div className="min-w-0 flex-1">
+            <label htmlFor="display_name" className="sr-only">
+              Display name
+            </label>
+            {nameLockDate ? (
+              <>
+                <p className="text-sm font-semibold text-ps-text">{form.display_name}</p>
+                <p className="mt-0.5 text-xs text-ps-text-ter">
+                  {t('profile.name_locked', { date: nameLockDate.toLocaleDateString(undefined, {
+                    month: "short",
+                    day: "numeric",
+                    year: "numeric",
+                  }) })}
+                </p>
+              </>
+            ) : (
+              <div className="flex items-center gap-2">
+                <input
+                  id="display_name"
+                  type="text"
+                  required
+                  minLength={1}
+                  maxLength={50}
+                  value={form.display_name}
+                  onChange={(e) => {
+                    setForm((prev) => ({
+                      ...prev,
+                      display_name: e.target.value,
+                    }));
+                    setFeedback(null);
+                  }}
+                  placeholder={t('profile.name_placeholder')}
+                  className="min-w-0 flex-1 rounded-lg border border-ps-border bg-ps-surface px-3 py-2 text-sm text-ps-text placeholder:text-ps-text-ter focus:border-ps-text-sec focus:outline-none"
+                />
+                {canSaveProfile && (
+                  <button
+                    type="submit"
+                    disabled={submitting}
+                    className="shrink-0 rounded-lg bg-ps-text px-3 py-2 text-xs font-semibold text-ps-bg transition-opacity hover:opacity-90 disabled:opacity-50"
+                  >
+                    {submitting ? t('profile.saving') : t('profile.save')}
+                  </button>
+                )}
+              </div>
+            )}
+            {form.display_name.trim().length > DISPLAY_NAME_MAX && (
+              <p className="mt-1 text-xs text-ps-red" role="alert">
+                {t('profile.name_max_error', { max: DISPLAY_NAME_MAX })}
+              </p>
+            )}
+            {feedback && (
+              <p
+                role="status"
+                aria-live="polite"
+                className={`mt-1 text-xs ${
+                  feedback.type === "success" ? "text-ps-green" : "text-ps-red"
+                }`}
+              >
+                {feedback.message}
+              </p>
+            )}
           </div>
-        </form>
-      )}
+        </div>
+      </form>
 
-      {/* ── Settings tab (auto-save) ────────────────────────────────── */}
-      {tab === "settings" && (
-        <div className="flex flex-col gap-5">
-          {/* Card 1: Your Experience */}
-          <YourExperienceSection />
+      {/* ── Card 1: Your Experience ────────────────────────────────── */}
+      <YourExperienceSection />
 
           {/* Card 2: Predictions */}
           <div>
@@ -957,26 +871,40 @@ export function ProfileForm({
             </div>
           </div>
 
-          {/* Auto-save status indicator */}
-          {autoSaveStatus !== "idle" && (
-            <div
-              role="status"
-              aria-live="polite"
-              className={`rounded-xl border px-3 py-2 text-xs font-medium transition-opacity ${
-                autoSaveStatus === "saved"
-                  ? "border-ps-green/30 bg-ps-surface text-ps-green"
-                  : autoSaveStatus === "error"
-                    ? "border-ps-red/30 bg-ps-red-soft text-ps-red"
-                    : "border-ps-border bg-ps-surface text-ps-text-ter"
-              }`}
-            >
-              {autoSaveStatus === "saving" && t('profile.saving')}
-              {autoSaveStatus === "saved" && t('profile.settings_saved')}
-              {autoSaveStatus === "error" && t('profile.error_generic')}
-            </div>
-          )}
+      {/* Auto-save status indicator */}
+      {autoSaveStatus !== "idle" && (
+        <div
+          role="status"
+          aria-live="polite"
+          className={`rounded-xl border px-3 py-2 text-xs font-medium transition-opacity ${
+            autoSaveStatus === "saved"
+              ? "border-ps-green/30 bg-ps-surface text-ps-green"
+              : autoSaveStatus === "error"
+                ? "border-ps-red/30 bg-ps-red-soft text-ps-red"
+                : "border-ps-border bg-ps-surface text-ps-text-ter"
+          }`}
+        >
+          {autoSaveStatus === "saving" && t('profile.saving')}
+          {autoSaveStatus === "saved" && t('profile.settings_saved')}
+          {autoSaveStatus === "error" && t('profile.error_generic')}
         </div>
       )}
+
+      {/* ── Card 4: Account ────────────────────────────────────────── */}
+      <div>
+        <SectionLabel>{t('profile.account')}</SectionLabel>
+        <div className="rounded-xl border border-ps-border bg-ps-surface px-4 py-3">
+          <p className="text-xs text-ps-text-ter">
+            {t('profile.signed_in_as')}
+          </p>
+          <p className="mt-0.5 text-sm font-medium text-ps-text">
+            {user.email}
+          </p>
+          <div className="mt-3 border-t border-ps-border pt-2">
+            <LogoutButton />
+          </div>
+        </div>
+      </div>
     </div>
   );
 }

@@ -3,7 +3,6 @@
 import { useState, useRef, useEffect } from "react";
 import Link from "next/link";
 import { LogoutButton } from "./LogoutButton";
-import { useTheme } from "./ThemeProvider";
 import { useT } from "@/lib/i18n";
 
 interface UserMenuProps {
@@ -15,14 +14,7 @@ interface UserMenuProps {
 export function UserMenu({ displayName, avatarUrl, isAdmin }: UserMenuProps) {
   const [isOpen, setIsOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
-  const { theme, cycleTheme } = useTheme();
   const t = useT();
-
-  const themeLabel = {
-    light: t("onboarding.theme_light"),
-    dark: t("onboarding.theme_dark"),
-    system: t("onboarding.theme_system"),
-  }[theme];
 
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
@@ -86,13 +78,6 @@ export function UserMenu({ displayName, avatarUrl, isAdmin }: UserMenuProps) {
               className="block rounded-md px-2 py-1.5 text-sm text-ps-text-sec transition-colors hover:bg-ps-chip hover:text-ps-text"
               onClick={() => setIsOpen(false)}
             >
-              {t("menu.profile")}
-            </Link>
-            <Link
-              href="/profile#settings"
-              className="block rounded-md px-2 py-1.5 text-sm text-ps-text-sec transition-colors hover:bg-ps-chip hover:text-ps-text"
-              onClick={() => setIsOpen(false)}
-            >
               {t("menu.settings")}
             </Link>
             {process.env.NEXT_PUBLIC_PRODUCT_MODE !== "world_cup_2026_shell" && (
@@ -104,17 +89,6 @@ export function UserMenu({ displayName, avatarUrl, isAdmin }: UserMenuProps) {
                 {t("menu.my_competitions")}
               </Link>
             )}
-            <button
-              type="button"
-              onClick={cycleTheme}
-              className="flex w-full items-center justify-between rounded-md px-2 py-1.5 text-left text-sm text-ps-text-sec transition-colors hover:bg-ps-chip hover:text-ps-text"
-              aria-label={`${t("menu.theme")}: ${themeLabel}. Click to change.`}
-            >
-              <span>{t("menu.theme")}</span>
-              <span className="text-xs font-semibold text-ps-text-ter">
-                {themeLabel}
-              </span>
-            </button>
             <LogoutButton />
           </div>
         </div>
