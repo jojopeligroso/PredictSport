@@ -1,4 +1,5 @@
 import type { PredictionType, EventPredictionType } from "@/types/database";
+import { deriveWinnerFromScore } from "@/lib/score-format";
 
 interface ScoringResult {
   is_correct: boolean | null;
@@ -97,6 +98,48 @@ export function scorePredictionLegacy(
     partial_points: partial,
     config: null,
   });
+}
+
+// ---------------------------------------------------------------------------
+// Score-derived winner overrides
+// ---------------------------------------------------------------------------
+
+/**
+ * Build a map of user_id → corrected winner prediction data for users who
+ * have both a winner and exact_score prediction. The score is the single
+ * source of truth for the winner whenever both exist.
+ *
+ * Knockout guard: does NOT override with "Draw" unless "Draw" is a valid
+ * winner option (group-stage matches). In knockout matches where the score
+ * is a draw, the user's explicit winner pick (penalties winner) is preserved.
+ */
+export function buildScoreDerivedWinnerOverrides(
+  predictions: Array<{
+    user_id: string;
+    prediction_type: string;
+    prediction_data: Record<string, unknown>;
+  }>,
+  winnerOptions: string[],
+  sport: string,
+): Map<string, Record<string, unknown>> {
+  const scoreByUser = new Map<string, Record<string, unknown>>();
+  for (const p of predictions) {
+    if (p.prediction_type === "exact_score") {
+      scoreByUser.set(p.user_id, p.prediction_data);
+    }
+  }
+
+  const overrides = new Map<string, Record<string, unknown>>();
+  for (const [userId, scoreData] of scoreByUser) {
+    const implied = deriveWinnerFromScore(scoreData, sport, winnerOptions);
+    const shouldOverride =
+      implied !== null &&
+      (implied !== "Draw" || winnerOptions.includes("Draw"));
+    if (shouldOverride) {
+      overrides.set(userId, { value: implied });
+    }
+  }
+  return overrides;
 }
 
 // ---------------------------------------------------------------------------

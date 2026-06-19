@@ -565,6 +565,8 @@
   "prediction.contradiction": "Score and pick don't match",
   "prediction.score_saved_as": "Score saved as {home} {homeScore}-{awayScore} {away}.",
   "prediction.your_pick_was": "Your pick was {team}.",
+  "prediction.contradiction_detail": "Your score ({home} {homeScore}-{awayScore} {away}) means {implied} wins, but you picked {team}.",
+  "prediction.fix_prediction": "Tap to fix",
   "rules.nav_points": "Points",
   "rules.nav_format": "Format",
   "rules.nav_picks": "Picks",

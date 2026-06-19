@@ -398,6 +398,17 @@ function MatchPickRow({
     winnerOptions,
   ]);
 
+  // Derive the implied winner for the contradiction CTA message
+  const contradictionImplied = useMemo(() => {
+    if (!hasCommittedScore || committedHome === null || committedAway === null)
+      return null;
+    return deriveWinnerFromScore(
+      { home: committedHome, away: committedAway },
+      event.sport,
+      winnerOptions,
+    );
+  }, [hasCommittedScore, committedHome, committedAway, event.sport, winnerOptions]);
+
   const submitPrediction = useCallback(
     async (
       predictionType: PredictionType,
@@ -517,6 +528,9 @@ function MatchPickRow({
     async (homeNum: number, awayNum: number) => {
       if (!scoreEpt) return;
       try {
+        // Cancel any in-flight winner POST — score is source of truth
+        winnerAbortRef.current?.abort();
+
         const saved = await submitPrediction("exact_score", {
           home: homeNum,
           away: awayNum,
@@ -539,6 +553,10 @@ function MatchPickRow({
    */
   const handleReset = useCallback(async () => {
     if (isLocked) return;
+
+    // Cancel any in-flight winner POST before DELETE to prevent
+    // the POST arriving after the DELETE and re-creating the prediction
+    winnerAbortRef.current?.abort();
 
     const previousWinner = winnerPred;
     const previousHome = committedHome;
@@ -857,25 +875,58 @@ function MatchPickRow({
         committedHome !== null &&
         committedAway !== null &&
         (hasContradiction ? (
-          <p
-            className="mt-1.5 text-center text-[11px]"
-            style={{ color: CHROME_PALETTE.attention }}
-          >
-            <span
-              className="mr-1 inline-flex h-3.5 w-3.5 items-center justify-center rounded-full text-[9px] font-extrabold leading-none text-white"
-              style={{ background: CHROME_PALETTE.attention }}
-              aria-label={t("prediction.contradiction")}
+          <div className="mt-2 flex flex-col items-center gap-1.5">
+            <div
+              className="flex items-center gap-1.5 rounded-lg px-3 py-1.5"
+              style={{ backgroundColor: "rgba(168, 85, 247, 0.12)" }}
+              role="alert"
             >
-              !
-            </span>
-            {t("prediction.score_saved_as", {
-              home,
-              homeScore: committedHome,
-              awayScore: committedAway,
-              away,
-            })}{" "}
-            {t("prediction.your_pick_was", { team: rawWinner! })}
-          </p>
+              <span
+                className="inline-flex h-4 w-4 shrink-0 items-center justify-center rounded-full text-[10px] font-extrabold leading-none text-white"
+                style={{ background: CHROME_PALETTE.attention }}
+                aria-hidden="true"
+              >
+                !
+              </span>
+              <span
+                className="text-[11px] font-medium leading-snug"
+                style={{ color: CHROME_PALETTE.attention }}
+              >
+                {t("prediction.contradiction_detail", {
+                  home,
+                  homeScore: committedHome,
+                  awayScore: committedAway,
+                  away,
+                  implied: contradictionImplied!,
+                  team: rawWinner!,
+                })}
+              </span>
+            </div>
+            <button
+              type="button"
+              onClick={handleReset}
+              className="animate-[contradiction-attention_1.5s_ease-out] inline-flex items-center gap-1.5 rounded-full px-4 py-2 text-xs font-bold text-white transition-all duration-200 hover:brightness-110 active:scale-[0.97]"
+              style={{
+                background: CHROME_PALETTE.attention,
+                boxShadow: "0 0 12px rgba(168, 85, 247, 0.35)",
+              }}
+            >
+              <svg
+                className="h-3.5 w-3.5"
+                fill="none"
+                viewBox="0 0 24 24"
+                strokeWidth={2.5}
+                stroke="currentColor"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.992 0l3.181 3.183a8.25 8.25 0 0013.803-3.7M4.031 9.865a8.25 8.25 0 0113.803-3.7l3.181 3.182"
+                />
+              </svg>
+              {t("prediction.fix_prediction")}
+            </button>
+          </div>
         ) : (
           <p
             className={`mt-1.5 text-center text-[11px] ${useCardSurface ? "text-white/65" : "text-ps-text-sec"}`}
@@ -907,7 +958,7 @@ function MatchPickRow({
           </p>
         ))}
 
-      {currentWinner && (
+      {currentWinner && !hasContradiction && (
         <div className="mt-1 flex justify-center">
           <button
             type="button"

@@ -1,7 +1,7 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { ResultCorrection } from "@/types/tournament";
 import type { PredictionType, EventPredictionType } from "@/types/database";
-import { scorePrediction } from "@/lib/scoring";
+import { scorePrediction, buildScoreDerivedWinnerOverrides } from "@/lib/scoring";
 
 /**
  * Emergency result correction workflow.
@@ -138,6 +138,27 @@ async function rescoreEventPredictions(
     .select("*")
     .eq("event_id", eventId);
 
+  // Score is source of truth: derive winner from score when both exist
+  const { data: eventForSport } = await supabase
+    .from("events")
+    .select("sport")
+    .eq("id", eventId)
+    .single();
+  const winnerEpt = eptMap.get("winner");
+  const winnerOpts =
+    ((winnerEpt?.config as Record<string, unknown> | null)?.options as
+      | string[]
+      | undefined) ?? [];
+  const winnerOverrides = buildScoreDerivedWinnerOverrides(
+    (predictions ?? []) as Array<{
+      user_id: string;
+      prediction_type: string;
+      prediction_data: Record<string, unknown>;
+    }>,
+    winnerOpts,
+    eventForSport?.sport ?? "",
+  );
+
   const scores: Array<{
     id: string;
     is_correct: boolean | null;
@@ -150,7 +171,13 @@ async function rescoreEventPredictions(
     const ept = eptMap.get(predType);
     const eptData = ept ?? { points: 10, partial_points: 0, config: null };
 
-    const result = scorePrediction(predType, prediction.prediction_data, newResult, eptData);
+    let predData = prediction.prediction_data as Record<string, unknown>;
+    if (predType === "winner") {
+      const override = winnerOverrides.get(prediction.user_id as string);
+      if (override) predData = override;
+    }
+
+    const result = scorePrediction(predType, predData, newResult, eptData);
 
     scores.push({
       id: prediction.id as string,

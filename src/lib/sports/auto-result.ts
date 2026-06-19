@@ -2,7 +2,7 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import { fetchResult } from "./fetch-result";
 import { searchEvents } from "./search-events";
 import { getTimingForSport } from "./timing";
-import { scorePrediction } from "@/lib/scoring";
+import { scorePrediction, buildScoreDerivedWinnerOverrides } from "@/lib/scoring";
 import type { PredictionType, EventPredictionType } from "@/types/database";
 import type { Sport } from "./types";
 import { notifyResultConfirmed } from "@/lib/notifications/result-confirmed";
@@ -312,7 +312,7 @@ export async function autoResolveEvent(
     }
 
     // Score predictions for the confirmed event
-    await scoreEventPredictions(supabase, event.id, finalResultData);
+    await scoreEventPredictions(supabase, event.id, finalResultData, event.sport as string);
 
     // Notify all members (chat message + push) — fire-and-forget
     notifyResultConfirmed(
@@ -331,6 +331,7 @@ export async function autoResolveEvent(
       event.external_event_id,
       event.event_name,
       finalResultData,
+      event.sport as string,
     );
 
     return {
@@ -362,6 +363,7 @@ async function scoreEventPredictions(
   supabase: SupabaseClient,
   eventId: string,
   resultData: Record<string, unknown>,
+  sport: string,
 ): Promise<void> {
   const { data: eptRows } = await supabase
     .from("event_prediction_types")
@@ -378,6 +380,22 @@ async function scoreEventPredictions(
     .select("*")
     .eq("event_id", eventId);
 
+  // Score is source of truth: derive winner from score when both exist
+  const winnerEpt = eptMap.get("winner");
+  const winnerOpts =
+    ((winnerEpt?.config as Record<string, unknown> | null)?.options as
+      | string[]
+      | undefined) ?? [];
+  const winnerOverrides = buildScoreDerivedWinnerOverrides(
+    (predictions ?? []) as Array<{
+      user_id: string;
+      prediction_type: string;
+      prediction_data: Record<string, unknown>;
+    }>,
+    winnerOpts,
+    sport,
+  );
+
   const scores: Array<{
     id: string;
     is_correct: boolean | null;
@@ -390,12 +408,14 @@ async function scoreEventPredictions(
     const ept = eptMap.get(predType);
     const eptData = ept ?? { points: 10, partial_points: 0, config: null };
 
-    const scoreResult = scorePrediction(
-      predType,
-      prediction.prediction_data as Record<string, unknown>,
-      resultData,
-      eptData,
-    );
+    // For winner predictions, use score-derived value if available
+    let predData = prediction.prediction_data as Record<string, unknown>;
+    if (predType === "winner") {
+      const override = winnerOverrides.get(prediction.user_id as string);
+      if (override) predData = override;
+    }
+
+    const scoreResult = scorePrediction(predType, predData, resultData, eptData);
 
     scores.push({
       id: prediction.id as string,
@@ -425,6 +445,7 @@ async function propagateResultToSiblings(
   externalEventId: string | null,
   eventName: string,
   resultData: Record<string, unknown>,
+  sport: string,
 ): Promise<void> {
   const canonicalId = normalizeExternalId(externalEventId);
   if (!canonicalId) return;
@@ -457,7 +478,7 @@ async function propagateResultToSiblings(
     if (!updated) continue; // already confirmed by concurrent process
 
     // Score predictions for this instance
-    await scoreEventPredictions(supabase, sibling.id, resultData);
+    await scoreEventPredictions(supabase, sibling.id, resultData, sport);
 
     // Notify this competition's members
     notifyResultConfirmed(

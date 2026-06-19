@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { verifyCompetitionAdmin } from "@/lib/admin";
-import { scorePrediction } from "@/lib/scoring";
+import { scorePrediction, buildScoreDerivedWinnerOverrides } from "@/lib/scoring";
 import { requireDisplayName } from "@/lib/require-display-name";
 import type { PredictionType, EventPredictionType } from "@/types/database";
 import { notifyResultConfirmed } from "@/lib/notifications/result-confirmed";
@@ -137,6 +137,22 @@ export async function POST(request: Request) {
     );
   }
 
+  // Score is source of truth: derive winner from score when both exist
+  const winnerEpt = eptMap.get("winner");
+  const winnerOpts =
+    ((winnerEpt?.config as Record<string, unknown> | null)?.options as
+      | string[]
+      | undefined) ?? [];
+  const winnerOverrides = buildScoreDerivedWinnerOverrides(
+    (predictions ?? []) as Array<{
+      user_id: string;
+      prediction_type: string;
+      prediction_data: Record<string, unknown>;
+    }>,
+    winnerOpts,
+    (event.sport as string) ?? "",
+  );
+
   // Score each prediction in memory, then batch-update in a single transaction.
   // If any row fails, the entire batch rolls back — no partially scored events.
   const scores: Array<{
@@ -156,9 +172,16 @@ export async function POST(request: Request) {
       config: null,
     };
 
+    // For winner predictions, use score-derived value if available
+    let predData = prediction.prediction_data as Record<string, unknown>;
+    if (predType === "winner") {
+      const override = winnerOverrides.get(prediction.user_id as string);
+      if (override) predData = override;
+    }
+
     const result = scorePrediction(
       predType,
-      prediction.prediction_data as Record<string, unknown>,
+      predData,
       resultData as Record<string, unknown>,
       eptData
     );

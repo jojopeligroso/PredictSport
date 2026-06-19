@@ -225,6 +225,77 @@ export async function POST(request: NextRequest) {
     );
   }
 
+  // Score-contradicted winner guard: if this is a winner POST and the user
+  // already has an exact_score, re-derive from the score. Prevents the race
+  // where a stale winner tap overwrites the correct score-derived value.
+  if (prediction_type === "winner") {
+    const { data: existingScore } = await supabase
+      .from("predictions")
+      .select("prediction_data")
+      .eq("event_id", event_id)
+      .eq("user_id", user.id)
+      .eq("prediction_type", "exact_score")
+      .maybeSingle();
+
+    if (existingScore?.prediction_data) {
+      // Resolve winner options from this EPT's config
+      const { data: winnerEptRow } = await supabase
+        .from("event_prediction_types")
+        .select("config")
+        .eq("id", event_prediction_type_id)
+        .single();
+      const opts = (winnerEptRow?.config as Record<string, unknown> | null)
+        ?.options as string[] | undefined;
+      const winnerOptions = opts && opts.length > 0 ? opts : [];
+
+      const implied = deriveWinnerFromScore(
+        existingScore.prediction_data as Record<string, unknown>,
+        eptEvent.sport,
+        winnerOptions,
+      );
+
+      // Knockout guard: don't override with "Draw" unless it's a valid option
+      const shouldOverride =
+        implied !== null &&
+        (implied !== "Draw" || winnerOptions.includes("Draw"));
+
+      if (
+        shouldOverride &&
+        implied !== (prediction_data as { value: string }).value
+      ) {
+        // Stale tap contradicts existing score — re-derive
+        const { error: rederiveError } = await supabase
+          .from("predictions")
+          .upsert(
+            {
+              event_prediction_type_id,
+              event_id,
+              user_id: user.id,
+              prediction_type: "winner",
+              prediction_data: { value: implied },
+              updated_at: new Date().toISOString(),
+            },
+            { onConflict: "event_prediction_type_id,user_id" },
+          );
+        if (rederiveError) {
+          console.error(
+            "[predictions] re-derive from existing score failed:",
+            {
+              event_id,
+              user_id: user.id,
+              implied,
+              error: rederiveError,
+            },
+          );
+        }
+        // Return the corrected prediction to the client
+        return NextResponse.json({
+          prediction: { ...saved, prediction_data: { value: implied } },
+        });
+      }
+    }
+  }
+
   // Score is source of truth — when an exact_score is saved, atomically
   // derive and upsert the winner prediction so they can never contradict.
   // This prevents the lock-boundary race where the client-side winner sync

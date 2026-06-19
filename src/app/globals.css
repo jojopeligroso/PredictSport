@@ -293,6 +293,13 @@ html[data-theme="dark"] .ps-island:not(.wc-theme .ps-island) {
   50% { box-shadow: 0 0 0 4px rgba(226,61,79,0); }
 }
 
+/* ── Contradiction attention pulse ───────────────────────────────────── */
+@keyframes contradiction-attention {
+  0% { box-shadow: 0 0 0 0 rgba(168, 85, 247, 0.5); }
+  70% { box-shadow: 0 0 0 8px rgba(168, 85, 247, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(168, 85, 247, 0); }
+}
+
 /* Hide scrollbars in scroll containers */
 .ps-scroll::-webkit-scrollbar { display: none; }
 .ps-scroll { scrollbar-width: none; }

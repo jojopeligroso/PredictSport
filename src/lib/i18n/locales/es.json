@@ -565,6 +565,8 @@
   "prediction.contradiction": "El marcador y tu prediccion no coinciden",
   "prediction.score_saved_as": "Marcador guardado: {home} {homeScore}-{awayScore} {away}.",
   "prediction.your_pick_was": "Tu prediccion fue {team}.",
+  "prediction.contradiction_detail": "Tu marcador ({home} {homeScore}-{awayScore} {away}) implica victoria de {implied}, pero elegiste {team}.",
+  "prediction.fix_prediction": "Toca para corregir",
   "rules.nav_points": "Puntos",
   "rules.nav_format": "Formato",
   "rules.nav_picks": "Pronósticos",
