@@ -10,6 +10,7 @@ interface PredictionRequestBody {
   prediction_data?: Record<string, unknown>;
   note_text?: string;
   note_visibility?: "public" | "private";
+  expected_updated_at?: string;
 }
 
 const VALID_PREDICTION_TYPES = [
@@ -61,6 +62,7 @@ export async function POST(request: NextRequest) {
     prediction_data,
     note_text,
     note_visibility,
+    expected_updated_at,
   } = body;
 
   // Validate required fields
@@ -186,43 +188,41 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ deleted: true });
   }
 
-  // Single race-safe upsert on the (event_prediction_type_id, user_id) unique
-  // constraint. Replaces the previous read-then-insert-or-update which raced
-  // under rapid taps (autosave-on-blur, bracket diff-loop) and returned a
-  // 409 → misleading "event may have locked" message to the user even though
-  // the first-winner write had succeeded.
-  const { data: saved, error: upsertError } = await supabase
-    .from("predictions")
-    .upsert(
-      {
-        event_prediction_type_id,
-        event_id,
-        user_id: user.id,
-        prediction_type,
-        prediction_data,
-        ...(note_text !== undefined && { note_text }),
-        ...(note_visibility && { note_visibility }),
-        updated_at: new Date().toISOString(),
-      },
-      { onConflict: "event_prediction_type_id,user_id" },
-    )
-    .select()
-    .single();
+  // Safe upsert via RPC with timestamp-based CAS guard.
+  // When expected_updated_at is provided (client has prior state), the write
+  // only succeeds if no concurrent modification happened since the client's read.
+  // When omitted (first pick, no prior state), always succeeds — backwards-compatible.
+  // SECURITY INVOKER preserves RLS (lock_time, membership, competition status).
+  const { data: rpcRows, error: upsertError } = await supabase.rpc(
+    "safe_upsert_prediction",
+    {
+      p_ept_id: event_prediction_type_id,
+      p_user_id: user.id,
+      p_type: prediction_type,
+      p_event_id: event_id,
+      p_data: prediction_data,
+      p_expected_updated_at: expected_updated_at ?? null,
+      p_note_text: note_text ?? null,
+      p_note_visibility: note_visibility ?? null,
+    },
+  );
 
   if (upsertError) {
-    // PGRST116 = no row returned after the write succeeded at the SQL layer,
-    // which means RLS hid the post-write row. Caused by: event lock_time
-    // passed between the EPT lookup above and this write, the competition
-    // disallowing updates, or the competition no longer being active.
-    const isRlsReject = upsertError.code === "PGRST116";
     return NextResponse.json(
-      {
-        error: isRlsReject
-          ? "Can't save that pick — the match may have locked or updates are disabled for this competition."
-          : "Couldn't save that pick. Please try again.",
-      },
-      { status: isRlsReject ? 403 : 500 },
+      { error: "Couldn't save that pick. Please try again." },
+      { status: 500 },
     );
+  }
+
+  const saved = Array.isArray(rpcRows) ? rpcRows[0] : rpcRows;
+
+  if (!saved) {
+    // No row returned: either CAS failure (concurrent edit) or RLS rejection (lock passed).
+    const status = expected_updated_at ? 409 : 403;
+    const error = expected_updated_at
+      ? "Your pick was modified in another session. Please refresh and try again."
+      : "Can't save that pick — the match may have locked or updates are disabled for this competition.";
+    return NextResponse.json({ error }, { status });
   }
 
   // Score-contradicted winner guard: if this is a winner POST and the user

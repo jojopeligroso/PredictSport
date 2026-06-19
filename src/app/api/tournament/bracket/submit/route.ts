@@ -139,11 +139,18 @@ export async function POST(request: Request) {
         updated_at: now,
       })
       .eq("id", existing.id)
+      .eq("version_number", existing.version_number)
       .select("id, version_number, status, submitted_at")
-      .single();
+      .maybeSingle();
 
     if (error) {
       return NextResponse.json({ error: error.message }, { status: 500 });
+    }
+    if (!updated) {
+      return NextResponse.json(
+        { error: "Bracket was modified by another session. Please refresh and try again." },
+        { status: 409 },
+      );
     }
     savedSubmission = updated;
   } else {

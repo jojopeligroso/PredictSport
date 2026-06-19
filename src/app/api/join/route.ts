@@ -252,12 +252,11 @@ export async function POST(request: NextRequest) {
     }
   }
 
-  // 8. Increment use_count (only for invite_tokens, not permanent invite_codes)
+  // 8. Atomically increment use_count (only for invite_tokens, not permanent invite_codes)
+  // Uses SQL `use_count + 1 WHERE use_count < max_uses` to prevent races where
+  // two concurrent joins both read the same count and write the same value.
   if (isInviteToken && invite) {
-    await supabase
-      .from("invite_tokens")
-      .update({ use_count: (invite.use_count ?? 0) + 1 })
-      .eq("id", invite.id);
+    await supabase.rpc("claim_invite_use", { p_invite_id: invite.id });
   }
 
   // 9. Fetch competition name + product_mode
