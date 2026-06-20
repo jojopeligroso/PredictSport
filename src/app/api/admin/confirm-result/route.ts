@@ -10,6 +10,8 @@ interface ConfirmResultBody {
   event_id: string;
   /** Optional: manually set result_data during confirmation */
   result_data?: Record<string, unknown>;
+  /** Force re-score an already-confirmed event (dispute resolution) */
+  force_rescore?: boolean;
 }
 
 /**
@@ -83,34 +85,91 @@ export async function POST(request: Request) {
     );
   }
 
-  // Atomically set result_confirmed = true only if it is currently false.
-  // This prevents two concurrent requests both scoring predictions.
-  const { data: confirmedEvent, error: updateError } = await supabase
-    .from("events")
-    .update({
-      result_data: resultData,
-      result_confirmed: true,
-      result_confirmed_by: user.id,
-      status: "resulted",
-    })
-    .eq("id", body.event_id)
-    .eq("result_confirmed", false)
-    .select("id")
-    .maybeSingle();
+  // Force-rescore: dispute resolution path. Allows re-scoring an already-confirmed
+  // event with corrected result_data. Resets all prediction scores first.
+  const isForceRescore = body.force_rescore === true && event.result_confirmed === true;
 
-  if (updateError) {
-    return NextResponse.json(
-      { error: "Failed to confirm result", details: updateError.message },
-      { status: 500 }
-    );
-  }
+  if (isForceRescore) {
+    // Clear verification dispute and record admin override
+    const overrideResultData: Record<string, unknown> = {
+      ...(resultData as Record<string, unknown>),
+      verification_status: "verified",
+      verified_at: new Date().toISOString(),
+      verification_provider: "admin_override",
+      admin_override_by: user.id,
+      admin_override_at: new Date().toISOString(),
+    };
 
-  if (!confirmedEvent) {
-    // No row was updated — result was already confirmed by a concurrent request
-    return NextResponse.json(
-      { error: "Result has already been confirmed for this event" },
-      { status: 409 }
+    const { error: updateError } = await supabase
+      .from("events")
+      .update({
+        result_data: overrideResultData,
+        result_confirmed_by: user.id,
+      })
+      .eq("id", body.event_id);
+
+    if (updateError) {
+      return NextResponse.json(
+        { error: "Failed to update result", details: updateError.message },
+        { status: 500 }
+      );
+    }
+
+    // Reset all prediction scores for this event before re-scoring
+    await supabase
+      .from("predictions")
+      .update({ is_correct: null, is_partial: false, points_awarded: 0 })
+      .eq("event_id", body.event_id);
+
+    // Post follow-up chat message
+    const names = (event.event_name as string).split(/\s+vs?\s+/i);
+    const score = overrideResultData.score as Record<string, unknown> | undefined;
+    const chatContent =
+      score && names.length === 2
+        ? `Result confirmed: ${names[0].trim()} ${score.home_score}-${score.away_score} ${names[1].trim()}`
+        : `Result confirmed: ${event.event_name}`;
+
+    const serviceClient = (await import("@supabase/supabase-js")).createClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.SUPABASE_SERVICE_ROLE_KEY!,
     );
+    await serviceClient.from("chat_messages").insert({
+      competition_id: competitionId,
+      content: chatContent,
+      message_type: "system_result",
+      user_id: null,
+    });
+
+    // Continue to re-score predictions below using overrideResultData
+    Object.assign(resultData as Record<string, unknown>, overrideResultData);
+  } else {
+    // Normal path: atomically set result_confirmed = true only if currently false.
+    const { data: confirmedEvent, error: updateError } = await supabase
+      .from("events")
+      .update({
+        result_data: resultData,
+        result_confirmed: true,
+        result_confirmed_by: user.id,
+        status: "resulted",
+      })
+      .eq("id", body.event_id)
+      .eq("result_confirmed", false)
+      .select("id")
+      .maybeSingle();
+
+    if (updateError) {
+      return NextResponse.json(
+        { error: "Failed to confirm result", details: updateError.message },
+        { status: 500 }
+      );
+    }
+
+    if (!confirmedEvent) {
+      return NextResponse.json(
+        { error: "Result has already been confirmed for this event" },
+        { status: 409 }
+      );
+    }
   }
 
   // Fetch event_prediction_types for this event

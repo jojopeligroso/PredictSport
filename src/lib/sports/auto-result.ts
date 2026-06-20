@@ -1,11 +1,12 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
-import { fetchResult } from "./fetch-result";
+import { fetchResult, verifyResult, type VerificationStatus } from "./fetch-result";
 import { searchEvents } from "./search-events";
 import { getTimingForSport } from "./timing";
 import { scorePrediction, buildScoreDerivedWinnerOverrides } from "@/lib/scoring";
 import type { PredictionType, EventPredictionType } from "@/types/database";
 import type { Sport } from "./types";
 import { notifyResultConfirmed } from "@/lib/notifications/result-confirmed";
+import { notifyResultDisputed } from "@/lib/notifications/result-disputed";
 
 // ---------------------------------------------------------------------------
 // Types
@@ -140,8 +141,17 @@ export async function autoResolveEvent(
   try {
     const resultData = event.result_data ?? {};
 
-    // 1. Already confirmed via auto-result
+    // 1. Already confirmed — skip unless verification is still pending
     if (resultData.auto_result_status === "confirmed") {
+      const vStatus = resultData.verification_status as VerificationStatus | undefined;
+      if (vStatus && vStatus !== "pending") {
+        return { ...base, status: "skipped", message: "already auto-confirmed and verified" };
+      }
+      if (vStatus === "pending") {
+        // Re-enter to retry verification (step 9 below)
+        return await retryVerification(supabase, event, resultData, base);
+      }
+      // No verification_status yet — first run was before cross-validation existed
       return { ...base, status: "skipped", message: "already auto-confirmed" };
     }
 
@@ -334,6 +344,18 @@ export async function autoResolveEvent(
       event.sport as string,
     );
 
+    // 9. Async cross-validation (ADR 0019)
+    // Fire-and-forget: verify against a second provider. Result is stored
+    // in result_data but does not block scoring or user notifications.
+    triggerVerification(
+      supabase,
+      event,
+      { score: result.score, positions: result.positions, provider: result.provider },
+      finalResultData,
+    ).catch((err) => {
+      console.error(`[auto-result] verification failed for ${event.event_name}:`, err);
+    });
+
     return {
       ...base,
       status: "confirmed",
@@ -344,6 +366,196 @@ export async function autoResolveEvent(
     console.error(`[auto-result] Error for ${event.event_name}:`, err);
     return { ...base, status: "error", message };
   }
+}
+
+// ---------------------------------------------------------------------------
+// Cross-validation helpers (ADR 0019)
+// ---------------------------------------------------------------------------
+
+/**
+ * Run cross-validation for a freshly confirmed result.
+ * Sets verification_status to pending, then attempts immediate verification.
+ */
+async function triggerVerification(
+  supabase: SupabaseClient,
+  event: AutoResultEvent,
+  primaryInput: { score: import("./types").ResultScore | null; positions: import("./types").ResultPosition[] | null; provider: string },
+  currentResultData: Record<string, unknown>,
+): Promise<void> {
+  // Mark as pending verification
+  const withPending = {
+    ...currentResultData,
+    verification_status: "pending" as VerificationStatus,
+    verification_attempts: 0,
+    verified_at: null,
+    verification_provider: null,
+  };
+  await supabase
+    .from("events")
+    .update({ result_data: withPending })
+    .eq("id", event.id);
+
+  // Resolve the external ID for verification
+  const resolvedId =
+    (currentResultData.provider_event_id as string | undefined) ??
+    (event.external_event_id?.startsWith("manual:")
+      ? null
+      : event.external_event_id);
+
+  if (!resolvedId) {
+    // No external ID — can't verify
+    await supabase
+      .from("events")
+      .update({
+        result_data: {
+          ...withPending,
+          verification_status: "unverifiable" as VerificationStatus,
+          verification_attempts: 1,
+          verified_at: new Date().toISOString(),
+        },
+      })
+      .eq("id", event.id);
+    return;
+  }
+
+  const vResult = await verifyResult(
+    primaryInput,
+    event.sport as Sport,
+    resolvedId,
+    event.provider_league ?? undefined,
+  );
+
+  const updatedData: Record<string, unknown> = {
+    ...withPending,
+    verification_status: vResult.status,
+    verification_provider: vResult.verifierProvider,
+    verification_attempts: 1,
+  };
+
+  if (vResult.status === "verified" || vResult.status === "unverifiable") {
+    updatedData.verified_at = new Date().toISOString();
+  }
+
+  await supabase
+    .from("events")
+    .update({ result_data: updatedData })
+    .eq("id", event.id);
+
+  // Handle dispute notification
+  if (vResult.status === "disputed" && vResult.verifierScore) {
+    notifyResultDisputed(
+      event.id,
+      event.competition_id,
+      event.event_name,
+      vResult.primaryScore,
+      vResult.verifierScore,
+      primaryInput.provider,
+      vResult.verifierProvider!,
+    ).catch(() => {});
+  }
+
+  // Handle pending (verifier not final) — admin gets a heads-up
+  if (vResult.status === "pending" && vResult.verifierProvider) {
+    console.log(
+      `[auto-result] verification pending for ${event.event_name}: ` +
+      `verifier ${vResult.verifierProvider} not final yet, will retry next cycle`,
+    );
+  }
+}
+
+/**
+ * Retry verification for an already-confirmed event on the next cron cycle.
+ * Called when the event re-enters autoResolveEvent with verification_status: "pending".
+ */
+async function retryVerification(
+  supabase: SupabaseClient,
+  event: AutoResultEvent,
+  resultData: Record<string, unknown>,
+  base: { event_id: string; event_name: string },
+): Promise<AutoResultOutcome> {
+  const attempts = (resultData.verification_attempts as number) ?? 0;
+
+  // Budget exhausted: 2 total attempts max (1 immediate + 1 retry)
+  if (attempts >= 2) {
+    const updated = {
+      ...resultData,
+      verification_status: "unverifiable" as VerificationStatus,
+      verified_at: new Date().toISOString(),
+    };
+    await supabase
+      .from("events")
+      .update({ result_data: updated })
+      .eq("id", event.id);
+    console.log(
+      `[auto-result] verification budget exhausted for ${event.event_name}, promoting to unverifiable`,
+    );
+    return { ...base, status: "skipped", message: "verification promoted to unverifiable" };
+  }
+
+  // Resolve external ID
+  const resolvedId =
+    (resultData.provider_event_id as string | undefined) ??
+    (event.external_event_id?.startsWith("manual:")
+      ? null
+      : event.external_event_id);
+
+  if (!resolvedId) {
+    const updated = {
+      ...resultData,
+      verification_status: "unverifiable" as VerificationStatus,
+      verification_attempts: attempts + 1,
+      verified_at: new Date().toISOString(),
+    };
+    await supabase
+      .from("events")
+      .update({ result_data: updated })
+      .eq("id", event.id);
+    return { ...base, status: "skipped", message: "no external ID for verification" };
+  }
+
+  const primaryProvider = resultData.provider as string;
+  const primaryInput = {
+    score: resultData.score as import("./types").ResultScore | null ?? null,
+    positions: resultData.positions as import("./types").ResultPosition[] | null ?? null,
+    provider: primaryProvider,
+  };
+
+  const vResult = await verifyResult(
+    primaryInput,
+    event.sport as Sport,
+    resolvedId,
+    event.provider_league ?? undefined,
+  );
+
+  const updatedData: Record<string, unknown> = {
+    ...resultData,
+    verification_status: vResult.status,
+    verification_provider: vResult.verifierProvider,
+    verification_attempts: attempts + 1,
+  };
+
+  if (vResult.status === "verified" || vResult.status === "unverifiable") {
+    updatedData.verified_at = new Date().toISOString();
+  }
+
+  await supabase
+    .from("events")
+    .update({ result_data: updatedData })
+    .eq("id", event.id);
+
+  if (vResult.status === "disputed" && vResult.verifierScore) {
+    notifyResultDisputed(
+      event.id,
+      event.competition_id,
+      event.event_name,
+      vResult.primaryScore,
+      vResult.verifierScore,
+      primaryProvider,
+      vResult.verifierProvider!,
+    ).catch(() => {});
+  }
+
+  return { ...base, status: "skipped", message: `verification retry: ${vResult.status}` };
 }
 
 // ---------------------------------------------------------------------------
