@@ -319,12 +319,14 @@ export function formatScoreForCopy(
 /* ── Confidence nudge copy ────────────────────────────────────────────── */
 
 /** Generic nudge lines (fallback when rival data isn't available). */
-const CONFIDENCE_NUDGE_GENERIC = [
-  "Your rivals are banking on their picks. Are you?",
+export const CONFIDENCE_NUDGE_POOL = [
+  // Social proof (preferred when rival data available)
+  "{count} of your group are banking on their picks today.",
+  "Your rivals are backing themselves. Are you?",
+  // Competitive needle (fallback)
   "Everyone can see you're playing it safe.",
   "Bold prediction. Back it with conviction?",
   "The quiet ones never top the board.",
-  "Go on — tell your group how sure you are.",
 ];
 
 /**
@@ -339,8 +341,8 @@ export const CONFIDENCE_NUDGE_DATA_TEMPLATE =
  * Returns a generic line; caller should prefer the data-driven template when stats exist.
  */
 export function pickConfidenceNudge(eventId: string): string {
-  const idx = stableHash(eventId) % CONFIDENCE_NUDGE_GENERIC.length;
-  return CONFIDENCE_NUDGE_GENERIC[idx];
+  const idx = stableHash(eventId) % CONFIDENCE_NUDGE_POOL.length;
+  return CONFIDENCE_NUDGE_POOL[idx];
 }
 
 /**

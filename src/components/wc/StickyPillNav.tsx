@@ -7,7 +7,6 @@ const SECTION_KEYS = [
   { id: "points", key: "rules.nav_points" },
   { id: "format", key: "rules.nav_format" },
   { id: "picks", key: "rules.nav_picks" },
-  { id: "ties", key: "rules.nav_ties" },
   { id: "faq", key: "rules.nav_faq" },
 ] as const;
 

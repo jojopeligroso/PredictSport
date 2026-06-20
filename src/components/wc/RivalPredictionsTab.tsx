@@ -4,6 +4,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { useT, useLocale } from "@/lib/i18n";
 import { confidenceLabel } from "@/lib/reckons-copy";
+import { markRivalConfidenceSeen } from "@/hooks/useConfidenceDisclosure";
 
 function numOrNull(v: unknown): number | null {
   if (v === null || v === undefined) return null;
@@ -541,7 +542,7 @@ function PredictionRow({
 
           {/* Confidence indicator — subtle accent bar */}
           {!noPick && row.confidenceLevel != null && (
-            <ConfidenceDot level={row.confidenceLevel} />
+            <ConfidenceDot level={row.confidenceLevel} onMount={markRivalConfidenceSeen} />
           )}
 
           {/* Points pill */}
@@ -665,7 +666,8 @@ const CONFIDENCE_COLORS = [
   "bg-red-500",      // 5: Dead Cert
 ];
 
-function ConfidenceDot({ level }: { level: number }) {
+function ConfidenceDot({ level, onMount }: { level: number; onMount?: () => void }) {
+  useEffect(() => { onMount?.(); }, []); // eslint-disable-line react-hooks/exhaustive-deps
   const idx = Math.max(0, Math.min(level - 1, CONFIDENCE_COLORS.length - 1));
   const sizeClass = level === 5 ? "h-[18px] px-2 text-[10px]" : "h-4 px-1.5 text-[9px]";
   return (

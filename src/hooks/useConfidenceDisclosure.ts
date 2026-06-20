@@ -1,10 +1,12 @@
 'use client';
 
 import { useState, useCallback } from 'react';
+import { pickConfidenceNudge } from '@/lib/reckons-copy';
 
 export type ConfidencePhase =
   | 'invisible'
-  | 'intro'
+  | 'intro-spectator'
+  | 'intro-fallback'
   | 'active'
   | 'nudge'
   | 'deprioritized'
@@ -18,6 +20,7 @@ const KEYS = {
   dismissCount: 'wc-confidence-dismiss-count',
   hidden: 'wc-confidence-hidden',
   neglectCount: 'wc-confidence-neglect-count',
+  rivalSeen: 'wc-confidence-rival-seen',
 } as const;
 
 function readInt(key: string): number {
@@ -49,6 +52,7 @@ interface DisclosureState {
   dismissCount: number;
   hidden: boolean;
   neglectCount: number;
+  rivalSeen: boolean;
 }
 
 function loadState(): DisclosureState {
@@ -60,6 +64,7 @@ function loadState(): DisclosureState {
     dismissCount: readInt(KEYS.dismissCount),
     hidden: readBool(KEYS.hidden),
     neglectCount: readInt(KEYS.neglectCount),
+    rivalSeen: readBool(KEYS.rivalSeen),
   };
 }
 
@@ -69,14 +74,18 @@ function derivePhase(s: DisclosureState): ConfidencePhase {
     return 'hidden';
   }
 
-  // grace period
-  if (s.graceCount < 3) {
-    return 'invisible';
-  }
-
   // intro moment not yet shown
   if (!s.introduced) {
-    return 'intro';
+    // spectator-first: grace ≥ 3 AND user has seen rival's confidence in results
+    if (s.graceCount >= 3 && s.rivalSeen) {
+      return 'intro-spectator';
+    }
+    // fallback: grace ≥ 5, no rival confidence seen
+    if (s.graceCount >= 5) {
+      return 'intro-fallback';
+    }
+    // still in grace period
+    return 'invisible';
   }
 
   // deprioritized: all 3 nudges sent, never used, 17+ neglects
@@ -92,16 +101,27 @@ function derivePhase(s: DisclosureState): ConfidencePhase {
   return 'active';
 }
 
+/**
+ * Standalone setter — call from any component (e.g. RivalPredictionsTab) when
+ * rival confidence data is displayed. Writes directly to localStorage so the
+ * hook picks up the change on next mount.
+ */
+export function markRivalConfidenceSeen(): void {
+  if (typeof window === 'undefined') return;
+  if (localStorage.getItem(KEYS.rivalSeen) === 'true') return;
+  localStorage.setItem(KEYS.rivalSeen, 'true');
+}
+
 export function useConfidenceDisclosure() {
   const [state, setState] = useState<DisclosureState>(loadState);
 
   const phase = derivePhase(state);
 
-  const showIntroCard = phase === 'intro';
+  const showIntroCard = phase === 'intro-spectator' || phase === 'intro-fallback';
   const showBreadcrumb = phase === 'hidden';
 
-  const nudgeIndex: number | null =
-    phase === 'nudge' ? state.nudgeCount : null;
+  const nudgeText: string | null =
+    phase === 'nudge' ? pickConfidenceNudge(`nudge-${state.nudgeCount}`) : null;
 
   const recordPrediction = useCallback(() => {
     setState((prev) => {
@@ -161,6 +181,15 @@ export function useConfidenceDisclosure() {
     });
   }, []);
 
+  const recordRivalConfidenceSeen = useCallback(() => {
+    setState((prev) => {
+      if (prev.rivalSeen) return prev;
+      const next = { ...prev, rivalSeen: true };
+      writeBool(KEYS.rivalSeen, true);
+      return next;
+    });
+  }, []);
+
   const restore = useCallback(() => {
     setState((prev) => {
       const next = { ...prev };
@@ -184,6 +213,7 @@ export function useConfidenceDisclosure() {
       dismissCount: 0,
       hidden: false,
       neglectCount: 0,
+      rivalSeen: false,
     };
     Object.entries(KEYS).forEach(([, key]) => {
       localStorage.removeItem(key);
@@ -193,12 +223,13 @@ export function useConfidenceDisclosure() {
 
   return {
     phase,
+    nudgeText,
     showIntroCard,
     showBreadcrumb,
-    nudgeIndex,
     recordPrediction,
     recordConfidenceUsed,
     recordConfidenceDismissed,
+    recordRivalConfidenceSeen,
     markIntroduced,
     restore,
     resetForCompetition,

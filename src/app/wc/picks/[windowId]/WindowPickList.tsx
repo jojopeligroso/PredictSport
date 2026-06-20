@@ -653,7 +653,7 @@ function MatchPickRow({
           </p>
         )}
 
-      {/* Confidence level — hidden until progressive disclosure is complete
+      {/* Confidence level — progressive disclosure */}
       {currentWinner && disclosure.phase !== 'invisible' && (
         disclosure.phase === 'hidden' ? (
           <ConfidenceBreadcrumb
@@ -678,7 +678,7 @@ function MatchPickRow({
             variant={useCardSurface ? "card" : "compact"}
           />
         )
-      )} */}
+      )}
 
       {/* Score input row */}
       {scoreEpt && (
