@@ -428,24 +428,33 @@ async function scoreEventPredictions(
   if (scores.length > 0) {
     await supabase.rpc("batch_score_predictions", { p_scores: scores });
 
-    // Anomaly detection: if >80% of winner predictions scored as wrong on an
-    // event with 15+ winner predictions, something is likely broken (provider
-    // name mismatch, home/away swap, wrong result). Log a warning so it
-    // surfaces in monitoring rather than silently corrupting the leaderboard.
-    const winnerScores = scores.filter((s) => {
-      const pred = (predictions ?? []).find((p) => (p as Record<string, unknown>).id === s.id);
-      return (pred as Record<string, unknown> | undefined)?.prediction_type === "winner";
-    });
-    if (winnerScores.length >= 15) {
-      const wrongCount = winnerScores.filter((s) => s.is_correct === false).length;
-      const wrongPct = wrongCount / winnerScores.length;
-      if (wrongPct > 0.8) {
-        console.warn(
-          `[scoring] ANOMALY: ${wrongCount}/${winnerScores.length} (${Math.round(wrongPct * 100)}%) ` +
-          `winner predictions scored wrong for event ${eventId}. ` +
-          `Possible provider name mismatch or incorrect result data.`
-        );
+    // Consistency check: if any user's exact_score is correct but their
+    // winner prediction is wrong, the scoring engine has a bug. This state
+    // is impossible in correct operation — a correct score always implies
+    // the correct winner (since winner is derived from score). Upsets
+    // cannot trigger this; only scoring logic errors can.
+    const preds = (predictions ?? []) as Array<Record<string, unknown>>;
+    const scoreCorrectUsers = new Set<string>();
+    const winnerWrongUsers = new Set<string>();
+
+    for (const s of scores) {
+      const pred = preds.find((p) => p.id === s.id);
+      if (!pred) continue;
+      if (pred.prediction_type === "exact_score" && s.is_correct === true) {
+        scoreCorrectUsers.add(pred.user_id as string);
       }
+      if (pred.prediction_type === "winner" && s.is_correct === false) {
+        winnerWrongUsers.add(pred.user_id as string);
+      }
+    }
+
+    const contradictions = [...scoreCorrectUsers].filter((u) => winnerWrongUsers.has(u));
+    if (contradictions.length > 0) {
+      console.error(
+        `[scoring] CONTRADICTION: ${contradictions.length} user(s) have exact_score=correct ` +
+        `but winner=wrong for event ${eventId}. This is an impossible state — ` +
+        `indicates a scoring engine bug (name mismatch, home/away swap, etc).`
+      );
     }
   }
 }
