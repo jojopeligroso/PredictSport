@@ -76,6 +76,7 @@
   "dash.stats_placeholder": "Tus estadísticas aparecerán después de los primeros resultados.",
   "dash.your_group": "Tu Grupo",
   "dash.results_placeholder": "Los resultados aparecerán una vez que se jueguen los partidos",
+  "dash.results_coming_soon": "Resultados en camino — {count} partido(s) pendientes de confirmación",
   "dash.latest_results": "Últimos Resultados",
   "dash.show_more_results": "Mostrar {count} más",
   "dash.go_to_results": "Ir a Resultados →",
@@ -678,5 +679,8 @@
   "push.single_event_body": "{event} cierra en ~{time} — envía tus pronósticos!",
   "push.multi_event_title": "{count} partidos por cerrar",
   "push.multi_event_body": "{events} cierran en ~{time}",
-  "push.multi_event_more_body": "{events} +{extra} más cierran pronto"
+  "push.multi_event_more_body": "{events} +{extra} más cierran pronto",
+  "dash.matchday_summary": "{correct}/{total} correctos · +{points} pts",
+  "dash.results_correct_count": "{correct}/{total}",
+  "dash.results_pts": "+{points} pts"
 }

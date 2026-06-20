@@ -10,7 +10,7 @@ export type EventStatus =
   | "postponed"
   | "cancelled";
 export type NominationStatus = "pending" | "approved" | "rejected";
-export type ChatMessageType = "user" | "system";
+export type ChatMessageType = "user" | "system" | "system_join" | "system_result";
 export type ChatDeletedBy = "user" | "mod" | "admin";
 export type ChatMediaType = "image" | "gif";
 export type PredictionType =
@@ -70,7 +70,7 @@ export interface Competition {
 export interface ChatMessage {
   id: string;
   competition_id: string;
-  user_id: string;
+  user_id: string | null;
   content: string;
   message_type: ChatMessageType;
   mentioned_user_ids: string[];

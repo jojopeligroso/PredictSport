@@ -491,7 +491,7 @@ export async function fetchDashboardData(): Promise<DashboardResult> {
       .from("chat_messages")
       .select("content, created_at, user_id")
       .eq("competition_id", competition.id)
-      .neq("message_type", "system_join")
+      .eq("message_type", "user")
       .is("deleted_at", null)
       .order("created_at", { ascending: false })
       .limit(1)

@@ -293,6 +293,35 @@ html[data-theme="dark"] .ps-island:not(.wc-theme .ps-island) {
   50% { box-shadow: 0 0 0 4px rgba(226,61,79,0); }
 }
 
+/* ── Jackpot shimmer — exact score points badge (ps-amber gold) ──────── */
+/* App-wide pattern: brand gold shimmer sweep, CSS-only, non-blocking.    */
+@keyframes ps-shimmer {
+  0% { left: -100%; }
+  25% { left: 150%; }
+  100% { left: 150%; }
+}
+.ps-jackpot-shimmer {
+  position: relative;
+  overflow: hidden;
+}
+.ps-jackpot-shimmer::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 50%;
+  height: 100%;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgba(212, 175, 55, 0.3),
+    transparent
+  );
+  animation: ps-shimmer 2.4s ease-in-out infinite;
+  animation-delay: 0.6s;
+  pointer-events: none;
+}
+
 /* ── Prediction conflict shutter ─────────────────────────────────────── */
 @keyframes ps-shutter-conflict {
   0% { background-color: transparent; }

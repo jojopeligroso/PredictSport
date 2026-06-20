@@ -94,7 +94,7 @@ export default async function WorldCupLayout({
       .from("chat_messages")
       .select("created_at")
       .eq("competition_id", wcComp.id)
-      .neq("message_type", "system_join")
+      .eq("message_type", "user")
       .is("deleted_at", null)
       .order("created_at", { ascending: false })
       .limit(1)

@@ -21,6 +21,7 @@ import {
 
 const LS_PROMPTED = "ps-push-prompted";
 const LS_SUBSCRIBED = "ps-push-subscribed";
+const LS_POST_MATCH = "ps-post-match-arrival";
 
 type Step = "idle" | "ask" | "requesting" | "refine" | "saving" | "done";
 
@@ -106,6 +107,16 @@ export function PushNotificationPrompt() {
     // First time: show the prompt after a short delay
     if (!alreadyPrompted) {
       const t = setTimeout(() => setStep("ask"), 800);
+      return () => clearTimeout(t);
+    }
+
+    // Post-match re-prompt: if user was prompted before but didn't subscribe,
+    // and they arrive right after a match ended, re-show the prompt.
+    // The dashboard sets this flag when recent results exist on mount.
+    const postMatch = localStorage.getItem(LS_POST_MATCH);
+    if (postMatch && !alreadySubscribed && Notification.permission === "default") {
+      localStorage.removeItem(LS_POST_MATCH);
+      const t = setTimeout(() => setStep("ask"), 1200);
       return () => clearTimeout(t);
     }
   }, []);

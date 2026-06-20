@@ -13,9 +13,11 @@ import { GroupMiniTable } from "@/components/wc/GroupMiniTable";
 import { FifaGroupsGrid } from "@/components/wc/FifaGroupsGrid";
 import { StatsCard } from "@/components/wc/StatsCard";
 import { InviteCodeBanner } from "@/components/InviteCodeBanner";
-import { CountryFlag } from "@/components/CountryFlag";
-import { fifaTrigram } from "@/lib/tournament/fifa-codes";
-import { confidenceLabel } from "@/lib/reckons-copy";
+import {
+  DashboardResultCard,
+  computeMatchdaySummary,
+  computeMovement,
+} from "@/components/wc/DashboardResultCard";
 import {
   OnboardingFlow,
   OnboardingSection,
@@ -168,6 +170,19 @@ export function DashboardClient({
   const { liveEnabled, toggle, showPrompt, acceptAlwaysOff, declinePrompt } =
     useLiveModeToggle(liveEventExistsRaw);
 
+  // Post-match push prompt trigger: if the user arrives and there are recent
+  // results, set a localStorage flag so PushNotificationPrompt can re-prompt
+  // users who previously dismissed notifications.
+  useEffect(() => {
+    if (recentResults.length > 0) {
+      try {
+        localStorage.setItem("ps-post-match-arrival", "1");
+      } catch {
+        // localStorage may be unavailable
+      }
+    }
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
   // Auto-refresh: refetch server data on visibility change + every 180s while
   // live events exist, so result_confirmed updates propagate and live state clears.
   const refreshData = useCallback(() => router.refresh(), [router]);
@@ -288,10 +303,8 @@ export function DashboardClient({
   // to the user's local "sports day" (6AM to 6AM). Runs after mount to avoid
   // hydration mismatch (server doesn't know the user's timezone).
   const windowedResults = useMemo(() => {
-    // Filter out events the user didn't predict
-    const predicted = recentResults.filter((r) => r.userWinnerPick !== null);
-    if (predicted.length === 0) return [];
-    if (!now) return predicted.slice(0, 3); // SSR: safe default
+    if (recentResults.length === 0) return [];
+    if (!now) return recentResults.slice(0, 3); // SSR: safe default
 
     // Compute the most recent local 6AM boundary
     const today6am = new Date(now);
@@ -301,14 +314,14 @@ export function DashboardClient({
       : new Date(today6am.getTime() - 24 * 60 * 60 * 1000);
 
     // Primary window: anchor → now
-    const primary = predicted.filter(
+    const primary = recentResults.filter(
       (r) => new Date(r.startTime).getTime() >= anchor.getTime(),
     );
     if (primary.length > 0) return primary;
 
     // Fallback: previous 6AM → anchor
     const prevAnchor = new Date(anchor.getTime() - 24 * 60 * 60 * 1000);
-    return predicted.filter((r) => {
+    return recentResults.filter((r) => {
       const t = new Date(r.startTime).getTime();
       return t >= prevAnchor.getTime() && t < anchor.getTime();
     });
@@ -322,6 +335,49 @@ export function DashboardClient({
     : windowedResults.slice(0, RESULTS_INITIAL);
   const canExpandResults = !resultsExpanded && windowedResults.length > RESULTS_INITIAL;
   const remainingResultsCount = Math.min(windowedResults.length, RESULTS_MAX) - RESULTS_INITIAL;
+
+  // Pre-compute per-result streak length for the visible results.
+  // Streak = consecutive correct winner predictions ending at each result.
+  const streakByExternalId = useMemo(() => {
+    const chronological = windowedResults
+      .slice()
+      .sort(
+        (a, b) =>
+          new Date(a.startTime).getTime() - new Date(b.startTime).getTime(),
+      );
+    const map = new Map<string, number>();
+    let running = 0;
+    for (const r of chronological) {
+      if (r.userWinnerPick === null) {
+        // unpredicted does not break streak, but doesn't extend it
+        map.set(r.fixture.externalId, running);
+        continue;
+      }
+      if (r.winnerCorrect) {
+        running++;
+      } else {
+        running = 0;
+      }
+      map.set(r.fixture.externalId, running);
+    }
+    return map;
+  }, [windowedResults]);
+
+  // "Results coming soon" — events past their expected duration but not yet
+  // confirmed by the cron. Shown when no live events remain and unconfirmed
+  // events exist that should have finished by now.
+  const awaitingResults = useMemo(() => {
+    if (!now) return 0;
+    const nowMs = now.getTime();
+    return nextEvents.filter((e) => {
+      if (e.result_confirmed) return false;
+      const startMs = new Date(e.start_time).getTime();
+      const { checkAfterHours } = getTimingForSport(e.sport);
+      // Past expected duration but within 24h (stale events shouldn't show)
+      const msSinceStart = nowMs - startMs;
+      return msSinceStart >= checkAfterHours * 3600000 && msSinceStart < 24 * 3600000;
+    }).length;
+  }, [nextEvents, now]);
 
   const appUrl =
     typeof window !== "undefined"
@@ -487,22 +543,35 @@ export function DashboardClient({
         </OnboardingSection>
       )}
 
+      {/* ── 4c. Results coming soon indicator ──────────────────────── */}
+      {awaitingResults > 0 && !liveMode && (
+        <section className="mt-2">
+          <div className="flex items-center gap-2 rounded-xl border border-ps-amber/30 bg-ps-amber-soft px-4 py-3">
+            <span className="relative flex h-2 w-2 shrink-0">
+              <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-ps-amber opacity-75" />
+              <span className="relative inline-flex h-2 w-2 rounded-full bg-ps-amber" />
+            </span>
+            <p className="text-xs font-semibold text-ps-text-sec">
+              {t('dash.results_coming_soon', { count: awaitingResults })}
+            </p>
+          </div>
+        </section>
+      )}
+
       {/* ── 5. Latest Results (6AM-anchored window) ─────────────────── */}
       {visibleResults.length > 0 && (
         <OnboardingSection id="other">
           <section className="ps-panel mt-2">
             <div className="rounded-xl border border-ps-border bg-ps-surface p-4">
-              <div className="flex items-center justify-between">
-                <h3 className="text-base font-bold text-ps-text">
-                  {t('dash.latest_results')}
-                </h3>
-                <span className="text-[11px] font-semibold uppercase text-ps-text-ter">
-                  {t(windowedResults.length === 1 ? 'wc.match' : 'wc.matches', { count: windowedResults.length })}
-                </span>
-              </div>
+              <ResultsHeader results={windowedResults} t={t} />
               <div className="mt-3 space-y-0 divide-y divide-ps-border">
                 {visibleResults.map((r) => (
-                  <TodayResultRow key={r.fixture.externalId} result={r} />
+                  <DashboardResultCard
+                    key={r.fixture.externalId}
+                    result={r}
+                    movement={computeMovement(r)}
+                    streak={streakByExternalId.get(r.fixture.externalId) ?? 0}
+                  />
                 ))}
               </div>
               {canExpandResults && remainingResultsCount > 0 && (
@@ -852,73 +921,41 @@ function DashboardPillIndicator({ status }: { status: string }) {
   }
 }
 
-/** Single result row with score, user prediction, correctness, and points. */
-function TodayResultRow({ result }: { result: ResultRow }) {
-  const t = useT();
-  const { fixture, homeScore, awayScore, userWinnerPick, userScorePick, winnerCorrect, scoreCorrect, winnerPoints, scorePoints, userConfidence } = result;
-  const homeTri = fifaTrigram(fixture.home) ?? fixture.home.slice(0, 3).toUpperCase();
-  const awayTri = fifaTrigram(fixture.away) ?? fixture.away.slice(0, 3).toUpperCase();
-
-  // Correctness color: green (both), light green (winner only), red (wrong), grey (no pred)
-  const hasPrediction = userWinnerPick !== null;
-  const bothCorrect = winnerCorrect === true && scoreCorrect === true;
-  const winnerOnly = winnerCorrect === true && scoreCorrect !== true;
-  const wrong = hasPrediction && winnerCorrect === false;
-
-  let dotColor = "bg-ps-border"; // grey — no prediction
-  if (bothCorrect) dotColor = "bg-[#0aa86d]";
-  else if (winnerOnly) dotColor = "bg-[#0aa86d]/50";
-  else if (wrong) dotColor = "bg-[#e23d4f]";
-
-  const totalPoints = winnerPoints + scorePoints;
+/** Results header with title + matchday summary (e.g. "3/4 correct · +18 pts"). */
+function ResultsHeader({
+  results,
+  t,
+}: {
+  results: ResultRow[];
+  t: (key: string, params?: Record<string, string | number>) => string;
+}) {
+  const summary = computeMatchdaySummary(results);
 
   return (
-    <div className="py-3">
-      {/* Match score row */}
-      <div className="flex items-center gap-2">
-        <span className={`h-2 w-2 flex-shrink-0 rounded-full ${dotColor}`} />
-        <CountryFlag name={fixture.home} size={22} shape="pill" />
-        <span className="text-sm font-semibold text-ps-text">{homeTri}</span>
-        <span className="flex-1 text-center font-mono text-base font-bold tabular-nums text-ps-text">
-          {homeScore} – {awayScore}
-        </span>
-        <span className="text-sm font-semibold text-ps-text">{awayTri}</span>
-        <CountryFlag name={fixture.away} size={22} shape="pill" />
-      </div>
-
-      {/* User prediction + points breakdown */}
-      {hasPrediction ? (
-        <div className="mt-1 flex items-center gap-2 pl-4.5">
-          <span className="text-[11px] text-ps-text-ter">
-            {t('dash.you_label')}{" "}
-            <span className="font-semibold text-ps-text-sec">
-              {userScorePick
-                ? `${userScorePick.home}–${userScorePick.away}`
-                : userWinnerPick}
-            </span>
-            {userConfidence != null && (
-              <span className="ml-1 italic text-ps-text-ter">
-                ({confidenceLabel(userConfidence)})
-              </span>
-            )}
+    <div className="flex items-center justify-between">
+      <h3 className="text-base font-bold text-ps-text">
+        {t("dash.latest_results")}
+      </h3>
+      {summary.totalPredicted > 0 ? (
+        <span className="text-[11px] font-semibold tabular-nums text-ps-text-sec">
+          <span className="text-ps-green">
+            {t("dash.results_correct_count", {
+              correct: summary.correctCount,
+              total: summary.totalPredicted,
+            })}
           </span>
-          {totalPoints > 0 && (
-            <span className="ml-auto font-mono text-[11px] font-semibold tabular-nums text-[#0aa86d]">
-              {winnerPoints > 0 && t('dash.winner_points', { points: winnerPoints })}
-              {winnerPoints > 0 && scorePoints > 0 && " "}
-              {scorePoints > 0 && t('dash.score_points', { points: scorePoints })}
-            </span>
-          )}
-          {totalPoints === 0 && (
-            <span className="ml-auto font-mono text-[11px] tabular-nums text-ps-text-ter">
-              +0
-            </span>
-          )}
-        </div>
+          {" correct \u00B7 "}
+          <span className="text-ps-amber">
+            {t("dash.results_pts", { points: summary.totalPoints })}
+          </span>
+        </span>
       ) : (
-        <div className="mt-1 pl-4.5">
-          <span className="text-[11px] text-ps-text-ter">{t('dash.no_prediction')}</span>
-        </div>
+        <span className="text-[11px] font-semibold uppercase text-ps-text-ter">
+          {t(
+            results.length === 1 ? "wc.match" : "wc.matches",
+            { count: results.length },
+          )}
+        </span>
       )}
     </div>
   );

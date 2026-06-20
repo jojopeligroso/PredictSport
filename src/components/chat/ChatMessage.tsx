@@ -109,7 +109,7 @@ export function ChatMessage({
 
   const isOwn = message.user_id === currentUserId;
   const isDeleted = !!message.deleted_at;
-  const isSystem = message.message_type === "system";
+  const isSystem = message.message_type !== "user";
   const isEdited = !!message.updated_at && !isDeleted;
 
   const actorRank = ROLE_RANK[currentUserRole] ?? 0;
@@ -185,7 +185,7 @@ export function ChatMessage({
     swipeOffset.current = 0;
   }, [message, onReply, isDeleted, isSystem, cancelPress]);
 
-  // System messages
+  // System messages (system, system_join, system_result)
   if (isSystem) {
     // Strip internal metadata tags (e.g. "[reckons:eventId] ") from display
     const systemContent = message.content.replace(/^\[reckons:[^\]]+\]\s*/, "");
@@ -414,7 +414,7 @@ export function ChatMessage({
             onReply={() => { setShowContextMenu(false); onReply?.(message); }}
             onEdit={() => { setShowContextMenu(false); handleStartEdit(); }}
             onDelete={() => { setShowContextMenu(false); onDelete?.(message.id); }}
-            onMute={() => { setShowContextMenu(false); onMute?.(message.user_id); }}
+            onMute={() => { setShowContextMenu(false); if (message.user_id) onMute?.(message.user_id); }}
             onDismiss={() => setShowContextMenu(false)}
           />,
           document.body

@@ -227,7 +227,7 @@ export async function PATCH(
     );
   }
 
-  if (message.message_type === "system") {
+  if (message.message_type !== "user") {
     return NextResponse.json(
       { error: "System messages cannot be edited" },
       { status: 400 }

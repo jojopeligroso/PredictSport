@@ -88,7 +88,8 @@ export function useRealtimeChat({
   const memberMap = useRef<Map<string, UseChatMember>>(new Map());
 
   const resolveUser = useCallback(
-    (userId: string): { display_name: string; avatar_url: string | null } => {
+    (userId: string | null): { display_name: string; avatar_url: string | null } => {
+      if (!userId) return { display_name: "System", avatar_url: null };
       const m = memberMap.current.get(userId);
       return m
         ? { display_name: m.display_name, avatar_url: m.avatar_url }
