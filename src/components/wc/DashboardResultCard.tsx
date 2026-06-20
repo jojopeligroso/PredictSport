@@ -3,7 +3,7 @@
 import { useT } from "@/lib/i18n";
 import { CountryFlag } from "@/components/CountryFlag";
 import { fifaTrigram } from "@/lib/tournament/fifa-codes";
-import { confidenceLabel } from "@/lib/reckons-copy";
+import { ConfidenceMicroPill } from "@/components/ConfidencePills";
 import type { ResultRow } from "@/app/wc/home/fetchDashboardData";
 
 /* ── Movement arrows (SVG inline) ──────────────────────────────────────── */
@@ -201,9 +201,7 @@ export function DashboardResultCard({
                 : userWinnerPick}
             </span>
             {userConfidence != null && (
-              <span className="ml-1 italic text-ps-text-ter">
-                ({confidenceLabel(userConfidence)})
-              </span>
+              <ConfidenceMicroPill level={userConfidence} />
             )}
           </span>
 

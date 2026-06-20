@@ -397,13 +397,6 @@ export function RulesContent({
         </details>
       </CollapsibleSection>
 
-      {/* ── TIES ─────────────────────────────────────────────── */}
-      <CollapsibleSection id="ties" title={t("ties.title")}>
-        <p className="mt-2 text-sm leading-relaxed text-ps-text-sec">
-          {t("ties.desc")}
-        </p>
-      </CollapsibleSection>
-
       {/* ── FAQ ─────────────────────────────────────────────── */}
       <CollapsibleSection id="faq" title={t("faq.title")} defaultOpen>
         <div className="mt-3 space-y-2">
@@ -419,6 +412,9 @@ export function RulesContent({
             </FAQ>
             <FAQ q={t("faq.q_when_join")}>
               {t("faq.a_when_join")}
+            </FAQ>
+            <FAQ q={t("faq.q_confidence")}>
+              {t("faq.a_confidence")}
             </FAQ>
           </FAQGroup>
           <FAQGroup title={t("faq.group_scoring")}>
@@ -436,9 +432,6 @@ export function RulesContent({
             </FAQ>
           </FAQGroup>
           <FAQGroup title={t("faq.group_rules")}>
-            <FAQ q={t("faq.q_tiebreakers")}>
-              {t("faq.a_tiebreakers")}
-            </FAQ>
             <FAQ q={t("faq.q_postponed")}>
               {t("faq.a_postponed")}
             </FAQ>

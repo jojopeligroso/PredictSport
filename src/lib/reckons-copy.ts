@@ -316,6 +316,33 @@ export function formatScoreForCopy(
   return `${home}–${away}`;
 }
 
+/* ── Confidence nudge copy ────────────────────────────────────────────── */
+
+/** Generic nudge lines (fallback when rival data isn't available). */
+const CONFIDENCE_NUDGE_GENERIC = [
+  "Your rivals are banking on their picks. Are you?",
+  "Everyone can see you're playing it safe.",
+  "Bold prediction. Back it with conviction?",
+  "The quiet ones never top the board.",
+  "Go on — tell your group how sure you are.",
+];
+
+/**
+ * Data-driven nudge template (preferred when group usage stats are available).
+ * Interpolate {count} and {total} before rendering.
+ */
+export const CONFIDENCE_NUDGE_DATA_TEMPLATE =
+  "{count} of {total} in your group set confidence on this match.";
+
+/**
+ * Pick a stable nudge line for a given event.
+ * Returns a generic line; caller should prefer the data-driven template when stats exist.
+ */
+export function pickConfidenceNudge(eventId: string): string {
+  const idx = stableHash(eventId) % CONFIDENCE_NUDGE_GENERIC.length;
+  return CONFIDENCE_NUDGE_GENERIC[idx];
+}
+
 /**
  * Resolve the label for a confidence level.
  * Falls back to "Level {n}" for admin-defined levels without labels.

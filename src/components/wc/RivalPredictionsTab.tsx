@@ -667,9 +667,10 @@ const CONFIDENCE_COLORS = [
 
 function ConfidenceDot({ level }: { level: number }) {
   const idx = Math.max(0, Math.min(level - 1, CONFIDENCE_COLORS.length - 1));
+  const sizeClass = level === 5 ? "h-[18px] px-2 text-[10px]" : "h-4 px-1.5 text-[9px]";
   return (
     <span
-      className={`inline-flex h-4 shrink-0 items-center rounded-full px-1.5 text-[9px] font-bold uppercase tracking-tight text-white ${CONFIDENCE_COLORS[idx]}`}
+      className={`inline-flex shrink-0 items-center rounded-full font-bold uppercase tracking-tight text-white ${sizeClass} ${CONFIDENCE_COLORS[idx]}`}
       title={confidenceLabel(level)}
     >
       {confidenceLabel(level)}

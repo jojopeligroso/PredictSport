@@ -10,7 +10,8 @@ import {
 } from "react";
 import { useT, useLocale } from "@/lib/i18n";
 import { CountryFlag } from "@/components/CountryFlag";
-import { ConfidencePills } from "@/components/ConfidencePills";
+import { ConfidencePills, ConfidenceIntroCard, ConfidenceBreadcrumb } from "@/components/ConfidencePills";
+import { useConfidenceDisclosure } from "@/hooks/useConfidenceDisclosure";
 import { ScoreInput } from "@/components/ScoreInput";
 import { FixtureCardSurface } from "@/components/wc/FixtureCardSurface";
 import { deriveWinnerFromScore } from "@/lib/score-format";
@@ -313,6 +314,18 @@ function MatchPickRow({
     [winnerOptions, home, away],
   );
 
+  // Confidence progressive disclosure
+  const disclosure = useConfidenceDisclosure();
+
+  // Wrap onWinnerLanded to also track grace period for confidence disclosure
+  const handleWinnerLandedWithDisclosure = useCallback(
+    (eventId: string, hasWinner: boolean) => {
+      if (hasWinner) disclosure.recordPrediction();
+      onWinnerLanded(eventId, hasWinner);
+    },
+    [onWinnerLanded, disclosure],
+  );
+
   // Prediction state hook
   const {
     currentWinner, scoreDisplay, feedback, error: errorMsg,
@@ -322,8 +335,13 @@ function MatchPickRow({
     initialPredictions, eventId: event.id, competitionId,
     sport: event.sport, winnerEptId: winnerEpt?.id,
     winnerOptions, scoreEptId: scoreEpt?.id,
-    isLocked, onWinnerLanded,
+    isLocked, onWinnerLanded: handleWinnerLandedWithDisclosure,
   });
+  const handleConfidenceChange = useCallback((level: number | null) => {
+    setConfidence(level);
+    if (level !== null) disclosure.recordConfidenceUsed();
+    else disclosure.recordConfidenceDismissed();
+  }, [setConfidence, disclosure]);
 
   // Live score values for the hint
   const [liveScore, setLiveScore] = useState({ home: "", away: "" });
@@ -622,13 +640,31 @@ function MatchPickRow({
           </p>
         )}
 
-      {/* Confidence level */}
-      {currentWinner && (
-        <ConfidencePills
-          value={confidenceLevel}
-          onChange={setConfidence}
-          variant={useCardSurface ? "card" : "compact"}
-        />
+      {/* Confidence level — progressive disclosure */}
+      {currentWinner && disclosure.phase !== 'invisible' && (
+        disclosure.phase === 'hidden' ? (
+          <ConfidenceBreadcrumb
+            onRestore={disclosure.restore}
+            variant={useCardSurface ? "card" : "compact"}
+          />
+        ) : disclosure.showIntroCard ? (
+          <ConfidenceIntroCard
+            variant={useCardSurface ? "card" : "compact"}
+            onDismiss={() => { disclosure.markIntroduced(); disclosure.recordConfidenceDismissed(); }}
+          >
+            <ConfidencePills
+              value={confidenceLevel}
+              onChange={(level) => { handleConfidenceChange(level); if (level !== null) disclosure.markIntroduced(); }}
+              variant={useCardSurface ? "card" : "compact"}
+            />
+          </ConfidenceIntroCard>
+        ) : (
+          <ConfidencePills
+            value={confidenceLevel}
+            onChange={handleConfidenceChange}
+            variant={useCardSurface ? "card" : "compact"}
+          />
+        )
       )}
 
       {/* Score input row */}

@@ -5,7 +5,7 @@ import { useT, useLocale } from "@/lib/i18n";
 import { CountryFlag } from "@/components/CountryFlag";
 import { HOST_CITIES, type HostCitySlug } from "@/lib/wc/host-cities";
 import { WindowPickList } from "@/app/wc/picks/[windowId]/WindowPickList";
-import { confidenceLabel } from "@/lib/reckons-copy";
+import { ConfidenceMicroPill } from "@/components/ConfidencePills";
 import type { WindowEvent } from "@/app/wc/picks/[windowId]/WindowPickList";
 import type { WcFixture } from "@/lib/wc/fixtures";
 import type { Prediction } from "@/types/database";
@@ -900,9 +900,7 @@ function FixtureCard({
                       {homeScore !== "" && awayScore !== "" ? ` (${homeScore}\u2013${awayScore})` : ""}
                     </span>
                     {prediction.userConfidence != null && (
-                      <span className="ml-1 italic text-white/50">
-                        ({confidenceLabel(prediction.userConfidence)})
-                      </span>
+                      <ConfidenceMicroPill level={prediction.userConfidence} />
                     )}
                   </span>
 
