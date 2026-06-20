@@ -4,6 +4,7 @@ import { useT } from "@/lib/i18n";
 import { CountryFlag } from "@/components/CountryFlag";
 import { fifaTrigram } from "@/lib/tournament/fifa-codes";
 import { ConfidenceMicroPill } from "@/components/ConfidencePills";
+import { getVerdict, type VerdictState } from "@/lib/payoff-copy";
 import type { ResultRow } from "@/app/wc/home/fetchDashboardData";
 
 /* ── Movement arrows (SVG inline) ──────────────────────────────────────── */
@@ -117,6 +118,20 @@ export function DashboardResultCard({
   const totalPoints = winnerPoints + scorePoints;
   const isJackpot = bothCorrect; // exact score = shimmer
 
+  // Derive verdict state for payoff quip
+  const verdictState: VerdictState | null = !hasPrediction
+    ? null
+    : bothCorrect
+      ? "exact"
+      : winnerOnly
+        ? "correct"
+        : wrong
+          ? "wrong"
+          : "partial";
+  const verdict = verdictState
+    ? getVerdict(verdictState, fixture.home + fixture.away)
+    : null;
+
   // Build points breakdown string: "(+3 W +7 S)"
   const breakdownParts: string[] = [];
   if (winnerPoints > 0)
@@ -192,57 +207,65 @@ export function DashboardResultCard({
 
       {/* ── Bottom row: prediction + streak + points ───────────────────── */}
       {hasPrediction ? (
-        <div className="mt-1 flex items-center gap-2 pl-[22px]">
-          <span className="text-[11px] text-ps-text-ter">
-            {t("dash.you_label")}{" "}
-            <span className="font-semibold text-ps-text-sec">
-              {userScorePick
-                ? `${userScorePick.home}\u2013${userScorePick.away}`
-                : userWinnerPick}
-            </span>
-            {userConfidence != null && (
-              <ConfidenceMicroPill level={userConfidence} />
-            )}
-          </span>
-
-          {/* Streak badge (3+) */}
-          {streak >= 3 && (
-            <span className="inline-flex items-center gap-0.5 rounded bg-ps-amber/12 px-1.5 py-0.5 text-[10px] font-bold text-ps-amber">
-              <FlameIcon />
-              {streak}
-            </span>
-          )}
-
-          {/* Points badge */}
-          {totalPoints > 0 ? (
-            <span
-              className={[
-                "ml-auto flex items-baseline gap-1 font-mono tabular-nums",
-                isJackpot
-                  ? "ps-jackpot-shimmer rounded-md bg-ps-amber/12 px-1.5 py-0.5"
-                  : "",
-              ].join(" ")}
-            >
-              <span
-                className={[
-                  "text-[13px] font-semibold",
-                  isJackpot ? "text-ps-amber" : "text-ps-green",
-                ].join(" ")}
-              >
-                +{totalPoints}
+        <>
+          <div className="mt-1 flex items-center gap-2 pl-[22px]">
+            <span className="text-[11px] text-ps-text-ter">
+              {t("dash.you_label")}{" "}
+              <span className="font-semibold text-ps-text-sec">
+                {userScorePick
+                  ? `${userScorePick.home}\u2013${userScorePick.away}`
+                  : userWinnerPick}
               </span>
-              {breakdownStr && (
-                <span className="text-[10px] font-medium text-ps-text-ter">
-                  {breakdownStr}
-                </span>
+              {userConfidence != null && (
+                <ConfidenceMicroPill level={userConfidence} />
               )}
             </span>
-          ) : (
-            <span className="ml-auto font-mono text-[11px] tabular-nums text-ps-text-ter">
-              +0
-            </span>
+
+            {/* Streak badge (3+) */}
+            {streak >= 3 && (
+              <span className="inline-flex items-center gap-0.5 rounded bg-ps-amber/12 px-1.5 py-0.5 text-[10px] font-bold text-ps-amber">
+                <FlameIcon />
+                {streak}
+              </span>
+            )}
+
+            {/* Points badge */}
+            {totalPoints > 0 ? (
+              <span
+                className={[
+                  "ml-auto flex items-baseline gap-1 font-mono tabular-nums",
+                  isJackpot
+                    ? "ps-jackpot-shimmer rounded-md bg-ps-amber/12 px-1.5 py-0.5"
+                    : "",
+                ].join(" ")}
+              >
+                <span
+                  className={[
+                    "text-[13px] font-semibold",
+                    isJackpot ? "text-ps-amber" : "text-ps-green",
+                  ].join(" ")}
+                >
+                  +{totalPoints}
+                </span>
+                {breakdownStr && (
+                  <span className="text-[10px] font-medium text-ps-text-ter">
+                    {breakdownStr}
+                  </span>
+                )}
+              </span>
+            ) : (
+              <span className="ml-auto font-mono text-[11px] tabular-nums text-ps-text-ter">
+                +0
+              </span>
+            )}
+          </div>
+          {/* Verdict quip */}
+          {verdict && (
+            <p className="mt-0.5 pl-[22px] font-serif italic text-[11px] text-ps-text-ter">
+              &ldquo;{verdict}&rdquo;
+            </p>
           )}
-        </div>
+        </>
       ) : (
         <div className="mt-1 pl-[22px]">
           <span className="text-[11px] text-ps-text-ter">

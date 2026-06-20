@@ -6,6 +6,7 @@ import { CountryFlag } from "@/components/CountryFlag";
 import { HOST_CITIES, type HostCitySlug } from "@/lib/wc/host-cities";
 import { WindowPickList } from "@/app/wc/picks/[windowId]/WindowPickList";
 import { ConfidenceMicroPill } from "@/components/ConfidencePills";
+import { getVerdict, type VerdictState } from "@/lib/payoff-copy";
 import type { WindowEvent } from "@/app/wc/picks/[windowId]/WindowPickList";
 import type { WcFixture } from "@/lib/wc/fixtures";
 import type { Prediction } from "@/types/database";
@@ -610,6 +611,21 @@ function FixtureCard({
   const isWrong = hasPrediction && winnerCorrect === false;
   const isJackpot = bothCorrect; // exact score = shimmer
 
+  // Derive verdict state for payoff quip (only on finished fixtures with a prediction)
+  const verdictState: VerdictState | null =
+    !hasPrediction || !isFinished
+      ? null
+      : bothCorrect
+        ? "exact"
+        : winnerOnly
+          ? "correct"
+          : isWrong
+            ? "wrong"
+            : "partial";
+  const verdict = verdictState
+    ? getVerdict(verdictState, fixture.home + fixture.away)
+    : null;
+
   // Movement direction: points > 0 = up, predicted but 0 points = down, else neutral
   const movement: "up" | "down" | "neutral" =
     !hasPrediction || !isFinished ? "neutral"
@@ -951,6 +967,12 @@ function FixtureCard({
                       </span>
                     )}
                   </div>
+                )}
+                {/* Verdict quip */}
+                {showCorrectness && verdict && (
+                  <p className="mt-1.5 font-serif italic text-[11px] text-white/60">
+                    &ldquo;{verdict}&rdquo;
+                  </p>
                 )}
               </div>
             )}

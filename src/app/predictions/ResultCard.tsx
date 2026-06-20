@@ -10,6 +10,7 @@ import {
   type SportKey,
   toSportKey,
 } from "@/components/ui";
+import { getVerdict } from "@/lib/payoff-copy";
 import { psDefaultResultCopy } from "@/lib/whatsapp";
 import type { Event, Prediction } from "@/types/database";
 
@@ -17,28 +18,6 @@ function getResultState(prediction: Prediction): "correct" | "wrong" | "partial"
   if (prediction.is_correct === true) return "correct";
   if (prediction.is_partial) return "partial";
   return "wrong";
-}
-
-function getVerdict(state: "correct" | "wrong" | "partial", eventName: string): string {
-  const correct = [
-    "Well played — banker landed.",
-    "Called it. Easy money.",
-    "Nailed it. Take a bow.",
-  ];
-  const wrong = [
-    "Ah sure look — that one got away.",
-    "Swing and a miss. It happens.",
-    "That's one for the bin.",
-  ];
-  const partial = [
-    "Half marks — right idea, soft execution.",
-    "Close enough. Take what you can get.",
-    "Near enough is good enough.",
-  ];
-
-  const pool = state === "correct" ? correct : state === "wrong" ? wrong : partial;
-  // Deterministic pick based on event name length
-  return pool[eventName.length % pool.length]!;
 }
 
 function formatResultDisplay(resultData: Record<string, unknown> | null): string {
