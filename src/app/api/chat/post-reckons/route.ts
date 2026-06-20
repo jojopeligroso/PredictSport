@@ -79,6 +79,7 @@ export async function POST(request: NextRequest) {
         )
         .eq("event_id", event.id)
         .not("confidence_level", "is", null)
+        .gte("confidence_level", 3)
         .limit(500);
 
       if (!predictions?.length) continue;

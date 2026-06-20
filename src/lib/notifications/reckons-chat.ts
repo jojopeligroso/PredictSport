@@ -36,6 +36,9 @@ export async function postReckonsChatMessage({
   homeScore?: number | null;
   awayScore?: number | null;
 }): Promise<void> {
+  // Confidence 1 (Hopeful) and 2 (Leaning) are too tepid for social content
+  if (confidenceLevel < 3) return;
+
   try {
     const supabase = createServiceClient();
 
