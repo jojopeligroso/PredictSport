@@ -1,7 +1,9 @@
 import { redirect } from "next/navigation";
+import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import { ProfileForm, type CompetitionRef } from "./ProfileForm";
 import type { User, CompetitionType } from "@/types/database";
+import { getServerT } from "@/lib/i18n/server";
 
 export const dynamic = "force-dynamic";
 
@@ -53,10 +55,32 @@ export default async function ProfilePage() {
       return a.name.localeCompare(b.name);
     });
 
+  const t = await getServerT();
+
   return (
-    <div className="mx-auto max-w-[600px] px-4 py-8 sm:px-6">
-      <h1 className="mb-6 font-display font-extrabold text-2xl uppercase tracking-[0.06em] text-ps-text">
-        Settings
+    <div className="mx-auto max-w-[480px] px-4 pt-6 pb-16">
+      <Link
+        href="/wc/home"
+        className="inline-flex items-center gap-1 text-xs font-medium text-ps-text-sec transition-colors hover:text-ps-text"
+      >
+        <svg
+          className="h-4 w-4"
+          fill="none"
+          viewBox="0 0 24 24"
+          strokeWidth={2}
+          stroke="currentColor"
+          aria-hidden="true"
+        >
+          <path
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            d="M15.75 19.5L8.25 12l7.5-7.5"
+          />
+        </svg>
+        {t('nav.back_to_dashboard')}
+      </Link>
+      <h1 className="mt-4 mb-6 font-display font-extrabold text-2xl uppercase tracking-[0.06em] text-ps-text">
+        {t('menu.settings')}
       </h1>
       <ProfileForm user={profile as User} competitions={competitions} />
     </div>
