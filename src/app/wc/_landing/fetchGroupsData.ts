@@ -1,5 +1,6 @@
 import { createClient } from "@/lib/supabase/server";
 import { computeGroupStandings } from "@/lib/wc/compute-group-standings";
+import { resolveWcCompetition } from "@/lib/wc/resolve-wc-competition";
 import type { WindowEvent } from "@/app/wc/picks/[windowId]/WindowPickList";
 import type { Prediction } from "@/types/database";
 import type { TeamWithStats } from "@/lib/tournament/bracket/types";
@@ -11,20 +12,13 @@ type EventRowWithExternal = WindowEvent & { external_event_id: string | null };
  * Group letter is extracted from external_event_id pattern: `manual:wc2026-grp-X-...`
  */
 export async function fetchGroupsData() {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-
-  const { data: competition } = await supabase
-    .from("competitions")
-    .select("id")
-    .eq("product_mode", "world_cup_2026_shell")
-    .in("status", ["active", "draft"])
-    .limit(1)
-    .maybeSingle();
+  const { competition, user } = await resolveWcCompetition({
+    statuses: ["active", "draft"],
+  });
 
   if (!competition) return null;
+
+  const supabase = await createClient();
 
   const { data: eventsRaw } = await supabase
     .from("events")

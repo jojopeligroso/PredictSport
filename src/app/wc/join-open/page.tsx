@@ -12,28 +12,29 @@ import { enrollEntrant } from "@/lib/tournament/classification-engine";
 import { addLateEntrant } from "@/lib/tournament/format/group-allocation";
 import { findOrProvisionInstance } from "@/lib/tournament/auto-provision";
 import { requireDisplayName } from "@/lib/require-display-name";
+import { resolveWcCompetition } from "@/lib/wc/resolve-wc-competition";
 
 export const dynamic = "force-dynamic";
 
 export default async function WcJoinOpenPage() {
-  const supabase = await createClient();
-  const svc = createServiceClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  // Step 1: Check if user is already in a WC instance → redirect to /wc/home
+  const { competition: existingComp, user, isMember } = await resolveWcCompetition({
+    statuses: ["draft", "active"],
+  });
 
   if (!user) {
     redirect("/login?next=/wc/join-open");
   }
 
-  // Find the WC shell competition
-  const { data: comp } = await supabase
-    .from("competitions")
-    .select("id, entry_closes_at, max_entrants, tournament_id, instance_type")
-    .eq("product_mode", "world_cup_2026_shell")
-    .in("status", ["draft", "active"])
-    .single();
+  if (isMember && existingComp) {
+    redirect("/wc/home");
+  }
 
+  // For non-members, find the first public instance to join (fallback path of resolver)
+  const supabase = await createClient();
+  const svc = createServiceClient();
+
+  const comp = existingComp;
   if (!comp) {
     redirect("/wc");
   }

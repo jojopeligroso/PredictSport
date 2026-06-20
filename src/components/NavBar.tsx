@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
+import { resolveWcCompetition } from "@/lib/wc/resolve-wc-competition";
 import { UserMenu } from "./UserMenu";
 import { MobileNav } from "./MobileNav";
 import { BrandMark } from "./BrandMark";
@@ -34,13 +35,9 @@ export async function NavBar() {
     isAdmin = ((adminRes.data ?? []).length > 0);
 
     // Fetch latest chat message for unread badge (WC competition)
-    const { data: wcComp } = await supabase
-      .from("competitions")
-      .select("id")
-      .eq("product_mode", "world_cup_2026_shell")
-      .in("status", ["active", "draft"])
-      .limit(1)
-      .maybeSingle();
+    const { competition: wcComp } = await resolveWcCompetition({
+      statuses: ["active", "draft"],
+    });
 
     if (wcComp) {
       // Include user messages + reckons (social content). Exclude system_join

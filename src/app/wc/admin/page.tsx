@@ -1,5 +1,6 @@
 import { createClient } from "@/lib/supabase/server";
 import { redirect } from "next/navigation";
+import { resolveWcCompetition } from "@/lib/wc/resolve-wc-competition";
 import { WcAdminClient } from "./WcAdminClient";
 import { ResultConfirmation } from "@/components/tournament/admin/ResultConfirmation";
 import { FinalisationPanel } from "@/components/tournament/admin/FinalisationPanel";
@@ -13,22 +14,16 @@ export const dynamic = "force-dynamic";
  * or super admin (if no competition exists yet, for creation).
  */
 export default async function AdminPage() {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  // Admin page: include all statuses + no status filter (admin needs to see everything)
+  const { competition, user } = await resolveWcCompetition({
+    statuses: ["draft", "active", "completed", "archived"],
+  });
 
   if (!user) {
     redirect("/login?next=/wc/admin");
   }
 
-  // Find WC competition
-  const { data: competition } = await supabase
-    .from("competitions")
-    .select("id, name, status, invite_code, created_by, visibility")
-    .eq("product_mode", "world_cup_2026_shell")
-    .limit(1)
-    .maybeSingle();
+  const supabase = await createClient();
 
   // Auth: if competition exists, check membership. If not, allow super admin to create.
   if (competition) {

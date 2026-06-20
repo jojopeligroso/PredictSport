@@ -12,6 +12,7 @@ import {
 } from "@/lib/bracket/adapters/fifa-world-cup-2026";
 import { describeDraftProgress } from "@/lib/bracket/bracket-progress";
 import { getServerT } from "@/lib/i18n/server";
+import { resolveWcCompetition } from "@/lib/wc/resolve-wc-competition";
 
 export const dynamic = "force-dynamic";
 
@@ -20,24 +21,12 @@ export const dynamic = "force-dynamic";
  * Shows status of user's bracket submissions (full and knockout).
  */
 export default async function BracketPage() {
-  const supabase = await createClient();
   const t = await getServerT();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const { competition, user } = await resolveWcCompetition();
 
   if (!user) {
     redirect("/login?next=/wc/bracket");
   }
-
-  // Find WC competition
-  const { data: competition } = await supabase
-    .from("competitions")
-    .select("id")
-    .eq("product_mode", "world_cup_2026_shell")
-    .in("status", ["active", "draft", "completed"])
-    .limit(1)
-    .maybeSingle();
 
   if (!competition) {
     return (
@@ -46,6 +35,8 @@ export default async function BracketPage() {
       </div>
     );
   }
+
+  const supabase = await createClient();
 
   // Get bracket classifications
   const { data: classifications } = await supabase

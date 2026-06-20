@@ -4,6 +4,7 @@ import { redirect } from "next/navigation";
 import { ClassificationTabs } from "@/components/tournament/ClassificationTabs";
 import { InviteCodeBanner } from "@/components/InviteCodeBanner";
 import { getServerT } from "@/lib/i18n/server";
+import { resolveWcCompetition } from "@/lib/wc/resolve-wc-competition";
 
 export const dynamic = "force-dynamic";
 
@@ -12,23 +13,11 @@ export const dynamic = "force-dynamic";
  */
 export default async function LeaderboardPage() {
   const t = await getServerT();
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const { competition, user } = await resolveWcCompetition();
 
   if (!user) {
     redirect("/login?next=/wc/leaderboard");
   }
-
-  // Find the WC competition
-  const { data: competition } = await supabase
-    .from("competitions")
-    .select("id, name, status, invite_code, max_entrants, min_entrants, entry_closes_at, chat_enabled")
-    .eq("product_mode", "world_cup_2026_shell")
-    .in("status", ["active", "draft", "completed"])
-    .limit(1)
-    .maybeSingle();
 
   if (!competition) {
     return (
@@ -37,6 +26,8 @@ export default async function LeaderboardPage() {
       </div>
     );
   }
+
+  const supabase = await createClient();
 
   // Get user display name
   const { data: profile } = await supabase

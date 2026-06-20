@@ -9,6 +9,7 @@ import { getWcBracketSnapshot } from "@/lib/tournament/bracket-snapshot";
 import { DisplayNameModal } from "@/components/DisplayNameModal";
 import { LanguageToggle } from "@/components/LanguageToggle";
 import { getServerT } from "@/lib/i18n/server";
+import { resolveWcCompetition } from "@/lib/wc/resolve-wc-competition";
 
 export default async function WorldCupLayout({
   children,
@@ -35,16 +36,9 @@ export default async function WorldCupLayout({
   // competition is the meaningful signal that the user wants the full nav —
   // they no longer need to touch the bracket to be considered engaged.
   let isAdmin = false;
-  let isWcMember = false;
-  const [bracket, wcComp] = await Promise.all([
+  const [{ competition: wcComp, isMember: isWcMember }, bracket] = await Promise.all([
+    resolveWcCompetition({ statuses: ["active", "draft"] }),
     authUser ? getWcBracketSnapshot(supabase, authUser.id) : Promise.resolve(null),
-    supabase
-      .from("competitions")
-      .select("id")
-      .eq("product_mode", "world_cup_2026_shell")
-      .limit(1)
-      .maybeSingle()
-      .then(({ data }) => data),
     // Admin/co-admin check across any competition (unchanged from before).
     authUser
       ? supabase
@@ -55,18 +49,6 @@ export default async function WorldCupLayout({
           .limit(1)
           .then(({ data }) => {
             isAdmin = ((data ?? []).length > 0);
-          })
-      : Promise.resolve(),
-    // WC membership check — drives engaged on the new picks-first landing.
-    authUser
-      ? supabase
-          .from("competition_members")
-          .select("competition_id, competitions!inner(product_mode)")
-          .eq("user_id", authUser.id)
-          .eq("competitions.product_mode", "world_cup_2026_shell")
-          .limit(1)
-          .then(({ data }) => {
-            isWcMember = ((data ?? []).length > 0);
           })
       : Promise.resolve(),
   ]);

@@ -1,6 +1,7 @@
 import { createClient } from "@/lib/supabase/server";
 import { WC2026_FIXTURES, type WcFixture } from "@/lib/wc/fixtures";
 import { utcDateIso } from "@/lib/wc/daily-lock";
+import { resolveWcCompetition } from "@/lib/wc/resolve-wc-competition";
 import type { WindowEvent } from "@/app/wc/picks/[windowId]/WindowPickList";
 import type { Prediction } from "@/types/database";
 
@@ -21,20 +22,13 @@ const WINDOW_SIZE_DAYS = 8;
  * Knockout (round 4+): all fixtures for the current round (no sliding).
  */
 export async function fetchMd1PicksData() {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-
-  const { data: competition } = await supabase
-    .from("competitions")
-    .select("id, status")
-    .eq("product_mode", "world_cup_2026_shell")
-    .in("status", ["active", "draft"])
-    .limit(1)
-    .maybeSingle();
+  const { competition, user, isMember: resolvedIsMember } = await resolveWcCompetition({
+    statuses: ["active", "draft"],
+  });
 
   if (!competition) return { ready: false as const };
+
+  const supabase = await createClient();
 
   // Fetch all group-stage rounds (round_number 1-3)
   const { data: groupRounds } = await supabase
@@ -85,7 +79,7 @@ export async function fetchMd1PicksData() {
 
     if (!windowStartIso) {
       // All group fixtures confirmed — fall through to knockout below
-      return fetchKnockoutFallback(supabase, competition.id, user);
+      return fetchKnockoutFallback(supabase, competition.id, user, resolvedIsMember);
     }
 
     // Take 8 fixture-dates from window_start (skipping dates with no fixtures)
@@ -104,7 +98,7 @@ export async function fetchMd1PicksData() {
     windowLocked = false;
   } else {
     // All group rounds scored — fall through to knockout
-    return fetchKnockoutFallback(supabase, competition.id, user);
+    return fetchKnockoutFallback(supabase, competition.id, user, resolvedIsMember);
   }
 
   const events: WindowEvent[] = eventRows.map((row) => ({
@@ -118,17 +112,9 @@ export async function fetchMd1PicksData() {
     event_prediction_types: row.event_prediction_types,
   }));
 
-  let isMember = false;
+  const isMember = resolvedIsMember;
   let predictions: Prediction[] = [];
   if (user) {
-    const { data: membership } = await supabase
-      .from("competition_members")
-      .select("id")
-      .eq("competition_id", competition.id)
-      .eq("user_id", user.id)
-      .maybeSingle();
-    isMember = Boolean(membership);
-
     if (isMember && events.length > 0) {
       const eventIds = events.map((e) => e.id);
       const { data: predRows } = await supabase
@@ -171,6 +157,7 @@ async function fetchKnockoutFallback(
   supabase: Awaited<ReturnType<typeof createClient>>,
   competitionId: string,
   user: { id: string } | null,
+  resolvedIsMember: boolean,
 ) {
   const { data: koRound } = await supabase
     .from("rounds")
@@ -215,17 +202,9 @@ async function fetchKnockoutFallback(
     if (fixture) fixtureByEventId.set(row.id, fixture);
   }
 
-  let isMember = false;
+  const isMember = resolvedIsMember;
   let predictions: Prediction[] = [];
   if (user) {
-    const { data: membership } = await supabase
-      .from("competition_members")
-      .select("id")
-      .eq("competition_id", competitionId)
-      .eq("user_id", user.id)
-      .maybeSingle();
-    isMember = Boolean(membership);
-
     if (isMember && events.length > 0) {
       const eventIds = events.map((e) => e.id);
       const { data: predRows } = await supabase

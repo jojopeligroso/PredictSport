@@ -1,5 +1,6 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { BracketSubmissionData } from "@/types/tournament";
+import { resolveWcCompetition } from "@/lib/wc/resolve-wc-competition";
 
 export type BracketStage =
   | "not_started"
@@ -39,13 +40,9 @@ export async function getWcBracketSnapshot(
   supabase: SupabaseClient,
   userId: string,
 ): Promise<BracketSnapshot | null> {
-  const { data: competition } = await supabase
-    .from("competitions")
-    .select("id, tournament_id")
-    .eq("product_mode", "world_cup_2026_shell")
-    .in("status", ["active", "draft"])
-    .limit(1)
-    .maybeSingle();
+  const { competition } = await resolveWcCompetition({
+    statuses: ["active", "draft"],
+  });
   if (!competition) return null;
 
   const { data: cls } = await supabase

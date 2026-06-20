@@ -1,35 +1,30 @@
 import { createClient } from "@/lib/supabase/server";
 import { redirect } from "next/navigation";
 import { getServerT } from "@/lib/i18n/server";
+import { resolveWcCompetition } from "@/lib/wc/resolve-wc-competition";
 import { ChatPageClient } from "./ChatPageClient";
 
 export const dynamic = "force-dynamic";
 
 export default async function ChatPage() {
   const t = await getServerT();
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const { competition, user, isMember } = await resolveWcCompetition();
 
   if (!user) {
     redirect("/login?next=/wc/chat");
   }
 
-  // Find the WC competition
-  const { data: competition } = await supabase
-    .from("competitions")
-    .select("id, name, chat_enabled")
-    .eq("product_mode", "world_cup_2026_shell")
-    .in("status", ["active", "draft", "completed"])
-    .limit(1)
-    .maybeSingle();
-
   if (!competition || !competition.chat_enabled) {
     redirect("/wc/home");
   }
 
-  // Verify membership + get role
+  if (!isMember) {
+    redirect("/wc/home");
+  }
+
+  const supabase = await createClient();
+
+  // Get role + member count
   const [{ data: membership }, { count: memberCount }] = await Promise.all([
     supabase
       .from("competition_members")
@@ -43,16 +38,12 @@ export default async function ChatPage() {
       .eq("competition_id", competition.id),
   ]);
 
-  if (!membership) {
-    redirect("/wc/home");
-  }
-
   return (
     <ChatPageClient
       competitionId={competition.id}
       competitionName={competition.name ?? "WC Predict"}
       currentUserId={user.id}
-      currentUserRole={membership.role ?? "participant"}
+      currentUserRole={membership?.role ?? "participant"}
       memberCount={memberCount ?? 0}
     />
   );

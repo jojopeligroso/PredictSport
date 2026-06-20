@@ -9,6 +9,7 @@ import { createClient } from "@/lib/supabase/server";
 import { WcBrandedTitle } from "@/components/wc/WcBrandedTitle";
 import { RulesContent } from "@/components/wc/RulesContent";
 import { getServerT } from "@/lib/i18n/server";
+import { resolveWcCompetition } from "@/lib/wc/resolve-wc-competition";
 
 export const dynamic = "force-dynamic";
 
@@ -20,33 +21,15 @@ export const metadata: Metadata = {
 
 export default async function WcRulesPage() {
   const t = await getServerT();
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-
-  let isMember = false;
-  if (user) {
-    const { data } = await supabase
-      .from("competition_members")
-      .select("competition_id, competitions!inner(product_mode)")
-      .eq("user_id", user.id)
-      .eq("competitions.product_mode", "world_cup_2026_shell")
-      .limit(1);
-    isMember = (data ?? []).length > 0;
-  }
+  const { competition: wcComp, user, isMember } = await resolveWcCompetition({
+    statuses: ["active", "draft"],
+  });
 
   // Get earliest lock_time across WC matchday 1
   let firstLockTime: string | null = null;
-  const { data: wcComp } = await supabase
-    .from("competitions")
-    .select("id")
-    .eq("product_mode", "world_cup_2026_shell")
-    .in("status", ["active", "draft"])
-    .limit(1)
-    .maybeSingle();
 
   if (wcComp) {
+    const supabase = await createClient();
     const { data: md1Round } = await supabase
       .from("rounds")
       .select("id")

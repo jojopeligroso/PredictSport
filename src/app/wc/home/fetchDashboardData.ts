@@ -3,6 +3,7 @@ import { WC2026_FIXTURES, type WcFixture } from "@/lib/wc/fixtures";
 import { describeDraftProgress } from "@/lib/bracket/bracket-progress";
 import { computeGroupStandings } from "@/lib/wc/compute-group-standings";
 import { utcDateIso } from "@/lib/wc/daily-lock";
+import { resolveWcCompetition } from "@/lib/wc/resolve-wc-competition";
 import type { WindowEvent } from "@/app/wc/picks/[windowId]/WindowPickList";
 import type { Prediction } from "@/types/database";
 import type { BracketSubmissionData } from "@/types/tournament";
@@ -110,21 +111,13 @@ export type DashboardResult =
  * Runs server-side. Reuses the same Supabase patterns as fetchMd1PicksData.
  */
 export async function fetchDashboardData(): Promise<DashboardResult> {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-
-  // 1. Find the WC competition
-  const { data: competition } = await supabase
-    .from("competitions")
-    .select("id, status, invite_code, entry_closes_at, max_entrants, chat_enabled, tournament_id")
-    .eq("product_mode", "world_cup_2026_shell")
-    .in("status", ["active", "draft"])
-    .limit(1)
-    .maybeSingle();
+  const { competition, user, isMember: resolvedIsMember } = await resolveWcCompetition({
+    statuses: ["active", "draft"],
+  });
 
   if (!competition) return { ready: false };
+
+  const supabase = await createClient();
 
   // 2. Parallel fetches: round (actionable + scored fallback), member count, membership, classification
   const [
@@ -157,7 +150,7 @@ export async function fetchDashboardData(): Promise<DashboardResult> {
         .from("competition_members")
         .select("id", { count: "exact", head: true })
         .eq("competition_id", competition.id),
-      // User membership (with role for chat admin)
+      // User membership role (membership already resolved, but need role for admin check)
       user
         ? supabase
             .from("competition_members")
@@ -178,7 +171,7 @@ export async function fetchDashboardData(): Promise<DashboardResult> {
   // Prefer actionable round; fall back to most recent scored round
   const currentRound = actionableRoundResult.data ?? scoredRoundResult.data;
   const membership = membershipResult.data;
-  const isMember = Boolean(membership);
+  const isMember = resolvedIsMember;
   const isCompetitionAdmin = membership?.role === "admin" || membership?.role === "co_admin";
   const memberCount = memberCountResult.count ?? 0;
   const classificationId = classificationResult.data?.id ?? null;

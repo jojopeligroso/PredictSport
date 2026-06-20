@@ -1,5 +1,6 @@
 import { createClient } from "@/lib/supabase/server";
 import { WC2026_FIXTURES, type WcFixture } from "@/lib/wc/fixtures";
+import { resolveWcCompetition } from "@/lib/wc/resolve-wc-competition";
 import type { FixtureResult, FixturePredictionData } from "@/components/wc/FixturesTabs";
 import type { WindowEvent } from "@/app/wc/picks/[windowId]/WindowPickList";
 import type { Prediction, EventPredictionType } from "@/types/database";
@@ -11,18 +12,9 @@ import type { Prediction, EventPredictionType } from "@/types/database";
  * Returns static fixture list + live results + per-fixture prediction context.
  */
 export async function fetchFixturesResultsData() {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const { competition, user, isMember: resolvedIsMember } = await resolveWcCompetition();
 
-  const { data: competition } = await supabase
-    .from("competitions")
-    .select("id")
-    .eq("product_mode", "world_cup_2026_shell")
-    .in("status", ["active", "draft", "completed"])
-    .limit(1)
-    .maybeSingle();
+  const supabase = await createClient();
 
   const resultsByExternalId: Record<string, FixtureResult | undefined> = {};
   const predictionsByExternalId: Record<string, FixturePredictionData> = {};
@@ -92,16 +84,7 @@ export async function fetchFixturesResultsData() {
       };
     }
 
-    // Membership check
-    if (user) {
-      const { data: membership } = await supabase
-        .from("competition_members")
-        .select("id")
-        .eq("competition_id", competition.id)
-        .eq("user_id", user.id)
-        .maybeSingle();
-      isMember = Boolean(membership);
-    }
+    isMember = resolvedIsMember;
 
     // Build WindowEvent objects for expand-to-pick
     const fixtureByExternalId = new Map<string, WcFixture>();
