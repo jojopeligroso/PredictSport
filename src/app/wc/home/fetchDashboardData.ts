@@ -26,6 +26,7 @@ export interface DatePillSummary {
 /** A single completed match with result data and the user's prediction outcome. */
 export interface ResultRow {
   fixture: WcFixture;
+  startTime: string;
   homeScore: number;
   awayScore: number;
   /** "home" | "away" | "draw" */
@@ -62,8 +63,6 @@ export interface DashboardData {
   fixtureByEventId: Map<string, WcFixture>;
   /** Most recent completed matchday results with user prediction outcomes. */
   recentResults: ResultRow[];
-  /** Label for the results section (e.g. "Today's Results" or "Jun 12 Results"). */
-  resultsLabel: string;
   /** Classification IDs for group/standings lookup. */
   classificationId: string | null;
   /** Competition invite code (null if no code or entry closed). */
@@ -274,7 +273,7 @@ export async function fetchDashboardData(): Promise<DashboardResult> {
       e.status !== "postponed",
   );
   const unlocked = eventRows.filter(
-    (e) => new Date(e.lock_time) > now && e.status !== "completed",
+    (e) => new Date(e.lock_time) > now && e.status !== "resulted",
   );
 
   // Group by UTC date, take the first day with events
@@ -416,7 +415,7 @@ export async function fetchDashboardData(): Promise<DashboardResult> {
   );
 
   // 6. Most recent completed matchday results + live group standings (parallel)
-  const [{ recentResults, resultsLabel }, standingsMap] = await Promise.all([
+  const [recentResults, standingsMap] = await Promise.all([
     fetchRecentResults(supabase, competition.id, fixtureByExternalId, user?.id ?? null),
     computeGroupStandings(supabase, competition.id),
   ]);
@@ -520,7 +519,6 @@ export async function fetchDashboardData(): Promise<DashboardResult> {
     predictions,
     fixtureByEventId,
     recentResults,
-    resultsLabel,
     classificationId,
     todayGroups,
     todayGroupEvents,
@@ -551,57 +549,21 @@ async function fetchRecentResults(
   competitionId: string,
   fixtureByExternalId: Map<string, WcFixture>,
   userId: string | null,
-): Promise<{ recentResults: ResultRow[]; resultsLabel: string }> {
-  // Fetch all completed events with result_data
+): Promise<ResultRow[]> {
+  // Fetch resulted events from the last 48h. No date grouping — the client
+  // applies a 6AM-local-anchor window to handle users across all timezones.
+  const cutoff = new Date(Date.now() - 48 * 60 * 60 * 1000).toISOString();
   const { data: completedEvents } = await supabase
     .from("events")
     .select("id, external_event_id, start_time, result_data")
     .eq("competition_id", competitionId)
-    .eq("status", "completed")
+    .eq("status", "resulted")
     .not("result_data", "is", null)
-    .order("start_time", { ascending: false });
+    .gte("start_time", cutoff)
+    .order("start_time", { ascending: false })
+    .limit(20);
 
-  if (!completedEvents?.length) {
-    return { recentResults: [], resultsLabel: "Results" };
-  }
-
-  // Group completed events by UTC date, pick today or most recent
-  const byDate = new Map<string, typeof completedEvents>();
-  for (const e of completedEvents) {
-    const d = new Date(e.start_time);
-    const iso = `${d.getUTCFullYear()}-${String(d.getUTCMonth() + 1).padStart(2, "0")}-${String(d.getUTCDate()).padStart(2, "0")}`;
-    const list = byDate.get(iso) ?? [];
-    list.push(e);
-    byDate.set(iso, list);
-  }
-
-  const now = new Date();
-  const todayIso = `${now.getUTCFullYear()}-${String(now.getUTCMonth() + 1).padStart(2, "0")}-${String(now.getUTCDate()).padStart(2, "0")}`;
-
-  // Prefer today; otherwise most recent date
-  let targetDate = todayIso;
-  if (!byDate.has(todayIso)) {
-    const sortedDates = [...byDate.keys()].sort().reverse();
-    targetDate = sortedDates[0];
-  }
-
-  const matchdayEvents = byDate.get(targetDate) ?? [];
-  // Sort chronologically within the matchday
-  matchdayEvents.sort(
-    (a, b) => new Date(a.start_time).getTime() - new Date(b.start_time).getTime(),
-  );
-
-  // Build label
-  const isToday = targetDate === todayIso;
-  let resultsLabel = "Today's Results";
-  if (!isToday) {
-    const d = new Date(targetDate + "T12:00:00Z");
-    resultsLabel = d.toLocaleDateString("en-GB", {
-      day: "numeric",
-      month: "short",
-      timeZone: "UTC",
-    }) + " Results";
-  }
+  if (!completedEvents?.length) return [];
 
   // Fetch user's predictions for these events (if logged in)
   type PredRow = {
@@ -614,10 +576,12 @@ async function fetchRecentResults(
   const predsByEventId = new Map<string, PredRow[]>();
 
   if (userId) {
-    const eventIds = matchdayEvents.map((e) => e.id);
+    const eventIds = completedEvents.map((e) => e.id);
     const { data: preds } = await supabase
       .from("predictions")
-      .select("event_id, prediction_type, prediction_data, is_correct, points_awarded")
+      .select(
+        "event_id, prediction_type, prediction_data, is_correct, points_awarded",
+      )
       .eq("user_id", userId)
       .in("event_id", eventIds);
 
@@ -630,22 +594,31 @@ async function fetchRecentResults(
 
   // Assemble result rows
   const recentResults: ResultRow[] = [];
-  for (const e of matchdayEvents) {
+  for (const e of completedEvents) {
     if (!e.external_event_id) continue;
     const fixture = fixtureByExternalId.get(e.external_event_id);
     if (!fixture) continue;
 
+    // Extract scores — handle all three shapes:
+    // 1. Nested (ESPN auto-resolve): result_data.score.home_score
+    // 2. Flat snake_case (manual): result_data.home_score
+    // 3. Flat camelCase: result_data.homeScore
     const rd = (e.result_data ?? {}) as Record<string, unknown>;
-    const homeScore = numOrNull(rd.home_score ?? rd.homeScore);
-    const awayScore = numOrNull(rd.away_score ?? rd.awayScore);
-    if (homeScore === null || awayScore === null) continue;
+    const scores = extractResultScores(rd);
+    if (!scores) continue;
 
     const winner =
-      homeScore > awayScore ? "home" : awayScore > homeScore ? "away" : "draw";
+      scores.home > scores.away
+        ? "home"
+        : scores.away > scores.home
+          ? "away"
+          : "draw";
 
     const preds = predsByEventId.get(e.id) ?? [];
     const winnerPred = preds.find((p) => p.prediction_type === "winner");
-    const scorePred = preds.find((p) => p.prediction_type === "exact_score");
+    const scorePred = preds.find(
+      (p) => p.prediction_type === "exact_score",
+    );
 
     // Extract user's winner pick value
     const userWinnerPick: string | null =
@@ -664,8 +637,9 @@ async function fetchRecentResults(
 
     recentResults.push({
       fixture,
-      homeScore,
-      awayScore,
+      startTime: e.start_time,
+      homeScore: scores.home,
+      awayScore: scores.away,
       winner,
       userWinnerPick,
       userScorePick,
@@ -676,7 +650,33 @@ async function fetchRecentResults(
     });
   }
 
-  return { recentResults, resultsLabel };
+  return recentResults;
+}
+
+/**
+ * Extract home/away scores from result_data, handling all three shapes:
+ * 1. Nested (ESPN): result_data.score.home_score
+ * 2. Flat snake_case (manual): result_data.home_score
+ * 3. Flat camelCase: result_data.homeScore
+ * Mirrors compute-group-standings.ts extractScores().
+ */
+function extractResultScores(
+  rd: Record<string, unknown>,
+): { home: number; away: number } | null {
+  // Top-level flat shape
+  let home = numOrNull(rd.home_score ?? rd.homeScore);
+  let away = numOrNull(rd.away_score ?? rd.awayScore);
+  if (home !== null && away !== null) return { home, away };
+
+  // Nested score shape (ESPN auto-resolve)
+  const score = rd.score as Record<string, unknown> | undefined;
+  if (score) {
+    home = numOrNull(score.home_score ?? score.home);
+    away = numOrNull(score.away_score ?? score.away);
+    if (home !== null && away !== null) return { home, away };
+  }
+
+  return null;
 }
 
 function numOrNull(v: unknown): number | null {

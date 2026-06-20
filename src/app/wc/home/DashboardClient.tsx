@@ -37,7 +37,6 @@ interface DashboardClientProps {
   predictions: Prediction[];
   fixtureByEventId: Map<string, WcFixture>;
   recentResults: ResultRow[];
-  resultsLabel: string;
   classificationId: string | null;
   todayGroups: string[];
   todayGroupEvents: Map<string, WindowEvent[]>;
@@ -131,7 +130,6 @@ export function DashboardClient({
   predictions,
   fixtureByEventId,
   recentResults,
-  resultsLabel,
   classificationId,
   todayGroups,
   todayGroupEvents,
@@ -157,6 +155,7 @@ export function DashboardClient({
   const [selectedDate, setSelectedDate] = useState<string | null>(null);
   // In-progress events auto-expand; track which ones the user manually collapsed
   const [collapsedLiveIds, setCollapsedLiveIds] = useState<Set<string>>(new Set());
+  const [resultsExpanded, setResultsExpanded] = useState(false);
 
   // Raw "is any match live right now" check (ignores the toggle + date filter) —
   // drives both the Live-mode toggle hook and the live poll gating.
@@ -283,6 +282,45 @@ export function DashboardClient({
   }, [filteredEvents, predictions, liveEnabled]);
 
   const now = useNowAfterMount();
+
+  // 6AM-anchored results window — filters server-provided results (last 48h)
+  // to the user's local "sports day" (6AM to 6AM). Runs after mount to avoid
+  // hydration mismatch (server doesn't know the user's timezone).
+  const windowedResults = useMemo(() => {
+    // Filter out events the user didn't predict
+    const predicted = recentResults.filter((r) => r.userWinnerPick !== null);
+    if (predicted.length === 0) return [];
+    if (!now) return predicted.slice(0, 3); // SSR: safe default
+
+    // Compute the most recent local 6AM boundary
+    const today6am = new Date(now);
+    today6am.setHours(6, 0, 0, 0);
+    const anchor = now >= today6am
+      ? today6am
+      : new Date(today6am.getTime() - 24 * 60 * 60 * 1000);
+
+    // Primary window: anchor → now
+    const primary = predicted.filter(
+      (r) => new Date(r.startTime).getTime() >= anchor.getTime(),
+    );
+    if (primary.length > 0) return primary;
+
+    // Fallback: previous 6AM → anchor
+    const prevAnchor = new Date(anchor.getTime() - 24 * 60 * 60 * 1000);
+    return predicted.filter((r) => {
+      const t = new Date(r.startTime).getTime();
+      return t >= prevAnchor.getTime() && t < anchor.getTime();
+    });
+  }, [recentResults, now]);
+
+  /** Max 6 results on dashboard. Show 3 initially, expand to min(total, 6). */
+  const RESULTS_INITIAL = 3;
+  const RESULTS_MAX = 6;
+  const visibleResults = resultsExpanded
+    ? windowedResults.slice(0, RESULTS_MAX)
+    : windowedResults.slice(0, RESULTS_INITIAL);
+  const canExpandResults = !resultsExpanded && windowedResults.length > RESULTS_INITIAL;
+  const remainingResultsCount = Math.min(windowedResults.length, RESULTS_MAX) - RESULTS_INITIAL;
 
   const appUrl =
     typeof window !== "undefined"
@@ -448,7 +486,46 @@ export function DashboardClient({
         </OnboardingSection>
       )}
 
-      {/* ── 5. Your Prediction Group ──────────────────────────────────── */}
+      {/* ── 5. Latest Results (6AM-anchored window) ─────────────────── */}
+      {visibleResults.length > 0 && (
+        <OnboardingSection id="other">
+          <section className="ps-panel mt-2">
+            <div className="rounded-xl border border-ps-border bg-ps-surface p-4">
+              <div className="flex items-center justify-between">
+                <h3 className="text-base font-bold text-ps-text">
+                  {t('dash.latest_results')}
+                </h3>
+                <span className="text-[11px] font-semibold uppercase text-ps-text-ter">
+                  {t(windowedResults.length === 1 ? 'wc.match' : 'wc.matches', { count: windowedResults.length })}
+                </span>
+              </div>
+              <div className="mt-3 space-y-0 divide-y divide-ps-border">
+                {visibleResults.map((r) => (
+                  <TodayResultRow key={r.fixture.externalId} result={r} />
+                ))}
+              </div>
+              {canExpandResults && remainingResultsCount > 0 && (
+                <button
+                  onClick={() => setResultsExpanded(true)}
+                  className="mt-3 w-full text-center text-[13px] font-semibold text-ps-amber transition-colors hover:opacity-80"
+                >
+                  {t('dash.show_more_results', { count: remainingResultsCount })}
+                </button>
+              )}
+              <div className="mt-2 text-center">
+                <Link
+                  href="/wc"
+                  className="text-[12px] font-medium text-ps-text-ter transition-colors hover:text-ps-text-sec"
+                >
+                  {t('dash.go_to_results')}
+                </Link>
+              </div>
+            </div>
+          </section>
+        </OnboardingSection>
+      )}
+
+      {/* ── 6. Your Prediction Group ──────────────────────────────────── */}
       <OnboardingSection id="group">
         <section className="ps-panel mt-2">
           {classificationId ? (
@@ -530,35 +607,6 @@ export function DashboardClient({
           </section>
         </OnboardingSection>
       )}
-
-      {/* ── 7. Recent Results ─────────────────────────────────────────── */}
-      <OnboardingSection id="other">
-        <section className="ps-panel mt-2">
-          {recentResults.length > 0 ? (
-            <div className="rounded-xl border border-ps-border bg-ps-surface p-4">
-              <div className="flex items-center justify-between">
-                <h3 className="text-base font-bold text-ps-text">
-                  {resultsLabel}
-                </h3>
-                <span className="text-[11px] font-semibold uppercase text-ps-text-ter">
-                  {t(recentResults.length === 1 ? 'wc.match' : 'wc.matches', { count: recentResults.length })}
-                </span>
-              </div>
-              <div className="mt-3 space-y-0 divide-y divide-ps-border">
-                {recentResults.map((r) => (
-                  <TodayResultRow key={r.fixture.externalId} result={r} />
-                ))}
-              </div>
-            </div>
-          ) : (
-            <div className="rounded-xl border border-ps-border bg-ps-surface px-4 py-5 text-center">
-              <p className="text-xs text-ps-text-ter">
-                {t('dash.results_placeholder')}
-              </p>
-            </div>
-          )}
-        </section>
-      </OnboardingSection>
 
       {/* ── 8. Today's WC Match Groups ──────────────────────────────── */}
       <OnboardingSection id="other">
