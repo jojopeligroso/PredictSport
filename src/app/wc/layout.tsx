@@ -1,6 +1,5 @@
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
-import { UserMenu } from "@/components/UserMenu";
 import { MobileNav } from "@/components/MobileNav";
 import { BrandMark } from "@/components/BrandMark";
 import { WcNavLinks } from "@/components/wc/WcNavLinks";
@@ -120,16 +119,6 @@ export default async function WorldCupLayout({
 
           <div className="flex items-center gap-1">
             <LanguageToggle />
-            {authUser ? (
-              <UserMenu displayName={displayName} avatarUrl={avatarUrl} isAdmin={isAdmin || isWcAdmin} />
-            ) : (
-              <Link
-                href="/login"
-                className="hidden rounded-lg bg-ps-text px-3 py-1.5 text-sm font-semibold text-ps-bg md:block"
-              >
-                {t('common.sign_in')}
-              </Link>
-            )}
             <MobileNav
               isLoggedIn={!!authUser}
               displayName={displayName}

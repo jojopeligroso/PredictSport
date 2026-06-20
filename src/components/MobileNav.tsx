@@ -44,7 +44,24 @@ export function MobileNav({ isLoggedIn, displayName, avatarUrl, isAdmin, extraLi
   }, [isOpen]);
 
   return (
-    <div className="md:hidden" ref={menuRef}>
+    <div className="flex items-center" ref={menuRef}>
+      {/* User avatar (always visible in nav bar) */}
+      {isLoggedIn && (
+        <span className="pointer-events-none flex items-center">
+          {avatarUrl ? (
+            <img
+              src={avatarUrl}
+              alt=""
+              className="h-7 w-7 rounded-full"
+              referrerPolicy="no-referrer"
+            />
+          ) : (
+            <span className="flex h-7 w-7 items-center justify-center rounded-full bg-ps-chip text-xs font-medium text-ps-text-sec">
+              {displayName.charAt(0).toUpperCase()}
+            </span>
+          )}
+        </span>
+      )}
       {/* Hamburger button */}
       <button
         onClick={() => setIsOpen(!isOpen)}
@@ -91,26 +108,7 @@ export function MobileNav({ isLoggedIn, displayName, avatarUrl, isAdmin, extraLi
           <div className="px-4 py-3">
             {isLoggedIn ? (
               <>
-                {/* User header */}
-                <div className="flex items-center gap-2.5 pb-2.5">
-                  {avatarUrl ? (
-                    <img
-                      src={avatarUrl}
-                      alt=""
-                      className="h-8 w-8 rounded-full"
-                      referrerPolicy="no-referrer"
-                    />
-                  ) : (
-                    <div className="flex h-8 w-8 items-center justify-center rounded-full bg-ps-chip text-sm font-medium text-ps-text-sec">
-                      {displayName.charAt(0).toUpperCase()}
-                    </div>
-                  )}
-                  <span className="text-sm font-semibold text-ps-text">
-                    {displayName}
-                  </span>
-                </div>
-
-                <div className="border-t border-ps-border pt-1.5">
+                <div>
                   {/* Navigation links */}
                   <Link
                     href="/profile"
@@ -126,8 +124,11 @@ export function MobileNav({ isLoggedIn, displayName, avatarUrl, isAdmin, extraLi
                   <Link
                     href="/wc/leaderboard"
                     onClick={() => setIsOpen(false)}
-                    className="block rounded-md px-3 py-2 text-sm font-medium text-ps-text-sec transition-colors hover:bg-ps-chip hover:text-ps-text"
+                    className="flex items-center gap-2 rounded-md px-3 py-2 text-sm font-medium text-ps-text-sec transition-colors hover:bg-ps-chip hover:text-ps-text"
                   >
+                    <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" aria-hidden="true">
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M16.5 18.75h-9m9 0a3 3 0 0 1 3 3h-15a3 3 0 0 1 3-3m9 0v-4.5A3.375 3.375 0 0 0 13.125 10.875h-2.25A3.375 3.375 0 0 0 7.5 14.25v4.5m6-6V6.375a3.375 3.375 0 0 0-3-3.354V3m0 0a3.375 3.375 0 0 0-3 3.354V10.5" />
+                    </svg>
                     {t("nav.leaderboard")}
                   </Link>
                   <Link
@@ -136,8 +137,11 @@ export function MobileNav({ isLoggedIn, displayName, avatarUrl, isAdmin, extraLi
                       setIsOpen(false);
                       markSeen();
                     }}
-                    className="flex items-center gap-1.5 rounded-md px-3 py-2 text-sm font-medium text-ps-text-sec transition-colors hover:bg-ps-chip hover:text-ps-text"
+                    className="flex items-center gap-2 rounded-md px-3 py-2 text-sm font-medium text-ps-text-sec transition-colors hover:bg-ps-chip hover:text-ps-text"
                   >
+                    <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" aria-hidden="true">
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M8.625 12a.375.375 0 1 1-.75 0 .375.375 0 0 1 .75 0Zm0 0H8.25m4.125 0a.375.375 0 1 1-.75 0 .375.375 0 0 1 .75 0Zm0 0H12m4.125 0a.375.375 0 1 1-.75 0 .375.375 0 0 1 .75 0Zm0 0h-.375M21 12c0 4.556-4.03 8.25-9 8.25a9.764 9.764 0 0 1-2.555-.337A5.972 5.972 0 0 1 5.41 20.97a5.969 5.969 0 0 1-.474-.065 4.48 4.48 0 0 0 .978-2.025c.09-.457-.133-.901-.467-1.226C3.93 16.178 3 14.189 3 12c0-4.556 4.03-8.25 9-8.25s9 3.694 9 8.25Z" />
+                    </svg>
                     {t("dash.chat")}
                     {hasUnread && (
                       <span className="h-2 w-2 rounded-full bg-ps-amber" aria-label="New chat messages" />
