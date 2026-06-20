@@ -1,7 +1,5 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
-import { notifyDeadline } from "@/lib/telegram/notify";
-import { revealPredictions } from "@/lib/telegram/predictions";
 import {
   sendPushToUser,
   getUserReminderLead,
@@ -15,9 +13,8 @@ import type { Locale } from "@/lib/i18n";
  * GET /api/notifications/cron
  *
  * Scheduled HOURLY at :00 by Supabase pg_cron (job `wc-notifications-hourly`,
- * see migration 20260528000100). Two responsibilities:
- *   1. Push deadline reminders to members of competitions whose events lock soon.
- *   2. Reveal predictions in the linked Telegram group when events lock.
+ * see migration 20260528000100). Sends push deadline reminders to members
+ * of competitions whose events lock soon.
  *
  * SECURITY: Protected by CRON_SECRET. Stored in Supabase Vault as secret
  * `cron_secret` (for pg_cron) AND in Vercel project env (kept in sync).
@@ -55,7 +52,6 @@ export async function GET(request: Request) {
 
   const supabase = getServiceClient();
   const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? "https://predictsport-rust.vercel.app";
-  const telegramGroupId = process.env.TELEGRAM_GROUP_CHAT_ID;
 
   const now = new Date();
   // 4-hour lookahead covers the longest user-configurable lead time (240min).
@@ -90,36 +86,6 @@ export async function GET(request: Request) {
   const events = ((rawEvents ?? []) as unknown as EventRow[]).filter(
     (e) => e.competitions && e.competitions.type !== "personal"
   );
-
-  // ── Telegram deadline pings ────────────────────────────────────────
-  // Only run if a group chat is configured. Earlier this returned 500
-  // when unset, which silently disabled the push block below it too.
-  let telegramSent = 0;
-  const telegramErrors: string[] = [];
-
-  if (telegramGroupId) {
-    for (const event of events) {
-      const lockTime = new Date(event.lock_time);
-      const hoursLeft = (lockTime.getTime() - now.getTime()) / (1000 * 60 * 60);
-      const isWc = event.competitions?.product_mode === WC_PRODUCT_MODE;
-      const targetPath = isWc ? "/wc" : "/predictions";
-
-      try {
-        await notifyDeadline(
-          telegramGroupId,
-          event.event_name,
-          hoursLeft,
-          appUrl,
-          targetPath
-        );
-        telegramSent++;
-      } catch (err) {
-        const msg = err instanceof Error ? err.message : "Unknown error";
-        console.error(`Cron: failed to notify for ${event.event_name}: ${msg}`);
-        telegramErrors.push(event.event_name);
-      }
-    }
-  }
 
   // ── Web Push deadline reminders to competition members ─────────────
   // Batched: each user gets at most ONE notification listing all events
@@ -288,38 +254,11 @@ export async function GET(request: Request) {
     }
   }
 
-  // ── Reveal predictions for events that just locked ─────────────────
-  // Telegram-only. Find events whose lock_time fell within the last hour.
-  let revealed = 0;
-  if (telegramGroupId) {
-    const oneHourAgo = new Date(now.getTime() - 1 * 60 * 60 * 1000);
-    const { data: lockedEvents } = await supabase
-      .from("events")
-      .select("id, event_name")
-      .in("status", ["upcoming", "locked"])
-      .lte("lock_time", now.toISOString())
-      .gt("lock_time", oneHourAgo.toISOString());
-
-    for (const event of lockedEvents ?? []) {
-      try {
-        await revealPredictions(telegramGroupId, event.id);
-        revealed++;
-      } catch (err) {
-        const msg = err instanceof Error ? err.message : "Unknown error";
-        console.error(`Cron: failed to reveal ${event.event_name}: ${msg}`);
-      }
-    }
-  }
-
   return NextResponse.json({
     ok: true,
     checked_at: now.toISOString(),
     events_found: events.length,
     push_sent: pushSent,
     push_throttled: pushThrottled,
-    telegram_sent: telegramSent,
-    predictions_revealed: revealed,
-    telegram_configured: !!telegramGroupId,
-    telegram_errors: telegramErrors.length > 0 ? telegramErrors : undefined,
   });
 }

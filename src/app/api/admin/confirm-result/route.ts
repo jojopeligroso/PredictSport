@@ -296,56 +296,10 @@ export async function POST(request: Request) {
     resultData as Record<string, unknown>,
   ).catch(() => {});
 
-  // Notify Telegram group (fire-and-forget — don't block the response)
-  const telegramGroupId = process.env.TELEGRAM_GROUP_CHAT_ID;
-  if (telegramGroupId) {
-    notifyResultsToGroup(supabase, telegramGroupId, event, predictions ?? []).catch((err) => {
-      console.error("Telegram notify failed:", err instanceof Error ? err.message : err);
-    });
-  }
-
   return NextResponse.json({
     success: true,
     event_id: body.event_id,
     predictions_scored: scored,
     scoring_errors: errors,
   });
-}
-
-/**
- * Build a leaderboard from scored predictions and send to the Telegram group.
- */
-async function notifyResultsToGroup(
-  supabase: Awaited<ReturnType<typeof createClient>>,
-  chatId: string,
-  event: Record<string, unknown>,
-  predictions: Array<Record<string, unknown>>
-) {
-  // Aggregate points per user from this event's predictions
-  const pointsByUser = new Map<string, number>();
-  for (const p of predictions) {
-    const userId = p.user_id as string;
-    const pts = (p.points_awarded as number) ?? 0;
-    pointsByUser.set(userId, (pointsByUser.get(userId) ?? 0) + pts);
-  }
-
-  if (pointsByUser.size === 0) return;
-
-  // Fetch display names for scorers
-  const userIds = [...pointsByUser.keys()];
-  const { data: users } = await supabase
-    .from("users")
-    .select("id, display_name")
-    .in("id", userIds);
-
-  const topScorers = [...pointsByUser.entries()]
-    .map(([id, points]) => ({
-      name: users?.find((u) => u.id === id)?.display_name || "Unknown",
-      points,
-    }))
-    .sort((a, b) => b.points - a.points);
-
-  const { notifyResults } = await import("@/lib/telegram/notify");
-  const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? "https://predictsport-rust.vercel.app";
-  await notifyResults(chatId, event.event_name as string, topScorers, appUrl);
 }

@@ -32,6 +32,7 @@ import { RivalTeaser } from "@/components/wc/RivalTeaser";
 import { CommunityPicksCard } from "@/components/wc/CommunityPicksCard";
 import { LiveModeToggle } from "@/components/wc/LiveModeToggle";
 import { LiveChatDrawer } from "@/components/wc/LiveChatDrawer";
+import { WcJoinCard } from "@/components/wc/WcJoinCard";
 import { useLiveModeToggle } from "@/hooks/useLiveMode";
 
 interface DashboardClientProps {
@@ -387,91 +388,105 @@ export function DashboardClient({
 
   const dashboard = (
     <div className="mx-auto max-w-[480px] px-3 pb-8">
-      {/* ── 0. Prediction urgency banner ──────────────────────────────── */}
-      <div className="pt-2">
-        <PredictionBanner events={pillDateEvents} predictions={predictions} />
-      </div>
+      {/* ── 0. Prediction urgency banner (members only) ────────────────── */}
+      {isMember && (
+        <div className="pt-2">
+          <PredictionBanner events={pillDateEvents} predictions={predictions} />
+        </div>
+      )}
 
-      {/* ── 1. Progress strip ──────────────────────────────────────────── */}
-      <OnboardingSection id="other">
-        {total > 0 && (
-          <div className="ps-panel mt-2 text-center">
-            {datePills.length > 0 && (
-              <DashboardDatePills
-                pills={datePills}
-                now={now}
-                selectedDate={selectedDate}
-                onSelectDate={(iso) => setSelectedDate((prev) => prev === iso ? null : iso)}
-              />
-            )}
-            <p className="mt-1 text-[11px] font-semibold uppercase tracking-wider text-ps-text-sec">
-              {t('dash.picks_progress', { picked, total })}
-            </p>
-            <div className="mx-auto mt-1.5 h-1 max-w-[200px] overflow-hidden rounded-full bg-ps-border">
-              <div
-                className="h-full rounded-full bg-ps-amber transition-all"
-                style={{ width: `${total > 0 ? (picked / total) * 100 : 0}%` }}
-              />
+      {/* ── 1. Progress strip (members only) ─────────────────────────── */}
+      {isMember && (
+        <OnboardingSection id="other">
+          {total > 0 && (
+            <div className="ps-panel mt-2 text-center">
+              {datePills.length > 0 && (
+                <DashboardDatePills
+                  pills={datePills}
+                  now={now}
+                  selectedDate={selectedDate}
+                  onSelectDate={(iso) => setSelectedDate((prev) => prev === iso ? null : iso)}
+                />
+              )}
+              <p className="mt-1 text-[11px] font-semibold uppercase tracking-wider text-ps-text-sec">
+                {t('dash.picks_progress', { picked, total })}
+              </p>
+              <div className="mx-auto mt-1.5 h-1 max-w-[200px] overflow-hidden rounded-full bg-ps-border">
+                <div
+                  className="h-full rounded-full bg-ps-amber transition-all"
+                  style={{ width: `${total > 0 ? (picked / total) * 100 : 0}%` }}
+                />
+              </div>
             </div>
-          </div>
-        )}
-      </OnboardingSection>
+          )}
+        </OnboardingSection>
+      )}
 
-      {/* ── 2. Next picks (hero cards — on floor, no panel) ────────────── */}
-      <OnboardingSection id="picks">
-        {filteredEvents.length > 0 && (
-          <section className="mt-2">
-            <p className="mb-1.5 text-[11px] font-semibold uppercase tracking-wider text-ps-text-ter">
-              {t('dash.your_picks')}
-            </p>
-            <div className="flex flex-col gap-1.5">
-              {filteredEvents.map((event) => {
-                const fixture = fixtureByEventId.get(event.id);
-                if (!fixture) return null;
-                const status = getPickStatus(event, predictions, liveEnabled);
-                // In-progress events auto-expand unless manually collapsed
-                const isLiveExpanded =
-                  status === "in_progress" && !collapsedLiveIds.has(event.id);
-                return (
-                  <DashboardPickRow
-                    key={event.id}
-                    fixture={fixture}
-                    predictions={predictions}
-                    status={status}
-                    event={event}
-                    competitionId={competitionId}
-                    fixtureByEventId={fixtureByEventId}
-                    windowLocked={windowLocked}
-                    expanded={isLiveExpanded || expandedEventId === event.id}
-                    onToggle={() => {
-                      if (status === "in_progress") {
-                        setCollapsedLiveIds((prev) => {
-                          const next = new Set(prev);
-                          if (next.has(event.id)) next.delete(event.id);
-                          else next.add(event.id);
-                          return next;
-                        });
-                      } else {
-                        setExpandedEventId((prev) =>
-                          prev === event.id ? null : event.id,
-                        );
-                      }
-                    }}
-                  />
-                );
-              })}
-            </div>
-            <div className="mt-2 text-center">
-              <Link
-                href="/wc"
-                className="text-[13px] font-semibold text-ps-amber transition-colors hover:opacity-80"
-              >
-                {t('dash.continue_round')}
-              </Link>
-            </div>
-          </section>
-        )}
-      </OnboardingSection>
+      {/* ── 2. Next picks (hero cards — members only) ─────────────────── */}
+      {isMember ? (
+        <OnboardingSection id="picks">
+          {filteredEvents.length > 0 && (
+            <section className="mt-2">
+              <p className="mb-1.5 text-[11px] font-semibold uppercase tracking-wider text-ps-text-ter">
+                {t('dash.your_picks')}
+              </p>
+              <div className="flex flex-col gap-1.5">
+                {filteredEvents.map((event) => {
+                  const fixture = fixtureByEventId.get(event.id);
+                  if (!fixture) return null;
+                  const status = getPickStatus(event, predictions, liveEnabled);
+                  // In-progress events auto-expand unless manually collapsed
+                  const isLiveExpanded =
+                    status === "in_progress" && !collapsedLiveIds.has(event.id);
+                  return (
+                    <DashboardPickRow
+                      key={event.id}
+                      fixture={fixture}
+                      predictions={predictions}
+                      status={status}
+                      event={event}
+                      competitionId={competitionId}
+                      fixtureByEventId={fixtureByEventId}
+                      windowLocked={windowLocked}
+                      expanded={isLiveExpanded || expandedEventId === event.id}
+                      onToggle={() => {
+                        if (status === "in_progress") {
+                          setCollapsedLiveIds((prev) => {
+                            const next = new Set(prev);
+                            if (next.has(event.id)) next.delete(event.id);
+                            else next.add(event.id);
+                            return next;
+                          });
+                        } else {
+                          setExpandedEventId((prev) =>
+                            prev === event.id ? null : event.id,
+                          );
+                        }
+                      }}
+                    />
+                  );
+                })}
+              </div>
+              <div className="mt-2 text-center">
+                <Link
+                  href="/wc"
+                  className="text-[13px] font-semibold text-ps-amber transition-colors hover:opacity-80"
+                >
+                  {t('dash.continue_round')}
+                </Link>
+              </div>
+            </section>
+          )}
+        </OnboardingSection>
+      ) : (
+        /* Non-member: Join CTA */
+        <section className="mt-4">
+          <WcJoinCard
+            isAuthenticated={isAuthenticated}
+            competitionId={competitionId}
+          />
+        </section>
+      )}
 
       {/* ── 3. Invite Friends ──────────────────────────────────────────── */}
       <OnboardingSection id="invite">
@@ -609,19 +624,21 @@ export function DashboardClient({
         </OnboardingSection>
       )}
 
-      {/* ── 6. Your Prediction Group ──────────────────────────────────── */}
-      <OnboardingSection id="group">
-        <section className="ps-panel mt-2">
-          {classificationId ? (
-            <GroupMiniTable
-              classificationId={classificationId}
-              competitionId={competitionId}
-            />
-          ) : (
-            <MockGroupCard />
-          )}
-        </section>
-      </OnboardingSection>
+      {/* ── 6. Your Prediction Group (members only) ────────────────────── */}
+      {isMember && (
+        <OnboardingSection id="group">
+          <section className="ps-panel mt-2">
+            {classificationId ? (
+              <GroupMiniTable
+                classificationId={classificationId}
+                competitionId={competitionId}
+              />
+            ) : (
+              <MockGroupCard />
+            )}
+          </section>
+        </OnboardingSection>
+      )}
 
       {/* ── 5a. Rival Predictions teaser ─────────────────────────── */}
       {isMember && (

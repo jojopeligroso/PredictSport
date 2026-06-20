@@ -22,7 +22,7 @@ export default function PrivacyPage() {
           <ul className="ml-4 list-disc space-y-1">
             <li>Manage your account and display your profile on leaderboards</li>
             <li>Calculate scores and rankings within your competitions</li>
-            <li>Send notifications you have opted into (push, Telegram)</li>
+            <li>Send notifications you have opted into (push)</li>
           </ul>
         </section>
 
@@ -52,7 +52,6 @@ export default function PrivacyPage() {
             <li>Google OAuth — for authentication</li>
             <li>Supabase — database and auth infrastructure</li>
             <li>Vercel — hosting</li>
-            <li>Telegram — optional notifications</li>
           </ul>
         </section>
 

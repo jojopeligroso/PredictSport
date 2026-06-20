@@ -6,14 +6,12 @@ import { OrDivider } from "@/components/OrDivider";
 import { useT } from "@/lib/i18n";
 
 // User-agent substrings that indicate an in-app browser where Google OAuth
-// is typically blocked (Telegram, Messenger, Instagram, Line, WhatsApp, etc.)
+// is typically blocked (Messenger, Instagram, Line, WhatsApp, etc.)
 const IN_APP_BROWSER_UA_PATTERNS = [
   "FBAN",        // Facebook app
   "FBAV",        // Facebook app (variant)
   "FB_IAB",      // Facebook in-app browser
   "Instagram",   // Instagram
-  "TelegramWebapp", // Telegram WebApp
-  "Telegram",    // Telegram in-app browser
   "Line/",       // Line messenger
   "WhatsApp",    // WhatsApp
   "MicroMessenger", // WeChat
