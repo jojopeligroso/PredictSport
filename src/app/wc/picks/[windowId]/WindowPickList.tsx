@@ -539,7 +539,9 @@ function MatchPickRow({
           >
             <div className={theme.lockedReadOnly}>{lockedBody}</div>
           </FixtureCardSurface>
-          <ConfidenceAccordion eventId={event.id} competitionId={competitionId} revealAt={confidenceRevealAt} />
+          {process.env.NEXT_PUBLIC_FEATURE_CONFIDENCE_ACCORDION === "true" && (
+            <ConfidenceAccordion eventId={event.id} competitionId={competitionId} revealAt={confidenceRevealAt} />
+          )}
         </>
       );
     }
@@ -547,7 +549,9 @@ function MatchPickRow({
     return (
       <>
         <div className={theme.lockedReadOnly}>{lockedBody}</div>
-        <ConfidenceAccordion eventId={event.id} competitionId={competitionId} revealAt={confidenceRevealAt} />
+        {process.env.NEXT_PUBLIC_FEATURE_CONFIDENCE_ACCORDION === "true" && (
+          <ConfidenceAccordion eventId={event.id} competitionId={competitionId} revealAt={confidenceRevealAt} />
+        )}
       </>
     );
   }
