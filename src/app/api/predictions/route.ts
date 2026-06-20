@@ -282,11 +282,14 @@ export async function POST(request: NextRequest) {
     const primaryPrediction =
       prediction_type === "winner" ? rpcResult.winner : rpcResult.score;
 
-    // Fire-and-forget: post reckons chat message when confidence is set
+    // Fire-and-forget: post reckons chat message when confidence is set.
+    // Only post AFTER lock_time — pre-lock predictions must stay hidden.
+    const eventLocked = new Date() >= new Date(eptEvent.lock_time);
     if (
       prediction_type === "winner" &&
       confidence_level != null &&
-      rpcResult.server_winner
+      rpcResult.server_winner &&
+      eventLocked
     ) {
       const predictedTeam = rpcResult.server_winner as string;
       const drawLabels = ["Draw", "draw", "Empate", "empate"];
