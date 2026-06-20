@@ -14,8 +14,7 @@ import { ConfidencePills, ConfidenceIntroCard, ConfidenceBreadcrumb } from "@/co
 import { useConfidenceDisclosure } from "@/hooks/useConfidenceDisclosure";
 import { ScoreInput } from "@/components/ScoreInput";
 import { FixtureCardSurface } from "@/components/wc/FixtureCardSurface";
-// TODO: re-enable ConfidenceAccordion once progressive disclosure is complete
-// import { ConfidenceAccordion } from "@/components/wc/ConfidenceAccordion";
+import { ConfidenceAccordion } from "@/components/wc/ConfidenceAccordion";
 import { deriveWinnerFromScore } from "@/lib/score-format";
 import { getPredictionSummary } from "@/lib/prediction-summary";
 import { usePredictionState } from "@/hooks/usePredictionState";
@@ -540,6 +539,7 @@ function MatchPickRow({
           >
             <div className={theme.lockedReadOnly}>{lockedBody}</div>
           </FixtureCardSurface>
+          <ConfidenceAccordion eventId={event.id} competitionId={competitionId} revealAt={confidenceRevealAt} />
         </>
       );
     }
@@ -547,6 +547,7 @@ function MatchPickRow({
     return (
       <>
         <div className={theme.lockedReadOnly}>{lockedBody}</div>
+        <ConfidenceAccordion eventId={event.id} competitionId={competitionId} revealAt={confidenceRevealAt} />
       </>
     );
   }
