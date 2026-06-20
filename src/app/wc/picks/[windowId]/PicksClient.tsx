@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import { MatchdayCompleteCelebration } from "@/components/tournament/MatchdayCompleteCelebration";
 import { WindowPickList, type WindowEvent } from "./WindowPickList";
 import type { Prediction } from "@/types/database";
@@ -42,6 +42,19 @@ export function PicksClient({
   bracketHandoffClassificationId,
 }: PicksClientProps) {
   const [celebrating, setCelebrating] = useState(false);
+  const reckonsFired = useRef(false);
+
+  // Fire-and-forget: trigger post-lock reckons batch on first visit.
+  // The endpoint is idempotent — subsequent visits are no-ops.
+  useEffect(() => {
+    if (reckonsFired.current) return;
+    reckonsFired.current = true;
+    fetch("/api/chat/post-reckons", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ competition_id: competitionId }),
+    }).catch(() => {});
+  }, [competitionId]);
 
   return (
     <>

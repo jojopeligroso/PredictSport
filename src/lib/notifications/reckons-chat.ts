@@ -70,7 +70,7 @@ export async function postReckonsChatMessage({
       .delete()
       .eq("competition_id", competitionId)
       .eq("user_id", userId)
-      .eq("message_type", "system")
+      .eq("message_type", "system_reckons")
       .like("content", `${tag}%`);
 
     // Insert new reckons message
@@ -78,7 +78,7 @@ export async function postReckonsChatMessage({
       competition_id: competitionId,
       user_id: userId,
       content: `${tag} ${result.text}`,
-      message_type: "system",
+      message_type: "system_reckons",
     });
   } catch (err) {
     console.error(
@@ -110,7 +110,7 @@ export async function removeReckonsChatMessage({
       .delete()
       .eq("competition_id", competitionId)
       .eq("user_id", userId)
-      .eq("message_type", "system")
+      .eq("message_type", "system_reckons")
       .like("content", `${tag}%`);
   } catch (err) {
     console.error(

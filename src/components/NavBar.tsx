@@ -43,10 +43,14 @@ export async function NavBar() {
       .maybeSingle();
 
     if (wcComp) {
+      // Include user messages + reckons (social content). Exclude system_join
+      // and system_result — they shouldn't bump the unread badge.
       const { data: latestMsg } = await supabase
         .from("chat_messages")
         .select("created_at")
         .eq("competition_id", wcComp.id)
+        .in("message_type", ["user", "system_reckons"])
+        .is("deleted_at", null)
         .order("created_at", { ascending: false })
         .limit(1)
         .maybeSingle();

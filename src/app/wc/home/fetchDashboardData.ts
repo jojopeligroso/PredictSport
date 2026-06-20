@@ -484,14 +484,15 @@ export async function fetchDashboardData(): Promise<DashboardResult> {
   const entryOpen = !competitionFull && (!entryClosesAt || new Date(entryClosesAt) > now);
   const inviteCode = entryOpen ? (competition.invite_code ?? null) : null;
 
-  // Last chat message for notification card (non-join, non-deleted)
+  // Last chat message for notification card (non-join, non-result, non-deleted).
+  // Reckons are social content — include them in the preview.
   let lastChatMessage: LastChatMessage | null = null;
   if (competition.chat_enabled) {
     const { data: msg } = await supabase
       .from("chat_messages")
       .select("content, created_at, user_id")
       .eq("competition_id", competition.id)
-      .eq("message_type", "user")
+      .in("message_type", ["user", "system_reckons"])
       .is("deleted_at", null)
       .order("created_at", { ascending: false })
       .limit(1)

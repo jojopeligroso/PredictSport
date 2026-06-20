@@ -10,7 +10,7 @@ export type EventStatus =
   | "postponed"
   | "cancelled";
 export type NominationStatus = "pending" | "approved" | "rejected";
-export type ChatMessageType = "user" | "system" | "system_join" | "system_result";
+export type ChatMessageType = "user" | "system" | "system_join" | "system_result" | "system_reckons";
 export type ChatDeletedBy = "user" | "mod" | "admin";
 export type ChatMediaType = "image" | "gif";
 export type PredictionType =

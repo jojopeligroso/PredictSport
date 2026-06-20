@@ -7,29 +7,49 @@
 --   - Join trigger used message_type='system' — need 'system_join' for filtering
 --
 -- After this migration:
---   - message_type allows: 'user', 'system', 'system_join', 'system_result'
---   - user_id is nullable (NULL for bot/system messages with no sender)
+--   - message_type allows: 'user', 'system', 'system_join', 'system_result', 'system_reckons'
+--   - user_id is nullable (NULL only for system_result messages — no natural sender)
+--   - CHECK constraint enforces: user_id IS NOT NULL unless message_type = 'system_result'
 --   - Join trigger updated to use 'system_join' for proper filtering
---   - Mod promotion trigger updated similarly
+--   - Existing join messages recategorized from 'system' to 'system_join'
 
 -- 1. Expand message_type CHECK constraint
 ALTER TABLE public.chat_messages
   DROP CONSTRAINT IF EXISTS chat_messages_message_type_check;
 ALTER TABLE public.chat_messages
   ADD CONSTRAINT chat_messages_message_type_check
-  CHECK (message_type IN ('user', 'system', 'system_join', 'system_result'));
+  CHECK (message_type IN ('user', 'system', 'system_join', 'system_result', 'system_reckons'));
 
--- 2. Make user_id nullable for system messages
+-- 2. Make user_id nullable for system_result messages (no natural sender)
 ALTER TABLE public.chat_messages
   ALTER COLUMN user_id DROP NOT NULL;
 
--- 3. RLS: system messages with null user_id need to be readable.
+-- 3. Enforce: only system_result can have NULL user_id
+ALTER TABLE public.chat_messages
+  DROP CONSTRAINT IF EXISTS chat_messages_user_id_required;
+ALTER TABLE public.chat_messages
+  ADD CONSTRAINT chat_messages_user_id_required
+  CHECK (user_id IS NOT NULL OR message_type IN ('system_result'));
+
+-- 4. RLS: system messages with null user_id need to be readable.
 -- The existing SELECT policy checks cm.user_id = auth.uid() on competition_members,
 -- not chat_messages.user_id, so null user_id on chat_messages is fine for reads.
 -- The INSERT policy checks auth.uid() = user_id, which blocks null inserts via
 -- anon key (correct — only service-role should insert system messages).
 
--- 4. Update join trigger to use 'system_join' message_type
+-- 5. Recategorize existing join messages from 'system' to 'system_join'
+UPDATE public.chat_messages
+  SET message_type = 'system_join'
+  WHERE message_type = 'system'
+    AND content LIKE '%joined the competition%';
+
+-- 6. Recategorize existing reckons messages from 'system' to 'system_reckons'
+UPDATE public.chat_messages
+  SET message_type = 'system_reckons'
+  WHERE message_type = 'system'
+    AND content LIKE '[reckons:%';
+
+-- 7. Update join trigger to use 'system_join' message_type
 CREATE OR REPLACE FUNCTION public.chat_on_member_join()
 RETURNS trigger
 LANGUAGE plpgsql
@@ -67,5 +87,4 @@ BEGIN
 END;
 $$;
 
--- 5. Update mod promotion trigger to use 'system' (unchanged — kept as 'system')
--- No change needed, promotion messages should remain visible in dashboard chat card.
+-- 8. Mod promotion trigger unchanged — kept as 'system'.

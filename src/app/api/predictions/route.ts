@@ -1,10 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { requireDisplayName } from "@/lib/require-display-name";
-import {
-  postReckonsChatMessage,
-  removeReckonsChatMessage,
-} from "@/lib/notifications/reckons-chat";
+import { removeReckonsChatMessage } from "@/lib/notifications/reckons-chat";
 
 interface PredictionRequestBody {
   event_id?: string;
@@ -282,33 +279,9 @@ export async function POST(request: NextRequest) {
     const primaryPrediction =
       prediction_type === "winner" ? rpcResult.winner : rpcResult.score;
 
-    // Fire-and-forget: post reckons chat message when confidence is set.
-    // Only post AFTER lock_time — pre-lock predictions must stay hidden.
-    const eventLocked = new Date() >= new Date(eptEvent.lock_time);
-    if (
-      prediction_type === "winner" &&
-      confidence_level != null &&
-      rpcResult.server_winner &&
-      eventLocked
-    ) {
-      const predictedTeam = rpcResult.server_winner as string;
-      const drawLabels = ["Draw", "draw", "Empate", "empate"];
-      postReckonsChatMessage({
-        userId: user.id,
-        competitionId: competition_id!,
-        eventId: event_id!,
-        predictedTeam,
-        confidenceLevel: confidence_level,
-        isDraw: drawLabels.includes(predictedTeam),
-      }).catch(() => {}); // swallow — best effort
-    } else if (prediction_type === "winner" && confidence_level == null) {
-      // Confidence removed — clean up any existing reckons message
-      removeReckonsChatMessage({
-        userId: user.id,
-        competitionId: competition_id!,
-        eventId: event_id!,
-      }).catch(() => {});
-    }
+    // Reckons chat messages are posted via POST /api/chat/post-reckons
+    // (lazy batch trigger on picks page load after lock). No per-prediction
+    // posting here — this route rejects locked events before reaching here.
 
     return NextResponse.json({
       prediction: primaryPrediction,

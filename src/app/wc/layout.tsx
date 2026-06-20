@@ -87,14 +87,16 @@ export default async function WorldCupLayout({
     isWcAdmin = profile?.is_super_admin === true;
   }
 
-  // Latest non-join chat message (for unread badge on TabBar + MobileNav)
+  // Latest chat message for unread badge on TabBar + MobileNav.
+  // Include user messages + reckons (social content). Exclude system_join
+  // and system_result — they shouldn't bump the unread badge.
   let latestChatAt: string | null = null;
   if (authUser && wcComp?.id) {
     const { data: latestMsg } = await supabase
       .from("chat_messages")
       .select("created_at")
       .eq("competition_id", wcComp.id)
-      .eq("message_type", "user")
+      .in("message_type", ["user", "system_reckons"])
       .is("deleted_at", null)
       .order("created_at", { ascending: false })
       .limit(1)
