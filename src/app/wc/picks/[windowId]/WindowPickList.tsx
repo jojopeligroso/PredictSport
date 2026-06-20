@@ -10,6 +10,7 @@ import {
 } from "react";
 import { useT, useLocale } from "@/lib/i18n";
 import { CountryFlag } from "@/components/CountryFlag";
+import { ConfidencePills } from "@/components/ConfidencePills";
 import { ScoreInput } from "@/components/ScoreInput";
 import { FixtureCardSurface } from "@/components/wc/FixtureCardSurface";
 import { deriveWinnerFromScore } from "@/lib/score-format";
@@ -315,8 +316,8 @@ function MatchPickRow({
   // Prediction state hook
   const {
     currentWinner, scoreDisplay, feedback, error: errorMsg,
-    scoreResetKey, resetInFlight, initialScore,
-    pickWinner, commitScore, resetAll, clearFeedback,
+    scoreResetKey, resetInFlight, initialScore, confidenceLevel,
+    pickWinner, commitScore, setConfidence, resetAll, clearFeedback,
   } = usePredictionState({
     initialPredictions, eventId: event.id, competitionId,
     sport: event.sport, winnerEptId: winnerEpt?.id,
@@ -620,6 +621,15 @@ function MatchPickRow({
             Draw = goes to pens. Pick who advances below.
           </p>
         )}
+
+      {/* Confidence level */}
+      {currentWinner && (
+        <ConfidencePills
+          value={confidenceLevel}
+          onChange={setConfidence}
+          variant={useCardSurface ? "card" : "compact"}
+        />
+      )}
 
       {/* Score input row */}
       {scoreEpt && (

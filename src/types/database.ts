@@ -153,6 +153,7 @@ export interface Prediction {
   note_visibility: NoteVisibility;
   submitted_at: string;
   updated_at: string;
+  confidence_level: number | null;
 }
 
 export interface PredictionReaction {

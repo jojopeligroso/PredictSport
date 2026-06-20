@@ -92,6 +92,9 @@ export function usePredictionState({
   const [resetInFlight, setResetInFlight] = useState(false);
   const [feedback, setFeedback] = useState<CardFeedback>({ type: "idle" });
   const [error, setError] = useState<string | null>(null);
+  const [confidenceLevel, setConfidenceLevel] = useState<number | null>(
+    initialWinner?.confidence_level ?? null,
+  );
 
   const abortRef = useRef<AbortController | null>(null);
 
@@ -131,6 +134,7 @@ export function usePredictionState({
       predictionType: PredictionType,
       predictionData: Record<string, unknown>,
       signal?: AbortSignal,
+      confidenceLevelParam?: number | null,
     ): Promise<SubmitResult> => {
       const res = await fetch("/api/predictions", {
         method: "POST",
@@ -140,6 +144,7 @@ export function usePredictionState({
           competition_id: competitionId,
           prediction_type: predictionType,
           prediction_data: predictionData,
+          confidence_level: confidenceLevelParam,
         }),
         signal,
       });
@@ -197,7 +202,7 @@ export function usePredictionState({
 
       const controller = abortAndReplace();
 
-      submitPrediction("winner", { value }, controller.signal)
+      submitPrediction("winner", { value }, controller.signal, confidenceLevel)
         .then(({ prediction: saved, corrected, server_winner }) => {
           if (controller.signal.aborted) return;
           if (saved) {
@@ -240,6 +245,7 @@ export function usePredictionState({
       winnerPred,
       eventId,
       scoreDisplay,
+      confidenceLevel,
       abortAndReplace,
       submitPrediction,
       onWinnerLanded,
@@ -284,6 +290,30 @@ export function usePredictionState({
     [scoreEptId, scoreDisplay, feedback, submitPrediction, router],
   );
 
+  // ── Set confidence ─────────────────────────────────────────────────
+
+  const setConfidence = useCallback(
+    (level: number | null) => {
+      setConfidenceLevel(level);
+      if (!currentWinner) return;
+      // Fire-and-forget save — doesn't interfere with winner abort chain
+      fetch("/api/predictions", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          event_id: eventId,
+          competition_id: competitionId,
+          prediction_type: "winner",
+          prediction_data: { value: currentWinner },
+          confidence_level: level,
+        }),
+      }).catch(() => {
+        // Best-effort — confidence is non-critical
+      });
+    },
+    [currentWinner, eventId, competitionId],
+  );
+
   // ── Reset ──────────────────────────────────────────────────────────
 
   const resetAll = useCallback(async () => {
@@ -298,6 +328,7 @@ export function usePredictionState({
     // Optimistic clear
     setWinnerPred(null);
     setScoreDisplay({ status: "resetting" });
+    setConfidenceLevel(null);
     setScoreResetKey((k) => k + 1);
     setResetInFlight(true);
     setError(null);
@@ -347,8 +378,10 @@ export function usePredictionState({
     scoreResetKey,
     resetInFlight,
     initialScore,
+    confidenceLevel,
     pickWinner,
     commitScore,
+    setConfidence,
     resetAll,
     clearFeedback,
   };

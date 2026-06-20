@@ -10,6 +10,7 @@ interface PredictionRequestBody {
   note_text?: string;
   note_visibility?: "public" | "private";
   expected_updated_at?: string;
+  confidence_level?: number | null;
 }
 
 const VALID_PREDICTION_TYPES = [
@@ -62,6 +63,7 @@ export async function POST(request: NextRequest) {
     note_text,
     note_visibility,
     expected_updated_at,
+    confidence_level,
   } = body;
 
   // Validate required fields
@@ -243,6 +245,7 @@ export async function POST(request: NextRequest) {
           prediction_type === "exact_score"
             ? Number(prediction_data.away)
             : null,
+        p_confidence_level: confidence_level ?? null,
       },
     );
 
@@ -294,6 +297,7 @@ export async function POST(request: NextRequest) {
       p_expected_updated_at: expected_updated_at ?? null,
       p_note_text: note_text ?? null,
       p_note_visibility: note_visibility ?? null,
+      p_confidence_level: confidence_level ?? null,
     },
   );
 
