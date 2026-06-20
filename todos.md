@@ -2,7 +2,7 @@
 
 Priority order. **Queue reads unchecked tasks top-to-bottom — active work must appear before backlog.**
 
-Audit date: 2026-05-09. Updated: 2026-06-10.
+Audit date: 2026-05-09. Updated: 2026-06-20.
 
 ## P0 — Blocking launch
 
@@ -305,7 +305,7 @@ See `SPORTS-ARCHITECTURE.md` for detailed spec (TBD).
 - [x] **CH-C2 — Full chat on leaderboard** — Add ChatWidget (full mode) to leaderboard page. Overall leaderboard collapses to show user + ~4 above/below. Chat takes remaining ~75% of screen.
 - [x] **CH-C3 — Move leaderboard link up on dashboard** — Reorder dashboard sections: leaderboard link moves to after group fixtures (section 5 → section 6), displacing current position. *(Audited 2026-06-20: done at `DashboardClient.tsx:552-569`.)*
 - [x] **CH-C4 — Unread badge on tab bar** — Done via `useUnreadChat()` hook (`src/hooks/useUnreadChat.ts:48-79`) consumed in `TabBar.tsx:115-145`. Capped at 9+, localStorage-backed. (Audited 2026-06-14.)
-- [ ] **CH-C5 — Dedicated /wc/chat page** — Full-screen chat page accessible exclusively via tab bar. Top: leaderboard classification pills (Overall, Format, Rival Predictions) that navigate to `/wc/leaderboard` with the corresponding tab active. Main content: ChatWidget in full mode at ~90% viewport height. Update TabBar to point Chat tab to `/wc/chat` and highlight when active. Keep existing mini/full widgets on dashboard and leaderboard. *(2026-06-19: route + ChatWidget full mode + TabBar all done at `ChatPageClient.tsx:33`. Only remaining: classification pills at top of chat page linking to leaderboard tabs.)*
+- [ ] **CH-C5 — Dedicated /wc/chat page** — Full-screen chat page accessible exclusively via tab bar. Top: leaderboard classification pills (Overall, Format, Rival Predictions) that navigate to `/wc/leaderboard` with the corresponding tab active. Main content: ChatWidget in full mode at ~90% viewport height. Update TabBar to point Chat tab to `/wc/chat` and highlight when active. Keep existing mini/full widgets on dashboard and leaderboard. *(2026-06-20 audit: route + ChatWidget full mode + TabBar all done at `ChatPageClient.tsx:33`. Only remaining: classification pills at top of chat page linking to leaderboard tabs.)*
 
 ### Phase CH-D — Notifications
 
@@ -340,7 +340,7 @@ See `SPORTS-ARCHITECTURE.md` for detailed spec (TBD).
 ### Phase PG-B — Auto-Redraw Logic
 
 - [ ] **PG-B1 — Redraw evaluation function** — `shouldRedrawGroups(classificationId)`: compares current member count vs `entrant_count_at_draw`. Returns true if delta >= `redraw_threshold` AND `canRegenerateDraw()` (before first window lock).
-- [ ] **PG-B2 — Lazy redraw in my-group endpoint** — Extend `GET /api/tournament/my-group` to call `shouldRedrawGroups()` before returning existing groups. If true, re-run `allocatePredictionGroups()` (which already deletes + recreates). Update draw metadata. *(2026-06-14: route + allocate call already wired at `my-group/route.ts:132`; only the `shouldRedrawGroups()` gate is missing — depends on PG-B1.)*
+- [ ] **PG-B2 — Lazy redraw in my-group endpoint** — Extend `GET /api/tournament/my-group` to call `shouldRedrawGroups()` before returning existing groups. If true, re-run `allocatePredictionGroups()` (which already deletes + recreates). Update draw metadata. *(2026-06-20 audit: allocatePredictionGroups() call wired at `my-group/route.ts:132`; only the `shouldRedrawGroups()` gate is missing — depends on PG-B1.)*
 - [ ] **PG-B3 — Admin redraw API** — `POST /api/admin/redraw-groups` — admin can force a redraw for a classification. Validates `canRegenerateDraw()`. Returns new group allocation.
 
 ### Phase PG-C — UI
@@ -410,7 +410,7 @@ See `SPORTS-ARCHITECTURE.md` for detailed spec (TBD).
 
 ### Phase I — Admin Bracket Builder
 
-- [ ] **I1 — Bracket template definitions** — `src/lib/bracket-templates.ts`: define standard bracket shapes as slot-count-per-round arrays. Built-in templates: `single_elim_4`, `single_elim_8`, `single_elim_16`, `single_elim_32`, `single_elim_64`, `gaa_all_ireland_hurling` (QF×4 → SF×2 → F), `gaa_all_ireland_football` (QF×4 → SF×2 → F). Templates describe slot count per round and how slot winners advance — not teams. *(2026-06-19: Template registry exists at `src/lib/tournament/bracket/templates/index.ts` with WC2026 registered. GAA templates are commented-out placeholders at line 15. Remaining: generic single_elim templates + GAA templates.)*
+- [ ] **I1 — Bracket template definitions** — `src/lib/bracket-templates.ts`: define standard bracket shapes as slot-count-per-round arrays. Built-in templates: `single_elim_4`, `single_elim_8`, `single_elim_16`, `single_elim_32`, `single_elim_64`, `gaa_all_ireland_hurling` (QF×4 → SF×2 → F), `gaa_all_ireland_football` (QF×4 → SF×2 → F). Templates describe slot count per round and how slot winners advance — not teams. *(2026-06-20 audit: WC2026 template registered at `templates/index.ts:12`. GAA templates commented-out placeholders at line 15. Remaining: generic single_elim templates + GAA implementations.)*
 - [ ] **I2 — Bracket competition wizard** — New admin flow for creating bracket-style competitions. Selects a template → auto-creates rounds with correct `bracket_round_label` values + placeholder events with `is_bracket_placeholder=true`. Admin fills in known teams; TBA slots remain as placeholders until rounds progress.
 - [ ] **I3 — Winner advancement UI** — After admin confirms a bracket event result, show "Advance winner to next round" action. Pre-fills the winner's name into the correct slot (`advances_to_slot`) of the target event. If target event now has both teams confirmed, it becomes predictionable (clears TBA flag).
 - [ ] **I4 — Bracket event management** — Extend existing admin event editing to show bracket context: which event this advances from, which event it advances to. Block deletion of events that have downstream advancement links.
@@ -442,7 +442,7 @@ Fixtures with unknown participants (TBA / TBC team names from providers) should 
 > **Design complete:** `docs/DESIGN-F1-ALL-COMPETITIONS-DASHBOARD.md` (2026-05-22, grill session). Decision record: `docs/adr/0010-cached-non-authoritative-standings.md`. The dashboard answers "how am I doing" across all of a user's competitions via a top "Your form" card + a per-card rank line on `/competitions`.
 
 - [x] **F1 — Design spike (grill session)** — ✅ Done. Produced `DESIGN-F1-ALL-COMPETITIONS-DASHBOARD.md`, ADR-0010, and four `CONTEXT.md` terms. Primary job = "how am I doing"; cached non-authoritative `competition_standings`; lazy read-through write path; scheduled job built dormant.
-- [ ] **F2a — Standings cache layer** — Finish the cache plumbing per design doc §3–§4: (c) implement the bodies of `recomputeStandings()` + `getCachedStandings()` in `src/lib/standings-cache.ts` (both currently throw "not impl"); (d) add dormant `/api/cron/recompute-standings` route (NOT in `vercel.json`). *(2026-06-14: (a) migration `20260522500000_competition_standings_cache.sql` and (b) `computeStandings()` extraction at `src/lib/leaderboard.ts:77-280+` are already done.)*
+- [ ] **F2a — Standings cache layer** — Finish the cache plumbing per design doc §3–§4: (c) implement the bodies of `recomputeStandings()` + `getCachedStandings()` in `src/lib/standings-cache.ts` (both currently throw "not impl"); (d) add dormant `/api/cron/recompute-standings` route (NOT in `vercel.json`). *(2026-06-20 audit: migration + `computeStandings()` extraction done at `leaderboard.ts:77-280`. Stubs remain at `standings-cache.ts:40,53`. No cron route.)*
 - [ ] **F2b — Dashboard UI card on /competitions** — Build per design doc §3–§4: (e) top "Your form" card with three display modes (empty / single-competition / full), gated to ≥1 group competition; (f) per-card rank line. Card expansion: 1 line → 5 results (stop there — F4 is the deeper target). Depends on F2a + F3a.
 - [ ] **F3a — `computeGlobalHitRate()` implementation** — Implement the body of `computeGlobalHitRate(userId)` at `src/lib/leaderboard.ts:370` (currently throws "not impl"). Aggregates correct ÷ resolved across ALL the user's competitions (personal + group). See design doc §3.7.
 - [ ] **F3b — Surface global hit rate in dashboard card** — Wire `computeGlobalHitRate()` into the F2b "Your form" card as the headline number. Distinct from the personal-stats hit rate (which is personal-competition-only).
