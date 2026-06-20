@@ -39,7 +39,7 @@ export function scorePrediction(
       return scoreHeadToHead(predictionData, resultData, fullPoints, ept.config);
 
     case "margin":
-      return scoreMargin(predictionData, resultData, fullPoints, partialPoints);
+      return scoreMargin(predictionData, resultData, fullPoints, partialPoints, ept.config);
 
     case "over_under":
       return scoreOverUnder(predictionData, resultData, fullPoints);
@@ -162,10 +162,38 @@ function scoreWinner(
   const allowDraw = config?.allow_draw === true || optionsHaveDraw;
 
   let actual: string;
-  if (result.winner) {
+
+  // When score + config options are available, use positional derivation.
+  // This avoids provider name mismatches (e.g., ESPN "United States" vs
+  // option "USA"). Options are seeded as [home, "Draw", away], matching
+  // the score's home/away order — so index 0 = home win, last = away win.
+  const score = result.score as Record<string, unknown> | undefined;
+  if (score && options.length >= 2) {
+    const homeScore = Number(score.home_score ?? 0);
+    const awayScore = Number(score.away_score ?? 0);
+    if (homeScore > awayScore) {
+      actual = normalizeStr(options[0]);
+    } else if (awayScore > homeScore) {
+      actual = normalizeStr(options[options.length - 1]);
+    } else if (options.length >= 3) {
+      actual = "draw";
+    } else if (result.winner) {
+      // Knockout tie (penalties): winner can't be derived from score.
+      // Map result.winner to the correct option via home/away team name.
+      const winnerNorm = normalizeStr(result.winner);
+      if (winnerNorm === normalizeStr(score.home_team)) {
+        actual = normalizeStr(options[0]);
+      } else if (winnerNorm === normalizeStr(score.away_team)) {
+        actual = normalizeStr(options[options.length - 1]);
+      } else {
+        actual = winnerNorm;
+      }
+    } else {
+      return { is_correct: null, is_partial: false, points_awarded: 0 };
+    }
+  } else if (result.winner) {
     actual = normalizeStr(result.winner);
-  } else if (result.score) {
-    const score = result.score as Record<string, unknown>;
+  } else if (score) {
     const homeScore = Number(score.home_score ?? 0);
     const awayScore = Number(score.away_score ?? 0);
     if (homeScore > awayScore) {
@@ -177,6 +205,26 @@ function scoreWinner(
     }
   } else {
     return { is_correct: null, is_partial: false, points_awarded: 0 };
+  }
+
+  // Cross-check: when positional derivation was used AND result.winner exists,
+  // verify they agree. A mismatch suggests a home/away swap or data error.
+  if (score && options.length >= 2 && result.winner && actual !== "draw") {
+    const providerWinner = normalizeStr(result.winner);
+    // Map provider's winner through team names to an option
+    let providerMapped: string | null = null;
+    if (providerWinner === normalizeStr(score.home_team)) {
+      providerMapped = normalizeStr(options[0]);
+    } else if (providerWinner === normalizeStr(score.away_team)) {
+      providerMapped = normalizeStr(options[options.length - 1]);
+    }
+    if (providerMapped && providerMapped !== actual) {
+      console.warn(
+        `[scoring] CROSS-CHECK MISMATCH: positional="${actual}" vs provider="${providerMapped}" ` +
+        `(result.winner="${result.winner}", home_team="${score.home_team}", away_team="${score.away_team}", ` +
+        `score=${score.home_score}-${score.away_score}, options=${JSON.stringify(options)})`
+      );
+    }
   }
 
   // Draw result handling
@@ -381,7 +429,21 @@ function scoreHeadToHead(
   const drawPoints = Number(config?.draw_points ?? fullPoints);
 
   let actual: string;
-  if (result.winner) {
+
+  // Positional derivation from score when config options are available.
+  // Same principle as scoreWinner: options[0] = home, last = away.
+  const h2hScore = result.score as Record<string, unknown> | undefined;
+  if (h2hScore && options.length >= 2) {
+    const homeScore = Number(h2hScore.home_score ?? 0);
+    const awayScore = Number(h2hScore.away_score ?? 0);
+    if (homeScore > awayScore) {
+      actual = normalizeStr(options[0]);
+    } else if (awayScore > homeScore) {
+      actual = normalizeStr(options[options.length - 1]);
+    } else {
+      actual = "draw";
+    }
+  } else if (result.winner) {
     actual = normalizeStr(result.winner);
   } else if (result.positions) {
     const positions = result.positions as Array<{
@@ -389,9 +451,9 @@ function scoreHeadToHead(
       name: string;
       dnf?: boolean;
     }>;
-    const options = (config?.options ?? []) as string[];
-    const participant1 = normalizeStr(options[0] ?? prediction.participant1);
-    const participant2 = normalizeStr(options[1] ?? prediction.participant2);
+    const posOptions = (config?.options ?? []) as string[];
+    const participant1 = normalizeStr(posOptions[0] ?? prediction.participant1);
+    const participant2 = normalizeStr(posOptions[1] ?? prediction.participant2);
 
     const p1 = positions.find((p) => normalizeStr(p.name) === participant1);
     const p2 = positions.find((p) => normalizeStr(p.name) === participant2);
@@ -410,17 +472,15 @@ function scoreHeadToHead(
     } else {
       actual = p1.position < p2.position ? participant1 : participant2;
     }
-  } else if (result.score) {
-    // Team sport: derive from score
-    const score = result.score as Record<string, unknown>;
-    const homeScore = Number(score.home_score ?? 0);
-    const awayScore = Number(score.away_score ?? 0);
+  } else if (h2hScore) {
+    const homeScore = Number(h2hScore.home_score ?? 0);
+    const awayScore = Number(h2hScore.away_score ?? 0);
     if (homeScore === awayScore) {
       actual = "draw";
     } else {
       actual = homeScore > awayScore
-        ? normalizeStr(score.home_team)
-        : normalizeStr(score.away_team);
+        ? normalizeStr(h2hScore.home_team)
+        : normalizeStr(h2hScore.away_team);
     }
   } else {
     return { is_correct: null, is_partial: false, points_awarded: 0 };
@@ -456,16 +516,28 @@ function scoreMargin(
   prediction: Record<string, unknown>,
   result: Record<string, unknown>,
   fullPoints: number,
-  partialPoints: number
+  partialPoints: number,
+  config: Record<string, unknown> | null = null
 ): ScoringResult {
   const rangeLow = Number(prediction.range_low ?? 0);
   const rangeHigh = Number(prediction.range_high ?? 0);
   const predictedTeam = normalizeStr(prediction.team);
+  const options = Array.isArray(config?.options) ? (config.options as unknown[]) : [];
 
   let actualMargin: number;
   let actualWinner: string;
 
-  if (result.margin !== undefined && result.margin !== null && result.winner) {
+  // Positional derivation from score when options are available
+  if (result.score && options.length >= 2) {
+    const score = result.score as Record<string, unknown>;
+    const homeScore = Number(score.home_score ?? 0);
+    const awayScore = Number(score.away_score ?? 0);
+    actualMargin = Math.abs(homeScore - awayScore);
+    actualWinner =
+      homeScore > awayScore
+        ? normalizeStr(options[0])
+        : normalizeStr(options[options.length - 1]);
+  } else if (result.margin !== undefined && result.margin !== null && result.winner) {
     actualMargin = Math.abs(Number(result.margin));
     actualWinner = normalizeStr(result.winner);
   } else if (result.score) {

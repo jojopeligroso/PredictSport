@@ -427,6 +427,26 @@ async function scoreEventPredictions(
 
   if (scores.length > 0) {
     await supabase.rpc("batch_score_predictions", { p_scores: scores });
+
+    // Anomaly detection: if >80% of winner predictions scored as wrong on an
+    // event with 15+ winner predictions, something is likely broken (provider
+    // name mismatch, home/away swap, wrong result). Log a warning so it
+    // surfaces in monitoring rather than silently corrupting the leaderboard.
+    const winnerScores = scores.filter((s) => {
+      const pred = (predictions ?? []).find((p) => (p as Record<string, unknown>).id === s.id);
+      return (pred as Record<string, unknown> | undefined)?.prediction_type === "winner";
+    });
+    if (winnerScores.length >= 15) {
+      const wrongCount = winnerScores.filter((s) => s.is_correct === false).length;
+      const wrongPct = wrongCount / winnerScores.length;
+      if (wrongPct > 0.8) {
+        console.warn(
+          `[scoring] ANOMALY: ${wrongCount}/${winnerScores.length} (${Math.round(wrongPct * 100)}%) ` +
+          `winner predictions scored wrong for event ${eventId}. ` +
+          `Possible provider name mismatch or incorrect result data.`
+        );
+      }
+    }
   }
 }
 
