@@ -14,6 +14,7 @@ import { ConfidencePills, ConfidenceIntroCard, ConfidenceBreadcrumb } from "@/co
 import { useConfidenceDisclosure } from "@/hooks/useConfidenceDisclosure";
 import { ScoreInput } from "@/components/ScoreInput";
 import { FixtureCardSurface } from "@/components/wc/FixtureCardSurface";
+import { ConfidenceAccordion } from "@/components/wc/ConfidenceAccordion";
 import { deriveWinnerFromScore } from "@/lib/score-format";
 import { getPredictionSummary } from "@/lib/prediction-summary";
 import { usePredictionState } from "@/hooks/usePredictionState";
@@ -510,32 +511,57 @@ function MatchPickRow({
       </>
     );
 
+    // Compute reveal time for confidence accordion
+    const confidenceRevealAt = event.pick_reveal_at
+      ? event.pick_reveal_at
+      : new Date(new Date(event.lock_time).getTime() + 5 * 60_000).toISOString();
+
     if (useCardSurface && fixture) {
       return (
-        <FixtureCardSurface
-          city={fixture.city}
-          headerLeft={
-            fixture.group && fixture.matchday
-              ? t("fixtures.stage_group", {
-                  group: fixture.group,
-                  matchday: fixture.matchday,
-                })
-              : event.event_name
-          }
-          headerRight={formatHeaderRight(
-            fixture.kickoffUtc,
-            showCardCountdown ? event.lock_time : undefined,
-            event.pick_reveal_at,
-            locale,
-          )}
-          hasPick={currentWinner !== null}
-        >
-          <div className={theme.lockedReadOnly}>{lockedBody}</div>
-        </FixtureCardSurface>
+        <>
+          <FixtureCardSurface
+            city={fixture.city}
+            headerLeft={
+              fixture.group && fixture.matchday
+                ? t("fixtures.stage_group", {
+                    group: fixture.group,
+                    matchday: fixture.matchday,
+                  })
+                : event.event_name
+            }
+            headerRight={formatHeaderRight(
+              fixture.kickoffUtc,
+              showCardCountdown ? event.lock_time : undefined,
+              event.pick_reveal_at,
+              locale,
+            )}
+            hasPick={currentWinner !== null}
+          >
+            <div className={theme.lockedReadOnly}>{lockedBody}</div>
+          </FixtureCardSurface>
+          <div className="mt-1 rounded-xl border border-ps-border bg-ps-surface">
+            <ConfidenceAccordion
+              eventId={event.id}
+              competitionId={competitionId}
+              revealAt={confidenceRevealAt}
+            />
+          </div>
+        </>
       );
     }
 
-    return <div className={theme.lockedReadOnly}>{lockedBody}</div>;
+    return (
+      <>
+        <div className={theme.lockedReadOnly}>{lockedBody}</div>
+        <div className="mt-1 rounded-xl border border-ps-border bg-ps-surface">
+          <ConfidenceAccordion
+            eventId={event.id}
+            competitionId={competitionId}
+            revealAt={confidenceRevealAt}
+          />
+        </div>
+      </>
+    );
   }
 
   // ── Conflict mode: replaces interactive body when score contradicts pick ──

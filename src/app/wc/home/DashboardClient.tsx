@@ -31,6 +31,7 @@ import { PredictionBanner } from "@/components/wc/PredictionBanner";
 import { RivalTeaser } from "@/components/wc/RivalTeaser";
 import { CommunityPicksCard } from "@/components/wc/CommunityPicksCard";
 import { LiveModeToggle } from "@/components/wc/LiveModeToggle";
+import { LiveChatDrawer } from "@/components/wc/LiveChatDrawer";
 import { useLiveModeToggle } from "@/hooks/useLiveMode";
 
 interface DashboardClientProps {
@@ -534,6 +535,19 @@ export function DashboardClient({
         )}
       </OnboardingSection>
 
+      {/* ── 4a. Live Chat Drawer (live mode only, position 2) ─────── */}
+      {liveMode && chatEnabled && isMember && currentUserId && (
+        <section className="mt-2">
+          <LiveChatDrawer
+            competitionId={competitionId}
+            currentUserId={currentUserId}
+            currentUserRole={memberRole}
+            memberCount={memberCount}
+            lastMessage={lastChatMessage}
+          />
+        </section>
+      )}
+
       {/* ── 4b. Community Picks (hidden during live — merged into island) */}
       {isMember && !liveMode && (
         <OnboardingSection id="other">
@@ -637,8 +651,8 @@ export function DashboardClient({
         )}
       </OnboardingSection>
 
-      {/* ── 5c. Chat notification card ──────────────────────────── */}
-      {chatEnabled && isMember && lastChatMessage && (
+      {/* ── 5c. Chat notification card (hidden when live drawer is showing) ── */}
+      {chatEnabled && isMember && lastChatMessage && !liveMode && (
         <OnboardingSection id="other">
           <section className="mt-2">
             <Link
