@@ -36,8 +36,8 @@ export async function postReckonsChatMessage({
   homeScore?: number | null;
   awayScore?: number | null;
 }): Promise<void> {
-  // Confidence 1 (Hopeful) and 2 (Leaning) are too tepid for social content
-  if (confidenceLevel < 3) return;
+  // Only V. Sure (4) and Dead Cert (5) generate reckons chat messages
+  if (confidenceLevel < 4) return;
 
   try {
     const supabase = createServiceClient();
