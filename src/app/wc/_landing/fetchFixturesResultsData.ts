@@ -233,6 +233,11 @@ export async function fetchFixturesResultsData() {
           hasExactScore: !!scoreEpt,
           currentWinner,
           currentScore,
+          winnerCorrect: winnerPred ? ((winnerPred as { is_correct?: boolean | null }).is_correct ?? null) : null,
+          scoreCorrect: scorePred ? ((scorePred as { is_correct?: boolean | null }).is_correct ?? null) : null,
+          winnerPoints: (winnerPred as { points_awarded?: number })?.points_awarded ?? 0,
+          scorePoints: (scorePred as { points_awarded?: number })?.points_awarded ?? 0,
+          userConfidence: (winnerPred as { confidence_level?: number | null })?.confidence_level ?? null,
         };
       }
     }

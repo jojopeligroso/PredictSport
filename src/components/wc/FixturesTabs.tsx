@@ -5,6 +5,7 @@ import { useT, useLocale } from "@/lib/i18n";
 import { CountryFlag } from "@/components/CountryFlag";
 import { HOST_CITIES, type HostCitySlug } from "@/lib/wc/host-cities";
 import { WindowPickList } from "@/app/wc/picks/[windowId]/WindowPickList";
+import { confidenceLabel } from "@/lib/reckons-copy";
 import type { WindowEvent } from "@/app/wc/picks/[windowId]/WindowPickList";
 import type { WcFixture } from "@/lib/wc/fixtures";
 import type { Prediction } from "@/types/database";
@@ -28,6 +29,12 @@ export type FixturePredictionData = {
   hasExactScore: boolean;
   currentWinner: string | null;
   currentScore: { home: number; away: number } | null;
+  /** Scoring data — populated for resulted fixtures with predictions */
+  winnerCorrect?: boolean | null;
+  scoreCorrect?: boolean | null;
+  winnerPoints?: number;
+  scorePoints?: number;
+  userConfidence?: number | null;
 };
 
 type TabId = "today" | "upcoming" | "results";
@@ -95,6 +102,18 @@ export function FixturesTabs({ fixtures, resultsByExternalId, serverDateIso, pre
     if (stored === "false") return false;
     return true;
   });
+  // Re-read from localStorage on mount to fix stale state when
+  // the component re-mounts without re-running the lazy initializer
+  // (e.g. React fiber reuse on tab switches).
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const storedPicks = localStorage.getItem("ps-show-picks");
+    const storedCorrectness = localStorage.getItem("ps-show-correctness");
+    if (storedPicks === "true") setShowPredictions(true);
+    else if (storedPicks === "false") setShowPredictions(false);
+    if (storedCorrectness === "true") setShowCorrectness(true);
+    else if (storedCorrectness === "false") setShowCorrectness(false);
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
   useEffect(() => {
     if (typeof window === "undefined") return;
     localStorage.setItem("ps-show-picks", String(showPredictions));
@@ -580,6 +599,23 @@ function FixtureCard({
   const awaySelected = currentWinner === fixture.away;
   const drawSelected = currentWinner === drawOption;
 
+  // ── Scoring-derived state (for results mode) ──
+  const winnerCorrect = prediction?.winnerCorrect ?? null;
+  const scoreCorrect = prediction?.scoreCorrect ?? null;
+  const winnerPoints = prediction?.winnerPoints ?? 0;
+  const scorePoints = prediction?.scorePoints ?? 0;
+  const totalPoints = winnerPoints + scorePoints;
+  const bothCorrect = winnerCorrect === true && scoreCorrect === true;
+  const winnerOnly = winnerCorrect === true && scoreCorrect !== true;
+  const isWrong = hasPrediction && winnerCorrect === false;
+  const isJackpot = bothCorrect; // exact score = shimmer
+
+  // Movement direction: points > 0 = up, predicted but 0 points = down, else neutral
+  const movement: "up" | "down" | "neutral" =
+    !hasPrediction || !isFinished ? "neutral"
+    : totalPoints > 0 ? "up"
+    : "down";
+
   // Ring color: green (correct), red (wrong), amber (pending / correctness off)
   let ringClass = "";
   if (hasPrediction && prediction) {
@@ -634,6 +670,8 @@ function FixtureCard({
         large ? "overflow-hidden rounded-2xl text-white shadow-sm transition-all"
               : "overflow-hidden rounded-xl text-white shadow-sm transition-all",
         ringClass,
+        // Left stripe for wrong predictions (matches dashboard pattern)
+        showCorrectness && isWrong && isFinished ? "border-l-[3px] border-l-ps-red" : "",
       ].join(" ")}
       style={{ backgroundColor: city.color }}
     >
@@ -817,15 +855,106 @@ function FixtureCard({
               </div>
             </div>
 
-            {/* Your prediction — shown when prediction context exists */}
+            {/* Your prediction + points — shown when prediction context exists */}
             {hasPrediction && prediction && (
-              <p className="mt-1.5 text-center text-[11px] font-medium text-white/70">
-                {t('fixtures.you_predicted')}{" "}
-                <span className="font-bold text-white/90">
-                  {currentWinner}
-                  {homeScore !== "" && awayScore !== "" ? ` (${homeScore}–${awayScore})` : ""}
-                </span>
-              </p>
+              <div className="mt-2 rounded-lg bg-black/20 px-3 py-2">
+                {/* Row 1: Movement arrow + prediction text + correctness badge */}
+                <div className="flex items-center gap-1.5">
+                  {/* Movement indicator */}
+                  {showCorrectness && (
+                    <span className="flex w-4 shrink-0 items-center justify-center">
+                      {movement === "up" && (
+                        <svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-ps-green" aria-hidden="true">
+                          <path d="M6 10V2M3 5l3-3 3 3" />
+                        </svg>
+                      )}
+                      {movement === "down" && (
+                        <svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-ps-red" aria-hidden="true">
+                          <path d="M6 2v8M3 7l3 3 3-3" />
+                        </svg>
+                      )}
+                      {movement === "neutral" && (
+                        <span className="inline-block h-[5px] w-[5px] rounded-full bg-white/40" aria-hidden="true" />
+                      )}
+                    </span>
+                  )}
+
+                  {/* Correctness dot */}
+                  {showCorrectness && (
+                    <span className="flex shrink-0">
+                      {bothCorrect ? (
+                        <span className="inline-block h-2 w-2 rounded-full bg-ps-green" />
+                      ) : winnerOnly ? (
+                        <span className="inline-block h-2 w-2 rounded-full bg-ps-amber" />
+                      ) : isWrong ? null : (
+                        <span className="inline-block h-1.5 w-1.5 rounded-full bg-white/40" />
+                      )}
+                    </span>
+                  )}
+
+                  {/* Prediction text */}
+                  <span className="flex-1 text-[11px] text-white/70">
+                    {t('fixtures.you_predicted')}{" "}
+                    <span className="font-bold text-white/90">
+                      {currentWinner}
+                      {homeScore !== "" && awayScore !== "" ? ` (${homeScore}\u2013${awayScore})` : ""}
+                    </span>
+                    {prediction.userConfidence != null && (
+                      <span className="ml-1 italic text-white/50">
+                        ({confidenceLabel(prediction.userConfidence)})
+                      </span>
+                    )}
+                  </span>
+
+                  {/* Correctness badge (check/cross) */}
+                  {showCorrectness && winnerCorrect !== null && (
+                    <span
+                      className={[
+                        "flex h-[18px] w-[18px] shrink-0 items-center justify-center rounded-full text-[10px] font-extrabold",
+                        winnerCorrect
+                          ? "bg-ps-green/25 text-ps-green"
+                          : "bg-ps-red/25 text-ps-red",
+                      ].join(" ")}
+                    >
+                      {winnerCorrect ? "\u2713" : "\u2715"}
+                    </span>
+                  )}
+                </div>
+
+                {/* Row 2: Points earned */}
+                {showCorrectness && isFinished && (
+                  <div className="mt-1 flex items-center justify-end">
+                    {totalPoints > 0 ? (
+                      <span
+                        className={[
+                          "flex items-baseline gap-1 font-mono tabular-nums",
+                          isJackpot
+                            ? "ps-jackpot-shimmer rounded-md bg-ps-amber/15 px-1.5 py-0.5"
+                            : "",
+                        ].join(" ")}
+                      >
+                        <span
+                          className={[
+                            "text-[13px] font-semibold",
+                            isJackpot ? "text-ps-amber" : "text-ps-green",
+                          ].join(" ")}
+                        >
+                          +{totalPoints}
+                        </span>
+                        {winnerPoints > 0 && scorePoints > 0 && (
+                          <span className="text-[10px] font-medium text-white/50">
+                            (+{winnerPoints} W +{scorePoints} S)
+                          </span>
+                        )}
+                      </span>
+                    ) : (
+                      <span className="font-mono text-[11px] tabular-nums text-white/40">
+                        +0
+                      </span>
+                    )}
+                  </div>
+                )}
+              </div>
             )}
           </>
         )}
