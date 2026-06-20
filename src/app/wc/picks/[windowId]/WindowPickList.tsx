@@ -14,7 +14,8 @@ import { ConfidencePills, ConfidenceIntroCard, ConfidenceBreadcrumb } from "@/co
 import { useConfidenceDisclosure } from "@/hooks/useConfidenceDisclosure";
 import { ScoreInput } from "@/components/ScoreInput";
 import { FixtureCardSurface } from "@/components/wc/FixtureCardSurface";
-import { ConfidenceAccordion } from "@/components/wc/ConfidenceAccordion";
+// TODO: re-enable ConfidenceAccordion once progressive disclosure is complete
+// import { ConfidenceAccordion } from "@/components/wc/ConfidenceAccordion";
 import { deriveWinnerFromScore } from "@/lib/score-format";
 import { getPredictionSummary } from "@/lib/prediction-summary";
 import { usePredictionState } from "@/hooks/usePredictionState";
@@ -539,13 +540,6 @@ function MatchPickRow({
           >
             <div className={theme.lockedReadOnly}>{lockedBody}</div>
           </FixtureCardSurface>
-          <div className="mt-1 rounded-xl border border-ps-border bg-ps-surface">
-            <ConfidenceAccordion
-              eventId={event.id}
-              competitionId={competitionId}
-              revealAt={confidenceRevealAt}
-            />
-          </div>
         </>
       );
     }
@@ -553,13 +547,6 @@ function MatchPickRow({
     return (
       <>
         <div className={theme.lockedReadOnly}>{lockedBody}</div>
-        <div className="mt-1 rounded-xl border border-ps-border bg-ps-surface">
-          <ConfidenceAccordion
-            eventId={event.id}
-            competitionId={competitionId}
-            revealAt={confidenceRevealAt}
-          />
-        </div>
       </>
     );
   }
@@ -666,7 +653,7 @@ function MatchPickRow({
           </p>
         )}
 
-      {/* Confidence level — progressive disclosure */}
+      {/* Confidence level — hidden until progressive disclosure is complete
       {currentWinner && disclosure.phase !== 'invisible' && (
         disclosure.phase === 'hidden' ? (
           <ConfidenceBreadcrumb
@@ -691,7 +678,7 @@ function MatchPickRow({
             variant={useCardSurface ? "card" : "compact"}
           />
         )
-      )}
+      )} */}
 
       {/* Score input row */}
       {scoreEpt && (
