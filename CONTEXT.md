@@ -73,7 +73,8 @@ In GAA, a score is expressed as goals and points separately (e.g., 2-14), not as
 
 ## Provider Chain
 
-The ordered sequence of sports data providers queried to fetch fixtures and results for a given sport. First non-null result wins. Providers: OpenF1, API-Football, TheSportsDB, ESPN, BallDontLie, MLB Stats, TheRacingAPI, Foireann, Manual.
+The ordered sequence of sports data providers queried to fetch fixtures and results for a given sport. First non-null result wins. Providers: OpenF1, API-Football, TheSportsDB, ESPN, BallDontLie, MLB Stats, TheRacingAPI, Foireann, Manual. After the primary provider returns a final result, cross-validation walks the remaining chain to verify the score against a second provider (see ADR 0019).
+_Avoid_: API chain, fallback chain
 
 ---
 
@@ -241,6 +242,26 @@ A dismissible notification bar shown on the home dashboard, picks page, and land
 ## Open Entry
 
 A temporary or permanent state where a [[Competition]] does not require an invite code to join — any authenticated user can join directly. Controlled by removing the invite-code gate at the join endpoint, not by changing `visibility`. Entry is still bounded by `entry_closes_at` on the competition.
+
+---
+
+## Sanctioned Competition
+
+A [[Competition Instance]] backed by an official [[Tournament Blueprint]] with full API provider coverage. The [[Fixture Catalogue]] is predetermined, results are sourced and cross-validated automatically via the [[Provider Chain]], and the [[Competition Admin]] role is purely ceremonial — they create the competition by selecting a [[Preset]], invite members, and manage chat moderation. No manual result entry, no fixture authoring, no score overrides needed. The World Cup is the canonical example.
+_Avoid_: Official competition, managed competition
+
+---
+
+## Custom Competition
+
+A [[Competition Instance]] where the [[Competition Admin]] selects arbitrary sports and events, potentially across leagues with limited or no API provider coverage. The admin has an active operational role: creating fixtures, manually entering results for uncovered events, and overriding results when needed. The admin surface for Custom Competitions requires substantially more capability than for [[Sanctioned Competition]]s.
+_Avoid_: Manual competition, user competition
+
+---
+
+## Admin Role Duality
+
+The [[Competition Admin]] role has fundamentally different responsibilities depending on whether the competition is [[Sanctioned Competition|sanctioned]] or [[Custom Competition|custom]]. A sanctioned admin is a social organiser (invite friends, moderate chat). A custom admin is an operational manager (author fixtures, enter results, resolve disputes). The admin UI must serve both without overwhelming the sanctioned admin or under-serving the custom admin. This distinction is unresolved and requires dedicated design work.
 
 ---
 
