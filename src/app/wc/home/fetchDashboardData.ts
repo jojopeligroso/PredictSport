@@ -43,6 +43,8 @@ export interface ResultRow {
   winnerPoints: number;
   /** Points awarded for exact score prediction. */
   scorePoints: number;
+  /** User's confidence level (1-5) on their winner prediction, null if not set. */
+  userConfidence: number | null;
 }
 
 export interface LastChatMessage {
@@ -348,7 +350,7 @@ export async function fetchDashboardData(): Promise<DashboardResult> {
     const { data: predRows } = await supabase
       .from("predictions")
       .select(
-        "id, event_prediction_type_id, event_id, user_id, prediction_type, prediction_data, is_correct, is_partial, points_awarded, note_text, note_visibility, submitted_at, updated_at",
+        "id, event_prediction_type_id, event_id, user_id, prediction_type, prediction_data, is_correct, is_partial, points_awarded, note_text, note_visibility, submitted_at, updated_at, confidence_level",
       )
       .eq("user_id", user.id)
       .in("event_id", eventIds);
@@ -572,6 +574,7 @@ async function fetchRecentResults(
     prediction_data: Record<string, unknown>;
     is_correct: boolean | null;
     points_awarded: number;
+    confidence_level: number | null;
   };
   const predsByEventId = new Map<string, PredRow[]>();
 
@@ -580,7 +583,7 @@ async function fetchRecentResults(
     const { data: preds } = await supabase
       .from("predictions")
       .select(
-        "event_id, prediction_type, prediction_data, is_correct, points_awarded",
+        "event_id, prediction_type, prediction_data, is_correct, points_awarded, confidence_level",
       )
       .eq("user_id", userId)
       .in("event_id", eventIds);
@@ -647,6 +650,7 @@ async function fetchRecentResults(
       scoreCorrect: scorePred ? (scorePred.is_correct ?? false) : null,
       winnerPoints: winnerPred?.points_awarded ?? 0,
       scorePoints: scorePred?.points_awarded ?? 0,
+      userConfidence: winnerPred?.confidence_level ?? null,
     });
   }
 

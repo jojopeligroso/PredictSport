@@ -155,7 +155,7 @@ async function handleEventPredictions(
     supabase
       .from("predictions")
       .select(
-        "user_id, prediction_type, prediction_data, is_correct, points_awarded",
+        "user_id, prediction_type, prediction_data, is_correct, points_awarded, confidence_level",
       )
       .eq("event_id", eventId),
     supabase
@@ -179,6 +179,7 @@ async function handleEventPredictions(
       scoreCorrect: boolean | null;
       winnerPoints: number;
       scorePoints: number;
+      confidenceLevel: number | null;
     }
   >();
 
@@ -194,6 +195,7 @@ async function handleEventPredictions(
         scoreCorrect: null,
         winnerPoints: 0,
         scorePoints: 0,
+        confidenceLevel: null,
       });
     }
     const entry = predMap.get(p.user_id)!;
@@ -203,6 +205,7 @@ async function handleEventPredictions(
       entry.winner = (data?.value as string) ?? null;
       entry.winnerCorrect = p.is_correct;
       entry.winnerPoints = p.points_awarded ?? 0;
+      entry.confidenceLevel = (p as Record<string, unknown>).confidence_level as number | null;
     } else if (p.prediction_type === "exact_score") {
       entry.exactScore =
         data?.home != null
@@ -229,6 +232,7 @@ async function handleEventPredictions(
       isSelf: m.user_id === userId,
       groupName: groupMemberships.get(m.user_id)?.groupName ?? null,
       groupId: groupMemberships.get(m.user_id)?.groupId ?? null,
+      confidenceLevel: pred?.confidenceLevel ?? null,
     };
   });
 

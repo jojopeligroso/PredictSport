@@ -15,6 +15,7 @@ import { StatsCard } from "@/components/wc/StatsCard";
 import { InviteCodeBanner } from "@/components/InviteCodeBanner";
 import { CountryFlag } from "@/components/CountryFlag";
 import { fifaTrigram } from "@/lib/tournament/fifa-codes";
+import { confidenceLabel } from "@/lib/reckons-copy";
 import {
   OnboardingFlow,
   OnboardingSection,
@@ -854,7 +855,7 @@ function DashboardPillIndicator({ status }: { status: string }) {
 /** Single result row with score, user prediction, correctness, and points. */
 function TodayResultRow({ result }: { result: ResultRow }) {
   const t = useT();
-  const { fixture, homeScore, awayScore, userWinnerPick, userScorePick, winnerCorrect, scoreCorrect, winnerPoints, scorePoints } = result;
+  const { fixture, homeScore, awayScore, userWinnerPick, userScorePick, winnerCorrect, scoreCorrect, winnerPoints, scorePoints, userConfidence } = result;
   const homeTri = fifaTrigram(fixture.home) ?? fixture.home.slice(0, 3).toUpperCase();
   const awayTri = fifaTrigram(fixture.away) ?? fixture.away.slice(0, 3).toUpperCase();
 
@@ -895,6 +896,11 @@ function TodayResultRow({ result }: { result: ResultRow }) {
                 ? `${userScorePick.home}–${userScorePick.away}`
                 : userWinnerPick}
             </span>
+            {userConfidence != null && (
+              <span className="ml-1 italic text-ps-text-ter">
+                ({confidenceLabel(userConfidence)})
+              </span>
+            )}
           </span>
           {totalPoints > 0 && (
             <span className="ml-auto font-mono text-[11px] font-semibold tabular-nums text-[#0aa86d]">

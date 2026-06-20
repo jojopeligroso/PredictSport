@@ -157,7 +157,7 @@ export async function fetchFixturesResultsData() {
         ? await supabase
             .from("predictions")
             .select(
-              "id, event_prediction_type_id, event_id, user_id, prediction_type, prediction_data, is_correct, is_partial, points_awarded, note_text, note_visibility, submitted_at, updated_at",
+              "id, event_prediction_type_id, event_id, user_id, prediction_type, prediction_data, is_correct, is_partial, points_awarded, note_text, note_visibility, submitted_at, updated_at, confidence_level",
             )
             .eq("user_id", user.id)
             .in("event_id", eventIds)

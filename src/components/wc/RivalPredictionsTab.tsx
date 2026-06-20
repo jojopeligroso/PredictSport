@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { useT, useLocale } from "@/lib/i18n";
+import { confidenceLabel } from "@/lib/reckons-copy";
 
 function numOrNull(v: unknown): number | null {
   if (v === null || v === undefined) return null;
@@ -37,6 +38,7 @@ interface RivalPrediction {
   isSelf: boolean;
   groupName: string | null;
   groupId: string | null;
+  confidenceLevel: number | null;
 }
 
 interface EventMeta {
@@ -537,6 +539,11 @@ function PredictionRow({
             </span>
           )}
 
+          {/* Confidence indicator — subtle accent bar */}
+          {!noPick && row.confidenceLevel != null && (
+            <ConfidenceDot level={row.confidenceLevel} />
+          )}
+
           {/* Points pill */}
           <div
             className={`flex h-[22px] min-w-[30px] shrink-0 items-center justify-center rounded-full px-1.5 text-xs font-bold ${pillClass}`}
@@ -644,5 +651,28 @@ function EyeIcon() {
       <path d="M1 8s2.5-5 7-5 7 5 7 5-2.5 5-7 5-7-5-7-5z" />
       <circle cx="8" cy="8" r="2" />
     </svg>
+  );
+}
+
+// ── Confidence indicator ────────────────────────────────────────────────────
+
+/** Accent colors per confidence level (1-5), matching ConfidencePills border scale. */
+const CONFIDENCE_COLORS = [
+  "bg-gray-400",     // 1: Hopeful
+  "bg-amber-600/70", // 2: Leaning
+  "bg-amber-500",    // 3: Confident
+  "bg-orange-500",   // 4: V. Sure
+  "bg-red-500",      // 5: Dead Cert
+];
+
+function ConfidenceDot({ level }: { level: number }) {
+  const idx = Math.max(0, Math.min(level - 1, CONFIDENCE_COLORS.length - 1));
+  return (
+    <span
+      className={`inline-flex h-4 shrink-0 items-center rounded-full px-1.5 text-[9px] font-bold uppercase tracking-tight text-white ${CONFIDENCE_COLORS[idx]}`}
+      title={confidenceLabel(level)}
+    >
+      {confidenceLabel(level)}
+    </span>
   );
 }

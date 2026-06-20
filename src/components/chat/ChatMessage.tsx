@@ -187,10 +187,12 @@ export function ChatMessage({
 
   // System messages
   if (isSystem) {
+    // Strip internal metadata tags (e.g. "[reckons:eventId] ") from display
+    const systemContent = message.content.replace(/^\[reckons:[^\]]+\]\s*/, "");
     return (
       <div className="flex justify-center py-1">
         <span className="text-xs text-ps-text-ter italic">
-          {message.content}
+          {systemContent}
         </span>
       </div>
     );
