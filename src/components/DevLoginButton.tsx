@@ -7,7 +7,7 @@ import { useRouter } from "next/navigation";
 export function DevLoginButton() {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [email, setEmail] = useState("eoinuamaoileoin@gmail.com");
+  const [email, setEmail] = useState("");
   const router = useRouter();
 
   async function handleDevLogin() {
