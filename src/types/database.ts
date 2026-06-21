@@ -10,7 +10,16 @@ export type EventStatus =
   | "postponed"
   | "cancelled";
 export type NominationStatus = "pending" | "approved" | "rejected";
-export type ChatMessageType = "user" | "system" | "system_join" | "system_result" | "system_reckons" | "system_tag_reveal" | "system_tag_change" | "system_tag_reject" | "system_round_summary";
+export type ChatMessageType =
+  | "user"
+  | "system"
+  | "system_join"
+  | "system_result"
+  | "system_reckons"
+  | "system_tag_reveal"
+  | "system_tag_change"
+  | "system_tag_reject"
+  | "system_round_summary";
 export type ChatDeletedBy = "user" | "mod" | "admin";
 export type ChatMediaType = "image" | "gif";
 export type PredictionType =
@@ -205,6 +214,10 @@ export interface InviteToken {
   created_at: string;
 }
 
+// ============================================================
+// Reputation Tags
+// ============================================================
+
 export type TagCategory = "behavioural" | "event_driven" | "engagement_pressure";
 export type TagStatus = "pending" | "active" | "rejected" | "suppressed" | "expired";
 
@@ -215,47 +228,60 @@ export interface MemberTag {
   round_id: string | null;
   event_id: string | null;
   tag_name: string;
-  tag_variant: string | null;
   tag_category: TagCategory;
-  stats: Record<string, unknown>;
   status: TagStatus;
+  stats: Record<string, unknown>;
   assigned_at: string;
   published_at: string | null;
   rejected_at: string | null;
-  suppressed_by: string | null;
-  suppressed_at: string | null;
+  expired_at: string | null;
+  created_at: string;
 }
 
+/** Row shape returned by compute_reputation_stats RPC */
 export interface BehaviouralTagMetrics {
   user_id: string;
   total_predictions: number;
-  total_fixtures: number;
+  events_available: number;
   engagement_rate: number;
-  contrarian_pct: number;
-  majority_pct: number;
-  avg_total_goals: number;
+  winner_correct: number;
+  winner_total: number;
+  exact_correct: number;
+  exact_total: number;
   draws_predicted: number;
+  total_goals_predicted: number;
+  avg_goal_diff: number;
+  avg_total_goals: number;
+  max_goal_diff: number;
+  blowouts_predicted: number;
+  minority_picks: number;
+  majority_picks: number;
+  contrarian_pct: number;
+  most_repeated_score: string;
   repeat_score_count: number;
-  most_repeated_score: string | null;
   unique_scores_used: number;
-  blowout_count: number;
   prediction_changes: number;
-  avg_submission_offset_seconds: number;
-  accuracy: number;
-  contrarian_accuracy: number;
-  correct_streak: number;
-  incorrect_streak: number;
+  avg_submission_lead_time_mins: number;
+  earliest_submission_lead_hrs: number;
+  latest_submission_lead_mins: number;
+  public_notes_count: number;
+  current_streak: number;
+  best_streak: number;
 }
 
+/** Row shape returned by compute_event_tag_metrics RPC */
 export interface EventTagMetric {
   user_id: string;
-  tag_type: string;
-  prediction_type: string;
-  prediction_data: Record<string, unknown> | null;
-  is_correct: boolean | null;
-  points_awarded: number | null;
-  submission_seconds_before_lock: number | null;
-  pct_with_same_pick: number | null;
-  is_first_exact_score: boolean;
   display_name: string;
+  predicted: boolean;
+  winner_correct: boolean;
+  exact_correct: boolean;
+  points_awarded: number;
+  was_minority: boolean;
+  was_majority: boolean;
+  current_streak: number;
+  position_before: number;
+  position_after: number;
+  is_last_event: boolean;
+  is_first_event: boolean;
 }
