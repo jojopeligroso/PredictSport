@@ -143,110 +143,83 @@ export function DashboardResultCard({
   }
   // wrong = no dot, red stripe on left instead
 
+  // Prediction display text: "Team" or "Team H–A" if exact score was predicted
+  const predDisplay = userScorePick
+    ? `${userWinnerPick} ${userScorePick.home}\u2013${userScorePick.away}`
+    : userWinnerPick;
+
+  // Color tokens for verdict
+  const isCorrect = winnerCorrect === true;
+
   return (
-    <div
-      className={[
-        "relative py-3",
-        wrong ? "border-l-[3px] border-l-ps-red pl-2.5 -ml-1" : "",
-      ].join(" ")}
-    >
-      {/* ── Top row: movement + dot + teams + score + correctness badge ─── */}
-      <div className="flex items-center gap-1.5">
-        {/* Movement indicator (left side) */}
-        <span className="flex w-4 shrink-0 items-center justify-center">
-          {movement === "up" && <ArrowUp />}
-          {movement === "down" && <ArrowDown />}
-          {movement === "neutral" && <NeutralDot />}
-        </span>
-
-        {/* Correctness dot (only for non-wrong predictions) */}
-        {dotEl && <span className="flex shrink-0">{dotEl}</span>}
-
-        {/* Home team */}
-        <CountryFlag name={fixture.home} size={22} shape="pill" />
-        <span className="text-sm font-semibold text-ps-text">{homeTri}</span>
-
-        {/* Score */}
-        <span className="flex-1 text-center font-mono text-base font-bold tabular-nums text-ps-text">
+    <div className="relative py-3">
+      {/* ── Compact scoreboard row ── */}
+      <div
+        className={[
+          "flex items-center gap-1.5 rounded-lg px-2.5 py-1.5",
+          hasPrediction
+            ? isCorrect
+              ? "bg-ps-green/8 shadow-[inset_0_0_0_1.5px_rgba(10,168,109,0.35)]"
+              : "bg-ps-red/8 shadow-[inset_0_0_0_1.5px_rgba(226,61,79,0.35)]"
+            : "bg-ps-bg-alt/50",
+        ].join(" ")}
+      >
+        <CountryFlag name={fixture.home} size={18} shape="pill" />
+        <span className="text-xs font-bold text-ps-text">{homeTri}</span>
+        <span className="flex-1 text-center font-mono text-sm font-extrabold tabular-nums text-ps-text">
           {homeScore} – {awayScore}
         </span>
-
-        {/* Away team */}
-        <span className="text-sm font-semibold text-ps-text">{awayTri}</span>
-        <CountryFlag name={fixture.away} size={22} shape="pill" />
-
-        {/* Correctness badge (top right) */}
-        {hasPrediction && (
-          <span
-            className={[
-              "flex h-[18px] w-[18px] shrink-0 items-center justify-center rounded-full text-micro font-extrabold",
-              winnerCorrect
-                ? "bg-ps-green/15 text-ps-green"
-                : "bg-ps-red/15 text-ps-red",
-            ].join(" ")}
-          >
-            {winnerCorrect ? "\u2713" : "\u2715"}
-          </span>
-        )}
+        <span className="text-xs font-bold text-ps-text">{awayTri}</span>
+        <CountryFlag name={fixture.away} size={18} shape="pill" />
+        <span className="rounded-full bg-ps-green/80 px-1.5 py-0.5 text-micro font-bold uppercase text-white">
+          FT
+        </span>
       </div>
 
-      {/* ── Bottom row: prediction + streak + points ───────────────────── */}
+      {/* ── Verdict row: arrow block | prediction | points block ── */}
       {hasPrediction ? (
-        <>
-          <div className="mt-1 flex items-center gap-2 pl-[22px]">
-            <span className="text-caption text-ps-text-ter">
-              {t("dash.you_label")}{" "}
-              <span className="font-semibold text-ps-text-sec">
-                {userScorePick
-                  ? `${userScorePick.home}\u2013${userScorePick.away}`
-                  : userWinnerPick}
-              </span>
-              {userConfidence != null && (
-                <ConfidenceMicroPill level={userConfidence} />
-              )}
-            </span>
-
-            {/* Streak badge (3+) */}
-            {streak >= 3 && (
-              <span className="inline-flex items-center gap-0.5 rounded bg-ps-amber/12 px-1.5 py-0.5 text-micro font-bold text-ps-amber">
-                <FlameIcon />
-                {streak}
-              </span>
-            )}
-
-            {/* Points badge */}
-            {totalPoints > 0 ? (
-              <span
-                className={[
-                  "ml-auto flex items-baseline gap-1 font-mono tabular-nums",
-                  isJackpot
-                    ? "ps-jackpot-shimmer rounded-md bg-ps-amber/12 px-1.5 py-0.5"
-                    : "",
-                ].join(" ")}
-              >
-                <span
-                  className={[
-                    "text-body font-semibold",
-                    isJackpot ? "text-ps-amber" : "text-ps-green",
-                  ].join(" ")}
-                >
-                  +{totalPoints}
-                </span>
-                {breakdownStr && (
-                  <span className="text-micro font-medium text-ps-text-ter">
-                    {breakdownStr}
-                  </span>
-                )}
-              </span>
-            ) : (
-              <span className="ml-auto font-mono text-caption tabular-nums text-ps-text-ter">
-                +0
-              </span>
-            )}
+        <div className="mt-1.5 flex overflow-hidden rounded-lg">
+          {/* Arrow block — dark-backed with colored border */}
+          <div
+            className={[
+              "flex w-9 shrink-0 items-center justify-center bg-ps-text/8",
+              isCorrect
+                ? "border-r-[2.5px] border-r-ps-green"
+                : "border-r-[2.5px] border-r-ps-red",
+            ].join(" ")}
+          >
+            {movement === "up" && <ArrowUp />}
+            {movement === "down" && <ArrowDown />}
+            {movement === "neutral" && <NeutralDot />}
           </div>
-        </>
+
+          {/* Center — prediction text */}
+          <div className="flex flex-1 items-center bg-ps-text/5 px-2.5 py-2">
+            <span className="text-caption text-ps-text-ter">
+              {t("dash.prediction_label")}{" "}
+              <span className="font-semibold text-ps-text-sec">{predDisplay}</span>
+            </span>
+          </div>
+
+          {/* Points block — solid color */}
+          <div
+            className={[
+              "flex w-12 shrink-0 items-center justify-center",
+              isCorrect ? "bg-ps-green" : "bg-ps-red",
+            ].join(" ")}
+          >
+            <span
+              className={[
+                "font-mono text-base font-extrabold text-white tabular-nums",
+                isJackpot ? "ps-jackpot-shimmer" : "",
+              ].join(" ")}
+            >
+              +{totalPoints}
+            </span>
+          </div>
+        </div>
       ) : (
-        <div className="mt-1 pl-[22px]">
+        <div className="mt-1.5 rounded-lg bg-ps-text/5 px-3 py-2">
           <span className="text-caption text-ps-text-ter">
             {t("dash.no_prediction")}
           </span>

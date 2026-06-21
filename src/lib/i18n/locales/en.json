@@ -520,6 +520,7 @@
   "sport.cricket": "Cricket",
   "sport.other": "Other",
   "dash.you_label": "You:",
+  "dash.prediction_label": "Prediction:",
   "chat.loading": "Loading chat...",
   "chat.header": "Chat",
   "chat.load_older": "Load older messages",
