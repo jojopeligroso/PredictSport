@@ -480,7 +480,7 @@ function PredictionRow({
       >
         {/* ── Front face ──────────────────────────────────────────── */}
         <div
-          className={`flex items-center gap-2.5 border-l-[3px] px-3 py-2.5 ${rowClass} ${rank > 1 ? "border-t border-t-ps-border/40" : ""}`}
+          className={`flex items-center gap-2.5 border-l-[3px] px-3 py-2.5 ${rowClass} ${rank > 1 ? "border-t border-t-ps-border/40" : ""} transition-opacity duration-300 ${flipped ? "opacity-0" : "opacity-100"}`}
           style={{ backfaceVisibility: "hidden" }}
         >
           {/* Rank */}

@@ -419,7 +419,7 @@ function FlipRow({
         >
           {/* ── Front face ── */}
           <div
-            className={`flex items-center px-3 py-2.5 ${faceBg}`}
+            className={`flex items-center px-3 py-2.5 ${faceBg} transition-opacity duration-300 ${flipped ? "opacity-0" : "opacity-100"}`}
             style={{ backfaceVisibility: "hidden" }}
           >
             <span className="w-8 shrink-0 text-center font-mono text-xs font-bold text-ps-text-ter">
@@ -1275,10 +1275,12 @@ function AllGroupsView({
             <div className="divide-y divide-ps-border">
               {group.members.map((m, i) => {
                 const rank = i + 1;
+                const zone = getQualificationZone(rank, group.members.length);
+                const zoneColor = zone === "qualify" ? "border-l-ps-green" : zone === "best-third" ? "border-l-ps-amber" : "border-l-ps-red";
                 return (
                   <div
                     key={m.user_id}
-                    className={`flex items-center px-3 py-2 ${
+                    className={`flex items-center border-l-2 px-3 py-2 ${zoneColor} ${
                       m.is_self ? "bg-ps-amber/5" : ""
                     }`}
                   >
