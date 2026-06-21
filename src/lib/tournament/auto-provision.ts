@@ -46,13 +46,15 @@ export async function findOrProvisionInstance(
     skipRounds: true, // Share rounds from instance 1 via tournament_id RLS
   });
 
-  // 4. Set instance metadata
+  // 4. Set instance metadata — entry_closes_at must be null so overflow
+  //    instances stay open indefinitely (instance #1's cutoff does not apply)
   await supabase
     .from("competitions")
     .update({
       instance_number: nextNumber,
       instance_type: instanceType,
       status: "active", // Immediately joinable
+      entry_closes_at: null,
     })
     .eq("id", result.competition.id);
 
