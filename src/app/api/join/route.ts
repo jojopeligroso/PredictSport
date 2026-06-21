@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
+import { createServiceClient } from "@/lib/supabase/service";
 import { enrollEntrant } from "@/lib/tournament/classification-engine";
 import { requireDisplayName } from "@/lib/require-display-name";
 import { sendPushToUser } from "@/lib/push/send";
@@ -121,15 +122,18 @@ export async function POST(request: NextRequest) {
   }
 
   // 4. Check entrant cap — auto-provision for tournament competitions
+  // MUST use service client: RLS on competition_members requires
+  // is_competition_member(), so a non-member's count returns 0 — bypassing the cap.
   {
-    const { data: comp } = await supabase
+    const svc = createServiceClient();
+    const { data: comp } = await svc
       .from("competitions")
       .select("max_entrants, tournament_id, instance_type")
       .eq("id", competitionId)
       .single();
 
     if (comp?.max_entrants) {
-      const { count } = await supabase
+      const { count } = await svc
         .from("competition_members")
         .select("id", { count: "exact", head: true })
         .eq("competition_id", competitionId);
@@ -139,7 +143,7 @@ export async function POST(request: NextRequest) {
           // Tournament instance full — find or create a new one
           const { findOrProvisionInstance } = await import("@/lib/tournament/auto-provision");
           competitionId = await findOrProvisionInstance(
-            supabase,
+            svc,
             comp.tournament_id,
             (comp.instance_type as "full" | "knockout_only") ?? "full",
             user.id

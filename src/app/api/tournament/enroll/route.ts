@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
+import { createServiceClient } from "@/lib/supabase/service";
 import { requireDisplayName } from "@/lib/require-display-name";
 
 /**
@@ -62,9 +63,10 @@ export async function POST(request: NextRequest) {
     );
   }
 
-  // Check entrant cap
+  // Check entrant cap — service client bypasses RLS so non-members get accurate count
   if (competition.max_entrants) {
-    const { count } = await supabase
+    const svc = createServiceClient();
+    const { count } = await svc
       .from("competition_members")
       .select("id", { count: "exact", head: true })
       .eq("competition_id", competitionId);
