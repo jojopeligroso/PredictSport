@@ -1129,7 +1129,7 @@ function QualificationRuleSummary({ groupSize }: { groupSize: number }) {
         <span className="rounded-full bg-ps-green/15 px-2 py-0.5 text-ps-green">
           {t('group.top2_qualify')}
         </span>
-        <span className="rounded-full bg-ps-amber/15 px-2 py-0.5 text-ps-amber">
+        <span className="rounded-full bg-orange-400/15 px-2 py-0.5 text-orange-400">
           {t('group.third_best_pool')}
         </span>
         <span className="rounded-full bg-ps-red/15 px-2 py-0.5 text-ps-red">
@@ -1163,14 +1163,14 @@ function YourGroupCard({
   const t = useT();
   const groupSize = group.members.length;
 
-  const zoneColors = {
-    qualify: "border-l-ps-green",
-    "best-third": "border-l-ps-amber",
-    eliminated: "border-l-ps-red",
+  const zoneStyles = {
+    qualify: "border-l-ps-green bg-ps-green/[0.06]",
+    "best-third": "border-l-orange-400 bg-orange-400/[0.06]",
+    eliminated: "border-l-ps-red bg-ps-red/[0.06]",
   };
 
   return (
-    <div className="mt-4 rounded-xl border border-ps-amber/40 bg-ps-surface ring-1 ring-ps-amber/20">
+    <div className="mt-4 overflow-hidden rounded-xl border border-ps-amber/40 bg-ps-surface ring-1 ring-ps-amber/20">
       {/* Header */}
       <div className="flex items-center justify-between bg-ps-amber/5 px-4 py-3">
         <div>
@@ -1208,8 +1208,8 @@ function YourGroupCard({
           return (
             <div
               key={m.user_id}
-              className={`flex items-center border-l-2 px-3 py-2 ${zoneColors[zone]} ${
-                m.is_self ? "bg-ps-amber/5" : ""
+              className={`flex items-center border-l-[3px] px-3 py-2 ${zoneStyles[zone]} ${
+                m.is_self ? "!bg-ps-amber/10" : ""
               }`}
             >
               <span className="w-6 text-center font-mono text-xs font-bold text-ps-text-ter">
@@ -1276,12 +1276,12 @@ function AllGroupsView({
               {group.members.map((m, i) => {
                 const rank = i + 1;
                 const zone = getQualificationZone(rank, group.members.length);
-                const zoneColor = zone === "qualify" ? "border-l-ps-green" : zone === "best-third" ? "border-l-ps-amber" : "border-l-ps-red";
+                const zoneStyle = zone === "qualify" ? "border-l-ps-green bg-ps-green/[0.06]" : zone === "best-third" ? "border-l-orange-400 bg-orange-400/[0.06]" : "border-l-ps-red bg-ps-red/[0.06]";
                 return (
                   <div
                     key={m.user_id}
-                    className={`flex items-center border-l-2 px-3 py-2 ${zoneColor} ${
-                      m.is_self ? "bg-ps-amber/5" : ""
+                    className={`flex items-center border-l-[3px] px-3 py-2 ${zoneStyle} ${
+                      m.is_self ? "!bg-ps-amber/10" : ""
                     }`}
                   >
                     <span className="w-6 text-center font-mono text-xs font-bold text-ps-text-ter">
