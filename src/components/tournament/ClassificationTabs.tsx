@@ -68,6 +68,16 @@ interface MyGroupData {
   totalMembers?: number;
 }
 
+interface LeaderboardTag {
+  tagName: string;
+  tagCategory: string;
+  status: string;
+  definition: {
+    layer1: string;
+    visual: { borderColor: string; gold?: boolean; opacity?: number };
+  };
+}
+
 export function ClassificationTabs({
   classifications,
   competitionId,
@@ -120,6 +130,7 @@ export function ClassificationTabs({
   const [selfVisibility, setSelfVisibility] = useState<"public" | "private">("public");
   const [groupData, setGroupData] = useState<MyGroupData | null>(null);
   const [fetchKey, setFetchKey] = useState(0);
+  const [tagsByUser, setTagsByUser] = useState<Map<string, LeaderboardTag>>(new Map());
 
   // Listen for scoring broadcasts to auto-refresh standings
   useEffect(() => {
@@ -135,6 +146,28 @@ export function ClassificationTabs({
       .subscribe();
 
     return () => { supabase.removeChannel(channel); };
+  }, [competitionId]);
+
+  // Fetch reputation tags for leaderboard badges (feature-flagged)
+  useEffect(() => {
+    if (process.env.NEXT_PUBLIC_FEATURE_TAGS !== "true") return;
+    let cancelled = false;
+
+    fetch(`/api/tournament/competition-tags?competitionId=${competitionId}`)
+      .then((res) => res.json())
+      .then((data) => {
+        if (cancelled) return;
+        const map = new Map<string, LeaderboardTag>();
+        for (const t of data?.tags ?? []) {
+          map.set(t.userId, t);
+        }
+        setTagsByUser(map);
+      })
+      .catch(() => {
+        // Silently fail — tags are non-critical
+      });
+
+    return () => { cancelled = true; };
   }, [competitionId]);
 
   useEffect(() => {
@@ -310,6 +343,7 @@ export function ClassificationTabs({
                 currentUserId={currentUserId}
                 classificationType={active?.classification_type ?? "leaderboard"}
                 selfVisibility={selfVisibility}
+                tagsByUser={tagsByUser}
                 onToggleVisibility={async (next) => {
                   const prev = selfVisibility;
                   setSelfVisibility(next);
@@ -385,6 +419,7 @@ function FlipRow({
   isBracket,
   selfVisibility,
   onToggleVisibility,
+  tag,
 }: {
   row: StandingRow;
   isMe: boolean;
@@ -393,6 +428,7 @@ function FlipRow({
   isBracket: boolean;
   selfVisibility: "public" | "private";
   onToggleVisibility: (next: "public" | "private") => void;
+  tag?: LeaderboardTag;
 }) {
   const t = useT();
   const [flipped, setFlipped] = useState(false);
@@ -431,6 +467,9 @@ function FlipRow({
               >
                 {row.display_name}
               </span>
+              {tag && (
+                <LeaderboardTagBadge tag={tag} />
+              )}
               {isMe && (
                 <span className="shrink-0 rounded bg-ps-amber/20 px-1 py-0.5 text-micro font-bold text-ps-amber">
                   {t('classification.you_label')}
@@ -537,17 +576,41 @@ function FlipRow({
   );
 }
 
+function LeaderboardTagBadge({ tag }: { tag: LeaderboardTag }) {
+  const isGhost = tag.tagName === "Ghost";
+  const isGold = tag.definition.visual.gold;
+
+  return (
+    <span
+      className="shrink-0 inline-flex items-center rounded-full px-1.5 py-0.5"
+      style={{
+        backgroundColor: isGold ? "#f59e0b" : tag.definition.visual.borderColor,
+        opacity: isGhost ? 0.6 : 1,
+      }}
+    >
+      <span
+        className="font-display text-[10px] font-extrabold uppercase leading-none text-white"
+        style={{ letterSpacing: "0.05em" }}
+      >
+        {tag.definition.layer1}
+      </span>
+    </span>
+  );
+}
+
 function StandingsTable({
   standings,
   currentUserId,
   classificationType,
   selfVisibility,
+  tagsByUser,
   onToggleVisibility,
 }: {
   standings: StandingRow[];
   currentUserId: string;
   classificationType: string;
   selfVisibility: "public" | "private";
+  tagsByUser: Map<string, LeaderboardTag>;
   onToggleVisibility: (next: "public" | "private") => void;
 }) {
   const t = useT();
@@ -579,6 +642,7 @@ function StandingsTable({
             isBracket={isBracket}
             selfVisibility={selfVisibility}
             onToggleVisibility={onToggleVisibility}
+            tag={tagsByUser.get(row.user_id)}
           />
         );
       })}

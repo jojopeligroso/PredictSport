@@ -21,6 +21,7 @@ import {
   ResultsSection,
   GroupSection,
   SocialSection,
+  TagSection,
   TournamentSection,
 } from "./DashboardSections";
 
@@ -391,6 +392,12 @@ export function DashboardClient({
         chatEnabled={chatEnabled}
         lastChatMessage={lastChatMessage}
         liveMode={liveMode}
+      />
+
+      {/* 7b. Reputation tag card */}
+      <TagSection
+        competitionId={competitionId}
+        isMember={isMember}
       />
 
       {/* 8. Tournament groups + bracket */}

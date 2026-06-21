@@ -6,4 +6,5 @@ export { LiveSection } from "./LiveSection";
 export { ResultsSection } from "./ResultsSection";
 export { GroupSection } from "./GroupSection";
 export { SocialSection } from "./SocialSection";
+export { TagSection } from "./TagSection";
 export { TournamentSection } from "./TournamentSection";
