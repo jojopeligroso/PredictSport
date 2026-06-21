@@ -76,7 +76,7 @@ export function ResultsSection({
               )}
               <div className="mt-2 text-center">
                 <Link
-                  href="/wc"
+                  href="/wc?tab=results"
                   className="text-caption font-medium text-ps-text-ter transition-colors hover:text-ps-text-sec"
                 >
                   {t('dash.go_to_results')}
