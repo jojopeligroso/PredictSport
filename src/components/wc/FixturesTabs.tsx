@@ -583,32 +583,10 @@ function FixtureCard({
     : totalPoints > 0 ? "up"
     : "down";
 
-  // Ring color: green (correct), red (wrong), amber (pending / correctness off)
+  // Ring color: amber for upcoming/pending predictions only (no outer ring on finished cards)
   let ringClass = "";
-  if (hasPrediction && prediction) {
-    if (isFinished && result && currentWinner) {
-      // Determine actual winner from result
-      const actualWinner =
-        result.homeScore !== null && result.awayScore !== null
-          ? result.homeScore > result.awayScore
-            ? fixture.home
-            : result.awayScore > result.homeScore
-              ? fixture.away
-              : drawOption
-          : result.winner ?? null;
-
-      if (showCorrectness && actualWinner) {
-        ringClass =
-          currentWinner === actualWinner
-            ? "ring-[6px] ring-ps-green/85 my-[3px]"
-            : "ring-[6px] ring-ps-red/85 my-[3px]";
-      } else {
-        ringClass = "ring-2 ring-ps-amber/50";
-      }
-    } else {
-      // Upcoming / pending — amber ring
-      ringClass = "ring-2 ring-ps-amber/50";
-    }
+  if (hasPrediction && prediction && !isFinished) {
+    ringClass = "ring-2 ring-ps-amber/50";
   }
 
   const cityTime = formatTime(kickoff, city.timezone, locale);
@@ -937,7 +915,7 @@ function FixtureCard({
       <div className="mt-1 text-center">
         <a
           href={`/wc/leaderboard?tab=rivals&eventId=${rivalsEventId}`}
-          className="text-[11px] font-medium text-white/40 transition-colors hover:text-white/60"
+          className="text-[11px] font-medium text-ps-text-sec dark:text-white/40 transition-colors hover:text-ps-text dark:hover:text-white/60"
         >
           {t("rivals.see_rivals")} ›
         </a>
