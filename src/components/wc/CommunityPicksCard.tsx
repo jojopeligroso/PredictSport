@@ -196,8 +196,10 @@ export function CommunityPicksCard({ competitionId, island = false }: CommunityP
 
 /* ── Vertical Bar Chart ─────────────────────────────────────────────── */
 
-const MAX_BAR_H = 72; // px — tallest bar
-const MIN_BAR_H = 22; // px — just enough for the percentage text
+const MAX_BAR_H = 72;      // px — tallest bar
+const MIN_BAR_H = 22;      // px — bars with text inside (>= 5%)
+const MIN_BAR_H_TINY = 4;  // px — bars with text above (< 5%)
+const SMALL_PCT = 10;       // threshold: below this, text goes above the bar
 const DRAW_COLOR = "#6b7280"; // gray-500
 
 interface VerticalBarChartProps {
@@ -229,8 +231,9 @@ function VerticalBarChart({
   const maxPct = Math.max(...pcts, 1); // avoid div-by-zero
 
   const barH = (pct: number) => {
-    if (pct === 0) return MIN_BAR_H;
-    return Math.max(MIN_BAR_H, Math.round((pct / maxPct) * MAX_BAR_H));
+    if (pct === 0) return MIN_BAR_H_TINY;
+    const minH = pct < SMALL_PCT ? MIN_BAR_H_TINY : MIN_BAR_H;
+    return Math.max(minH, Math.round((pct / maxPct) * MAX_BAR_H));
   };
 
   return (
@@ -281,6 +284,7 @@ interface BarColumnProps {
 
 function BarColumn({ flag, label, pct, height, color }: BarColumnProps) {
   const textColor = textOnColor(color);
+  const textAbove = pct < SMALL_PCT;
 
   return (
     <div className="flex flex-1 flex-col items-center gap-1">
@@ -291,17 +295,26 @@ function BarColumn({ flag, label, pct, height, color }: BarColumnProps) {
         <span className="text-micro font-medium text-ps-text-ter/50">{label}</span>
       ) : null}
 
+      {/* Percentage above bar for small values */}
+      {textAbove && (
+        <span className="font-mono text-micro font-semibold tabular-nums text-ps-text-sec">
+          {pct}%
+        </span>
+      )}
+
       {/* Bar */}
       <div
         className="relative w-full rounded-t-md transition-all duration-500"
         style={{ height, backgroundColor: color }}
       >
-        <span
-          className="absolute inset-0 flex items-center justify-center font-mono text-micro font-semibold tabular-nums"
-          style={{ color: textColor }}
-        >
-          {pct}%
-        </span>
+        {!textAbove && (
+          <span
+            className="absolute inset-0 flex items-center justify-center font-mono text-micro font-semibold tabular-nums"
+            style={{ color: textColor }}
+          >
+            {pct}%
+          </span>
+        )}
       </div>
     </div>
   );
