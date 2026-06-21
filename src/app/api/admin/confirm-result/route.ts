@@ -127,7 +127,7 @@ export async function POST(request: Request) {
     const score = overrideResultData.score as Record<string, unknown> | undefined;
     const chatContent =
       score && names.length === 2
-        ? `Result confirmed: ${names[0].trim()} ${score.home_score}-${score.away_score} ${names[1].trim()}`
+        ? `Result confirmed: ${names[0].trim()} ${score.home_score}\u2013${score.away_score} ${names[1].trim()}`
         : `Result confirmed: ${event.event_name}`;
 
     const serviceClient = (await import("@supabase/supabase-js")).createClient(

@@ -11,7 +11,7 @@ function getServiceClient() {
 
 function formatScore(input: CompareInput): string {
   if (input.score) {
-    return `${input.score.home_score}-${input.score.away_score}`;
+    return `${input.score.home_score}\u2013${input.score.away_score}`;
   }
   if (input.positions?.length) {
     return input.positions

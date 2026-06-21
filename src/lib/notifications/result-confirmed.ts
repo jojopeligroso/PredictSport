@@ -11,7 +11,7 @@ function getServiceClient() {
 /**
  * Notify all competition members that a result has been confirmed.
  *
- * 1. Inserts a system chat message: "Full time: France 2-1 Mexico"
+ * 1. Inserts a system chat message: "Full time: France 2\u20131 Mexico"
  * 2. Sends push notification to all members with result_notifications enabled.
  *
  * Fire-and-forget — errors are logged, never thrown.
@@ -25,12 +25,12 @@ export async function notifyResultConfirmed(
   try {
     const supabase = getServiceClient();
 
-    // Build score string: "Full time: France 2-1 Mexico"
+    // Build score string: "Full time: France 2\u20131 Mexico"
     const homeScore = resultData.home_score ?? resultData.homeScore;
     const awayScore = resultData.away_score ?? resultData.awayScore;
     const scoreLine =
       typeof homeScore === "number" && typeof awayScore === "number"
-        ? `${homeScore}-${awayScore}`
+        ? `${homeScore}\u2013${awayScore}`
         : null;
 
     // Use event_name which is typically "France vs Mexico"

@@ -4,6 +4,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { useT, useLocale } from "@/lib/i18n";
 import type { ChatMessageWithUser, UseChatMember, ReplyPreview } from "./useRealtimeChat";
+import { TagRevealCard, type TagRevealMetadata } from "./TagRevealCard";
 
 const ROLE_RANK: Record<string, number> = {
   participant: 0,
@@ -53,6 +54,32 @@ function formatMessageTime(iso: string, locale: string): string {
     day: "numeric",
     month: "short",
   }) + ` ${time}`;
+}
+
+/** Render tag change/reject content with **bold** tag names */
+function renderTagChangeContent(content: string): React.ReactNode {
+  const boldRegex = /\*\*([^*]+)\*\*/g;
+  const parts: React.ReactNode[] = [];
+  let lastIndex = 0;
+  let match: RegExpExecArray | null;
+
+  while ((match = boldRegex.exec(content)) !== null) {
+    if (match.index > lastIndex) {
+      parts.push(content.slice(lastIndex, match.index));
+    }
+    parts.push(
+      <span key={match.index} className="font-bold text-ps-text-sec">
+        {match[1]}
+      </span>
+    );
+    lastIndex = match.index + match[0].length;
+  }
+
+  if (lastIndex < content.length) {
+    parts.push(content.slice(lastIndex));
+  }
+
+  return parts.length > 0 ? parts : content;
 }
 
 /** Highlight @mentions in message content */
@@ -185,10 +212,51 @@ export function ChatMessage({
     swipeOffset.current = 0;
   }, [message, onReply, isDeleted, isSystem, cancelPress]);
 
-  // System messages (system, system_join, system_result)
+  // System messages — dispatch by message_type for structured rendering
   if (isSystem) {
     // Strip internal metadata tags (e.g. "[reckons:eventId] ") from display
     const systemContent = message.content.replace(/^\[reckons:[^\]]+\]\s*/, "");
+
+    // Tag reveal: announcement text + inline TagRevealCard
+    if (message.message_type === "system_tag_reveal" && message.metadata) {
+      return (
+        <div className="flex justify-center py-1">
+          <div className="max-w-[85%]">
+            <p className="text-xs text-ps-text-ter italic text-center">
+              {systemContent}
+            </p>
+            <TagRevealCard metadata={message.metadata as unknown as TagRevealMetadata} />
+          </div>
+        </div>
+      );
+    }
+
+    // Tag change: italic, secondary color, tag names in bold
+    if (message.message_type === "system_tag_change") {
+      return (
+        <div className="flex justify-center py-1">
+          <span className="text-xs text-ps-text-ter italic">
+            {renderTagChangeContent(systemContent)}
+          </span>
+        </div>
+      );
+    }
+
+    // Tag reject: centered, italic, text-xs, secondary color
+    if (message.message_type === "system_tag_reject") {
+      return (
+        <div className="flex justify-center py-1">
+          <span className="text-xs text-ps-text-ter italic">
+            {renderTagChangeContent(systemContent)}
+          </span>
+        </div>
+      );
+    }
+
+    // Round summary: rendered as system message for now (full implementation later)
+    // Falls through to default system rendering below.
+
+    // Default system message rendering
     return (
       <div className="flex justify-center py-1">
         <span className="text-xs text-ps-text-ter italic">
