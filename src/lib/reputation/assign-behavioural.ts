@@ -204,6 +204,40 @@ export function assignBehaviouralTags(
 }
 
 // ---------------------------------------------------------------------------
+// Resolve the {stat} template variable per tag
+// ---------------------------------------------------------------------------
+
+function resolveStatForTag(
+  tag: TagDefinition,
+  member: BehaviouralTagMetrics,
+): unknown {
+  switch (tag.name) {
+    case "Broken Clock":
+      return member.most_repeated_score;
+    case "One-Trick Pony":
+      return member.unique_scores_used;
+    case "All-Square":
+      return member.draws_predicted;
+    case "Not a Chance":
+      return member.blowouts_predicted;
+    case "The Tinkerer":
+    case "Fire and Forget":
+      return member.prediction_changes;
+    case "Defence Wins Championships":
+    case "Are You Not Entertained":
+      return member.avg_total_goals?.toFixed(1);
+    case "Ghost":
+    case "No Participation Trophies":
+      return member.events_available - member.total_predictions;
+    case "Still in the Fight":
+      return member.total_predictions;
+    case "Dead Centre":
+      return "all";
+    default:
+      return undefined;
+  }
+}
+
 // Build stats object for a tag assignment
 // ---------------------------------------------------------------------------
 
@@ -220,28 +254,27 @@ function buildStats(
         )
       : 0;
 
+  // Resolve {pct} based on which metric the tag measures
+  const pct =
+    tag.metric === "majority_pct"
+      ? majorityPct
+      : tag.metric === "engagement_rate" || tag.category === "engagement_pressure"
+        ? Math.round(member.engagement_rate * 100)
+        : Math.round(member.contrarian_pct);
+
   return {
-    pct: Math.round(member.contrarian_pct),
+    pct,
     score:
-      tag.metric.includes("avg_total_goals")
-        ? member.avg_total_goals
-        : tag.metric.includes("earliest_submission")
-          ? member.earliest_submission_lead_hrs
-          : tag.metric.includes("latest_submission")
-            ? Math.round(member.latest_submission_lead_mins)
-            : undefined,
-    stat:
       tag.name === "Broken Clock"
         ? member.most_repeated_score
-        : tag.name === "One-Trick Pony"
-          ? member.unique_scores_used
-          : tag.name === "All-Square"
-            ? member.draws_predicted
-            : tag.name === "Not a Chance"
-              ? member.blowouts_predicted
-              : tag.name === "The Tinkerer"
-                ? member.prediction_changes
-                : undefined,
+        : tag.metric.includes("avg_total_goals")
+          ? member.avg_total_goals?.toFixed(1)
+          : tag.metric.includes("earliest_submission")
+            ? member.earliest_submission_lead_hrs
+            : tag.metric.includes("latest_submission")
+              ? Math.round(member.latest_submission_lead_mins)
+              : undefined,
+    stat: resolveStatForTag(tag, member),
     total: member.events_available,
     majority_pct: majorityPct,
     engagement_rate: member.engagement_rate,
