@@ -260,7 +260,7 @@ export function FixturesTabs({ fixtures, resultsByExternalId, serverDateIso, pre
         </div>
       )}
 
-      <div className="mt-4 flex flex-col gap-3">
+      <div className="mt-4 flex flex-col gap-2">
         {active.length === 0 && (
           <p className="rounded-xl border border-ps-border bg-ps-surface px-4 py-8 text-center text-sm text-ps-text-sec">
             {mode === "fixtures"
@@ -278,10 +278,10 @@ export function FixturesTabs({ fixtures, resultsByExternalId, serverDateIso, pre
         {dateGroups
           ? dateGroups.map((group) => (
               <div key={group.dateKey}>
-                <h3 className="mb-2 mt-4 first:mt-0 font-mono text-micro font-bold uppercase tracking-[0.18em] text-ps-text-sec">
+                <h3 className="mb-1.5 mt-3 first:mt-0 font-mono text-micro font-bold uppercase tracking-[0.18em] text-ps-text-sec">
                   {group.label}
                 </h3>
-                <div className="space-y-3">
+                <div className="space-y-2">
                   {group.items.map((f) => {
                     const windowEvent = canExpandToPick ? windowEventsByExternalId?.[f.externalId] : undefined;
                     const result = resultsByExternalId[f.externalId];
@@ -604,7 +604,7 @@ function FixtureCard({
   const teamPad = large ? "gap-1.5 px-2 py-2" : "gap-1 px-1.5 py-1.5";
   const headerText = large ? "text-xs" : "text-caption";
   const stadiumText = large ? "text-caption" : "text-micro";
-  const bodyPad = large ? "px-5 pb-4 pt-3" : "px-4 pb-3 pt-2";
+  const bodyPad = large ? "px-5 pb-3 pt-3" : "px-4 pb-2.5 pt-2";
   const headerPad = large ? "px-5 pt-4" : "px-4 pt-3";
   const rowGap = large ? "gap-2" : "gap-1.5";
   const timeText = large ? "text-sm" : "text-xs";
@@ -795,7 +795,7 @@ function FixtureCard({
 
             {/* Verdict row: arrow block | prediction | points block */}
             {hasPrediction && prediction && showCorrectness && (
-              <div className="mt-2 flex overflow-hidden rounded-[10px] min-h-[44px]">
+              <div className="mt-1.5 flex overflow-hidden rounded-lg min-h-[42px]">
                 {/* Arrow block — dark-backed with colored accent border */}
                 <div
                   className={[
@@ -821,7 +821,7 @@ function FixtureCard({
                 </div>
 
                 {/* Center — prediction text */}
-                <div className="flex flex-1 items-center bg-black/25 px-3.5 py-2">
+                <div className="flex flex-1 items-center bg-black/25 px-3 py-1.5">
                   <span className="text-[12px] text-white/50">
                     {t('dash.prediction_label')}{" "}
                     <span className="text-[13px] font-bold text-white/90">
@@ -852,7 +852,7 @@ function FixtureCard({
 
             {/* Prediction row without correctness (before results revealed) */}
             {hasPrediction && prediction && !showCorrectness && (
-              <div className="mt-2 rounded-lg bg-black/20 px-3 py-2">
+              <div className="mt-1.5 rounded-lg bg-black/20 px-3 py-1.5">
                 <span className="text-[12px] text-white/55">
                   {t('dash.prediction_label')}{" "}
                   <span className="font-bold text-white/90">
@@ -912,7 +912,7 @@ function FixtureCard({
     </article>
     {/* Rivals CTA — subtle text link outside card */}
     {rivalsEventId && isFinished && (
-      <div className="mt-1 text-center">
+      <div className="mt-0.5 text-center">
         <a
           href={`/wc/leaderboard?tab=rivals&eventId=${rivalsEventId}`}
           className="text-[11px] font-medium text-ps-text-sec dark:text-white/40 transition-colors hover:text-ps-text dark:hover:text-white/60"
