@@ -10,7 +10,7 @@ export type EventStatus =
   | "postponed"
   | "cancelled";
 export type NominationStatus = "pending" | "approved" | "rejected";
-export type ChatMessageType = "user" | "system" | "system_join" | "system_result" | "system_reckons";
+export type ChatMessageType = "user" | "system" | "system_join" | "system_result" | "system_reckons" | "system_tag_reveal" | "system_tag_change" | "system_tag_reject" | "system_round_summary";
 export type ChatDeletedBy = "user" | "mod" | "admin";
 export type ChatMediaType = "image" | "gif";
 export type PredictionType =
@@ -77,6 +77,7 @@ export interface ChatMessage {
   reply_to_id: string | null;
   media_url: string | null;
   media_type: ChatMediaType | null;
+  metadata: Record<string, unknown> | null;
   created_at: string;
   updated_at: string | null;
   deleted_at: string | null;
@@ -202,4 +203,59 @@ export interface InviteToken {
   max_uses: number | null;
   use_count: number;
   created_at: string;
+}
+
+export type TagCategory = "behavioural" | "event_driven" | "engagement_pressure";
+export type TagStatus = "pending" | "active" | "rejected" | "suppressed" | "expired";
+
+export interface MemberTag {
+  id: string;
+  competition_id: string;
+  user_id: string;
+  round_id: string | null;
+  event_id: string | null;
+  tag_name: string;
+  tag_variant: string | null;
+  tag_category: TagCategory;
+  stats: Record<string, unknown>;
+  status: TagStatus;
+  assigned_at: string;
+  published_at: string | null;
+  rejected_at: string | null;
+  suppressed_by: string | null;
+  suppressed_at: string | null;
+}
+
+export interface BehaviouralTagMetrics {
+  user_id: string;
+  total_predictions: number;
+  total_fixtures: number;
+  engagement_rate: number;
+  contrarian_pct: number;
+  majority_pct: number;
+  avg_total_goals: number;
+  draws_predicted: number;
+  repeat_score_count: number;
+  most_repeated_score: string | null;
+  unique_scores_used: number;
+  blowout_count: number;
+  prediction_changes: number;
+  avg_submission_offset_seconds: number;
+  accuracy: number;
+  contrarian_accuracy: number;
+  correct_streak: number;
+  incorrect_streak: number;
+}
+
+export interface EventTagMetric {
+  user_id: string;
+  tag_type: string;
+  prediction_type: string;
+  prediction_data: Record<string, unknown> | null;
+  is_correct: boolean | null;
+  points_awarded: number | null;
+  submission_seconds_before_lock: number | null;
+  pct_with_same_pick: number | null;
+  is_first_exact_score: boolean;
+  display_name: string;
 }
