@@ -915,7 +915,7 @@ function FixtureCard({
       <div className="mt-0.5 text-center">
         <a
           href={`/wc/leaderboard?tab=rivals&eventId=${rivalsEventId}`}
-          className="text-[11px] font-medium text-ps-text-sec dark:text-white/40 transition-colors hover:text-ps-text dark:hover:text-white/60"
+          className="text-[11px] font-semibold text-ps-amber transition-colors hover:text-ps-amber/80"
         >
           {t("rivals.see_rivals")} ›
         </a>
