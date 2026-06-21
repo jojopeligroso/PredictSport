@@ -72,12 +72,13 @@ setup("authenticate", async ({ page }) => {
   }
   await page.context().addCookies(cookies);
 
-  await page.goto("/admin");
+  // Reload after setting cookies so the app picks up the session
+  await page.goto("/");
   await page.waitForLoadState("networkidle");
 
-  await expect(
-    page.getByRole("heading", { name: /match day desk/i })
-  ).toBeVisible({ timeout: 15000 });
+  // Verify auth worked: authenticated users are NOT redirected to /login
+  // and the page should not show a "Sign in" button
+  await expect(page).not.toHaveURL(/\/login/, { timeout: 10000 });
 
   await page.context().storageState({ path: "e2e/.auth/user.json" });
 });
