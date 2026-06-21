@@ -1275,13 +1275,11 @@ function AllGroupsView({
             <div className="divide-y divide-ps-border">
               {group.members.map((m, i) => {
                 const rank = i + 1;
-                const zone = getQualificationZone(rank, group.members.length);
-                const zoneStyle = zone === "qualify" ? "border-l-ps-green bg-ps-green/[0.06]" : zone === "best-third" ? "border-l-orange-400 bg-orange-400/[0.06]" : "border-l-ps-red bg-ps-red/[0.06]";
                 return (
                   <div
                     key={m.user_id}
-                    className={`flex items-center border-l-[3px] px-3 py-2 ${zoneStyle} ${
-                      m.is_self ? "!bg-ps-amber/10" : ""
+                    className={`flex items-center px-3 py-2 ${
+                      m.is_self ? "bg-ps-amber/5" : ""
                     }`}
                   >
                     <span className="w-6 text-center font-mono text-xs font-bold text-ps-text-ter">
