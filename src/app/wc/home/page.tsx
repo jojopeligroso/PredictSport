@@ -3,6 +3,7 @@ import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { fetchDashboardData } from "./fetchDashboardData";
 import { DashboardClient } from "./DashboardClient";
+import { checkAndPublishExpiredPending } from "@/lib/reputation/auto-publish";
 
 export const dynamic = "force-dynamic";
 
@@ -27,6 +28,13 @@ export default async function WcHomePage({
   } = await supabase.auth.getUser();
 
   const data = await fetchDashboardData();
+
+  // Side effect: auto-publish any pending tags past the 6-hour preview window
+  if (data.ready && data.competitionId) {
+    checkAndPublishExpiredPending(data.competitionId).catch(() => {
+      // Non-critical — log happens inside the function
+    });
+  }
 
   if (!data.ready) {
     return (

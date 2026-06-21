@@ -38,7 +38,8 @@ export type NotifCategory =
   | "result_notifications"
   | "leaderboard_updates"
   | "chat_mentions"
-  | "chat_member_join";
+  | "chat_member_join"
+  | "reputation_tags";
 
 /** Default reminder lead time in minutes. Users can override in notification_prefs. */
 export const DEFAULT_REMINDER_LEAD_MINUTES = 60;
@@ -213,6 +214,7 @@ export async function sendPushToUser(
     leaderboard_updates: true,
     chat_mentions: true,
     chat_member_join: false,
+    reputation_tags: true,
   };
   const enabled = prefs?.[category] ?? defaultPrefs[category];
   if (!enabled) return { sent: 0, failed: 0, cleaned: 0 };

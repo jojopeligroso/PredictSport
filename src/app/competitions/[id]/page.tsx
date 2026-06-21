@@ -1,6 +1,8 @@
 import { redirect, notFound } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { CompetitionTabs } from "@/app/admin/components/CompetitionTabs";
+import { checkAndPublishExpiredPending } from "@/lib/reputation/auto-publish";
+import type { MemberTag } from "@/types/database";
 
 interface PageProps {
   params: Promise<{ id: string }>;
@@ -97,6 +99,26 @@ export default async function CompetitionDetailPage({ params }: PageProps) {
         .order("created_at", { ascending: false })
     : { data: [] };
 
+  // Fetch member tags (pending + active) for admin tag preview
+  let memberTags: MemberTag[] = [];
+  if (userRole === "admin" || userRole === "co_admin") {
+    const { data: tagsData } = await supabase
+      .from("member_tags")
+      .select("*")
+      .eq("competition_id", id)
+      .in("status", ["pending", "active"])
+      .limit(500);
+
+    memberTags = (tagsData ?? []) as MemberTag[];
+
+    // Side effect: auto-publish any pending tags past the 6-hour preview window
+    try {
+      await checkAndPublishExpiredPending(id);
+    } catch {
+      // Non-critical — log happens inside the function
+    }
+  }
+
   // Check for tournament classifications
   const { data: classifications } = await supabase
     .from("classifications")
@@ -181,6 +203,7 @@ export default async function CompetitionDetailPage({ params }: PageProps) {
         competition={competition}
         events={eventsWithTypes}
         rounds={rounds ?? []}
+        memberTags={memberTags}
         members={
           (members ?? []).map((m) => ({
             ...m,

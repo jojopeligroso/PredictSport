@@ -16,8 +16,10 @@ CREATE TABLE public.member_tags (
   assigned_at timestamptz NOT NULL DEFAULT now(),
   published_at timestamptz,
   rejected_at timestamptz,
+  expired_at timestamptz,
   suppressed_by uuid REFERENCES public.users(id),
   suppressed_at timestamptz,
+  created_at timestamptz NOT NULL DEFAULT now(),
   UNIQUE(competition_id, user_id, round_id, tag_name)
 );
 

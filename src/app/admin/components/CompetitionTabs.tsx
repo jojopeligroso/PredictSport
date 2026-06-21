@@ -9,7 +9,7 @@ import { NominateSection } from "./NominateSection";
 import { SettingsSection } from "./SettingsSection";
 import { ResultPanel } from "./ResultPanel";
 import { RoundBuilder } from "./RoundBuilder";
-import type { Competition, Event, CompetitionMember, EventNomination, InviteToken, EventPredictionType, Round } from "@/types/database";
+import type { Competition, Event, CompetitionMember, EventNomination, InviteToken, EventPredictionType, Round, MemberTag } from "@/types/database";
 import { PredictionWindowSelector } from "@/components/tournament/PredictionWindowSelector";
 import { FinalisationPanel } from "@/components/tournament/admin/FinalisationPanel";
 import { ClassificationTabs } from "@/components/tournament/ClassificationTabs";
@@ -23,6 +23,7 @@ interface CompetitionTabsProps {
   events: EventWithPredictionTypes[];
   rounds: Round[];
   members: (CompetitionMember & { user?: { display_name: string; email: string } })[];
+  memberTags?: MemberTag[];
   nominations: (EventNomination & { nominator?: { display_name: string } })[];
   inviteTokens: InviteToken[];
   currentUserId: string;
@@ -43,6 +44,7 @@ export function CompetitionTabs({
   events,
   rounds,
   members,
+  memberTags = [],
   nominations,
   inviteTokens,
   currentUserId,
@@ -183,6 +185,7 @@ export function CompetitionTabs({
           <ParticipantsSection
             competition={competition}
             members={members}
+            memberTags={memberTags}
             inviteTokens={inviteTokens}
             currentUserId={currentUserId}
             userRole={userRole}

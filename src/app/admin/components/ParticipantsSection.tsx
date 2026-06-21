@@ -3,11 +3,12 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { PersonaCallout, Avatar } from "@/components/ui";
-import type { Competition, CompetitionMember, InviteToken, UserRole } from "@/types/database";
+import type { Competition, CompetitionMember, InviteToken, UserRole, MemberTag } from "@/types/database";
 
 interface ParticipantsSectionProps {
   competition: Competition;
   members: (CompetitionMember & { user?: { display_name: string; email: string } })[];
+  memberTags?: MemberTag[];
   inviteTokens: InviteToken[];
   currentUserId: string;
   userRole?: "admin" | "co_admin" | "participant";
@@ -16,6 +17,7 @@ interface ParticipantsSectionProps {
 export function ParticipantsSection({
   competition,
   members,
+  memberTags = [],
   inviteTokens,
   currentUserId,
   userRole,
@@ -37,6 +39,37 @@ export function ParticipantsSection({
     }
   );
   const [savingCallout, setSavingCallout] = useState(false);
+  const [suppressingTagId, setSuppressingTagId] = useState<string | null>(null);
+
+  // Build a map of user_id -> most relevant tag (pending first, then active)
+  const userTagMap = new Map<string, MemberTag>();
+  for (const tag of memberTags) {
+    if (tag.status !== "pending" && tag.status !== "active") continue;
+    const existing = userTagMap.get(tag.user_id);
+    // Prefer pending over active (admin can act on pending)
+    if (!existing || (tag.status === "pending" && existing.status !== "pending")) {
+      userTagMap.set(tag.user_id, tag);
+    }
+  }
+
+  const handleSuppressTag = async (tagId: string) => {
+    setSuppressingTagId(tagId);
+    try {
+      const res = await fetch("/api/admin/suppress-tag", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ tagId }),
+      });
+      if (res.ok) {
+        router.refresh();
+      } else {
+        const data = await res.json();
+        alert(data.error || "Failed to suppress tag");
+      }
+    } finally {
+      setSuppressingTagId(null);
+    }
+  };
 
   const sortedMembers = [...(members ?? [])].sort((a, b) => {
     const roleOrder: Record<UserRole, number> = { admin: 0, co_admin: 1, mod: 2, participant: 3 };
@@ -157,6 +190,7 @@ export function ParticipantsSection({
           const isEditing = editingCalloutId === member.user_id;
           const displayName = member.user?.display_name || "Unknown";
           const initials = displayName.slice(0, 2).toUpperCase();
+          const memberTag = userTagMap.get(member.user_id);
 
           return (
             <div
@@ -187,6 +221,36 @@ export function ParticipantsSection({
                       <span className="text-xs text-ps-text-ter">(you)</span>
                     )}
                   </div>
+                  {/* Tag badge row */}
+                  {memberTag && (
+                    <div className="mt-0.5 flex items-center gap-1.5">
+                      <span
+                        className="inline-flex items-center gap-1 rounded-full bg-ps-amber-soft px-2 py-0.5 text-ps-amber-deep"
+                        style={{ fontSize: 10, fontWeight: 700 }}
+                      >
+                        {memberTag.tag_name}
+                        {memberTag.status === "pending" && (
+                          <span
+                            className="inline-block h-[6px] w-[6px] rounded-full bg-ps-amber animate-pulse"
+                            title="Pending — not yet visible to participants"
+                          />
+                        )}
+                      </span>
+                      {isAdmin && memberTag.status === "pending" && (
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleSuppressTag(memberTag.id);
+                          }}
+                          disabled={suppressingTagId === memberTag.id}
+                          className="rounded-md border border-[#e23d4f]/30 px-1.5 py-px text-[#e23d4f] transition-colors hover:bg-[#e23d4f]/10 disabled:opacity-50"
+                          style={{ fontSize: 9, fontWeight: 700 }}
+                        >
+                          {suppressingTagId === memberTag.id ? "..." : "Suppress"}
+                        </button>
+                      )}
+                    </div>
+                  )}
                   {!isEditing && (
                     <p className="mt-0.5 truncate text-[11px] italic text-ps-text-sec">
                       {calloutDrafts[member.user_id] ?? `${displayName} reckons...`}

@@ -10,6 +10,7 @@ import {
   insertTagRevealMessage,
   insertTagChangeMessage,
 } from "./chat-messages";
+import { notifyAdminOfPendingTags } from "./admin-notify";
 import type { MemberTag } from "@/types/database";
 
 // ---------------------------------------------------------------------------
@@ -96,6 +97,19 @@ export async function publishBehaviouralTags(
           assignment.stats,
         );
       }
+    }
+  }
+
+  // Notify admins of pending tags (non-engagement_pressure)
+  const pendingCount = assignments.filter(
+    (a) => a.tagCategory !== "engagement_pressure",
+  ).length;
+  if (pendingCount > 0) {
+    try {
+      await notifyAdminOfPendingTags(competitionId, pendingCount);
+    } catch (err) {
+      // Don't fail the publish if notification fails
+      console.error("[reputation] Admin notification failed:", err);
     }
   }
 }
