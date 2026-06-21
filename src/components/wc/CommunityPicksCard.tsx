@@ -197,8 +197,6 @@ export function CommunityPicksCard({ competitionId, island = false }: CommunityP
 /* ── Vertical Bar Chart ─────────────────────────────────────────────── */
 
 const MAX_BAR_H = 72;      // px — tallest bar
-const MIN_BAR_H = 22;      // px — bars with text inside (>= 5%)
-const MIN_BAR_H_TINY = 4;  // px — bars with text above (< 5%)
 const SMALL_PCT = 10;       // threshold: below this, text goes above the bar
 const DRAW_COLOR = "#6b7280"; // gray-500
 
@@ -231,9 +229,7 @@ function VerticalBarChart({
   const maxPct = Math.max(...pcts, 1); // avoid div-by-zero
 
   const barH = (pct: number) => {
-    if (pct === 0) return MIN_BAR_H_TINY;
-    const minH = pct < SMALL_PCT ? MIN_BAR_H_TINY : MIN_BAR_H;
-    return Math.max(minH, Math.round((pct / maxPct) * MAX_BAR_H));
+    return Math.max(1, Math.round((pct / maxPct) * MAX_BAR_H));
   };
 
   return (
