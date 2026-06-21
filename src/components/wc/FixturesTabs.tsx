@@ -85,9 +85,7 @@ export function FixturesTabs({ fixtures, resultsByExternalId, serverDateIso, pre
 
   const [tab, setTab] = useState<TabId>("today");
   const hasPredictions = Object.keys(predictionsByExternalId).length > 0;
-  // Sticky toggles: persist the user's choice across sessions. If they've
-  // never set the toggle, fall back to the smart default (showPredictions
-  // mirrors hasPredictions; showCorrectness defaults on).
+  // Sticky toggle: persist the user's choice across sessions.
   const [showPredictions, setShowPredictions] = useState(() => {
     if (typeof window === "undefined") return hasPredictions;
     const stored = localStorage.getItem("ps-show-picks");
@@ -634,6 +632,7 @@ function FixtureCard({
   const timeText = large ? "text-sm" : "text-xs";
 
   return (
+    <>
     <article
       className={[
         large ? "overflow-hidden rounded-2xl text-white shadow-sm transition-all"
@@ -789,7 +788,7 @@ function FixtureCard({
             {/* Compact scoreboard row with gradient wash + inner glow */}
             <div
               className={[
-                "flex items-center gap-2 rounded-lg px-3 py-[7px]",
+                "flex items-center gap-2.5 rounded-lg px-3.5 py-3",
                 showCorrectness && hasPrediction
                   ? winnerCorrect
                     ? "bg-gradient-to-br from-ps-green/[0.38] to-black/35 shadow-[inset_0_0_0_1.5px_rgba(10,168,109,0.65),0_0_10px_rgba(10,168,109,0.15)]"
@@ -797,15 +796,15 @@ function FixtureCard({
                   : "bg-black/30 shadow-[inset_0_1px_0_rgba(255,255,255,0.08)]",
               ].join(" ")}
             >
-              <CountryFlag shape="pill" name={fixture.home} size={22} />
-              <span className="text-[11px] font-bold text-white shrink-0">{fifaTrigram(fixture.home) ?? fixture.home.slice(0, 3).toUpperCase()}</span>
-              <span className="flex-1 text-center font-mono text-[16px] font-extrabold tabular-nums text-white drop-shadow-[0_1px_2px_rgba(0,0,0,0.5)]">
+              <CountryFlag shape="pill" name={fixture.home} size={28} />
+              <span className="text-[12px] font-bold text-white shrink-0">{fifaTrigram(fixture.home) ?? fixture.home.slice(0, 3).toUpperCase()}</span>
+              <span className="flex-1 text-center font-mono text-[18px] font-extrabold tabular-nums text-white drop-shadow-[0_1px_2px_rgba(0,0,0,0.5)]">
                 {result?.homeScore !== null && result?.awayScore !== null
                   ? `${result.homeScore} – ${result.awayScore}`
                   : (result?.winner ?? "Result")}
               </span>
-              <span className="text-[11px] font-bold text-white shrink-0">{fifaTrigram(fixture.away) ?? fixture.away.slice(0, 3).toUpperCase()}</span>
-              <CountryFlag shape="pill" name={fixture.away} size={22} />
+              <span className="text-[12px] font-bold text-white shrink-0">{fifaTrigram(fixture.away) ?? fixture.away.slice(0, 3).toUpperCase()}</span>
+              <CountryFlag shape="pill" name={fixture.away} size={28} />
               <span
                 className={[
                   "rounded-full px-[5px] py-[2px] text-[7px] font-bold uppercase tracking-[0.5px] leading-none shrink-0",
@@ -932,30 +931,19 @@ function FixtureCard({
         )}
       </div>
 
-      {/* Rivals CTA — ghost button on resulted matches */}
-      {rivalsEventId && isFinished && (
-        <div className="bg-ps-surface px-4 py-3.5 text-center dark:bg-ps-chip">
-          <a
-            href={`/wc/leaderboard?tab=rivals&eventId=${rivalsEventId}`}
-            className="inline-flex items-center gap-1.5 rounded-[10px] border-[1.5px] border-ps-amber bg-ps-amber px-5 py-2.5 text-sm font-semibold text-ps-text transition-colors hover:brightness-110"
-          >
-            {t("rivals.see_what_others")}
-            <svg
-              width="14"
-              height="14"
-              viewBox="0 0 16 16"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2.5"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-            >
-              <path d="M6 4l4 4-4 4" />
-            </svg>
-          </a>
-        </div>
-      )}
     </article>
+    {/* Rivals CTA — subtle text link outside card */}
+    {rivalsEventId && isFinished && (
+      <div className="mt-1 text-center">
+        <a
+          href={`/wc/leaderboard?tab=rivals&eventId=${rivalsEventId}`}
+          className="text-[11px] font-medium text-white/40 transition-colors hover:text-white/60"
+        >
+          {t("rivals.see_rivals")} ›
+        </a>
+      </div>
+    )}
+    </>
   );
 }
 
