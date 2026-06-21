@@ -153,7 +153,7 @@ See `design/README.md` for full brand brief and asset references.
 
 **Palette:** Cream `#efe9de` (bg), Ink `#191512` (text), Amber `#f59e0b` (accent), Green `#0aa86d` (correct), Red `#e23d4f` (wrong). All via `ps-*` Tailwind tokens.
 
-**Typography:** Inter 800 (`font-display font-extrabold`) for headlines/wordmark. Inter 600 for UI labels. Inter 500 for body. JetBrains Mono (`font-mono`) for scores/stats/metadata. Instrument Serif italic (`font-serif italic`) for taglines/quips.
+**Typography:** Inter 800 (`font-display font-extrabold`) for headlines/wordmark. Inter 600 for UI labels. Inter 500 for body. JetBrains Mono (`font-mono`) for scores/stats/metadata. Instrument Serif italic (`font-serif italic`) for taglines only. **No auto-generated quips/verdict copy on result cards** — this was tried and removed; it undermines authenticity.
 
 **Wordmark:** `sportspredict.` — Inter 800, lowercase, tight tracking. `sports` in ink, `predict.` in amber with period. Never "PredictSport" or "PS".
 

@@ -10,7 +10,6 @@ import {
   type SportKey,
   toSportKey,
 } from "@/components/ui";
-import { getVerdict } from "@/lib/payoff-copy";
 import { psDefaultResultCopy } from "@/lib/whatsapp";
 import type { Event, Prediction } from "@/types/database";
 
@@ -47,7 +46,6 @@ interface ResultCardProps {
 export function ResultCard({ event, prediction, showResultHints = true }: ResultCardProps) {
   const sportKey = toSportKey(event.sport);
   const state = getResultState(prediction);
-  const verdict = getVerdict(state, event.event_name);
   const resultDisplay = formatResultDisplay(event.result_data);
   const pickDisplay = formatPickValue(prediction.prediction_data);
 
@@ -77,7 +75,7 @@ export function ResultCard({ event, prediction, showResultHints = true }: Result
           <h4 className="text-base font-extrabold leading-snug text-ps-text">
             {event.event_name}
           </h4>
-          <p className="mt-0.5 text-[11px] font-medium text-ps-text-sec">
+          <p className="mt-0.5 text-caption font-medium text-ps-text-sec">
             {new Date(event.start_time).toLocaleDateString("en-IE", {
               weekday: "short",
               day: "numeric",
@@ -98,23 +96,18 @@ export function ResultCard({ event, prediction, showResultHints = true }: Result
             </div>
             <div className="min-w-0 flex-1">
               <p
-                className="leading-none"
-                style={{ fontSize: 9.5, fontWeight: 800, letterSpacing: 1.1, textTransform: "uppercase", color: stateColors.fg }}
+                className="leading-none text-micro"
+                style={{ fontWeight: 800, letterSpacing: 1.1, textTransform: "uppercase", color: stateColors.fg }}
               >
                 {stateColors.label}
               </p>
-              <p className="mt-1 text-[11.5px] font-semibold text-ps-text">
+              <p className="mt-1 text-caption font-semibold text-ps-text">
                 <span className="font-medium text-ps-text-sec">You:</span> {pickDisplay}
                 <span className="mx-1.5 text-ps-text-ter">&middot;</span>
                 <span className="font-medium text-ps-text-sec">Result:</span> {resultDisplay}
               </p>
             </div>
           </div>
-
-          {/* Verdict quip */}
-          <p className="mt-2.5 text-[12.5px] italic leading-relaxed text-ps-text">
-            &ldquo;{verdict}&rdquo;
-          </p>
 
           {/* SendToThread */}
           <div className="mt-2.5 flex justify-end" onClick={(e) => e.preventDefault()}>

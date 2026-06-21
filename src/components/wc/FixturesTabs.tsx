@@ -6,7 +6,6 @@ import { CountryFlag } from "@/components/CountryFlag";
 import { HOST_CITIES, type HostCitySlug } from "@/lib/wc/host-cities";
 import { WindowPickList } from "@/app/wc/picks/[windowId]/WindowPickList";
 import { ConfidenceMicroPill } from "@/components/ConfidencePills";
-import { getVerdict, type VerdictState } from "@/lib/payoff-copy";
 import type { WindowEvent } from "@/app/wc/picks/[windowId]/WindowPickList";
 import type { WcFixture } from "@/lib/wc/fixtures";
 import type { Prediction } from "@/types/database";
@@ -311,7 +310,7 @@ export function FixturesTabs({ fixtures, resultsByExternalId, serverDateIso, pre
         {dateGroups
           ? dateGroups.map((group) => (
               <div key={group.dateKey}>
-                <h3 className="mb-2 mt-4 first:mt-0 font-mono text-[10px] font-bold uppercase tracking-[0.18em] text-ps-text-sec">
+                <h3 className="mb-2 mt-4 first:mt-0 font-mono text-micro font-bold uppercase tracking-[0.18em] text-ps-text-sec">
                   {group.label}
                 </h3>
                 <div className="space-y-3">
@@ -424,7 +423,7 @@ function TabButton({
       {children}
       <span
         className={[
-          "ml-1.5 inline-flex min-w-[1.25rem] justify-center rounded-full px-1 font-mono text-[0.7rem] tabular-nums",
+          "ml-1.5 inline-flex min-w-[1.25rem] justify-center rounded-full px-1 font-mono text-caption tabular-nums",
           active ? "bg-ps-bg/20 text-ps-bg" : "bg-ps-border/60 text-ps-text-sec",
         ].join(" ")}
       >
@@ -447,7 +446,7 @@ function ToggleSwitch({
     <button
       type="button"
       onClick={onChange}
-      className="flex items-center gap-1.5 rounded-md px-2.5 py-1.5 text-[11px] font-semibold text-ps-text-sec transition-colors hover:bg-ps-chip hover:text-ps-text"
+      className="flex items-center gap-1.5 rounded-md px-2.5 py-1.5 text-caption font-semibold text-ps-text-sec transition-colors hover:bg-ps-chip hover:text-ps-text"
     >
       {label}
       <span
@@ -611,21 +610,6 @@ function FixtureCard({
   const isWrong = hasPrediction && winnerCorrect === false;
   const isJackpot = bothCorrect; // exact score = shimmer
 
-  // Derive verdict state for payoff quip (only on finished fixtures with a prediction)
-  const verdictState: VerdictState | null =
-    !hasPrediction || !isFinished
-      ? null
-      : bothCorrect
-        ? "exact"
-        : winnerOnly
-          ? "correct"
-          : isWrong
-            ? "wrong"
-            : "partial";
-  const verdict = verdictState
-    ? getVerdict(verdictState, fixture.home + fixture.away)
-    : null;
-
   // Movement direction: points > 0 = up, predicted but 0 points = down, else neutral
   const movement: "up" | "down" | "neutral" =
     !hasPrediction || !isFinished ? "neutral"
@@ -673,8 +657,8 @@ function FixtureCard({
   const scoreSize = large ? "w-[40px] h-[38px] text-lg" : "w-[30px] h-[28px] text-sm";
   const drawSize = large ? "px-3.5 py-2 text-sm" : "px-2.5 py-1.5 text-xs";
   const teamPad = large ? "gap-1.5 px-2 py-2" : "gap-1 px-1.5 py-1.5";
-  const headerText = large ? "text-xs" : "text-[0.7rem]";
-  const stadiumText = large ? "text-[0.7rem]" : "text-[0.625rem]";
+  const headerText = large ? "text-xs" : "text-caption";
+  const stadiumText = large ? "text-caption" : "text-micro";
   const bodyPad = large ? "px-5 pb-4 pt-3" : "px-4 pb-3 pt-2";
   const headerPad = large ? "px-5 pt-4" : "px-4 pt-3";
   const rowGap = large ? "gap-2" : "gap-1.5";
@@ -825,7 +809,7 @@ function FixtureCard({
             </div>
 
             {error && (
-              <p className="mt-1 text-center text-[10px] font-medium text-red-300">{error}</p>
+              <p className="mt-1 text-center text-micro font-medium text-red-300">{error}</p>
             )}
           </>
         )}
@@ -853,7 +837,7 @@ function FixtureCard({
                   </span>
                   <span
                     className={[
-                      "rounded-full px-2 py-0.5 text-[9px] font-bold uppercase tracking-[0.10em] leading-none",
+                      "rounded-full px-2 py-0.5 text-micro font-bold uppercase tracking-[0.10em] leading-none",
                       result?.isFinalised ? "bg-ps-green/80 text-white" : "bg-black/25 text-white/75 ring-1 ring-inset ring-white/15",
                     ].join(" ")}
                   >
@@ -909,7 +893,7 @@ function FixtureCard({
                   )}
 
                   {/* Prediction text */}
-                  <span className="flex-1 text-[11px] text-white/70">
+                  <span className="flex-1 text-caption text-white/70">
                     {t('fixtures.you_predicted')}{" "}
                     <span className="font-bold text-white/90">
                       {currentWinner}
@@ -924,7 +908,7 @@ function FixtureCard({
                   {showCorrectness && winnerCorrect !== null && (
                     <span
                       className={[
-                        "flex h-[18px] w-[18px] shrink-0 items-center justify-center rounded-full text-[10px] font-extrabold",
+                        "flex h-[18px] w-[18px] shrink-0 items-center justify-center rounded-full text-micro font-extrabold",
                         winnerCorrect
                           ? "bg-ps-green/25 text-ps-green"
                           : "bg-ps-red/25 text-ps-red",
@@ -949,30 +933,24 @@ function FixtureCard({
                       >
                         <span
                           className={[
-                            "text-[13px] font-semibold",
+                            "text-body font-semibold",
                             isJackpot ? "text-ps-amber" : "text-ps-green",
                           ].join(" ")}
                         >
                           +{totalPoints}
                         </span>
                         {winnerPoints > 0 && scorePoints > 0 && (
-                          <span className="text-[10px] font-medium text-white/50">
+                          <span className="text-micro font-medium text-white/50">
                             (+{winnerPoints} W +{scorePoints} S)
                           </span>
                         )}
                       </span>
                     ) : (
-                      <span className="font-mono text-[11px] tabular-nums text-white/40">
+                      <span className="font-mono text-caption tabular-nums text-white/40">
                         +0
                       </span>
                     )}
                   </div>
-                )}
-                {/* Verdict quip */}
-                {showCorrectness && verdict && (
-                  <p className="mt-1.5 font-serif italic text-[11px] text-white/60">
-                    &ldquo;{verdict}&rdquo;
-                  </p>
                 )}
               </div>
             )}
@@ -993,7 +971,7 @@ function FixtureCard({
               <button
                 type="button"
                 onClick={(e) => { e.stopPropagation(); onExpand(); }}
-                className="shrink-0 rounded-lg bg-white/20 px-3 py-1.5 text-[11px] font-bold text-white transition-colors hover:bg-white/30 active:bg-white/40"
+                className="shrink-0 rounded-lg bg-white/20 px-3 py-1.5 text-caption font-bold text-white transition-colors hover:bg-white/30 active:bg-white/40"
               >
                 {t('fixtures.pick_cta')}
               </button>
