@@ -353,3 +353,79 @@ _Avoid_: Unlock, unspoiler
 
 A two-part signal fired when an [[Event]] result is confirmed (whether by the auto-result cron or manual admin confirmation). Consists of: (1) a [[System Message]] in [[Competition Chat]] with the score ("France 2-1 Mexico — result confirmed"), and (2) a push notification to all [[Competition]] members ("France 2-1 Mexico" / "How did you do? Check your score."). Uses the `result_notifications` push category. Both paths (cron and admin) invoke the same shared notification function.
 _Avoid_: Score alert, result update
+
+---
+
+## Reputation Tag
+
+A data-driven label assigned to a [[Competition]] member based on their prediction behaviour or a specific in-competition moment. Tags are the personality layer of the platform — pub-ready, never corporate, never emoji. Each tag has three copy layers: a 2–4 word name (Layer 1), a second-person subtitle with data stat (Layer 2, shown on the member's own profile), and a third-person chat announcement with social prompt (Layer 3, posted to [[Competition Chat]]). At most one behavioural tag per member per [[Prediction Window]]; event-driven tags can coexist. Not everyone gets a tag — the system targets 20–40% density (hard cap: 50%). Tags are a novelty, not a default state.
+_Avoid_: Badge, achievement, reward
+
+---
+
+## Behavioural Tag
+
+A [[Reputation Tag]] computed from aggregate prediction statistics across a [[Prediction Window]]. Recalculated when a window closes and results are confirmed. Lasts exactly one window — earned at close, held until next recalculation. One per member at a time, selected by priority tier then z-score deviation from the group mean. Examples: Dark Horse, Defence Wins Championships, Maverick, The Anorak, Vibes Only.
+_Avoid_: Persistent tag, permanent tag (even though some feel stable, all are recalculated per window)
+
+---
+
+## Event-Driven Tag (Moment Tag)
+
+A [[Reputation Tag]] triggered by a specific in-competition moment — a single fixture result, a streak, or a milestone. Earned once and announced once; not recalculated. Displaces [[Behavioural Tag]]s in the chat timeline (behavioural tags remain on profiles). Examples: Nailed It (exact score), Giant Killer (correct upset), Perfect Window (all winners correct), First Blood (first exact score in competition).
+_Avoid_: Achievement, instant tag
+
+---
+
+## Tag Density
+
+The percentage of [[Competition]] members who hold any [[Reputation Tag]] at a given time. Target range: 20–40%. Hard cap: 50%. In a group of 24, this means 5–10 members tagged at any time. Enforced by tightening thresholds until density falls within range, with priority tiers determining who keeps their tag when density must be reduced. The goal: tags should always feel fresh and worth tuning in for. Vision is 100+ tags in the catalogue with only 12–15 active in any given competition.
+_Avoid_: Tag rate, coverage
+
+---
+
+## Tag Priority Tier
+
+The ranked order used to resolve conflicts when a member qualifies for multiple [[Behavioural Tag]]s or when [[Tag Density]] must be reduced. Tier 1 (highest): Maverick. Tier 2: The Anorak. Tier 3: Individual behavioural tags (tiebreaker: highest z-score deviation from group mean). Tier 4 (fallback): Dead Centre — only assigned when no other tag qualifies.
+
+---
+
+## Tag Rejection
+
+The act of a [[Competition]] member declining a non-offensive [[Reputation Tag]]. Fires a [[System Message]] in [[Competition Chat]] using a one-liner from a rotation pool. The tag is removed from the member's profile but the data stands — rejection is a social act, not a data correction. Phase 1 excludes all potentially offensive copy; phase 2 introduces edgier variants with human review.
+_Avoid_: Tag dismiss (dismissing hides the card; rejecting is a public declaration)
+
+---
+
+## Tag Suppression
+
+An admin action that vetoes a [[Reputation Tag]] assignment before it goes live. The admin's power is mercy, not accusation — they can protect members from tags (especially [[Engagement Pressure Tag]]s) but cannot select targets for tagging. The admin receives a preview notification 6–8 hours before tags are applied, giving them a window to suppress.
+_Avoid_: Tag block, tag override
+
+---
+
+## Engagement Pressure Tag
+
+A subset of [[Behavioural Tag]]s describing member absence: Ghost (<20% engagement, ≥8 fixtures missed) and No Participation Trophies (20–40% engagement, ≥5 fixtures missed). These have NO rejection mechanic — the data is the data. Ghost has no chat announcement (silent profile-only tag). NPT keeps its announcement. Admin can suppress both via [[Tag Suppression]].
+_Avoid_: Shame tag, punishment tag
+
+---
+
+## Tag Reveal
+
+The moment a [[Reputation Tag]] is announced in [[Competition Chat]] via a [[System Message]] of type `system_tag_reveal`. Includes a structured Data Fact Card with the tag name, a data-backed subtitle, a specific stat, and group context. Rendered as a PersonaCallout card inside the chat message.
+_Avoid_: Tag announcement (too generic)
+
+---
+
+## Data Fact Card
+
+A structured visual block inside a [[Tag Reveal]] chat message. Contains four elements: tag name (Inter 800, uppercase), display name, a plain-English data fact with specific stat (JetBrains Mono, amber), and group context (Inter 400, secondary text). Rendered as a PersonaCallout with amber left border (gold for Maverick/Anorak).
+_Avoid_: Tag card (ambiguous with profile tag display)
+
+---
+
+## Tag Preview Window
+
+The 6–8 hour period between tag computation and tag publication during which the [[Competition Admin]] can review and [[Tag Suppression|suppress]] upcoming tags. Tags are computed after result confirmation but held in a pending state until the preview window expires. If no admin action is taken, tags auto-publish.
+_Avoid_: Review period, approval window (admin suppresses, never approves)
