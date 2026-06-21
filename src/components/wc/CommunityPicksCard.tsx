@@ -20,12 +20,19 @@ interface TopScore {
   pct: number;
 }
 
+interface ConfidenceData {
+  distribution: number[]; // [level1, level2, level3, level4, level5]
+  noVote: number;
+  total: number;
+}
+
 interface CommunityData {
   fixture: { home: string; away: string; eventId: string } | null;
   sport: string;
   allowDraw: boolean;
   outcomeSplit: OutcomeSplit;
   topScores: TopScore[];
+  confidence?: ConfidenceData;
 }
 
 interface CommunityPicksCardProps {
@@ -38,7 +45,8 @@ interface CommunityPicksCardProps {
  * CommunityPicksCard — two side-by-side cards showing competition-wide
  * prediction stats for the most recently revealed fixture.
  *
- * Card 1: Vertical bar chart (home / draw / away %)
+ * Card 1: Flip card — front shows vertical bar chart (home / draw / away %),
+ *         back shows confidence level distribution.
  * Card 2: Most popular exact score(s)
  *
  * Only renders after pick_reveal_at has passed.
@@ -47,6 +55,7 @@ export function CommunityPicksCard({ competitionId, island = false }: CommunityP
   const t = useT();
   const [data, setData] = useState<CommunityData | null>(null);
   const [loading, setLoading] = useState(true);
+  const [flipped, setFlipped] = useState(false);
 
   const fetchData = useCallback(async () => {
     try {
@@ -100,7 +109,7 @@ export function CommunityPicksCard({ competitionId, island = false }: CommunityP
 
   if (!data?.fixture || data.outcomeSplit.total === 0) return null;
 
-  const { fixture, allowDraw, outcomeSplit, topScores } = data;
+  const { fixture, allowDraw, outcomeSplit, topScores, confidence } = data;
   const homeTri =
     fifaTrigram(fixture.home) ?? fixture.home.slice(0, 3).toUpperCase();
   const awayTri =
@@ -120,21 +129,63 @@ export function CommunityPicksCard({ competitionId, island = false }: CommunityP
       : 0;
 
   const showDrawBar = allowDraw;
+  const hasConfidence = confidence && confidence.total > 0;
 
   const cards = (
     <div className="flex items-stretch gap-2">
-      {/* Card 1: Vertical Bar Chart */}
-      <div className="min-w-[100px] flex-1 rounded-lg border border-ps-border bg-ps-surface p-3">
-        <VerticalBarChart
-          homeName={fixture.home}
-          awayName={fixture.away}
-          homeTri={homeTri}
-          awayTri={awayTri}
-          homePct={homePct}
-          drawPct={drawPct}
-          awayPct={awayPct}
-          showDrawBar={showDrawBar}
-        />
+      {/* Card 1: Flip Card — Bar Chart (front) / Confidence (back) */}
+      <div
+        className="min-w-[100px] flex-1"
+        style={{ perspective: 800 }}
+      >
+        <button
+          type="button"
+          onClick={() => hasConfidence && setFlipped((f) => !f)}
+          className="relative w-full"
+          style={{
+            transformStyle: "preserve-3d",
+            transition: "transform 400ms ease",
+            transform: flipped ? "rotateY(180deg)" : "rotateY(0deg)",
+          }}
+          aria-label={flipped ? "Show pick distribution" : "Show confidence breakdown"}
+          disabled={!hasConfidence}
+        >
+          {/* Front face: Bar Chart */}
+          <div
+            className="rounded-lg border border-ps-border bg-ps-surface p-3"
+            style={{ backfaceVisibility: "hidden" }}
+          >
+            <VerticalBarChart
+              homeName={fixture.home}
+              awayName={fixture.away}
+              homeTri={homeTri}
+              awayTri={awayTri}
+              homePct={homePct}
+              drawPct={drawPct}
+              awayPct={awayPct}
+              showDrawBar={showDrawBar}
+            />
+            {hasConfidence && <FlipHint />}
+          </div>
+
+          {/* Back face: Confidence Breakdown */}
+          <div
+            className="absolute inset-0 rounded-lg border border-ps-border bg-ps-surface p-3"
+            style={{
+              backfaceVisibility: "hidden",
+              transform: "rotateY(180deg)",
+            }}
+          >
+            {confidence && confidence.total > 0 && (
+              <ConfidenceBack
+                distribution={confidence.distribution}
+                noVote={confidence.noVote}
+                total={confidence.total}
+              />
+            )}
+            <FlipHint />
+          </div>
+        </button>
       </div>
 
         {/* Card 2: Popular Score */}
@@ -158,7 +209,7 @@ export function CommunityPicksCard({ competitionId, island = false }: CommunityP
                         : "text-body font-semibold text-ps-text-sec",
                     ].join(" ")}
                   >
-                    {s.home}–{s.away}
+                    {s.home}&ndash;{s.away}
                   </span>
                   <span
                     className={[
@@ -191,6 +242,108 @@ export function CommunityPicksCard({ competitionId, island = false }: CommunityP
       </p>
       {cards}
     </section>
+  );
+}
+
+/* ── Confidence Back Face ────────────────────────────────────────────── */
+
+const LEVEL_LABELS = ["Hopeful", "Leaning", "Confident", "V. Sure", "Dead Cert"];
+const LEVEL_COLORS = [
+  "#8b8275", // Hopeful — muted grey
+  "#3b82f6", // Leaning — cool blue
+  "#f59e0b", // Confident — warm amber
+  "#d97706", // Very Sure — deep amber
+  "#e23d4f", // Dead Cert — conviction red
+];
+
+interface ConfidenceBackProps {
+  distribution: number[];
+  noVote: number;
+  total: number;
+}
+
+function ConfidenceBack({ distribution, noVote, total }: ConfidenceBackProps) {
+  const maxCount = Math.max(...distribution, 1);
+
+  return (
+    <div className="flex h-full flex-col">
+      {/* Header row with label and no-vote indicator */}
+      <div className="mb-2 flex items-center justify-between">
+        <p className="text-micro font-semibold uppercase tracking-wider text-ps-text-ter">
+          Confidence
+        </p>
+        {noVote > 0 && (
+          <span
+            className="font-mono text-micro tabular-nums text-ps-text-ter/60"
+            title={`${noVote} picked without setting confidence`}
+          >
+            {noVote} no vote
+          </span>
+        )}
+      </div>
+
+      {/* Confidence level rows */}
+      <div className="flex flex-1 flex-col justify-center gap-1.5">
+        {distribution.map((count, i) => {
+          const pct = total > 0 ? Math.round((count / total) * 100) : 0;
+          const barWidth = maxCount > 0 ? Math.max(2, (count / maxCount) * 100) : 2;
+
+          return (
+            <div key={i} className="flex items-center gap-1.5">
+              {/* Level label */}
+              <span className="w-[52px] shrink-0 text-right text-micro font-medium text-ps-text-sec">
+                {LEVEL_LABELS[i]}
+              </span>
+
+              {/* Bar */}
+              <div className="flex flex-1 items-center">
+                <div
+                  className="h-3 rounded-sm transition-all duration-300"
+                  style={{
+                    width: `${barWidth}%`,
+                    backgroundColor: LEVEL_COLORS[i],
+                    minWidth: count > 0 ? 6 : 2,
+                    opacity: count > 0 ? 1 : 0.2,
+                  }}
+                />
+              </div>
+
+              {/* Count + percentage */}
+              <span className="w-[38px] shrink-0 text-right font-mono text-micro tabular-nums text-ps-text-sec">
+                {count > 0 ? `${count} ${pct}%` : "-"}
+              </span>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+/* ── Flip Hint Icon ──────────────────────────────────────────────────── */
+
+function FlipHint() {
+  return (
+    <div className="pointer-events-none absolute bottom-1.5 right-1.5">
+      <svg
+        className="h-3.5 w-3.5 text-ps-text-ter/30"
+        viewBox="0 0 24 24"
+        fill="none"
+        strokeWidth={2}
+        stroke="currentColor"
+      >
+        <path
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          d="M4 4v5h5M20 20v-5h-5"
+        />
+        <path
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          d="M20.49 9A9 9 0 0 0 5.64 5.64L4 4m16 16l-1.64-1.64A9 9 0 0 1 3.51 15"
+        />
+      </svg>
+    </div>
   );
 }
 

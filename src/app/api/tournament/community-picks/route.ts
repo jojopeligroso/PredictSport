@@ -80,7 +80,7 @@ export async function GET(request: NextRequest) {
   // Fetch ALL predictions for this event (competition-wide, all users)
   const { data: predictions } = await supabase
     .from("predictions")
-    .select("prediction_type, prediction_data")
+    .select("prediction_type, prediction_data, confidence_level")
     .eq("event_id", revealedEvent.id);
 
   const preds = predictions ?? [];
@@ -137,6 +137,22 @@ export async function GET(request: NextRequest) {
       };
     });
 
+  // --- Confidence distribution (winner predictions only) ---
+  const confidenceDist = [0, 0, 0, 0, 0]; // indices 0-4 = levels 1-5
+  let noConfidenceCount = 0;
+  let totalWinnerPicks = 0;
+
+  for (const p of preds) {
+    if (p.prediction_type !== "winner") continue;
+    totalWinnerPicks++;
+    const level = (p as { confidence_level?: number | null }).confidence_level;
+    if (level && level >= 1 && level <= 5) {
+      confidenceDist[level - 1]++;
+    } else {
+      noConfidenceCount++;
+    }
+  }
+
   return NextResponse.json({
     fixture: {
       home,
@@ -152,5 +168,10 @@ export async function GET(request: NextRequest) {
       total: totalOutcome,
     },
     topScores,
+    confidence: {
+      distribution: confidenceDist,
+      noVote: noConfidenceCount,
+      total: totalWinnerPicks,
+    },
   });
 }

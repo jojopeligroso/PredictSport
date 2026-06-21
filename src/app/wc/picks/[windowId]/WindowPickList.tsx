@@ -14,7 +14,7 @@ import { ConfidencePills, ConfidenceIntroCard, ConfidenceBreadcrumb } from "@/co
 import { useConfidenceDisclosure } from "@/hooks/useConfidenceDisclosure";
 import { ScoreInput } from "@/components/ScoreInput";
 import { FixtureCardSurface } from "@/components/wc/FixtureCardSurface";
-import { ConfidenceAccordion } from "@/components/wc/ConfidenceAccordion";
+
 import { deriveWinnerFromScore } from "@/lib/score-format";
 import { getPredictionSummary } from "@/lib/prediction-summary";
 import { usePredictionState } from "@/hooks/usePredictionState";
@@ -511,11 +511,6 @@ function MatchPickRow({
       </>
     );
 
-    // Compute reveal time for confidence accordion
-    const confidenceRevealAt = event.pick_reveal_at
-      ? event.pick_reveal_at
-      : new Date(new Date(event.lock_time).getTime() + 5 * 60_000).toISOString();
-
     if (useCardSurface && fixture) {
       return (
         <>
@@ -539,9 +534,6 @@ function MatchPickRow({
           >
             <div className={theme.lockedReadOnly}>{lockedBody}</div>
           </FixtureCardSurface>
-          {process.env.NEXT_PUBLIC_FEATURE_CONFIDENCE_ACCORDION === "true" && (
-            <ConfidenceAccordion eventId={event.id} competitionId={competitionId} revealAt={confidenceRevealAt} />
-          )}
         </>
       );
     }
@@ -549,9 +541,6 @@ function MatchPickRow({
     return (
       <>
         <div className={theme.lockedReadOnly}>{lockedBody}</div>
-        {process.env.NEXT_PUBLIC_FEATURE_CONFIDENCE_ACCORDION === "true" && (
-          <ConfidenceAccordion eventId={event.id} competitionId={competitionId} revealAt={confidenceRevealAt} />
-        )}
       </>
     );
   }
