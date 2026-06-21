@@ -3,7 +3,6 @@
 import { useT } from "@/lib/i18n";
 import { CountryFlag } from "@/components/CountryFlag";
 import { fifaTrigram } from "@/lib/tournament/fifa-codes";
-import { ConfidenceMicroPill } from "@/components/ConfidencePills";
 import type { ResultRow } from "@/app/wc/home/fetchDashboardData";
 
 /* ── Movement arrows (SVG inline) ──────────────────────────────────────── */
@@ -11,12 +10,12 @@ import type { ResultRow } from "@/app/wc/home/fetchDashboardData";
 function ArrowUp() {
   return (
     <svg
-      width="12"
-      height="12"
+      width="18"
+      height="18"
       viewBox="0 0 12 12"
       fill="none"
       stroke="currentColor"
-      strokeWidth="2"
+      strokeWidth="2.5"
       strokeLinecap="round"
       strokeLinejoin="round"
       className="text-ps-green"
@@ -30,43 +29,18 @@ function ArrowUp() {
 function ArrowDown() {
   return (
     <svg
-      width="12"
-      height="12"
+      width="18"
+      height="18"
       viewBox="0 0 12 12"
       fill="none"
       stroke="currentColor"
-      strokeWidth="2"
+      strokeWidth="2.5"
       strokeLinecap="round"
       strokeLinejoin="round"
       className="text-ps-red"
       aria-hidden="true"
     >
       <path d="M6 2v8M3 7l3 3 3-3" />
-    </svg>
-  );
-}
-
-function NeutralDot() {
-  return (
-    <span
-      className="inline-block h-[5px] w-[5px] rounded-full bg-ps-text-ter"
-      aria-hidden="true"
-    />
-  );
-}
-
-/* ── Streak flame icon ─────────────────────────────────────────────────── */
-
-function FlameIcon() {
-  return (
-    <svg
-      width="10"
-      height="10"
-      viewBox="0 0 12 12"
-      fill="currentColor"
-      aria-hidden="true"
-    >
-      <path d="M6 1c0 2-2.5 3-2.5 5.5a3.5 3.5 0 007 0C10.5 4 8 3 6 1z" />
     </svg>
   );
 }
@@ -88,7 +62,6 @@ export interface DashboardResultCardProps {
 export function DashboardResultCard({
   result,
   movement,
-  streak,
 }: DashboardResultCardProps) {
   const t = useT();
   const {
@@ -101,7 +74,6 @@ export function DashboardResultCard({
     scoreCorrect,
     winnerPoints,
     scorePoints,
-    userConfidence,
   } = result;
 
   const homeTri =
@@ -111,143 +83,95 @@ export function DashboardResultCard({
 
   const hasPrediction = userWinnerPick !== null;
   const bothCorrect = winnerCorrect === true && scoreCorrect === true;
-  const winnerOnly = winnerCorrect === true && scoreCorrect !== true;
   const wrong = hasPrediction && winnerCorrect === false;
 
   const totalPoints = winnerPoints + scorePoints;
   const isJackpot = bothCorrect; // exact score = shimmer
 
-  // Build points breakdown string: "(+3 W +7 S)"
-  const breakdownParts: string[] = [];
-  if (winnerPoints > 0)
-    breakdownParts.push(t("dash.winner_points", { points: winnerPoints }));
-  if (scorePoints > 0)
-    breakdownParts.push(t("dash.score_points", { points: scorePoints }));
-  const breakdownStr =
-    breakdownParts.length > 0 ? `(${breakdownParts.join(" ")})` : "";
+  // Prediction display: "Team" or "Team H–A"
+  const predDisplay = userScorePick
+    ? `${userWinnerPick} ${userScorePick.home}\u2013${userScorePick.away}`
+    : userWinnerPick;
 
-  // Dot color class — green (both correct), gold/amber (winner only), no dot for wrong (stripe instead), grey for no prediction
-  let dotEl: React.ReactNode = null;
-  if (!hasPrediction) {
-    dotEl = (
-      <span className="inline-block h-1.5 w-1.5 flex-shrink-0 rounded-full bg-ps-text-ter" />
-    );
-  } else if (bothCorrect) {
-    dotEl = (
-      <span className="inline-block h-2 w-2 flex-shrink-0 rounded-full bg-ps-green" />
-    );
-  } else if (winnerOnly) {
-    dotEl = (
-      <span className="inline-block h-2 w-2 flex-shrink-0 rounded-full bg-ps-amber" />
-    );
-  }
-  // wrong = no dot, red stripe on left instead
+  const isCorrect = winnerCorrect === true;
 
   return (
     <div
       className={[
-        "relative py-3",
-        wrong ? "border-l-[3px] border-l-ps-red pl-2.5 -ml-1" : "",
+        "relative py-3.5",
+        wrong ? "border-l-[3px] border-l-ps-red pl-2.5 -ml-[3px]" : "",
       ].join(" ")}
     >
-      {/* ── Top row: movement + dot + teams + score + correctness badge ─── */}
-      <div className="flex items-center gap-1.5">
-        {/* Movement indicator (left side) */}
-        <span className="flex w-4 shrink-0 items-center justify-center">
-          {movement === "up" && <ArrowUp />}
-          {movement === "down" && <ArrowDown />}
-          {movement === "neutral" && <NeutralDot />}
-        </span>
-
-        {/* Correctness dot (only for non-wrong predictions) */}
-        {dotEl && <span className="flex shrink-0">{dotEl}</span>}
-
-        {/* Home team */}
+      {/* ── Compact scoreboard row ── */}
+      <div
+        className={[
+          "flex items-center gap-2 rounded-lg px-2.5 py-1.5",
+          hasPrediction
+            ? isCorrect
+              ? "bg-ps-green/7 shadow-[inset_0_0_0_1px_rgba(10,168,109,0.25)]"
+              : "bg-ps-red/7 shadow-[inset_0_0_0_1px_rgba(226,61,79,0.25)]"
+            : "bg-ps-text/4 shadow-[inset_0_0_0_1px_rgba(25,21,18,0.10)]",
+        ].join(" ")}
+      >
         <CountryFlag name={fixture.home} size={22} shape="pill" />
-        <span className="text-sm font-semibold text-ps-text">{homeTri}</span>
-
-        {/* Score */}
-        <span className="flex-1 text-center font-mono text-base font-bold tabular-nums text-ps-text">
+        <span className="text-[11px] font-bold text-ps-text shrink-0">{homeTri}</span>
+        <span className="flex-1 text-center font-mono text-[15px] font-extrabold tabular-nums text-ps-text">
           {homeScore} – {awayScore}
         </span>
-
-        {/* Away team */}
-        <span className="text-sm font-semibold text-ps-text">{awayTri}</span>
+        <span className="text-[11px] font-bold text-ps-text shrink-0">{awayTri}</span>
         <CountryFlag name={fixture.away} size={22} shape="pill" />
-
-        {/* Correctness badge (top right) */}
-        {hasPrediction && (
-          <span
-            className={[
-              "flex h-[18px] w-[18px] shrink-0 items-center justify-center rounded-full text-micro font-extrabold",
-              winnerCorrect
-                ? "bg-ps-green/15 text-ps-green"
-                : "bg-ps-red/15 text-ps-red",
-            ].join(" ")}
-          >
-            {winnerCorrect ? "\u2713" : "\u2715"}
-          </span>
-        )}
+        <span className="rounded-full bg-ps-green px-[5px] py-[2px] text-[7px] font-bold uppercase tracking-[0.5px] text-white shrink-0">
+          FT
+        </span>
       </div>
 
-      {/* ── Bottom row: prediction + streak + points ───────────────────── */}
+      {/* ── Verdict row: arrow block | prediction | points block ── */}
       {hasPrediction ? (
-        <>
-          <div className="mt-1 flex items-center gap-2 pl-[22px]">
-            <span className="text-caption text-ps-text-ter">
-              {t("dash.you_label")}{" "}
-              <span className="font-semibold text-ps-text-sec">
-                {userScorePick
-                  ? `${userScorePick.home}\u2013${userScorePick.away}`
-                  : userWinnerPick}
-              </span>
-              {userConfidence != null && (
-                <ConfidenceMicroPill level={userConfidence} />
-              )}
-            </span>
-
-            {/* Streak badge (3+) */}
-            {streak >= 3 && (
-              <span className="inline-flex items-center gap-0.5 rounded bg-ps-amber/12 px-1.5 py-0.5 text-micro font-bold text-ps-amber">
-                <FlameIcon />
-                {streak}
-              </span>
-            )}
-
-            {/* Points badge */}
-            {totalPoints > 0 ? (
-              <span
-                className={[
-                  "ml-auto flex items-baseline gap-1 font-mono tabular-nums",
-                  isJackpot
-                    ? "ps-jackpot-shimmer rounded-md bg-ps-amber/12 px-1.5 py-0.5"
-                    : "",
-                ].join(" ")}
-              >
-                <span
-                  className={[
-                    "text-body font-semibold",
-                    isJackpot ? "text-ps-amber" : "text-ps-green",
-                  ].join(" ")}
-                >
-                  +{totalPoints}
-                </span>
-                {breakdownStr && (
-                  <span className="text-micro font-medium text-ps-text-ter">
-                    {breakdownStr}
-                  </span>
-                )}
-              </span>
-            ) : (
-              <span className="ml-auto font-mono text-caption tabular-nums text-ps-text-ter">
-                +0
-              </span>
+        <div className="mt-2 flex overflow-hidden rounded-lg min-h-[40px]">
+          {/* Arrow block */}
+          <div
+            className={[
+              "flex w-10 shrink-0 items-center justify-center bg-ps-text/5",
+              isCorrect
+                ? "border-r-[2.5px] border-r-ps-green"
+                : "border-r-[2.5px] border-r-ps-red",
+            ].join(" ")}
+          >
+            {movement === "up" && <ArrowUp />}
+            {movement === "down" && <ArrowDown />}
+            {movement === "neutral" && (
+              <span className="text-[16px] font-extrabold text-ps-text-ter" aria-hidden="true">—</span>
             )}
           </div>
-        </>
+
+          {/* Center — prediction text */}
+          <div className="flex flex-1 items-center bg-ps-text/4 px-3 py-2">
+            <span className="text-[12px] text-ps-text-ter">
+              {t("dash.prediction_label")}{" "}
+              <span className="text-[13px] font-bold text-ps-text">{predDisplay}</span>
+            </span>
+          </div>
+
+          {/* Points block — muted color fill */}
+          <div
+            className={[
+              "flex w-14 shrink-0 items-center justify-center",
+              isCorrect ? "bg-ps-green/12" : "bg-ps-red/12",
+            ].join(" ")}
+          >
+            <span
+              className={[
+                "font-mono text-[18px] font-extrabold tabular-nums",
+                isJackpot ? "ps-jackpot-shimmer text-ps-amber" : isCorrect ? "text-ps-green" : "text-ps-red",
+              ].join(" ")}
+            >
+              +{totalPoints}
+            </span>
+          </div>
+        </div>
       ) : (
-        <div className="mt-1 pl-[22px]">
-          <span className="text-caption text-ps-text-ter">
+        <div className="mt-2 rounded-lg bg-ps-text/4 px-3 py-2">
+          <span className="text-[12px] text-ps-text-ter">
             {t("dash.no_prediction")}
           </span>
         </div>

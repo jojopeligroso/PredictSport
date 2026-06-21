@@ -3,9 +3,9 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useT, useLocale } from "@/lib/i18n";
 import { CountryFlag } from "@/components/CountryFlag";
+import { fifaTrigram } from "@/lib/tournament/fifa-codes";
 import { HOST_CITIES, type HostCitySlug } from "@/lib/wc/host-cities";
 import { WindowPickList } from "@/app/wc/picks/[windowId]/WindowPickList";
-import { ConfidenceMicroPill } from "@/components/ConfidencePills";
 import type { WindowEvent } from "@/app/wc/picks/[windowId]/WindowPickList";
 import type { WcFixture } from "@/lib/wc/fixtures";
 import type { Prediction } from "@/types/database";
@@ -95,33 +95,21 @@ export function FixturesTabs({ fixtures, resultsByExternalId, serverDateIso, pre
     if (stored === "false") return false;
     return hasPredictions;
   });
-  const [showCorrectness, setShowCorrectness] = useState(() => {
-    if (typeof window === "undefined") return true;
-    const stored = localStorage.getItem("ps-show-correctness");
-    if (stored === "true") return true;
-    if (stored === "false") return false;
-    return true;
-  });
+  // showCorrectness: always on when picks are visible (toggle removed)
+  const showCorrectness = showPredictions;
   // Re-read from localStorage on mount to fix stale state when
   // the component re-mounts without re-running the lazy initializer
   // (e.g. React fiber reuse on tab switches).
   useEffect(() => {
     if (typeof window === "undefined") return;
     const storedPicks = localStorage.getItem("ps-show-picks");
-    const storedCorrectness = localStorage.getItem("ps-show-correctness");
     if (storedPicks === "true") setShowPredictions(true);
     else if (storedPicks === "false") setShowPredictions(false);
-    if (storedCorrectness === "true") setShowCorrectness(true);
-    else if (storedCorrectness === "false") setShowCorrectness(false);
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
   useEffect(() => {
     if (typeof window === "undefined") return;
     localStorage.setItem("ps-show-picks", String(showPredictions));
   }, [showPredictions]);
-  useEffect(() => {
-    if (typeof window === "undefined") return;
-    localStorage.setItem("ps-show-correctness", String(showCorrectness));
-  }, [showCorrectness]);
   const [biggerCards, setBiggerCards] = useState(() => {
     if (typeof window === "undefined") return false;
     return localStorage.getItem("ps-bigger-cards") === "true";
@@ -254,24 +242,6 @@ export function FixturesTabs({ fixtures, resultsByExternalId, serverDateIso, pre
               onChange={() => setShowPredictions((v) => !v)}
             />
           </div>
-          {showPredictions && hasResults && (
-            <div className="flex items-center justify-between border-t border-ps-border/50 pt-2 mt-2">
-              <div className="flex items-center gap-1.5">
-                <span className="flex gap-0.5">
-                  <span className="block h-2.5 w-2.5 rounded-sm bg-ps-green/70" />
-                  <span className="block h-2.5 w-2.5 rounded-sm bg-ps-red/70" />
-                </span>
-                <span className="text-xs text-ps-text-sec">
-                  {t('fixtures.show_correct_wrong')}
-                </span>
-              </div>
-              <ToggleSwitch
-                label=""
-                checked={showCorrectness}
-                onChange={() => setShowCorrectness((v) => !v)}
-              />
-            </div>
-          )}
         </div>
       )}
 
@@ -377,7 +347,7 @@ export function FixturesTabs({ fixtures, resultsByExternalId, serverDateIso, pre
                   fixture={f}
                   result={fResult}
                   prediction={showPredictions ? fPred : undefined}
-                  showCorrectness={showPredictions && showCorrectness}
+                  showCorrectness={showPredictions}
                   large={biggerCards}
                   locale={locale}
                   rivalsEventId={
@@ -606,7 +576,6 @@ function FixtureCard({
   const scorePoints = prediction?.scorePoints ?? 0;
   const totalPoints = winnerPoints + scorePoints;
   const bothCorrect = winnerCorrect === true && scoreCorrect === true;
-  const winnerOnly = winnerCorrect === true && scoreCorrect !== true;
   const isWrong = hasPrediction && winnerCorrect === false;
   const isJackpot = bothCorrect; // exact score = shimmer
 
@@ -817,141 +786,103 @@ function FixtureCard({
         {/* ── Read-only teams + result (finished) ── */}
         {isFinished && (
           <>
-            {/* Inset scoreboard panel */}
-            <div className={`rounded-xl bg-black/30 ${large ? "px-5 py-3" : "px-4 py-2.5"} shadow-[inset_0_1px_0_rgba(255,255,255,0.08),inset_0_-1px_0_rgba(0,0,0,0.25)] ring-1 ring-inset ring-black/20`}>
-              <div className="flex items-start justify-between gap-2">
-                {/* Home team — left, flag above name */}
-                <div className="flex flex-1 min-w-0 flex-col items-center gap-1">
-                  <CountryFlag shape="pill" name={fixture.home} size={flagSizeRo} />
-                  <span className={`${large ? "text-sm" : "text-xs"} font-bold text-white text-center leading-tight max-w-full truncate`}>
-                    {fixture.home}
+            {/* Compact scoreboard row with gradient wash + inner glow */}
+            <div
+              className={[
+                "flex items-center gap-2 rounded-lg px-3 py-[7px]",
+                showCorrectness && hasPrediction
+                  ? winnerCorrect
+                    ? "bg-gradient-to-br from-ps-green/[0.38] to-black/35 shadow-[inset_0_0_0_1.5px_rgba(10,168,109,0.65),0_0_10px_rgba(10,168,109,0.15)]"
+                    : "bg-gradient-to-br from-ps-red/[0.38] to-black/35 shadow-[inset_0_0_0_1.5px_rgba(226,61,79,0.65),0_0_10px_rgba(226,61,79,0.15)]"
+                  : "bg-black/30 shadow-[inset_0_1px_0_rgba(255,255,255,0.08)]",
+              ].join(" ")}
+            >
+              <CountryFlag shape="pill" name={fixture.home} size={22} />
+              <span className="text-[11px] font-bold text-white shrink-0">{fifaTrigram(fixture.home) ?? fixture.home.slice(0, 3).toUpperCase()}</span>
+              <span className="flex-1 text-center font-mono text-[16px] font-extrabold tabular-nums text-white drop-shadow-[0_1px_2px_rgba(0,0,0,0.5)]">
+                {result?.homeScore !== null && result?.awayScore !== null
+                  ? `${result.homeScore} – ${result.awayScore}`
+                  : (result?.winner ?? "Result")}
+              </span>
+              <span className="text-[11px] font-bold text-white shrink-0">{fifaTrigram(fixture.away) ?? fixture.away.slice(0, 3).toUpperCase()}</span>
+              <CountryFlag shape="pill" name={fixture.away} size={22} />
+              <span
+                className={[
+                  "rounded-full px-[5px] py-[2px] text-[7px] font-bold uppercase tracking-[0.5px] leading-none shrink-0",
+                  result?.isFinalised ? "bg-ps-green/80 text-white" : "bg-black/25 text-white/75 ring-1 ring-inset ring-white/15",
+                ].join(" ")}
+              >
+                {result?.isFinalised ? "FT" : t('fixtures.result_provisional')}
+              </span>
+            </div>
+
+            {/* Verdict row: arrow block | prediction | points block */}
+            {hasPrediction && prediction && showCorrectness && (
+              <div className="mt-2 flex overflow-hidden rounded-[10px] min-h-[44px]">
+                {/* Arrow block — dark-backed with colored accent border */}
+                <div
+                  className={[
+                    "flex w-[44px] shrink-0 items-center justify-center bg-black/45",
+                    winnerCorrect
+                      ? "border-r-[2.5px] border-r-ps-green"
+                      : "border-r-[2.5px] border-r-ps-red",
+                  ].join(" ")}
+                >
+                  {movement === "up" && (
+                    <svg width="22" height="22" viewBox="0 0 12 12" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" className="text-ps-green" aria-hidden="true">
+                      <path d="M6 10V2M3 5l3-3 3 3" />
+                    </svg>
+                  )}
+                  {movement === "down" && (
+                    <svg width="22" height="22" viewBox="0 0 12 12" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" className="text-ps-red" aria-hidden="true">
+                      <path d="M6 2v8M3 7l3 3 3-3" />
+                    </svg>
+                  )}
+                  {movement === "neutral" && (
+                    <span className="text-[18px] font-extrabold text-white/35" aria-hidden="true">—</span>
+                  )}
+                </div>
+
+                {/* Center — prediction text */}
+                <div className="flex flex-1 items-center bg-black/25 px-3.5 py-2">
+                  <span className="text-[12px] text-white/50">
+                    {t('dash.prediction_label')}{" "}
+                    <span className="text-[13px] font-bold text-white/90">
+                      {currentWinner}
+                      {homeScore !== "" && awayScore !== "" ? ` ${homeScore}\u2013${awayScore}` : ""}
+                    </span>
                   </span>
                 </div>
 
-                {/* Score + status — center */}
-                <div className="flex shrink-0 flex-col items-center gap-1.5">
-                  <span className={`font-mono ${large ? "text-xl" : "text-lg"} font-extrabold tabular-nums leading-none whitespace-nowrap text-white drop-shadow-[0_1px_2px_rgba(0,0,0,0.5)]`}>
-                    {result?.homeScore !== null && result?.awayScore !== null
-                      ? `${result.homeScore} – ${result.awayScore}`
-                      : (result?.winner ?? "Result")}
-                  </span>
+                {/* Points block — solid color */}
+                <div
+                  className={[
+                    "flex w-[60px] shrink-0 items-center justify-center",
+                    winnerCorrect ? "bg-ps-green" : "bg-ps-red",
+                  ].join(" ")}
+                >
                   <span
                     className={[
-                      "rounded-full px-2 py-0.5 text-micro font-bold uppercase tracking-[0.10em] leading-none",
-                      result?.isFinalised ? "bg-ps-green/80 text-white" : "bg-black/25 text-white/75 ring-1 ring-inset ring-white/15",
+                      "font-mono text-[20px] font-extrabold text-white tabular-nums",
+                      isJackpot ? "ps-jackpot-shimmer" : "",
                     ].join(" ")}
                   >
-                    {result?.isFinalised ? t('fixtures.result_final') : t('fixtures.result_provisional')}
-                  </span>
-                </div>
-
-                {/* Away team — right, flag above name */}
-                <div className="flex flex-1 min-w-0 flex-col items-center gap-1">
-                  <CountryFlag shape="pill" name={fixture.away} size={flagSizeRo} />
-                  <span className={`${large ? "text-sm" : "text-xs"} font-bold text-white text-center leading-tight max-w-full truncate`}>
-                    {fixture.away}
+                    +{totalPoints}
                   </span>
                 </div>
               </div>
-            </div>
+            )}
 
-            {/* Your prediction + points — shown when prediction context exists */}
-            {hasPrediction && prediction && (
+            {/* Prediction row without correctness (before results revealed) */}
+            {hasPrediction && prediction && !showCorrectness && (
               <div className="mt-2 rounded-lg bg-black/20 px-3 py-2">
-                {/* Row 1: Movement arrow + prediction text + correctness badge */}
-                <div className="flex items-center gap-1.5">
-                  {/* Movement indicator */}
-                  {showCorrectness && (
-                    <span className="flex w-4 shrink-0 items-center justify-center">
-                      {movement === "up" && (
-                        <svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-ps-green" aria-hidden="true">
-                          <path d="M6 10V2M3 5l3-3 3 3" />
-                        </svg>
-                      )}
-                      {movement === "down" && (
-                        <svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-ps-red" aria-hidden="true">
-                          <path d="M6 2v8M3 7l3 3 3-3" />
-                        </svg>
-                      )}
-                      {movement === "neutral" && (
-                        <span className="inline-block h-[5px] w-[5px] rounded-full bg-white/40" aria-hidden="true" />
-                      )}
-                    </span>
-                  )}
-
-                  {/* Correctness dot */}
-                  {showCorrectness && (
-                    <span className="flex shrink-0">
-                      {bothCorrect ? (
-                        <span className="inline-block h-2 w-2 rounded-full bg-ps-green" />
-                      ) : winnerOnly ? (
-                        <span className="inline-block h-2 w-2 rounded-full bg-ps-amber" />
-                      ) : isWrong ? null : (
-                        <span className="inline-block h-1.5 w-1.5 rounded-full bg-white/40" />
-                      )}
-                    </span>
-                  )}
-
-                  {/* Prediction text */}
-                  <span className="flex-1 text-caption text-white/70">
-                    {t('fixtures.you_predicted')}{" "}
-                    <span className="font-bold text-white/90">
-                      {currentWinner}
-                      {homeScore !== "" && awayScore !== "" ? ` (${homeScore}\u2013${awayScore})` : ""}
-                    </span>
-                    {prediction.userConfidence != null && (
-                      <ConfidenceMicroPill level={prediction.userConfidence} />
-                    )}
+                <span className="text-[12px] text-white/55">
+                  {t('dash.prediction_label')}{" "}
+                  <span className="font-bold text-white/90">
+                    {currentWinner}
+                    {homeScore !== "" && awayScore !== "" ? ` ${homeScore}\u2013${awayScore}` : ""}
                   </span>
-
-                  {/* Correctness badge (check/cross) */}
-                  {showCorrectness && winnerCorrect !== null && (
-                    <span
-                      className={[
-                        "flex h-[18px] w-[18px] shrink-0 items-center justify-center rounded-full text-micro font-extrabold",
-                        winnerCorrect
-                          ? "bg-ps-green/25 text-ps-green"
-                          : "bg-ps-red/25 text-ps-red",
-                      ].join(" ")}
-                    >
-                      {winnerCorrect ? "\u2713" : "\u2715"}
-                    </span>
-                  )}
-                </div>
-
-                {/* Row 2: Points earned */}
-                {showCorrectness && isFinished && (
-                  <div className="mt-1 flex items-center justify-end">
-                    {totalPoints > 0 ? (
-                      <span
-                        className={[
-                          "flex items-baseline gap-1 font-mono tabular-nums",
-                          isJackpot
-                            ? "ps-jackpot-shimmer rounded-md bg-ps-amber/15 px-1.5 py-0.5"
-                            : "",
-                        ].join(" ")}
-                      >
-                        <span
-                          className={[
-                            "text-body font-semibold",
-                            isJackpot ? "text-ps-amber" : "text-ps-green",
-                          ].join(" ")}
-                        >
-                          +{totalPoints}
-                        </span>
-                        {winnerPoints > 0 && scorePoints > 0 && (
-                          <span className="text-micro font-medium text-white/50">
-                            (+{winnerPoints} W +{scorePoints} S)
-                          </span>
-                        )}
-                      </span>
-                    ) : (
-                      <span className="font-mono text-caption tabular-nums text-white/40">
-                        +0
-                      </span>
-                    )}
-                  </div>
-                )}
+                </span>
               </div>
             )}
           </>
