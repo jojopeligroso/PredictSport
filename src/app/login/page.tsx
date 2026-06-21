@@ -1,6 +1,7 @@
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { LoginButton } from "@/components/LoginButton";
+import { DevLoginButton } from "@/components/DevLoginButton";
 import { BrandMark } from "@/components/BrandMark";
 import { getServerT } from "@/lib/i18n/server";
 
@@ -67,6 +68,7 @@ export default async function LoginPage({
 
         {/* Auth buttons */}
         <LoginButton redirectTo={next} />
+        <DevLoginButton />
 
         {/* Caption */}
         <p className="mt-2.5 text-center text-caption text-ps-text-ter">

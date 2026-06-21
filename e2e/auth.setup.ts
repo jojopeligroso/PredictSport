@@ -1,51 +1,33 @@
 import { test as setup, expect } from "@playwright/test";
-import { readFileSync } from "fs";
-import { resolve } from "path";
 
 const E2E_EMAIL = "e2e-test@predictsport.dev";
-const E2E_PASSWORD = "devpassword123";
-
-function loadEnv(): Record<string, string> {
-  const content = readFileSync(resolve(__dirname, "../.env.local"), "utf-8");
-  const env: Record<string, string> = {};
-  for (const line of content.split("\n")) {
-    const match = line.match(/^([^#=]+)=(.*)$/);
-    if (match) env[match[1].trim()] = match[2].trim();
-  }
-  return env;
-}
 
 setup("authenticate", async ({ page }) => {
-  const env = loadEnv();
-  const supabaseUrl = env.NEXT_PUBLIC_SUPABASE_URL;
-  const supabaseKey = env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
-  const projectRef = supabaseUrl.match(/https:\/\/([^.]+)/)?.[1] ?? "";
+  const baseURL =
+    process.env.PLAYWRIGHT_BASE_URL ?? "http://localhost:3000";
 
-  // Sign in via REST
-  const res = await fetch(
-    `${supabaseUrl}/auth/v1/token?grant_type=password`,
-    {
-      method: "POST",
-      headers: { "Content-Type": "application/json", apikey: supabaseKey },
-      body: JSON.stringify({ email: E2E_EMAIL, password: E2E_PASSWORD }),
-    }
-  );
-  if (!res.ok) throw new Error(`Auth failed: ${await res.text()}`);
+  // Use the dev login API to get a session — works for any existing user,
+  // no password needed (service-role generates + verifies an OTP server-side)
+  const res = await fetch(`${baseURL}/api/dev/login`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ email: E2E_EMAIL }),
+  });
+  if (!res.ok) throw new Error(`Dev login failed: ${await res.text()}`);
 
   const session = await res.json();
+  const projectRef =
+    process.env.NEXT_PUBLIC_SUPABASE_URL?.match(/https:\/\/([^.]+)/)?.[1] ??
+    "wujgqjjddonxoddkgbxy";
 
   // Navigate to app first (need domain for cookies)
   await page.goto("/login");
   await page.waitForLoadState("networkidle");
 
-  // Derive cookie domain from the actual base URL
-  const baseURL =
-    process.env.PLAYWRIGHT_BASE_URL ?? "http://localhost:3000";
   const cookieDomain = new URL(baseURL).hostname;
   const isSecure = new URL(baseURL).protocol === "https:";
 
-  // Set the auth cookie in the format @supabase/ssr createBrowserClient uses.
-  // The library stores the full session JSON as the cookie value, chunked.
+  // Set the auth cookie in the format @supabase/ssr uses
   const sessionData = JSON.stringify({
     access_token: session.access_token,
     refresh_token: session.refresh_token,
@@ -72,12 +54,11 @@ setup("authenticate", async ({ page }) => {
   }
   await page.context().addCookies(cookies);
 
-  // Reload after setting cookies so the app picks up the session
+  // Reload so the app picks up the session
   await page.goto("/");
   await page.waitForLoadState("networkidle");
 
-  // Verify auth worked: authenticated users are NOT redirected to /login
-  // and the page should not show a "Sign in" button
+  // Verify auth: authenticated users should not be on /login
   await expect(page).not.toHaveURL(/\/login/, { timeout: 10000 });
 
   await page.context().storageState({ path: "e2e/.auth/user.json" });
