@@ -4,6 +4,7 @@ import { useCallback, useEffect, useState } from "react";
 import { useT } from "@/lib/i18n";
 import { CountryFlag } from "@/components/CountryFlag";
 import { fifaTrigram } from "@/lib/tournament/fifa-codes";
+import { teamColor, textOnColor } from "@/lib/tournament/team-colors";
 
 interface OutcomeSplit {
   home: number;
@@ -21,6 +22,8 @@ interface TopScore {
 
 interface CommunityData {
   fixture: { home: string; away: string; eventId: string } | null;
+  sport: string;
+  allowDraw: boolean;
   outcomeSplit: OutcomeSplit;
   topScores: TopScore[];
 }
@@ -35,7 +38,7 @@ interface CommunityPicksCardProps {
  * CommunityPicksCard — two side-by-side cards showing competition-wide
  * prediction stats for the most recently revealed fixture.
  *
- * Card 1: Outcome split (home / draw / away %)
+ * Card 1: Vertical bar chart (home / draw / away %)
  * Card 2: Most popular exact score(s)
  *
  * Only renders after pick_reveal_at has passed.
@@ -97,7 +100,7 @@ export function CommunityPicksCard({ competitionId, island = false }: CommunityP
 
   if (!data?.fixture || data.outcomeSplit.total === 0) return null;
 
-  const { fixture, outcomeSplit, topScores } = data;
+  const { fixture, allowDraw, outcomeSplit, topScores } = data;
   const homeTri =
     fifaTrigram(fixture.home) ?? fixture.home.slice(0, 3).toUpperCase();
   const awayTri =
@@ -116,36 +119,23 @@ export function CommunityPicksCard({ competitionId, island = false }: CommunityP
       ? Math.round((outcomeSplit.away / outcomeSplit.total) * 100)
       : 0;
 
+  const showDrawBar = allowDraw;
+
   const cards = (
     <div className="flex items-stretch gap-2">
-      {/* Card 1: Outcome Split */}
+      {/* Card 1: Vertical Bar Chart */}
       <div className="min-w-[100px] flex-1 rounded-lg border border-ps-border bg-ps-surface p-3">
-          <div className="flex items-center gap-1.5 text-micro font-semibold uppercase tracking-wider text-ps-text-ter">
-            <CountryFlag name={fixture.home} size={14} shape="pill" />
-            <span>{homeTri}</span>
-            <span className="text-ps-text-ter/40">v</span>
-            <span>{awayTri}</span>
-            <CountryFlag name={fixture.away} size={14} shape="pill" />
-          </div>
-
-          <div className="mt-2 space-y-1.5">
-            <OutcomeBar
-              label={homeTri}
-              pct={homePct}
-              color="bg-ps-amber"
-            />
-            <OutcomeBar
-              label={t("community.draw")}
-              pct={drawPct}
-              color="bg-ps-text-ter"
-            />
-            <OutcomeBar
-              label={awayTri}
-              pct={awayPct}
-              color="bg-ps-text-sec"
-            />
-          </div>
-        </div>
+        <VerticalBarChart
+          homeName={fixture.home}
+          awayName={fixture.away}
+          homeTri={homeTri}
+          awayTri={awayTri}
+          homePct={homePct}
+          drawPct={drawPct}
+          awayPct={awayPct}
+          showDrawBar={showDrawBar}
+        />
+      </div>
 
         {/* Card 2: Popular Score */}
         <div className="min-w-[100px] flex-1 rounded-lg border border-ps-border bg-ps-surface p-3">
@@ -204,30 +194,115 @@ export function CommunityPicksCard({ competitionId, island = false }: CommunityP
   );
 }
 
-/** Single outcome bar (home/draw/away). */
-function OutcomeBar({
-  label,
-  pct,
-  color,
-}: {
-  label: string;
-  pct: number;
-  color: string;
-}) {
+/* ── Vertical Bar Chart ─────────────────────────────────────────────── */
+
+const MAX_BAR_H = 72; // px — tallest bar
+const MIN_BAR_H = 22; // px — just enough for the percentage text
+const DRAW_COLOR = "#6b7280"; // gray-500
+
+interface VerticalBarChartProps {
+  homeName: string;
+  awayName: string;
+  homeTri: string;
+  awayTri: string;
+  homePct: number;
+  drawPct: number;
+  awayPct: number;
+  showDrawBar: boolean;
+}
+
+function VerticalBarChart({
+  homeName,
+  awayName,
+  homePct,
+  drawPct,
+  awayPct,
+  showDrawBar,
+}: VerticalBarChartProps) {
+  const homeColor = teamColor(homeName);
+  const awayColor = teamColor(awayName);
+
+  // Compute bar heights proportional to percentages
+  const pcts = showDrawBar
+    ? [homePct, drawPct, awayPct]
+    : [homePct, awayPct];
+  const maxPct = Math.max(...pcts, 1); // avoid div-by-zero
+
+  const barH = (pct: number) => {
+    if (pct === 0) return MIN_BAR_H;
+    return Math.max(MIN_BAR_H, Math.round((pct / maxPct) * MAX_BAR_H));
+  };
+
   return (
-    <div className="flex items-center gap-1.5">
-      <span className="w-9 shrink-0 text-micro font-semibold text-ps-text-sec">
-        {label}
-      </span>
-      <div className="flex-1 overflow-hidden rounded-full bg-ps-chip" style={{ height: 6 }}>
-        <div
-          className={`h-full rounded-full ${color} transition-all`}
-          style={{ width: `${pct}%` }}
+    <div className="flex items-end gap-1.5" style={{ minHeight: MAX_BAR_H + 28 }}>
+      {/* Home bar */}
+      <BarColumn
+        flag={homeName}
+        pct={homePct}
+        height={barH(homePct)}
+        color={homeColor}
+      />
+
+      {showDrawBar ? (
+        /* Draw bar with "v" label */
+        <BarColumn
+          label="v"
+          pct={drawPct}
+          height={barH(drawPct)}
+          color={DRAW_COLOR}
         />
+      ) : (
+        /* No-draw: small "v" separator */
+        <div className="flex shrink-0 items-center self-center px-0.5">
+          <span className="text-micro font-medium text-ps-text-ter/50">v</span>
+        </div>
+      )}
+
+      {/* Away bar */}
+      <BarColumn
+        flag={awayName}
+        pct={awayPct}
+        height={barH(awayPct)}
+        color={awayColor}
+      />
+    </div>
+  );
+}
+
+/* ── Single Bar Column ──────────────────────────────────────────────── */
+
+interface BarColumnProps {
+  flag?: string;  // country name for flag — omit for draw column
+  label?: string; // text label above bar (e.g. "v" for draw)
+  pct: number;
+  height: number;
+  color: string;
+}
+
+function BarColumn({ flag, label, pct, height, color }: BarColumnProps) {
+  const textColor = textOnColor(color);
+
+  return (
+    <div className="flex flex-1 flex-col items-center gap-1">
+      {/* Label: flag icon or text */}
+      {flag ? (
+        <CountryFlag name={flag} size={18} shape="pill" />
+      ) : label ? (
+        <span className="text-micro font-medium text-ps-text-ter/50">{label}</span>
+      ) : null}
+
+      {/* Bar */}
+      <div
+        className="relative w-full rounded-t-md transition-all duration-500"
+        style={{ height, backgroundColor: color }}
+      >
+        <span
+          className="absolute inset-0 flex items-center justify-center font-mono text-micro font-semibold tabular-nums"
+          style={{ color: textColor }}
+        >
+          {pct}%
+        </span>
       </div>
-      <span className="w-7 shrink-0 text-right font-mono text-micro tabular-nums text-ps-text-ter">
-        {pct}%
-      </span>
     </div>
   );
 }

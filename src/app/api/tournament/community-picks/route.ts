@@ -36,7 +36,7 @@ export async function GET(request: NextRequest) {
   const now = new Date().toISOString();
   const { data: lockedEvents } = await supabase
     .from("events")
-    .select("id, event_name, lock_time, pick_reveal_at, external_event_id")
+    .select("id, event_name, lock_time, pick_reveal_at, external_event_id, sport")
     .eq("competition_id", competitionId)
     .lt("lock_time", now)
     .order("lock_time", { ascending: false })
@@ -65,6 +65,17 @@ export async function GET(request: NextRequest) {
   const parts = revealedEvent.event_name.split(/\s+vs?\s+/i);
   const home = parts[0]?.trim() ?? "Home";
   const away = parts[1]?.trim() ?? "Away";
+
+  // Check if draw is allowed for the winner prediction type on this event
+  const { data: eptRows } = await supabase
+    .from("event_prediction_types")
+    .select("config")
+    .eq("event_id", revealedEvent.id)
+    .eq("prediction_type", "winner")
+    .limit(1);
+
+  const winnerConfig = (eptRows?.[0]?.config ?? {}) as Record<string, unknown>;
+  const allowDraw = winnerConfig.allow_draw !== false; // default true for soccer
 
   // Fetch ALL predictions for this event (competition-wide, all users)
   const { data: predictions } = await supabase
@@ -132,6 +143,8 @@ export async function GET(request: NextRequest) {
       away,
       eventId: revealedEvent.id,
     },
+    sport: revealedEvent.sport ?? "soccer",
+    allowDraw,
     outcomeSplit: {
       home: homeCount,
       draw: drawCount,
