@@ -10,7 +10,7 @@ export function CountdownChip({ text, urgent = false }: CountdownChipProps) {
 
   return (
     <span
-      className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-semibold ${bgClass} ${textClass}`}
+      className={`inline-flex items-center gap-1 px-2 py-0.5 min-h-[44px] rounded-full text-xs font-semibold ${bgClass} ${textClass}`}
       role="timer"
       aria-live="polite"
     >

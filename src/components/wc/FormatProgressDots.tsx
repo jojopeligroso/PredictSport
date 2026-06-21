@@ -117,7 +117,7 @@ export function FormatProgressDots() {
                 : "bg-ps-text-ter/40 hover:bg-ps-text-ter/70"
             }`}
           >
-            <span className={`pointer-events-none absolute right-[calc(100%+10px)] top-1/2 -translate-y-1/2 whitespace-nowrap rounded-md border border-ps-border bg-ps-surface px-2 py-1 text-[10px] font-semibold text-ps-text shadow-sm transition-opacity duration-150 ${showTooltips ? "opacity-100" : "opacity-0"}`}>
+            <span className={`pointer-events-none absolute right-[calc(100%+10px)] top-1/2 -translate-y-1/2 whitespace-nowrap rounded-md border border-ps-border bg-ps-surface px-2 py-1 text-micro font-semibold text-ps-text shadow-sm transition-opacity duration-150 ${showTooltips ? "opacity-100" : "opacity-0"}`}>
               {label}
             </span>
           </button>

@@ -36,7 +36,7 @@ export default async function JoinPage({
               <p className="text-base font-extrabold lowercase leading-tight tracking-tight text-ps-text">
                 sports<span className="text-ps-amber">predict.</span>
               </p>
-              <p className="font-serif text-[11.5px] italic leading-tight text-ps-text-sec">
+              <p className="font-serif text-caption italic leading-tight text-ps-text-sec">
                 Sign in to join
               </p>
             </div>

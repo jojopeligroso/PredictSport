@@ -160,6 +160,18 @@ html[data-theme="dark"] {
   --shadow-ps-raised: var(--ps-shadow-raised);
 }
 
+/* ── Design-tenet typography scale ─────────────────────────────────────── */
+/* Canonical sizes — replace arbitrary text-[Npx] with these utilities.    */
+@utility text-page-title    { font-size: 24px; }
+@utility text-section-title { font-size: 18px; }
+@utility text-item-label    { font-size: 16px; }
+@utility text-body          { font-size: 14px; }
+@utility text-caption        { font-size: 12px; }
+@utility text-micro          { font-size: 10px; }
+
+/* ── Tap-target minimum size ──────────────────────────────────────────── */
+@utility tap-target { min-height: 44px; min-width: 44px; }
+
 /* ── Display font utility — always Inter 800 ────────────────────────────── */
 /* font-display class: pairs font-family with weight 800 for headlines      */
 /* Note: Tailwind's font-display utility sets font-family only.             */

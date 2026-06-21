@@ -346,7 +346,7 @@ export function CreateWcCompetition() {
                       {t(cls.labelKey)}
                     </span>
                     {cls.required && (
-                      <span className="rounded-full bg-ps-chip px-1.5 py-0.5 text-[10px] font-semibold text-ps-text-ter">
+                      <span className="rounded-full bg-ps-chip px-1.5 py-0.5 text-micro font-semibold text-ps-text-ter">
                         {t("create.required")}
                       </span>
                     )}

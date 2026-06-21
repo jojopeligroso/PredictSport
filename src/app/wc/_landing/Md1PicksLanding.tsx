@@ -166,7 +166,7 @@ export function Md1PicksLanding(props: Md1PicksLandingProps) {
       {/* Progress strip — hidden for non-members */}
       {!previewMode && <div className="mx-auto mt-4 w-full max-w-[480px] px-4">
         <div className="flex items-center gap-3 rounded-lg border border-ps-border bg-ps-surface px-3.5 py-2.5">
-          <span className="font-mono text-[10px] font-bold uppercase tracking-[0.12em] text-ps-text-ter">
+          <span className="font-mono text-micro font-bold uppercase tracking-[0.12em] text-ps-text-ter">
             {t('wc.md1_picks')}
           </span>
           <div
@@ -370,15 +370,15 @@ function Sections({
               >
                 <div className="flex items-center gap-2">
                   <SectionStatusIcon status={status} />
-                  <span className="font-mono text-[11px] font-extrabold uppercase tracking-[0.12em] text-ps-text">
+                  <span className="font-mono text-caption font-extrabold uppercase tracking-[0.12em] text-ps-text">
                     {s.heading}
                   </span>
                   {pickedCount > 0 ? (
-                    <span className={`font-mono text-[10px] ${isComplete ? "text-ps-green" : "text-ps-text-ter"}`}>
+                    <span className={`font-mono text-micro ${isComplete ? "text-ps-green" : "text-ps-text-ter"}`}>
                       {t('wc.picked', { count: String(pickedCount), total: String(s.events.length) })}
                     </span>
                   ) : (
-                    <span className="font-mono text-[10px] text-ps-text-ter">
+                    <span className="font-mono text-micro text-ps-text-ter">
                       {s.sub}
                     </span>
                   )}
@@ -407,7 +407,7 @@ function Sections({
               <div className="flex items-center gap-2">
                 {/* Status icon beside heading */}
                 <SectionStatusIcon status={status} />
-                <h2 className="font-mono text-[11px] font-extrabold uppercase tracking-[0.12em] text-ps-text">
+                <h2 className="font-mono text-caption font-extrabold uppercase tracking-[0.12em] text-ps-text">
                   {s.heading}
                 </h2>
               </div>
@@ -445,7 +445,7 @@ function Sections({
                 {/* Partial: "Exact score needed" label */}
                 {status === "partial" && (
                   <span
-                    className="font-mono text-[9px] font-semibold uppercase tracking-wide"
+                    className="font-mono text-micro font-semibold uppercase tracking-wide"
                     style={{ color: CHROME_PALETTE.attention }}
                   >
                     {t('wc.exact_score_needed')}
@@ -463,7 +463,7 @@ function Sections({
                 )}
                 {/* Match count */}
                 {!eligible && status !== "partial" && s.sub && (
-                  <span className="font-mono text-[11px] text-ps-text-ter">
+                  <span className="font-mono text-caption text-ps-text-ter">
                     {s.sub}
                   </span>
                 )}
@@ -494,7 +494,7 @@ function Sections({
               {t('wc.show_more', { count: String(remainingEvents) })}
             </span>
             {revealedBatches === 1 && (
-              <span className="mt-1 text-[11px] font-serif italic text-white/75">
+              <span className="mt-1 text-caption font-serif italic text-white/75">
                 {t('wc.no_rush')}
               </span>
             )}
@@ -510,14 +510,14 @@ function SectionStatusIcon({ status }: { status: DayPredictionStatus }) {
   switch (status) {
     case "complete":
       return (
-        <span className="inline-flex h-4 w-4 items-center justify-center rounded-full bg-ps-green text-[9px] font-extrabold leading-none text-white">
+        <span className="inline-flex h-4 w-4 items-center justify-center rounded-full bg-ps-green text-micro font-extrabold leading-none text-white">
           ✓
         </span>
       );
     case "partial":
       return (
         <span
-          className="inline-flex h-4 w-4 items-center justify-center rounded-full text-[10px] font-extrabold leading-none text-white"
+          className="inline-flex h-4 w-4 items-center justify-center rounded-full text-micro font-extrabold leading-none text-white"
           style={{ background: CHROME_PALETTE.attention }}
         >
           !
@@ -525,7 +525,7 @@ function SectionStatusIcon({ status }: { status: DayPredictionStatus }) {
       );
     case "urgent":
       return (
-        <span className="inline-flex h-4 w-4 items-center justify-center rounded-full bg-ps-red text-[9px] font-extrabold leading-none text-white">
+        <span className="inline-flex h-4 w-4 items-center justify-center rounded-full bg-ps-red text-micro font-extrabold leading-none text-white">
           ✗
         </span>
       );
@@ -719,7 +719,7 @@ function SectionCountdown({ lockTime, urgent }: { lockTime: string; urgent: bool
 
   return (
     <span
-      className={`font-mono text-[10px] font-semibold tabular-nums ${
+      className={`font-mono text-micro font-semibold tabular-nums ${
         urgent ? "text-ps-red" : "text-ps-text-ter"
       }`}
       role="timer"
@@ -750,14 +750,14 @@ function GroupCountdownInfo() {
         type="button"
         onClick={() => setOpen((v) => !v)}
         onKeyDown={(e) => e.key === "Escape" && setOpen(false)}
-        className="inline-flex h-4 w-4 items-center justify-center rounded-full bg-ps-chip text-[9px] font-bold text-ps-text-ter hover:bg-ps-border"
+        className="inline-flex h-4 w-4 items-center justify-center rounded-full bg-ps-chip text-micro font-bold text-ps-text-ter hover:bg-ps-border"
         aria-label="Countdown info"
         aria-expanded={open}
       >
         ?
       </button>
       {open && (
-        <span className="absolute right-0 top-full z-10 mt-1 w-52 rounded-lg border border-ps-border bg-ps-surface p-2.5 text-[11px] leading-snug text-ps-text-sec shadow-lg">
+        <span className="absolute right-0 top-full z-10 mt-1 w-52 rounded-lg border border-ps-border bg-ps-surface p-2.5 text-caption leading-snug text-ps-text-sec shadow-lg">
           This countdown refers to the earliest match shown in this group section.
         </span>
       )}

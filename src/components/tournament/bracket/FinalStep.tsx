@@ -44,10 +44,10 @@ export default function FinalStep({
   return (
     <div className="space-y-5">
       <div className="rounded-xl border border-ps-border bg-ps-surface p-4">
-        <p className="font-mono text-[10px] font-bold uppercase tracking-widest text-ps-text-ter">
+        <p className="font-mono text-micro font-bold uppercase tracking-widest text-ps-text-ter">
           Final round
         </p>
-        <h2 className="mt-1 text-lg font-extrabold text-ps-text">
+        <h2 className="mt-1 text-section-title font-extrabold text-ps-text">
           The Final &amp; 3rd-Place Playoff
         </h2>
         <p className="mt-1 text-xs text-ps-text-sec">
@@ -60,7 +60,7 @@ export default function FinalStep({
         <h3 className="text-xs font-bold uppercase tracking-widest text-ps-text-ter">
           Third-place playoff
         </h3>
-        <p className="mt-1 text-[11px] text-ps-text-sec">
+        <p className="mt-1 text-caption text-ps-text-sec">
           The two semi-final losers play for bronze.
         </p>
         <div className="mt-3">
@@ -72,7 +72,7 @@ export default function FinalStep({
                 onClick={() => onThirdPlacePick(sfLosers.home)}
                 pickColor={pickColor}
               />
-              <span className="shrink-0 font-mono text-[10px] uppercase tracking-widest text-ps-text-ter">
+              <span className="shrink-0 font-mono text-micro uppercase tracking-widest text-ps-text-ter">
                 vs
               </span>
               <FinalPickButton
@@ -99,7 +99,7 @@ export default function FinalStep({
         <h3 className="text-xs font-bold uppercase tracking-widest text-ps-amber">
           The Final · Pick the champion
         </h3>
-        <p className="mt-1 text-[11px] text-ps-text-sec">
+        <p className="mt-1 text-caption text-ps-text-sec">
           Whoever wins this match lifts the World Cup.
         </p>
         <div className="mt-3">
@@ -132,10 +132,10 @@ export default function FinalStep({
 
         {championPicked && (
           <div className="mt-4 rounded-lg bg-ps-amber/10 px-3 py-3 text-center">
-            <p className="font-mono text-[10px] font-bold uppercase tracking-widest text-ps-amber">
+            <p className="font-mono text-micro font-bold uppercase tracking-widest text-ps-amber">
               Your champion
             </p>
-            <p className="mt-1 font-display text-2xl font-extrabold text-ps-text">
+            <p className="mt-1 font-display text-page-title font-extrabold text-ps-text">
               {champion}
             </p>
           </div>

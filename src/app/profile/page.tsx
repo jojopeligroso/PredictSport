@@ -79,7 +79,7 @@ export default async function ProfilePage() {
         </svg>
         {t('nav.back_to_dashboard')}
       </Link>
-      <h1 className="mt-4 mb-6 font-display font-extrabold text-2xl uppercase tracking-[0.06em] text-ps-text">
+      <h1 className="mt-4 mb-6 font-display font-extrabold text-page-title uppercase text-ps-text">
         {t('menu.settings')}
       </h1>
       <ProfileForm user={profile as User} competitions={competitions} />

@@ -327,7 +327,7 @@ function MatchScoreInput({ match, teamName, onScoreEntry }: MatchScoreInputProps
           {match.away_team}
         </span>
       </div>
-      <p className="mb-2 text-[10px] text-ps-text-ter">
+      <p className="mb-2 text-micro text-ps-text-ter">
         Your prediction: {formatResult(match.result)}
       </p>
 
@@ -356,7 +356,7 @@ function MatchScoreInput({ match, teamName, onScoreEntry }: MatchScoreInputProps
           />
           <button
             onClick={handleSubmit}
-            className="ml-auto rounded bg-ps-text px-2 py-0.5 text-[10px] font-semibold text-ps-bg"
+            className="ml-auto rounded bg-ps-text px-2 py-0.5 text-micro font-semibold text-ps-bg"
           >
             Save
           </button>

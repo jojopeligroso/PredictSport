@@ -97,7 +97,7 @@ export function LanguageToggle() {
           />
         </span>
       </span>
-      <span className="text-[11px] font-bold uppercase tracking-wide text-ps-text-sec">
+      <span className="text-caption font-bold uppercase tracking-wide text-ps-text-sec">
         {locale === 'es' ? 'ES' : 'EN'}
       </span>
     </button>

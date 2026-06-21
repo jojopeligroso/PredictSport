@@ -255,7 +255,7 @@ export function RivalPredictionsTab({
         <div className="px-4 pb-3 pt-3.5">
           {/* Round label */}
           {selectedFixture?.roundName && (
-            <p className="mb-2.5 font-mono text-[10px] font-bold uppercase tracking-[0.10em] text-ps-text-ter">
+            <p className="mb-2.5 font-mono text-micro font-bold uppercase tracking-[0.10em] text-ps-text-ter">
               {selectedFixture.roundName}
             </p>
           )}
@@ -284,10 +284,10 @@ export function RivalPredictionsTab({
             </button>
 
             <div className="min-w-0 flex-1 text-center">
-              <p className="truncate text-[15px] font-bold text-ps-text">
+              <p className="truncate text-item-label font-bold text-ps-text">
                 {selectedFixture?.name}
               </p>
-              <p className="mt-0.5 font-mono text-[11px] text-ps-text-sec">
+              <p className="mt-0.5 font-mono text-caption text-ps-text-sec">
                 {fixtureDate} · {fixtureTime}
               </p>
             </div>
@@ -319,11 +319,11 @@ export function RivalPredictionsTab({
             {hasResult ? (
               <div className="flex items-center justify-center gap-1.5 rounded-md bg-ps-green/10 px-2.5 py-1.5">
                 <span className="h-1.5 w-1.5 rounded-full bg-ps-green" />
-                <span className="text-[11px] font-semibold text-ps-green">
+                <span className="text-caption font-semibold text-ps-green">
                   {t("rivals.final")}
                 </span>
-                <span className="text-[11px] text-ps-text-ter">·</span>
-                <span className="font-mono text-[11px] font-semibold text-ps-green">
+                <span className="text-caption text-ps-text-ter">·</span>
+                <span className="font-mono text-caption font-semibold text-ps-green">
                   {homeScore} – {awayScore}
                 </span>
               </div>
@@ -331,7 +331,7 @@ export function RivalPredictionsTab({
               <div className="flex items-center justify-center gap-1.5 rounded-md bg-ps-amber/10 px-2.5 py-1.5">
                 <span className="h-1.5 w-1.5 rounded-full bg-ps-amber" />
                 <EyeIcon />
-                <span className="text-[11px] font-semibold text-ps-amber">
+                <span className="text-caption font-semibold text-ps-amber">
                   {t("rivals.predictions_revealed")}
                 </span>
               </div>
@@ -350,7 +350,7 @@ export function RivalPredictionsTab({
           <button
             type="button"
             onClick={() => setSortMode((m) => (m === "points" ? "group" : "points"))}
-            className="text-[11px] font-semibold text-ps-amber"
+            className="text-caption font-semibold text-ps-amber"
           >
             {sortMode === "points" ? t("rivals.sort_points") : t("rivals.sort_group")}
           </button>
@@ -367,7 +367,7 @@ export function RivalPredictionsTab({
               <div key={row.userId}>
                 {groupHeaders.has(i) && (
                   <div className="border-t border-ps-border/50 bg-ps-bg px-4 py-1.5">
-                    <span className="font-mono text-[10px] font-bold uppercase tracking-[0.12em] text-ps-text-ter">
+                    <span className="font-mono text-micro font-bold uppercase tracking-[0.12em] text-ps-text-ter">
                       {groupHeaders.get(i)}
                     </span>
                   </div>
@@ -382,7 +382,7 @@ export function RivalPredictionsTab({
 
             {/* Scroll hint when list is long */}
             {sortedPredictions.length > 8 && (
-              <div className="border-t border-ps-border/50 px-4 py-2.5 text-center text-[11px] font-medium text-ps-text-ter">
+              <div className="border-t border-ps-border/50 px-4 py-2.5 text-center text-caption font-medium text-ps-text-ter">
                 {t("rivals.scroll_more", {
                   count: predictions.length - 8,
                 })}
@@ -485,7 +485,7 @@ function PredictionRow({
         >
           {/* Rank */}
           <span
-            className={`w-4 shrink-0 text-center text-[11px] font-semibold ${
+            className={`w-4 shrink-0 text-center text-caption font-semibold ${
               row.isSelf ? "text-ps-amber" : "text-ps-text-ter"
             }`}
           >
@@ -494,7 +494,7 @@ function PredictionRow({
 
           {/* Avatar */}
           <div
-            className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-[11px] font-bold ${
+            className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-caption font-bold ${
               row.isSelf
                 ? "border-[1.5px] border-ps-amber bg-ps-amber-soft text-ps-text"
                 : "border-[1.5px] border-ps-border bg-ps-bg text-ps-text"
@@ -506,14 +506,14 @@ function PredictionRow({
           {/* Name + badges */}
           <div className="flex min-w-0 flex-1 items-center gap-1.5">
             <span
-              className={`truncate text-[13px] font-medium ${
+              className={`truncate text-body font-medium ${
                 noPick ? "text-ps-text-ter" : "text-ps-text"
               }`}
             >
               {row.displayName}
             </span>
             {row.isSelf && (
-              <span className="shrink-0 rounded bg-ps-amber px-1.5 py-px text-[9px] font-bold uppercase tracking-[0.06em] text-ps-text">
+              <span className="shrink-0 rounded bg-ps-amber px-1.5 py-px text-micro font-bold uppercase tracking-[0.06em] text-ps-text">
                 You
               </span>
             )}
@@ -532,7 +532,7 @@ function PredictionRow({
             </span>
           ) : (
             <span
-              className={`max-w-[120px] truncate text-[13px] font-semibold ${
+              className={`max-w-[120px] truncate text-body font-semibold ${
                 isPending ? "font-medium text-ps-text-sec" : "text-ps-text"
               }`}
             >
@@ -587,7 +587,7 @@ function PredictionRow({
 
           {/* Outcome label */}
           <span
-            className={`text-[12px] font-semibold ${
+            className={`text-caption font-semibold ${
               isExact
                 ? "text-[#00c87a]"
                 : isCorrect
@@ -611,13 +611,13 @@ function PredictionRow({
           {/* Predicted score */}
           {row.exactScore ? (
             <div className="flex items-center gap-1.5">
-              <span className="text-[11px] text-ps-text-sec">{t("rivals.predicted_score")}</span>
-              <span className="font-mono text-[15px] font-bold text-ps-text">
+              <span className="text-caption text-ps-text-sec">{t("rivals.predicted_score")}</span>
+              <span className="font-mono text-item-label font-bold text-ps-text">
                 {row.exactScore.home}–{row.exactScore.away}
               </span>
             </div>
           ) : (
-            <span className="text-[12px] text-ps-text-ter italic">
+            <span className="text-caption text-ps-text-ter italic">
               {t("rivals.no_score_predicted")}
             </span>
           )}
@@ -669,7 +669,7 @@ const CONFIDENCE_COLORS = [
 function ConfidenceDot({ level, onMount }: { level: number; onMount?: () => void }) {
   useEffect(() => { onMount?.(); }, []); // eslint-disable-line react-hooks/exhaustive-deps
   const idx = Math.max(0, Math.min(level - 1, CONFIDENCE_COLORS.length - 1));
-  const sizeClass = level === 5 ? "h-[18px] px-2 text-[10px]" : "h-4 px-1.5 text-[9px]";
+  const sizeClass = level === 5 ? "h-[18px] px-2 text-micro" : "h-4 px-1.5 text-micro";
   return (
     <span
       className={`inline-flex shrink-0 items-center rounded-full font-bold uppercase tracking-tight text-white ${sizeClass} ${CONFIDENCE_COLORS[idx]}`}

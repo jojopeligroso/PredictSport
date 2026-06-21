@@ -72,7 +72,7 @@ export function JoinCutoffBanner({
           <button
             type="button"
             onClick={handleDismiss}
-            className="absolute right-2 top-2 flex h-5 w-5 items-center justify-center rounded-full text-[10px] opacity-40 transition-opacity hover:opacity-70"
+            className="absolute right-2 top-2 flex h-5 w-5 items-center justify-center rounded-full text-micro opacity-40 transition-opacity hover:opacity-70"
             style={{ color: "var(--ps-text-sec, #5e554a)" }}
             aria-label="Dismiss"
           >
@@ -94,7 +94,7 @@ export function JoinCutoffBanner({
           }}
         >
           <span
-            className="inline-flex h-4 w-4 shrink-0 items-center justify-center rounded-full text-[10px] font-extrabold"
+            className="inline-flex h-4 w-4 shrink-0 items-center justify-center rounded-full text-micro font-extrabold"
             style={{ background: CHROME_PALETTE.warning, color: "#191512" }}
             aria-hidden="true"
           >
@@ -120,7 +120,7 @@ export function JoinCutoffBanner({
         }}
       >
         <span
-          className="inline-flex h-4 w-4 shrink-0 items-center justify-center rounded-full text-[10px] font-extrabold"
+          className="inline-flex h-4 w-4 shrink-0 items-center justify-center rounded-full text-micro font-extrabold"
           style={{ background: CHROME_PALETTE.warning, color: "#191512" }}
           aria-hidden="true"
         >

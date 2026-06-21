@@ -16,12 +16,12 @@ export function PersonaCallout({
     return (
       <div className="bg-ps-amber-soft rounded-lg px-[11px] py-2">
         <p
-          className="font-bold uppercase text-ps-amber-deep mb-0.5"
-          style={{ fontSize: 9, letterSpacing: '0.06em' }}
+          className="text-micro font-bold uppercase text-ps-amber-deep mb-0.5"
+          style={{ letterSpacing: '0.06em' }}
         >
           {calloutLabel}
         </p>
-        <p className="font-serif text-ps-text italic" style={{ fontSize: 12 }}>
+        <p className="text-caption font-serif text-ps-text italic">
           {fact}
         </p>
       </div>
@@ -34,12 +34,12 @@ export function PersonaCallout({
       style={{ borderLeft: '3px solid var(--ps-amber)' }}
     >
       <p
-        className="font-bold uppercase text-ps-amber-deep mb-0.5"
-        style={{ fontSize: 9, letterSpacing: '0.06em' }}
+        className="text-micro font-bold uppercase text-ps-amber-deep mb-0.5"
+        style={{ letterSpacing: '0.06em' }}
       >
         {calloutLabel}
       </p>
-      <p className="font-serif text-ps-text italic" style={{ fontSize: 12 }}>
+      <p className="text-caption font-serif text-ps-text italic">
         {fact}
       </p>
     </div>

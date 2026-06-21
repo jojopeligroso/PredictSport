@@ -142,7 +142,7 @@ function BackToAllGroups({
   return (
     <button
       onClick={onClick}
-      className={`flex items-center gap-1.5 rounded-full bg-ps-amber px-3.5 py-2 font-mono text-[11px] font-bold uppercase tracking-[0.08em] text-white transition-colors hover:bg-ps-amber/85 ${className}`}
+      className={`flex items-center gap-1.5 rounded-full bg-ps-amber px-3.5 py-2 font-mono text-caption font-bold uppercase tracking-[0.08em] text-white transition-colors hover:bg-ps-amber/85 ${className}`}
     >
       <svg
         className="h-3.5 w-3.5"
@@ -188,7 +188,7 @@ function AccordionPanel({
 
   return (
     <div className="mt-3">
-      <p className="mb-2 font-mono text-[11px] font-extrabold uppercase tracking-[0.12em] text-ps-text">
+      <p className="mb-2 font-mono text-caption font-extrabold uppercase tracking-[0.12em] text-ps-text">
         {t('groups.group_matches', { groupId })}
       </p>
       <WindowPickList
@@ -211,7 +211,7 @@ function AccordionPanel({
 function GroupTable({ standings }: { standings: TeamWithStats[] }) {
   const t = useT();
   const thClass =
-    "pb-2 text-center font-mono text-[11px] font-semibold text-ps-text-ter";
+    "pb-2 text-center font-mono text-caption font-semibold text-ps-text-ter";
 
   function positionStyle(pos: number) {
     if (pos <= 2) return { bg: "bg-ps-green-soft", badge: "bg-ps-green text-white" };
@@ -248,12 +248,12 @@ function GroupTable({ standings }: { standings: TeamWithStats[] }) {
               >
                 <td className="py-2 text-left">
                   <span
-                    className={`inline-flex h-5 w-5 items-center justify-center rounded-full text-[10px] font-semibold ${style.badge}`}
+                    className={`inline-flex h-5 w-5 items-center justify-center rounded-full text-micro font-semibold ${style.badge}`}
                   >
                     {pos}
                   </span>
                 </td>
-                <td className="py-2 text-left font-sans text-[13px] font-semibold text-ps-text">
+                <td className="py-2 text-left font-sans text-body font-semibold text-ps-text">
                   <span className="inline-flex items-center gap-1.5">
                     <CountryFlag shape="pill" name={team.name} size={16} />
                     <span className="hidden min-[360px]:inline">
@@ -290,7 +290,7 @@ function GroupTable({ standings }: { standings: TeamWithStats[] }) {
           })}
         </tbody>
       </table>
-      <div className="mt-2.5 flex flex-wrap items-center gap-x-4 gap-y-1 text-[10px] text-ps-text-ter">
+      <div className="mt-2.5 flex flex-wrap items-center gap-x-4 gap-y-1 text-micro text-ps-text-ter">
         <span className="inline-flex items-center gap-1.5">
           <span className="inline-block h-2.5 w-2.5 rounded-full bg-ps-green" />
           {t('groups.qualifies')}

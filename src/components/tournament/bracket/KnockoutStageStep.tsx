@@ -60,11 +60,11 @@ export default function KnockoutStageStep({
   return (
     <div className="space-y-4">
       <div className="rounded-xl border border-ps-border bg-ps-surface p-4">
-        <p className="font-mono text-[10px] font-bold uppercase tracking-widest text-ps-text-ter">
+        <p className="font-mono text-micro font-bold uppercase tracking-widest text-ps-text-ter">
           Knockout · {roundKey.toUpperCase()}
         </p>
         <div className="mt-1 flex items-baseline justify-between gap-3">
-          <h2 className="text-lg font-extrabold text-ps-text">{roundName}</h2>
+          <h2 className="text-section-title font-extrabold text-ps-text">{roundName}</h2>
           <span className="font-mono text-xs font-semibold text-ps-text-sec">
             {completed}/{total}
           </span>
@@ -91,7 +91,7 @@ export default function KnockoutStageStep({
       {halves.map((half) => (
         <div key={half.label} className="space-y-2">
           {halves.length > 1 && (
-            <h3 className="px-1 text-[10px] font-bold uppercase tracking-widest text-ps-text-ter">
+            <h3 className="px-1 text-micro font-bold uppercase tracking-widest text-ps-text-ter">
               {half.label}
             </h3>
           )}
@@ -165,13 +165,13 @@ function KnockoutMatchRow({
   return (
     <div className="rounded-xl border border-ps-border bg-ps-surface p-2.5">
       <div className="mb-1.5 flex items-center gap-2">
-        <span className="font-mono text-[10px] font-bold text-ps-text-ter">
+        <span className="font-mono text-micro font-bold text-ps-text-ter">
           M{matchNumber}
         </span>
-        <span className="text-[10px] text-ps-text-ter" aria-hidden>
+        <span className="text-micro text-ps-text-ter" aria-hidden>
           •
         </span>
-        <span className="font-mono text-[10px] text-ps-text-ter">{slotId}</span>
+        <span className="font-mono text-micro text-ps-text-ter">{slotId}</span>
       </div>
       {bothReady ? (
         <div className="flex items-center gap-2">
@@ -181,7 +181,7 @@ function KnockoutMatchRow({
             onClick={() => onPick(home)}
             pickColor={pickColor}
           />
-          <span className="shrink-0 font-mono text-[10px] uppercase tracking-widest text-ps-text-ter">
+          <span className="shrink-0 font-mono text-micro uppercase tracking-widest text-ps-text-ter">
             vs
           </span>
           <TeamPickButton
@@ -192,7 +192,7 @@ function KnockoutMatchRow({
           />
         </div>
       ) : (
-        <p className="py-2 text-center text-[11px] text-ps-text-ter">
+        <p className="py-2 text-center text-caption text-ps-text-ter">
           Waiting for previous-round picks
         </p>
       )}

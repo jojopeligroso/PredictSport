@@ -17,7 +17,7 @@ export function BracketVersionFooter({
 }: BracketVersionFooterProps) {
   return (
     <div className={`mt-8 flex justify-center ${className}`}>
-      <span className="inline-flex items-center gap-1.5 rounded-full bg-ps-chip px-3 py-1 font-mono text-[10px] font-bold uppercase tracking-widest text-ps-text-ter">
+      <span className="inline-flex items-center gap-1.5 rounded-full bg-ps-chip px-3 py-1 font-mono text-micro font-bold uppercase tracking-widest text-ps-text-ter">
         <span>v{versionNumber}</span>
         <span aria-hidden>·</span>
         <span>{status}</span>

@@ -204,7 +204,7 @@ export function ChatMessage({
       <div className={`flex gap-2 py-1 ${isOwn ? "flex-row-reverse" : "flex-row"}`}>
         <div className={`max-w-[75%] ${isOwn ? "items-end" : "items-start"}`}>
           {!isOwn && (
-            <p className="text-[10px] font-semibold text-ps-text-ter mb-0.5 ml-1">
+            <p className="text-micro font-semibold text-ps-text-ter mb-0.5 ml-1">
               {message.display_name}
             </p>
           )}
@@ -212,7 +212,7 @@ export function ChatMessage({
             <p className="text-xs text-ps-text-ter italic">{message.content}</p>
           </div>
           <div className={`mt-0.5 ${isOwn ? "text-right mr-1" : "ml-1"}`}>
-            <span className="text-[10px] text-ps-text-ter">
+            <span className="text-micro text-ps-text-ter">
               {formatMessageTime(message.created_at, locale)}
             </span>
           </div>
@@ -258,14 +258,14 @@ export function ChatMessage({
         >
           {/* Sender name — only on first in group */}
           {showName && (
-            <p className={`truncate text-[10px] font-semibold text-ps-text-sec mb-0.5 ${isOwn ? "text-right mr-1" : "ml-1"}`}>
+            <p className={`truncate text-caption font-semibold text-ps-text-sec mb-0.5 ${isOwn ? "text-right mr-1" : "ml-1"}`}>
               {message.display_name}
             </p>
           )}
 
           <div
             ref={bubbleEl}
-            className={`rounded-2xl px-3 py-1.5 text-sm transition-all duration-150 ${
+            className={`rounded-2xl px-3 py-1.5 text-body transition-all duration-150 ${
               pressing ? "scale-[0.97] opacity-80" : ""
             } ${
               isOwn
@@ -288,10 +288,10 @@ export function ChatMessage({
                   isOwn ? "bg-ps-amber/10" : "bg-ps-bg/50"
                 }`}
               >
-                <p className="text-[10px] font-semibold text-ps-amber truncate">
+                <p className="text-micro font-semibold text-ps-amber truncate">
                   {message.reply_preview.display_name}
                 </p>
-                <p className="text-[11px] text-ps-text-sec truncate">
+                <p className="text-caption text-ps-text-sec truncate">
                   {message.reply_preview.media_type
                     ? message.reply_preview.media_type === "gif" ? t("chat.gif") : t("chat.photo")
                     : message.reply_preview.content}
@@ -358,12 +358,12 @@ export function ChatMessage({
               }`}
             >
               {showTimestamp && (
-                <span className="text-[10px] text-ps-text-ter">
+                <span className="text-micro text-ps-text-ter">
                   {formatMessageTime(message.created_at, locale)}
                 </span>
               )}
               {isEdited && showTimestamp && (
-                <span className="text-[10px] text-ps-text-ter italic">
+                <span className="text-micro text-ps-text-ter italic">
                   {t("chat.edited")}
                 </span>
               )}
@@ -374,7 +374,7 @@ export function ChatMessage({
                   {canReply && (
                     <button
                       onClick={() => onReply?.(message)}
-                      className="text-[10px] text-ps-text-ter hover:text-ps-text"
+                      className="text-micro text-ps-text-ter hover:text-ps-text"
                     >
                       {t("chat.action_reply")}
                     </button>
@@ -382,7 +382,7 @@ export function ChatMessage({
                   {canEdit && (
                     <button
                       onClick={handleStartEdit}
-                      className="text-[10px] text-ps-text-ter hover:text-ps-text"
+                      className="text-micro text-ps-text-ter hover:text-ps-text"
                     >
                       {t("chat.action_edit")}
                     </button>
@@ -390,7 +390,7 @@ export function ChatMessage({
                   {canDelete && (
                     <button
                       onClick={() => onDelete?.(message.id)}
-                      className="text-[10px] text-ps-text-ter hover:text-ps-red"
+                      className="text-micro text-ps-text-ter hover:text-ps-red"
                     >
                       {t("chat.action_delete")}
                     </button>
@@ -522,7 +522,7 @@ function ChatActionSheet({
 
         {/* Message preview */}
         <div className="mx-4 mb-2 rounded-xl bg-ps-chip/50 px-3 py-2">
-          <p className="text-[11px] font-semibold text-ps-text-sec truncate">
+          <p className="text-caption font-semibold text-ps-text-sec truncate">
             {message.display_name}
           </p>
           <p className="text-xs text-ps-text-ter truncate mt-0.5">

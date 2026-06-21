@@ -49,12 +49,11 @@ export function EmojiReactions({ reactions, onReact }: EmojiReactionsProps) {
           key={emoji}
           type="button"
           onClick={() => onReact(emoji)}
-          className="inline-flex items-center gap-0.5 px-2.5 py-1.5 rounded-full border border-ps-border bg-ps-amber-soft text-ps-text transition-colors hover:border-ps-amber"
-          style={{ fontSize: 13 }}
+          className="inline-flex items-center gap-0.5 px-2.5 py-1.5 rounded-full border border-ps-border bg-ps-amber-soft text-body text-ps-text transition-colors hover:border-ps-amber"
           aria-label={`React with ${emoji}, ${count} reaction${count !== 1 ? 's' : ''}`}
         >
           <span>{emoji}</span>
-          <span className="text-ps-text-sec" style={{ fontSize: 11 }}>
+          <span className="text-caption text-ps-text-sec">
             {count}
           </span>
         </button>
@@ -66,8 +65,7 @@ export function EmojiReactions({ reactions, onReact }: EmojiReactionsProps) {
         onClick={() => setPickerOpen((v) => !v)}
         aria-label="Add reaction"
         aria-expanded={pickerOpen}
-        className="inline-flex items-center justify-center w-8 h-8 rounded-full border border-ps-border bg-ps-chip text-ps-text-sec hover:border-ps-border-strong hover:text-ps-text transition-colors"
-        style={{ fontSize: 14 }}
+        className="inline-flex items-center justify-center w-8 h-8 rounded-full border border-ps-border bg-ps-chip text-body text-ps-text-sec hover:border-ps-border-strong hover:text-ps-text transition-colors"
       >
         +
       </button>
@@ -86,8 +84,7 @@ export function EmojiReactions({ reactions, onReact }: EmojiReactionsProps) {
                 type="button"
                 onClick={() => handleReact(emoji)}
                 aria-label={`React with ${emoji}`}
-                className="flex items-center justify-center w-8 h-8 rounded-lg hover:bg-ps-chip transition-colors"
-                style={{ fontSize: 18 }}
+                className="flex items-center justify-center w-8 h-8 rounded-lg text-section-title hover:bg-ps-chip transition-colors"
               >
                 {emoji}
               </button>

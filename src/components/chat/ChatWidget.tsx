@@ -412,7 +412,7 @@ export function ChatWidget({
               <div key={msg.id}>
                 {showDateSeparator && (
                   <div className="flex items-center justify-center py-2">
-                    <span className="text-[10px] uppercase tracking-wide text-ps-text-ter">
+                    <span className="text-micro uppercase tracking-wide text-ps-text-ter">
                       {formatDateSeparator(msg.created_at)}
                     </span>
                   </div>
@@ -464,10 +464,10 @@ export function ChatWidget({
             {replyTo && (
               <div className="flex items-center gap-2 mb-2 rounded-lg bg-ps-chip/50 px-3 py-1.5 border-l-2 border-ps-amber">
                 <div className="flex-1 min-w-0">
-                  <p className="text-[10px] font-semibold text-ps-amber truncate">
+                  <p className="text-micro font-semibold text-ps-amber truncate">
                     {replyTo.display_name}
                   </p>
-                  <p className="text-[11px] text-ps-text-sec truncate">
+                  <p className="text-caption text-ps-text-sec truncate">
                     {replyTo.media_url
                       ? replyTo.media_type === "gif" ? t('chat.gif') : t('chat.photo')
                       : replyTo.content}
@@ -542,7 +542,7 @@ export function ChatWidget({
               <button
                 onClick={handleSend}
                 disabled={(!inputValue.trim() && !mediaPreview) || isSending || isUploading}
-                className="self-end rounded-xl bg-ps-amber px-3 py-1.5 text-sm font-bold text-ps-bg hover:opacity-90 disabled:opacity-40"
+                className="self-end rounded-xl bg-ps-amber px-3 py-1.5 text-sm font-bold text-ps-bg hover:opacity-90 disabled:opacity-40 tap-target"
               >
                 {isUploading ? "..." : isSending ? "..." : t('chat.send')}
               </button>

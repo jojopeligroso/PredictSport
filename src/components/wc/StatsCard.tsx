@@ -115,7 +115,7 @@ export function StatsCard({
     <div className="flex gap-2">
       {/* Rank */}
       <div className={`w-[88px] shrink-0 ${CARD_BASE}`}>
-        <p className="font-display text-2xl font-extrabold tabular-nums leading-none text-ps-amber">
+        <p className="font-display text-page-title font-extrabold tabular-nums leading-none text-ps-amber">
           {rank != null ? formatOrdinal(rank, locale) : "\u2014"}
         </p>
         <p className="mt-1 text-xs font-medium text-ps-text-sec">{t('stats.your_rank')}</p>
@@ -124,7 +124,7 @@ export function StatsCard({
 
       {/* Points */}
       <div className={`w-[88px] shrink-0 ${CARD_BASE}`}>
-        <p className="font-display text-2xl font-extrabold tabular-nums leading-none text-ps-text">
+        <p className="font-display text-page-title font-extrabold tabular-nums leading-none text-ps-text">
           {points}
         </p>
         <p className="mt-1 text-xs font-medium text-ps-text-sec">{t('stats.points')}</p>
@@ -151,7 +151,7 @@ export function StatsCard({
             {!flipped ? (
               /* Front: Outcome accuracy */
               <>
-                <p className="font-display text-2xl font-extrabold tabular-nums leading-none text-ps-green">
+                <p className="font-display text-page-title font-extrabold tabular-nums leading-none text-ps-green">
                   {hasOutcome ? `${accuracy.user!.pct}%` : "\u2014"}
                 </p>
                 <p className="mt-1 text-xs font-medium text-ps-text-sec">
@@ -166,7 +166,7 @@ export function StatsCard({
             ) : (
               /* Back: Exact score accuracy */
               <>
-                <p className="font-display text-2xl font-extrabold tabular-nums leading-none text-ps-amber">
+                <p className="font-display text-page-title font-extrabold tabular-nums leading-none text-ps-amber">
                   {hasScore ? `${accuracy.userScore!.pct}%` : "\u2014"}
                 </p>
                 <p className="mt-1 text-xs font-medium text-ps-text-sec">

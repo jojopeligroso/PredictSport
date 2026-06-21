@@ -72,7 +72,7 @@ export function RivalTeaser({ competitionId }: Props) {
         <p className="text-xs font-bold text-ps-text-sec">
           {t("rivals.group_picks")}
         </p>
-        <p className="mt-px truncate text-[11px] text-ps-text-ter">{fixtureName}</p>
+        <p className="mt-px truncate text-caption text-ps-text-ter">{fixtureName}</p>
       </div>
 
       {/* Prediction rows — group members only (excluding self) */}
@@ -123,7 +123,7 @@ export function RivalTeaser({ competitionId }: Props) {
               {row.displayName}
             </span>
             {noPick ? (
-              <span className="text-[11px] italic text-ps-text-ter">
+              <span className="text-caption italic text-ps-text-ter">
                 {t("rivals.no_prediction")}
               </span>
             ) : (
@@ -136,7 +136,7 @@ export function RivalTeaser({ competitionId }: Props) {
               </span>
             )}
             <div
-              className={`flex h-5 min-w-[26px] items-center justify-center rounded-[10px] px-1.5 text-[11px] font-bold ${pillClass}`}
+              className={`flex h-5 min-w-[26px] items-center justify-center rounded-[10px] px-1.5 text-caption font-bold ${pillClass}`}
             >
               {row.totalPoints}
             </div>
@@ -148,7 +148,7 @@ export function RivalTeaser({ competitionId }: Props) {
       <div className="border-t border-ps-border/50 px-3.5 py-2.5">
         <Link
           href={`/wc/leaderboard?tab=rivals&eventId=${event.eventId}`}
-          className="flex items-center gap-1 text-[13px] font-semibold text-ps-amber"
+          className="flex items-center gap-1 text-body font-semibold text-ps-amber"
         >
           {t("rivals.see_all_predictions", { count: totalMembers })}
           <svg

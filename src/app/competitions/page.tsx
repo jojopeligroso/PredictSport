@@ -179,7 +179,7 @@ export default async function CompetitionsPage() {
       {/* Header */}
       <div className="mb-6 flex items-center justify-between">
         <div>
-          <p className="text-[10px] font-extrabold tracking-widest uppercase text-ps-text-ter">
+          <p className="text-micro font-extrabold tracking-widest uppercase text-ps-text-ter">
             Your Competitions
           </p>
           <h1 className="font-display font-extrabold text-2xl uppercase tracking-tight text-ps-text leading-none mt-0.5">
@@ -203,13 +203,13 @@ export default async function CompetitionsPage() {
         className="mb-4 flex items-center justify-between rounded-2xl border border-ps-border bg-ps-surface px-4 py-3.5 shadow-[0_1px_2px_rgba(40,30,20,0.04)] transition-all hover:border-ps-border-strong active:scale-[0.98]"
       >
         <div>
-          <p className="text-[10px] font-extrabold tracking-widest uppercase text-ps-text-ter">
+          <p className="text-micro font-extrabold tracking-widest uppercase text-ps-text-ter">
             Personal
           </p>
           <p className="text-sm font-extrabold text-ps-text leading-snug">
             My Personal Predictions
           </p>
-          <p className="mt-0.5 text-[11.5px] font-semibold text-ps-text-sec">
+          <p className="mt-0.5 text-caption font-semibold text-ps-text-sec">
             Pick outcomes on any fixture — no competition needed
           </p>
         </div>
@@ -262,7 +262,7 @@ export default async function CompetitionsPage() {
                       )}
                     </p>
                   </div>
-                  <span className="shrink-0 rounded-full bg-ps-amber px-2.5 py-1 text-[10px] font-extrabold text-[#1a1208]">
+                  <span className="shrink-0 rounded-full bg-ps-amber px-2.5 py-1 text-micro font-extrabold text-[#1a1208]">
                     {overdueCount}
                   </span>
                 </Link>
@@ -316,7 +316,7 @@ export default async function CompetitionsPage() {
                       className="w-5 h-5"
                     />
                     <span
-                      className={`inline-flex items-center gap-1.5 rounded-full px-2 py-0.5 text-[9.5px] font-extrabold tracking-wide uppercase ${
+                      className={`inline-flex items-center gap-1.5 rounded-full px-2 py-0.5 text-micro font-extrabold tracking-wide uppercase ${
                         isActive
                           ? "bg-ps-green-soft text-ps-green"
                           : isDraft
@@ -345,7 +345,7 @@ export default async function CompetitionsPage() {
                 {/* Body: active vs draft vs other */}
                 {isActive && roundCount > 0 ? (
                   <div className="mt-3">
-                    <div className="flex items-center gap-2 text-[11.5px] font-semibold text-ps-text-sec">
+                    <div className="flex items-center gap-2 text-caption font-semibold text-ps-text-sec">
                       <span>Round {latestRound}</span>
                       {nextLock && (
                         <>
@@ -366,7 +366,7 @@ export default async function CompetitionsPage() {
                         style={{ width: `${Math.min(100, (latestRound / Math.max(roundCount, 1)) * 100)}%` }}
                       />
                     </div>
-                    <div className="mt-1.5 flex justify-between text-[10.5px] font-semibold text-ps-text-ter">
+                    <div className="mt-1.5 flex justify-between text-micro font-semibold text-ps-text-ter">
                       <span>{roundCount} round{roundCount !== 1 ? "s" : ""} total</span>
                       <span>Round {latestRound} of {roundCount}</span>
                     </div>
@@ -376,12 +376,12 @@ export default async function CompetitionsPage() {
                     <span className="text-xs font-bold text-ps-amber-deep leading-snug flex-1">
                       No rounds yet. Add the first round to send it live.
                     </span>
-                    <span className="shrink-0 rounded-lg bg-[#f59e0b] px-2.5 py-1 text-[10px] font-extrabold text-[#1a1208]">
+                    <span className="shrink-0 rounded-lg bg-[#f59e0b] px-2.5 py-1 text-micro font-extrabold text-[#1a1208]">
                       Add round
                     </span>
                   </div>
                 ) : (
-                  <div className="mt-2 text-[11.5px] font-semibold text-ps-text-ter">
+                  <div className="mt-2 text-caption font-semibold text-ps-text-ter">
                     {roundCount} {roundCount === 1 ? "round" : "rounds"} played
                   </div>
                 )}
@@ -394,7 +394,7 @@ export default async function CompetitionsPage() {
       {/* Discover public competitions */}
       {discoverComps.length > 0 && (
         <div className="mt-8">
-          <p className="mb-3 text-[10px] font-extrabold tracking-widest uppercase text-ps-text-ter">
+          <p className="mb-3 text-micro font-extrabold tracking-widest uppercase text-ps-text-ter">
             Discover
           </p>
           <div className="flex flex-col gap-3 md:grid md:grid-cols-2 md:gap-4">
@@ -406,7 +406,7 @@ export default async function CompetitionsPage() {
                   className="rounded-2xl border border-ps-border bg-ps-surface p-4 shadow-[0_1px_2px_rgba(40,30,20,0.04)]"
                 >
                   <div className="flex items-center justify-between mb-2">
-                    <span className="inline-flex items-center gap-1.5 rounded-full bg-ps-green-soft px-2 py-0.5 text-[9.5px] font-extrabold tracking-wide uppercase text-ps-green">
+                    <span className="inline-flex items-center gap-1.5 rounded-full bg-ps-green-soft px-2 py-0.5 text-micro font-extrabold tracking-wide uppercase text-ps-green">
                       <span className="h-1.5 w-1.5 rounded-full bg-ps-green" />
                       active
                     </span>

@@ -104,7 +104,7 @@ export function FoldedBracket({
         {/* Caption (display name) */}
         {caption && (
           <div className="border-b border-ps-border bg-ps-bg/60 px-4 py-2 text-center">
-            <span className="font-mono text-[10px] font-bold uppercase tracking-widest text-ps-text-ter">
+            <span className="font-mono text-micro font-bold uppercase tracking-widest text-ps-text-ter">
               {caption}
             </span>
           </div>
@@ -155,7 +155,7 @@ export function FoldedBracket({
           {/* Vertical label */}
           <span
             aria-hidden
-            className="flex flex-col items-center gap-1 font-mono text-[9px] font-bold uppercase tracking-widest"
+            className="flex flex-col items-center gap-1 font-mono text-micro font-bold uppercase tracking-widest"
           >
             {side === "A" ? (
               <>
@@ -201,7 +201,7 @@ export function FoldedBracket({
       />
 
       {/* Hint */}
-      <p className="mt-2 text-center font-mono text-[10px] uppercase tracking-widest text-ps-text-ter">
+      <p className="mt-2 text-center font-mono text-micro uppercase tracking-widest text-ps-text-ter">
         Swipe or tap the tab to flip
       </p>
     </div>
@@ -251,10 +251,10 @@ function BracketSide({
   return (
     <div className="w-1/2 shrink-0 px-3 py-4">
       <div className="mb-2 flex items-center justify-between">
-        <span className="font-mono text-[10px] font-bold uppercase tracking-widest text-ps-text-ter">
+        <span className="font-mono text-micro font-bold uppercase tracking-widest text-ps-text-ter">
           Side {sideLabel}
         </span>
-        <span className="font-mono text-[10px] font-bold uppercase tracking-widest text-ps-text-ter">
+        <span className="font-mono text-micro font-bold uppercase tracking-widest text-ps-text-ter">
           {groupIds[0]}–{groupIds[groupIds.length - 1]}
         </span>
       </div>
@@ -326,11 +326,11 @@ function GroupCard({
   return (
     <div className="rounded-md border border-ps-border bg-ps-bg p-1.5">
       <div className="mb-1 flex items-center justify-between">
-        <span className="font-mono text-[9px] font-bold uppercase tracking-wider text-ps-text-ter">
+        <span className="font-mono text-micro font-bold uppercase tracking-wider text-ps-text-ter">
           Grp {groupId}
         </span>
         {ranking.length === 4 && (
-          <span className="font-mono text-[8px] font-bold text-ps-green">✓</span>
+          <span className="font-mono text-micro font-bold text-ps-green">✓</span>
         )}
       </div>
       <ol className="space-y-0.5">
@@ -344,7 +344,7 @@ function GroupCard({
                   : "text-ps-text-ter"
                 : "text-ps-text-ter line-through decoration-ps-text-ter/60";
           return (
-            <li key={`${team}-${i}`} className={`flex items-center gap-1 text-[10px] ${colour}`}>
+            <li key={`${team}-${i}`} className={`flex items-center gap-1 text-micro ${colour}`}>
               <span className="font-mono w-2 shrink-0">{i + 1}</span>
               <CountryFlag shape="pill" name={team} size={10} />
               <span className="truncate">{team}</span>
@@ -371,7 +371,7 @@ function BracketColumn({
 }) {
   return (
     <div>
-      <p className="mb-0.5 font-mono text-[9px] font-bold uppercase tracking-widest text-ps-text-ter">
+      <p className="mb-0.5 font-mono text-micro font-bold uppercase tracking-widest text-ps-text-ter">
         {label}
       </p>
       <div className={`flex flex-col ${compact ? "gap-0.5" : "gap-1"}`}>
@@ -384,18 +384,18 @@ function BracketColumn({
               className="rounded border border-ps-border bg-ps-bg px-1.5 py-0.5"
             >
               {winner ? (
-                <div className="flex items-center gap-1 text-[10px] font-semibold text-ps-text">
+                <div className="flex items-center gap-1 text-micro font-semibold text-ps-text">
                   <CountryFlag shape="pill" name={winner} size={10} />
                   <span className="truncate">{winner}</span>
                 </div>
               ) : matchup ? (
-                <div className="text-[9px] text-ps-text-ter">
+                <div className="text-micro text-ps-text-ter">
                   <span className="truncate">{matchup.home || "?"}</span>
                   <span className="mx-1 opacity-50">v</span>
                   <span className="truncate">{matchup.away || "?"}</span>
                 </div>
               ) : (
-                <div className="text-[9px] text-ps-text-ter">—</div>
+                <div className="text-micro text-ps-text-ter">—</div>
               )}
             </div>
           );
@@ -417,7 +417,7 @@ function ChampionSeam({
   if (!champion && !runnerUp && !thirdPlace) return null;
   return (
     <div className="mt-3 rounded-xl border-2 border-ps-amber/40 bg-gradient-to-br from-ps-amber/10 to-ps-amber/5 px-4 py-3 text-center">
-      <p className="font-mono text-[10px] font-bold uppercase tracking-widest text-ps-amber">
+      <p className="font-mono text-micro font-bold uppercase tracking-widest text-ps-amber">
         Final → Champion
       </p>
       {champion ? (
@@ -431,12 +431,12 @@ function ChampionSeam({
         </p>
       )}
       {runnerUp && (
-        <p className="mt-1 font-mono text-[10px] text-ps-text-sec">
+        <p className="mt-1 font-mono text-micro text-ps-text-sec">
           Runner-up: <span className="font-semibold text-ps-text">{runnerUp}</span>
         </p>
       )}
       {thirdPlace && (
-        <p className="mt-1 font-mono text-[10px] text-ps-text-sec">
+        <p className="mt-1 font-mono text-micro text-ps-text-sec">
           3rd place: <span className="font-semibold text-ps-text">{thirdPlace}</span>
         </p>
       )}

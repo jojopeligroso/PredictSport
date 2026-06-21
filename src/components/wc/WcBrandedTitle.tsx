@@ -52,7 +52,7 @@ export function WcBrandedTitle({
           className="wc-mark h-11 w-auto shrink-0"
         />
         <div className="-mt-1 flex-1">
-          <h1 className="font-display text-xl font-extrabold leading-tight text-ps-text">
+          <h1 className="font-display text-section-title font-extrabold leading-tight text-ps-text">
             {title}
           </h1>
           {subtitle && (

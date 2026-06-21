@@ -1,39 +1,28 @@
 "use client";
 
-import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { useT } from "@/lib/i18n";
-import { computeDayStatus, formatLockCountdown } from "@/lib/wc/daily-lock";
 import { getTimingForSport } from "@/lib/sports/timing";
-import { CHROME_PALETTE } from "@/app/wc/_landing/brand-palette";
-import type { DatePillSummary } from "./fetchDashboardData";
-import { DashboardPickRow } from "@/components/wc/DashboardPickRow";
-import { GroupMiniTable } from "@/components/wc/GroupMiniTable";
-import { FifaGroupsGrid } from "@/components/wc/FifaGroupsGrid";
-import { StatsCard } from "@/components/wc/StatsCard";
-import { InviteCodeBanner } from "@/components/InviteCodeBanner";
-import {
-  DashboardResultCard,
-  computeMatchdaySummary,
-  computeMovement,
-} from "@/components/wc/DashboardResultCard";
-import {
-  OnboardingFlow,
-  OnboardingSection,
-} from "@/components/wc/OnboardingFlow";
+import { OnboardingFlow } from "@/components/wc/OnboardingFlow";
+import { PredictionBanner } from "@/components/wc/PredictionBanner";
+import { useLiveModeToggle } from "@/hooks/useLiveMode";
+import { isEventLive, getPickStatus, hasCompletePick } from "./dashboard-utils";
+import type { PickStatus } from "./dashboard-utils";
 import type { WindowEvent } from "@/app/wc/picks/[windowId]/WindowPickList";
 import type { WcFixture } from "@/lib/wc/fixtures";
 import type { Prediction } from "@/types/database";
-import type { ResultRow, LastChatMessage } from "./fetchDashboardData";
+import type { DatePillSummary, ResultRow, LastChatMessage } from "./fetchDashboardData";
 import type { TeamWithStats } from "@/lib/tournament/bracket/types";
-import { PredictionBanner } from "@/components/wc/PredictionBanner";
-import { RivalTeaser } from "@/components/wc/RivalTeaser";
-import { CommunityPicksCard } from "@/components/wc/CommunityPicksCard";
-import { LiveModeToggle } from "@/components/wc/LiveModeToggle";
-import { LiveChatDrawer } from "@/components/wc/LiveChatDrawer";
-import { WcJoinCard } from "@/components/wc/WcJoinCard";
-import { useLiveModeToggle } from "@/hooks/useLiveMode";
+import {
+  PicksSection,
+  ProgressStrip,
+  InviteSection,
+  LiveSection,
+  ResultsSection,
+  GroupSection,
+  SocialSection,
+  TournamentSection,
+} from "./DashboardSections";
 
 interface DashboardClientProps {
   competitionId: string;
@@ -62,71 +51,11 @@ interface DashboardClientProps {
   lastChatMessage: LastChatMessage | null;
 }
 
-type PickStatus = "complete" | "urgent" | "unpicked" | "in_progress";
-
-/** Max live window per sport: expected match duration + 1h buffer for result confirmation. */
-function getLiveWindowMs(sport: string): number {
-  const { checkAfterHours } = getTimingForSport(sport);
-  return (checkAfterHours + 1) * 60 * 60 * 1000;
-}
-
-/** Is this event currently live: started, unresolved, and within its sport's live window? */
-function isEventLive(event: WindowEvent): boolean {
-  const startMs = new Date(event.start_time).getTime();
-  const nowMs = Date.now();
-  return startMs <= nowMs && !event.result_confirmed && nowMs < startMs + getLiveWindowMs(event.sport);
-}
-
-function getPickStatus(
-  event: WindowEvent,
-  predictions: Prediction[],
-  liveEnabled: boolean,
-): PickStatus {
-  // In-progress (LIVE): match has started but not yet resulted.
-  // Capped at sport-specific duration (checkAfterHours + 1h buffer) so the
-  // dashboard reverts to idle even if auto-resolve fails completely.
-  // Soccer: 3h, rugby: 3.5h, golf: 9h, etc.
-  // When the user has turned Live mode off, skip this branch so the event
-  // falls through to the locked/"complete" treatment below (the prediction is
-  // already locked because the match is past lock_time — no regression).
-  const lockMs = new Date(event.lock_time).getTime();
-  const startMs = new Date(event.start_time).getTime();
-  const nowMs = Date.now();
-  const liveWindow = getLiveWindowMs(event.sport);
-  if (liveEnabled && startMs <= nowMs && !event.result_confirmed && nowMs < startMs + liveWindow)
-    return "in_progress";
-
-  // Locked: past lock_time but match hasn't started (or live window expired).
-  // No further action possible — treat as complete regardless of pick state.
-  if (lockMs <= nowMs && !event.result_confirmed) return "complete";
-
-  const eventPreds = predictions.filter((p) => p.event_id === event.id);
-  // "Complete" = has both winner and exact_score predictions
-  const hasWinner = eventPreds.some((p) => p.prediction_type === "winner");
-  const hasScore = eventPreds.some((p) => p.prediction_type === "exact_score");
-  if (hasWinner && hasScore) return "complete";
-
-  // Urgent = < 36h to lock
-  if (lockMs - nowMs < 36 * 60 * 60 * 1000 && lockMs > nowMs) return "urgent";
-
-  return "unpicked";
-}
-
-/** Check if user has both winner + exact_score predictions for an event. */
-function hasCompletePick(event: WindowEvent, predictions: Prediction[]): boolean {
-  const eventPreds = predictions.filter((p) => p.event_id === event.id);
-  return (
-    eventPreds.some((p) => p.prediction_type === "winner") &&
-    eventPreds.some((p) => p.prediction_type === "exact_score")
-  );
-}
-
 /**
- * DashboardClient — renders the 7-section Home dashboard.
+ * DashboardClient -- slim orchestrator for the 7-section Home dashboard.
  *
- * Layout follows the approved mockup: hero pick cards (host-city colors),
- * horizontal "at a glance" scroll, group table card, results card, invite
- * row, and bracket strip.
+ * All hooks and computed state live here; section components receive
+ * the computed values as props and own their own JSX.
  */
 export function DashboardClient({
   competitionId,
@@ -154,7 +83,6 @@ export function DashboardClient({
   memberRole,
   lastChatMessage,
 }: DashboardClientProps) {
-  const t = useT();
   const router = useRouter();
   const [expandedEventId, setExpandedEventId] = useState<string | null>(null);
   const [selectedDate, setSelectedDate] = useState<string | null>(null);
@@ -162,7 +90,7 @@ export function DashboardClient({
   const [collapsedLiveIds, setCollapsedLiveIds] = useState<Set<string>>(new Set());
   const [resultsExpanded, setResultsExpanded] = useState(false);
 
-  // Raw "is any match live right now" check (ignores the toggle + date filter) —
+  // Raw "is any match live right now" check (ignores the toggle + date filter) --
   // drives both the Live-mode toggle hook and the live poll gating.
   const liveEventExistsRaw = useMemo(
     () => nextEvents.some(isEventLive),
@@ -198,9 +126,6 @@ export function DashboardClient({
     // Live mode off, so result confirmations clear the live state even if the
     // user keeps the tab open. Turning Live mode off stops the polling.
     const hasLive = liveEnabled && nextEvents.some(isEventLive);
-    // Slow live poll (180s) and only refresh while the tab is foregrounded.
-    // Returning to the tab triggers an immediate refresh via onVisible above,
-    // so the interval only needs to cover users actively watching.
     const interval = hasLive
       ? setInterval(() => {
           if (document.visibilityState === "visible") refreshData();
@@ -215,14 +140,10 @@ export function DashboardClient({
 
   // Active result check: for unconfirmed events past their expected match
   // duration (checkAfterHours), call /api/results/check to try to confirm.
-  // Runs on mount and repeats every 5 min while eligible events exist.
-  // This makes every user with the dashboard open a result-resolution trigger,
-  // so even if the pg_cron and sibling propagation both fail, results still
-  // get confirmed as long as anyone is looking at the dashboard.
+  // Runs on mount and repeats every 15 min while eligible events exist.
   const checkInFlight = useRef(false);
   useEffect(() => {
     async function checkResults() {
-      // Backstop only — don't poll while the tab is backgrounded.
       if (document.visibilityState !== "visible") return;
       const eligible = nextEvents.filter((e) => {
         if (e.result_confirmed) return false;
@@ -232,9 +153,6 @@ export function DashboardClient({
       });
       if (eligible.length === 0 || checkInFlight.current) return;
 
-      // Check only the single soonest-finished eligible event. The 15-min
-      // server cron (/api/results/cron) is the primary confirmation path; this
-      // client check is just a safety net, so one event per cycle is enough.
       const target = [...eligible].sort(
         (a, b) =>
           new Date(a.start_time).getTime() - new Date(b.start_time).getTime(),
@@ -260,14 +178,11 @@ export function DashboardClient({
     }
 
     checkResults();
-    // 15-min cadence, matching the server cron — client is a backstop.
     const interval = setInterval(checkResults, 15 * 60_000);
     return () => clearInterval(interval);
   }, [nextEvents, router]);
 
   // Filter events by selected date pill
-  // No pill selected → original capped nextEvents (unchanged deploy behavior)
-  // Pill selected → all events for that date from pillDateEvents
   const filteredEvents = useMemo(() => {
     if (!selectedDate) return nextEvents;
     return pillDateEvents.filter((e) => {
@@ -277,18 +192,17 @@ export function DashboardClient({
     });
   }, [nextEvents, pillDateEvents, selectedDate]);
 
-  // Does a live event exist in the current view (ignores the toggle)? Drives
-  // whether the Live-mode toggle is shown.
+  // Does a live event exist in the current view (ignores the toggle)?
   const liveEventExists = useMemo(
     () => filteredEvents.some((e) => getPickStatus(e, predictions, true) === "in_progress"),
     [filteredEvents, predictions],
   );
 
-  // Effective live treatment — only when a live event exists AND the user
-  // hasn't turned Live mode off. Replaces the old `hasLiveEvent` flag.
+  // Effective live treatment -- only when a live event exists AND the user
+  // hasn't turned Live mode off.
   const liveMode = liveEventExists && liveEnabled;
 
-  // Count picks progress (in-progress events with complete picks still count as picked)
+  // Count picks progress
   const { picked, total } = useMemo(() => {
     let picked = 0;
     for (const e of filteredEvents) {
@@ -301,27 +215,22 @@ export function DashboardClient({
 
   const now = useNowAfterMount();
 
-  // 6AM-anchored results window — filters server-provided results (last 48h)
-  // to the user's local "sports day" (6AM to 6AM). Runs after mount to avoid
-  // hydration mismatch (server doesn't know the user's timezone).
+  // 6AM-anchored results window
   const windowedResults = useMemo(() => {
     if (recentResults.length === 0) return [];
-    if (!now) return recentResults.slice(0, 3); // SSR: safe default
+    if (!now) return recentResults.slice(0, 3);
 
-    // Compute the most recent local 6AM boundary
     const today6am = new Date(now);
     today6am.setHours(6, 0, 0, 0);
     const anchor = now >= today6am
       ? today6am
       : new Date(today6am.getTime() - 24 * 60 * 60 * 1000);
 
-    // Primary window: anchor → now
     const primary = recentResults.filter(
       (r) => new Date(r.startTime).getTime() >= anchor.getTime(),
     );
     if (primary.length > 0) return primary;
 
-    // Fallback: previous 6AM → anchor
     const prevAnchor = new Date(anchor.getTime() - 24 * 60 * 60 * 1000);
     return recentResults.filter((r) => {
       const t = new Date(r.startTime).getTime();
@@ -329,7 +238,6 @@ export function DashboardClient({
     });
   }, [recentResults, now]);
 
-  /** Max 6 results on dashboard. Show 3 initially, expand to min(total, 6). */
   const RESULTS_INITIAL = 3;
   const RESULTS_MAX = 6;
   const visibleResults = resultsExpanded
@@ -338,8 +246,7 @@ export function DashboardClient({
   const canExpandResults = !resultsExpanded && windowedResults.length > RESULTS_INITIAL;
   const remainingResultsCount = Math.min(windowedResults.length, RESULTS_MAX) - RESULTS_INITIAL;
 
-  // Pre-compute per-result streak length for the visible results.
-  // Streak = consecutive correct winner predictions ending at each result.
+  // Pre-compute per-result streak length
   const streakByExternalId = useMemo(() => {
     const chronological = windowedResults
       .slice()
@@ -351,7 +258,6 @@ export function DashboardClient({
     let running = 0;
     for (const r of chronological) {
       if (r.userWinnerPick === null) {
-        // unpredicted does not break streak, but doesn't extend it
         map.set(r.fixture.externalId, running);
         continue;
       }
@@ -365,9 +271,7 @@ export function DashboardClient({
     return map;
   }, [windowedResults]);
 
-  // "Results coming soon" — events past their expected duration but not yet
-  // confirmed by the cron. Shown when no live events remain and unconfirmed
-  // events exist that should have finished by now.
+  // "Results coming soon" count
   const awaitingResults = useMemo(() => {
     if (!now) return 0;
     const nowMs = now.getTime();
@@ -375,7 +279,6 @@ export function DashboardClient({
       if (e.result_confirmed) return false;
       const startMs = new Date(e.start_time).getTime();
       const { checkAfterHours } = getTimingForSport(e.sport);
-      // Past expected duration but within 24h (stale events shouldn't show)
       const msSinceStart = nowMs - startMs;
       return msSinceStart >= checkAfterHours * 3600000 && msSinceStart < 24 * 3600000;
     }).length;
@@ -386,385 +289,120 @@ export function DashboardClient({
       ? window.location.origin
       : "https://predictsport-rust.vercel.app";
 
+  // Toggle handler for PicksSection -- updates collapsedLiveIds or expandedEventId
+  const onToggleEvent = useCallback((eventId: string, status: PickStatus) => {
+    if (status === "in_progress") {
+      setCollapsedLiveIds((prev) => {
+        const next = new Set(prev);
+        if (next.has(eventId)) next.delete(eventId);
+        else next.add(eventId);
+        return next;
+      });
+    } else {
+      setExpandedEventId((prev) => (prev === eventId ? null : eventId));
+    }
+  }, []);
+
   const dashboard = (
     <div className="mx-auto max-w-[480px] px-3 pb-8">
-      {/* ── 0. Prediction urgency banner (members only) ────────────────── */}
+      {/* 0. Prediction urgency banner (members only) */}
       {isMember && (
         <div className="pt-2">
           <PredictionBanner events={pillDateEvents} predictions={predictions} />
         </div>
       )}
 
-      {/* ── 1. Progress strip (members only) ─────────────────────────── */}
+      {/* 1. Progress strip (members only) */}
       {isMember && (
-        <OnboardingSection id="other">
-          {total > 0 && (
-            <div className="ps-panel mt-2 text-center">
-              {datePills.length > 0 && (
-                <DashboardDatePills
-                  pills={datePills}
-                  now={now}
-                  selectedDate={selectedDate}
-                  onSelectDate={(iso) => setSelectedDate((prev) => prev === iso ? null : iso)}
-                />
-              )}
-              <p className="mt-1 text-[11px] font-semibold uppercase tracking-wider text-ps-text-sec">
-                {t('dash.picks_progress', { picked, total })}
-              </p>
-              <div className="mx-auto mt-1.5 h-1 max-w-[200px] overflow-hidden rounded-full bg-ps-border">
-                <div
-                  className="h-full rounded-full bg-ps-amber transition-all"
-                  style={{ width: `${total > 0 ? (picked / total) * 100 : 0}%` }}
-                />
-              </div>
-            </div>
-          )}
-        </OnboardingSection>
-      )}
-
-      {/* ── 2. Next picks (hero cards — members only) ─────────────────── */}
-      {isMember ? (
-        <OnboardingSection id="picks">
-          {filteredEvents.length > 0 && (
-            <section className="mt-2">
-              <p className="mb-1.5 text-[11px] font-semibold uppercase tracking-wider text-ps-text-ter">
-                {t('dash.your_picks')}
-              </p>
-              <div className="flex flex-col gap-1.5">
-                {filteredEvents.map((event) => {
-                  const fixture = fixtureByEventId.get(event.id);
-                  if (!fixture) return null;
-                  const status = getPickStatus(event, predictions, liveEnabled);
-                  // In-progress events auto-expand unless manually collapsed
-                  const isLiveExpanded =
-                    status === "in_progress" && !collapsedLiveIds.has(event.id);
-                  return (
-                    <DashboardPickRow
-                      key={event.id}
-                      fixture={fixture}
-                      predictions={predictions}
-                      status={status}
-                      event={event}
-                      competitionId={competitionId}
-                      fixtureByEventId={fixtureByEventId}
-                      windowLocked={windowLocked}
-                      expanded={isLiveExpanded || expandedEventId === event.id}
-                      onToggle={() => {
-                        if (status === "in_progress") {
-                          setCollapsedLiveIds((prev) => {
-                            const next = new Set(prev);
-                            if (next.has(event.id)) next.delete(event.id);
-                            else next.add(event.id);
-                            return next;
-                          });
-                        } else {
-                          setExpandedEventId((prev) =>
-                            prev === event.id ? null : event.id,
-                          );
-                        }
-                      }}
-                    />
-                  );
-                })}
-              </div>
-              <div className="mt-2 text-center">
-                <Link
-                  href="/wc"
-                  className="text-[13px] font-semibold text-ps-amber transition-colors hover:opacity-80"
-                >
-                  {t('dash.continue_round')}
-                </Link>
-              </div>
-            </section>
-          )}
-        </OnboardingSection>
-      ) : (
-        /* Non-member: Join CTA */
-        <section className="mt-4">
-          <WcJoinCard
-            isAuthenticated={isAuthenticated}
-            competitionId={competitionId}
-          />
-        </section>
-      )}
-
-      {/* ── 3. Invite Friends ──────────────────────────────────────────── */}
-      <OnboardingSection id="invite">
-        {inviteCode && (
-          <section className="ps-panel mt-2">
-            <InviteCodeBanner
-              inviteCode={inviteCode}
-              competitionName="WC Predict"
-              joinUrl={`${appUrl}/join`}
-              memberCount={memberCount}
-            />
-          </section>
-        )}
-      </OnboardingSection>
-
-      {/* ── Live-mode toggle — only while a match is live ──────────────── */}
-      {liveEventExists && (
-        <LiveModeToggle
-          liveEnabled={liveEnabled}
-          onToggle={toggle}
-          showPrompt={showPrompt}
-          onAcceptAlwaysOff={acceptAlwaysOff}
-          onDeclinePrompt={declinePrompt}
+        <ProgressStrip
+          total={total}
+          picked={picked}
+          datePills={datePills}
+          now={now}
+          selectedDate={selectedDate}
+          onSelectDate={(iso) => setSelectedDate((prev) => (prev === iso ? null : iso))}
         />
       )}
 
-      {/* ── 4. At a Glance / The Field (live state swaps content) ──── */}
-      <OnboardingSection id="other">
-        {liveMode ? (
-          /* Live: island with community picks (THE FIELD) */
-          <section className="ps-island mt-2">
-            <p className="mb-1.5 flex items-center gap-2 text-[11px] font-semibold uppercase tracking-wider text-ps-text-ter">
-              {t('dash.the_field')}
-              <span className="inline-flex items-center gap-1 rounded-full bg-ps-red/90 px-1.5 py-0.5 text-[9px] font-bold normal-case text-white">
-                <span className="h-1.5 w-1.5 rounded-full bg-white" style={{ animation: "pulse-live 2s infinite" }} />
-                {t('picks.live')}
-              </span>
-            </p>
-            <CommunityPicksCard competitionId={competitionId} island />
-          </section>
-        ) : (
-          /* Idle: stats panel */
-          <section className="ps-panel mt-2">
-            <p className="mb-1.5 text-[11px] font-semibold uppercase tracking-wider text-ps-text-ter">
-              {t('dash.at_a_glance')}
-            </p>
-            {classificationId && currentUserId ? (
-              <StatsCard
-                classificationId={classificationId}
-                currentUserId={currentUserId}
-                competitionId={competitionId}
-              />
-            ) : (
-              <div className="rounded-xl border border-ps-border bg-ps-surface px-4 py-5 text-center">
-                <p className="text-xs text-ps-text-ter">
-                  {t('dash.stats_placeholder')}
-                </p>
-              </div>
-            )}
-          </section>
-        )}
-      </OnboardingSection>
+      {/* 2. Next picks / Join CTA */}
+      <PicksSection
+        isMember={isMember}
+        isAuthenticated={isAuthenticated}
+        competitionId={competitionId}
+        filteredEvents={filteredEvents}
+        predictions={predictions}
+        fixtureByEventId={fixtureByEventId}
+        windowLocked={windowLocked}
+        liveEnabled={liveEnabled}
+        collapsedLiveIds={collapsedLiveIds}
+        expandedEventId={expandedEventId}
+        onToggleEvent={onToggleEvent}
+      />
 
-      {/* ── 4a. Live Chat Drawer (live mode only, position 2) ─────── */}
-      {liveMode && chatEnabled && isMember && currentUserId && (
-        <section className="mt-2">
-          <LiveChatDrawer
-            competitionId={competitionId}
-            currentUserId={currentUserId}
-            currentUserRole={memberRole}
-            memberCount={memberCount}
-            lastMessage={lastChatMessage}
-          />
-        </section>
-      )}
+      {/* 3. Invite Friends */}
+      <InviteSection
+        inviteCode={inviteCode}
+        memberCount={memberCount}
+        appUrl={appUrl}
+      />
 
-      {/* ── 4b. Community Picks (hidden during live — merged into island) */}
-      {isMember && !liveMode && (
-        <OnboardingSection id="other">
-          <div className="ps-panel mt-2">
-            <CommunityPicksCard competitionId={competitionId} />
-          </div>
-        </OnboardingSection>
-      )}
+      {/* 4. Live toggle + at-a-glance + live chat + community picks */}
+      <LiveSection
+        liveEventExists={liveEventExists}
+        liveEnabled={liveEnabled}
+        liveMode={liveMode}
+        toggle={toggle}
+        showPrompt={showPrompt}
+        acceptAlwaysOff={acceptAlwaysOff}
+        declinePrompt={declinePrompt}
+        competitionId={competitionId}
+        classificationId={classificationId}
+        currentUserId={currentUserId}
+        chatEnabled={chatEnabled}
+        isMember={isMember}
+        memberRole={memberRole}
+        memberCount={memberCount}
+        lastChatMessage={lastChatMessage}
+      />
 
-      {/* ── 4c. Results coming soon indicator ──────────────────────── */}
-      {awaitingResults > 0 && !liveMode && (
-        <section className="mt-2">
-          <div className="flex items-center gap-2 rounded-xl border border-ps-amber/30 bg-ps-amber-soft px-4 py-3">
-            <span className="relative flex h-2 w-2 shrink-0">
-              <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-ps-amber opacity-75" />
-              <span className="relative inline-flex h-2 w-2 rounded-full bg-ps-amber" />
-            </span>
-            <p className="text-xs font-semibold text-ps-text-sec">
-              {t('dash.results_coming_soon', { count: awaitingResults })}
-            </p>
-          </div>
-        </section>
-      )}
+      {/* 5. Results */}
+      <ResultsSection
+        awaitingResults={awaitingResults}
+        liveMode={liveMode}
+        visibleResults={visibleResults}
+        windowedResults={windowedResults}
+        streakByExternalId={streakByExternalId}
+        canExpandResults={canExpandResults}
+        remainingResultsCount={remainingResultsCount}
+        onExpandResults={() => setResultsExpanded(true)}
+      />
 
-      {/* ── 5. Latest Results (6AM-anchored window) ─────────────────── */}
-      {visibleResults.length > 0 && (
-        <OnboardingSection id="other">
-          <section className="ps-panel mt-2">
-            <div className="rounded-xl border border-ps-border bg-ps-surface p-4">
-              <ResultsHeader results={windowedResults} t={t} />
-              <div className="mt-3 space-y-0 divide-y divide-ps-border">
-                {visibleResults.map((r) => (
-                  <DashboardResultCard
-                    key={r.fixture.externalId}
-                    result={r}
-                    movement={computeMovement(r)}
-                    streak={streakByExternalId.get(r.fixture.externalId) ?? 0}
-                  />
-                ))}
-              </div>
-              {canExpandResults && remainingResultsCount > 0 && (
-                <button
-                  onClick={() => setResultsExpanded(true)}
-                  className="mt-3 w-full text-center text-[13px] font-semibold text-ps-amber transition-colors hover:opacity-80"
-                >
-                  {t('dash.show_more_results', { count: remainingResultsCount })}
-                </button>
-              )}
-              <div className="mt-2 text-center">
-                <Link
-                  href="/wc"
-                  className="text-[12px] font-medium text-ps-text-ter transition-colors hover:text-ps-text-sec"
-                >
-                  {t('dash.go_to_results')}
-                </Link>
-              </div>
-            </div>
-          </section>
-        </OnboardingSection>
-      )}
+      {/* 6. Your Prediction Group */}
+      <GroupSection
+        isMember={isMember}
+        classificationId={classificationId}
+        competitionId={competitionId}
+      />
 
-      {/* ── 6. Your Prediction Group (members only) ────────────────────── */}
-      {isMember && (
-        <OnboardingSection id="group">
-          <section className="ps-panel mt-2">
-            {classificationId ? (
-              <GroupMiniTable
-                classificationId={classificationId}
-                competitionId={competitionId}
-              />
-            ) : (
-              <MockGroupCard />
-            )}
-          </section>
-        </OnboardingSection>
-      )}
+      {/* 7. Social -- rival teaser, leaderboard, chat card */}
+      <SocialSection
+        isMember={isMember}
+        competitionId={competitionId}
+        chatEnabled={chatEnabled}
+        lastChatMessage={lastChatMessage}
+        liveMode={liveMode}
+      />
 
-      {/* ── 5a. Rival Predictions teaser ─────────────────────────── */}
-      {isMember && (
-        <OnboardingSection id="other">
-          <section className="ps-panel mt-2">
-            <RivalTeaser competitionId={competitionId} />
-          </section>
-        </OnboardingSection>
-      )}
-
-      {/* ── 5b. Leaderboard link ──────────────────────────────────── */}
-      <OnboardingSection id="other">
-        {isMember && (
-          <section className="mt-2">
-            <Link
-              href="/wc/leaderboard"
-              className="flex items-center justify-between rounded-xl bg-ps-amber px-4 py-3 transition-colors hover:opacity-90"
-            >
-              <span className="text-[13px] font-semibold text-white">
-                {t('dash.leaderboard')}
-              </span>
-              <span className="text-[13px] font-semibold text-white">
-                →
-              </span>
-            </Link>
-          </section>
-        )}
-      </OnboardingSection>
-
-      {/* ── 5c. Chat notification card (hidden when live drawer is showing) ── */}
-      {chatEnabled && isMember && lastChatMessage && !liveMode && (
-        <OnboardingSection id="other">
-          <section className="mt-2">
-            <Link
-              href="/wc/chat"
-              className="flex items-center gap-3 rounded-xl border border-ps-border bg-ps-surface px-4 py-3 transition-colors hover:bg-ps-chip"
-            >
-              {/* Avatar */}
-              {lastChatMessage.senderAvatar ? (
-                <img
-                  src={lastChatMessage.senderAvatar}
-                  alt=""
-                  className="h-8 w-8 shrink-0 rounded-full"
-                  referrerPolicy="no-referrer"
-                />
-              ) : (
-                <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-ps-chip text-xs font-bold text-ps-text-sec">
-                  {lastChatMessage.senderName.charAt(0).toUpperCase()}
-                </div>
-              )}
-              {/* Message preview */}
-              <div className="min-w-0 flex-1">
-                <span className="truncate text-xs font-semibold text-ps-text">
-                  {lastChatMessage.senderName}
-                </span>
-                <p className="truncate text-xs text-ps-text-sec">
-                  {lastChatMessage.content.length > 60
-                    ? lastChatMessage.content.slice(0, 57) + "..."
-                    : lastChatMessage.content}
-                </p>
-              </div>
-              {/* Arrow */}
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="shrink-0 text-ps-text-ter">
-                <path d="M9 18l6-6-6-6" />
-              </svg>
-            </Link>
-          </section>
-        </OnboardingSection>
-      )}
-
-      {/* ── 8. Today's WC Match Groups ──────────────────────────────── */}
-      <OnboardingSection id="other">
-        {todayGroups.length > 0 && (
-          <section className="ps-panel mt-2">
-            <p className="mb-1.5 text-[11px] font-semibold uppercase tracking-wider text-ps-text-ter">
-              {t('dash.todays_groups')}
-            </p>
-            <FifaGroupsGrid
-              mode="accordion"
-              groupFilter={todayGroups}
-              groupEvents={todayGroupEvents}
-              predictions={predictions}
-              competitionId={competitionId}
-              windowLocked={windowLocked}
-              backLabel={t('dash.todays_groups')}
-              standings={groupStandings}
-            />
-          </section>
-        )}
-      </OnboardingSection>
-
-      {/* ── 9. Bracket strip (collapsed by default) ──────────────────── */}
-      {bracketProgress && (
-      <OnboardingSection id="other">
-        <section className="mt-2">
-          <details className="group">
-            <summary className="flex cursor-pointer list-none [&::-webkit-details-marker]:hidden">
-              <Link
-                href="/wc/bracket"
-                className="flex w-full items-center justify-between rounded-xl border border-ps-border bg-ps-surface px-4 py-3 transition-colors hover:bg-ps-chip"
-                onClick={(e) => e.stopPropagation()}
-              >
-                <div className="flex items-center gap-2">
-                  <span className="text-[13px] font-semibold text-ps-text-sec">
-                    {t('dash.bracket')}
-                  </span>
-                  <span className="rounded-full bg-ps-purple-soft px-1.5 py-0.5 text-[8px] font-bold uppercase text-ps-purple">
-                    {t('dash.anorak')}
-                  </span>
-                </div>
-                <div className="flex items-center gap-2">
-                  {bracketProgress && (
-                    <span className="font-mono text-[11px] tabular-nums text-ps-text-sec">
-                      {bracketProgress.pct}%
-                    </span>
-                  )}
-                  <span className="text-[13px] font-semibold tabular-nums text-ps-text">
-                    →
-                  </span>
-                </div>
-              </Link>
-            </summary>
-          </details>
-        </section>
-      </OnboardingSection>
-      )}
+      {/* 8. Tournament groups + bracket */}
+      <TournamentSection
+        todayGroups={todayGroups}
+        todayGroupEvents={todayGroupEvents}
+        predictions={predictions}
+        competitionId={competitionId}
+        windowLocked={windowLocked}
+        groupStandings={groupStandings}
+        bracketProgress={bracketProgress}
+      />
     </div>
   );
 
@@ -775,225 +413,8 @@ export function DashboardClient({
   return dashboard;
 }
 
-/** Placeholder group table shown during onboarding when no classification exists. */
-function MockGroupCard() {
-  const t = useT();
-  const mockRows = [
-    { label: "You", pts: 0, isYou: true },
-    { label: "Player 2", pts: 0, isYou: false },
-    { label: "Player 3", pts: 0, isYou: false },
-    { label: "Player 4", pts: 0, isYou: false },
-  ];
-
-  return (
-    <div className="rounded-xl border border-ps-border bg-ps-surface p-4">
-      <div className="flex items-center justify-between">
-        <h3 className="text-base font-bold text-ps-text">{t('dash.your_group')}</h3>
-        <Link
-          href="/wc/leaderboard"
-          className="text-[13px] font-semibold text-ps-amber transition-opacity hover:opacity-80"
-        >
-          {t('dash.see_all_groups')}
-        </Link>
-      </div>
-      <p className="mt-0.5 text-[11px] font-semibold uppercase tracking-wider text-ps-text-ter">
-        {t('dash.group_x')}
-      </p>
-      <div className="mt-3 space-y-0 divide-y divide-ps-border">
-        {mockRows.map((row, i) => (
-          <div
-            key={row.label}
-            className={[
-              "flex items-center gap-3 py-2",
-              row.isYou ? "font-bold text-ps-amber" : "text-ps-text",
-            ].join(" ")}
-          >
-            <span className="w-4 shrink-0 font-mono text-[11px] tabular-nums text-ps-text-ter">
-              {i + 1}.
-            </span>
-            <span className="flex-1 text-sm">{row.label}</span>
-            <span className="font-mono text-[11px] tabular-nums text-ps-text-sec">
-              {row.pts} {t('common.pts')}
-            </span>
-          </div>
-        ))}
-      </div>
-      <p className="mt-3 text-center text-xs text-ps-text-ter">
-        {t('dash.groups_drawn_message')}
-      </p>
-    </div>
-  );
-}
-
-/** Date pills showing status for the next 3 match dates. Chrome element — ps-* tokens only. */
-function DashboardDatePills({
-  pills,
-  now,
-  selectedDate,
-  onSelectDate,
-}: {
-  pills: DatePillSummary[];
-  now: Date | null;
-  selectedDate: string | null;
-  onSelectDate: (iso: string) => void;
-}) {
-  if (pills.length === 0) return null;
-
-  // Find earliest urgent pill for warning banner
-  let warningText: string | null = null;
-  for (const p of pills) {
-    const status = now
-      ? computeDayStatus({
-          totalEvents: p.totalCount,
-          fullyComplete: p.fullyComplete,
-          hasAnyOutcome: p.hasAnyOutcome,
-          lockTime: p.lockTime,
-          now,
-        })
-      : "upcoming";
-    if (status === "urgent") {
-      const countdown = formatLockCountdown(p.lockTime, now!);
-      if (countdown) warningText = `\u26A0 ${countdown} to submit ${p.weekday} picks`;
-      break;
-    }
-  }
-
-  return (
-    <>
-      <div className="flex justify-center gap-1.5">
-        {pills.map((p) => {
-          const status = now
-            ? computeDayStatus({
-                totalEvents: p.totalCount,
-                fullyComplete: p.fullyComplete,
-                hasAnyOutcome: p.hasAnyOutcome,
-                lockTime: p.lockTime,
-                now,
-              })
-            : "upcoming";
-
-          const isComplete = status === "complete";
-          const isUrgent = status === "urgent";
-          const borderClass = isComplete || isUrgent ? "border-ps-amber" : "border-ps-border";
-          const pillShadow = isComplete
-            ? { boxShadow: "0 2px 6px -3px rgba(212,175,55,0.5)" }
-            : isUrgent
-              ? { boxShadow: "0 2px 6px -3px rgba(212,175,55,0.3)" }
-              : undefined;
-
-          const isSelected = selectedDate === p.iso;
-
-          const pillBorder = isSelected
-            ? "border-ps-amber"
-            : isComplete
-              ? "border-ps-amber"
-              : borderClass;
-          const selectedShadow = isSelected || isComplete
-            ? { boxShadow: "0 2px 6px -3px rgba(212,175,55,0.5)" }
-            : pillShadow;
-
-          return (
-            <button key={p.iso} onClick={() => onSelectDate(p.iso)} className="flex shrink-0 flex-col items-center">
-              <span className="mb-1 h-4" aria-hidden="true" />
-              <span
-                className={[
-                  "flex h-12 w-11 flex-col items-center justify-center rounded-md border bg-ps-surface transition-colors",
-                  "hover:bg-ps-bg-alt",
-                  pillBorder,
-                ].join(" ")}
-                style={selectedShadow}
-              >
-                <span className="font-mono text-[9px] font-bold uppercase tracking-[0.10em] text-ps-text-ter">
-                  {p.weekday}
-                </span>
-                <span className="font-display text-base font-extrabold leading-none text-ps-text">
-                  {p.dayNum}
-                </span>
-              </span>
-              <DashboardPillIndicator status={status} />
-            </button>
-          );
-        })}
-      </div>
-      {warningText && (
-        <p className="mt-2 text-[11px] font-semibold text-ps-red">{warningText}</p>
-      )}
-    </>
-  );
-}
-
-function DashboardPillIndicator({ status }: { status: string }) {
-  const t = useT();
-  switch (status) {
-    case "complete":
-      return (
-        <span className="mt-1 inline-flex h-3.5 w-3.5 items-center justify-center rounded-full bg-ps-green text-[8px] font-extrabold leading-none text-white" aria-label={t('calendar.complete')}>
-          ✓
-        </span>
-      );
-    case "partial":
-      return (
-        <span
-          className="mt-1 inline-flex h-3.5 w-3.5 items-center justify-center rounded-full text-[9px] font-extrabold leading-none text-white"
-          style={{ background: CHROME_PALETTE.attention }}
-          aria-label={t('calendar.exact_score_needed')}
-        >
-          !
-        </span>
-      );
-    case "urgent":
-      return (
-        <span className="mt-1 inline-flex h-3.5 w-3.5 items-center justify-center rounded-full bg-ps-red text-[7px] font-extrabold leading-none text-white" style={{ letterSpacing: "-0.5px" }} aria-label={t('calendar.locks_soon')}>
-          !!
-        </span>
-      );
-    default:
-      return <span className="mt-1 h-3.5" aria-hidden="true" />;
-  }
-}
-
-/** Results header with title + matchday summary (e.g. "3/4 correct · +18 pts"). */
-function ResultsHeader({
-  results,
-  t,
-}: {
-  results: ResultRow[];
-  t: (key: string, params?: Record<string, string | number>) => string;
-}) {
-  const summary = computeMatchdaySummary(results);
-
-  return (
-    <div className="flex items-center justify-between">
-      <h3 className="text-base font-bold text-ps-text">
-        {t("dash.latest_results")}
-      </h3>
-      {summary.totalPredicted > 0 ? (
-        <span className="text-[11px] font-semibold tabular-nums text-ps-text-sec">
-          <span className="text-ps-green">
-            {t("dash.results_correct_count", {
-              correct: summary.correctCount,
-              total: summary.totalPredicted,
-            })}
-          </span>
-          {" correct \u00B7 "}
-          <span className="text-ps-amber">
-            {t("dash.results_pts", { points: summary.totalPoints })}
-          </span>
-        </span>
-      ) : (
-        <span className="text-[11px] font-semibold uppercase text-ps-text-ter">
-          {t(
-            results.length === 1 ? "wc.match" : "wc.matches",
-            { count: results.length },
-          )}
-        </span>
-      )}
-    </div>
-  );
-}
-
 /**
- * Hydration-safe "now" — null on server, Date after mount.
+ * Hydration-safe "now" -- null on server, Date after mount.
  * Updates when the page regains visibility so pick statuses
  * (urgent/locked/in_progress) recompute after PWA resume.
  */

@@ -120,7 +120,7 @@ export function CommunityPicksCard({ competitionId, island = false }: CommunityP
     <div className="flex items-stretch gap-2">
       {/* Card 1: Outcome Split */}
       <div className="min-w-[100px] flex-1 rounded-lg border border-ps-border bg-ps-surface p-3">
-          <div className="flex items-center gap-1.5 text-[10px] font-semibold uppercase tracking-wider text-ps-text-ter">
+          <div className="flex items-center gap-1.5 text-micro font-semibold uppercase tracking-wider text-ps-text-ter">
             <CountryFlag name={fixture.home} size={14} shape="pill" />
             <span>{homeTri}</span>
             <span className="text-ps-text-ter/40">v</span>
@@ -149,7 +149,7 @@ export function CommunityPicksCard({ competitionId, island = false }: CommunityP
 
         {/* Card 2: Popular Score */}
         <div className="min-w-[100px] flex-1 rounded-lg border border-ps-border bg-ps-surface p-3">
-          <p className="text-[10px] font-semibold uppercase tracking-wider text-ps-text-ter">
+          <p className="text-micro font-semibold uppercase tracking-wider text-ps-text-ter">
             {t("community.popular_score")}
           </p>
 
@@ -157,7 +157,7 @@ export function CommunityPicksCard({ competitionId, island = false }: CommunityP
             <div className="mt-2 space-y-1">
               {topScores.map((s, i) => (
                 <div key={`${s.home}-${s.away}`} className="flex items-baseline gap-1.5">
-                  <span className="w-3.5 shrink-0 font-mono text-[9px] tabular-nums text-ps-text-ter">
+                  <span className="w-3.5 shrink-0 font-mono text-micro tabular-nums text-ps-text-ter">
                     {i + 1}.
                   </span>
                   <span
@@ -165,7 +165,7 @@ export function CommunityPicksCard({ competitionId, island = false }: CommunityP
                       "font-mono tabular-nums",
                       i === 0
                         ? "text-lg font-bold text-ps-text"
-                        : "text-[13px] font-semibold text-ps-text-sec",
+                        : "text-body font-semibold text-ps-text-sec",
                     ].join(" ")}
                   >
                     {s.home}–{s.away}
@@ -175,7 +175,7 @@ export function CommunityPicksCard({ competitionId, island = false }: CommunityP
                       "font-mono tabular-nums",
                       i === 0
                         ? "text-xs font-semibold text-ps-amber"
-                        : "text-[10px] text-ps-text-ter",
+                        : "text-micro text-ps-text-ter",
                     ].join(" ")}
                   >
                     {s.pct}%
@@ -196,7 +196,7 @@ export function CommunityPicksCard({ competitionId, island = false }: CommunityP
 
   return (
     <section className="mt-3">
-      <p className="mb-2 text-[11px] font-semibold uppercase tracking-wider text-ps-text-ter">
+      <p className="mb-2 text-caption font-semibold uppercase tracking-wider text-ps-text-ter">
         {t("dash.the_field")}
       </p>
       {cards}
@@ -216,7 +216,7 @@ function OutcomeBar({
 }) {
   return (
     <div className="flex items-center gap-1.5">
-      <span className="w-9 shrink-0 text-[10px] font-semibold text-ps-text-sec">
+      <span className="w-9 shrink-0 text-micro font-semibold text-ps-text-sec">
         {label}
       </span>
       <div className="flex-1 overflow-hidden rounded-full bg-ps-chip" style={{ height: 6 }}>
@@ -225,7 +225,7 @@ function OutcomeBar({
           style={{ width: `${pct}%` }}
         />
       </div>
-      <span className="w-7 shrink-0 text-right font-mono text-[10px] tabular-nums text-ps-text-ter">
+      <span className="w-7 shrink-0 text-right font-mono text-micro tabular-nums text-ps-text-ter">
         {pct}%
       </span>
     </div>

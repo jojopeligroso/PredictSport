@@ -27,7 +27,7 @@ export function LiveModeToggle({
   return (
     <div className="mt-2">
       <div className="flex items-center justify-between rounded-xl border border-ps-border bg-ps-surface px-3 py-2">
-        <span className="flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-wider text-ps-text-sec">
+        <span className="flex items-center gap-1.5 text-caption font-semibold uppercase tracking-wider text-ps-text-sec">
           <span
             className="h-1.5 w-1.5 rounded-full bg-ps-red"
             style={{ animation: liveEnabled ? "pulse-live 2s infinite" : undefined }}
@@ -67,14 +67,14 @@ export function LiveModeToggle({
             <button
               type="button"
               onClick={onAcceptAlwaysOff}
-              className="rounded-lg bg-ps-text px-3 py-1.5 text-[11px] font-semibold text-ps-bg transition-opacity hover:opacity-90"
+              className="rounded-lg bg-ps-text px-3 py-1.5 text-caption font-semibold text-ps-bg transition-opacity hover:opacity-90"
             >
               {t("dash.live_mode_keep_off")}
             </button>
             <button
               type="button"
               onClick={onDeclinePrompt}
-              className="rounded-lg border border-ps-border px-3 py-1.5 text-[11px] font-semibold text-ps-text-sec transition-colors hover:bg-ps-surface"
+              className="rounded-lg border border-ps-border px-3 py-1.5 text-caption font-semibold text-ps-text-sec transition-colors hover:bg-ps-surface"
             >
               {t("dash.live_mode_no_thanks")}
             </button>

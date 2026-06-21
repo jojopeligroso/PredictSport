@@ -58,7 +58,7 @@ export function JoinCard({ token, competitionName, memberCount }: JoinCardProps)
           <p className="text-base font-extrabold lowercase leading-tight tracking-tight text-ps-text">
             sports<span className="text-ps-amber">predict.</span>
           </p>
-          <p className="text-[11.5px] leading-tight text-ps-text-sec">
+          <p className="text-caption leading-tight text-ps-text-sec">
             {memberCount} {memberCount === 1 ? "member" : "members"}
           </p>
         </div>

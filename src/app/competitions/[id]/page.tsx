@@ -160,16 +160,16 @@ export default async function CompetitionDetailPage({ params }: PageProps) {
       <div className="mb-6 flex items-center justify-between">
         <div>
           <h1
-            className="font-display text-ps-text font-extrabold"
-            style={{ fontSize: 28, lineHeight: 1.1, letterSpacing: -0.5 }}
+            className="font-display text-ps-text font-extrabold text-page-title"
+            style={{ lineHeight: 1.1, letterSpacing: -0.5 }}
           >
             {competition.name}
           </h1>
         </div>
         {(userRole === "admin" || userRole === "co_admin") && (
           <span
-            className="rounded-full bg-ps-amber-soft px-2.5 py-1 text-ps-amber-deep"
-            style={{ fontSize: 10, fontWeight: 800, letterSpacing: 0.8, textTransform: "uppercase" as const }}
+            className="rounded-full bg-ps-amber-soft px-2.5 py-1 text-ps-amber-deep text-micro"
+            style={{ fontWeight: 800, letterSpacing: 0.8, textTransform: "uppercase" as const }}
           >
             {userRole === "admin" ? "Admin" : "Co-Admin"}
           </span>

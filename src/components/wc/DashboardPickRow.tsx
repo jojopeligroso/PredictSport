@@ -85,13 +85,13 @@ export function DashboardPickRow({
           type="button"
           onClick={onToggle}
           aria-label={t('picks.collapse_card')}
-          className="mb-1 w-full py-1.5 text-left text-[10px] font-semibold uppercase tracking-wider text-ps-text-ter flex items-center gap-1"
+          className="mb-1 w-full min-h-[44px] py-1.5 text-left text-micro font-semibold uppercase tracking-wider text-ps-text-ter flex items-center gap-1"
         >
           <svg className="h-3 w-3 rotate-180" fill="none" viewBox="0 0 24 24" strokeWidth={2.5} stroke="currentColor">
             <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
           </svg>
           {isLive && (
-            <span className="mr-1 inline-flex items-center gap-1 rounded-full bg-ps-red/90 px-1.5 py-0.5 text-[9px] font-bold text-white">
+            <span className="mr-1 inline-flex items-center gap-1 rounded-full bg-ps-red/90 px-1.5 py-0.5 text-micro font-bold text-white">
               <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-white" />
               {t('picks.live')}
             </span>
@@ -155,7 +155,7 @@ export function DashboardPickRow({
           {/* Status indicator + CTA */}
           {status === "complete" && (
             <span className="flex items-center gap-1.5">
-              <span className="text-[11px] font-semibold text-white/80">{t('picks.edit')}</span>
+              <span className="text-caption font-semibold text-white/80">{t('picks.edit')}</span>
               <span className="flex h-6 w-6 items-center justify-center rounded-full bg-ps-green text-white">
                 <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" strokeWidth={3} stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" d="M4.5 12.75l6 6 9-13.5" />
@@ -165,8 +165,8 @@ export function DashboardPickRow({
           )}
           {status === "urgent" && (
             <span className="flex items-center gap-1.5">
-              <span className="text-[11px] font-bold text-white">{t('fixtures.pick_cta')}</span>
-              <span className="animate-pulse rounded-full bg-ps-purple/80 px-2 py-0.5 text-[10px] font-bold text-white">
+              <span className="text-caption font-bold text-white">{t('fixtures.pick_cta')}</span>
+              <span className="animate-pulse rounded-full bg-ps-purple/80 px-2 py-0.5 text-micro font-bold text-white">
                 {t('picks.urgent_24h')}
               </span>
             </span>
@@ -174,16 +174,16 @@ export function DashboardPickRow({
           {status === "in_progress" && (
             <span className="flex items-center gap-1.5">
               {hasWinnerAndScore && (
-                <span className="text-[11px] font-semibold text-white/80">{t('picks.your_pick')}</span>
+                <span className="text-caption font-semibold text-white/80">{t('picks.your_pick')}</span>
               )}
-              <span className="inline-flex items-center gap-1 rounded-full bg-ps-red/90 px-2 py-0.5 text-[10px] font-bold text-white">
+              <span className="inline-flex items-center gap-1 rounded-full bg-ps-red/90 px-2 py-0.5 text-micro font-bold text-white">
                 <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-white" />
                 {t('picks.live')}
               </span>
             </span>
           )}
           {status === "unpicked" && (
-            <span className="text-[11px] font-bold text-white/90">{t('fixtures.pick_cta')}</span>
+            <span className="text-caption font-bold text-white/90">{t('fixtures.pick_cta')}</span>
           )}
         </div>
       </FixtureCardSurface>

@@ -217,7 +217,7 @@ function ExpandedDrawer({
           Chat
         </span>
         <div className="flex items-center gap-2">
-          <span className="text-[10px] text-ps-text-ter">
+          <span className="text-micro text-ps-text-ter">
             {memberCount} member{memberCount !== 1 ? "s" : ""}
           </span>
           <button
@@ -251,11 +251,11 @@ function ExpandedDrawer({
       >
         {isLoading ? (
           <div className="flex h-full items-center justify-center">
-            <span className="text-[10px] text-ps-text-ter">Loading...</span>
+            <span className="text-micro text-ps-text-ter">Loading...</span>
           </div>
         ) : displayMessages.length === 0 ? (
           <div className="flex h-full items-center justify-center">
-            <span className="text-[10px] text-ps-text-ter">
+            <span className="text-micro text-ps-text-ter">
               No messages yet. Say something.
             </span>
           </div>
@@ -279,7 +279,7 @@ function ExpandedDrawer({
       {/* Input bar — 56px */}
       <div className="border-t border-ps-border px-3 py-2" style={{ height: 56 }}>
         {isMuted ? (
-          <div className="flex h-full items-center justify-center text-[10px] italic text-ps-text-ter">
+          <div className="flex h-full items-center justify-center text-micro italic text-ps-text-ter">
             You are muted.
           </div>
         ) : (

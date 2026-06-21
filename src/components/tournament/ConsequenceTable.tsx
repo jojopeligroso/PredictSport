@@ -74,24 +74,24 @@ export default function ConsequenceTable({
           </h3>
           <div className="grid grid-cols-2 gap-3 text-sm">
             <div className="bg-ps-ink/5 rounded-lg p-3">
-              <div className="font-mono text-lg font-bold">{groupComposition.totalGroups}</div>
+              <div className="font-mono text-item-label font-bold">{groupComposition.totalGroups}</div>
               <div className="text-ps-ink/60">Total groups</div>
             </div>
             {groupComposition.groups4 > 0 && (
               <div className="bg-ps-ink/5 rounded-lg p-3">
-                <div className="font-mono text-lg font-bold">{groupComposition.groups4}</div>
+                <div className="font-mono text-item-label font-bold">{groupComposition.groups4}</div>
                 <div className="text-ps-ink/60">Groups of 4</div>
               </div>
             )}
             {groupComposition.groups5 > 0 && (
               <div className="bg-ps-ink/5 rounded-lg p-3">
-                <div className="font-mono text-lg font-bold">{groupComposition.groups5}</div>
+                <div className="font-mono text-item-label font-bold">{groupComposition.groups5}</div>
                 <div className="text-ps-ink/60">Groups of 5</div>
               </div>
             )}
             {groupComposition.groups3 > 0 && (
               <div className="bg-ps-ink/5 rounded-lg p-3">
-                <div className="font-mono text-lg font-bold">{groupComposition.groups3}</div>
+                <div className="font-mono text-item-label font-bold">{groupComposition.groups3}</div>
                 <div className="text-ps-ink/60">Groups of 3</div>
               </div>
             )}

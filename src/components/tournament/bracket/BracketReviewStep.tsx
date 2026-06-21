@@ -51,10 +51,10 @@ export default function BracketReviewStep({
   return (
     <div className="space-y-4">
       <div className="rounded-xl border border-ps-border bg-ps-surface p-4">
-        <p className="font-mono text-[10px] font-bold uppercase tracking-widest text-ps-text-ter">
+        <p className="font-mono text-micro font-bold uppercase tracking-widest text-ps-text-ter">
           Step 8 of 8
         </p>
-        <h2 className="mt-1 text-lg font-extrabold text-ps-text">Review your bracket</h2>
+        <h2 className="mt-1 text-section-title font-extrabold text-ps-text">Review your bracket</h2>
         <p className="mt-1 text-xs text-ps-text-sec">
           One last look. Hit any section to edit it. You can keep editing and
           resubmitting right up until the day before kick-off.
@@ -79,7 +79,7 @@ export default function BracketReviewStep({
             aria-hidden
             className="pointer-events-none absolute -right-16 -top-16 h-48 w-48 rounded-full bg-ps-amber/15 blur-3xl"
           />
-          <p className="font-mono text-[10px] font-bold uppercase tracking-widest text-ps-amber">
+          <p className="font-mono text-micro font-bold uppercase tracking-widest text-ps-amber">
             Your World Cup champion
           </p>
           <ChampionFlagFountain champion={champion} teams={r32Teams} />
@@ -90,13 +90,13 @@ export default function BracketReviewStep({
             const ru = [knockoutPicks?.sf_m1?.winner, knockoutPicks?.sf_m2?.winner]
               .find((t) => t && t !== champion);
             return ru ? (
-              <p className="mt-2 font-mono text-[11px] text-ps-text-sec">
+              <p className="mt-2 font-mono text-caption text-ps-text-sec">
                 Runner-up: <span className="font-semibold text-ps-text">{ru}</span>
               </p>
             ) : null;
           })()}
           {thirdPlace && (
-            <p className="mt-2 font-mono text-[11px] text-ps-text-sec">
+            <p className="mt-2 font-mono text-caption text-ps-text-sec">
               3rd place: <span className="font-semibold text-ps-text">{thirdPlace}</span>
             </p>
           )}
@@ -116,7 +116,7 @@ export default function BracketReviewStep({
                 key={step.slotId}
                 className="flex items-center gap-2 rounded-md bg-ps-bg px-2 py-1.5"
               >
-                <span className="font-mono text-[10px] font-bold uppercase text-ps-text-ter">
+                <span className="font-mono text-micro font-bold uppercase text-ps-text-ter">
                   {step.roundLabel}
                 </span>
                 <span className="ml-auto inline-flex items-center gap-1 text-xs">
@@ -146,10 +146,10 @@ export default function BracketReviewStep({
                 key={groupId}
                 className="rounded-md border border-ps-border bg-ps-bg p-2"
               >
-                <p className="font-mono text-[10px] font-bold uppercase tracking-widest text-ps-text-ter">
+                <p className="font-mono text-micro font-bold uppercase tracking-widest text-ps-text-ter">
                   Group {groupId}
                 </p>
-                <ol className="mt-1 space-y-0.5 text-[11px]">
+                <ol className="mt-1 space-y-0.5 text-caption">
                   {groupRankings[groupId].slice(0, 4).map((team, i) => (
                     <li
                       key={team}
@@ -184,7 +184,7 @@ export default function BracketReviewStep({
             return (
               <span
                 key={groupId}
-                className={`inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-[11px] font-bold ${
+                className={`inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-caption font-bold ${
                   pickColor === "amber"
                     ? "bg-ps-amber/15 text-ps-amber"
                     : "bg-ps-green/15 text-ps-green"
@@ -205,14 +205,14 @@ export default function BracketReviewStep({
         editLabel="Edit"
         onEdit={() => onJumpToStep("r32")}
       >
-        <p className="mb-2 text-[10px] text-ps-text-ter">
+        <p className="mb-2 text-micro text-ps-text-ter">
           Score: 1 point per correct team in the Last 32 classification.
         </p>
         <div className="flex flex-wrap gap-1">
           {r32Teams.map((team) => (
             <span
               key={team}
-              className="inline-flex items-center gap-1 rounded-md bg-ps-bg px-2 py-0.5 text-[11px] font-semibold text-ps-text"
+              className="inline-flex items-center gap-1 rounded-md bg-ps-bg px-2 py-0.5 text-caption font-semibold text-ps-text"
             >
               <CountryFlag shape="pill" name={team} size={12} />
               <span>{team}</span>
@@ -224,14 +224,14 @@ export default function BracketReviewStep({
             Helps the user spot a missing favourite before submitting. */}
         {eliminatedTeams.length > 0 && (
           <div className="mt-4 border-t border-ps-border pt-3">
-            <p className="mb-2 font-mono text-[10px] font-bold uppercase tracking-widest text-ps-text-ter">
+            <p className="mb-2 font-mono text-micro font-bold uppercase tracking-widest text-ps-text-ter">
               Eliminated teams ({eliminatedTeams.length}/16)
             </p>
             <div className="flex flex-wrap gap-1">
               {eliminatedTeams.map((team) => (
                 <span
                   key={team}
-                  className="inline-flex items-center gap-1 rounded-md border border-ps-border bg-ps-chip px-2 py-0.5 text-[11px] font-medium text-ps-text-sec"
+                  className="inline-flex items-center gap-1 rounded-md border border-ps-border bg-ps-chip px-2 py-0.5 text-caption font-medium text-ps-text-sec"
                 >
                   <CountryFlag shape="pill" name={team} size={12} className="opacity-60" />
                   <span className="line-through decoration-ps-text-ter/60">{team}</span>
@@ -259,11 +259,11 @@ export default function BracketReviewStep({
                 className="rounded-md border border-ps-border bg-ps-bg p-2"
               >
                 <div className="flex items-baseline justify-between">
-                  <p className="font-mono text-[10px] font-bold uppercase tracking-widest text-ps-text-ter">
+                  <p className="font-mono text-micro font-bold uppercase tracking-widest text-ps-text-ter">
                     {round.name}
                   </p>
                   <span
-                    className={`font-mono text-[10px] font-bold ${
+                    className={`font-mono text-micro font-bold ${
                       done ? accent : "text-ps-amber"
                     }`}
                   >
@@ -271,7 +271,7 @@ export default function BracketReviewStep({
                     {round.slotIds.length}
                   </span>
                 </div>
-                <p className="mt-1 text-[11px] text-ps-text-sec">
+                <p className="mt-1 text-caption text-ps-text-sec">
                   {picks.filter((p) => p !== "?").slice(0, 8).join(" · ")}
                   {picks.length > 8 && " …"}
                 </p>
@@ -284,7 +284,7 @@ export default function BracketReviewStep({
       {/* Soft deadline reminder — last beat of the review so it's the parting
           thought before the submit CTA. Actual operator lock fires ~1h before
           kickoff, but we promise users "day before" so there's always a buffer. */}
-      <p className="rounded-md bg-ps-amber-soft px-3 py-2 text-center text-[11px] text-ps-amber-deep">
+      <p className="rounded-md bg-ps-amber-soft px-3 py-2 text-center text-caption text-ps-amber-deep">
         <span className="font-semibold">Don&apos;t worry</span> — you can keep
         editing and resubmitting until the day before kick-off.
       </p>
@@ -310,7 +310,7 @@ function Section({
         <button
           type="button"
           onClick={onEdit}
-          className="rounded-md px-2 py-0.5 text-[11px] font-bold text-ps-amber transition-colors hover:bg-ps-amber/10"
+          className="rounded-md px-2 py-0.5 text-caption font-bold text-ps-amber transition-colors hover:bg-ps-amber/10"
         >
           {editLabel}
         </button>

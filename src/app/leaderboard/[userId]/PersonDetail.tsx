@@ -93,8 +93,8 @@ export function PersonDetail({
         <div className="mt-3.5">
           <div>
             <p
+              className="text-caption"
               style={{
-                fontSize: 11,
                 fontWeight: 700,
                 letterSpacing: 0.8,
                 textTransform: "uppercase",
@@ -104,14 +104,14 @@ export function PersonDetail({
               Rank &middot; #{rank}
             </p>
             <h1
-              className="mt-1 font-display font-extrabold"
-              style={{ fontSize: 36, lineHeight: 1, color: "#fff", letterSpacing: 0.6 }}
+              className="mt-1 font-display font-extrabold text-page-title"
+              style={{ lineHeight: 1, color: "#fff", letterSpacing: 0.6 }}
             >
               {person.displayName}
             </h1>
             <p
-              className="mt-1"
-              style={{ fontSize: 12, color: "rgba(255,255,255,0.85)", fontStyle: "italic" }}
+              className="mt-1 text-caption"
+              style={{ color: "rgba(255,255,255,0.85)", fontStyle: "italic" }}
             >
               &ldquo;{person.calloutLabel}&rdquo;
             </p>
@@ -132,12 +132,12 @@ export function PersonDetail({
             style={{ boxShadow: "0 4px 14px rgba(40,30,20,0.06)" }}
           >
             <p
-              style={{ fontSize: 9.5, fontWeight: 800, letterSpacing: 1.1, textTransform: "uppercase" }}
-              className="text-ps-text-sec"
+              className="text-micro text-ps-text-sec"
+              style={{ fontWeight: 800, letterSpacing: 1.1, textTransform: "uppercase" }}
             >
               {s.label}
             </p>
-            <p className="mt-0.5 font-display font-extrabold" style={{ fontSize: 22, letterSpacing: 0.5, color: s.color }}>
+            <p className="mt-0.5 font-display font-extrabold text-page-title" style={{ letterSpacing: 0.5, color: s.color }}>
               {s.val}
             </p>
           </div>
@@ -184,15 +184,15 @@ export function PersonDetail({
                 >
                   <span className="w-[22px] text-center text-base">{sportCfg.emoji}</span>
                   <div className="flex-1 min-w-0">
-                    <p className="text-[12.5px] font-bold leading-snug text-ps-text">
+                    <p className="text-caption font-bold leading-snug text-ps-text">
                       {p.eventName}
                     </p>
-                    <p className="mt-0.5 text-[10.5px] text-ps-text-sec">
+                    <p className="mt-0.5 text-micro text-ps-text-sec">
                       {p.pickValue} <span className="text-ps-text-ter">vs</span> {p.resultValue}
                     </p>
                   </div>
                   <span
-                    className="text-[11px] font-extrabold tabular-nums"
+                    className="text-caption font-extrabold tabular-nums"
                     style={{ color: stateColor }}
                   >
                     +{p.pointsAwarded}

@@ -49,7 +49,7 @@ function LandingPage({ t }: { t: TFn }) {
           style={{ background: "#0a0f0a", color: "#f1ece2" }}
         >
           <p
-            className="text-[10px] font-bold uppercase tracking-widest"
+            className="text-micro font-bold uppercase tracking-widest"
             style={{ color: "#006847" }}
           >
             {t('landing.coming_june')}
@@ -300,7 +300,7 @@ async function Dashboard({ userId, t }: { userId: string; t: TFn }) {
     <div className="mx-auto max-w-[480px] px-4 py-6">
       {/* ── Wordmark + avatar ──────────────────────────────────── */}
       <div className="flex items-center justify-between px-1 pb-2">
-        <span className="text-[17px] font-extrabold leading-none tracking-tight">
+        <span className="text-section-title font-extrabold leading-none tracking-tight">
           <span className="text-ps-text">sports</span>
           <span className="text-ps-amber">predict.</span>
         </span>
@@ -322,12 +322,12 @@ async function Dashboard({ userId, t }: { userId: string; t: TFn }) {
           }}
         >
           <p
-            className="text-[10px] font-bold uppercase tracking-[0.18em]"
+            className="text-micro font-bold uppercase tracking-[0.18em]"
             style={{ color: "rgba(212,175,55,0.6)" }}
           >
             {t('dash.now_open')}
           </p>
-          <p className="mt-1 text-[13px] font-semibold" style={{ color: "rgba(255,255,255,0.55)" }}>
+          <p className="mt-1 text-body font-semibold" style={{ color: "rgba(255,255,255,0.55)" }}>
             <span style={{ color: "rgba(255,255,255,0.85)" }}>{heroComp.name}</span>
             {memberCounts[heroComp.id] ? (
               <span className="ml-2 font-mono text-xs" style={{ color: "rgba(255,255,255,0.35)" }}>
@@ -355,11 +355,11 @@ async function Dashboard({ userId, t }: { userId: string; t: TFn }) {
                 />
               </svg>
               <div className="absolute inset-0 flex flex-col items-center justify-center">
-                <span className="font-mono text-[22px] font-bold leading-none" style={{ color: "#d4af37" }}>
+                <span className="font-mono text-page-title font-bold leading-none" style={{ color: "#d4af37" }}>
                   {heroPickCount}
                 </span>
                 <span
-                  className="mt-0.5 font-mono text-[11px] font-medium leading-none"
+                  className="mt-0.5 font-mono text-caption font-medium leading-none"
                   style={{ color: "rgba(212,175,55,0.5)" }}
                 >
                   /{heroEvtCount}
@@ -368,10 +368,10 @@ async function Dashboard({ userId, t }: { userId: string; t: TFn }) {
             </div>
 
             <div className="flex-1">
-              <h2 className="text-[22px] font-extrabold leading-tight text-white">
+              <h2 className="text-page-title font-extrabold leading-tight text-white">
                 {heroRound.name ?? `Round ${heroRound.round_number}`}
               </h2>
-              <p className="mt-1 text-[13px] font-semibold" style={{ color: "rgba(255,255,255,0.45)" }}>
+              <p className="mt-1 text-body font-semibold" style={{ color: "rgba(255,255,255,0.45)" }}>
                 {t('dash.picks_made', { picked: String(heroPickCount), total: String(heroEvtCount) })}
               </p>
               {daysLeft !== null && (
@@ -389,13 +389,13 @@ async function Dashboard({ userId, t }: { userId: string; t: TFn }) {
           </div>
 
           <div
-            className="mt-5 rounded-[14px] py-3.5 text-center text-[15px] font-extrabold"
+            className="mt-5 rounded-[14px] py-3.5 text-center text-item-label font-extrabold"
             style={{ background: "#f59e0b", color: "#0a0f0a", boxShadow: "0 4px 16px rgba(212,175,55,0.35)" }}
           >
             {t('dash.make_picks')}
           </div>
           {deadlineLabel && (
-            <p className="mt-2 text-center text-[11px] font-medium" style={{ color: "rgba(255,255,255,0.35)" }}>
+            <p className="mt-2 text-center text-caption font-medium" style={{ color: "rgba(255,255,255,0.35)" }}>
               {t('dash.deadline', { deadline: deadlineLabel })}
             </p>
           )}
@@ -407,7 +407,7 @@ async function Dashboard({ userId, t }: { userId: string; t: TFn }) {
           className="mt-2 block rounded-3xl p-6 transition-all active:scale-[0.98]"
           style={{ background: "#0a0f0a", color: "#f1ece2" }}
         >
-          <p className="text-[10px] font-bold uppercase tracking-widest" style={{ color: "#006847" }}>
+          <p className="text-micro font-bold uppercase tracking-widest" style={{ color: "#006847" }}>
             {t('landing.wc_title')} 2026
           </p>
           <h2 className="mt-1 text-lg font-extrabold">{t('wc.make_picks')}</h2>
@@ -453,10 +453,10 @@ async function Dashboard({ userId, t }: { userId: string; t: TFn }) {
               <CrosshairIcon />
             </div>
             <div className="min-w-0 flex-1">
-              <div className="text-[13px] font-bold text-ps-text">{t('dash.personal_predictions')}</div>
-              <div className="mt-0.5 text-[11px] font-medium text-ps-text-ter">{t('dash.personal_desc')}</div>
+              <div className="text-body font-bold text-ps-text">{t('dash.personal_predictions')}</div>
+              <div className="mt-0.5 text-caption font-medium text-ps-text-ter">{t('dash.personal_desc')}</div>
             </div>
-            <span className="rounded-full bg-ps-chip px-2 py-0.5 text-[10px] font-bold text-ps-text-ter">
+            <span className="rounded-full bg-ps-chip px-2 py-0.5 text-micro font-bold text-ps-text-ter">
               {t('common.open')}
             </span>
           </Link>
@@ -470,10 +470,10 @@ async function Dashboard({ userId, t }: { userId: string; t: TFn }) {
               <PodiumIcon />
             </div>
             <div className="min-w-0 flex-1">
-              <div className="text-[13px] font-bold text-ps-text">{t('dash.leaderboard')}</div>
-              <div className="mt-0.5 text-[11px] font-medium text-ps-text-ter">{t('dash.leaderboard_desc')}</div>
+              <div className="text-body font-bold text-ps-text">{t('dash.leaderboard')}</div>
+              <div className="mt-0.5 text-caption font-medium text-ps-text-ter">{t('dash.leaderboard_desc')}</div>
             </div>
-            <span className="rounded-full bg-ps-chip px-2 py-0.5 text-[10px] font-bold text-ps-text-ter">
+            <span className="rounded-full bg-ps-chip px-2 py-0.5 text-micro font-bold text-ps-text-ter">
               {t('common.view')}
             </span>
           </Link>
@@ -497,7 +497,7 @@ async function Dashboard({ userId, t }: { userId: string; t: TFn }) {
                 </div>
                 <div className="min-w-0 flex-1">
                   <div className="flex items-center gap-1.5">
-                    <span className="text-[13px] font-bold text-ps-text">{comp.name}</span>
+                    <span className="text-body font-bold text-ps-text">{comp.name}</span>
                     {isCompAdmin && (
                       <Link
                         href={`/competitions/${comp.id}`}
@@ -512,7 +512,7 @@ async function Dashboard({ userId, t }: { userId: string; t: TFn }) {
                       </Link>
                     )}
                   </div>
-                  <div className="mt-0.5 flex items-center gap-1.5 text-[11px] font-medium text-ps-text-ter">
+                  <div className="mt-0.5 flex items-center gap-1.5 text-caption font-medium text-ps-text-ter">
                     <span>
                       {activeRound
                         ? (activeRound.name ?? `Round ${activeRound.round_number}`)
@@ -528,7 +528,7 @@ async function Dashboard({ userId, t }: { userId: string; t: TFn }) {
                 </div>
                 {activeRound ? (
                   <span
-                    className={`rounded-full px-2 py-0.5 font-mono text-[10px] font-bold ${
+                    className={`rounded-full px-2 py-0.5 font-mono text-micro font-bold ${
                       evtCount > 0 && pickCount >= evtCount
                         ? "bg-[rgba(10,168,109,0.1)] text-ps-green"
                         : pickCount > 0
@@ -539,7 +539,7 @@ async function Dashboard({ userId, t }: { userId: string; t: TFn }) {
                     {pickCount}/{evtCount}
                   </span>
                 ) : (
-                  <span className="rounded-full bg-[rgba(245,158,11,0.1)] px-2 py-0.5 text-[10px] font-bold text-[#b8741f]">
+                  <span className="rounded-full bg-[rgba(245,158,11,0.1)] px-2 py-0.5 text-micro font-bold text-[#b8741f]">
                     {t('common.idle')}
                   </span>
                 )}

@@ -235,7 +235,7 @@ const MORE_NOTIFS_KEY = "ps-more-notifs-expanded";
 /** iOS-style section label — sits outside the card. */
 function SectionLabel({ children }: { children: React.ReactNode }) {
   return (
-    <h2 className="mb-1.5 pl-1 text-[11px] font-semibold uppercase tracking-[0.06em] text-ps-text-ter">
+    <h2 className="mb-1.5 pl-1 text-caption font-semibold uppercase tracking-wide text-ps-text-ter">
       {children}
     </h2>
   );

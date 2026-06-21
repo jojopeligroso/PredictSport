@@ -73,7 +73,7 @@ export function WcJoinCard({
         .filter(Boolean)
         .join(" ")}
     >
-      <h2 className="font-display text-xl font-extrabold uppercase tracking-tight text-ps-text">
+      <h2 className="font-display text-section-title font-extrabold uppercase tracking-tight text-ps-text">
         {t("wc.join_title")}
       </h2>
       <p className="mt-2 text-sm text-ps-text-sec">

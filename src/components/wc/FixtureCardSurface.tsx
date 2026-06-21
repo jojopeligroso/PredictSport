@@ -71,7 +71,7 @@ export function FixtureCardSurface({
       ].join(" ")}
       style={{ backgroundColor: cityMeta.color, ...haloStyle }}
     >
-      <header className="flex items-center justify-between gap-2 px-2.5 pt-2.5 text-[0.7rem] font-bold uppercase tracking-wide text-white/85">
+      <header className="flex items-center justify-between gap-2 px-2.5 pt-2.5 text-caption font-bold uppercase tracking-wide text-white/85">
         <span className="shrink-0">{headerLeft}</span>
         <span className="min-w-0 truncate text-right font-mono normal-case tracking-normal text-white/85">
           {headerRight}

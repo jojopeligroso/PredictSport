@@ -188,13 +188,13 @@ export function TabBar({ latestChatAt }: TabBarProps) {
               <span className="relative">
                 {tab.icon}
                 {!!tab.badge && tab.badge > 0 && (
-                  <span className="absolute -right-2 -top-1 flex h-3.5 min-w-[14px] items-center justify-center rounded-full bg-ps-amber px-0.5 text-[9px] font-bold leading-none text-white">
+                  <span className="absolute -right-2 -top-1 flex h-3.5 min-w-[14px] items-center justify-center rounded-full bg-ps-amber px-0.5 text-micro font-bold leading-none text-white">
                     {tab.badge > 9 ? "9+" : tab.badge}
                   </span>
                 )}
               </span>
               <span
-                className="relative text-[11px] font-semibold uppercase tracking-wider leading-none"
+                className="relative text-micro font-semibold uppercase tracking-wider leading-none"
               >
                 {t(tab.key)}
               </span>

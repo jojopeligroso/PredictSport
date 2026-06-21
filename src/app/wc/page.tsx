@@ -44,7 +44,7 @@ export default async function WorldCupLanding() {
 function ComingSoonPanel({ t }: { t: (key: string, vars?: Record<string, string | number>) => string }) {
   return (
     <div className="mx-auto max-w-[480px] px-4 pt-16 text-center">
-      <p className="font-mono text-[10px] font-bold uppercase tracking-[0.18em] text-ps-amber-deep">
+      <p className="font-mono text-micro font-bold uppercase tracking-[0.18em] text-ps-amber-deep">
         {t('common.coming_soon')}
       </p>
       <h1 className="mt-2 font-display text-3xl font-extrabold uppercase tracking-tight text-ps-text">

@@ -76,7 +76,7 @@ export function DayCalendarPills({
           return (
             <span
               key={mg.month}
-              className="absolute font-mono text-[9px] font-bold uppercase tracking-[0.15em] text-ps-text-ter"
+              className="absolute font-mono text-micro font-bold uppercase tracking-[0.15em] text-ps-text-ter"
               style={{ left: `${leftPx}px` }}
             >
               {mg.month}
@@ -142,7 +142,7 @@ export function DayCalendarPills({
                 ].join(" ")}
                 style={pillShadow}
               >
-                <span className="font-mono text-[9px] font-bold uppercase tracking-[0.10em] text-ps-text-ter">
+                <span className="font-mono text-micro font-bold uppercase tracking-[0.10em] text-ps-text-ter">
                   {d.weekday}
                 </span>
                 <span className="font-display text-base font-extrabold leading-none text-ps-text">
@@ -169,7 +169,7 @@ function PillStatusIndicator({ status }: { status: DayPredictionStatus }) {
       // Green tick on amber-accented pill — completion state
       return (
         <span
-          className="mt-1 inline-flex h-3.5 w-3.5 items-center justify-center rounded-full bg-ps-green text-[8px] font-extrabold leading-none text-white"
+          className="mt-1 inline-flex h-3.5 w-3.5 items-center justify-center rounded-full bg-ps-green text-micro font-extrabold leading-none text-white"
           aria-label={t('calendar.complete')}
         >
           ✓
@@ -179,7 +179,7 @@ function PillStatusIndicator({ status }: { status: DayPredictionStatus }) {
       // Purple exclamation — attention, exact score needed
       return (
         <span
-          className="mt-1 inline-flex h-3.5 w-3.5 items-center justify-center rounded-full text-[9px] font-extrabold leading-none text-white"
+          className="mt-1 inline-flex h-3.5 w-3.5 items-center justify-center rounded-full text-micro font-extrabold leading-none text-white"
           style={{ background: CHROME_PALETTE.attention }}
           aria-label={t('calendar.exact_score_needed')}
         >
@@ -190,7 +190,7 @@ function PillStatusIndicator({ status }: { status: DayPredictionStatus }) {
       // Red X — incomplete, <24h to lock
       return (
         <span
-          className="mt-1 inline-flex h-3.5 w-3.5 items-center justify-center rounded-full bg-ps-red text-[8px] font-extrabold leading-none text-white"
+          className="mt-1 inline-flex h-3.5 w-3.5 items-center justify-center rounded-full bg-ps-red text-micro font-extrabold leading-none text-white"
           aria-label={t('calendar.locks_soon')}
         >
           ✗
@@ -246,7 +246,7 @@ function JoinCutoffBadge() {
           e.stopPropagation();
           setOpen((v) => !v);
         }}
-        className="inline-flex h-4 w-4 items-center justify-center rounded-full text-[10px] font-extrabold leading-none"
+        className="inline-flex h-4 w-4 items-center justify-center rounded-full text-micro font-extrabold leading-none"
         style={{
           background: CHROME_PALETTE.warning,
           color: "#191512",
@@ -264,10 +264,10 @@ function JoinCutoffBadge() {
             className="fixed z-50 w-56 rounded-lg border border-ps-border bg-ps-surface p-3 text-left shadow-lg"
             style={{ top: `${pos.top}px`, left: `${pos.left}px`, position: "absolute" }}
           >
-            <p className="text-[11px] font-semibold text-ps-text">
+            <p className="text-caption font-semibold text-ps-text">
               {t('calendar.joins_close')}
             </p>
-            <p className="mt-1 text-[11px] leading-snug text-ps-text-sec">
+            <p className="mt-1 text-caption leading-snug text-ps-text-sec">
               {t('calendar.joins_close_desc')}
             </p>
             <button
@@ -278,7 +278,7 @@ function JoinCutoffBadge() {
                 );
                 setOpen(false);
               }}
-              className="mt-2 w-full rounded-lg bg-ps-text px-3 py-2 text-[11px] font-semibold text-ps-bg transition-colors hover:bg-ps-text/90"
+              className="mt-2 w-full rounded-lg bg-ps-text px-3 py-2 text-caption font-semibold text-ps-bg transition-colors hover:bg-ps-text/90"
             >
               {t('calendar.copy_invite')}
             </button>

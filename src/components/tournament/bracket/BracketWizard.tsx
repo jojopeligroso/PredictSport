@@ -825,7 +825,7 @@ function StepNav({
               onClick={() => onNavigate(i)}
               className={[
                 "flex items-center justify-center rounded-full font-mono font-bold transition-all duration-200",
-                isLarge ? "h-8 w-8 text-xs" : "h-5 w-5 text-[9px]",
+                isLarge ? "h-8 w-8 text-xs" : "h-5 w-5 text-micro",
                 isCurrent
                   ? "bg-ps-text text-ps-bg"
                   : isReachable
@@ -843,10 +843,10 @@ function StepNav({
 
       {/* Step label + save status */}
       <div className="flex items-center justify-between">
-        <p className="font-mono text-[10px] font-bold uppercase tracking-widest text-ps-text-ter">
+        <p className="font-mono text-micro font-bold uppercase tracking-widest text-ps-text-ter">
           {stepLabel(step, t)}
         </p>
-        <div className="flex items-center gap-2 text-[11px] text-ps-text-sec">
+        <div className="flex items-center gap-2 text-caption text-ps-text-sec">
           {showReset && (
             <button
               type="button"

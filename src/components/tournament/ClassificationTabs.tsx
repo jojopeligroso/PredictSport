@@ -93,7 +93,7 @@ export function ClassificationTabs({
   const searchParams = useSearchParams();
   const RIVALS_TAB = "__rivals__";
   const initialRivalEventId = searchParams.get("eventId");
-  const shouldStartOnRivals = searchParams.get("tab") === "rivals";
+  const tabParam = searchParams.get("tab");
 
   // Memoized so the reference is stable across renders — otherwise the
   // my-group fetch effect below (which depends on it) re-runs on every render
@@ -106,7 +106,12 @@ export function ClassificationTabs({
     (c) => c.classification_key === "format"
   );
   const [activeId, setActiveId] = useState<string>(() => {
-    if (shouldStartOnRivals) return RIVALS_TAB;
+    if (tabParam === "rivals") return RIVALS_TAB;
+    // Deep-link to a classification by key (e.g. ?tab=overall, ?tab=format)
+    if (tabParam) {
+      const match = visibleClassifications.find((c) => c.classification_key === tabParam);
+      if (match) return match.id;
+    }
     return formatClassification?.id ?? visibleClassifications[0]?.id ?? "";
   });
   const [standings, setStandings] = useState<StandingRow[]>([]);
@@ -362,7 +367,7 @@ function FormatDrawBanner({
 
   return (
     <div className="mt-3 rounded-xl border border-ps-amber/20 bg-ps-amber/5 px-4 py-3 text-center">
-      <p className="font-mono text-[10px] font-bold uppercase tracking-[0.12em] text-ps-amber-deep">
+      <p className="font-mono text-micro font-bold uppercase tracking-[0.12em] text-ps-amber-deep">
         {label}
       </p>
       <p className="mt-1 font-mono text-base font-bold text-ps-text">
@@ -427,7 +432,7 @@ function FlipRow({
                 {row.display_name}
               </span>
               {isMe && (
-                <span className="shrink-0 rounded bg-ps-amber/20 px-1 py-0.5 text-[10px] font-bold text-ps-amber">
+                <span className="shrink-0 rounded bg-ps-amber/20 px-1 py-0.5 text-micro font-bold text-ps-amber">
                   {t('classification.you_label')}
                 </span>
               )}
@@ -440,13 +445,13 @@ function FlipRow({
                 </span>
               )}
               {isEliminated && (
-                <span className="shrink-0 rounded bg-ps-red/15 px-1 py-0.5 text-[10px] font-bold text-ps-red">
+                <span className="shrink-0 rounded bg-ps-red/15 px-1 py-0.5 text-micro font-bold text-ps-red">
                   {row.status === "dead" ? t('classification.dead') : t('classification.out')}
                 </span>
               )}
               {row.movement !== undefined && row.movement !== 0 && !isEliminated && (
                 <span
-                  className={`shrink-0 text-[10px] font-bold ${
+                  className={`shrink-0 text-micro font-bold ${
                     row.movement > 0 ? "text-ps-green" : "text-ps-red"
                   }`}
                 >
@@ -484,10 +489,10 @@ function FlipRow({
                   {row.accuracy?.outcome ? `${row.accuracy.outcome.pct}%` : "\u2014"}
                 </span>
                 <div className="flex flex-col min-w-0">
-                  <span className="text-[11px] font-semibold text-ps-text-sec leading-tight">
+                  <span className="text-caption font-semibold text-ps-text-sec leading-tight">
                     {t('stats.outcome')}
                   </span>
-                  <span className="font-mono text-[11px] text-ps-text-ter leading-tight">
+                  <span className="font-mono text-caption text-ps-text-ter leading-tight">
                     {row.accuracy?.outcome
                       ? `${row.accuracy.outcome.correct}/${row.accuracy.outcome.total}`
                       : ""}
@@ -504,10 +509,10 @@ function FlipRow({
                   {row.accuracy?.exact ? `${row.accuracy.exact.pct}%` : "\u2014"}
                 </span>
                 <div className="flex flex-col min-w-0">
-                  <span className="text-[11px] font-semibold text-ps-text-sec leading-tight">
+                  <span className="text-caption font-semibold text-ps-text-sec leading-tight">
                     {t('stats.exact_score')}
                   </span>
-                  <span className="font-mono text-[11px] text-ps-text-ter leading-tight">
+                  <span className="font-mono text-caption text-ps-text-ter leading-tight">
                     {row.accuracy?.exact
                       ? `${row.accuracy.exact.correct}/${row.accuracy.exact.total}`
                       : ""}
@@ -599,7 +604,7 @@ function VisibilityToggle({
           ? t('classification.anon_desc')
           : t('classification.public_desc')
       }
-      className={`rounded px-1.5 py-0.5 text-[10px] font-semibold transition-colors ${
+      className={`rounded px-1.5 py-0.5 text-micro font-semibold transition-colors ${
         isPrivate
           ? "bg-ps-text-ter/15 text-ps-text-ter hover:bg-ps-text-ter/25"
           : "bg-ps-amber/10 text-ps-amber hover:bg-ps-amber/20"
@@ -844,7 +849,7 @@ function ClassificationRulesPreview({
           <h3 className="text-sm font-bold text-ps-text">{heading}</h3>
           <div className="flex items-center gap-2">
             <FlagToggle />
-            <button type="button" onClick={toggleDismissed} className="flex h-6 w-6 items-center justify-center rounded text-ps-text-ter hover:text-ps-text" aria-label="Collapse">
+            <button type="button" onClick={toggleDismissed} className="flex h-6 w-6 min-h-[44px] min-w-[44px] items-center justify-center rounded text-ps-text-ter hover:text-ps-text" aria-label="Collapse">
               <svg className="h-4 w-4 rotate-180" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
               </svg>
@@ -876,7 +881,7 @@ function ClassificationRulesPreview({
           <h3 className="text-sm font-bold text-ps-text">{heading}</h3>
           <div className="flex items-center gap-2">
             <FlagToggle />
-            <button type="button" onClick={toggleDismissed} className="flex h-6 w-6 items-center justify-center rounded text-ps-text-ter hover:text-ps-text" aria-label="Collapse">
+            <button type="button" onClick={toggleDismissed} className="flex h-6 w-6 min-h-[44px] min-w-[44px] items-center justify-center rounded text-ps-text-ter hover:text-ps-text" aria-label="Collapse">
               <svg className="h-4 w-4 rotate-180" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
               </svg>
@@ -903,7 +908,7 @@ function ClassificationRulesPreview({
       <div className="mt-4 rounded-xl border border-ps-border bg-ps-surface p-4">
         <div className="flex items-center justify-between">
           <h3 className="text-sm font-bold text-ps-text">{heading}</h3>
-          <button type="button" onClick={toggleDismissed} className="flex h-6 w-6 items-center justify-center rounded text-ps-text-ter hover:text-ps-text" aria-label="Collapse">
+          <button type="button" onClick={toggleDismissed} className="flex h-6 w-6 min-h-[44px] min-w-[44px] items-center justify-center rounded text-ps-text-ter hover:text-ps-text" aria-label="Collapse">
             <svg className="h-4 w-4 rotate-180" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
             </svg>
@@ -921,7 +926,7 @@ function ClassificationRulesPreview({
       <div className="mt-4 rounded-xl border border-ps-border bg-ps-surface p-4">
         <div className="flex items-center justify-between">
           <h3 className="text-sm font-bold text-ps-text">{heading}</h3>
-          <button type="button" onClick={toggleDismissed} className="flex h-6 w-6 items-center justify-center rounded text-ps-text-ter hover:text-ps-text" aria-label="Collapse">
+          <button type="button" onClick={toggleDismissed} className="flex h-6 w-6 min-h-[44px] min-w-[44px] items-center justify-center rounded text-ps-text-ter hover:text-ps-text" aria-label="Collapse">
             <svg className="h-4 w-4 rotate-180" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
             </svg>
@@ -1028,7 +1033,7 @@ function FormatGroupCard({
               <span className={`flex-1 text-sm ${m.is_self ? "font-semibold text-ps-text" : "text-ps-text"}`}>
                 {m.display_name}
                 {m.is_self && (
-                  <span className="ml-1.5 rounded bg-ps-amber/20 px-1 py-0.5 text-[10px] font-bold text-ps-amber">
+                  <span className="ml-1.5 rounded bg-ps-amber/20 px-1 py-0.5 text-micro font-bold text-ps-amber">
                     {t('classification.you_label')}
                   </span>
                 )}
@@ -1062,7 +1067,7 @@ function DrawCountdown({ drawAt }: { drawAt: string }) {
   }, [drawAt, t]);
 
   return (
-    <span className="text-[11px] font-medium text-ps-amber">{label}</span>
+    <span className="text-caption font-medium text-ps-amber">{label}</span>
   );
 }
 
@@ -1107,7 +1112,7 @@ function QualificationRuleSummary({ groupSize }: { groupSize: number }) {
 
   if (groupSize === 3) {
     return (
-      <div className="mt-2 flex flex-wrap gap-1.5 text-[10px] font-semibold">
+      <div className="mt-2 flex flex-wrap gap-1.5 text-micro font-semibold">
         <span className="rounded-full bg-ps-green/15 px-2 py-0.5 text-ps-green">
           {t('group.top2_qualify')}
         </span>
@@ -1120,7 +1125,7 @@ function QualificationRuleSummary({ groupSize }: { groupSize: number }) {
 
   if (groupSize === 4) {
     return (
-      <div className="mt-2 flex flex-wrap gap-1.5 text-[10px] font-semibold">
+      <div className="mt-2 flex flex-wrap gap-1.5 text-micro font-semibold">
         <span className="rounded-full bg-ps-green/15 px-2 py-0.5 text-ps-green">
           {t('group.top2_qualify')}
         </span>
@@ -1136,7 +1141,7 @@ function QualificationRuleSummary({ groupSize }: { groupSize: number }) {
 
   if (groupSize >= 5) {
     return (
-      <div className="mt-2 flex flex-wrap gap-1.5 text-[10px] font-semibold">
+      <div className="mt-2 flex flex-wrap gap-1.5 text-micro font-semibold">
         <span className="rounded-full bg-ps-green/15 px-2 py-0.5 text-ps-green">
           {t('group.top3_qualify')}
         </span>
@@ -1171,13 +1176,13 @@ function YourGroupCard({
         <div>
           <div className="flex items-center gap-2">
             <h3 className="text-sm font-bold text-ps-text">{group.name}</h3>
-            <span className="rounded bg-ps-amber/20 px-1.5 py-0.5 text-[10px] font-bold text-ps-amber">
+            <span className="rounded bg-ps-amber/20 px-1.5 py-0.5 text-micro font-bold text-ps-amber">
               {t('classification.you_label')}
             </span>
           </div>
           <QualificationRuleSummary groupSize={groupSize} />
         </div>
-        <span className="text-[10px] font-medium text-ps-text-ter">
+        <span className="text-micro font-medium text-ps-text-ter">
           {t('group.players_count', { count: groupSize })}
         </span>
       </div>
@@ -1217,7 +1222,7 @@ function YourGroupCard({
               >
                 {m.display_name}
                 {m.is_self && (
-                  <span className="ml-1.5 rounded bg-ps-amber/20 px-1 py-0.5 text-[10px] font-bold text-ps-amber">
+                  <span className="ml-1.5 rounded bg-ps-amber/20 px-1 py-0.5 text-micro font-bold text-ps-amber">
                     {t('classification.you_label')}
                   </span>
                 )}
@@ -1261,7 +1266,7 @@ function AllGroupsView({
             {/* Group header */}
             <div className="flex items-center justify-between px-3 py-2">
               <h3 className="text-sm font-bold text-ps-text">{group.name}</h3>
-              <span className="text-[10px] font-medium text-ps-text-ter">
+              <span className="text-micro font-medium text-ps-text-ter">
                 {t('group.players_count', { count: group.members.length })}
               </span>
             </div>
@@ -1287,7 +1292,7 @@ function AllGroupsView({
                     >
                       {m.display_name}
                       {m.is_self && (
-                        <span className="ml-1.5 rounded bg-ps-amber/20 px-1 py-0.5 text-[10px] font-bold text-ps-amber">
+                        <span className="ml-1.5 rounded bg-ps-amber/20 px-1 py-0.5 text-micro font-bold text-ps-amber">
                           {t('classification.you_label')}
                         </span>
                       )}

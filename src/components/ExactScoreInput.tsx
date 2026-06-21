@@ -166,7 +166,7 @@ export function ExactScoreInput({
             className={numInputClasses}
           />
           {homeTotal !== null && (
-            <span className="text-[11px] font-mono text-ps-text-ter">
+            <span className="text-caption font-mono text-ps-text-ter">
               ({homeTotal})
             </span>
           )}
@@ -195,7 +195,7 @@ export function ExactScoreInput({
             className={numInputClasses}
           />
           {awayTotal !== null && (
-            <span className="text-[11px] font-mono text-ps-text-ter">
+            <span className="text-caption font-mono text-ps-text-ter">
               ({awayTotal})
             </span>
           )}

@@ -409,12 +409,12 @@ function PickRow({
             {hasTeams ? `${home} vs ${away}` : pick.event_name}
           </p>
           <div className="mt-0.5 flex flex-wrap items-center gap-1.5">
-            <span className="font-mono text-[10px] text-ps-text-ter">
+            <span className="font-mono text-micro text-ps-text-ter">
               {formatTime(pick.start_time)}
             </span>
             <SportPill sport={toSportKey(pick.sport as Sport)} size="sm" />
             {leagueLabel && (
-              <span className="max-w-[100px] truncate rounded-full bg-ps-chip px-1.5 py-px text-[10px] font-semibold text-ps-text-ter">
+              <span className="max-w-[100px] truncate rounded-full bg-ps-chip px-1.5 py-px text-micro font-semibold text-ps-text-ter">
                 {leagueLabel}
               </span>
             )}
@@ -426,7 +426,7 @@ function PickRow({
           <div className="text-right">
             <p className="text-xs font-extrabold text-ps-text">{winnerPick}</p>
             {scorePrediction && (
-              <p className="mt-0.5 font-mono text-[10px] text-ps-amber-deep">
+              <p className="mt-0.5 font-mono text-micro text-ps-amber-deep">
                 {formatScoreDisplay(scorePrediction, pick.sport)}
                 {scoreCorrect !== null && (
                   <span className={`ml-1 font-bold ${scoreCorrect ? "text-ps-green" : "text-ps-red"}`}>
@@ -437,7 +437,7 @@ function PickRow({
             )}
             {isPast && showResultHints && hasResult ? (
               <span
-                className={`mt-0.5 inline-block rounded-full px-2 py-0.5 text-[10px] font-extrabold uppercase tracking-wide ${
+                className={`mt-0.5 inline-block rounded-full px-2 py-0.5 text-micro font-extrabold uppercase tracking-wide ${
                   isCorrect
                     ? "bg-ps-green-soft text-ps-green"
                     : "bg-ps-red/10 text-ps-red"
@@ -446,7 +446,7 @@ function PickRow({
                 {isCorrect ? "Correct" : "Wrong"}
               </span>
             ) : isPast && resultValue !== null ? (
-              <p className="mt-0.5 text-[10px] font-semibold text-ps-text-ter">
+              <p className="mt-0.5 text-micro font-semibold text-ps-text-ter">
                 Result: {resultValue}
               </p>
             ) : null}
@@ -468,7 +468,7 @@ function PickRow({
       {/* Expanded: change pick area */}
       {isExpanded && !isPast && (
         <div className="border-t border-ps-border/50 px-4 pb-4 pt-3">
-          <p className="mb-2 text-[10px] font-extrabold tracking-widest uppercase text-ps-text-ter">
+          <p className="mb-2 text-micro font-extrabold tracking-widest uppercase text-ps-text-ter">
             Change pick
           </p>
           {options !== null ? (
@@ -579,7 +579,7 @@ function PersonalScoreInput({
   return (
     <div className="mt-3 rounded-xl border border-ps-amber/25 bg-ps-amber-soft p-3">
       <div className="flex items-center justify-between mb-2">
-        <span className="text-[11px] font-bold uppercase tracking-wide text-ps-amber-deep">
+        <span className="text-caption font-bold uppercase tracking-wide text-ps-amber-deep">
           Exact Score
         </span>
       </div>
@@ -682,7 +682,7 @@ function MyPicksTab({
     <div className="flex flex-col gap-8">
       {upcomingPicks.length > 0 && (
         <div>
-          <p className="mb-3 text-[11px] font-extrabold tracking-widest uppercase text-ps-text-ter">
+          <p className="mb-3 text-caption font-extrabold tracking-widest uppercase text-ps-text-ter">
             Coming up
           </p>
           <div className="flex flex-col gap-2">
@@ -703,7 +703,7 @@ function MyPicksTab({
 
       {pastPicks.length > 0 && (
         <div>
-          <p className="mb-3 text-[11px] font-extrabold tracking-widest uppercase text-ps-text-ter">
+          <p className="mb-3 text-caption font-extrabold tracking-widest uppercase text-ps-text-ter">
             Past picks
           </p>
           <div className="flex flex-col gap-2">
@@ -852,7 +852,7 @@ function OutrightsTab({ onNavigateToLeague }: { onNavigateToLeague?: (sportCateg
       {/* Suggestions */}
       {validSuggestions.length > 0 && (
         <div>
-          <p className="mb-2 text-[10px] font-extrabold tracking-widest uppercase text-ps-text-ter">
+          <p className="mb-2 text-micro font-extrabold tracking-widest uppercase text-ps-text-ter">
             Do you want to take a stab at
           </p>
           <div className="flex flex-col gap-2">
@@ -947,7 +947,7 @@ function OutrightsTab({ onNavigateToLeague }: { onNavigateToLeague?: (sportCateg
       {hasOutrights ? (
         ORDER.filter((s) => grouped.has(s)).map((status) => (
           <div key={status}>
-            <p className="mb-2 text-[10px] font-extrabold tracking-widest uppercase text-ps-text-ter">
+            <p className="mb-2 text-micro font-extrabold tracking-widest uppercase text-ps-text-ter">
               {STATUS_LABEL[status]}
             </p>
             <div className="flex flex-col gap-2">
@@ -997,7 +997,7 @@ function OutrightCard({
         {/* Status indicator */}
         {status === "resolved" && (
           <div
-            className={`mt-0.5 shrink-0 h-7 w-7 rounded-full flex items-center justify-center text-[10px] font-extrabold ${
+            className={`mt-0.5 shrink-0 h-7 w-7 rounded-full flex items-center justify-center text-micro font-extrabold ${
               outright.is_correct
                 ? "bg-ps-green-soft text-ps-green"
                 : "bg-ps-red/10 text-ps-red"
@@ -1007,12 +1007,12 @@ function OutrightCard({
           </div>
         )}
         {status === "pending" && (
-          <div className="mt-0.5 shrink-0 h-7 w-7 rounded-full flex items-center justify-center bg-ps-amber/15 text-[10px] font-extrabold text-ps-amber">
+          <div className="mt-0.5 shrink-0 h-7 w-7 rounded-full flex items-center justify-center bg-ps-amber/15 text-micro font-extrabold text-ps-amber">
             ?
           </div>
         )}
         {status === "open" && (
-          <div className="mt-0.5 shrink-0 h-7 w-7 rounded-full flex items-center justify-center bg-ps-chip text-[10px] font-extrabold text-ps-text-ter">
+          <div className="mt-0.5 shrink-0 h-7 w-7 rounded-full flex items-center justify-center bg-ps-chip text-micro font-extrabold text-ps-text-ter">
             &bull;
           </div>
         )}
@@ -1023,7 +1023,7 @@ function OutrightCard({
           <div className="mt-0.5 flex items-center gap-1.5">
             <SportPill sport={toSportKey(outright.sport as Sport)} size="sm" />
             {status === "open" && changesUsed > 0 && (
-              <span className={`font-mono text-[10px] font-semibold ${
+              <span className={`font-mono text-micro font-semibold ${
                 changesRemaining === 0
                   ? "text-ps-red"
                   : changesRemaining === 1
@@ -1042,7 +1042,7 @@ function OutrightCard({
         <div className="shrink-0 text-right">
           <p className="text-xs font-extrabold text-ps-text">{outright.pick ?? "No pick"}</p>
           {resultWinner && (
-            <p className="mt-0.5 text-[10px] font-semibold text-ps-text-ter">
+            <p className="mt-0.5 text-micro font-semibold text-ps-text-ter">
               Winner: {resultWinner}
             </p>
           )}
@@ -1050,12 +1050,12 @@ function OutrightCard({
           {!resultWinner && status === "open" && (
             outright.tournament_started
               ? (!outright.picked_pre_start || outright.change_history.length > 1) && outright.change_history.length > 0 && (
-                <p className="mt-0.5 font-mono text-[10px] text-ps-text-ter">
+                <p className="mt-0.5 font-mono text-micro text-ps-text-ter">
                   {formatChangeDate(outright.change_history[outright.change_history.length - 1].changed_at)}
                 </p>
               )
               : (
-                <p className="mt-0.5 text-[10px] font-semibold italic text-ps-amber-deep">
+                <p className="mt-0.5 text-micro font-semibold italic text-ps-amber-deep">
                   Change your mind?
                 </p>
               )
@@ -1069,7 +1069,7 @@ function OutrightCard({
           <button
             type="button"
             onClick={() => setShowHistory((v) => !v)}
-            className="flex items-center gap-1 text-[10px] font-semibold text-ps-text-ter hover:text-ps-text-sec"
+            className="flex items-center gap-1 text-micro font-semibold text-ps-text-ter hover:text-ps-text-sec"
           >
             <svg
               width="10"
@@ -1086,7 +1086,7 @@ function OutrightCard({
           {showHistory && (
             <div className="mt-1.5 flex flex-col gap-1">
               {outright.change_history.map((h, i) => (
-                <div key={h.changed_at} className="flex items-center gap-2 text-[10px]">
+                <div key={h.changed_at} className="flex items-center gap-2 text-micro">
                   <span className="font-mono text-ps-text-ter">{formatChangeDate(h.changed_at)}</span>
                   <span className={`font-semibold ${i === outright.change_history.length - 1 ? "text-ps-text" : "text-ps-text-ter line-through"}`}>
                     {h.pick}
@@ -1249,7 +1249,7 @@ function ResultsTab({ picks }: { picks: PersonalPick[] }) {
       <div className="flex flex-col rounded-xl border border-ps-border bg-ps-surface px-4 py-3">
         <div className="flex items-center gap-3">
           <div className="flex-1">
-            <p className="text-[10px] font-extrabold tracking-widest uppercase text-ps-text-ter">
+            <p className="text-micro font-extrabold tracking-widest uppercase text-ps-text-ter">
               Record
             </p>
             <p className="mt-0.5 text-sm font-extrabold text-ps-text">
@@ -1257,7 +1257,7 @@ function ResultsTab({ picks }: { picks: PersonalPick[] }) {
             </p>
           </div>
           <div className="text-right">
-            <p className="text-[10px] font-extrabold tracking-widest uppercase text-ps-text-ter">
+            <p className="text-micro font-extrabold tracking-widest uppercase text-ps-text-ter">
               Hit rate
             </p>
             <p className="mt-0.5 text-sm font-extrabold text-ps-text">
@@ -1295,7 +1295,7 @@ function ResultsTab({ picks }: { picks: PersonalPick[] }) {
             >
               {/* Outcome indicator */}
               <div
-                className={`shrink-0 h-7 w-7 rounded-full flex items-center justify-center text-[10px] font-extrabold ${
+                className={`shrink-0 h-7 w-7 rounded-full flex items-center justify-center text-micro font-extrabold ${
                   isCorrect
                     ? "bg-ps-green-soft text-ps-green"
                     : "bg-ps-red/10 text-ps-red"
@@ -1310,7 +1310,7 @@ function ResultsTab({ picks }: { picks: PersonalPick[] }) {
                   {hasTeams ? `${home} vs ${away}` : pick.event_name}
                 </p>
                 <div className="mt-0.5 flex flex-wrap items-center gap-1.5">
-                  <span className="font-mono text-[10px] text-ps-text-ter">
+                  <span className="font-mono text-micro text-ps-text-ter">
                     {formatTime(pick.start_time)}
                   </span>
                   <SportPill sport={toSportKey(pick.sport as Sport)} size="sm" />
@@ -1321,7 +1321,7 @@ function ResultsTab({ picks }: { picks: PersonalPick[] }) {
               <div className="shrink-0 text-right">
                 <p className="text-xs font-extrabold text-ps-text">{pickLabel}</p>
                 {scorePrediction && (
-                  <p className="mt-0.5 font-mono text-[10px] text-ps-amber-deep">
+                  <p className="mt-0.5 font-mono text-micro text-ps-amber-deep">
                     {formatScoreDisplay(scorePrediction, pick.sport)}
                     {scoreCorrect !== null && (
                       <span className={`ml-1 font-bold ${scoreCorrect ? "text-ps-green" : "text-ps-red"}`}>
@@ -1330,7 +1330,7 @@ function ResultsTab({ picks }: { picks: PersonalPick[] }) {
                     )}
                   </p>
                 )}
-                <p className="mt-0.5 text-[10px] font-semibold text-ps-text-ter">
+                <p className="mt-0.5 text-micro font-semibold text-ps-text-ter">
                   Result: {resultLabel}
                 </p>
               </div>
@@ -1469,7 +1469,7 @@ function ContextualOutrightCard({
       <div className="mb-4 rounded-2xl border border-ps-amber/30 bg-ps-amber-soft p-4">
         <div className="flex items-start justify-between">
           <div className="min-w-0 flex-1">
-            <p className="text-[10px] font-extrabold tracking-widest uppercase text-ps-amber-deep">
+            <p className="text-micro font-extrabold tracking-widest uppercase text-ps-amber-deep">
               Outright Winner
             </p>
             <p className="mt-1 text-sm font-extrabold text-ps-text">
@@ -1477,18 +1477,18 @@ function ContextualOutrightCard({
             </p>
             {tournamentStarted ? (
               history.length > 1 ? (
-                <p className="mt-0.5 font-mono text-[10px] text-ps-text-ter">
+                <p className="mt-0.5 font-mono text-micro text-ps-text-ter">
                   Picked {formatChangeDate(history[history.length - 1].changed_at)}
                 </p>
               ) : null
             ) : (
-              <p className="mt-0.5 text-[11px] font-semibold italic text-ps-amber-deep">
+              <p className="mt-0.5 text-caption font-semibold italic text-ps-amber-deep">
                 Change your mind?
               </p>
             )}
             {/* Change budget badge */}
             {tournamentStarted && (
-              <p className={`mt-1.5 font-mono text-[10px] font-semibold ${
+              <p className={`mt-1.5 font-mono text-micro font-semibold ${
                 changesRemaining === 0
                   ? "text-ps-red"
                   : changesRemaining === 1
@@ -1520,7 +1520,7 @@ function ContextualOutrightCard({
             <button
               type="button"
               onClick={() => setShowHistory((v) => !v)}
-              className="flex items-center gap-1 text-[10px] font-semibold text-ps-text-ter hover:text-ps-text-sec"
+              className="flex items-center gap-1 text-micro font-semibold text-ps-text-ter hover:text-ps-text-sec"
             >
               <svg
                 width="10"
@@ -1537,7 +1537,7 @@ function ContextualOutrightCard({
             {showHistory && (
               <div className="mt-1.5 flex flex-col gap-1">
                 {history.map((h, i) => (
-                  <div key={h.changed_at} className="flex items-center gap-2 text-[10px]">
+                  <div key={h.changed_at} className="flex items-center gap-2 text-micro">
                     <span className="font-mono text-ps-text-ter">{formatChangeDate(h.changed_at)}</span>
                     <span className={`font-semibold ${i === history.length - 1 ? "text-ps-text" : "text-ps-text-ter line-through"}`}>
                       {h.pick}
@@ -1560,7 +1560,7 @@ function ContextualOutrightCard({
         <p className="text-sm font-extrabold text-ps-text">
           Who wins {leagueName}?
         </p>
-        <p className="mt-1 text-[11px] text-ps-text-ter">
+        <p className="mt-1 text-caption text-ps-text-ter">
           {isEditing && tournamentStarted
             ? `Change your outright prediction (${changesRemaining} change${changesRemaining !== 1 ? "s" : ""} remaining)`
             : "Make your outright prediction for the season"}
@@ -1629,7 +1629,7 @@ function ContextualOutrightCard({
         <p className="text-sm font-extrabold text-ps-text">
           Who wins {leagueName}?
         </p>
-        <p className="mt-0.5 text-[11px] text-ps-text-ter">
+        <p className="mt-0.5 text-caption text-ps-text-ter">
           Tap to make your outright prediction
         </p>
       </div>
@@ -2289,7 +2289,7 @@ export function PersonalFixtureBrowser({
           <div className="flex flex-col gap-6">
             {grouped.map(([dateStr, dayFixtures]) => (
               <div key={dateStr}>
-                <p className="mb-3 text-[11px] font-extrabold tracking-widest uppercase text-ps-text-ter">
+                <p className="mb-3 text-caption font-extrabold tracking-widest uppercase text-ps-text-ter">
                   {formatDateHeading(dayFixtures[0]!.start_time)}
                 </p>
                 <div className="flex flex-col gap-3">
@@ -2326,17 +2326,17 @@ export function PersonalFixtureBrowser({
                               </p>
                             )}
                             <div className="mt-1.5 flex flex-wrap items-center gap-1.5">
-                              <span className="font-mono text-[11px] text-ps-text-ter">
+                              <span className="font-mono text-caption text-ps-text-ter">
                                 {formatTime(fixture.start_time)}
                               </span>
                               <SportPill sport={toSportKey(fixture.sport)} size="sm" />
                               {fixture.competition_name && (
-                                <span className="max-w-[140px] truncate rounded-full bg-ps-chip px-1.5 py-px text-[10px] font-semibold text-ps-text-ter">
+                                <span className="max-w-[140px] truncate rounded-full bg-ps-chip px-1.5 py-px text-micro font-semibold text-ps-text-ter">
                                   {fixture.competition_name}
                                 </span>
                               )}
                               {currentPickValue && (
-                                <span className="rounded-full bg-ps-green-soft px-2 py-0.5 text-[10px] font-extrabold uppercase tracking-wide text-ps-green">
+                                <span className="rounded-full bg-ps-green-soft px-2 py-0.5 text-micro font-extrabold uppercase tracking-wide text-ps-green">
                                   Picked
                                 </span>
                               )}
@@ -2349,13 +2349,13 @@ export function PersonalFixtureBrowser({
                           currentPickValue ? (
                             <div className="flex items-center gap-1.5">
                               <LockIcon />
-                              <span className="text-[11px] font-semibold text-ps-text-sec">
+                              <span className="text-caption font-semibold text-ps-text-sec">
                                 Your pick:{" "}
                                 <span className="font-extrabold text-ps-text">{currentPickValue}</span>
                               </span>
                             </div>
                           ) : (
-                            <p className="text-[11px] font-semibold text-ps-text-ter">
+                            <p className="text-caption font-semibold text-ps-text-ter">
                               Fixture started — no pick made
                             </p>
                           )
@@ -2412,7 +2412,7 @@ export function PersonalFixtureBrowser({
                             </button>
                           </div>
                         ) : (
-                          <p className="text-[11px] font-semibold text-ps-text-ter">
+                          <p className="text-caption font-semibold text-ps-text-ter">
                             Fixture data not available for predictions
                           </p>
                         )}
@@ -2431,7 +2431,7 @@ export function PersonalFixtureBrowser({
                         {/* Show existing score when locked */}
                         {isLocked && existingScore && (
                           <div className="mt-2 rounded-lg bg-ps-amber-soft border border-ps-amber/20 px-3 py-2">
-                            <span className="text-[11px] font-medium uppercase text-ps-amber-deep">
+                            <span className="text-caption font-medium uppercase text-ps-amber-deep">
                               Exact Score:{" "}
                             </span>
                             <span className="font-mono text-sm font-medium text-ps-text">
@@ -2594,7 +2594,7 @@ function DashboardTab() {
             setShowCustomiseToast(true);
             setTimeout(() => setShowCustomiseToast(false), 2500);
           }}
-          className="rounded-full bg-ps-ink/5 px-3 py-1 text-[10px] font-bold text-ps-text-sec transition-colors hover:bg-ps-ink/10"
+          className="rounded-full bg-ps-ink/5 px-3 py-1 text-micro font-bold text-ps-text-sec transition-colors hover:bg-ps-ink/10"
         >
           Customise
         </button>
@@ -2702,7 +2702,7 @@ function RecentPicksWidget({ picks }: { picks: DashboardStats["recent_picks"] })
             >
               {/* Result indicator */}
               <div
-                className={`shrink-0 h-5 w-5 rounded-full flex items-center justify-center text-[9px] font-extrabold ${
+                className={`shrink-0 h-5 w-5 rounded-full flex items-center justify-center text-micro font-extrabold ${
                   pick.is_correct === null
                     ? "bg-ps-chip text-ps-text-ter"
                     : pick.is_correct
@@ -2722,7 +2722,7 @@ function RecentPicksWidget({ picks }: { picks: DashboardStats["recent_picks"] })
               </span>
 
               {/* Sport tag */}
-              <span className="shrink-0 rounded-full bg-ps-chip px-1.5 py-0.5 text-[9px] font-bold text-ps-text-ter">
+              <span className="shrink-0 rounded-full bg-ps-chip px-1.5 py-0.5 text-micro font-bold text-ps-text-ter">
                 {cfg?.emoji} {cfg?.name ?? pick.sport}
               </span>
             </div>
@@ -2733,7 +2733,7 @@ function RecentPicksWidget({ picks }: { picks: DashboardStats["recent_picks"] })
         <button
           type="button"
           onClick={() => setExpanded(!expanded)}
-          className="mt-2 w-full text-center text-[11px] font-bold text-ps-amber hover:text-ps-amber/80 transition-colors"
+          className="mt-2 w-full text-center text-caption font-bold text-ps-amber hover:text-ps-amber/80 transition-colors"
         >
           {expanded ? "Show less" : `Show all ${picks.length} picks`}
         </button>
@@ -2785,7 +2785,7 @@ function FavouriteTeamOnboarding({ onDismiss, onSaved }: { onDismiss: () => void
         </p>
 
         <div className="mt-4">
-          <label className="mb-1.5 block text-[10px] font-bold uppercase tracking-widest text-ps-text-ter">
+          <label className="mb-1.5 block text-micro font-bold uppercase tracking-widest text-ps-text-ter">
             Sport
           </label>
           <div className="flex flex-wrap gap-1.5">
@@ -2795,7 +2795,7 @@ function FavouriteTeamOnboarding({ onDismiss, onSaved }: { onDismiss: () => void
                 <button
                   key={key}
                   onClick={() => setSelectedSport(key)}
-                  className={`rounded-full px-2.5 py-1 text-[11px] font-bold transition-colors ${
+                  className={`rounded-full px-2.5 py-1 text-caption font-bold transition-colors ${
                     key === selectedSport
                       ? "bg-ps-amber text-ps-ink"
                       : "bg-ps-ink/5 text-ps-text-sec hover:bg-ps-ink/10"
@@ -2809,7 +2809,7 @@ function FavouriteTeamOnboarding({ onDismiss, onSaved }: { onDismiss: () => void
         </div>
 
         <div className="mt-4">
-          <label className="mb-1.5 block text-[10px] font-bold uppercase tracking-widest text-ps-text-ter">
+          <label className="mb-1.5 block text-micro font-bold uppercase tracking-widest text-ps-text-ter">
             Team name
           </label>
           <input
@@ -2855,7 +2855,7 @@ function FavouriteTeamWidget({
           <p className="text-xs font-semibold text-ps-text-sec">No favourite team set</p>
           <a
             href="/profile"
-            className="mt-1.5 inline-block rounded-full bg-ps-amber/15 px-3 py-1 text-[10px] font-bold text-ps-amber transition-colors hover:bg-ps-amber/25"
+            className="mt-1.5 inline-block rounded-full bg-ps-amber/15 px-3 py-1 text-micro font-bold text-ps-amber transition-colors hover:bg-ps-amber/25"
           >
             Set a favourite team
           </a>
@@ -2899,7 +2899,7 @@ function FavouriteTeamWidget({
                 <span className="min-w-0 flex-1 truncate text-xs text-ps-text">
                   {pick.event_name}
                 </span>
-                <span className="font-mono text-[10px] text-ps-text-ter">
+                <span className="font-mono text-micro text-ps-text-ter">
                   {pick.is_correct === true ? "W" : pick.is_correct === false ? "L" : "—"}
                 </span>
               </div>
@@ -2950,7 +2950,7 @@ function ByYearWidget({ yearEntries }: { yearEntries: [string, { total: number; 
 function DashboardSection({ title, children }: { title: string; children: import("react").ReactNode }) {
   return (
     <div className="rounded-xl border border-ps-border bg-ps-surface px-4 py-3">
-      <p className="mb-2.5 text-[10px] font-extrabold tracking-widest uppercase text-ps-text-ter">
+      <p className="mb-2.5 text-micro font-extrabold tracking-widest uppercase text-ps-text-ter">
         {title}
       </p>
       {children}
@@ -2962,7 +2962,7 @@ function StatCell({ label, value }: { label: string; value: string }) {
   return (
     <div>
       <p className="font-mono text-base font-extrabold text-ps-text">{value}</p>
-      <p className="mt-0.5 text-[10px] font-semibold text-ps-text-ter">{label}</p>
+      <p className="mt-0.5 text-micro font-semibold text-ps-text-ter">{label}</p>
     </div>
   );
 }
@@ -2993,7 +2993,7 @@ function BreakdownRow({
       <span className={`min-w-0 flex-1 truncate text-xs font-semibold ${active ? "text-ps-amber" : "text-ps-text"}`}>
         {label}
       </span>
-      <span className="font-mono text-[10px] text-ps-text-ter">
+      <span className="font-mono text-micro text-ps-text-ter">
         {correct}/{total}
       </span>
       <span className={`w-10 text-right font-mono text-xs font-extrabold ${active ? "text-ps-amber" : "text-ps-text"}`}>
@@ -3042,7 +3042,7 @@ function TabButton({
       {label}
       {count !== undefined && count > 0 && (
         <span
-          className={`rounded-full px-1.5 py-0.5 text-[10px] font-extrabold ${
+          className={`rounded-full px-1.5 py-0.5 text-micro font-extrabold ${
             active ? "bg-ps-amber text-[#1a1208]" : "bg-ps-chip text-ps-text-ter"
           }`}
         >

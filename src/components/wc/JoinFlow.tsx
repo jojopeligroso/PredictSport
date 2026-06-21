@@ -70,7 +70,7 @@ export function JoinFlow({
 
   return (
     <div className="mx-auto max-w-[480px] px-4 pt-12 pb-16">
-      <h1 className="font-display text-2xl uppercase tracking-tight text-ps-text">
+      <h1 className="font-display text-page-title uppercase tracking-tight text-ps-text">
         {t('join.heading')}
       </h1>
 

@@ -186,7 +186,7 @@ const COMPACT_THEME: SurfaceTheme = {
       filled ? "bg-white border-ps-amber" : "bg-transparent border-ps-border",
       "focus:border-ps-amber focus:bg-white",
     ].join(" "),
-  errorText: "mt-1 text-[11px] font-medium text-ps-red",
+  errorText: "mt-1 text-caption font-medium text-ps-red",
   lockedReadOnly: "rounded-lg border border-ps-border bg-ps-surface px-3 py-2",
   lockedText: "text-sm font-semibold text-ps-text",
   lockedPickedText: "font-semibold text-ps-text",
@@ -230,7 +230,7 @@ const CARD_THEME: SurfaceTheme = {
       filled ? "bg-white/18 border-ps-amber/70" : "bg-white/8 border-white/25",
       "focus:border-ps-amber/80 focus:bg-white/15",
     ].join(" "),
-  errorText: "mt-1 text-[11px] font-medium text-red-200",
+  errorText: "mt-1 text-caption font-medium text-red-200",
   // Card surface read-only state stays on the host-city background. We still
   // dim the body slightly so it reads as locked vs interactive.
   lockedReadOnly: "px-1 py-0.5 opacity-90",
@@ -413,7 +413,7 @@ function MatchPickRow({
               <span className="font-semibold text-white">{currentWinner}</span>
             </p>
             {initialScore && !resetInFlight && (
-              <p className="text-[10px] text-white/55">
+              <p className="text-micro text-white/55">
                 {getPredictionSummary(
                   "exact_score",
                   initialScore.prediction_data,
@@ -453,7 +453,7 @@ function MatchPickRow({
             <CountryFlag shape="pill" name={away} size={18} />
             {away}
           </span>
-          <span className="rounded-full bg-ps-chip px-2 py-0.5 text-[10px] font-semibold uppercase text-ps-text-sec">
+          <span className="rounded-full bg-ps-chip px-2 py-0.5 text-micro font-semibold uppercase text-ps-text-sec">
             {event.result_confirmed
               ? t("prediction.resulted")
               : t("prediction.locked")}
@@ -479,7 +479,7 @@ function MatchPickRow({
               <span className={theme.lockedPickedText}>{currentWinner}</span>
             </p>
             {initialScore && !resetInFlight && (
-              <p className={`text-[10px] text-ps-text-ter`}>
+              <p className={`text-micro text-ps-text-ter`}>
                 {getPredictionSummary(
                   "exact_score",
                   initialScore.prediction_data,
@@ -563,7 +563,7 @@ function MatchPickRow({
         <svg className={`h-5 w-5 ${useCardSurface ? "text-red-300" : "text-ps-red"}`} fill="none" viewBox="0 0 24 24" strokeWidth={2.5} stroke="currentColor">
           <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
         </svg>
-        <p className={`text-[13px] font-semibold ${useCardSurface ? "text-white" : "text-ps-text"}`}>
+        <p className={`text-body font-semibold ${useCardSurface ? "text-white" : "text-ps-text"}`}>
           {t("prediction.contradiction")}
         </p>
         <p className={`text-xs text-center max-w-[260px] ${useCardSurface ? "text-white/70" : "text-ps-text-sec"}`}>
@@ -722,14 +722,14 @@ function MatchPickRow({
       )}
 
       {showScoreHint && (
-        <p className={`mt-1 text-center text-[11px] font-medium ${useCardSurface ? "text-amber-300" : "text-ps-amber"}`}>
+        <p className={`mt-1 text-center text-caption font-medium ${useCardSurface ? "text-amber-300" : "text-ps-amber"}`}>
           {t("prediction.score_implies", { outcome: liveImpliedWinner })}
         </p>
       )}
 
       {scoreDisplay.status === "committed" && (
           <p
-            className={`mt-1.5 text-center text-[11px] ${useCardSurface ? "text-white/65" : "text-ps-text-sec"}`}
+            className={`mt-1.5 text-center text-caption ${useCardSurface ? "text-white/65" : "text-ps-text-sec"}`}
           >
             {getPredictionSummary(
               "exact_score",
@@ -763,7 +763,7 @@ function MatchPickRow({
           <button
             type="button"
             onClick={resetAll}
-            className={`text-[11px] font-medium rounded-full border px-2.5 py-1 min-h-[28px] transition-colors ${
+            className={`text-caption font-medium rounded-full border px-2.5 py-1 min-h-[28px] transition-colors ${
               useCardSurface
                 ? "border-white/20 text-white/45 hover:border-red-300/50 hover:text-red-200"
                 : "border-ps-border text-ps-text-ter hover:border-ps-red/40 hover:text-ps-red"
@@ -844,7 +844,7 @@ function formatHeaderRight(
   return (
     <>
       <span className="block">{time}</span>
-      <span className="block text-[0.65rem] font-medium text-white/55">
+      <span className="block text-micro font-medium text-white/55">
         {date}
       </span>
       {lockTime && (
@@ -892,7 +892,7 @@ function CardCountdown({
   if (lockText) {
     return (
       <span
-        className="mt-0.5 block font-mono text-[0.6rem] font-semibold tabular-nums text-white/70"
+        className="mt-0.5 block font-mono text-micro font-semibold tabular-nums text-white/70"
         role="timer"
         aria-live="off"
       >
@@ -905,7 +905,7 @@ function CardCountdown({
   if (revealText) {
     return (
       <span
-        className="mt-0.5 block text-[0.55rem] font-semibold text-amber-300/80"
+        className="mt-0.5 block text-micro font-semibold text-amber-300/80"
         role="timer"
         aria-live="off"
       >

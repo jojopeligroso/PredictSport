@@ -459,12 +459,12 @@ export function EventList({
           <button
             onClick={() => setActiveRoundId("all")}
             className={[
-              "shrink-0 rounded-full px-3 py-1.5 font-semibold transition-colors",
+              "shrink-0 rounded-full px-3 py-1.5 text-caption font-semibold transition-colors",
               activeRoundId === "all"
                 ? "bg-ps-text text-ps-bg"
                 : "border border-ps-border bg-ps-surface text-ps-text-sec",
             ].join(" ")}
-            style={{ fontSize: 11.5, whiteSpace: "nowrap" }}
+            style={{ whiteSpace: "nowrap" }}
           >
             All
           </button>
@@ -480,13 +480,13 @@ export function EventList({
                 key={round.id}
                 onClick={() => setActiveRoundId(round.id)}
                 className={[
-                  "shrink-0 rounded-full px-3 py-1.5 font-semibold transition-colors",
+                  "shrink-0 rounded-full px-3 py-1.5 text-caption font-semibold transition-colors",
                   isActive
                     ? "bg-ps-text text-ps-bg"
                     : "border border-ps-border bg-ps-surface",
                   !isActive && isLocked ? "text-ps-text-ter" : !isActive ? "text-ps-text-sec" : "",
                 ].join(" ")}
-                style={{ fontSize: 11.5, whiteSpace: "nowrap" }}
+                style={{ whiteSpace: "nowrap" }}
               >
                 <span className="inline-flex items-center gap-1">
                   {isLocked && (
@@ -512,8 +512,7 @@ export function EventList({
                   {label}
                   {showProgress && !isActive && (
                     <span
-                      className="ml-0.5 opacity-60"
-                      style={{ fontSize: 10 }}
+                      className="ml-0.5 opacity-60 text-micro"
                     >
                       {progress.picked}/{progress.total}
                     </span>
@@ -538,15 +537,15 @@ export function EventList({
           <BrandMark className="h-8 w-auto shrink-0" />
           <div className="flex flex-col gap-0.5">
             <span
-              className="font-bold uppercase tracking-[0.06em] text-ps-text-sec"
-              style={{ fontSize: 10, lineHeight: 1 }}
+              className="font-bold uppercase tracking-[0.06em] text-ps-text-sec text-micro"
+              style={{ lineHeight: 1 }}
             >
               {sheetLabel}
             </span>
             {roundLabel && (
               <span
-                className="font-semibold text-ps-text"
-                style={{ fontSize: 13, lineHeight: 1 }}
+                className="font-semibold text-ps-text text-body"
+                style={{ lineHeight: 1 }}
               >
                 {roundLabel}
               </span>
@@ -556,9 +555,8 @@ export function EventList({
 
         {/* Giant round name */}
         <h1
-          className="font-sans text-ps-text"
+          className="font-sans text-ps-text text-page-title"
           style={{
-            fontSize: 44,
             lineHeight: 0.92,
             letterSpacing: "1.5px",
             fontWeight: 400,
@@ -575,8 +573,7 @@ export function EventList({
 
         {/* Progress row */}
         <div
-          className="mt-3 flex items-center gap-3 font-medium text-ps-text-sec"
-          style={{ fontSize: 12 }}
+          className="mt-3 flex items-center gap-3 font-medium text-ps-text-sec text-caption"
         >
           <span>
             <strong className="font-bold text-ps-text">
@@ -622,7 +619,7 @@ export function EventList({
               key={mode}
               onClick={() => setViewMode(mode)}
               className={[
-                "flex-1 rounded-md py-[7px] text-center text-[11px] font-bold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ps-amber",
+                "flex-1 rounded-md py-[7px] text-center text-caption font-bold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ps-amber",
                 viewMode === mode
                   ? "bg-ps-text text-ps-bg"
                   : "text-ps-text-sec hover:text-ps-text",
@@ -643,12 +640,12 @@ export function EventList({
                 key={id}
                 onClick={() => setFilterChip(id)}
                 className={[
-                  "shrink-0 rounded-full px-3 py-1.5 font-semibold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ps-amber focus-visible:ring-offset-1",
+                  "shrink-0 rounded-full px-3 py-1.5 text-caption font-semibold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ps-amber focus-visible:ring-offset-1",
                   filterChip === id
                     ? "bg-ps-text text-ps-bg"
                     : "border border-ps-border bg-ps-surface text-ps-text-sec",
                 ].join(" ")}
-                style={{ fontSize: 11.5, whiteSpace: "nowrap" }}
+                style={{ whiteSpace: "nowrap" }}
               >
                 {label}
               </button>
@@ -727,33 +724,33 @@ export function EventList({
           <div className="flex items-center justify-between mb-3">
             <div>
               <p
-                className="font-bold uppercase text-ps-text-sec"
-                style={{ fontSize: 11, letterSpacing: 0.8 }}
+                className="font-bold uppercase text-ps-text-sec text-caption"
+                style={{ letterSpacing: 0.8 }}
               >
                 Last Round
               </p>
               <h2
-                className="font-display font-extrabold text-ps-text"
-                style={{ fontSize: 32, lineHeight: 1, letterSpacing: 1 }}
+                className="font-display font-extrabold text-ps-text text-page-title"
+                style={{ lineHeight: 1, letterSpacing: 1 }}
               >
                 RESULTS
               </h2>
             </div>
             <div className="text-right">
               <p
-                className="uppercase text-ps-text-ter"
-                style={{ fontSize: 9, fontWeight: 800, letterSpacing: 1.2 }}
+                className="uppercase text-ps-text-ter text-micro"
+                style={{ fontWeight: 800, letterSpacing: 1.2 }}
               >
                 You
               </p>
               <p
-                className="mt-1 font-display font-extrabold text-ps-green"
-                style={{ fontSize: 28, lineHeight: 1 }}
+                className="mt-1 font-display font-extrabold text-ps-green text-page-title"
+                style={{ lineHeight: 1 }}
               >
                 +{resultedEvents.reduce((sum, e) => sum + (e.predictions?.[0]?.points_awarded ?? 0), 0)}
                 <span
-                  className="text-ps-text-sec"
-                  style={{ fontSize: 14, letterSpacing: 0.4 }}
+                  className="text-ps-text-sec text-body"
+                  style={{ letterSpacing: 0.4 }}
                 >
                   {" "}/ {resultedEvents.length * 10}
                 </span>
@@ -880,16 +877,15 @@ function EventCard({
         <div className="mt-2 flex items-start gap-3">
           <div className="min-w-0 flex-1">
             <h4
-              className="font-extrabold leading-snug text-ps-text"
-              style={{ fontSize: 17 }}
+              className="font-extrabold leading-snug text-ps-text text-section-title"
             >
               <Link href={`/predictions/${event.id}`} className="hover:underline">
                 {event.event_name}
               </Link>
             </h4>
             <p
-              className="mt-0.5 text-ps-text-sec"
-              style={{ fontSize: 12.5, letterSpacing: "0.01em" }}
+              className="mt-0.5 text-ps-text-sec text-caption"
+              style={{ letterSpacing: "0.01em" }}
             >
               {formatSubtitle(event)}
             </p>
@@ -1282,7 +1278,7 @@ function TiebreakerInput({ tiebreaker }: { tiebreaker: TiebreakerData }) {
 
   return (
     <div className="rounded-xl border border-ps-amber/30 bg-ps-amber-soft/30 p-4">
-      <p className="text-[10px] font-extrabold tracking-widest uppercase text-ps-amber-deep">
+      <p className="text-micro font-extrabold tracking-widest uppercase text-ps-amber-deep">
         Tiebreaker
       </p>
       <p className="mt-1 text-sm font-semibold text-ps-text">
@@ -1308,7 +1304,7 @@ function TiebreakerInput({ tiebreaker }: { tiebreaker: TiebreakerData }) {
         </button>
       </div>
       {tiebreaker.correct_value !== null && (
-        <p className="mt-2 text-[10px] font-semibold text-ps-text-ter">
+        <p className="mt-2 text-micro font-semibold text-ps-text-ter">
           Answer: <span className="font-mono font-bold text-ps-text">{tiebreaker.correct_value}</span>
           {tiebreaker.user_answer !== null && (
             <> &middot; Off by {Math.abs(tiebreaker.user_answer - tiebreaker.correct_value)}</>

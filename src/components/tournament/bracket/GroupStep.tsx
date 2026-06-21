@@ -135,10 +135,10 @@ export default function GroupStep({
       <div className="rounded-xl border border-ps-border bg-ps-surface p-4">
         <div className="flex items-baseline justify-between">
           <div>
-            <p className="font-mono text-[10px] font-bold uppercase tracking-widest text-ps-text-ter">
+            <p className="font-mono text-micro font-bold uppercase tracking-widest text-ps-text-ter">
               Group {activeIndex + 1} of {groups.length}
             </p>
-            <h2 className="mt-1 text-lg font-extrabold text-ps-text">
+            <h2 className="mt-1 text-section-title font-extrabold text-ps-text">
               {currentGroup.group_name}
             </h2>
           </div>
@@ -344,7 +344,7 @@ function LiveStandingsTable({
           </tbody>
         </table>
       </div>
-      <p className="mt-2 text-[10px] text-ps-text-ter">
+      <p className="mt-2 text-micro text-ps-text-ter">
         Top 2 through · 3rd plays for a lifeline
       </p>
     </div>

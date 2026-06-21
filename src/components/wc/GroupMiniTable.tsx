@@ -147,7 +147,7 @@ export function GroupMiniTable({
       </div>
 
       {/* Column headers */}
-      <div className="mt-3 flex items-center border-b border-ps-border pb-1.5 text-[10px] font-semibold uppercase tracking-wider text-ps-text-ter">
+      <div className="mt-3 flex items-center border-b border-ps-border pb-1.5 text-micro font-semibold uppercase tracking-wider text-ps-text-ter">
         <span className="w-6 text-center">#</span>
         <span className="flex-1 pl-2">{t('leaderboard.player')}</span>
         <span className="w-10 text-right">{t('common.pts')}</span>
@@ -163,7 +163,7 @@ export function GroupMiniTable({
             className="flex items-center py-2.5"
             style={style}
           >
-            <span className="w-6 text-center text-[13px] tabular-nums text-ps-text-ter">
+            <span className="w-6 text-center text-body tabular-nums text-ps-text-ter">
               {rank}
             </span>
             <span

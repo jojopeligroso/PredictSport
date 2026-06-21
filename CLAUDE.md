@@ -222,6 +222,12 @@ This project runs on **Vercel Hobby (free)**. These limits bite silently:
 
 2. **Batch reminder dedup keys must be stable across cron runs** — the notification cron batches incomplete events per user. If the dedup key is the first event's ID, completing that event between cron runs shifts the key and the dedup check passes, causing repeat notifications. Use a date-based tag (`deadline-YYYY-MM-DD`) so each user gets at most one reminder per day.
 
+## Gotchas — Feature Scope Control
+
+1. **Never ship a new user-visible feature directly to /wc without explicit user approval.** All new features must be behind a `NEXT_PUBLIC_FEATURE_*` environment variable flag, defaulting to `false` (disabled). The user enables it after review. This prevents the build-ship-reject-remove cycle that hit verdict quips (d477e95 → 1fcf3f3), Telegram integration (added → b2ec87c removed), and the confidence accordion (added → hidden → unhidden → gated c9c5af7). Design specs and task docs are reference material, not work orders — only build what the user explicitly requests in conversation.
+
+2. **Never originate user-facing natural language copy.** AI-generated quips, taglines, verdicts, or persona text actively damages brand authenticity. AI can derive additional examples from a large base of human-written samples, but it must never generate copy from scratch and ship it. If a task involves copy, ask the user for sample text first.
+
 ## Multi-Session Warning
 
 **NEVER run `npm run dev` or port-binding commands without explicit user confirmation.**

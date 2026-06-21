@@ -228,7 +228,7 @@ function ExpandedDetail({ entry }: { entry: LeaderboardEntry }) {
     <div className="overflow-x-auto px-4 pb-4 pt-3">
       <table className="w-full min-w-[560px] text-sm">
         <thead>
-          <tr className="text-left text-[10px] font-bold uppercase tracking-widest text-ps-text-ter">
+          <tr className="text-left text-micro font-bold uppercase tracking-widest text-ps-text-ter">
             <th className="pb-2 pr-4">Event</th>
             <th className="pb-2 pr-4">Sport</th>
             <th className="pb-2 pr-4">Prediction</th>
@@ -404,8 +404,8 @@ function PodiumCard({
           <div className="min-w-0 flex-1">
             <Link
               href={`/leaderboard/${entry.user_id}`}
-              className="truncate font-bold text-white hover:underline"
-              style={{ fontSize: 14, letterSpacing: 0.2 }}
+              className="truncate font-bold text-white hover:underline text-body"
+              style={{ letterSpacing: 0.2 }}
               onClick={(e) => e.stopPropagation()}
             >
               {entry.display_name}
@@ -416,13 +416,12 @@ function PodiumCard({
                   // Form badges on gradient: white-tinted squares matching prototype
                   <span
                     key={i}
-                    className="inline-flex items-center justify-center font-extrabold text-white"
+                    className="inline-flex items-center justify-center font-extrabold text-white text-micro"
                     style={{
                       width: 16,
                       height: 16,
                       borderRadius: 4,
                       background: "rgba(255,255,255,0.2)",
-                      fontSize: 9,
                     }}
                   >
                     {letter}
@@ -434,12 +433,12 @@ function PodiumCard({
 
           {/* Percentage — Bebas Neue 26px, with pts sub-label */}
           <div className="shrink-0 text-right">
-            <p className="font-display font-extrabold leading-none text-white" style={{ fontSize: 26, letterSpacing: 0.6 }}>
+            <p className="font-display font-extrabold leading-none text-white text-page-title" style={{ letterSpacing: 0.6 }}>
               {entry.percentage.toFixed(1)}%
             </p>
             <p
-              className="mt-0.5 font-bold uppercase text-white/85"
-              style={{ fontSize: 9, letterSpacing: 1 }}
+              className="mt-0.5 font-bold uppercase text-white/85 text-micro"
+              style={{ letterSpacing: 1 }}
             >
               {entry.total_points}pts · {entry.rounds_participated}/{entry.total_rounds}r
             </p>
@@ -495,8 +494,7 @@ function TableRow({
         <div className="flex items-center gap-[10px]">
           {/* Rank */}
           <span
-            className="w-[18px] shrink-0 text-center font-extrabold tabular-nums text-ps-text-ter"
-            style={{ fontSize: 12.5 }}
+            className="w-[18px] shrink-0 text-center font-extrabold tabular-nums text-ps-text-ter text-caption"
           >
             {dimmed ? "—" : entry.rank}
           </span>
@@ -506,14 +504,13 @@ function TableRow({
             <div className="flex items-center gap-1.5">
               <Link
                 href={`/leaderboard/${entry.user_id}`}
-                className="truncate font-bold text-ps-text hover:underline"
-                style={{ fontSize: 13 }}
+                className="truncate font-bold text-ps-text hover:underline text-body"
                 onClick={(e) => e.stopPropagation()}
               >
                 {entry.display_name}
               </Link>
               {dimmed && (
-                <span className="shrink-0 rounded bg-ps-chip px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wider text-ps-text-ter">
+                <span className="shrink-0 rounded bg-ps-chip px-1.5 py-0.5 text-micro font-bold uppercase tracking-wider text-ps-text-ter">
                   Not qualified
                 </span>
               )}
@@ -537,12 +534,11 @@ function TableRow({
           {/* Percentage + rounds stacked */}
           <div className="shrink-0 min-w-[48px] text-right">
             <p
-              className="font-extrabold tabular-nums leading-none text-ps-text"
-              style={{ fontSize: 16 }}
+              className="font-extrabold tabular-nums leading-none text-ps-text text-item-label"
             >
               {entry.percentage.toFixed(1)}%
             </p>
-            <p className="mt-0.5 tabular-nums text-ps-text-ter" style={{ fontSize: 9 }}>
+            <p className="mt-0.5 tabular-nums text-ps-text-ter text-micro">
               {entry.rounds_participated}/{entry.total_rounds}r
             </p>
             <div className="mt-0.5">
@@ -599,15 +595,15 @@ function BestInClass({ entries }: { entries: LeaderboardEntry[] }) {
             >
               <div className="text-[18px] leading-none">{meta.emoji}</div>
               <div
-                className="mt-0.5 font-extrabold uppercase text-ps-text-sec"
-                style={{ fontSize: 9, letterSpacing: 1 }}
+                className="mt-0.5 font-extrabold uppercase text-ps-text-sec text-micro"
+                style={{ letterSpacing: 1 }}
               >
                 {meta.label}
               </div>
-              <div className="mt-1 font-extrabold text-ps-text" style={{ fontSize: 13 }}>
+              <div className="mt-1 font-extrabold text-ps-text text-body">
                 {b.name}
               </div>
-              <div className="mt-0.5 font-bold text-ps-green" style={{ fontSize: 11 }}>
+              <div className="mt-0.5 font-bold text-ps-green text-caption">
                 {b.pct}% acc
               </div>
             </div>
@@ -655,12 +651,12 @@ export function LeaderboardTable({ entries }: { entries: LeaderboardEntry[] }) {
           <span className="text-[18px] leading-none" aria-hidden="true">🔥</span>
           <div className="min-w-0 flex-1">
             <p
-              className="font-extrabold uppercase text-ps-amber-deep"
-              style={{ fontSize: 10.5, letterSpacing: 1.2 }}
+              className="font-extrabold uppercase text-ps-amber-deep text-micro"
+              style={{ letterSpacing: 1.2 }}
             >
               {rivalry.headline}
             </p>
-            <p className="mt-0.5 text-ps-text" style={{ fontSize: 13, lineHeight: 1.35 }}>
+            <p className="mt-0.5 text-ps-text text-body" style={{ lineHeight: 1.35 }}>
               {rivalry.body}
             </p>
           </div>
@@ -703,7 +699,7 @@ export function LeaderboardTable({ entries }: { entries: LeaderboardEntry[] }) {
       {unqualifiedEntries.length > 0 && (
         <div className="mt-[14px]">
           <SectionHeader label="Not yet qualified" accent="var(--ps-text-ter)" />
-          <p className="mt-1 mb-3 text-[11px] text-ps-text-ter">
+          <p className="mt-1 mb-3 text-caption text-ps-text-ter">
             Play more rounds to qualify for the table.
           </p>
           <div className="overflow-hidden rounded-2xl border border-ps-border bg-ps-surface">

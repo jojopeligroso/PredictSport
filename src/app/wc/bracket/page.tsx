@@ -194,10 +194,10 @@ export default async function BracketPage() {
                 return (
                   <div className="mt-3 space-y-2 rounded-lg bg-ps-bg px-3 py-2.5">
                     <div className="flex items-center justify-between">
-                      <span className="font-mono text-[10px] font-bold uppercase tracking-widest text-ps-text-sec">
+                      <span className="font-mono text-micro font-bold uppercase tracking-widest text-ps-text-sec">
                         {t('bracket.up_to', { label: progress.label })}
                       </span>
-                      <span className="font-mono text-[10px] font-bold text-ps-amber">
+                      <span className="font-mono text-micro font-bold text-ps-amber">
                         {progress.pct}%
                       </span>
                     </div>
@@ -208,7 +208,7 @@ export default async function BracketPage() {
                       />
                     </div>
                     <div className="flex items-center justify-between pt-0.5">
-                      <span className="text-[10px] text-ps-text-ter">
+                      <span className="text-micro text-ps-text-ter">
                         v{submission.version_number}
                         {submission.submitted_at && (
                           <>

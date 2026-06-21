@@ -36,7 +36,7 @@ export function RulesContent({
 
       {/* How it works */}
       <div className="mb-10 rounded-xl border border-ps-border bg-ps-surface px-5 py-5 text-center">
-        <p className="font-display font-extrabold text-[15px] uppercase tracking-[0.18em] text-ps-amber-deep">
+        <p className="font-display font-extrabold text-item-label uppercase tracking-[0.18em] text-ps-amber-deep">
           {t("rules.how_it_works")}
         </p>
         <div className="mx-auto mt-3 flex w-fit flex-col gap-3">
@@ -123,7 +123,7 @@ export function RulesContent({
           <div className="mt-3 overflow-hidden rounded-xl border border-ps-border bg-ps-surface">
             <div className="border-b border-ps-border px-4 py-2.5">
               <p className="text-sm font-bold text-ps-text">Group A</p>
-              <p className="font-mono text-[10px] text-ps-text-ter">
+              <p className="font-mono text-micro text-ps-text-ter">
                 1 of 12 groups &middot; 48 players
               </p>
             </div>
@@ -133,7 +133,7 @@ export function RulesContent({
                 1
               </span>
               <span className="flex-1 pl-2 text-sm text-ps-text">Manning</span>
-              <span className="mr-2 rounded bg-ps-green/15 px-1.5 py-0.5 text-[10px] font-bold text-ps-green">
+              <span className="mr-2 rounded bg-ps-green/15 px-1.5 py-0.5 text-micro font-bold text-ps-green">
                 {t("rules.safe")}
               </span>
               <span className="w-14 text-right font-mono text-xs font-bold text-ps-text">
@@ -147,11 +147,11 @@ export function RulesContent({
               </span>
               <span className="flex-1 pl-2 text-sm font-semibold text-ps-text">
                 Scrooch
-                <span className="ml-1.5 rounded bg-ps-amber/20 px-1 py-0.5 text-[10px] font-bold text-ps-amber">
+                <span className="ml-1.5 rounded bg-ps-amber/20 px-1 py-0.5 text-micro font-bold text-ps-amber">
                   {t("common.you")}
                 </span>
               </span>
-              <span className="mr-2 rounded bg-ps-green/15 px-1.5 py-0.5 text-[10px] font-bold text-ps-green">
+              <span className="mr-2 rounded bg-ps-green/15 px-1.5 py-0.5 text-micro font-bold text-ps-green">
                 {t("rules.safe")}
               </span>
               <span className="w-14 text-right font-mono text-xs font-bold text-ps-text">
@@ -160,10 +160,10 @@ export function RulesContent({
             </div>
             {/* DANGER ZONE banner */}
             <div className="border-l-[3px] border-l-ps-amber bg-ps-amber/[0.15] px-4 py-2">
-              <p className="font-mono text-[10px] font-bold uppercase tracking-[0.12em] text-ps-amber">
+              <p className="font-mono text-micro font-bold uppercase tracking-[0.12em] text-ps-amber">
                 {t("rules.danger_zone")}
               </p>
-              <p className="mt-0.5 text-[10px] text-ps-text-sec">
+              <p className="mt-0.5 text-micro text-ps-text-sec">
                 {t("rules.danger_desc")}
               </p>
             </div>
@@ -173,7 +173,7 @@ export function RulesContent({
                 3
               </span>
               <span className="flex-1 pl-2 text-sm text-ps-text">Bohanna</span>
-              <span className="mr-2 rounded bg-ps-amber/25 px-2 py-0.5 text-[10px] font-bold text-ps-amber">
+              <span className="mr-2 rounded bg-ps-amber/25 px-2 py-0.5 text-micro font-bold text-ps-amber">
                 {t("rules.at_risk")}
               </span>
               <span className="w-14 text-right font-mono text-xs font-bold text-ps-text">
@@ -182,10 +182,10 @@ export function RulesContent({
             </div>
             {/* ELIMINATED banner */}
             <div className="border-l-[3px] border-l-ps-red bg-ps-red/[0.08] px-4 py-2">
-              <p className="font-mono text-[10px] font-bold uppercase tracking-[0.12em] text-ps-red">
+              <p className="font-mono text-micro font-bold uppercase tracking-[0.12em] text-ps-red">
                 {t("rules.eliminated")}
               </p>
-              <p className="mt-0.5 text-[10px] text-ps-text-sec">
+              <p className="mt-0.5 text-micro text-ps-text-sec">
                 {t("rules.eliminated_desc")}
               </p>
             </div>
@@ -195,7 +195,7 @@ export function RulesContent({
                 4
               </span>
               <span className="flex-1 pl-2 text-sm text-ps-text">Gerry Ramos</span>
-              <span className="mr-2 rounded bg-ps-red/15 px-1.5 py-0.5 text-[10px] font-bold text-ps-red">
+              <span className="mr-2 rounded bg-ps-red/15 px-1.5 py-0.5 text-micro font-bold text-ps-red">
                 {t("rules.out")}
               </span>
               <span className="w-14 text-right font-mono text-xs font-bold text-ps-text">
@@ -211,7 +211,7 @@ export function RulesContent({
             </p>
             <ul className="mt-2 space-y-1.5 text-xs leading-relaxed text-ps-text-sec">
               <li>{t("rules.top2")}</li>
-              <li className="-mx-1.5 rounded-md bg-ps-amber/[0.08] px-2.5 py-2 text-[13px]">
+              <li className="-mx-1.5 rounded-md bg-ps-amber/[0.08] px-2.5 py-2 text-body">
                 {t("rules.third_place")}
               </li>
               <li>{t("rules.fourth_place")}</li>
@@ -237,7 +237,7 @@ export function RulesContent({
           <div className="mt-3 overflow-hidden rounded-xl border border-ps-border bg-ps-surface">
             <div className="border-b border-ps-border px-4 py-2.5">
               <p className="text-sm font-bold text-ps-text">Round of 32</p>
-              <p className="font-mono text-[10px] text-ps-text-ter">
+              <p className="font-mono text-micro text-ps-text-ter">
                 {t("rules.r32_meta")}
               </p>
             </div>
@@ -263,7 +263,7 @@ export function RulesContent({
                 &mdash;
               </span>
             </div>
-            <div className="border-b border-ps-border px-4 py-1 text-center font-mono text-[10px] text-ps-text-ter">
+            <div className="border-b border-ps-border px-4 py-1 text-center font-mono text-micro text-ps-text-ter">
               &middot; &middot; &middot;
             </div>
             {/* Scrooch (YOU) at rank 14 */}
@@ -273,7 +273,7 @@ export function RulesContent({
               </span>
               <span className="flex-1 pl-2 text-sm font-semibold text-ps-text">
                 Scrooch
-                <span className="ml-1.5 rounded bg-ps-amber/20 px-1 py-0.5 text-[10px] font-bold text-ps-amber">
+                <span className="ml-1.5 rounded bg-ps-amber/20 px-1 py-0.5 text-micro font-bold text-ps-amber">
                   {t("common.you")}
                 </span>
               </span>
@@ -281,7 +281,7 @@ export function RulesContent({
                 &mdash;
               </span>
             </div>
-            <div className="border-b border-ps-border px-4 py-1 text-center font-mono text-[10px] text-ps-text-ter">
+            <div className="border-b border-ps-border px-4 py-1 text-center font-mono text-micro text-ps-text-ter">
               &middot; &middot; &middot;
             </div>
             <div className="flex items-center border-b border-ps-border px-4 py-2">
@@ -297,17 +297,17 @@ export function RulesContent({
             </div>
             {/* Eliminated section */}
             <div className="bg-ps-red/[0.03] px-4 py-3">
-              <p className="font-mono text-[10px] font-bold uppercase tracking-[0.12em] text-ps-red/60">
+              <p className="font-mono text-micro font-bold uppercase tracking-[0.12em] text-ps-red/60">
                 {t("rules.eliminated_count", { count: 16 })}
               </p>
               <div className="mt-1.5 flex flex-wrap gap-1">
-                <span className="text-[10px] text-ps-text-ter/40 line-through">
+                <span className="text-micro text-ps-text-ter/40 line-through">
                   Gerry Ramos
                 </span>
                 {Array.from({ length: 15 }, (_, i) => (
                   <span
                     key={i}
-                    className="select-none text-[10px] text-ps-text-ter/30 blur-[3px]"
+                    className="select-none text-micro text-ps-text-ter/30 blur-[3px]"
                   >
                     ██████
                   </span>
@@ -603,7 +603,7 @@ function FAQGroup({
   return (
     <details className="group/faq" open={defaultOpen || undefined}>
       <summary className="mb-1.5 flex cursor-pointer items-center justify-between list-none [&::-webkit-details-marker]:hidden">
-        <p className="font-display font-extrabold text-[10px] uppercase tracking-[0.12em] text-ps-text-ter">
+        <p className="font-display font-extrabold text-micro uppercase tracking-[0.12em] text-ps-text-ter">
           {title}
         </p>
         <svg

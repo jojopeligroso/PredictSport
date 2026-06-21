@@ -189,7 +189,7 @@ export function ScoreInput({
           disabled={disabled}
           aria-label={`${homeLabel} score`}
           className={[
-            "w-[34px] h-[32px] rounded-full border text-center font-mono text-base font-semibold text-ps-text outline-none transition-all duration-150 shrink-0",
+            "w-[34px] h-[32px] rounded-full border text-center font-mono text-item-label font-semibold text-ps-text outline-none transition-all duration-150 shrink-0",
             home !== "" ? "bg-white border-ps-amber" : "bg-transparent border-ps-border",
             "focus:border-ps-amber focus:bg-white",
           ].join(" ")}
@@ -208,7 +208,7 @@ export function ScoreInput({
           disabled={disabled}
           aria-label={`${awayLabel} score`}
           className={[
-            "w-[34px] h-[32px] rounded-full border text-center font-mono text-base font-semibold text-ps-text outline-none transition-all duration-150 shrink-0",
+            "w-[34px] h-[32px] rounded-full border text-center font-mono text-item-label font-semibold text-ps-text outline-none transition-all duration-150 shrink-0",
             away !== "" ? "bg-white border-ps-amber" : "bg-transparent border-ps-border",
             "focus:border-ps-amber focus:bg-white",
           ].join(" ")}
@@ -233,7 +233,7 @@ export function ScoreInput({
           disabled={disabled}
           aria-label={`${homeLabel} score`}
           className={[
-            "w-[34px] h-[32px] rounded-full border text-center font-mono text-base font-semibold tabular-nums text-white outline-none transition-all duration-150 shrink-0 placeholder:text-white/40",
+            "w-[34px] h-[32px] rounded-full border text-center font-mono text-item-label font-semibold tabular-nums text-white outline-none transition-all duration-150 shrink-0 placeholder:text-white/40",
             home !== "" ? "bg-black/30 border-ps-amber" : "bg-black/20 border-white/30",
             "focus:border-ps-amber focus:bg-black/35",
           ].join(" ")}
@@ -252,7 +252,7 @@ export function ScoreInput({
           disabled={disabled}
           aria-label={`${awayLabel} score`}
           className={[
-            "w-[34px] h-[32px] rounded-full border text-center font-mono text-base font-semibold tabular-nums text-white outline-none transition-all duration-150 shrink-0 placeholder:text-white/40",
+            "w-[34px] h-[32px] rounded-full border text-center font-mono text-item-label font-semibold tabular-nums text-white outline-none transition-all duration-150 shrink-0 placeholder:text-white/40",
             away !== "" ? "bg-black/30 border-ps-amber" : "bg-black/20 border-white/30",
             "focus:border-ps-amber focus:bg-black/35",
           ].join(" ")}
@@ -279,7 +279,7 @@ export function ScoreInput({
         onBlur={handleHomeBlur}
         disabled={disabled}
         aria-label={`${homeLabel} score`}
-        className="w-12 rounded-md border border-ps-border-strong bg-ps-surface px-1.5 py-1.5 text-center text-base font-mono text-ps-text placeholder:text-ps-text-ter focus:border-ps-amber focus:outline-none focus:ring-1 focus:ring-ps-amber disabled:opacity-50 disabled:cursor-not-allowed"
+        className="w-12 rounded-md border border-ps-border-strong bg-ps-surface px-1.5 py-1.5 text-center text-item-label font-mono text-ps-text placeholder:text-ps-text-ter focus:border-ps-amber focus:outline-none focus:ring-1 focus:ring-ps-amber disabled:opacity-50 disabled:cursor-not-allowed"
       />
       <span className="text-xs text-ps-text-ter">-</span>
       <input
@@ -294,7 +294,7 @@ export function ScoreInput({
         onBlur={handleAwayBlur}
         disabled={disabled}
         aria-label={`${awayLabel} score`}
-        className="w-12 rounded-md border border-ps-border-strong bg-ps-surface px-1.5 py-1.5 text-center text-base font-mono text-ps-text placeholder:text-ps-text-ter focus:border-ps-amber focus:outline-none focus:ring-1 focus:ring-ps-amber disabled:opacity-50 disabled:cursor-not-allowed"
+        className="w-12 rounded-md border border-ps-border-strong bg-ps-surface px-1.5 py-1.5 text-center text-item-label font-mono text-ps-text placeholder:text-ps-text-ter focus:border-ps-amber focus:outline-none focus:ring-1 focus:ring-ps-amber disabled:opacity-50 disabled:cursor-not-allowed"
       />
       <span className="text-xs font-semibold text-ps-text min-w-[60px] truncate">
         {awayLabel}

@@ -10,7 +10,7 @@ export function SportPill({ sport, size = 'md' }: SportPillProps) {
   const cfg = SPORT_CONFIG[sport];
 
   const paddingClass = size === 'sm' ? 'px-2 py-0.5' : 'px-2.5 py-1';
-  const textClass = size === 'sm' ? 'text-[10px]' : 'text-xs';
+  const textClass = size === 'sm' ? 'text-micro' : 'text-caption';
   const gapClass = size === 'sm' ? 'gap-0.5' : 'gap-1';
 
   return (

@@ -40,7 +40,7 @@ export function InviteCodeBanner({ inviteCode, competitionName, joinUrl, memberC
     <div className="flex items-center gap-2 rounded-xl border border-ps-border bg-ps-chip/50 px-3 py-2">
       <span className="text-xs text-ps-text-sec">{t('invite.label')}</span>
       {memberCount != null && memberCount > 0 && (
-        <span className="rounded-full bg-ps-chip px-2 py-0.5 text-[10px] font-semibold text-ps-text-sec">
+        <span className="rounded-full bg-ps-chip px-2 py-0.5 text-micro font-semibold text-ps-text-sec">
           {t(memberCount === 1 ? 'invite.player' : 'invite.players', { count: memberCount })}
         </span>
       )}

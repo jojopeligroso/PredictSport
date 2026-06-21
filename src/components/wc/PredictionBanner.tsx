@@ -130,7 +130,7 @@ export function PredictionBanner({ events, predictions }: PredictionBannerProps)
     if (!countdown) return null;
 
     return (
-      <div className="mb-3 flex items-center gap-2 rounded-xl bg-ps-amber/10 px-3.5 py-2.5 text-xs font-semibold text-ps-amber">
+      <div className="mb-3 flex items-center gap-2 rounded-xl bg-ps-amber/10 px-3.5 py-2.5 text-caption font-semibold text-ps-amber">
         <svg
           width="14"
           height="14"
@@ -172,7 +172,7 @@ export function PredictionBanner({ events, predictions }: PredictionBannerProps)
 
   return (
     <div
-      className={`mb-3 flex items-center justify-between gap-2 rounded-xl px-3.5 py-2.5 text-xs font-semibold ${
+      className={`mb-3 flex items-center justify-between gap-2 rounded-xl px-3.5 py-2.5 text-caption font-semibold ${
         isVeryUrgent
           ? "bg-ps-red/15 text-ps-red"
           : "bg-ps-amber/15 text-ps-amber-deep"

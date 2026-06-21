@@ -52,8 +52,8 @@ export default async function LeaderboardPage({ searchParams }: PageProps) {
   if (competitions.length === 0) {
     return (
       <div className="mx-auto max-w-2xl p-4 sm:p-6">
-        <p className="text-[11px] font-extrabold lowercase tracking-tight text-ps-text">sports<span className="text-ps-amber">predict.</span></p>
-        <h1 className="mt-0.5 font-display font-extrabold text-[32px] leading-none tracking-wider text-ps-text">
+        <p className="text-caption font-extrabold lowercase tracking-tight text-ps-text">sports<span className="text-ps-amber">predict.</span></p>
+        <h1 className="mt-0.5 font-display font-extrabold text-page-title leading-none tracking-wider text-ps-text">
           {t('leaderboard.the_table')}
         </h1>
         <div className="mt-8 rounded-2xl border border-ps-border bg-ps-surface p-12 text-center text-ps-text-sec">
@@ -72,8 +72,8 @@ export default async function LeaderboardPage({ searchParams }: PageProps) {
   if (!selectedId) {
     return (
       <div className="mx-auto max-w-2xl p-4 sm:p-6">
-        <p className="text-[11px] font-extrabold lowercase tracking-tight text-ps-text">sports<span className="text-ps-amber">predict.</span></p>
-        <h1 className="mt-0.5 font-display font-extrabold text-[32px] leading-none tracking-wider text-ps-text">
+        <p className="text-caption font-extrabold lowercase tracking-tight text-ps-text">sports<span className="text-ps-amber">predict.</span></p>
+        <h1 className="mt-0.5 font-display font-extrabold text-page-title leading-none tracking-wider text-ps-text">
           {t('leaderboard.the_table')}
         </h1>
         <div className="mt-8 rounded-2xl border border-ps-border bg-ps-surface p-12 text-center text-ps-text-sec">
@@ -96,10 +96,10 @@ export default async function LeaderboardPage({ searchParams }: PageProps) {
       <div className="mx-auto max-w-2xl p-4 sm:p-6">
         <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
           <div>
-            <p className="text-[11px] font-extrabold lowercase tracking-tight text-ps-text">
+            <p className="text-caption font-extrabold lowercase tracking-tight text-ps-text">
               sports<span className="text-ps-amber">predict.</span>
             </p>
-            <h1 className="mt-0.5 font-display font-extrabold text-[32px] leading-none tracking-wider text-ps-text">
+            <h1 className="mt-0.5 font-display font-extrabold text-page-title leading-none tracking-wider text-ps-text">
               {t('leaderboard.the_table')}
             </h1>
           </div>
@@ -425,10 +425,10 @@ export default async function LeaderboardPage({ searchParams }: PageProps) {
       {/* Page header */}
       <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
         <div>
-          <p className="text-[11px] font-extrabold lowercase tracking-tight text-ps-text">
+          <p className="text-caption font-extrabold lowercase tracking-tight text-ps-text">
             sports<span className="text-ps-amber">predict.</span>
           </p>
-          <h1 className="mt-0.5 font-display font-extrabold text-[32px] leading-none tracking-wider text-ps-text">
+          <h1 className="mt-0.5 font-display font-extrabold text-page-title leading-none tracking-wider text-ps-text">
             THE TABLE
           </h1>
           <p className="text-xs text-ps-text-ter font-mono">{t('dash.players', { count: String(memberList.length) })}</p>

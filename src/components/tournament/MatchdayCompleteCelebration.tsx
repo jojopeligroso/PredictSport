@@ -107,7 +107,7 @@ export function MatchdayCompleteCelebration({
           <p className="mt-3 font-serif italic text-base text-ps-text-sec">
             Picks in.
           </p>
-          <h2 className="mt-1 text-center text-2xl font-extrabold tracking-tight text-ps-text">
+          <h2 className="mt-1 text-center text-page-title font-extrabold tracking-tight text-ps-text">
             {matchdayName} complete
           </h2>
           <p className="mt-2 max-w-[280px] text-center text-sm text-ps-text-sec">
@@ -120,21 +120,21 @@ export function MatchdayCompleteCelebration({
             {bracketHandoffClassificationId ? (
               <Link
                 href={`/wc/bracket/wizard?classificationId=${bracketHandoffClassificationId}`}
-                className="flex h-12 items-center justify-center rounded-xl bg-ps-amber text-base font-bold text-ps-text shadow transition-transform hover:scale-[1.01] active:scale-[0.99]"
+                className="flex h-12 items-center justify-center rounded-xl bg-ps-amber text-item-label font-bold text-ps-text shadow transition-transform hover:scale-[1.01] active:scale-[0.99]"
               >
                 Tiebreakers &amp; best thirds →
               </Link>
             ) : nextWindowId ? (
               <Link
                 href={`/wc/picks/${nextWindowId}`}
-                className="flex h-12 items-center justify-center rounded-xl bg-ps-amber text-base font-bold text-ps-text shadow transition-transform hover:scale-[1.01] active:scale-[0.99]"
+                className="flex h-12 items-center justify-center rounded-xl bg-ps-amber text-item-label font-bold text-ps-text shadow transition-transform hover:scale-[1.01] active:scale-[0.99]"
               >
                 {nextWindowName ?? "Next matchday"} →
               </Link>
             ) : (
               <Link
                 href="/wc/picks"
-                className="flex h-12 items-center justify-center rounded-xl bg-ps-amber text-base font-bold text-ps-text shadow transition-transform hover:scale-[1.01] active:scale-[0.99]"
+                className="flex h-12 items-center justify-center rounded-xl bg-ps-amber text-item-label font-bold text-ps-text shadow transition-transform hover:scale-[1.01] active:scale-[0.99]"
               >
                 Back to all windows
               </Link>

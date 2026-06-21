@@ -51,7 +51,7 @@ export function FifaGroupCard({
       style={{ backgroundColor: cityColor }}
     >
       <div className="px-2.5 pt-2 pb-0.5">
-        <p className="font-mono text-[9px] font-bold uppercase tracking-[0.14em] text-white/80">
+        <p className="font-mono text-micro font-bold uppercase tracking-[0.14em] text-white/80">
           Group {groupId}
         </p>
       </div>
@@ -65,11 +65,11 @@ export function FifaGroupCard({
               className="flex items-center gap-1.5 py-[3px]"
             >
               <CountryFlag name={team} size={14} shape="pill" />
-              <span className="flex-1 font-mono text-[10px] font-semibold text-white/90">
+              <span className="flex-1 font-mono text-micro font-semibold text-white/90">
                 {fifaTrigram(team) ?? team.slice(0, 3).toUpperCase()}
               </span>
               {pts !== null && (
-                <span className="font-mono text-[10px] font-bold tabular-nums text-white">
+                <span className="font-mono text-micro font-bold tabular-nums text-white">
                   {pts}
                 </span>
               )}

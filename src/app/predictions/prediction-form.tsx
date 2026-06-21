@@ -317,7 +317,7 @@ export function PredictionForm({
           const isComplete = rankings.filter((n) => n !== "").length >= numPositions;
           return (
             <div>
-              <p className="text-[11px] text-ps-text-ter mb-2">
+              <p className="text-caption text-ps-text-ter mb-2">
                 Tap in order: 1st, 2nd, 3rd...{" "}
                 {!isLocked && rankings.some((n) => n !== "") && (
                   <button
@@ -363,7 +363,7 @@ export function PredictionForm({
                       }}
                     >
                       <span
-                        className="flex items-center justify-center rounded-full font-bold text-[12px]"
+                        className="flex items-center justify-center rounded-full font-bold text-caption"
                         style={{
                           width: 26,
                           height: 26,
@@ -374,7 +374,7 @@ export function PredictionForm({
                         {isAssigned ? assignedIdx + 1 : ""}
                       </span>
                       <span
-                        className="text-[13px] font-semibold"
+                        className="text-body font-semibold"
                         style={{ color: isAssigned ? "var(--ps-text)" : "var(--ps-text-sec)" }}
                       >
                         {opt}

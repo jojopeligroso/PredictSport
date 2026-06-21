@@ -233,7 +233,7 @@ function CreateForm() {
               max={168}
               className="mt-1 block w-full rounded-lg border border-ps-border bg-ps-bg px-3 py-2 text-sm text-ps-text outline-none focus:border-ps-amber"
             />
-            <p className="mt-1 text-[11px] text-ps-text-ter">
+            <p className="mt-1 text-caption text-ps-text-ter">
               Groups are drawn automatically this many hours before the first match of each stage.
             </p>
           </label>
@@ -410,17 +410,17 @@ function Dashboard({
                       {m.display_name}
                     </span>
                     {(m.role === "admin" || m.role === "co_admin") && (
-                      <span className="rounded-full bg-[rgba(245,158,11,0.15)] px-1.5 py-px text-[9px] font-extrabold uppercase tracking-wide text-ps-amber">
+                      <span className="rounded-full bg-[rgba(245,158,11,0.15)] px-1.5 py-px text-micro font-extrabold uppercase tracking-wide text-ps-amber">
                         {m.role === "admin" ? "Admin" : "Co-admin"}
                       </span>
                     )}
                     {m.role === "mod" && (
-                      <span className="rounded-full bg-[rgba(59,130,246,0.12)] px-1.5 py-px text-[9px] font-extrabold uppercase tracking-wide text-[#3b82f6]">
+                      <span className="rounded-full bg-[rgba(59,130,246,0.12)] px-1.5 py-px text-micro font-extrabold uppercase tracking-wide text-[#3b82f6]">
                         Mod
                       </span>
                     )}
                   </div>
-                  <span className="font-mono text-[11px] text-ps-text-ter">
+                  <span className="font-mono text-caption text-ps-text-ter">
                     {t("admin.joined")} {new Date(m.joined_at).toLocaleDateString()}
                   </span>
                 </div>
@@ -431,7 +431,7 @@ function Dashboard({
                       type="button"
                       onClick={() => handleRoleChange(m.user_id, "mod", m.display_name)}
                       disabled={promotingId === m.user_id}
-                      className="rounded-lg border border-ps-border px-2.5 py-1.5 text-[11px] font-semibold text-[#3b82f6] transition-colors hover:border-[#3b82f6] disabled:opacity-50"
+                      className="rounded-lg border border-ps-border px-2.5 py-1.5 text-caption font-semibold text-[#3b82f6] transition-colors hover:border-[#3b82f6] disabled:opacity-50"
                     >
                       {promotingId === m.user_id ? "..." : t("admin.make_mod")}
                     </button>
@@ -441,7 +441,7 @@ function Dashboard({
                       type="button"
                       onClick={() => handleRoleChange(m.user_id, "participant", m.display_name)}
                       disabled={promotingId === m.user_id}
-                      className="rounded-lg border border-ps-border px-2.5 py-1.5 text-[11px] font-semibold text-ps-text-ter transition-colors hover:border-ps-text-sec disabled:opacity-50"
+                      className="rounded-lg border border-ps-border px-2.5 py-1.5 text-caption font-semibold text-ps-text-ter transition-colors hover:border-ps-text-sec disabled:opacity-50"
                     >
                       {promotingId === m.user_id ? "..." : t("admin.remove_mod")}
                     </button>
@@ -451,13 +451,13 @@ function Dashboard({
                       type="button"
                       onClick={() => handleRemove(m.user_id, m.display_name)}
                       disabled={removingId === m.user_id}
-                      className="rounded-lg border border-ps-border px-2.5 py-1.5 text-[11px] font-semibold text-ps-text-sec transition-colors hover:border-ps-red hover:text-ps-red disabled:opacity-50"
+                      className="rounded-lg border border-ps-border px-2.5 py-1.5 text-caption font-semibold text-ps-text-sec transition-colors hover:border-ps-red hover:text-ps-red disabled:opacity-50"
                     >
                       {removingId === m.user_id ? "..." : t("admin.remove")}
                     </button>
                   )}
                   {pw1Locked && !isCreator && !isSelf && (m.role === "participant" || m.role === "mod") && !canRemove && (
-                    <span className="text-[10px] font-medium text-ps-text-ter">
+                    <span className="text-micro font-medium text-ps-text-ter">
                       {t("admin.locked")}
                     </span>
                   )}
@@ -488,7 +488,7 @@ function Dashboard({
                 <span className="text-sm font-semibold text-ps-text">
                   {c.name}
                 </span>
-                <span className="ml-2 font-mono text-[11px] text-ps-text-ter">
+                <span className="ml-2 font-mono text-caption text-ps-text-ter">
                   {c.type}
                 </span>
               </div>
@@ -513,7 +513,7 @@ function StatusBadge({ status }: { status: string }) {
 
   return (
     <span
-      className={`rounded-full px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide ${
+      className={`rounded-full px-2 py-0.5 text-micro font-bold uppercase tracking-wide ${
         colors[status] ?? colors.draft
       }`}
     >

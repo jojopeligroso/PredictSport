@@ -232,7 +232,7 @@ export function PushNotificationPrompt() {
 
                 <h2
                   id="push-prompt-title"
-                  className="text-base font-semibold text-ps-text"
+                  className="text-item-label font-semibold text-ps-text"
                 >
                   Stay in the game
                 </h2>
@@ -247,7 +247,7 @@ export function PushNotificationPrompt() {
                 type="button"
                 onClick={handleAccept}
                 disabled={step === "requesting"}
-                className="w-full rounded-lg px-3 py-3 text-sm font-semibold transition-colors bg-ps-amber text-ps-bg hover:bg-ps-amber-deep focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ps-amber focus-visible:ring-offset-2 disabled:opacity-60 disabled:cursor-not-allowed"
+                className="w-full min-h-[44px] rounded-lg px-3 py-3 text-sm font-semibold transition-colors bg-ps-amber text-ps-bg hover:bg-ps-amber-deep focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ps-amber focus-visible:ring-offset-2 disabled:opacity-60 disabled:cursor-not-allowed"
               >
                 {step === "requesting" ? "Enabling..." : "Enable notifications"}
               </button>
@@ -257,7 +257,7 @@ export function PushNotificationPrompt() {
                 type="button"
                 onClick={handleDecline}
                 disabled={step === "requesting"}
-                className="mt-2 w-full rounded-lg px-3 py-2.5 text-xs font-medium text-ps-text-ter transition-colors hover:text-ps-text-sec focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ps-amber focus-visible:ring-offset-2"
+                className="mt-2 w-full min-h-[44px] rounded-lg px-3 py-2.5 text-xs font-medium text-ps-text-ter transition-colors hover:text-ps-text-sec focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ps-amber focus-visible:ring-offset-2"
               >
                 No, I don&apos;t want notifications
               </button>
@@ -271,7 +271,7 @@ export function PushNotificationPrompt() {
                 <div>
                   <h2
                     id="push-prompt-title"
-                    className="text-base font-semibold text-ps-text"
+                    className="text-item-label font-semibold text-ps-text"
                   >
                     Refine your preferences
                   </h2>
@@ -346,7 +346,7 @@ export function PushNotificationPrompt() {
                 type="button"
                 onClick={handleSavePrefs}
                 disabled={step === "saving"}
-                className={`mt-4 w-full rounded-lg px-3 py-3 text-sm font-semibold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ps-amber focus-visible:ring-offset-2 disabled:opacity-60 disabled:cursor-not-allowed ${
+                className={`mt-4 w-full min-h-[44px] rounded-lg px-3 py-3 text-sm font-semibold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ps-amber focus-visible:ring-offset-2 disabled:opacity-60 disabled:cursor-not-allowed ${
                   anySelected
                     ? "bg-ps-amber text-ps-bg hover:bg-ps-amber-deep"
                     : "bg-ps-chip text-ps-text-sec hover:bg-ps-border"

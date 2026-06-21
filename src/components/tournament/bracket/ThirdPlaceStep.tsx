@@ -74,10 +74,10 @@ export default function ThirdPlaceStep({
   return (
     <div className="space-y-4">
       <div className="rounded-xl border border-ps-border bg-ps-surface p-4">
-        <p className="font-mono text-[10px] font-bold uppercase tracking-widest text-ps-text-ter">
+        <p className="font-mono text-micro font-bold uppercase tracking-widest text-ps-text-ter">
           Best thirds
         </p>
-        <h2 className="mt-1 text-lg font-extrabold text-ps-text">
+        <h2 className="mt-1 text-section-title font-extrabold text-ps-text">
           Third-place ranking
         </h2>
         <p className="mt-1 text-xs text-ps-text-sec">
@@ -224,7 +224,7 @@ function ThirdPlaceRow({
               {qualifies ? "✓ " : ""}
               {team.team_name}
             </p>
-            <p className="font-mono text-[11px] text-ps-text-sec">
+            <p className="font-mono text-caption text-ps-text-sec">
               Group {team.group_id} · {team.points} pts
               {team.has_all_scores && (
                 <>
@@ -239,7 +239,7 @@ function ThirdPlaceRow({
             <button
               type="button"
               onClick={onToggleExpand}
-              className="shrink-0 rounded-md bg-ps-amber/15 px-2.5 py-1 text-[11px] font-bold text-ps-amber"
+              className="shrink-0 rounded-md bg-ps-amber/15 px-2.5 py-1 text-caption font-bold text-ps-amber"
             >
               {expanded ? "Hide" : "Add scores"}
             </button>
@@ -269,7 +269,7 @@ function ThirdPlaceRow({
       {isCutoff && (
         <li
           aria-hidden
-          className="flex items-center gap-2 px-2 py-1 text-[10px] font-bold uppercase tracking-widest text-ps-text-ter"
+          className="flex items-center gap-2 px-2 py-1 text-micro font-bold uppercase tracking-widest text-ps-text-ter"
         >
           <span className="h-px flex-1 bg-ps-border" />
           <span>Cut line — top 8 qualify</span>
@@ -324,7 +324,7 @@ function ScoreEntryRow({
         <span className="text-ps-text-ter">vs</span>
         <CountryFlag shape="pill" name={match.away_team} size={16} />
         <span>{match.away_team}</span>
-        <span className="ml-1 rounded bg-ps-chip px-1.5 py-0.5 font-mono text-[11px] text-ps-text-sec">
+        <span className="ml-1 rounded bg-ps-chip px-1.5 py-0.5 font-mono text-caption text-ps-text-sec">
           {resultLabel}
         </span>
       </p>
@@ -364,7 +364,7 @@ function ScoreEntryRow({
         <button
           type="button"
           onClick={commit}
-          className={`ml-auto rounded-md px-2.5 py-1 text-[11px] font-bold transition-all ${
+          className={`ml-auto rounded-md px-2.5 py-1 text-caption font-bold transition-all ${
             saved ? `bg-ps-chip text-ps-text-sec` : `bg-ps-text text-ps-bg hover:opacity-90`
           }`}
         >
@@ -372,7 +372,7 @@ function ScoreEntryRow({
         </button>
         {saved && !err && <span className={`text-xs ${accent}`}>✓</span>}
       </div>
-      {err && <p className="mt-1 text-[11px] text-ps-red">{err}</p>}
+      {err && <p className="mt-1 text-caption text-ps-red">{err}</p>}
     </div>
   );
 }

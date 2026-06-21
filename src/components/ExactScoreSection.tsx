@@ -190,7 +190,7 @@ export function ExactScoreSection({
     const data = existingScorePrediction.prediction_data;
     return (
       <div className="mt-2 rounded-lg bg-ps-chip px-3 py-2">
-        <span className="text-[11px] font-medium uppercase text-ps-text-ter">
+        <span className="text-caption font-medium uppercase text-ps-text-ter">
           Exact Score:{" "}
         </span>
         <span className="font-mono text-sm font-medium text-ps-text">
@@ -241,10 +241,10 @@ export function ExactScoreSection({
   return (
     <div className="mt-2 rounded-xl border border-ps-border bg-ps-chip/50 p-3">
       <div className="flex items-center justify-between mb-2">
-        <span className="text-[11px] font-bold uppercase tracking-wide text-ps-text-sec">
+        <span className="text-caption font-bold uppercase tracking-wide text-ps-text-sec">
           Exact Score
         </span>
-        <span className="text-[11px] font-mono text-ps-text-ter">
+        <span className="text-caption font-mono text-ps-text-ter">
           +{ept.points}pts
         </span>
       </div>
@@ -262,7 +262,7 @@ export function ExactScoreSection({
           />
 
           {derivationMsg && (
-            <p className="mt-2 text-[11px] font-medium text-ps-amber-deep animate-pulse">
+            <p className="mt-2 text-caption font-medium text-ps-amber-deep animate-pulse">
               {derivationMsg}
             </p>
           )}
@@ -321,7 +321,7 @@ export function ExactScoreSection({
                 type="button"
                 onClick={handleClear}
                 disabled={isSubmitting}
-                className="text-[10px] font-medium text-ps-text-ter hover:text-ps-red transition-colors"
+                className="text-micro font-medium text-ps-text-ter hover:text-ps-red transition-colors"
               >
                 {t('prediction.reset')}
               </button>

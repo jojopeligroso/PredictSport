@@ -5,7 +5,7 @@ interface ResultBadgeProps {
 
 export function ResultBadge({ status, className = "" }: ResultBadgeProps) {
   const baseClasses =
-    "inline-flex items-center rounded-full px-2.5 py-0.5 font-mono text-[10px] font-bold uppercase tracking-widest";
+    "inline-flex items-center rounded-full px-2.5 py-0.5 font-mono text-micro font-bold uppercase tracking-widest";
 
   const variantClasses =
     status === "final"

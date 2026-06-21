@@ -104,7 +104,7 @@ function SendToThreadComposer({ defaultText, members = [], onCancel, onSend }: C
         {/* Header */}
         <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
           <WAIcon size={18} color={WA_GREEN} />
-          <span style={{ fontWeight: 600, fontSize: 14, color: 'var(--ps-text, #f1f5f9)' }}>
+          <span className="text-body" style={{ fontWeight: 600, color: 'var(--ps-text, #f1f5f9)' }}>
             Send to the WhatsApp group
           </span>
         </div>
@@ -116,6 +116,7 @@ function SendToThreadComposer({ defaultText, members = [], onCancel, onSend }: C
           onChange={(e) => setText(e.target.value)}
           rows={3}
           aria-label="Message text"
+          className="text-body"
           style={{
             width: '100%',
             background: 'var(--ps-surface, #1a1f2e)',
@@ -123,7 +124,6 @@ function SendToThreadComposer({ defaultText, members = [], onCancel, onSend }: C
             borderRadius: 10,
             padding: '10px 12px',
             color: 'var(--ps-text, #f1f5f9)',
-            fontSize: 14,
             lineHeight: 1.5,
             resize: 'none',
             outline: 'none',
@@ -137,13 +137,13 @@ function SendToThreadComposer({ defaultText, members = [], onCancel, onSend }: C
             <button
               type="button"
               onClick={() => setShowPicker((v) => !v)}
+              className="text-caption"
               style={{
                 alignSelf: 'flex-start',
                 background: 'transparent',
                 border: '1px solid var(--ps-border-strong, rgba(255,255,255,0.18))',
                 borderRadius: 999,
                 padding: '4px 12px',
-                fontSize: 12,
                 fontWeight: 600,
                 color: 'var(--ps-text-muted, #94a3b8)',
                 cursor: 'pointer',
@@ -165,12 +165,12 @@ function SendToThreadComposer({ defaultText, members = [], onCancel, onSend }: C
                     key={m.id}
                     type="button"
                     onClick={() => insertMention(m.display_name)}
+                    className="text-caption"
                     style={{
                       background: 'var(--ps-surface, #1a1f2e)',
                       border: '1px solid var(--ps-border-strong, rgba(255,255,255,0.18))',
                       borderRadius: 999,
                       padding: '4px 10px',
-                      fontSize: 12,
                       color: 'var(--ps-text, #f1f5f9)',
                       cursor: 'pointer',
                     }}
@@ -188,13 +188,13 @@ function SendToThreadComposer({ defaultText, members = [], onCancel, onSend }: C
           <button
             type="button"
             onClick={onCancel}
+            className="text-body"
             style={{
               flex: '0 0 auto',
               background: 'transparent',
               border: '1px solid var(--ps-border-strong, rgba(255,255,255,0.18))',
               borderRadius: 12,
               padding: '10px 18px',
-              fontSize: 14,
               fontWeight: 600,
               color: 'var(--ps-text-muted, #94a3b8)',
               cursor: 'pointer',
@@ -206,13 +206,13 @@ function SendToThreadComposer({ defaultText, members = [], onCancel, onSend }: C
           <button
             type="button"
             onClick={() => onSend(text)}
+            className="text-body"
             style={{
               flex: 1,
               background: `linear-gradient(135deg, ${WA_GREEN}, ${WA_GREEN_DARK})`,
               border: 'none',
               borderRadius: 12,
               padding: '10px 18px',
-              fontSize: 14,
               fontWeight: 700,
               color: '#fff',
               cursor: 'pointer',
@@ -323,10 +323,9 @@ export function SendToThread({
           {...pressProps}
           aria-label={sent ? 'Sent to WhatsApp' : label}
           title="Tap to send · Hold to edit"
-          className="w-full inline-flex items-center justify-center gap-2 rounded-xl px-4 py-3 font-semibold text-white transition-opacity hover:opacity-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-1"
+          className="w-full inline-flex items-center justify-center gap-2 rounded-xl px-4 py-3 font-semibold text-white transition-opacity hover:opacity-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-1 text-body"
           style={{
             background: `linear-gradient(135deg, ${WA_GREEN} 0%, ${WA_GREEN_DARK} 100%)`,
-            fontSize: 14,
             userSelect: 'none',
             WebkitUserSelect: 'none',
           }}
@@ -347,11 +346,10 @@ export function SendToThread({
         {...pressProps}
         aria-label={sent ? 'Sent to WhatsApp' : label}
         title="Tap to send · Hold to edit"
-        className="inline-flex items-center gap-1.5 rounded-full px-3 py-1 font-semibold transition-opacity hover:opacity-80 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-1"
+        className="inline-flex items-center gap-1.5 rounded-full px-3 py-1 font-semibold transition-opacity hover:opacity-80 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-1 text-caption"
         style={{
           background: sent ? WA_GREEN : WA_GREEN_SOFT,
           color: WA_GREEN_DARK,
-          fontSize: 12,
           userSelect: 'none',
           WebkitUserSelect: 'none',
         }}

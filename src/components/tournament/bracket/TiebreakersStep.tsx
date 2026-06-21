@@ -89,10 +89,10 @@ export default function TiebreakersStep({
     return (
       <div className="space-y-4">
         <div className="rounded-xl border border-ps-border bg-ps-surface p-4">
-          <p className="font-mono text-[10px] font-bold uppercase tracking-widest text-ps-text-ter">
+          <p className="font-mono text-micro font-bold uppercase tracking-widest text-ps-text-ter">
             Tiebreakers
           </p>
-          <h2 className="mt-1 text-lg font-extrabold text-ps-text">
+          <h2 className="mt-1 text-section-title font-extrabold text-ps-text">
             No tiebreakers needed
           </h2>
           <p className="mt-1 text-xs text-ps-text-sec">
@@ -127,10 +127,10 @@ export default function TiebreakersStep({
   return (
     <div className="space-y-4">
       <div className="rounded-xl border border-ps-border bg-ps-surface p-4">
-        <p className="font-mono text-[10px] font-bold uppercase tracking-widest text-ps-text-ter">
+        <p className="font-mono text-micro font-bold uppercase tracking-widest text-ps-text-ter">
           Tiebreakers
         </p>
-        <h2 className="mt-1 text-lg font-extrabold text-ps-text">
+        <h2 className="mt-1 text-section-title font-extrabold text-ps-text">
           Resolve group ties
         </h2>
         <p className="mt-1 text-xs text-ps-text-sec">
@@ -223,7 +223,7 @@ function TiedGroupCard({
       {/* Header */}
       <div className="mb-3 flex items-center justify-between">
         <div>
-          <p className="font-mono text-[10px] font-bold uppercase tracking-widest text-ps-text-ter">
+          <p className="font-mono text-micro font-bold uppercase tracking-widest text-ps-text-ter">
             {group.group_id}
           </p>
           <h3 className="text-sm font-extrabold text-ps-text">
@@ -433,7 +433,7 @@ function TiebreakerMatchRow({
       </div>
 
       {error && (
-        <p className="mt-1.5 text-[11px] text-ps-red">{error}</p>
+        <p className="mt-1.5 text-caption text-ps-red">{error}</p>
       )}
     </div>
   );
@@ -454,7 +454,7 @@ function ChosenBanner({
     <div
       className={`flex items-center gap-2 rounded-md border px-2.5 py-1.5 ${tone}`}
     >
-      <span className="font-mono text-[9px] font-bold uppercase tracking-widest opacity-80">
+      <span className="font-mono text-micro font-bold uppercase tracking-widest opacity-80">
         You chose
       </span>
       <span aria-hidden className="text-base leading-none">

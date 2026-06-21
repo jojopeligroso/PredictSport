@@ -36,14 +36,14 @@ export function ConfidencePills({
   return (
     <div className="mt-2.5 mb-0.5">
       <p
-        className={`mb-1.5 flex items-center justify-center gap-1 text-[10px] font-medium ${
+        className={`mb-1.5 flex items-center justify-center gap-1 text-micro font-medium ${
           isCard ? "text-white/45" : "text-ps-text-ter"
         }`}
       >
         How sure are you?
         <Link
           href="/wc/rules#faq"
-          className={`inline-flex h-3.5 w-3.5 items-center justify-center rounded-full border text-[8px] font-bold ${
+          className={`inline-flex h-3.5 w-3.5 items-center justify-center rounded-full border text-micro font-bold ${
             isCard
               ? "border-white/20 text-white/30 hover:text-white/50"
               : "border-ps-border text-ps-text-ter hover:text-ps-amber"
@@ -70,7 +70,7 @@ export function ConfidencePills({
               aria-pressed={selected}
               aria-label={`Confidence: ${level.label}`}
               className={[
-                "flex-1 py-1.5 text-center text-[10px] leading-tight transition-colors duration-100",
+                "flex-1 py-1.5 text-center text-micro leading-tight transition-colors duration-100",
                 "focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-inset focus-visible:ring-ps-amber/60",
                 !isLast &&
                   (isCard
@@ -113,7 +113,7 @@ export function ConfidenceMicroPill({ level }: { level: number }) {
   const label = confidenceLabel(level);
   return (
     <span
-      className={`ml-1.5 inline-flex items-center rounded-full px-1.5 py-px text-[9px] font-bold uppercase tracking-tight ${PILL_STYLES[level - 1] ?? PILL_STYLES[0]}`}
+      className={`ml-1.5 inline-flex items-center rounded-full px-1.5 py-px text-micro font-bold uppercase tracking-tight ${PILL_STYLES[level - 1] ?? PILL_STYLES[0]}`}
     >
       {label}
     </span>
@@ -147,7 +147,7 @@ export function ConfidenceIntroCard({
       {/* UNLOCKED badge */}
       <span
         className={[
-          "inline-block rounded-full px-2 py-0.5 text-[9px] font-bold uppercase tracking-[0.08em]",
+          "inline-block rounded-full px-2 py-0.5 text-micro font-bold uppercase tracking-[0.08em]",
           isCard
             ? "bg-white/20 text-white"
             : "bg-ps-amber px-2 py-0.5 text-[#191512]",
@@ -163,7 +163,7 @@ export function ConfidenceIntroCard({
         How sure are you?
       </p>
       <p
-        className={`mt-0.5 text-[11px] leading-relaxed ${isCard ? "text-white/60" : "text-ps-text-sec"}`}
+        className={`mt-0.5 text-caption leading-relaxed ${isCard ? "text-white/60" : "text-ps-text-sec"}`}
       >
         Tap a level and your group will see it after the match.
       </p>
@@ -176,7 +176,7 @@ export function ConfidenceIntroCard({
         <button
           type="button"
           onClick={onDismiss}
-          className={`text-[10px] ${isCard ? "text-white/30 hover:text-white/50" : "text-ps-text-ter hover:text-ps-text-sec"}`}
+          className={`text-micro ${isCard ? "text-white/30 hover:text-white/50" : "text-ps-text-ter hover:text-ps-text-sec"}`}
         >
           Not for me
         </button>
@@ -200,7 +200,7 @@ export function ConfidenceBreadcrumb({
     <button
       type="button"
       onClick={onRestore}
-      className={`mt-2 flex items-center gap-1 text-[10px] ${
+      className={`mt-2 flex items-center gap-1 text-micro ${
         isCard
           ? "text-white/30 hover:text-white/50"
           : "text-ps-text-ter hover:text-ps-amber"

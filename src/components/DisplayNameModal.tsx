@@ -92,7 +92,7 @@ export function DisplayNameModal({ suggestedName }: DisplayNameModalProps) {
           </svg>
         </div>
 
-        <h2 className="text-lg font-extrabold text-ps-text">
+        <h2 className="text-section-title font-extrabold text-ps-text">
           {t('display_name.heading')}
         </h2>
         <p className="mt-1 text-sm text-ps-text-sec">

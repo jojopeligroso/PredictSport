@@ -312,10 +312,10 @@ function BracketModeBanner({
   return (
     <div className="rounded-xl border-2 border-ps-amber/40 bg-ps-amber/5 p-4">
       <div className="flex items-baseline justify-between gap-3">
-        <p className="font-mono text-[10px] font-bold uppercase tracking-widest text-ps-amber-deep">
+        <p className="font-mono text-micro font-bold uppercase tracking-widest text-ps-amber-deep">
           Bracket edit mode
         </p>
-        <span className="font-mono text-[10px] font-bold text-ps-text-ter">
+        <span className="font-mono text-micro font-bold text-ps-text-ter">
           {saving ? "Saving…" : lastSavedAt ? "✓ Saved" : ""}
         </span>
       </div>
@@ -346,7 +346,7 @@ function BracketHandoffCard({
 }) {
   return (
     <div className="rounded-xl border-2 border-ps-amber/40 bg-ps-amber/5 p-4">
-      <p className="font-mono text-[10px] font-bold uppercase tracking-widest text-ps-amber-deep">
+      <p className="font-mono text-micro font-bold uppercase tracking-widest text-ps-amber-deep">
         Bracket edit mode
       </p>
       <div className="mt-2">{children}</div>

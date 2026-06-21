@@ -25,7 +25,7 @@ export function PickButton({
       disabled={disabled}
       aria-pressed={selected}
       className={[
-        'relative w-full text-left rounded-lg border px-3 py-2.5 transition-all duration-150',
+        'relative w-full text-left rounded-lg border px-3 py-2.5 min-h-[44px] transition-all duration-150',
         'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ps-amber/50 focus-visible:ring-offset-1 focus-visible:ring-offset-ps-surface',
         'motion-reduce:transition-none',
         selected
@@ -40,8 +40,7 @@ export function PickButton({
     >
       {communityPct !== undefined && (
         <span
-          className="absolute top-2 right-2.5 text-ps-text-ter"
-          style={{ fontSize: 9 }}
+          className="absolute top-2 right-2.5 text-micro text-ps-text-ter"
           aria-label={`${communityPct}% of the group picked this`}
         >
           {communityPct}%
@@ -49,16 +48,14 @@ export function PickButton({
       )}
 
       <span
-        className="block truncate font-bold text-ps-text leading-tight"
-        style={{ fontSize: 12.5 }}
+        className="block truncate text-caption font-bold text-ps-text leading-tight"
       >
         {label}
       </span>
 
       {sub && (
         <span
-          className="block uppercase text-ps-text-sec font-semibold tracking-wide mt-0.5"
-          style={{ fontSize: 9.5 }}
+          className="block text-micro uppercase text-ps-text-sec font-semibold tracking-wide mt-0.5"
         >
           {sub}
         </span>

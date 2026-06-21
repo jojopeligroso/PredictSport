@@ -44,14 +44,14 @@ export function PickNote({
       >
         <p
           className={[
-            'font-semibold uppercase mb-1',
+            'text-micro font-semibold uppercase mb-1',
             isPrivate ? 'text-ps-violet' : 'text-ps-amber-deep',
           ].join(' ')}
-          style={{ fontSize: 9, letterSpacing: '0.06em' }}
+          style={{ letterSpacing: '0.06em' }}
         >
           {isPrivate ? `🔒 Private note${ownerIsYou ? ' · only you see this' : ''}` : '✏️ Note'}
         </p>
-        <p className="italic text-ps-text" style={{ fontSize: 12 }}>
+        <p className="text-caption italic text-ps-text">
           &ldquo;{initialText}&rdquo;
         </p>
       </div>
@@ -78,7 +78,7 @@ export function PickNote({
   return (
     <div className="rounded-lg border border-dashed border-ps-border-strong px-3 py-2.5 transition-colors focus-within:border-ps-amber/60 focus-within:ring-2 focus-within:ring-ps-amber/20">
       <div className="flex items-center justify-between mb-2 gap-2">
-        <span className="text-ps-text-sec font-medium" style={{ fontSize: 11 }}>
+        <span className="text-caption text-ps-text-sec font-medium">
           Add a note{' '}
           <span className="text-ps-text-ter font-normal">(optional)</span>
         </span>
@@ -96,12 +96,12 @@ export function PickNote({
               onClick={() => handleVisibilityChange(v)}
               aria-pressed={visibility === v}
               className={[
-                'px-2.5 py-1 font-semibold uppercase transition-colors',
+                'text-micro px-2.5 py-1 font-semibold uppercase transition-colors',
                 visibility === v
                   ? 'bg-ps-amber text-white'
                   : 'text-ps-text-sec hover:text-ps-text',
               ].join(' ')}
-              style={{ fontSize: 9, letterSpacing: '0.05em' }}
+              style={{ letterSpacing: '0.05em' }}
             >
               {v}
             </button>
@@ -114,12 +114,11 @@ export function PickNote({
         onChange={handleTextChange}
         placeholder="e.g. Backing the stats here…"
         rows={2}
-        className="w-full bg-transparent resize-none text-ps-text placeholder:text-ps-text-ter outline-none leading-snug focus:ring-0 transition-colors"
-        style={{ fontSize: 12 }}
+        className="w-full bg-transparent resize-none text-caption text-ps-text placeholder:text-ps-text-ter outline-none leading-snug focus:ring-0 transition-colors"
         aria-label="Pick note"
       />
 
-      <p className="text-ps-text-ter mt-1" style={{ fontSize: 10 }}>
+      <p className="text-micro text-ps-text-ter mt-1">
         {helperText}
       </p>
     </div>

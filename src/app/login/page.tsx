@@ -44,7 +44,7 @@ export default async function LoginPage({
             <p className="text-base font-extrabold lowercase leading-tight tracking-tight text-ps-text">
               sports<span className="text-ps-amber">predict.</span>
             </p>
-            <p className="font-serif text-[11.5px] italic leading-tight text-ps-text-sec">
+            <p className="font-serif text-caption italic leading-tight text-ps-text-sec">
               {t('login.tagline')}
             </p>
           </div>
@@ -69,7 +69,7 @@ export default async function LoginPage({
         <LoginButton redirectTo={next} />
 
         {/* Caption */}
-        <p className="mt-2.5 text-center text-[11px] text-ps-text-ter">
+        <p className="mt-2.5 text-center text-caption text-ps-text-ter">
           {t('login.legal').split(t('login.terms'))[0]}
           <a href="/terms" className="underline hover:text-ps-text">{t('login.terms')}</a>
           {(t('login.legal').split(t('login.terms'))[1] || '').split(t('login.privacy'))[0]}

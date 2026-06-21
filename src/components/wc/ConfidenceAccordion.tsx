@@ -104,7 +104,7 @@ export function ConfidenceAccordion({
         aria-expanded={expanded}
         aria-label="Crowd confidence"
       >
-        <span className="text-[10px] font-medium text-ps-text-ter">
+        <span className="text-micro font-medium text-ps-text-ter">
           Crowd confidence
         </span>
         <svg
@@ -134,7 +134,7 @@ export function ConfidenceAccordion({
         <div className="border-t border-ps-border/[0.08] px-3 pb-3 pt-2">
           {loading ? (
             <div className="flex items-center justify-center py-2">
-              <span className="text-[10px] text-ps-text-ter">Loading...</span>
+              <span className="text-micro text-ps-text-ter">Loading...</span>
             </div>
           ) : data && total > 0 ? (
             <>
@@ -174,7 +174,7 @@ export function ConfidenceAccordion({
                       }}
                     >
                       <span
-                        className="font-mono text-[11px] text-ps-text/40"
+                        className="font-mono text-caption text-ps-text/40"
                         title={LEVEL_LABELS[i]}
                       >
                         {count}
@@ -185,7 +185,7 @@ export function ConfidenceAccordion({
               </div>
             </>
           ) : (
-            <p className="text-[10px] text-ps-text-ter">
+            <p className="text-micro text-ps-text-ter">
               No confidence data available.
             </p>
           )}

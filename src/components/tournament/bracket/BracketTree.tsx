@@ -48,7 +48,7 @@ export function BracketTree({
 
       {/* Champion pick */}
       <div className="mt-3 rounded-lg bg-ps-amber/5 border border-ps-amber/20 px-3 py-2 text-center">
-        <span className="text-[10px] font-bold uppercase tracking-widest text-ps-amber">
+        <span className="text-micro font-bold uppercase tracking-widest text-ps-amber">
           Champion
         </span>
         <p className="flex items-center justify-center gap-2 text-base font-extrabold text-ps-text">
@@ -64,7 +64,7 @@ export function BracketTree({
         <div className="flex gap-3" style={{ minWidth: `${WC2026_KNOCKOUT_ROUNDS.length * 140}px` }}>
           {WC2026_KNOCKOUT_ROUNDS.map((round) => (
             <div key={round.roundKey} className="flex-1 min-w-[120px]">
-              <h4 className="text-[10px] font-bold uppercase tracking-widest text-ps-text-ter">
+              <h4 className="text-micro font-bold uppercase tracking-widest text-ps-text-ter">
                 {round.name}
               </h4>
               <div className="mt-1 space-y-1">

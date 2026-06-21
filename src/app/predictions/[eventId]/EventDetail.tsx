@@ -420,8 +420,8 @@ export function EventDetail({
             </svg>
           </Link>
           <span
+            className="text-micro"
             style={{
-              fontSize: 10,
               fontWeight: 700,
               letterSpacing: 1.2,
               textTransform: "uppercase",
@@ -435,9 +435,8 @@ export function EventDetail({
 
         {/* League subtitle */}
         <p
-          className="mt-4"
+          className="mt-4 text-caption"
           style={{
-            fontSize: 11,
             opacity: 0.85,
             fontWeight: 600,
             letterSpacing: 0.4,
@@ -449,16 +448,16 @@ export function EventDetail({
 
         {/* Bebas title */}
         <h1
-          className="mt-1.5 font-display font-extrabold"
-          style={{ fontSize: 32, lineHeight: 1.0, letterSpacing: 0.8 }}
+          className="mt-1.5 font-display font-extrabold text-page-title"
+          style={{ lineHeight: 1.0, letterSpacing: 0.8 }}
         >
           {event.event_name}
         </h1>
 
         {/* Kickoff time */}
         <div
-          className="mt-2 flex gap-3.5"
-          style={{ fontSize: 11.5, opacity: 0.92, fontWeight: 500 }}
+          className="mt-2 flex gap-3.5 text-caption"
+          style={{ opacity: 0.92, fontWeight: 500 }}
         >
           <span>
             {new Date(event.start_time).toLocaleDateString("en-IE", {
@@ -493,18 +492,17 @@ export function EventDetail({
               <>
                 <p
                   style={{
-                    fontSize: 9,
                     fontWeight: 800,
                     letterSpacing: 1.2,
                     textTransform: "uppercase",
                   }}
-                  className="text-ps-text-sec"
+                  className="text-ps-text-sec text-micro"
                 >
                   {cd.label}
                 </p>
                 <p
-                  className="mt-0.5 font-display font-extrabold text-ps-amber-deep"
-                  style={{ fontSize: 18, letterSpacing: 0.6 }}
+                  className="mt-0.5 font-display font-extrabold text-ps-amber-deep text-section-title"
+                  style={{ letterSpacing: 0.6 }}
                 >
                   {cd.value}
                 </p>
@@ -514,14 +512,13 @@ export function EventDetail({
         </div>
         <div className="flex items-center gap-1.5">
           <span
-            style={{ fontSize: 10.5 }}
-            className="font-semibold text-ps-text-sec"
+            className="font-semibold text-ps-text-sec text-micro"
           >
             worth
           </span>
           <span
-            className="rounded-lg bg-ps-amber-soft px-2.5 py-1 font-display font-extrabold text-ps-amber-deep"
-            style={{ fontSize: 13, letterSpacing: 0.5 }}
+            className="rounded-lg bg-ps-amber-soft px-2.5 py-1 font-display font-extrabold text-ps-amber-deep text-body"
+            style={{ letterSpacing: 0.5 }}
           >
             +{totalPoints} PTS
           </span>
@@ -632,7 +629,7 @@ export function EventDetail({
             return (
               <div key={ept.id} className="mb-3">
                 <SectionHeader label={`Your Pick \u00B7 ${typeLabel}`} />
-                <p className="text-[11px] text-ps-text-ter mt-1 mb-2">
+                <p className="text-caption text-ps-text-ter mt-1 mb-2">
                   Tap in order: 1st, 2nd, 3rd...{" "}
                   {!isLocked && rankings.length > 0 && (
                     <button
@@ -689,7 +686,7 @@ export function EventDetail({
                       >
                         {/* Position badge */}
                         <span
-                          className="flex items-center justify-center rounded-full font-display font-extrabold text-[12px]"
+                          className="flex items-center justify-center rounded-full font-display font-extrabold text-caption"
                           style={{
                             width: 26,
                             height: 26,
@@ -702,7 +699,7 @@ export function EventDetail({
                           {isAssigned ? assigned.position : ""}
                         </span>
                         <span
-                          className="text-[13px] font-semibold"
+                          className="text-body font-semibold"
                           style={{
                             color: isAssigned
                               ? "var(--ps-text)"
@@ -775,9 +772,8 @@ export function EventDetail({
           <button
             onClick={handleSubmit}
             disabled={submitting || !hasActivePick}
-            className="w-full rounded-xl py-3.5 font-extrabold disabled:opacity-60"
+            className="w-full rounded-xl py-3.5 font-extrabold disabled:opacity-60 text-body"
             style={{
-              fontSize: 14.5,
               background: hasActivePick
                 ? "linear-gradient(135deg, var(--ps-amber), var(--ps-amber-deep))"
                 : "var(--ps-chip)",
@@ -792,12 +788,12 @@ export function EventDetail({
               : "Pick to continue"}
           </button>
           {submitError && (
-            <p className="mt-2 text-center text-[12px] font-medium text-ps-red">
+            <p className="mt-2 text-center text-caption font-medium text-ps-red">
               {submitError}
             </p>
           )}
           {!submitError && (
-            <p className="mt-2 text-center text-[11px] text-ps-text-ter">
+            <p className="mt-2 text-center text-caption text-ps-text-ter">
               You can change your pick until kickoff.
             </p>
           )}
@@ -850,8 +846,7 @@ export function EventDetail({
                     }}
                   />
                   <span
-                    className="text-ps-text-sec font-semibold"
-                    style={{ fontSize: 11 }}
+                    className="text-ps-text-sec font-semibold text-caption"
                   >
                     {optionLabel} ({group.count})
                   </span>
@@ -873,7 +868,7 @@ export function EventDetail({
                   size={32}
                 />
                 <div className="flex-1 min-w-0">
-                  <span className="text-[12.5px] font-bold text-ps-text">
+                  <span className="text-caption font-bold text-ps-text">
                     {row.displayName}
                     {row.userId === currentUserId && (
                       <span className="text-ps-text-ter font-normal">
@@ -884,7 +879,7 @@ export function EventDetail({
                   </span>
                   <div className="mt-0.5">
                     <span
-                      className="rounded px-1.5 py-0.5 text-[10.5px] font-extrabold"
+                      className="rounded px-1.5 py-0.5 text-micro font-extrabold"
                       style={{
                         background: row.color + "20",
                         color: row.color,

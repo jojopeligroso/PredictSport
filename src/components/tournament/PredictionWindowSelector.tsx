@@ -169,7 +169,7 @@ function ProgressChip({
       : "border-ps-border bg-ps-chip text-ps-text-ter";
   return (
     <span
-      className={`inline-flex items-center gap-1.5 rounded-full border px-2 py-0.5 text-[11px] font-semibold ${tone}`}
+      className={`inline-flex items-center gap-1.5 rounded-full border px-2 py-0.5 text-caption font-semibold ${tone}`}
     >
       <span className="uppercase tracking-wide opacity-80">{label}</span>
       <span className="font-mono">
