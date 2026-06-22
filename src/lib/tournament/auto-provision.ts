@@ -3,6 +3,10 @@ import { createWorldCupCompetition } from "./create-world-cup-competition";
 
 const WC2026_TOURNAMENT_ID = "a0000000-0000-0000-0000-000000000026";
 
+// Joins close when the knockouts begin: earliest R32 kickoff (match 73).
+// Kept in sync with migration 20260622100000_wc_entry_closes_at_r32_start.sql.
+const WC2026_ENTRY_CLOSES_AT = "2026-06-28T20:00:00Z";
+
 /**
  * Find an existing instance with capacity, or provision a new one.
  * Called from /api/join when the target instance is full.
@@ -46,15 +50,16 @@ export async function findOrProvisionInstance(
     skipRounds: true, // Share rounds from instance 1 via tournament_id RLS
   });
 
-  // 4. Set instance metadata — entry_closes_at must be null so overflow
-  //    instances stay open indefinitely (instance #1's cutoff does not apply)
+  // 4. Set instance metadata — overflow instances share the same R32-start
+  //    cutoff as instance #1, so the join window closes uniformly across
+  //    instances when the knockouts begin.
   await supabase
     .from("competitions")
     .update({
       instance_number: nextNumber,
       instance_type: instanceType,
       status: "active", // Immediately joinable
-      entry_closes_at: null,
+      entry_closes_at: WC2026_ENTRY_CLOSES_AT,
     })
     .eq("id", result.competition.id);
 
