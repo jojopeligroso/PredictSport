@@ -37,7 +37,7 @@ const PREDICTION_WINDOWS = [
 interface CreateWCOptions {
   name: string;
   visibility: "public" | "private";
-  entrantCount: number; // 8-96, validated by generateEliminationCurve
+  entrantCount: number; // 8-48, validated by generateEliminationCurve
   maxEntrants?: number; // Hard cap on membership. Null = unlimited.
   minEntrants?: number; // Minimum to proceed. Null = no minimum.
   groupDrawHoursBefore?: number; // Hours before first event to draw groups. Default 24.

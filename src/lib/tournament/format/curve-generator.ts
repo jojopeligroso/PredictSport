@@ -2,11 +2,12 @@
  * Elimination Curve Generator
  *
  * Generates a strictly decreasing elimination curve for tournament competitions.
- * Given an entrant count (8-96), returns the number of survivors at each stage.
+ * Given an entrant count (8-48), returns the number of survivors at each stage.
  *
  * Algorithm: group stage reduces by ~1/3, then generous halving with minimum
- * thresholds to ensure >= 1 elimination at every stage. Final prediction window
- * band is determined by entrant count tier.
+ * thresholds to ensure >= 1 elimination at every stage. Every instance caps at
+ * 48 entrants (auto-provision spins up a fresh instance when one fills), so the
+ * final prediction window always seats 2 finalists.
  */
 
 export interface CurveStep {
@@ -14,33 +15,28 @@ export interface CurveStep {
   remaining: number;
 }
 
-/**
- * Determines the number of finalists for the final prediction window.
- * 8-55 → 2, 56-79 → 3, 80-96 → 4.
- */
-function getFinalBand(entrantCount: number): number {
-  if (entrantCount <= 55) return 2;
-  if (entrantCount <= 79) return 3;
-  return 4;
-}
+/** Hard ceiling on entrants per instance. Mirrors the membership cap. */
+export const MAX_ENTRANTS_PER_INSTANCE = 48;
 
 /**
  * Generates an elimination curve for a tournament with the given entrant count.
  *
- * @param entrantCount Number of entrants (8-96)
+ * @param entrantCount Number of entrants (8-48)
  * @returns Ordered array of { stage, remaining } from start to winner
- * @throws If entrantCount is outside 8-96 range
+ * @throws If entrantCount is outside 8-48 range
  */
 export function generateEliminationCurve(entrantCount: number): CurveStep[] {
-  if (entrantCount < 8 || entrantCount > 96) {
-    throw new Error(`Entrant count must be 8-96, got ${entrantCount}`);
+  if (entrantCount < 8 || entrantCount > MAX_ENTRANTS_PER_INSTANCE) {
+    throw new Error(
+      `Entrant count must be 8-${MAX_ENTRANTS_PER_INSTANCE}, got ${entrantCount}`
+    );
   }
 
   // Group stage: reduce by ~1/3
   const gsTarget = Math.ceil((entrantCount * 2) / 3);
 
-  // Final prediction window band
-  const fpw = getFinalBand(entrantCount);
+  // Final prediction window seats 2 finalists at every valid (8-48) size.
+  const fpw = 2;
 
   // Minimum values to guarantee >= 1 elimination at every step
   const minQF = fpw + 1;

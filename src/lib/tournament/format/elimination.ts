@@ -1,6 +1,10 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { Classification } from "@/types/tournament";
-import { generateEliminationCurve, type CurveStep } from "./curve-generator";
+import {
+  generateEliminationCurve,
+  MAX_ENTRANTS_PER_INSTANCE,
+  type CurveStep,
+} from "./curve-generator";
 import { eliminateEntrant } from "../membership";
 import { computeFormatGroupStandings, computeBestThirdRanking } from "./scoring";
 
@@ -243,14 +247,20 @@ export function getEliminationCurve(
   }
 
   // If actual entrants differ from configured count, regenerate
-  // the curve to maintain correct proportions
+  // the curve to maintain correct proportions. Clamp to the per-instance
+  // ceiling (48): a concurrent-join race can briefly push membership to 49+,
+  // and the curve must degrade gracefully rather than throw and brick the draw.
+  // computeGroupComposition() still receives the real member count, so the
+  // extra bodies are placed into groups normally.
   if (
     actualEntrants &&
     actualEntrants >= 8 &&
     curveConfig.entrantCount &&
     actualEntrants !== curveConfig.entrantCount
   ) {
-    return generateEliminationCurve(actualEntrants);
+    return generateEliminationCurve(
+      Math.min(actualEntrants, MAX_ENTRANTS_PER_INSTANCE)
+    );
   }
 
   return curveConfig.curve;
