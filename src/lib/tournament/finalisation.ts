@@ -231,6 +231,72 @@ export async function finaliseWindow(
     );
   }
 
+  // Handle sibling competition instances (multi-instance tournaments).
+  // Events/rounds are shared via tournament_id but each instance has its own
+  // classifications and standings. Create finalisation records and snapshots
+  // for sibling instances so their leaderboards stay current.
+  const { data: ownerComp } = await supabase
+    .from("competitions")
+    .select("tournament_id")
+    .eq("id", round.competition_id)
+    .single();
+
+  if (ownerComp?.tournament_id) {
+    const { data: siblings } = await supabase
+      .from("competitions")
+      .select("id")
+      .eq("tournament_id", ownerComp.tournament_id)
+      .neq("id", round.competition_id)
+      .in("status", ["active", "draft"]);
+
+    for (const sibling of siblings ?? []) {
+      // Check if already finalised for this sibling (idempotent)
+      const { data: existing } = await supabase
+        .from("result_finalisations")
+        .select("id")
+        .eq("competition_id", sibling.id)
+        .eq("prediction_window_id", roundId)
+        .maybeSingle();
+
+      if (existing) continue;
+
+      const { data: sibFinalisation } = await supabase
+        .from("result_finalisations")
+        .insert({
+          competition_id: sibling.id,
+          prediction_window_id: roundId,
+          sporting_stage_id: round.sporting_stage_id,
+          finalisation_type: "window",
+          status: "finalised",
+          finalised_at: new Date().toISOString(),
+          finalised_by: finalisedBy,
+          finalisation_method: finalisedBy ? "manual" : "automatic",
+        })
+        .select()
+        .single();
+
+      if (!sibFinalisation) continue;
+
+      const { data: sibClassifications } = await supabase
+        .from("classifications")
+        .select("id, classification_type")
+        .eq("competition_id", sibling.id)
+        .in("status", ["active", "finalised"]);
+
+      for (const cls of sibClassifications ?? []) {
+        await generateWindowSnapshot(
+          supabase,
+          cls.id,
+          sibling.id,
+          roundId,
+          round.sporting_stage_id,
+          sibFinalisation.id,
+          finalisedBy
+        );
+      }
+    }
+  }
+
   return finalisation as ResultFinalisation;
 }
 

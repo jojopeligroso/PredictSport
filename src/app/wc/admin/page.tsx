@@ -141,7 +141,7 @@ export default async function AdminPage() {
   const { data: stages } = await supabase
     .from("sporting_stages")
     .select("id, name, status, stage_order")
-    .eq("tournament_id", "a0000000-0000-0000-0000-000000000026")
+    .eq("tournament_id", competition.tournament_id!)
     .order("stage_order", { ascending: true });
 
   const stageData = (stages ?? []).map((s) => {

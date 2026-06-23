@@ -64,7 +64,7 @@ export async function GET(request: Request) {
   const { data: rawEvents, error } = await supabase
     .from("events")
     .select(
-      "id, event_name, lock_time, status, competition_id, competitions(id, type, product_mode)"
+      "id, event_name, lock_time, status, competition_id, competitions(id, type, product_mode, tournament_id)"
     )
     .eq("status", "upcoming")
     .gt("lock_time", now.toISOString())
@@ -80,7 +80,7 @@ export async function GET(request: Request) {
     event_name: string;
     lock_time: string;
     competition_id: string;
-    competitions: { id: string; type: string | null; product_mode: string | null } | null;
+    competitions: { id: string; type: string | null; product_mode: string | null; tournament_id: string | null } | null;
   };
 
   const events = ((rawEvents ?? []) as unknown as EventRow[]).filter(
@@ -98,14 +98,37 @@ export async function GET(request: Request) {
   // Build userId → [events] map: which events each user should hear about
   const userEvents = new Map<string, EventRow[]>();
 
+  // Cache: tournament_id → all sibling competition IDs (avoids repeated lookups)
+  const siblingCache = new Map<string, string[]>();
+
   for (const event of events) {
     let userIds = memberCache.get(event.competition_id);
     if (!userIds) {
-      const { data: members } = await supabase
-        .from("competition_members")
-        .select("user_id")
-        .eq("competition_id", event.competition_id);
-      userIds = (members ?? []).map((m) => m.user_id);
+      const tournamentId = event.competitions?.tournament_id;
+      if (tournamentId) {
+        // Multi-instance: look up members from ALL sibling instances
+        let compIds = siblingCache.get(tournamentId);
+        if (!compIds) {
+          const { data: siblings } = await supabase
+            .from("competitions")
+            .select("id")
+            .eq("tournament_id", tournamentId)
+            .in("status", ["active", "draft"]);
+          compIds = (siblings ?? []).map((c) => c.id);
+          siblingCache.set(tournamentId, compIds);
+        }
+        const { data: members } = await supabase
+          .from("competition_members")
+          .select("user_id")
+          .in("competition_id", compIds);
+        userIds = (members ?? []).map((m) => m.user_id);
+      } else {
+        const { data: members } = await supabase
+          .from("competition_members")
+          .select("user_id")
+          .eq("competition_id", event.competition_id);
+        userIds = (members ?? []).map((m) => m.user_id);
+      }
       memberCache.set(event.competition_id, userIds);
     }
     for (const uid of userIds) {

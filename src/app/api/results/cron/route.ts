@@ -127,22 +127,44 @@ export async function GET(request: Request) {
 
   const { data: manualEvents } = await supabase
     .from("events")
-    .select("id, event_name, competition_id, start_time")
+    .select("id, event_name, competition_id, start_time, competitions(tournament_id)")
     .eq("status", "locked")
     .eq("result_confirmed", false)
     .is("external_event_id", null)
     .lt("start_time", twoHoursAgo.toISOString())
     .gt("start_time", sevenDaysAgoAlert.toISOString());
 
+  // Cache: tournament_id → all sibling competition IDs
+  const manualSiblingCache = new Map<string, string[]>();
+
   for (const evt of manualEvents ?? []) {
     const startTime = new Date(evt.start_time);
     const hoursAgo = Math.round((now.getTime() - startTime.getTime()) / (1000 * 60 * 60));
 
-    // Fetch competition admins
+    // Fetch competition admins (including sibling instances for tournaments)
+    const comps = (evt as Record<string, unknown>).competitions as { tournament_id: string | null } | { tournament_id: string | null }[] | null;
+    const tournamentId = Array.isArray(comps) ? comps[0]?.tournament_id : comps?.tournament_id;
+    let adminCompIds: string[];
+    if (tournamentId) {
+      let cached = manualSiblingCache.get(tournamentId);
+      if (!cached) {
+        const { data: siblings } = await supabase
+          .from("competitions")
+          .select("id")
+          .eq("tournament_id", tournamentId)
+          .in("status", ["active", "draft"]);
+        cached = (siblings ?? []).map((c) => c.id);
+        manualSiblingCache.set(tournamentId, cached);
+      }
+      adminCompIds = cached;
+    } else {
+      adminCompIds = [evt.competition_id];
+    }
+
     const { data: adminMembers } = await supabase
       .from("competition_members")
       .select("user_id")
-      .eq("competition_id", evt.competition_id)
+      .in("competition_id", adminCompIds)
       .in("role", ["admin", "co_admin"]);
 
     for (const adminMember of adminMembers ?? []) {

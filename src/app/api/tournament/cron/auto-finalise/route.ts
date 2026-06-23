@@ -1,6 +1,8 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 import { finaliseWindow } from "@/lib/tournament/finalisation";
+import { processTagsForRound } from "@/lib/reputation";
+import { fixtureFilterFromIds } from "@/lib/tournament/shared-fixtures";
 
 export const dynamic = "force-dynamic";
 
@@ -35,26 +37,38 @@ export async function GET(request: Request) {
   const now = new Date();
   const fifteenMinutes = 15 * 60 * 1000;
 
-  // Find tournament competitions
+  // Find tournament competitions (include tournament_id for shared fixture queries)
   const { data: competitions } = await supabase
     .from("competitions")
-    .select("id")
+    .select("id, tournament_id")
     .not("tournament_id", "is", null)
     .in("status", ["active", "draft"]);
 
   const finalised: string[] = [];
   const skipped: string[] = [];
+  const tagsProcessed: string[] = [];
+
+  // Track processed rounds to avoid double-processing shared rounds
+  // across sibling competition instances
+  const processedRounds = new Set<string>();
 
   for (const comp of competitions ?? []) {
+    // Use tournament_id-aware filter so instance #2 finds shared rounds
+    const ff = fixtureFilterFromIds(comp.id, comp.tournament_id);
+
     // Find locked (not yet scored) windows where all events have results confirmed
     const { data: lockedWindows } = await supabase
       .from("rounds")
       .select("id, name, round_number")
-      .eq("competition_id", comp.id)
+      .eq(ff.key, ff.value)
       .eq("status", "locked")
       .order("round_number", { ascending: true });
 
     for (const window of lockedWindows ?? []) {
+      // Skip if already processed by a sibling instance in this cron run
+      if (processedRounds.has(window.id)) continue;
+      processedRounds.add(window.id);
+
       // Check if all events in this window are resulted and confirmed
       const { data: events } = await supabase
         .from("events")
@@ -76,7 +90,7 @@ export async function GET(request: Request) {
       const { data: nextWindow } = await supabase
         .from("rounds")
         .select("id")
-        .eq("competition_id", comp.id)
+        .eq(ff.key, ff.value)
         .gt("round_number", window.round_number)
         .eq("status", "open")
         .order("round_number", { ascending: true })
@@ -105,8 +119,23 @@ export async function GET(request: Request) {
 
       if (shouldAutoFinalise) {
         try {
+          // finaliseWindow handles sibling instances internally
           await finaliseWindow(supabase, window.id, null);
           finalised.push(window.name);
+
+          // Process behavioural tags for all competition instances sharing this round
+          const siblingComps = (competitions ?? []).filter(
+            (c) => c.tournament_id === comp.tournament_id
+          );
+          for (const sib of siblingComps) {
+            processTagsForRound(sib.id, window.id).catch((err) =>
+              console.error(
+                `[auto-finalise] Tag processing failed for comp ${sib.id}:`,
+                err instanceof Error ? err.message : err
+              )
+            );
+            tagsProcessed.push(`${window.name}/${sib.id}`);
+          }
         } catch (err) {
           skipped.push(
             `${window.name}: finalisation error - ${err instanceof Error ? err.message : "unknown"}`
@@ -121,6 +150,7 @@ export async function GET(request: Request) {
   return NextResponse.json({
     finalised,
     skipped,
+    tagsProcessed: tagsProcessed.length > 0 ? tagsProcessed : undefined,
     checkedAt: now.toISOString(),
   });
 }
