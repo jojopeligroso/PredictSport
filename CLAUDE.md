@@ -216,6 +216,12 @@ This project runs on **Vercel Hobby (free)**. These limits bite silently:
 
 2. **Never aggregate in JavaScript what the database can aggregate in SQL.** Fetching individual rows and summing in a JS loop means (a) you hit the row limit silently, (b) you transfer orders of magnitude more data than needed, (c) you burn serverless CPU on work Postgres does in milliseconds. **Use a Postgres RPC with `SUM() GROUP BY`** so the database returns one row per group, not one row per input record. The current `.limit(10000)` band-aid works at 48 users but the proper fix is an RPC.
 
+## Gotchas — RLS vs Service Client
+
+1. **Cap check counts MUST use service client.** RLS SELECT on `competition_members` requires `is_competition_member(competition_id)`. A non-member joining via `/api/join` gets `count = 0` from the anon client — the cap check passes and the user walks into a full competition. All entrant cap counts must use `createServiceClient()`. The `/wc/join-open` page got this right; `/api/join` did not (fixed 2026-06-21). The `max_entrants` cap is per-competition (currently 48 for WC, will vary for future blueprints).
+
+2. **Any new join path must use service client for cap + auto-provision.** `findOrProvisionInstance` receives a Supabase client as parameter — always pass the service client, not the session client. If it uses the anon client, it sees 0 members in every instance and never provisions new ones.
+
 ## Gotchas — Notification Dedup
 
 1. **Don't call `notifyResultConfirmed` from routes that delegate to `autoResolveEvent`** — `autoResolveEvent` already calls it internally. Adding a second call in the caller causes duplicate chat messages and double push notifications. The admin confirm-result route correctly calls `notifyResultConfirmed` because it does its own scoring and does NOT go through `autoResolveEvent`.

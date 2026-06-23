@@ -219,13 +219,21 @@ export function ChatMessage({
 
     // Tag reveal: announcement text + inline TagRevealCard
     if (message.message_type === "system_tag_reveal" && message.metadata) {
+      const tagMeta = message.metadata as unknown as TagRevealMetadata;
+      if (!tagMeta?.factCard) {
+        return (
+          <div className="flex justify-center py-1">
+            <span className="text-xs text-ps-text-ter italic">{systemContent}</span>
+          </div>
+        );
+      }
       return (
         <div className="flex justify-center py-1">
           <div className="max-w-[85%]">
             <p className="text-xs text-ps-text-ter italic text-center">
               {systemContent}
             </p>
-            <TagRevealCard metadata={message.metadata as unknown as TagRevealMetadata} />
+            <TagRevealCard metadata={tagMeta} />
           </div>
         </div>
       );

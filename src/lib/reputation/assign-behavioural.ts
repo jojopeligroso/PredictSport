@@ -230,7 +230,7 @@ function resolveStatForTag(
     case "No Participation Trophies":
       return member.events_available - member.total_predictions;
     case "Still in the Fight":
-      return member.total_predictions;
+      return member.events_available - member.total_predictions;
     case "Dead Centre":
       return "all";
     default:

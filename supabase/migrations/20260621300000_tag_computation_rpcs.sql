@@ -555,6 +555,6 @@ COMMENT ON FUNCTION public.compute_event_tag_metrics IS
   'Result set bounded by qualifying members (typically 0-5 rows). '
   'SECURITY DEFINER — call from service-role only.';
 
--- Grant execute to authenticated (RPCs called via service-role, but grant avoids issues)
-GRANT EXECUTE ON FUNCTION public.compute_behavioural_tag_metrics(uuid, uuid) TO authenticated;
-GRANT EXECUTE ON FUNCTION public.compute_event_tag_metrics(uuid, uuid) TO authenticated;
+-- No GRANT to authenticated — these SECURITY DEFINER RPCs are called via
+-- service-role only. Granting to authenticated would let any logged-in user
+-- extract metrics for competitions they don't belong to.

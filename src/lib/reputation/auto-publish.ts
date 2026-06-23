@@ -54,12 +54,13 @@ export async function checkAndPublishExpiredPending(
 
   const now = new Date().toISOString();
 
-  // Flip to active
+  // Flip to active — guard on status = pending to prevent race with admin suppress
   const tagIds = pendingTags.map((t) => t.id);
   const { error: updateError } = await supabase
     .from("member_tags")
     .update({ status: "active", published_at: now })
-    .in("id", tagIds);
+    .in("id", tagIds)
+    .eq("status", "pending");
 
   if (updateError) {
     console.error(
