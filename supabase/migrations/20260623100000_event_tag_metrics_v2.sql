@@ -8,6 +8,9 @@
 -- This rewrite aligns the RPC with the engine.
 -- ============================================================
 
+-- Must DROP first because return type changed (Postgres disallows in-place)
+DROP FUNCTION IF EXISTS public.compute_event_tag_metrics(uuid, uuid);
+
 CREATE OR REPLACE FUNCTION public.compute_event_tag_metrics(
   p_competition_id uuid,
   p_event_id uuid
