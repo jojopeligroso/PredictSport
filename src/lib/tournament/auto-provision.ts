@@ -1,7 +1,6 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { createWorldCupCompetition } from "./create-world-cup-competition";
-
-const WC2026_TOURNAMENT_ID = "a0000000-0000-0000-0000-000000000026";
+import { fetchBlueprintEntrantConfig } from "./blueprint-config";
 
 // Joins close when the knockouts begin: earliest R32 kickoff (match 73).
 // Kept in sync with migration 20260622100000_wc_entry_closes_at_r32_start.sql.
@@ -38,15 +37,18 @@ export async function findOrProvisionInstance(
     if ((count ?? 0) < inst.max_entrants) return inst.id;
   }
 
-  // 3. All full — provision new instance
+  // 3. All full — provision new instance. The entrant cap is a property of the
+  //    blueprint, inherited by every instance (not hardcoded here).
   const nextNumber = ((instances ?? []).length) + 1;
+  const blueprint = await fetchBlueprintEntrantConfig(supabase, tournamentId);
 
   const result = await createWorldCupCompetition(supabase, userId, {
     name: `World Cup 2026 #${nextNumber}`,
     visibility: "public",
-    entrantCount: 48, // Will be recalculated by curve logic when entrants known
-    maxEntrants: 48,
-    minEntrants: 8,
+    // Curve seed — recalculated from actual entrants at draw time.
+    entrantCount: blueprint.maxEntrantsPerInstance ?? 48,
+    maxEntrants: blueprint.maxEntrantsPerInstance ?? undefined,
+    minEntrants: blueprint.minEntrants ?? undefined,
     skipRounds: true, // Share rounds from instance 1 via tournament_id RLS
   });
 
