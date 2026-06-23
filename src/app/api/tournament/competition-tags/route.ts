@@ -52,14 +52,17 @@ export async function GET(request: NextRequest) {
     }
   }
 
-  // Build response with tag definitions
+  // Build response with tag definitions + stats for expanded view
   const tags: Array<{
     userId: string;
     tagName: string;
     tagCategory: string;
     status: string;
+    stats: Record<string, unknown>;
     definition: {
       layer1: string;
+      layer2: string;
+      factCard: { fact: string; statTemplate: string; contextTemplate: string };
       visual: { borderColor: string; gold?: boolean; opacity?: number };
     };
   }> = [];
@@ -73,8 +76,15 @@ export async function GET(request: NextRequest) {
       tagName: tag.tag_name,
       tagCategory: tag.tag_category,
       status: tag.status,
+      stats: (tag.stats ?? {}) as Record<string, unknown>,
       definition: {
         layer1: def.layer1,
+        layer2: def.layer2,
+        factCard: {
+          fact: def.factCard.fact,
+          statTemplate: def.factCard.statTemplate,
+          contextTemplate: def.factCard.contextTemplate,
+        },
         visual: {
           borderColor: def.visual.borderColor,
           gold: def.visual.gold,

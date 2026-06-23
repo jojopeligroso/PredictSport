@@ -72,8 +72,11 @@ interface LeaderboardTag {
   tagName: string;
   tagCategory: string;
   status: string;
+  stats: Record<string, unknown>;
   definition: {
     layer1: string;
+    layer2: string;
+    factCard: { fact: string; statTemplate: string; contextTemplate: string };
     visual: { borderColor: string; gold?: boolean; opacity?: number };
   };
 }
@@ -468,7 +471,7 @@ function FlipRow({
                 {row.display_name}
               </span>
               {tag && (
-                <LeaderboardTagBadge tag={tag} />
+                <LeaderboardTagBadge tag={tag} displayName={row.display_name} />
               )}
               {isMe && (
                 <span className="shrink-0 rounded bg-ps-amber/20 px-1 py-0.5 text-micro font-bold text-ps-amber">
@@ -576,24 +579,67 @@ function FlipRow({
   );
 }
 
-function LeaderboardTagBadge({ tag }: { tag: LeaderboardTag }) {
+function LeaderboardTagBadge({ tag, displayName }: { tag: LeaderboardTag; displayName: string }) {
+  const [expanded, setExpanded] = useState(false);
   const isGhost = tag.tagName === "Ghost";
   const isGold = tag.definition.visual.gold;
 
+  const interpolate = (tpl: string) =>
+    tpl.replace(/\{(\w+)\}/g, (_, key) => {
+      if (key === "name") return displayName;
+      const val = tag.stats[key];
+      return val != null ? String(val) : `{${key}}`;
+    });
+
   return (
-    <span
-      className="shrink-0 inline-flex items-center rounded-full px-1.5 py-0.5"
-      style={{
-        backgroundColor: isGold ? "#f59e0b" : tag.definition.visual.borderColor,
-        opacity: isGhost ? 0.6 : 1,
-      }}
-    >
-      <span
-        className="font-display text-[10px] font-extrabold uppercase leading-none text-white"
-        style={{ letterSpacing: "0.05em" }}
+    <span className="shrink-0 relative" onClick={(e) => e.stopPropagation()}>
+      <button
+        type="button"
+        onClick={() => setExpanded((v) => !v)}
+        className="inline-flex items-center rounded-full px-1.5 py-0.5 transition-opacity hover:opacity-80"
+        style={{
+          backgroundColor: isGold ? "#f59e0b" : tag.definition.visual.borderColor,
+          opacity: isGhost ? 0.6 : 1,
+        }}
+        aria-expanded={expanded}
       >
-        {tag.definition.layer1}
-      </span>
+        <span
+          className="font-display text-[10px] font-extrabold uppercase leading-none text-white"
+          style={{ letterSpacing: "0.05em" }}
+        >
+          {tag.definition.layer1}
+        </span>
+      </button>
+
+      {expanded && (
+        <div
+          className="absolute left-0 top-full z-40 mt-1 w-64 rounded-lg border border-ps-border bg-ps-surface shadow-lg"
+          style={{ borderLeft: `3px solid ${tag.definition.visual.borderColor}` }}
+        >
+          <div className="px-3 py-2.5">
+            <p
+              className="font-display text-xs font-extrabold uppercase text-ps-text"
+              style={{ letterSpacing: "0.06em" }}
+            >
+              {tag.definition.layer1}
+            </p>
+            <p className="mt-0.5 font-serif text-xs italic text-ps-text">
+              {interpolate(tag.definition.layer2)}
+            </p>
+            <p className="mt-1 font-mono text-xs text-ps-amber">
+              {interpolate(tag.definition.factCard.statTemplate)}
+            </p>
+            <p className="mt-0.5 text-[11px] text-ps-text-ter">
+              {interpolate(tag.definition.factCard.contextTemplate)}
+            </p>
+            <div className="mt-1.5 border-t border-ps-border/40 pt-1.5">
+              <p className="text-[11px] leading-relaxed text-ps-text-sec">
+                {tag.definition.factCard.fact}
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
     </span>
   );
 }

@@ -52,10 +52,12 @@ function FullTagCard({
   const factExplanation = tagDefinition.factCard.fact;
 
   return (
-    <button
-      type="button"
+    <div
+      role="button"
+      tabIndex={0}
       onClick={() => setShowFact((v) => !v)}
-      className="w-full rounded-r-lg px-3 py-2.5 text-left transition-all duration-200"
+      onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") setShowFact((v) => !v); }}
+      className="w-full cursor-pointer rounded-r-lg px-3 py-2.5 text-left"
       style={{
         borderLeft: `3px solid ${tagDefinition.visual.borderColor}`,
         backgroundColor: "var(--ps-amber-soft)",
@@ -139,7 +141,7 @@ function FullTagCard({
           </span>
         </div>
       )}
-    </button>
+    </div>
   );
 }
 
