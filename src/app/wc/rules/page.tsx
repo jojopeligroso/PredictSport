@@ -10,6 +10,7 @@ import { WcBrandedTitle } from "@/components/wc/WcBrandedTitle";
 import { RulesContent } from "@/components/wc/RulesContent";
 import { getServerT } from "@/lib/i18n/server";
 import { resolveWcCompetition } from "@/lib/wc/resolve-wc-competition";
+import { fixtureFilter } from "@/lib/tournament/shared-fixtures";
 
 export const dynamic = "force-dynamic";
 
@@ -30,10 +31,11 @@ export default async function WcRulesPage() {
 
   if (wcComp) {
     const supabase = await createClient();
+    const ff = fixtureFilter(wcComp);
     const { data: md1Round } = await supabase
       .from("rounds")
       .select("id")
-      .eq("competition_id", wcComp.id)
+      .eq(ff.key, ff.value)
       .eq("round_number", 1)
       .limit(1)
       .maybeSingle();

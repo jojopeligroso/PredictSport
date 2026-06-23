@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
+import { fixtureFilterFromIds } from "@/lib/tournament/shared-fixtures";
 
 /**
  * GET /api/tournament/community-picks?competitionId=xxx
@@ -34,10 +35,18 @@ export async function GET(request: NextRequest) {
   // pick_reveal_at defaults to lock_time when null, so we fetch all locked
   // events and find the one with the most recent effective reveal time.
   const now = new Date().toISOString();
+
+  const { data: comp } = await supabase
+    .from("competitions")
+    .select("tournament_id")
+    .eq("id", competitionId)
+    .single();
+  const ff = fixtureFilterFromIds(competitionId, comp?.tournament_id);
+
   const { data: lockedEvents } = await supabase
     .from("events")
     .select("id, event_name, lock_time, pick_reveal_at, external_event_id, sport")
-    .eq("competition_id", competitionId)
+    .eq(ff.key, ff.value)
     .lt("lock_time", now)
     .order("lock_time", { ascending: false })
     .limit(20);

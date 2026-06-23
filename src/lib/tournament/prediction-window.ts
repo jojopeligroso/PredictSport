@@ -1,5 +1,6 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { Round } from "@/types/database";
+import { fixtureFilterFromIds } from "@/lib/tournament/shared-fixtures";
 
 // ============================================================
 // All open (unlocked) prediction windows for a competition
@@ -9,10 +10,17 @@ export async function getOpenPredictionWindows(
   supabase: SupabaseClient,
   competitionId: string
 ): Promise<Round[]> {
+  const { data: comp } = await supabase
+    .from("competitions")
+    .select("tournament_id")
+    .eq("id", competitionId)
+    .single();
+  const ff = fixtureFilterFromIds(competitionId, comp?.tournament_id);
+
   const { data, error } = await supabase
     .from("rounds")
     .select("*")
-    .eq("competition_id", competitionId)
+    .eq(ff.key, ff.value)
     .eq("status", "open")
     .order("round_number", { ascending: true });
 
@@ -45,11 +53,18 @@ export async function getNextLockTime(
   supabase: SupabaseClient,
   competitionId: string
 ): Promise<Date | null> {
+  const { data: comp } = await supabase
+    .from("competitions")
+    .select("tournament_id")
+    .eq("id", competitionId)
+    .single();
+  const ff = fixtureFilterFromIds(competitionId, comp?.tournament_id);
+
   // Find the earliest lock_time among events in open rounds for this competition
   const { data: openRounds, error: roundError } = await supabase
     .from("rounds")
     .select("id")
-    .eq("competition_id", competitionId)
+    .eq(ff.key, ff.value)
     .eq("status", "open");
 
   if (roundError) throw new Error(`Failed to fetch open rounds: ${roundError.message}`);
@@ -83,10 +98,17 @@ export async function getWindowsToLock(
 ): Promise<Pick<Round, "id" | "name">[]> {
   const now = new Date().toISOString();
 
+  const { data: comp } = await supabase
+    .from("competitions")
+    .select("tournament_id")
+    .eq("id", competitionId)
+    .single();
+  const ff = fixtureFilterFromIds(competitionId, comp?.tournament_id);
+
   const { data: openRounds, error: roundError } = await supabase
     .from("rounds")
     .select("id, name")
-    .eq("competition_id", competitionId)
+    .eq(ff.key, ff.value)
     .eq("status", "open");
 
   if (roundError)
@@ -141,10 +163,17 @@ export async function getClassificationsNeedingReconciliation(
   competitionId: string,
 ): Promise<{ classificationId: string }[]> {
   // Check if first event in the competition has locked
+  const { data: comp } = await supabase
+    .from("competitions")
+    .select("tournament_id")
+    .eq("id", competitionId)
+    .single();
+  const ff = fixtureFilterFromIds(competitionId, comp?.tournament_id);
+
   const { data: allRounds } = await supabase
     .from("rounds")
     .select("id")
-    .eq("competition_id", competitionId);
+    .eq(ff.key, ff.value);
 
   if (!allRounds || allRounds.length === 0) return [];
 

@@ -1,6 +1,7 @@
 import { createClient } from "@/lib/supabase/server";
 import { WC2026_FIXTURES, type WcFixture } from "@/lib/wc/fixtures";
 import { resolveWcCompetition } from "@/lib/wc/resolve-wc-competition";
+import { fixtureFilter } from "@/lib/tournament/shared-fixtures";
 import type { FixtureResult, FixturePredictionData } from "@/components/wc/FixturesTabs";
 import type { WindowEvent } from "@/app/wc/picks/[windowId]/WindowPickList";
 import type { Prediction, EventPredictionType } from "@/types/database";
@@ -25,6 +26,7 @@ export async function fetchFixturesResultsData() {
 
   if (competition) {
     const externalIds = WC2026_FIXTURES.map((f) => f.externalId);
+    const ff = fixtureFilter(competition);
 
     const { data: events } = await supabase
       .from("events")
@@ -32,7 +34,7 @@ export async function fetchFixturesResultsData() {
         `id, external_event_id, event_name, sport, start_time, lock_time, pick_reveal_at, status, result_data, result_confirmed, round_id,
          event_prediction_types (id, event_id, prediction_type, points, partial_points, config)`,
       )
-      .eq("competition_id", competition.id)
+      .eq(ff.key, ff.value)
       .in("external_event_id", externalIds);
 
     const roundIds = [

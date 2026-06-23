@@ -4,6 +4,7 @@ import {
   generateReckonsCopy,
   formatScoreForCopy,
 } from "@/lib/reckons-copy";
+import { fixtureFilterFromIds } from "@/lib/tournament/shared-fixtures";
 
 /**
  * POST /api/chat/post-reckons
@@ -41,10 +42,17 @@ export async function POST(request: NextRequest) {
     const now = new Date();
     const windowStart = new Date(now.getTime() - 24 * 60 * 60 * 1000);
 
+    const { data: compRow } = await supabase
+      .from("competitions")
+      .select("tournament_id")
+      .eq("id", competitionId)
+      .single();
+    const ff = fixtureFilterFromIds(competitionId, compRow?.tournament_id);
+
     const { data: lockedEvents, error: eventsError } = await supabase
       .from("events")
       .select("id, event_name")
-      .eq("competition_id", competitionId)
+      .eq(ff.key, ff.value)
       .lte("lock_time", now.toISOString())
       .gte("lock_time", windowStart.toISOString())
       .limit(100);

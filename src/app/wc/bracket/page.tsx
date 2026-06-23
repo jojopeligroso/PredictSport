@@ -13,6 +13,7 @@ import {
 import { describeDraftProgress } from "@/lib/bracket/bracket-progress";
 import { getServerT } from "@/lib/i18n/server";
 import { resolveWcCompetition } from "@/lib/wc/resolve-wc-competition";
+import { fixtureFilter } from "@/lib/tournament/shared-fixtures";
 
 export const dynamic = "force-dynamic";
 
@@ -56,15 +57,17 @@ export default async function BracketPage() {
   // Group-stage progress now comes from `predictions` rows (per the 2026-05-23
   // unified-predictions amendment), not from `bracket_data.groupsV2`. One
   // count is enough for both bracket classifications shown on this page.
+  const ff = fixtureFilter(competition);
+  const eventsJoinField = ff.key === "tournament_id" ? "tournament_id" : "competition_id";
   const { count: groupPicksCount } = await supabase
     .from("predictions")
-    .select("event_id, events!inner(competition_id, external_event_id)", {
+    .select(`event_id, events!inner(${eventsJoinField}, external_event_id)`, {
       count: "exact",
       head: true,
     })
     .eq("user_id", user.id)
     .eq("prediction_type", "winner")
-    .eq("events.competition_id", competition.id)
+    .eq(`events.${eventsJoinField}`, ff.value)
     .like("events.external_event_id", "manual:wc2026-grp-%");
 
   const submissionMap = new Map(

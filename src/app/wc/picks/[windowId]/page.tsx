@@ -1,6 +1,8 @@
 import { createClient } from "@/lib/supabase/server";
 import { redirect, notFound } from "next/navigation";
 import Link from "next/link";
+import { resolveWcCompetition } from "@/lib/wc/resolve-wc-competition";
+import { fixtureFilter } from "@/lib/tournament/shared-fixtures";
 import { PicksClient } from "./PicksClient";
 import { EmbeddedBracketKoEditor } from "./EmbeddedBracketKoEditor";
 import { PredictionBanner } from "@/components/wc/PredictionBanner";
@@ -38,14 +40,17 @@ export default async function WindowPicksPage({
   params: Promise<{ windowId: string }>;
 }) {
   const { windowId } = await params;
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+
+  // Use resolveWcCompetition so instance #2 users get their own competition, not instance #1.
+  const { competition, user } = await resolveWcCompetition({
+    statuses: ["active", "draft", "completed"],
+  });
 
   if (!user) {
     redirect(`/login?next=/wc/picks/${windowId}`);
   }
+
+  const supabase = await createClient();
 
   const { data: round } = await supabase
     .from("rounds")
@@ -57,16 +62,25 @@ export default async function WindowPicksPage({
     notFound();
   }
 
+  // Membership check: use the user's own competition (from resolveWcCompetition),
+  // not round.competition_id (which is always instance #1's id for shared fixtures).
+  // If competition is null (non-member / unenrolled), redirect to join.
+  if (!competition) {
+    redirect(`/wc/join?next=/wc/picks/${windowId}`);
+  }
+
   const { data: membership } = await supabase
     .from("competition_members")
     .select("id")
-    .eq("competition_id", round.competition_id)
+    .eq("competition_id", competition.id)
     .eq("user_id", user.id)
     .maybeSingle();
 
   if (!membership) {
     redirect(`/wc/join?next=/wc/picks/${windowId}`);
   }
+
+  const ff = fixtureFilter(competition);
 
   const isDraft = round.status === "draft";
   const isFinalised = round.status === "scored";
@@ -78,7 +92,7 @@ export default async function WindowPicksPage({
   const { data: siblings } = await supabase
     .from("rounds")
     .select("id, name, round_number, status")
-    .eq("competition_id", round.competition_id)
+    .eq(ff.key, ff.value)
     .order("round_number", { ascending: true });
 
   const siblingList = siblings ?? [];
@@ -106,7 +120,7 @@ export default async function WindowPicksPage({
   const { data: bracketCls } = await supabase
     .from("classifications")
     .select("id, status")
-    .eq("competition_id", round.competition_id)
+    .eq("competition_id", competition.id)
     .eq("classification_key", "full_bracket")
     .eq("status", "active")
     .maybeSingle();
@@ -120,7 +134,7 @@ export default async function WindowPicksPage({
     const { data: sub } = await supabase
       .from("bracket_prediction_submissions")
       .select("bracket_data, status")
-      .eq("competition_id", round.competition_id)
+      .eq("competition_id", competition.id)
       .eq("classification_id", bracketCls.id)
       .eq("user_id", user.id)
       .neq("status", "superseded")
@@ -159,7 +173,7 @@ export default async function WindowPicksPage({
   if (showBracketEditMode && koRoundKey && bracketCls) {
     const groups = await loadGroupDataFromPredictions(supabase, {
       userId: user.id,
-      competitionId: round.competition_id,
+      competitionId: competition.id,
       groups: WC2026_GROUPS,
     });
     const groupRankings = groupDataToRankings(groups);
@@ -227,7 +241,7 @@ export default async function WindowPicksPage({
         <div className="mt-6">
           <EmbeddedBracketKoEditor
             classificationId={bracketEditPayload.classificationId}
-            competitionId={round.competition_id}
+            competitionId={competition.id}
             roundKey={bracketEditPayload.roundKey}
             groupRankings={bracketEditPayload.groupRankings}
             existingBracketData={bracketEditPayload.existingBracketData}
@@ -237,7 +251,7 @@ export default async function WindowPicksPage({
       ) : (
         <div className="mt-6">
           <PicksClient
-            competitionId={round.competition_id}
+            competitionId={competition.id}
             events={events}
             predictions={predictions}
             windowLocked={isWindowLocked}

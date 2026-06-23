@@ -2,6 +2,7 @@ import { createClient } from "@/lib/supabase/server";
 import { WC2026_FIXTURES, type WcFixture } from "@/lib/wc/fixtures";
 import { utcDateIso } from "@/lib/wc/daily-lock";
 import { resolveWcCompetition } from "@/lib/wc/resolve-wc-competition";
+import { fixtureFilter } from "@/lib/tournament/shared-fixtures";
 import type { WindowEvent } from "@/app/wc/picks/[windowId]/WindowPickList";
 import type { Prediction } from "@/types/database";
 
@@ -29,12 +30,13 @@ export async function fetchMd1PicksData() {
   if (!competition) return { ready: false as const };
 
   const supabase = await createClient();
+  const ff = fixtureFilter(competition);
 
   // Fetch all group-stage rounds (round_number 1-3)
   const { data: groupRounds } = await supabase
     .from("rounds")
     .select("id, status, round_number")
-    .eq("competition_id", competition.id)
+    .eq(ff.key, ff.value)
     .lte("round_number", 3)
     .order("round_number", { ascending: true });
 
@@ -79,7 +81,7 @@ export async function fetchMd1PicksData() {
 
     if (!windowStartIso) {
       // All group fixtures confirmed — fall through to knockout below
-      return fetchKnockoutFallback(supabase, competition.id, user, resolvedIsMember);
+      return fetchKnockoutFallback(supabase, competition.id, ff, user, resolvedIsMember);
     }
 
     // Take 8 fixture-dates from window_start (skipping dates with no fixtures)
@@ -98,7 +100,7 @@ export async function fetchMd1PicksData() {
     windowLocked = false;
   } else {
     // All group rounds scored — fall through to knockout
-    return fetchKnockoutFallback(supabase, competition.id, user, resolvedIsMember);
+    return fetchKnockoutFallback(supabase, competition.id, ff, user, resolvedIsMember);
   }
 
   const events: WindowEvent[] = eventRows.map((row) => ({
@@ -156,13 +158,14 @@ export async function fetchMd1PicksData() {
 async function fetchKnockoutFallback(
   supabase: Awaited<ReturnType<typeof createClient>>,
   competitionId: string,
+  ff: { key: "tournament_id" | "competition_id"; value: string },
   user: { id: string } | null,
   resolvedIsMember: boolean,
 ) {
   const { data: koRound } = await supabase
     .from("rounds")
     .select("id, status")
-    .eq("competition_id", competitionId)
+    .eq(ff.key, ff.value)
     .gt("round_number", 3)
     .in("status", ["draft", "open", "locked"])
     .order("round_number", { ascending: true })

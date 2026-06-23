@@ -8,6 +8,7 @@ import type { WindowEvent } from "@/app/wc/picks/[windowId]/WindowPickList";
 import type { Prediction } from "@/types/database";
 import type { BracketSubmissionData } from "@/types/tournament";
 import type { TeamWithStats } from "@/lib/tournament/bracket/types";
+import { fixtureFilter, fixtureFilterFromIds } from "@/lib/tournament/shared-fixtures";
 
 /** Number of fixture-days visible in the sliding window. */
 const WINDOW_SIZE_DAYS = 8;
@@ -118,6 +119,7 @@ export async function fetchDashboardData(): Promise<DashboardResult> {
   if (!competition) return { ready: false };
 
   const supabase = await createClient();
+  const ff = fixtureFilter(competition);
 
   // 2. Parallel fetches: round (actionable + scored fallback), member count, membership, classification
   const [
@@ -131,7 +133,7 @@ export async function fetchDashboardData(): Promise<DashboardResult> {
       supabase
         .from("rounds")
         .select("id, status, round_number")
-        .eq("competition_id", competition.id)
+        .eq(ff.key, ff.value)
         .in("status", ["draft", "open", "locked"])
         .order("round_number", { ascending: true })
         .limit(1)
@@ -140,7 +142,7 @@ export async function fetchDashboardData(): Promise<DashboardResult> {
       supabase
         .from("rounds")
         .select("id, status, round_number")
-        .eq("competition_id", competition.id)
+        .eq(ff.key, ff.value)
         .eq("status", "scored")
         .order("round_number", { ascending: false })
         .limit(1)
@@ -187,7 +189,7 @@ export async function fetchDashboardData(): Promise<DashboardResult> {
     const { data: groupRounds } = await supabase
       .from("rounds")
       .select("id")
-      .eq("competition_id", competition.id)
+      .eq(ff.key, ff.value)
       .lte("round_number", 3);
 
     const groupRoundIds = (groupRounds ?? []).map((r: { id: string }) => r.id);
@@ -411,7 +413,7 @@ export async function fetchDashboardData(): Promise<DashboardResult> {
 
   // 6. Most recent completed matchday results + live group standings (parallel)
   const [recentResults, standingsMap] = await Promise.all([
-    fetchRecentResults(supabase, competition.id, fixtureByExternalId, user?.id ?? null),
+    fetchRecentResults(supabase, competition.id, competition.tournament_id ?? null, fixtureByExternalId, user?.id ?? null),
     computeGroupStandings(supabase, competition.id),
   ]);
   const groupStandings = Object.fromEntries(standingsMap);
@@ -543,16 +545,18 @@ type SupabaseClient = Awaited<ReturnType<typeof createClient>>;
 async function fetchRecentResults(
   supabase: SupabaseClient,
   competitionId: string,
+  tournamentId: string | null,
   fixtureByExternalId: Map<string, WcFixture>,
   userId: string | null,
 ): Promise<ResultRow[]> {
   // Fetch resulted events from the last 48h. No date grouping — the client
   // applies a 6AM-local-anchor window to handle users across all timezones.
   const cutoff = new Date(Date.now() - 48 * 60 * 60 * 1000).toISOString();
+  const rf = fixtureFilterFromIds(competitionId, tournamentId);
   const { data: completedEvents } = await supabase
     .from("events")
     .select("id, external_event_id, start_time, result_data")
-    .eq("competition_id", competitionId)
+    .eq(rf.key, rf.value)
     .eq("status", "resulted")
     .not("result_data", "is", null)
     .gte("start_time", cutoff)

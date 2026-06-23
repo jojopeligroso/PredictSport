@@ -2,6 +2,7 @@ import { createClient } from "@/lib/supabase/server";
 import { redirect } from "next/navigation";
 import { resolveWcCompetition } from "@/lib/wc/resolve-wc-competition";
 import { WcAdminClient } from "./WcAdminClient";
+import { fixtureFilter } from "@/lib/tournament/shared-fixtures";
 import { ResultConfirmation } from "@/components/tournament/admin/ResultConfirmation";
 import { FinalisationPanel } from "@/components/tournament/admin/FinalisationPanel";
 import { CorrectionFlow } from "@/components/tournament/admin/CorrectionFlow";
@@ -78,6 +79,7 @@ export default async function AdminPage() {
   }
 
   // --- Competition exists: fetch all data for dashboard ---
+  const ff = fixtureFilter(competition);
   const [
     { data: members },
     { data: classifications },
@@ -102,7 +104,7 @@ export default async function AdminPage() {
     supabase
       .from("rounds")
       .select("id, status, lock_time")
-      .eq("competition_id", competition.id)
+      .eq(ff.key, ff.value)
       .eq("round_number", 1)
       .maybeSingle(),
   ]);
@@ -116,7 +118,7 @@ export default async function AdminPage() {
   const { data: windows } = await supabase
     .from("rounds")
     .select("id, name, status, round_number")
-    .eq("competition_id", competition.id)
+    .eq(ff.key, ff.value)
     .order("round_number", { ascending: true });
 
   const windowData = await Promise.all(

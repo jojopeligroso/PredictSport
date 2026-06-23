@@ -1,6 +1,7 @@
 import { createClient } from "@/lib/supabase/server";
 import { computeGroupStandings } from "@/lib/wc/compute-group-standings";
 import { resolveWcCompetition } from "@/lib/wc/resolve-wc-competition";
+import { fixtureFilter } from "@/lib/tournament/shared-fixtures";
 import type { WindowEvent } from "@/app/wc/picks/[windowId]/WindowPickList";
 import type { Prediction } from "@/types/database";
 import type { TeamWithStats } from "@/lib/tournament/bracket/types";
@@ -19,6 +20,7 @@ export async function fetchGroupsData() {
   if (!competition) return null;
 
   const supabase = await createClient();
+  const ff = fixtureFilter(competition);
 
   const { data: eventsRaw } = await supabase
     .from("events")
@@ -26,7 +28,7 @@ export async function fetchGroupsData() {
       `id, event_name, sport, start_time, lock_time, pick_reveal_at, status, result_confirmed, external_event_id,
        event_prediction_types (id, event_id, prediction_type, points, partial_points, config)`,
     )
-    .eq("competition_id", competition.id)
+    .eq(ff.key, ff.value)
     .like("external_event_id", "manual:wc2026-grp-%")
     .order("start_time", { ascending: true });
 
