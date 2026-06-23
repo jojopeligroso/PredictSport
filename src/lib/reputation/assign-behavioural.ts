@@ -272,8 +272,8 @@ function buildStats(
       ? majorityPct
       : tag.metric === "winner_accuracy"
         ? memberAccuracy
-        : tag.metric === "engagement_rate" || tag.category === "engagement_pressure"
-          ? Math.round(member.engagement_rate * 100)
+        : tag.metric.startsWith("engagement_rate") || tag.category === "engagement_pressure"
+          ? Math.round(member.engagement_rate)
           : Math.round(member.contrarian_pct);
 
   return {

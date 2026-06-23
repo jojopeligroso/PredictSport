@@ -248,8 +248,8 @@ export function assignEventDrivenTags(
     // --- Clean Sheet: predicted 0 goals for one side AND exact score correct ---
     if (metric.exact_correct && metric.exact_score_prediction_data) {
       const data = metric.exact_score_prediction_data;
-      const home = Number(data.home_score ?? -1);
-      const away = Number(data.away_score ?? -1);
+      const home = Number(data.home ?? -1);
+      const away = Number(data.away ?? -1);
       if (home === 0 || away === 0) {
         assignments.push({
           userId: metric.user_id,
