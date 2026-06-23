@@ -957,6 +957,163 @@ const theWhistle: TagDefinition = {
 };
 
 // ---------------------------------------------------------------------------
+// Behavioural tags — new additions
+// ---------------------------------------------------------------------------
+
+const iceCold: TagDefinition = {
+  name: "Ice Cold",
+  category: "behavioural",
+  priorityTier: 2,
+  metric: "winner_accuracy",
+  qualifies: (member, all) => {
+    if (member.winner_total < 5) return false;
+    const memberAcc = member.winner_correct / member.winner_total;
+    if (memberAcc < 0.6) return false;
+    const allAccs = all
+      .filter((m) => m.winner_total >= 5)
+      .map((m) => m.winner_correct / m.winner_total);
+    return isHighest(memberAcc, allAccs);
+  },
+  zScore: (member, all) => {
+    const allAccs = all
+      .filter((m) => m.winner_total >= 5)
+      .map((m) => m.winner_correct / m.winner_total);
+    const memberAcc = member.winner_correct / member.winner_total;
+    return zScore(memberAcc, allAccs);
+  },
+  layer1: "Ice Cold",
+  layer2: "You have the highest hit rate in the group. {pct}% correct.",
+  layer3: "{name} has the highest hit rate in the group. {pct}% correct.",
+  factCard: {
+    fact: "Highest winner prediction accuracy in the group.",
+    statTemplate: "{pct}% accuracy",
+    contextTemplate: "Group average: {stat}%",
+  },
+  visual: { borderColor: "#0ea5e9", gold: true },
+  rejectable: true,
+  announced: true,
+};
+
+const scattergun: TagDefinition = {
+  name: "Scattergun",
+  category: "behavioural",
+  priorityTier: 3,
+  metric: "engagement_rate+accuracy_low",
+  qualifies: (member, all) => {
+    if (member.winner_total < 5) return false;
+    if (member.engagement_rate < 80) return false;
+    const memberAcc = member.winner_correct / member.winner_total;
+    if (memberAcc >= 0.4) return false;
+    // Must be highest engagement among low-accuracy members
+    const highEngLowAcc = all.filter((m) => {
+      if (m.winner_total < 5) return false;
+      const acc = m.winner_correct / m.winner_total;
+      return m.engagement_rate >= 80 && acc < 0.4;
+    });
+    if (highEngLowAcc.length === 0) return false;
+    const maxEng = Math.max(...highEngLowAcc.map((m) => m.engagement_rate));
+    return member.engagement_rate === maxEng;
+  },
+  zScore: (member, all) =>
+    zScore(member.engagement_rate, extract(all, "engagement_rate")),
+  layer1: "Scattergun",
+  layer2: "You predicted on everything and got most of them wrong. Respect the commitment.",
+  layer3: "{name} predicted on everything and got most of them wrong. Respect the commitment.",
+  factCard: {
+    fact: "Highest engagement with lowest accuracy.",
+    statTemplate: "{pct}% engagement, {stat}% accuracy",
+    contextTemplate: "Fires from the hip",
+  },
+  visual: { borderColor: "#f97316" },
+  rejectable: true,
+  announced: true,
+};
+
+// ---------------------------------------------------------------------------
+// Event-driven tags — new additions
+// ---------------------------------------------------------------------------
+
+const theSweater: TagDefinition = {
+  name: "The Sweater",
+  category: "event_driven",
+  priorityTier: 3,
+  metric: "submission_timing+winner_correct",
+  qualifies: eventNoOp,
+  zScore: eventZScoreNoOp,
+  layer1: "The Sweater",
+  layer2: "Cut it fine. {stat} seconds before lock. Still nailed it.",
+  layer3: "{name} submitted {stat} seconds before lock and still got it right.",
+  factCard: {
+    fact: "Predicted within 5 minutes of lock and got the winner right.",
+    statTemplate: "{stat}s before lock",
+    contextTemplate: "Deadline merchant delivers",
+  },
+  visual: { borderColor: "#eab308" },
+  rejectable: false,
+  announced: true,
+};
+
+const theProfessor: TagDefinition = {
+  name: "The Professor",
+  category: "event_driven",
+  priorityTier: 2,
+  metric: "submission_timing+exact_correct",
+  qualifies: eventNoOp,
+  zScore: eventZScoreNoOp,
+  layer1: "The Professor",
+  layer2: "Predicted the exact score {stat} hours early. Studied the form.",
+  layer3: "{name} nailed the exact score {stat} hours before lock. Studied the form.",
+  factCard: {
+    fact: "Predicted the exact scoreline 24+ hours before lock.",
+    statTemplate: "{stat}h before lock",
+    contextTemplate: "Saw it coming a mile away",
+  },
+  visual: { borderColor: "#f59e0b", gold: true },
+  rejectable: false,
+  announced: true,
+};
+
+const solo: TagDefinition = {
+  name: "Solo",
+  category: "event_driven",
+  priorityTier: 1,
+  metric: "pct_with_same_pick+winner_correct",
+  qualifies: eventNoOp,
+  zScore: eventZScoreNoOp,
+  layer1: "Solo",
+  layer2: "You were virtually the only one who picked that. And you were right.",
+  layer3: "{name} stood alone. Picked what nobody else did. And was right.",
+  factCard: {
+    fact: "Correct winner prediction shared by less than 5% of the group.",
+    statTemplate: "{stat}% picked the same",
+    contextTemplate: "Against the world",
+  },
+  visual: { borderColor: "#f59e0b", gold: true },
+  rejectable: false,
+  announced: true,
+};
+
+const theFlatTrackBully: TagDefinition = {
+  name: "The Flat Track Bully",
+  category: "event_driven",
+  priorityTier: 3,
+  metric: "pct_with_same_pick+winner_correct",
+  qualifies: eventNoOp,
+  zScore: eventZScoreNoOp,
+  layer1: "The Flat Track Bully",
+  layer2: "Everyone picked them. You picked them. They won. Points are points.",
+  layer3: "{name} went with the crowd. {stat}% picked the same. And they were all right.",
+  factCard: {
+    fact: "Correctly predicted the overwhelming favourite.",
+    statTemplate: "{stat}% of group agreed",
+    contextTemplate: "Points are points",
+  },
+  visual: { borderColor: "#22c55e" },
+  rejectable: false,
+  announced: true,
+};
+
+// ---------------------------------------------------------------------------
 // Exports
 // ---------------------------------------------------------------------------
 
@@ -964,6 +1121,7 @@ const theWhistle: TagDefinition = {
 export const BEHAVIOURAL_TAGS: TagDefinition[] = [
   maverick,
   theAnorak,
+  iceCold,
   darkHorse,
   defenceWinsChampionships,
   areYouNotEntertained,
@@ -975,6 +1133,7 @@ export const BEHAVIOURAL_TAGS: TagDefinition[] = [
   theTinkerer,
   fireAndForget,
   vibesOnly,
+  scattergun,
   deadCentre,
 ];
 
@@ -987,11 +1146,15 @@ export const ENGAGEMENT_TAGS: TagDefinition[] = [
 
 /** Event-driven tags */
 export const EVENT_DRIVEN_TAGS: TagDefinition[] = [
-  nailedIt,
+  solo,
   crystalBall,
-  onARoll,
+  theProfessor,
   onFire,
+  nailedIt,
+  onARoll,
   giantKiller,
+  theSweater,
+  theFlatTrackBully,
   perfectWindow,
   lastGasp,
   firstBlood,

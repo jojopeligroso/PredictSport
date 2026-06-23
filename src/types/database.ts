@@ -269,19 +269,25 @@ export interface BehaviouralTagMetrics {
   best_streak: number;
 }
 
-/** Row shape returned by compute_event_tag_metrics RPC */
+/** Row shape returned by compute_event_tag_metrics RPC (v2 — per-member summary) */
 export interface EventTagMetric {
   user_id: string;
   display_name: string;
   predicted: boolean;
   winner_correct: boolean;
   exact_correct: boolean;
-  points_awarded: number;
+  total_points_this_event: number;
   was_minority: boolean;
-  was_majority: boolean;
-  current_streak: number;
+  pct_with_same_pick: number;
+  current_correct_streak: number;
+  current_wrong_streak: number;
   position_before: number;
   position_after: number;
-  is_last_event: boolean;
-  is_first_event: boolean;
+  is_first_confirmed_event: boolean;
+  is_last_confirmed_event: boolean;
+  exact_score_count_total: number;
+  winner_prediction_data: Record<string, unknown> | null;
+  exact_score_prediction_data: Record<string, unknown> | null;
+  submission_seconds_before_lock: number;
+  is_first_exact_score: boolean;
 }

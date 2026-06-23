@@ -262,6 +262,18 @@ export async function autoPublishPendingTags(
     return;
   }
 
+  // After the update, fetch the tags that were actually published
+  const { data: publishedTags } = await supabase
+    .from("member_tags")
+    .select("*")
+    .eq("competition_id", competitionId)
+    .eq("status", "active")
+    .eq("tag_category", "behavioural")
+    .in("id", pendingTags.map(t => (t as MemberTag).id))
+    .limit(500);
+
+  if (!publishedTags || publishedTags.length === 0) return;
+
   // Check for tag changes (user had a different tag before)
   const { data: previousTags } = await supabase
     .from("member_tags")
@@ -278,7 +290,7 @@ export async function autoPublishPendingTags(
   }
 
   // Insert chat messages for each newly published tag
-  for (const raw of pendingTags) {
+  for (const raw of publishedTags) {
     const tag = raw as MemberTag;
     const tagDef = getTagDefinition(tag.tag_name);
     if (!tagDef || !tagDef.announced) continue;

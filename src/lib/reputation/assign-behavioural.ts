@@ -231,6 +231,14 @@ function resolveStatForTag(
       return member.events_available - member.total_predictions;
     case "Still in the Fight":
       return member.events_available - member.total_predictions;
+    case "Ice Cold":
+      return member.winner_total > 0
+        ? Math.round((member.winner_correct / member.winner_total) * 100)
+        : 0;
+    case "Scattergun":
+      return member.winner_total > 0
+        ? Math.round((member.winner_correct / member.winner_total) * 100)
+        : 0;
     case "Dead Centre":
       return "all";
     default:
@@ -255,12 +263,18 @@ function buildStats(
       : 0;
 
   // Resolve {pct} based on which metric the tag measures
+  const memberAccuracy =
+    member.winner_total > 0
+      ? Math.round((member.winner_correct / member.winner_total) * 100)
+      : 0;
   const pct =
     tag.metric === "majority_pct"
       ? majorityPct
-      : tag.metric === "engagement_rate" || tag.category === "engagement_pressure"
-        ? Math.round(member.engagement_rate * 100)
-        : Math.round(member.contrarian_pct);
+      : tag.metric === "winner_accuracy"
+        ? memberAccuracy
+        : tag.metric === "engagement_rate" || tag.category === "engagement_pressure"
+          ? Math.round(member.engagement_rate * 100)
+          : Math.round(member.contrarian_pct);
 
   return {
     pct,

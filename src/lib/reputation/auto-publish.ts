@@ -70,6 +70,17 @@ export async function checkAndPublishExpiredPending(
     return;
   }
 
+  // Re-fetch only tags that were actually published (guards against race with suppress)
+  const { data: publishedTags } = await supabase
+    .from("member_tags")
+    .select("*")
+    .eq("competition_id", competitionId)
+    .eq("status", "active")
+    .in("id", tagIds)
+    .limit(500);
+
+  if (!publishedTags || publishedTags.length === 0) return;
+
   // Fetch previous round's expired tags for change detection
   const { data: previousTags } = await supabase
     .from("member_tags")
@@ -86,7 +97,7 @@ export async function checkAndPublishExpiredPending(
   }
 
   // Insert chat messages for each newly published tag
-  for (const raw of pendingTags) {
+  for (const raw of publishedTags) {
     const tag = raw as MemberTag;
     const tagDef = getTagDefinition(tag.tag_name);
     if (!tagDef || !tagDef.announced) continue;
@@ -121,6 +132,6 @@ export async function checkAndPublishExpiredPending(
   }
 
   console.log(
-    `[reputation] Auto-published ${pendingTags.length} expired pending tags for competition ${competitionId}`,
+    `[reputation] Auto-published ${publishedTags.length} expired pending tags for competition ${competitionId}`,
   );
 }
