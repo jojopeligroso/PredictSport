@@ -4,6 +4,10 @@ import { createServiceClient } from "@/lib/supabase/service";
 import { enrollEntrant } from "@/lib/tournament/classification-engine";
 import { requireDisplayName } from "@/lib/require-display-name";
 import { sendPushToUser } from "@/lib/push/send";
+import {
+  joinCompetitionWithCap,
+  CompetitionFullError,
+} from "@/lib/tournament/cap-aware-join";
 
 export async function POST(request: NextRequest) {
   const supabase = await createClient();
@@ -121,16 +125,22 @@ export async function POST(request: NextRequest) {
     }
   }
 
-  // 4. Check entrant cap — auto-provision for tournament competitions
+  // 4. Check entrant cap — auto-provision for tournament competitions.
   // MUST use service client: RLS on competition_members requires
-  // is_competition_member(), so a non-member's count returns 0 — bypassing the cap.
+  // is_competition_member(), so a non-member's count returns 0 — bypassing the
+  // cap. This is the fast path; the DB trigger (step 6) is the race-proof backstop.
+  const svc = createServiceClient();
+  let tournamentId: string | null = null;
+  let instanceType: "full" | "knockout_only" = "full";
   {
-    const svc = createServiceClient();
     const { data: comp } = await svc
       .from("competitions")
       .select("max_entrants, tournament_id, instance_type")
       .eq("id", competitionId)
       .single();
+
+    tournamentId = comp?.tournament_id ?? null;
+    instanceType = (comp?.instance_type as "full" | "knockout_only") ?? "full";
 
     if (comp?.max_entrants) {
       const { count } = await svc
@@ -139,13 +149,13 @@ export async function POST(request: NextRequest) {
         .eq("competition_id", competitionId);
 
       if ((count ?? 0) >= comp.max_entrants) {
-        if (comp.tournament_id) {
+        if (tournamentId) {
           // Tournament instance full — find or create a new one
           const { findOrProvisionInstance } = await import("@/lib/tournament/auto-provision");
           competitionId = await findOrProvisionInstance(
             svc,
-            comp.tournament_id,
-            (comp.instance_type as "full" | "knockout_only") ?? "full",
+            tournamentId,
+            instanceType,
             user.id
           );
         } else {
@@ -185,31 +195,39 @@ export async function POST(request: NextRequest) {
     });
   }
 
-  // 6. Insert into competition_members
-  const { error: insertError } = await supabase
-    .from("competition_members")
-    .insert({
-      competition_id: competitionId,
-      user_id: user.id,
-      role: "participant",
+  // 6. Insert into competition_members. The DB cap trigger rejects the insert
+  // if the instance filled since the step-4 pre-check (concurrent join race);
+  // the helper then provisions/finds the next instance and retries, so the
+  // resolved competitionId may change here.
+  try {
+    const result = await joinCompetitionWithCap(svc, competitionId, user.id, {
+      tournamentId,
+      instanceType,
     });
+    competitionId = result.competitionId;
 
-  if (insertError) {
-    // Handle concurrent duplicate join gracefully
-    if (insertError.code === "23505") {
+    if (result.alreadyMember) {
       const { data: comp } = await supabase
         .from("competitions")
-        .select("name")
+        .select("name, product_mode")
         .eq("id", competitionId)
         .single();
+
+      // Ensure classification memberships exist before returning.
+      await enrollEntrant(supabase, competitionId, user.id);
 
       return NextResponse.json({
         competition_id: competitionId,
         competition_name: comp?.name ?? "Competition",
+        product_mode: comp?.product_mode ?? null,
         already_member: true,
       });
     }
-    console.error("Failed to join competition:", insertError);
+  } catch (err) {
+    if (err instanceof CompetitionFullError) {
+      return NextResponse.json({ error: "Competition is full" }, { status: 403 });
+    }
+    console.error("Failed to join competition:", err);
     return NextResponse.json({ error: "Failed to join" }, { status: 500 });
   }
 
