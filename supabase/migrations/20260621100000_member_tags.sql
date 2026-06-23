@@ -15,6 +15,7 @@ CREATE TABLE public.member_tags (
   status text NOT NULL DEFAULT 'pending' CHECK (status IN ('pending', 'active', 'rejected', 'suppressed', 'expired')),
   assigned_at timestamptz NOT NULL DEFAULT now(),
   published_at timestamptz,
+  accepted_at timestamptz,
   rejected_at timestamptz,
   expired_at timestamptz,
   suppressed_by uuid REFERENCES public.users(id),

@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
+import { createServiceClient } from "@/lib/supabase/service";
 import { rejectTag } from "@/lib/reputation";
 
 /**
@@ -67,9 +68,15 @@ export async function POST(request: NextRequest) {
 
   if (action === "reject") {
     await rejectTag(tagId, user.id);
+  } else {
+    // Accept: stamp accepted_at so CTAs disappear and auto-accept skips this tag
+    const serviceClient = createServiceClient();
+    await serviceClient
+      .from("member_tags")
+      .update({ accepted_at: new Date().toISOString() })
+      .eq("id", tagId)
+      .eq("status", "active");
   }
-
-  // Accept: no DB change. The tag stays active. The user simply acknowledges it.
 
   return NextResponse.json({ ok: true, action });
 }

@@ -233,6 +233,7 @@ export interface MemberTag {
   stats: Record<string, unknown>;
   assigned_at: string;
   published_at: string | null;
+  accepted_at: string | null;
   rejected_at: string | null;
   expired_at: string | null;
   created_at: string;

@@ -80,6 +80,54 @@ export async function processTagsForRound(
 }
 
 // ---------------------------------------------------------------------------
+// checkRoundCompletionAndProcessTags
+// ---------------------------------------------------------------------------
+
+/**
+ * After a result is confirmed, check if all events in that event's round
+ * are now resulted. If so, trigger behavioural tag processing for the round.
+ *
+ * Safe to call from any result-confirmation path (admin confirm, auto-resolve).
+ * Fire-and-forget — logs errors but never throws.
+ *
+ * @param competitionId - Competition UUID
+ * @param eventId - Event UUID that was just confirmed
+ */
+export async function checkRoundCompletionAndProcessTags(
+  competitionId: string,
+  eventId: string,
+): Promise<void> {
+  const supabase = createServiceClient();
+
+  // Find the round this event belongs to
+  const { data: event } = await supabase
+    .from("events")
+    .select("round_id")
+    .eq("id", eventId)
+    .single();
+
+  if (!event?.round_id) return; // No round = no behavioural tags
+
+  // Check if all events in this round are resulted
+  const { data: roundEvents } = await supabase
+    .from("events")
+    .select("id, status")
+    .eq("round_id", event.round_id)
+    .limit(200);
+
+  if (!roundEvents || roundEvents.length === 0) return;
+
+  const allResulted = roundEvents.every((e) => e.status === "resulted");
+  if (!allResulted) return;
+
+  console.log(
+    `[reputation] Round ${event.round_id} fully resulted (${roundEvents.length} events) — triggering behavioural tags`,
+  );
+
+  await processTagsForRound(competitionId, event.round_id);
+}
+
+// ---------------------------------------------------------------------------
 // processEventTags
 // ---------------------------------------------------------------------------
 

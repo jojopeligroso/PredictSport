@@ -3,9 +3,10 @@
  *
  * Checks each member's performance on a single event and assigns
  * event-driven tags (Nailed It, Crystal Ball, Giant Killer, etc.).
- * No density cap for event-driven tags.
+ * Capped to ONE tag per user per event — highest priority tier wins.
  */
 import type { EventTagMetric, MemberTag } from "@/types/database";
+import { getTagDefinition } from "./tag-catalogue";
 
 // ---------------------------------------------------------------------------
 // Output type
@@ -37,17 +38,11 @@ const HEARTBREAKER_DROP = 3;
 /** Minimum position gain for "The Reverse" */
 const REVERSE_GAIN = 3;
 
-/** Submission within 5 min of lock for "The Sweater" */
-const SWEATER_SECONDS = 300;
-
 /** Submission 24h+ before lock for "The Professor" */
 const PROFESSOR_SECONDS = 86400;
 
 /** Solo threshold: <= 5% of group picked the same winner */
 const SOLO_PCT_THRESHOLD = 5;
-
-/** Flat Track Bully: >= 75% of group picked the same winner */
-const FLAT_TRACK_PCT = 75;
 
 // ---------------------------------------------------------------------------
 // Core assignment function
@@ -146,23 +141,7 @@ export function assignEventDrivenTags(
     ) {
       assignments.push({
         userId: metric.user_id,
-        tagName: "Solo",
-        eventId,
-        stats: {
-          display_name: metric.display_name,
-          pct_with_same_pick: metric.pct_with_same_pick,
-        },
-      });
-    }
-
-    // --- The Flat Track Bully: overwhelming majority + winner correct ---
-    if (
-      metric.winner_correct &&
-      metric.pct_with_same_pick >= FLAT_TRACK_PCT
-    ) {
-      assignments.push({
-        userId: metric.user_id,
-        tagName: "The Flat Track Bully",
+        tagName: "A League of Their Own",
         eventId,
         stats: {
           display_name: metric.display_name,
@@ -244,25 +223,6 @@ export function assignEventDrivenTags(
           position_before: metric.position_before,
           position_after: metric.position_after,
           gain: metric.position_before - metric.position_after,
-        },
-      });
-    }
-
-    // --- The Sweater: submitted within 5 min of lock AND winner correct ---
-    if (
-      metric.winner_correct &&
-      metric.submission_seconds_before_lock > 0 &&
-      metric.submission_seconds_before_lock <= SWEATER_SECONDS
-    ) {
-      assignments.push({
-        userId: metric.user_id,
-        tagName: "The Sweater",
-        eventId,
-        stats: {
-          display_name: metric.display_name,
-          seconds_before_lock: Math.round(
-            metric.submission_seconds_before_lock,
-          ),
         },
       });
     }
@@ -352,5 +312,22 @@ export function assignEventDrivenTags(
     }
   }
 
-  return assignments;
+  // Deduplicate: one tag per user per event, highest priority tier wins.
+  // Lower tier number = higher priority. Within same tier, first assigned wins
+  // (catalogue order acts as tiebreaker).
+  const bestByUser = new Map<string, EventTagAssignment>();
+  const tierByUser = new Map<string, number>();
+
+  for (const a of assignments) {
+    const def = getTagDefinition(a.tagName);
+    const tier = def?.priorityTier ?? 4;
+    const currentTier = tierByUser.get(a.userId) ?? Infinity;
+
+    if (tier < currentTier) {
+      bestByUser.set(a.userId, a);
+      tierByUser.set(a.userId, tier);
+    }
+  }
+
+  return Array.from(bestByUser.values());
 }

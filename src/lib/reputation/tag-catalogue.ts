@@ -151,9 +151,12 @@ const theAnorak: TagDefinition = {
       member.minority_picks + member.majority_picks > 0
         ? member.minority_picks / (member.minority_picks + member.majority_picks)
         : 0;
+    const memberAcc =
+      member.winner_total > 0 ? member.winner_correct / member.winner_total : 0;
     return (
       isHighest(member.earliest_submission_lead_hrs, leadTimes) &&
       member.earliest_submission_lead_hrs > 2 &&
+      memberAcc >= 0.6 &&
       memberMinorityRate > 0.2 &&
       member.total_predictions >= 3
     );
@@ -1033,26 +1036,6 @@ const scattergun: TagDefinition = {
 // Event-driven tags — new additions
 // ---------------------------------------------------------------------------
 
-const theSweater: TagDefinition = {
-  name: "The Sweater",
-  category: "event_driven",
-  priorityTier: 3,
-  metric: "submission_timing+winner_correct",
-  qualifies: eventNoOp,
-  zScore: eventZScoreNoOp,
-  layer1: "The Sweater",
-  layer2: "Cut it fine. {stat} seconds before lock. Still nailed it.",
-  layer3: "{name} submitted {stat} seconds before lock and still got it right.",
-  factCard: {
-    fact: "Predicted within 5 minutes of lock and got the winner right.",
-    statTemplate: "{stat}s before lock",
-    contextTemplate: "Deadline merchant delivers",
-  },
-  visual: { borderColor: "#eab308" },
-  rejectable: false,
-  announced: true,
-};
-
 const theProfessor: TagDefinition = {
   name: "The Professor",
   category: "event_driven",
@@ -1073,14 +1056,14 @@ const theProfessor: TagDefinition = {
   announced: true,
 };
 
-const solo: TagDefinition = {
-  name: "Solo",
+const aLeagueOfTheirOwn: TagDefinition = {
+  name: "A League of Their Own",
   category: "event_driven",
   priorityTier: 1,
   metric: "pct_with_same_pick+winner_correct",
   qualifies: eventNoOp,
   zScore: eventZScoreNoOp,
-  layer1: "Solo",
+  layer1: "A League of Their Own",
   layer2: "You were virtually the only one who picked that. And you were right.",
   layer3: "{name} stood alone. Picked what nobody else did. And was right.",
   factCard: {
@@ -1089,26 +1072,6 @@ const solo: TagDefinition = {
     contextTemplate: "Against the world",
   },
   visual: { borderColor: "#f59e0b", gold: true },
-  rejectable: false,
-  announced: true,
-};
-
-const theFlatTrackBully: TagDefinition = {
-  name: "The Flat Track Bully",
-  category: "event_driven",
-  priorityTier: 3,
-  metric: "pct_with_same_pick+winner_correct",
-  qualifies: eventNoOp,
-  zScore: eventZScoreNoOp,
-  layer1: "The Flat Track Bully",
-  layer2: "Everyone picked them. You picked them. They won. Points are points.",
-  layer3: "{name} went with the crowd. {stat}% picked the same. And they were all right.",
-  factCard: {
-    fact: "Correctly predicted the overwhelming favourite.",
-    statTemplate: "{stat}% of group agreed",
-    contextTemplate: "Points are points",
-  },
-  visual: { borderColor: "#22c55e" },
   rejectable: false,
   announced: true,
 };
@@ -1146,15 +1109,13 @@ export const ENGAGEMENT_TAGS: TagDefinition[] = [
 
 /** Event-driven tags */
 export const EVENT_DRIVEN_TAGS: TagDefinition[] = [
-  solo,
+  aLeagueOfTheirOwn,
   crystalBall,
   theProfessor,
   onFire,
   nailedIt,
   onARoll,
   giantKiller,
-  theSweater,
-  theFlatTrackBully,
   perfectWindow,
   lastGasp,
   firstBlood,

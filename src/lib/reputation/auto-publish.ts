@@ -13,8 +13,11 @@ import {
   insertTagChangeMessage,
 } from "./chat-messages";
 
-/** Preview window duration in hours */
+/** Preview window duration in hours (admin can suppress before publish) */
 const PREVIEW_WINDOW_HOURS = 6;
+
+/** Accept/reject window in hours after publish — auto-accepts if ignored */
+const ACCEPT_REJECT_WINDOW_HOURS = 24;
 
 /**
  * Find all pending tags older than the preview window and flip them to active.
@@ -133,5 +136,56 @@ export async function checkAndPublishExpiredPending(
 
   console.log(
     `[reputation] Auto-published ${publishedTags.length} expired pending tags for competition ${competitionId}`,
+  );
+
+  // Also auto-accept tags past the accept/reject window
+  await autoAcceptExpiredActiveTags(competitionId);
+}
+
+/**
+ * Auto-accept active tags that have been published for longer than the
+ * accept/reject window (24h). If the user hasn't acted, the tag is
+ * accepted on their behalf — it becomes permanent for that round.
+ *
+ * Safe to call repeatedly — only acts on tags past the window.
+ */
+async function autoAcceptExpiredActiveTags(
+  competitionId: string,
+): Promise<void> {
+  const supabase = createServiceClient();
+
+  const cutoff = new Date(
+    Date.now() - ACCEPT_REJECT_WINDOW_HOURS * 60 * 60 * 1000,
+  ).toISOString();
+
+  // Find active behavioural tags published before the cutoff
+  const { data: expiredTags, error } = await supabase
+    .from("member_tags")
+    .select("id")
+    .eq("competition_id", competitionId)
+    .eq("status", "active")
+    .eq("tag_category", "behavioural")
+    .lt("published_at", cutoff)
+    .is("accepted_at", null)
+    .limit(500);
+
+  if (error || !expiredTags || expiredTags.length === 0) return;
+
+  const tagIds = expiredTags.map((t) => t.id);
+  const now = new Date().toISOString();
+
+  const { error: updateError } = await supabase
+    .from("member_tags")
+    .update({ accepted_at: now })
+    .in("id", tagIds)
+    .eq("status", "active");
+
+  if (updateError) {
+    console.error("[reputation] Failed to auto-accept expired tags:", updateError);
+    return;
+  }
+
+  console.log(
+    `[reputation] Auto-accepted ${tagIds.length} tags past ${ACCEPT_REJECT_WINDOW_HOURS}h window for competition ${competitionId}`,
   );
 }

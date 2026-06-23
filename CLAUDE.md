@@ -159,7 +159,7 @@ See `design/README.md` for full brand brief and asset references.
 
 **Brand marks:** Three rotating marks via `<BrandMark>` component (daily-stable weighted random): Oracle Dot (60%), GAA Umpire (30% / always for GAA), Bubble Call (10%). All use `currentColor` for auto dark mode inversion.
 
-**Personality:** "Confident, cheeky, craftsman-warm." — pub chalkboard vibe. Culturally inferred, never explicit.
+**Personality:** "Confident, cheeky, craftsman-warm." — casual banter tone, mates-at-the-pub energy. Culturally inferred, never explicit. The app should feel like a game — slick, engaging, driving return visits. "Never gambly" means no real-money mechanics, not no engagement.
 
 **Layout container:** Layout files do NOT wrap children in a container. Each page provides its own `max-w-[480px]` wrapper. Landing page is full-width hero. The generic NavBar/Footer use `max-w-3xl`. The `/wc` surface uses its own branded top nav + fixed TabBar (see Architecture above).
 

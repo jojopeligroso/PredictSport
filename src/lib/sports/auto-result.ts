@@ -7,6 +7,7 @@ import type { PredictionType, EventPredictionType } from "@/types/database";
 import type { Sport } from "./types";
 import { notifyResultConfirmed } from "@/lib/notifications/result-confirmed";
 import { notifyResultDisputed } from "@/lib/notifications/result-disputed";
+import { processEventTags, checkRoundCompletionAndProcessTags } from "@/lib/reputation";
 
 // ---------------------------------------------------------------------------
 // Types
@@ -331,6 +332,10 @@ export async function autoResolveEvent(
       event.event_name,
       finalResultData,
     ).catch(() => {});
+
+    // Process reputation tags (fire-and-forget)
+    processEventTags(event.competition_id, event.id).catch(() => {});
+    checkRoundCompletionAndProcessTags(event.competition_id, event.id).catch(() => {});
 
     // Propagate result to sibling events (same fixture across other
     // competition instances). One real-world match = one result,
@@ -728,6 +733,10 @@ async function propagateResultToSiblings(
       eventName,
       resultData,
     ).catch(() => {});
+
+    // Process reputation tags for sibling instance
+    processEventTags(sibling.competition_id, sibling.id).catch(() => {});
+    checkRoundCompletionAndProcessTags(sibling.competition_id, sibling.id).catch(() => {});
 
     console.log(
       `[auto-result] propagated result to sibling ${sibling.id} (competition ${sibling.competition_id})`,

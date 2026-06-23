@@ -5,7 +5,7 @@ import { scorePrediction, buildScoreDerivedWinnerOverrides } from "@/lib/scoring
 import { requireDisplayName } from "@/lib/require-display-name";
 import type { PredictionType, EventPredictionType } from "@/types/database";
 import { notifyResultConfirmed } from "@/lib/notifications/result-confirmed";
-import { processEventTags } from "@/lib/reputation";
+import { processEventTags, checkRoundCompletionAndProcessTags } from "@/lib/reputation";
 
 interface ConfirmResultBody {
   event_id: string;
@@ -300,6 +300,11 @@ export async function POST(request: Request) {
   // Process event-driven reputation tags (fire-and-forget)
   processEventTags(competitionId as string, body.event_id).catch((err) => {
     console.error("[confirm-result] Event tag processing failed:", err);
+  });
+
+  // Check if round is fully resulted → trigger behavioural tags (fire-and-forget)
+  checkRoundCompletionAndProcessTags(competitionId as string, body.event_id).catch((err) => {
+    console.error("[confirm-result] Round tag processing failed:", err);
   });
 
   return NextResponse.json({

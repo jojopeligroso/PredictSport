@@ -40,6 +40,7 @@ function FullTagCard({
   const showCTAs =
     isOwnTag &&
     tag.status === "active" &&
+    !tag.accepted_at &&
     !isEngagementPressure &&
     tagDefinition.rejectable;
 
