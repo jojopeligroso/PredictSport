@@ -35,7 +35,8 @@ function FullTagCard({
   onAccept,
   onReject,
 }: Omit<TagCardProps, "compact" | "displayName">) {
-  const isGhost = tag.status === "suppressed" || tag.tag_category === "engagement_pressure" && tag.tag_name === "Ghost";
+  const [showFact, setShowFact] = useState(false);
+  const isGhost = (tag.status === "suppressed") || (tag.tag_category === "engagement_pressure" && tag.tag_name === "Ghost");
   const isEngagementPressure = tag.tag_category === "engagement_pressure";
   const showCTAs =
     isOwnTag &&
@@ -48,23 +49,42 @@ function FullTagCard({
   const subtitle = interpolate(tagDefinition.layer2, stats);
   const statLine = interpolate(tagDefinition.factCard.statTemplate, stats);
   const contextLine = interpolate(tagDefinition.factCard.contextTemplate, stats);
+  const factExplanation = tagDefinition.factCard.fact;
 
   return (
-    <div
-      className="rounded-r-lg px-3 py-2.5"
+    <button
+      type="button"
+      onClick={() => setShowFact((v) => !v)}
+      className="w-full rounded-r-lg px-3 py-2.5 text-left transition-all duration-200"
       style={{
         borderLeft: `3px solid ${tagDefinition.visual.borderColor}`,
         backgroundColor: "var(--ps-amber-soft)",
-        opacity: isGhost || tag.status === "suppressed" ? 0.6 : 1,
+        opacity: isGhost ? 0.6 : 1,
       }}
+      aria-expanded={showFact}
     >
-      {/* Tag name */}
-      <p
-        className="font-display text-xs font-extrabold uppercase text-ps-text"
-        style={{ letterSpacing: "0.06em" }}
-      >
-        {tagDefinition.layer1}
-      </p>
+      {/* Tag name + tap hint */}
+      <div className="flex items-center justify-between">
+        <p
+          className="font-display text-xs font-extrabold uppercase text-ps-text"
+          style={{ letterSpacing: "0.06em" }}
+        >
+          {tagDefinition.layer1}
+        </p>
+        <svg
+          width={14}
+          height={14}
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth={2}
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          className={`text-ps-text-ter transition-transform duration-200 ${showFact ? "rotate-180" : ""}`}
+        >
+          <polyline points="6 9 12 15 18 9" />
+        </svg>
+      </div>
 
       {/* Subtitle (Layer 2) */}
       <p className="mt-0.5 font-serif text-sm italic text-ps-text">
@@ -81,26 +101,45 @@ function FullTagCard({
         {contextLine}
       </p>
 
-      {/* CTAs */}
+      {/* Data fact explanation — revealed on tap */}
+      <div
+        className="overflow-hidden transition-all duration-200"
+        style={{ maxHeight: showFact ? "80px" : "0px", opacity: showFact ? 1 : 0 }}
+      >
+        <div className="mt-2 border-t border-ps-border/40 pt-2">
+          <p className="text-xs leading-relaxed text-ps-text-sec">
+            {factExplanation}
+          </p>
+        </div>
+      </div>
+
+      {/* CTAs — stop propagation so tapping them doesn't toggle the fact */}
       {showCTAs && (
-        <div className="mt-2.5 flex items-center gap-2">
-          <button
-            type="button"
+        <div
+          className="mt-2.5 flex items-center gap-2"
+          onClick={(e) => e.stopPropagation()}
+        >
+          <span
+            role="button"
+            tabIndex={0}
             onClick={onAccept}
+            onKeyDown={(e) => { if (e.key === "Enter") onAccept?.(); }}
             className="rounded-full bg-ps-amber px-3.5 py-1.5 text-xs font-bold text-ps-text transition-opacity hover:opacity-90"
           >
             Wear it
-          </button>
-          <button
-            type="button"
+          </span>
+          <span
+            role="button"
+            tabIndex={0}
             onClick={onReject}
+            onKeyDown={(e) => { if (e.key === "Enter") onReject?.(); }}
             className="rounded-full border border-ps-border px-3.5 py-1.5 text-xs font-semibold text-ps-text-sec transition-colors hover:border-ps-text-ter"
           >
             Not for me
-          </button>
+          </span>
         </div>
       )}
-    </div>
+    </button>
   );
 }
 
