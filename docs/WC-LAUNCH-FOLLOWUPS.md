@@ -39,8 +39,9 @@ this panel is unreachable.
 
 ### C3a — Entrant count UX (from launch discussion)
 At creation, show the admin a participant counter: `x/8` minimum (the min
-disappears once the 8-entrant threshold is met) and `x/96` maximum cap. 8 and
-96 are the hard bounds of `generateEliminationCurve()`.
+disappears once the 8-entrant threshold is met) and `x/48` maximum cap. 8 and
+48 are the hard bounds of `generateEliminationCurve()`; an instance never
+exceeds 48 (auto-provision spins up a fresh instance when one fills).
 
 ## C4 — Unified prediction model (SUPERSEDES the old "seed 72 events" framing)
 Originally scoped as "create 72 group fixture events". That framing was wrong.

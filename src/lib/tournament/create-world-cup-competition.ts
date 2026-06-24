@@ -4,7 +4,7 @@ import type { Classification } from "@/types/tournament";
 import { generateEliminationCurve } from "@/lib/tournament/format/curve-generator";
 
 // Well-known IDs from seed migration
-const WC2026_TOURNAMENT_ID = "a0000000-0000-0000-0000-000000000026";
+export const WC2026_TOURNAMENT_ID = "a0000000-0000-0000-0000-000000000026";
 const WC2026_BRACKET_TEMPLATE_ID = "c0000000-0000-0000-0000-000000000026";
 
 // Sporting stage IDs from seed. Exported so other modules (e.g. the
@@ -37,7 +37,7 @@ const PREDICTION_WINDOWS = [
 interface CreateWCOptions {
   name: string;
   visibility: "public" | "private";
-  entrantCount: number; // 8-96, validated by generateEliminationCurve
+  entrantCount: number; // 8-48, validated by generateEliminationCurve
   maxEntrants?: number; // Hard cap on membership. Null = unlimited.
   minEntrants?: number; // Minimum to proceed. Null = no minimum.
   groupDrawHoursBefore?: number; // Hours before first event to draw groups. Default 24.

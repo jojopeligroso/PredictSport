@@ -1,6 +1,10 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
-import { createWorldCupCompetition } from "@/lib/tournament/create-world-cup-competition";
+import {
+  createWorldCupCompetition,
+  WC2026_TOURNAMENT_ID,
+} from "@/lib/tournament/create-world-cup-competition";
+import { fetchBlueprintEntrantConfig } from "@/lib/tournament/blueprint-config";
 import { requireDisplayName } from "@/lib/require-display-name";
 
 /**
@@ -65,12 +69,15 @@ export async function POST(request: Request) {
   }
 
   try {
+    // Entrant cap is inherited from the blueprint, not hardcoded here.
+    const blueprint = await fetchBlueprintEntrantConfig(supabase, WC2026_TOURNAMENT_ID);
     const result = await createWorldCupCompetition(supabase, user.id, {
       name: body.name.trim(),
       visibility: body.visibility,
-      entrantCount: 12, // Default estimate — curve recalculated at PW1 lock
-      maxEntrants: 48,
-      minEntrants: 8,
+      // Curve seed — recalculated from actual entrants at PW1 lock.
+      entrantCount: blueprint.maxEntrantsPerInstance ?? 12,
+      maxEntrants: blueprint.maxEntrantsPerInstance ?? undefined,
+      minEntrants: blueprint.minEntrants ?? undefined,
       groupDrawHoursBefore: body.groupDrawHoursBefore ?? 24,
       enabledClassifications: body.enabledClassifications,
     });

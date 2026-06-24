@@ -11,6 +11,7 @@ import { createServiceClient } from "@/lib/supabase/service";
 import { enrollEntrant } from "@/lib/tournament/classification-engine";
 import { addLateEntrant } from "@/lib/tournament/format/group-allocation";
 import { findOrProvisionInstance } from "@/lib/tournament/auto-provision";
+import { joinCompetitionWithCap } from "@/lib/tournament/cap-aware-join";
 import { requireDisplayName } from "@/lib/require-display-name";
 import { resolveWcCompetition } from "@/lib/wc/resolve-wc-competition";
 
@@ -85,14 +86,16 @@ export default async function WcJoinOpenPage() {
     .maybeSingle();
 
   if (!existing) {
-    // Join the competition
-    await svc.from("competition_members").insert({
-      competition_id: competitionId,
-      user_id: user.id,
-      role: "participant",
+    // Join the competition. The DB cap trigger backstops the pre-check above:
+    // if the instance filled via a concurrent join, the helper provisions/finds
+    // the next instance and retries, so competitionId may change here.
+    const joinResult = await joinCompetitionWithCap(svc, competitionId, user.id, {
+      tournamentId: comp.tournament_id,
+      instanceType: (comp.instance_type as "full" | "knockout_only") ?? "full",
     });
+    competitionId = joinResult.competitionId;
 
-    // Enroll in classifications
+    // Enroll in classifications (idempotent)
     await enrollEntrant(svc, competitionId, user.id);
 
     // If format groups already drawn, slot this user into a group.
