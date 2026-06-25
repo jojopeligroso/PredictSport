@@ -213,7 +213,7 @@ function resolveStatForTag(
 ): unknown {
   switch (tag.name) {
     case "Broken Clock":
-      return member.most_repeated_score;
+      return member.repeat_score_count;
     case "One-Trick Pony":
       return member.unique_scores_used;
     case "All-Square":
