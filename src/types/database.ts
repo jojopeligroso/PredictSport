@@ -291,4 +291,5 @@ export interface EventTagMetric {
   exact_score_prediction_data: Record<string, unknown> | null;
   submission_seconds_before_lock: number;
   is_first_exact_score: boolean;
+  current_exact_score_streak: number;
 }

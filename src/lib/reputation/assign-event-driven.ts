@@ -38,8 +38,8 @@ const HEARTBREAKER_DROP = 3;
 /** Minimum position gain for "The Reverse" */
 const REVERSE_GAIN = 3;
 
-/** Submission 24h+ before lock for "The Professor" */
-const PROFESSOR_SECONDS = 86400;
+/** Minimum consecutive exact scores for "The Professor" */
+const PROFESSOR_EXACT_STREAK = 2;
 
 /** Solo threshold: <= 5% of group picked the same winner */
 const SOLO_PCT_THRESHOLD = 5;
@@ -92,6 +92,9 @@ export function assignEventDrivenTags(
         predicted.length
       ).toFixed(1)
     : "0";
+  const bestExactStreak = predicted.length > 0
+    ? Math.max(...predicted.map((m) => m.current_exact_score_streak))
+    : 0;
 
   for (const metric of eventMetrics) {
     if (!metric.predicted) continue;
@@ -268,10 +271,10 @@ export function assignEventDrivenTags(
       });
     }
 
-    // --- The Professor: submitted 24h+ before lock AND exact score correct ---
+    // --- The Professor: 2+ consecutive exact scores ---
     if (
       metric.exact_correct &&
-      metric.submission_seconds_before_lock >= PROFESSOR_SECONDS
+      metric.current_exact_score_streak >= PROFESSOR_EXACT_STREAK
     ) {
       assignments.push({
         userId: metric.user_id,
@@ -279,10 +282,9 @@ export function assignEventDrivenTags(
         eventId,
         stats: {
           display_name: metric.display_name,
-          hours_before_lock: Math.round(
-            metric.submission_seconds_before_lock / 3600,
-          ),
-          stat: Math.round(metric.submission_seconds_before_lock / 3600),
+          exact_streak: metric.current_exact_score_streak,
+          stat: metric.current_exact_score_streak,
+          contextStat: bestExactStreak,
           totalPointsThisEvent: metric.total_points_this_event,
         },
       });
