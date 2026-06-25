@@ -6,10 +6,7 @@ import { createServiceClient } from "@/lib/supabase/service";
 import type { TagAssignment } from "./assign-behavioural";
 import type { EventTagAssignment } from "./assign-event-driven";
 import { getTagDefinition } from "./tag-catalogue";
-import {
-  insertTagRevealMessage,
-  insertTagChangeMessage,
-} from "./chat-messages";
+import { insertTagRevealMessage } from "./chat-messages";
 import { notifyAdminOfPendingTags } from "./admin-notify";
 import type { MemberTag } from "@/types/database";
 
@@ -61,44 +58,8 @@ export async function publishBehaviouralTags(
     throw error;
   }
 
-  // Engagement pressure tags that are announced get immediate chat messages
-  for (const assignment of assignments) {
-    if (assignment.tagCategory === "engagement_pressure") {
-      const tagDef = getTagDefinition(assignment.tagName);
-      if (!tagDef || !tagDef.announced) continue;
-
-      // Fetch display name for chat message
-      const { data: user } = await supabase
-        .from("users")
-        .select("display_name")
-        .eq("id", assignment.userId)
-        .single();
-
-      const displayName = user?.display_name ?? "Someone";
-
-      // We need to fetch the just-inserted tag to get its ID
-      const { data: insertedTag } = await supabase
-        .from("member_tags")
-        .select("*")
-        .eq("competition_id", competitionId)
-        .eq("user_id", assignment.userId)
-        .eq("tag_name", assignment.tagName)
-        .eq("round_id", roundId)
-        .order("created_at", { ascending: false })
-        .limit(1)
-        .single();
-
-      if (insertedTag) {
-        await insertTagRevealMessage(
-          competitionId,
-          insertedTag as MemberTag,
-          tagDef,
-          displayName,
-          assignment.stats,
-        );
-      }
-    }
-  }
+  // Behavioural + engagement tags are visible on the leaderboard only.
+  // No chat messages — they flood the conversation.
 
   // Notify admins of pending tags (non-engagement_pressure)
   const pendingCount = assignments.filter(
@@ -154,15 +115,25 @@ export async function publishEventDrivenTags(
     throw error;
   }
 
-  // Insert chat messages for announced event tags
-  for (const assignment of assignments) {
-    const tagDef = getTagDefinition(assignment.tagName);
-    if (!tagDef || !tagDef.announced) continue;
+  // Insert chat messages for the top 2 event-driven tags only (avoid flooding)
+  const announceable = assignments.filter((a) => {
+    const def = getTagDefinition(a.tagName);
+    return def?.announced;
+  });
 
+  // Sort by priority tier (lower = higher priority)
+  announceable.sort((a, b) => {
+    const aDef = getTagDefinition(a.tagName);
+    const bDef = getTagDefinition(b.tagName);
+    return (aDef?.priorityTier ?? 4) - (bDef?.priorityTier ?? 4);
+  });
+
+  const chatCap = 2;
+  for (const assignment of announceable.slice(0, chatCap)) {
+    const tagDef = getTagDefinition(assignment.tagName)!;
     const displayName =
       (assignment.stats.display_name as string) ?? "Someone";
 
-    // Fetch the just-inserted tag
     const { data: insertedTag } = await supabase
       .from("member_tags")
       .select("*")
@@ -272,57 +243,5 @@ export async function autoPublishPendingTags(
     .in("id", pendingTags.map(t => (t as MemberTag).id))
     .limit(500);
 
-  if (!publishedTags || publishedTags.length === 0) return;
-
-  // Check for tag changes (user had a different tag before)
-  const { data: previousTags } = await supabase
-    .from("member_tags")
-    .select("*")
-    .eq("competition_id", competitionId)
-    .eq("status", "expired")
-    .eq("tag_category", "behavioural")
-    .limit(500);
-
-  const previousTagMap = new Map<string, string>();
-  for (const pt of previousTags ?? []) {
-    const prev = pt as MemberTag;
-    previousTagMap.set(prev.user_id, prev.tag_name);
-  }
-
-  // Insert chat messages for each newly published tag
-  for (const raw of publishedTags) {
-    const tag = raw as MemberTag;
-    const tagDef = getTagDefinition(tag.tag_name);
-    if (!tagDef || !tagDef.announced) continue;
-
-    // Fetch display name
-    const { data: user } = await supabase
-      .from("users")
-      .select("display_name")
-      .eq("id", tag.user_id)
-      .single();
-
-    const displayName = user?.display_name ?? "Someone";
-    const previousTag = previousTagMap.get(tag.user_id);
-
-    if (previousTag && previousTag !== tag.tag_name) {
-      // Tag changed — send change message
-      await insertTagChangeMessage(
-        competitionId,
-        displayName,
-        previousTag,
-        tag.tag_name,
-        "New prediction window data",
-      );
-    }
-
-    // Always send reveal message
-    await insertTagRevealMessage(
-      competitionId,
-      tag,
-      tagDef,
-      displayName,
-      tag.stats,
-    );
-  }
+  // Behavioural tags are visible on the leaderboard only — no chat messages.
 }
