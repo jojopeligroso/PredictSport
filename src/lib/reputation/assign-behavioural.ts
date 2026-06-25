@@ -1,5 +1,5 @@
 /**
- * Behavioural + engagement pressure tag assignment engine.
+ * Behavioural tag assignment engine.
  *
  * Takes metrics from compute_reputation_stats RPC and assigns at most
  * one behavioural tag per member, respecting priority tiers, z-score
@@ -8,7 +8,6 @@
 import type { BehaviouralTagMetrics } from "@/types/database";
 import {
   BEHAVIOURAL_TAGS,
-  ENGAGEMENT_TAGS,
   type TagDefinition,
 } from "./tag-catalogue";
 
@@ -73,41 +72,11 @@ export function assignBehaviouralTags(
   const assignments: TagAssignment[] = [];
 
   // -----------------------------------------------------------------------
-  // 1. Engagement pressure tags (independent of density cap)
+  // Behavioural tags — one per member, highest priority wins
   // -----------------------------------------------------------------------
-  for (const member of metrics) {
-    const fixturesMissed = member.events_available - member.total_predictions;
-
-    for (const engTag of ENGAGEMENT_TAGS) {
-      if (engTag.qualifies(member, metrics)) {
-        // Ghost: no rejection, no chat
-        // NPT: no rejection, HAS chat
-        // Still in the Fight: rejectable
-        assignments.push({
-          userId: member.user_id,
-          tagName: engTag.name,
-          tagCategory: "engagement_pressure",
-          stats: {
-            engagement_rate: member.engagement_rate,
-            fixtures_missed: fixturesMissed,
-            total_fixtures: totalFixtures,
-            competition_completion_pct: competitionCompletionPct,
-          },
-        });
-        // One engagement tag per member max
-        break;
-      }
-    }
-  }
-
-  // Track which users already have an engagement tag
-  const usersWithEngagementTag = new Set(
-    assignments.map((a) => a.userId),
-  );
-
-  // -----------------------------------------------------------------------
-  // 2. Behavioural tags — one per member, highest priority wins
-  // -----------------------------------------------------------------------
+  // Engagement pressure tags (Ghost, NPT, Still in the Fight) are disabled.
+  // events_available counts ALL competition events including future ones,
+  // so the metric is meaningless mid-tournament.
 
   interface Candidate {
     userId: string;
@@ -119,10 +88,6 @@ export function assignBehaviouralTags(
   const candidates: Candidate[] = [];
 
   for (const member of metrics) {
-    // Skip members with engagement pressure tags — they don't also get
-    // behavioural tags (Ghost/NPT are more important signals)
-    if (usersWithEngagementTag.has(member.user_id)) continue;
-
     // Find all qualifying tags for this member
     const qualifyingTags: Array<{
       tag: TagDefinition;
