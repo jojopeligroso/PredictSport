@@ -132,7 +132,7 @@ const maverick: TagDefinition = {
   factCard: {
     fact: "Picked against the majority more than anyone else, and was accurate.",
     statTemplate: "{pct}% contrarian picks",
-    contextTemplate: "Group average: {stat}%",
+    contextTemplate: "Group average: {contextStat}%",
   },
   visual: { borderColor: "#f59e0b", gold: true },
   rejectable: true,
@@ -171,7 +171,7 @@ const theAnorak: TagDefinition = {
   factCard: {
     fact: "Earliest predictions in the group, with independent picks.",
     statTemplate: "{score}h average lead time",
-    contextTemplate: "Group average: {stat}h",
+    contextTemplate: "Group average: {contextStat}h",
   },
   visual: { borderColor: "#f59e0b", gold: true },
   rejectable: true,
@@ -194,7 +194,7 @@ const darkHorse: TagDefinition = {
   factCard: {
     fact: "Highest percentage of minority picks in the group.",
     statTemplate: "{pct}% contrarian",
-    contextTemplate: "Group average: {stat}%",
+    contextTemplate: "Group average: {contextStat}%",
   },
   visual: { borderColor: "#6366f1" },
   rejectable: true,
@@ -223,7 +223,7 @@ const defenceWinsChampionships: TagDefinition = {
   factCard: {
     fact: "Lowest average total goals in predicted scorelines.",
     statTemplate: "{score} avg total goals",
-    contextTemplate: "Group average: {stat}",
+    contextTemplate: "Group average: {contextStat}",
   },
   visual: { borderColor: "#0ea5e9" },
   rejectable: true,
@@ -247,7 +247,7 @@ const areYouNotEntertained: TagDefinition = {
   factCard: {
     fact: "Highest average total goals in predicted scorelines.",
     statTemplate: "{score} avg total goals",
-    contextTemplate: "Group average: {stat}",
+    contextTemplate: "Group average: {contextStat}",
   },
   visual: { borderColor: "#ef4444" },
   rejectable: true,
@@ -271,7 +271,7 @@ const allSquare: TagDefinition = {
   factCard: {
     fact: "Most draw predictions in the group.",
     statTemplate: "{stat} draws predicted",
-    contextTemplate: "Group average: {stat}",
+    contextTemplate: "Group average: {contextStat}",
   },
   visual: { borderColor: "#8b5cf6" },
   rejectable: true,
@@ -298,7 +298,7 @@ const brokenClock: TagDefinition = {
   factCard: {
     fact: "Most repeated single scoreline prediction.",
     statTemplate: "{score} predicted {stat} times",
-    contextTemplate: "Group average: {stat} repeats",
+    contextTemplate: "Group average: {contextStat} repeats",
   },
   visual: { borderColor: "#f97316" },
   rejectable: true,
@@ -326,7 +326,7 @@ const oneTrickPony: TagDefinition = {
   factCard: {
     fact: "Fewest unique scoreline predictions in the group.",
     statTemplate: "{stat} unique scores",
-    contextTemplate: "Group average: {stat} unique",
+    contextTemplate: "Group average: {contextStat} unique",
   },
   visual: { borderColor: "#ec4899" },
   rejectable: true,
@@ -353,7 +353,7 @@ const notAChance: TagDefinition = {
   factCard: {
     fact: "Most blowout predictions (3+ goal margin) in the group.",
     statTemplate: "{stat} blowouts",
-    contextTemplate: "Group average: {stat}",
+    contextTemplate: "Group average: {contextStat}",
   },
   visual: { borderColor: "#dc2626" },
   rejectable: true,
@@ -399,7 +399,7 @@ const theSureThing: TagDefinition = {
   factCard: {
     fact: "Highest percentage of majority-aligned picks.",
     statTemplate: "{pct}% with majority",
-    contextTemplate: "Group average: {stat}%",
+    contextTemplate: "Group average: {contextStat}%",
   },
   visual: { borderColor: "#22c55e" },
   rejectable: true,
@@ -426,7 +426,7 @@ const theTinkerer: TagDefinition = {
   factCard: {
     fact: "Most prediction changes in the group.",
     statTemplate: "{stat} changes",
-    contextTemplate: "Group average: {stat} changes",
+    contextTemplate: "Group average: {contextStat} changes",
   },
   visual: { borderColor: "#14b8a6" },
   rejectable: true,
@@ -454,7 +454,7 @@ const fireAndForget: TagDefinition = {
   factCard: {
     fact: "Zero prediction changes with high engagement.",
     statTemplate: "0 changes",
-    contextTemplate: "Group average: {stat} changes",
+    contextTemplate: "Group average: {contextStat} changes",
   },
   visual: { borderColor: "#0891b2" },
   rejectable: true,
@@ -493,7 +493,7 @@ const vibesOnly: TagDefinition = {
   factCard: {
     fact: "Latest submissions with majority-aligned picks.",
     statTemplate: "{score}min average lead time",
-    contextTemplate: "Group average: {stat}min",
+    contextTemplate: "Group average: {contextStat}min",
   },
   visual: { borderColor: "#a855f7" },
   rejectable: true,
@@ -712,7 +712,7 @@ const onARoll: TagDefinition = {
   factCard: {
     fact: "Consecutive correct predictions streak.",
     statTemplate: "{stat} in a row",
-    contextTemplate: "Best in group: {stat}",
+    contextTemplate: "Best in group: {contextStat}",
   },
   visual: { borderColor: "#0aa86d" },
   rejectable: false,
@@ -732,7 +732,7 @@ const onFire: TagDefinition = {
   factCard: {
     fact: "Extended correct prediction streak.",
     statTemplate: "{stat} in a row",
-    contextTemplate: "Group record: {stat}",
+    contextTemplate: "Group record: {contextStat}",
   },
   visual: { borderColor: "#ef4444" },
   rejectable: false,
@@ -779,26 +779,6 @@ const perfectWindow: TagDefinition = {
   announced: true,
 };
 
-const lastGasp: TagDefinition = {
-  name: "Last Gasp",
-  category: "event_driven",
-  priorityTier: 3,
-  metric: "is_last_event+winner_correct",
-  qualifies: eventNoOp,
-  zScore: eventZScoreNoOp,
-  layer1: "Last Gasp",
-  layer2: "Got the final event right when it mattered most.",
-  layer3: "{name} got the final event right. Last gasp.",
-  factCard: {
-    fact: "Correctly predicted the final event of the competition.",
-    statTemplate: "Final event: correct",
-    contextTemplate: "{stat} others got it right",
-  },
-  visual: { borderColor: "#e23d4f" },
-  rejectable: false,
-  announced: true,
-};
-
 const firstBlood: TagDefinition = {
   name: "First Blood",
   category: "event_driven",
@@ -832,7 +812,7 @@ const hatTrick: TagDefinition = {
   factCard: {
     fact: "Third exact score prediction correct.",
     statTemplate: "3 exact scores",
-    contextTemplate: "Group average: {stat}",
+    contextTemplate: "Group average: {contextStat}",
   },
   visual: { borderColor: "#f59e0b" },
   rejectable: false,
@@ -852,7 +832,7 @@ const heartbreaker: TagDefinition = {
   factCard: {
     fact: "Significant position drop after a single event.",
     statTemplate: "Dropped {stat} places",
-    contextTemplate: "From #{stat} to #{stat}",
+    contextTemplate: "From #{position_before} to #{position_after}",
   },
   visual: { borderColor: "#e23d4f" },
   rejectable: false,
@@ -892,7 +872,7 @@ const coldStreak: TagDefinition = {
   factCard: {
     fact: "Consecutive incorrect predictions.",
     statTemplate: "{stat} wrong in a row",
-    contextTemplate: "Group worst: {stat}",
+    contextTemplate: "Group worst: {contextStat}",
   },
   visual: { borderColor: "#64748b" },
   rejectable: false,
@@ -912,7 +892,7 @@ const theReverse: TagDefinition = {
   factCard: {
     fact: "Significant position climb after a single event.",
     statTemplate: "Climbed {stat} places",
-    contextTemplate: "From #{stat} to #{stat}",
+    contextTemplate: "From #{position_before} to #{position_after}",
   },
   visual: { borderColor: "#0aa86d" },
   rejectable: false,
@@ -990,7 +970,7 @@ const iceCold: TagDefinition = {
   factCard: {
     fact: "Highest winner prediction accuracy in the group.",
     statTemplate: "{pct}% accuracy",
-    contextTemplate: "Group average: {stat}%",
+    contextTemplate: "Group average: {contextStat}%",
   },
   visual: { borderColor: "#0ea5e9", gold: true },
   rejectable: true,
@@ -1117,7 +1097,6 @@ export const EVENT_DRIVEN_TAGS: TagDefinition[] = [
   onARoll,
   giantKiller,
   perfectWindow,
-  lastGasp,
   firstBlood,
   hatTrick,
   heartbreaker,

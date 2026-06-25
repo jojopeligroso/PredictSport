@@ -158,7 +158,7 @@ export function assignBehaviouralTags(
       userId: member.user_id,
       tag: best.tag,
       zScoreValue: best.zScoreValue,
-      stats: buildStats(member, best.tag),
+      stats: buildStats(member, best.tag, metrics),
     });
   }
 
@@ -246,12 +246,104 @@ function resolveStatForTag(
   }
 }
 
+// ---------------------------------------------------------------------------
+// Resolve the {contextStat} template variable (group averages) per tag
+// ---------------------------------------------------------------------------
+
+function resolveContextStatForTag(
+  tag: TagDefinition,
+  allMembers: BehaviouralTagMetrics[],
+): unknown {
+  switch (tag.name) {
+    case "Maverick":
+    case "Dark Horse":
+      return Math.round(
+        computeGroupMean(allMembers.map((m) => m.contrarian_pct)),
+      );
+    case "The Anorak":
+      return Math.round(
+        computeGroupMean(
+          allMembers.map((m) => m.earliest_submission_lead_hrs),
+        ),
+      );
+    case "Defence Wins Championships":
+    case "Are You Not Entertained":
+      return computeGroupMean(
+        allMembers.map((m) => m.avg_total_goals),
+      ).toFixed(1);
+    case "All-Square":
+      return Math.round(
+        computeGroupMean(allMembers.map((m) => m.draws_predicted)),
+      );
+    case "Broken Clock":
+      return Math.round(
+        computeGroupMean(allMembers.map((m) => m.repeat_score_count)),
+      );
+    case "One-Trick Pony":
+      return Math.round(
+        computeGroupMean(allMembers.map((m) => m.unique_scores_used)),
+      );
+    case "Not a Chance":
+      return Math.round(
+        computeGroupMean(allMembers.map((m) => m.blowouts_predicted)),
+      );
+    case "The Sure Thing": {
+      const allMajPcts = allMembers.map((m) =>
+        m.majority_picks + m.minority_picks > 0
+          ? (m.majority_picks / (m.majority_picks + m.minority_picks)) * 100
+          : 0,
+      );
+      return Math.round(computeGroupMean(allMajPcts));
+    }
+    case "The Tinkerer":
+    case "Fire and Forget":
+      return Math.round(
+        computeGroupMean(allMembers.map((m) => m.prediction_changes)),
+      );
+    case "Vibes Only":
+      return Math.round(
+        computeGroupMean(
+          allMembers.map((m) => m.latest_submission_lead_mins),
+        ),
+      );
+    case "Dead Centre":
+      return 4;
+    case "Ice Cold": {
+      const eligible = allMembers.filter((m) => m.winner_total >= 5);
+      if (eligible.length === 0) return 0;
+      return Math.round(
+        computeGroupMean(
+          eligible.map((m) => (m.winner_correct / m.winner_total) * 100),
+        ),
+      );
+    }
+    case "Scattergun": {
+      if (allMembers.length === 0) return 0;
+      const allAccs = allMembers
+        .filter((m) => m.winner_total > 0)
+        .map((m) => (m.winner_correct / m.winner_total) * 100);
+      return Math.round(computeGroupMean(allAccs));
+    }
+    case "Ghost":
+    case "No Participation Trophies":
+    case "Still in the Fight":
+      return Math.round(
+        computeGroupMean(
+          allMembers.map((m) => m.events_available - m.total_predictions),
+        ),
+      );
+    default:
+      return undefined;
+  }
+}
+
 // Build stats object for a tag assignment
 // ---------------------------------------------------------------------------
 
 function buildStats(
   member: BehaviouralTagMetrics,
   tag: TagDefinition,
+  allMembers: BehaviouralTagMetrics[],
 ): Record<string, unknown> {
   const majorityPct =
     member.majority_picks + member.minority_picks > 0
@@ -289,6 +381,7 @@ function buildStats(
               ? Math.round(member.latest_submission_lead_mins)
               : undefined,
     stat: resolveStatForTag(tag, member),
+    contextStat: resolveContextStatForTag(tag, allMembers),
     total: member.events_available,
     majority_pct: majorityPct,
     engagement_rate: member.engagement_rate,

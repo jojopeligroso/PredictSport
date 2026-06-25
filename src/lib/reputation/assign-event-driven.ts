@@ -44,6 +44,9 @@ const PROFESSOR_SECONDS = 86400;
 /** Solo threshold: <= 5% of group picked the same winner */
 const SOLO_PCT_THRESHOLD = 5;
 
+/** Max recipients per tag name per event */
+const MAX_PER_TAG_PER_EVENT = 2;
+
 // ---------------------------------------------------------------------------
 // Core assignment function
 // ---------------------------------------------------------------------------
@@ -73,8 +76,22 @@ export function assignEventDrivenTags(
     (t) => t.tag_name === "The Whistle" && t.competition_id === competitionId,
   );
 
-  // Count exact correct for Crystal Ball rarity check
+  // Pre-compute group-level aggregates
+  const predicted = eventMetrics.filter((m) => m.predicted);
   const exactCorrectUsers = eventMetrics.filter((m) => m.exact_correct);
+  const winnersCorrectCount = predicted.filter((m) => m.winner_correct).length;
+  const bestCorrectStreak = predicted.length > 0
+    ? Math.max(...predicted.map((m) => m.current_correct_streak))
+    : 0;
+  const worstWrongStreak = predicted.length > 0
+    ? Math.max(...predicted.map((m) => m.current_wrong_streak))
+    : 0;
+  const avgExactScoreCount = predicted.length > 0
+    ? (
+        predicted.reduce((sum, m) => sum + m.exact_score_count_total, 0) /
+        predicted.length
+      ).toFixed(1)
+    : "0";
 
   for (const metric of eventMetrics) {
     if (!metric.predicted) continue;
@@ -89,6 +106,8 @@ export function assignEventDrivenTags(
           display_name: metric.display_name,
           exact_correct: true,
           others_exact: exactCorrectUsers.length - 1,
+          stat: exactCorrectUsers.length - 1,
+          totalPointsThisEvent: metric.total_points_this_event,
         },
       });
     }
@@ -103,6 +122,8 @@ export function assignEventDrivenTags(
           display_name: metric.display_name,
           exact_correct: true,
           total_who_got_exact: exactCorrectUsers.length,
+          stat: exactCorrectUsers.length,
+          totalPointsThisEvent: metric.total_points_this_event,
         },
       });
     }
@@ -116,6 +137,9 @@ export function assignEventDrivenTags(
         stats: {
           display_name: metric.display_name,
           exact_score_count: metric.exact_score_count_total,
+          stat: metric.exact_score_count_total,
+          contextStat: avgExactScoreCount,
+          totalPointsThisEvent: metric.total_points_this_event,
         },
       });
     }
@@ -129,6 +153,8 @@ export function assignEventDrivenTags(
         stats: {
           display_name: metric.display_name,
           pct_with_same_pick: metric.pct_with_same_pick,
+          stat: Math.round(100 - metric.pct_with_same_pick),
+          totalPointsThisEvent: metric.total_points_this_event,
         },
       });
     }
@@ -146,6 +172,8 @@ export function assignEventDrivenTags(
         stats: {
           display_name: metric.display_name,
           pct_with_same_pick: metric.pct_with_same_pick,
+          stat: Math.round(metric.pct_with_same_pick),
+          totalPointsThisEvent: metric.total_points_this_event,
         },
       });
     }
@@ -159,6 +187,9 @@ export function assignEventDrivenTags(
         stats: {
           display_name: metric.display_name,
           streak: metric.current_correct_streak,
+          stat: metric.current_correct_streak,
+          contextStat: bestCorrectStreak,
+          totalPointsThisEvent: metric.total_points_this_event,
         },
       });
     }
@@ -172,6 +203,9 @@ export function assignEventDrivenTags(
         stats: {
           display_name: metric.display_name,
           streak: metric.current_correct_streak,
+          stat: metric.current_correct_streak,
+          contextStat: bestCorrectStreak,
+          totalPointsThisEvent: metric.total_points_this_event,
         },
       });
     }
@@ -185,6 +219,9 @@ export function assignEventDrivenTags(
         stats: {
           display_name: metric.display_name,
           streak: metric.current_wrong_streak,
+          stat: metric.current_wrong_streak,
+          contextStat: worstWrongStreak,
+          totalPointsThisEvent: metric.total_points_this_event,
         },
       });
     }
@@ -204,6 +241,8 @@ export function assignEventDrivenTags(
           position_before: metric.position_before,
           position_after: metric.position_after,
           drop: metric.position_after - metric.position_before,
+          stat: metric.position_after - metric.position_before,
+          totalPointsThisEvent: metric.total_points_this_event,
         },
       });
     }
@@ -223,6 +262,8 @@ export function assignEventDrivenTags(
           position_before: metric.position_before,
           position_after: metric.position_after,
           gain: metric.position_before - metric.position_after,
+          stat: metric.position_before - metric.position_after,
+          totalPointsThisEvent: metric.total_points_this_event,
         },
       });
     }
@@ -241,6 +282,8 @@ export function assignEventDrivenTags(
           hours_before_lock: Math.round(
             metric.submission_seconds_before_lock / 3600,
           ),
+          stat: Math.round(metric.submission_seconds_before_lock / 3600),
+          totalPointsThisEvent: metric.total_points_this_event,
         },
       });
     }
@@ -258,6 +301,8 @@ export function assignEventDrivenTags(
           stats: {
             display_name: metric.display_name,
             score: `${home}-${away}`,
+            stat: exactCorrectUsers.length - 1,
+            totalPointsThisEvent: metric.total_points_this_event,
           },
         });
       }
@@ -275,21 +320,12 @@ export function assignEventDrivenTags(
         eventId,
         stats: {
           display_name: metric.display_name,
+          stat: winnersCorrectCount - 1,
+          totalPointsThisEvent: metric.total_points_this_event,
         },
       });
     }
 
-    // --- Last Gasp: last confirmed event, winner correct ---
-    if (metric.is_last_confirmed_event && metric.winner_correct) {
-      assignments.push({
-        userId: metric.user_id,
-        tagName: "Last Gasp",
-        eventId,
-        stats: {
-          display_name: metric.display_name,
-        },
-      });
-    }
   }
 
   // --- The Whistle: last event of competition (one-time, applies to top scorer) ---
@@ -307,6 +343,7 @@ export function assignEventDrivenTags(
         eventId,
         stats: {
           display_name: topScorer.display_name,
+          totalPointsThisEvent: topScorer.total_points_this_event,
         },
       });
     }
@@ -329,5 +366,29 @@ export function assignEventDrivenTags(
     }
   }
 
-  return Array.from(bestByUser.values());
+  const perUser = Array.from(bestByUser.values());
+
+  // Cap: at most MAX_PER_TAG_PER_EVENT recipients per tag name
+  const byTag = new Map<string, EventTagAssignment[]>();
+  for (const a of perUser) {
+    const arr = byTag.get(a.tagName) ?? [];
+    arr.push(a);
+    byTag.set(a.tagName, arr);
+  }
+
+  const result: EventTagAssignment[] = [];
+  for (const [, group] of byTag) {
+    if (group.length <= MAX_PER_TAG_PER_EVENT) {
+      result.push(...group);
+    } else {
+      group.sort(
+        (a, b) =>
+          ((b.stats.totalPointsThisEvent as number) ?? 0) -
+          ((a.stats.totalPointsThisEvent as number) ?? 0),
+      );
+      result.push(...group.slice(0, MAX_PER_TAG_PER_EVENT));
+    }
+  }
+
+  return result;
 }
