@@ -20,6 +20,23 @@ import { fixtureFilterFromIds } from "@/lib/tournament/shared-fixtures";
  * Body: { competition_id: string }
  */
 export async function POST(request: NextRequest) {
+  // H3: Validate caller is authenticated or a cron job
+  const cronSecret = request.headers.get("x-cron-secret");
+  const isValidCron =
+    cronSecret && process.env.CRON_SECRET && cronSecret === process.env.CRON_SECRET;
+
+  if (!isValidCron) {
+    // Require authenticated user session
+    const { createClient } = await import("@/lib/supabase/server");
+    const authSupabase = await createClient();
+    const {
+      data: { user },
+    } = await authSupabase.auth.getUser();
+    if (!user) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+  }
+
   let body: { competition_id?: string };
   try {
     body = await request.json();

@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
+import { createServiceClient } from "@/lib/supabase/service";
 import { verifyCompetitionAdmin } from "@/lib/admin";
 import { requireDisplayName } from "@/lib/require-display-name";
 import type { CompetitionType, CompetitionVisibility, CompetitionStatus } from "@/types/database";
@@ -93,8 +94,10 @@ export async function POST(request: Request) {
     );
   }
 
-  // Add creator as admin member
-  const { error: memberError } = await supabase
+  // Add creator as admin member (service client bypasses RLS which
+  // restricts INSERT to role='participant' — see C2 security fix)
+  const svc = createServiceClient();
+  const { error: memberError } = await svc
     .from("competition_members")
     .insert({
       competition_id: competition.id,

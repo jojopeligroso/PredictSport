@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
+import { createServiceClient } from "@/lib/supabase/service";
 import { createWorldCupCompetition } from "@/lib/tournament/create-world-cup-competition";
 import { requireDisplayName } from "@/lib/require-display-name";
 
@@ -65,7 +66,10 @@ export async function POST(request: Request) {
   }
 
   try {
-    const result = await createWorldCupCompetition(supabase, user.id, {
+    // Use service client: RLS now restricts competition_members INSERT
+    // to role='participant' — admin self-insert requires service role (C2 fix)
+    const svc = createServiceClient();
+    const result = await createWorldCupCompetition(svc, user.id, {
       name: body.name.trim(),
       visibility: body.visibility,
       entrantCount: 12, // Default estimate — curve recalculated at PW1 lock

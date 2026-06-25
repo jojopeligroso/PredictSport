@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
+import { verifyCompetitionAdmin } from "@/lib/admin";
 import { fetchResult } from "@/lib/sports/fetch-result";
 import type { Sport } from "@/lib/sports/types";
 
@@ -40,6 +41,27 @@ export async function POST(request: Request) {
       { error: "Missing externalEventId" },
       { status: 400 }
     );
+  }
+
+  // H4: If writing to DB, verify caller is competition admin
+  if (eventId) {
+    const { data: event } = await supabase
+      .from("events")
+      .select("competition_id")
+      .eq("id", eventId)
+      .single();
+
+    if (!event) {
+      return NextResponse.json({ error: "Event not found" }, { status: 404 });
+    }
+
+    const admin = await verifyCompetitionAdmin(supabase, user.id, event.competition_id);
+    if (!admin) {
+      return NextResponse.json(
+        { error: "Admin access required to update event results" },
+        { status: 403 }
+      );
+    }
   }
 
   const result = await fetchResult(sport, externalEventId);

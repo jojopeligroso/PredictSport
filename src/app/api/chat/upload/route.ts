@@ -6,6 +6,25 @@ const MAX_GIF_SIZE = 3 * 1024 * 1024; // 3MB
 const MAX_COMPETITION_STORAGE = 200 * 1024 * 1024; // 200MB per competition
 const ALLOWED_TYPES = ["image/jpeg", "image/png", "image/gif", "image/webp"];
 
+// H8: Magic byte signatures for allowed image types
+const MAGIC_BYTES: Record<string, number[][]> = {
+  "image/jpeg": [[0xff, 0xd8, 0xff]],
+  "image/png": [[0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]],
+  "image/gif": [
+    [0x47, 0x49, 0x46, 0x38, 0x37, 0x61], // GIF87a
+    [0x47, 0x49, 0x46, 0x38, 0x39, 0x61], // GIF89a
+  ],
+  "image/webp": [[0x52, 0x49, 0x46, 0x46]], // RIFF (WebP starts with RIFF....WEBP)
+};
+
+function validateMagicBytes(bytes: Uint8Array, declaredType: string): boolean {
+  const signatures = MAGIC_BYTES[declaredType];
+  if (!signatures) return false;
+  return signatures.some((sig) =>
+    sig.every((byte, i) => i < bytes.length && bytes[i] === byte)
+  );
+}
+
 /**
  * POST /api/chat/upload
  * Upload an image or GIF for chat.
@@ -53,6 +72,16 @@ export async function POST(request: Request) {
     );
   }
 
+  // H8: Validate magic bytes match declared MIME type
+  const fileBuffer = await file.arrayBuffer();
+  const headerBytes = new Uint8Array(fileBuffer.slice(0, 12));
+  if (!validateMagicBytes(headerBytes, file.type)) {
+    return NextResponse.json(
+      { error: "File content does not match declared type" },
+      { status: 400 }
+    );
+  }
+
   // Verify membership
   const { data: membership } = await supabase
     .from("competition_members")
@@ -93,7 +122,7 @@ export async function POST(request: Request) {
 
   const { error: uploadError } = await supabase.storage
     .from("chat-media")
-    .upload(filePath, file, {
+    .upload(filePath, fileBuffer, {
       contentType: file.type,
       upsert: false,
     });

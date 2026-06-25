@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
+import { createServiceClient } from "@/lib/supabase/service";
 import { correctResult } from "@/lib/tournament/corrections";
 import { requireDisplayName } from "@/lib/require-display-name";
 
@@ -41,8 +42,10 @@ export async function POST(request: NextRequest) {
   }
 
   try {
+    // H1: batch_score_predictions revoked from authenticated — use service client
+    const svc = createServiceClient();
     const correction = await correctResult(
-      supabase,
+      svc,
       body.finalisation_id,
       body.event_id,
       body.new_result,

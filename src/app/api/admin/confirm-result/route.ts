@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
+import { createServiceClient } from "@/lib/supabase/service";
 import { verifyCompetitionAdmin } from "@/lib/admin";
 import { scorePrediction, buildScoreDerivedWinnerOverrides } from "@/lib/scoring";
 import { requireDisplayName } from "@/lib/require-display-name";
@@ -130,10 +131,7 @@ export async function POST(request: Request) {
         ? `Result confirmed: ${names[0].trim()} ${score.home_score}\u2013${score.away_score} ${names[1].trim()}`
         : `Result confirmed: ${event.event_name}`;
 
-    const serviceClient = (await import("@supabase/supabase-js")).createClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.SUPABASE_SERVICE_ROLE_KEY!,
-    );
+    const serviceClient = createServiceClient();
     await serviceClient.from("chat_messages").insert({
       competition_id: competitionId,
       content: chatContent,
@@ -258,7 +256,9 @@ export async function POST(request: Request) {
   let errors = 0;
 
   if (scores.length > 0) {
-    const { data: batchResult, error: batchError } = await supabase.rpc(
+    // H1: batch_score_predictions revoked from authenticated — use service client
+    const svc = createServiceClient();
+    const { data: batchResult, error: batchError } = await svc.rpc(
       "batch_score_predictions",
       { p_scores: scores }
     );
