@@ -234,6 +234,27 @@ This project runs on **Vercel Hobby (free)**. These limits bite silently:
 
 2. **Never originate user-facing natural language copy.** AI-generated quips, taglines, verdicts, or persona text actively damages brand authenticity. AI can derive additional examples from a large base of human-written samples, but it must never generate copy from scratch and ship it. If a task involves copy, ask the user for sample text first.
 
+## Gotchas — RLS Column Restrictions (PostgREST Attack Surface)
+
+1. **RLS `WITH CHECK` must restrict sensitive columns, not just ownership.** An UPDATE policy like `USING (auth.uid() = id)` lets a user update ANY column on their own row — including `is_super_admin`, `role`, or other privilege-escalating fields. PostgREST is a direct API to the database that bypasses all Next.js route-level validation. Every RLS INSERT/UPDATE policy must explicitly restrict which values the user can set for sensitive columns. Example fix:
+   ```sql
+   -- BAD: user can set is_super_admin = true
+   WITH CHECK (auth.uid() = id)
+   -- GOOD: locks is_super_admin to its current value
+   WITH CHECK (
+     auth.uid() = id
+     AND is_super_admin = (SELECT is_super_admin FROM public.users WHERE id = auth.uid())
+   )
+   ```
+
+2. **INSERT policies must restrict the `role` column.** A policy like `WITH CHECK (auth.uid() = user_id)` on `competition_members` lets a user self-insert with `role = 'admin'`. Always add `AND role = 'member'` (or whatever the default role is) to INSERT policies on tables with role columns.
+
+3. **INSERT policies on `chat_messages` must restrict `message_type`.** Without `AND message_type = 'user'`, any competition member can insert fake system messages (`system_tag_reveal`, `system_result`, etc.) with arbitrary metadata via PostgREST.
+
+4. **After writing any migration that creates or alters RLS policies**, mentally simulate: "What happens if someone calls this table directly via PostgREST with a crafted payload?" If the answer is "they can escalate privileges or impersonate system actions," the policy needs tightening.
+
+5. **SECURITY DEFINER functions MUST have `SET search_path = ''`** and explicit `REVOKE ALL FROM PUBLIC` unless the function is intentionally callable by all roles. Without these, any role (including `anon`) can call the function, and search_path hijacking is possible.
+
 ## Multi-Session Warning
 
 **NEVER run `npm run dev` or port-binding commands without explicit user confirmation.**

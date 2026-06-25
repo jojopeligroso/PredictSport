@@ -9,7 +9,10 @@
 import { createServiceClient } from "@/lib/supabase/service";
 import type { BehaviouralTagMetrics, EventTagMetric, MemberTag } from "@/types/database";
 import { assignBehaviouralTags } from "./assign-behavioural";
-import { assignEventDrivenTags } from "./assign-event-driven";
+import {
+  assignEventDrivenTags,
+  type EventTagAssignment,
+} from "./assign-event-driven";
 import {
   publishBehaviouralTags,
   publishEventDrivenTags,
@@ -178,12 +181,94 @@ export async function processEventTags(
 
   if (assignments.length === 0) return;
 
-  // 4. Publish (immediately active + chat messages)
-  await publishEventDrivenTags(competitionId, assignments);
+  // 4. Throttle: cap event-driven tags per competition per rolling window
+  const throttled = await throttleEventTags(competitionId, assignments);
+
+  if (throttled.length === 0) {
+    console.log(
+      `[reputation] All ${assignments.length} event tags throttled for event ${eventId}`,
+    );
+    return;
+  }
+
+  // 5. Publish (immediately active + chat messages)
+  await publishEventDrivenTags(competitionId, throttled);
 
   console.log(
-    `[reputation] Processed ${assignments.length} event tags for event ${eventId}`,
+    `[reputation] Published ${throttled.length}/${assignments.length} event tags for event ${eventId}`,
   );
+}
+
+// ---------------------------------------------------------------------------
+// Event tag throttle
+// ---------------------------------------------------------------------------
+
+/** Rolling window (hours) for event-driven tag rate limiting */
+const EVENT_TAG_WINDOW_HOURS = 20;
+
+/** Max event-driven tags per competition in the rolling window */
+const COMPETITION_EVENT_TAG_CAP = 4;
+
+/** Max event-driven tags per user in the rolling window */
+const USER_EVENT_TAG_CAP = 2;
+
+/**
+ * Rate-limit event-driven tags to keep notifications meaningful.
+ * ~4 tags per day per competition, max 2 per user (preferring different names).
+ */
+async function throttleEventTags(
+  competitionId: string,
+  assignments: EventTagAssignment[],
+): Promise<EventTagAssignment[]> {
+  const supabase = createServiceClient();
+  const windowStart = new Date(
+    Date.now() - EVENT_TAG_WINDOW_HOURS * 60 * 60 * 1000,
+  ).toISOString();
+
+  const { data: recentRaw } = await supabase
+    .from("member_tags")
+    .select("user_id, tag_name")
+    .eq("competition_id", competitionId)
+    .eq("tag_category", "event_driven")
+    .gte("created_at", windowStart)
+    .limit(200);
+
+  const recent = (recentRaw ?? []) as { user_id: string; tag_name: string }[];
+  let remainingSlots = Math.max(0, COMPETITION_EVENT_TAG_CAP - recent.length);
+
+  if (remainingSlots === 0) return [];
+
+  // Build per-user recent tag names
+  const userRecent = new Map<string, string[]>();
+  for (const t of recent) {
+    const arr = userRecent.get(t.user_id) ?? [];
+    arr.push(t.tag_name);
+    userRecent.set(t.user_id, arr);
+  }
+
+  // Prioritise higher-tier tags when slots are limited
+  const sorted = [...assignments].sort((a, b) => {
+    const aTier = getTagDefinition(a.tagName)?.priorityTier ?? 4;
+    const bTier = getTagDefinition(b.tagName)?.priorityTier ?? 4;
+    return aTier - bTier;
+  });
+
+  const result: EventTagAssignment[] = [];
+  for (const a of sorted) {
+    if (remainingSlots <= 0) break;
+
+    const userTags = userRecent.get(a.userId) ?? [];
+    if (userTags.length >= USER_EVENT_TAG_CAP) continue;
+    if (userTags.length > 0 && userTags.includes(a.tagName)) continue;
+
+    result.push(a);
+    remainingSlots--;
+    const arr = userRecent.get(a.userId) ?? [];
+    arr.push(a.tagName);
+    userRecent.set(a.userId, arr);
+  }
+
+  return result;
 }
 
 // ---------------------------------------------------------------------------
