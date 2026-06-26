@@ -5,6 +5,11 @@ import Link from "next/link";
 import { useT, useLocale } from "@/lib/i18n";
 import { confidenceLabel } from "@/lib/reckons-copy";
 import { markRivalConfidenceSeen } from "@/hooks/useConfidenceDisclosure";
+import { useCompetitionTags } from "@/hooks/useCompetitionTags";
+import {
+  TagPills,
+  type LeaderboardTag,
+} from "@/components/tournament/LeaderboardTagBadge";
 
 function numOrNull(v: unknown): number | null {
   if (v === null || v === undefined) return null;
@@ -70,6 +75,7 @@ export function RivalPredictionsTab({
 }: Props) {
   const t = useT();
   const { locale } = useLocale();
+  const tagsByUser = useCompetitionTags(competitionId);
 
   const [fixtures, setFixtures] = useState<RevealedFixture[]>([]);
   const [fixtureIdx, setFixtureIdx] = useState(0);
@@ -376,6 +382,7 @@ export function RivalPredictionsTab({
                   row={row}
                   rank={i + 1}
                   hasResult={hasResult}
+                  tags={tagsByUser.get(row.userId)}
                 />
               </div>
             ))}
@@ -411,10 +418,12 @@ function PredictionRow({
   row,
   rank,
   hasResult,
+  tags,
 }: {
   row: RivalPrediction;
   rank: number;
   hasResult: boolean;
+  tags?: LeaderboardTag[];
 }) {
   const t = useT();
   const [flipped, setFlipped] = useState(false);
@@ -512,6 +521,7 @@ function PredictionRow({
             >
               {row.displayName}
             </span>
+            <TagPills tags={tags} displayName={row.displayName} />
             {row.isSelf && (
               <span className="shrink-0 rounded bg-ps-amber px-1.5 py-px text-micro font-bold uppercase tracking-[0.06em] text-ps-text">
                 You

@@ -4,6 +4,11 @@ import { useState, useEffect, useMemo } from "react";
 import { useSearchParams } from "next/navigation";
 import { useT, useLocale, type Locale } from "@/lib/i18n";
 import { RivalPredictionsTab } from "@/components/wc/RivalPredictionsTab";
+import {
+  TagPills,
+  type LeaderboardTag,
+} from "@/components/tournament/LeaderboardTagBadge";
+import { useCompetitionTags } from "@/hooks/useCompetitionTags";
 import { createClient } from "@/lib/supabase/client";
 
 interface Classification {
@@ -68,19 +73,6 @@ interface MyGroupData {
   totalMembers?: number;
 }
 
-interface LeaderboardTag {
-  tagName: string;
-  tagCategory: string;
-  status: string;
-  stats: Record<string, unknown>;
-  definition: {
-    layer1: string;
-    layer2: string;
-    factCard: { fact: string; statTemplate: string; contextTemplate: string };
-    visual: { borderColor: string; gold?: boolean; opacity?: number };
-  };
-}
-
 export function ClassificationTabs({
   classifications,
   competitionId,
@@ -133,7 +125,10 @@ export function ClassificationTabs({
   const [selfVisibility, setSelfVisibility] = useState<"public" | "private">("public");
   const [groupData, setGroupData] = useState<MyGroupData | null>(null);
   const [fetchKey, setFetchKey] = useState(0);
-  const [tagsByUser, setTagsByUser] = useState<Map<string, LeaderboardTag>>(new Map());
+
+  // Reputation tags for leaderboard pills — shared across standings, format
+  // groups, and Rival Predictions (feature-flagged inside the hook).
+  const tagsByUser = useCompetitionTags(competitionId);
 
   // Listen for scoring broadcasts to auto-refresh standings
   useEffect(() => {
@@ -149,28 +144,6 @@ export function ClassificationTabs({
       .subscribe();
 
     return () => { supabase.removeChannel(channel); };
-  }, [competitionId]);
-
-  // Fetch reputation tags for leaderboard badges (feature-flagged)
-  useEffect(() => {
-    if (process.env.NEXT_PUBLIC_FEATURE_TAGS !== "true") return;
-    let cancelled = false;
-
-    fetch(`/api/tournament/competition-tags?competitionId=${competitionId}`)
-      .then((res) => res.json())
-      .then((data) => {
-        if (cancelled) return;
-        const map = new Map<string, LeaderboardTag>();
-        for (const t of data?.tags ?? []) {
-          map.set(t.userId, t);
-        }
-        setTagsByUser(map);
-      })
-      .catch(() => {
-        // Silently fail — tags are non-critical
-      });
-
-    return () => { cancelled = true; };
   }, [competitionId]);
 
   useEffect(() => {
@@ -311,16 +284,17 @@ export function ClassificationTabs({
               <div className="mt-4">
                 {groupData.myGroupId && (() => {
                   const myGroup = groupData.allGroups!.find((g) => g.id === groupData.myGroupId);
-                  return myGroup ? <YourGroupCard group={myGroup} /> : null;
+                  return myGroup ? <YourGroupCard group={myGroup} tagsByUser={tagsByUser} /> : null;
                 })()}
                 <div className={groupData.myGroupId ? "mt-3" : ""}>
-                  <AllGroupsView groups={groupData.allGroups} myGroupId={groupData.myGroupId ?? null} />
+                  <AllGroupsView groups={groupData.allGroups} myGroupId={groupData.myGroupId ?? null} tagsByUser={tagsByUser} />
                 </div>
               </div>
             ) : (
               <FormatGroupCard
                 groupData={groupData}
                 displayName={currentDisplayName ?? "You"}
+                tagsByUser={tagsByUser}
               />
             )
           )}
@@ -422,7 +396,7 @@ function FlipRow({
   isBracket,
   selfVisibility,
   onToggleVisibility,
-  tag,
+  tags,
 }: {
   row: StandingRow;
   isMe: boolean;
@@ -431,7 +405,7 @@ function FlipRow({
   isBracket: boolean;
   selfVisibility: "public" | "private";
   onToggleVisibility: (next: "public" | "private") => void;
-  tag?: LeaderboardTag;
+  tags?: LeaderboardTag[];
 }) {
   const t = useT();
   const [flipped, setFlipped] = useState(false);
@@ -470,9 +444,7 @@ function FlipRow({
               >
                 {row.display_name}
               </span>
-              {tag && (
-                <LeaderboardTagBadge tag={tag} displayName={row.display_name} />
-              )}
+              <TagPills tags={tags} displayName={row.display_name} />
               {isMe && (
                 <span className="shrink-0 rounded bg-ps-amber/20 px-1 py-0.5 text-micro font-bold text-ps-amber">
                   {t('classification.you_label')}
@@ -579,71 +551,6 @@ function FlipRow({
   );
 }
 
-function LeaderboardTagBadge({ tag, displayName }: { tag: LeaderboardTag; displayName: string }) {
-  const [expanded, setExpanded] = useState(false);
-  const isGhost = tag.tagName === "Ghost";
-  const isGold = tag.definition.visual.gold;
-
-  const interpolate = (tpl: string) =>
-    tpl.replace(/\{(\w+)\}/g, (_, key) => {
-      if (key === "name") return displayName;
-      const val = tag.stats[key];
-      return val != null ? String(val) : `{${key}}`;
-    });
-
-  return (
-    <span className="shrink-0 relative" onClick={(e) => e.stopPropagation()}>
-      <button
-        type="button"
-        onClick={() => setExpanded((v) => !v)}
-        className="inline-flex items-center rounded-full px-1.5 py-0.5 transition-opacity hover:opacity-80"
-        style={{
-          backgroundColor: isGold ? "#f59e0b" : tag.definition.visual.borderColor,
-          opacity: isGhost ? 0.6 : 1,
-        }}
-        aria-expanded={expanded}
-      >
-        <span
-          className="font-display text-[10px] font-extrabold uppercase leading-none text-white"
-          style={{ letterSpacing: "0.05em" }}
-        >
-          {tag.definition.layer1}
-        </span>
-      </button>
-
-      {expanded && (
-        <div
-          className="absolute left-0 top-full z-40 mt-1 w-64 rounded-lg border border-ps-border bg-ps-surface shadow-lg"
-          style={{ borderLeft: `3px solid ${tag.definition.visual.borderColor}` }}
-        >
-          <div className="px-3 py-2.5">
-            <p
-              className="font-display text-xs font-extrabold uppercase text-ps-text"
-              style={{ letterSpacing: "0.06em" }}
-            >
-              {tag.definition.layer1}
-            </p>
-            <p className="mt-0.5 font-serif text-xs italic text-ps-text">
-              {interpolate(tag.definition.layer2)}
-            </p>
-            <p className="mt-1 font-mono text-xs text-ps-amber">
-              {interpolate(tag.definition.factCard.statTemplate)}
-            </p>
-            <p className="mt-0.5 text-[11px] text-ps-text-ter">
-              {interpolate(tag.definition.factCard.contextTemplate)}
-            </p>
-            <div className="mt-1.5 border-t border-ps-border/40 pt-1.5">
-              <p className="text-[11px] leading-relaxed text-ps-text-sec">
-                {tag.definition.factCard.fact}
-              </p>
-            </div>
-          </div>
-        </div>
-      )}
-    </span>
-  );
-}
-
 function StandingsTable({
   standings,
   currentUserId,
@@ -656,7 +563,7 @@ function StandingsTable({
   currentUserId: string;
   classificationType: string;
   selfVisibility: "public" | "private";
-  tagsByUser: Map<string, LeaderboardTag>;
+  tagsByUser: Map<string, LeaderboardTag[]>;
   onToggleVisibility: (next: "public" | "private") => void;
 }) {
   const t = useT();
@@ -688,7 +595,7 @@ function StandingsTable({
             isBracket={isBracket}
             selfVisibility={selfVisibility}
             onToggleVisibility={onToggleVisibility}
-            tag={tagsByUser.get(row.user_id)}
+            tags={tagsByUser.get(row.user_id)}
           />
         );
       })}
@@ -1082,9 +989,11 @@ const BLURRED_NAMES = [
 function FormatGroupCard({
   groupData,
   displayName,
+  tagsByUser,
 }: {
   groupData: MyGroupData | null;
   displayName: string;
+  tagsByUser: Map<string, LeaderboardTag[]>;
 }) {
   const t = useT();
   if (!groupData) return null;
@@ -1140,14 +1049,17 @@ function FormatGroupCard({
               key={m.user_id}
               className={`flex items-center px-3 py-2.5 ${m.is_self ? "bg-ps-amber/5" : ""}`}
             >
-              <span className={`flex-1 text-sm ${m.is_self ? "font-semibold text-ps-text" : "text-ps-text"}`}>
-                {m.display_name}
+              <div className="flex flex-1 items-center gap-1.5 min-w-0">
+                <span className={`truncate text-sm ${m.is_self ? "font-semibold text-ps-text" : "text-ps-text"}`}>
+                  {m.display_name}
+                </span>
+                <TagPills tags={tagsByUser.get(m.user_id)} displayName={m.display_name} />
                 {m.is_self && (
-                  <span className="ml-1.5 rounded bg-ps-amber/20 px-1 py-0.5 text-micro font-bold text-ps-amber">
+                  <span className="shrink-0 rounded bg-ps-amber/20 px-1 py-0.5 text-micro font-bold text-ps-amber">
                     {t('classification.you_label')}
                   </span>
                 )}
-              </span>
+              </div>
               <span className="w-12 text-center font-mono text-xs text-ps-text-ter">
                 {m.predictions_made}/{m.predictions_total}
               </span>
@@ -1267,8 +1179,10 @@ function QualificationRuleSummary({ groupSize }: { groupSize: number }) {
 
 function YourGroupCard({
   group,
+  tagsByUser,
 }: {
   group: GroupInfo;
+  tagsByUser: Map<string, LeaderboardTag[]>;
 }) {
   const t = useT();
   const groupSize = group.members.length;
@@ -1325,18 +1239,21 @@ function YourGroupCard({
               <span className="w-6 text-center font-mono text-xs font-bold text-ps-text-ter">
                 {rank}
               </span>
-              <span
-                className={`flex-1 truncate pl-2 text-sm ${
-                  m.is_self ? "font-semibold text-ps-text" : "text-ps-text"
-                }`}
-              >
-                {m.display_name}
+              <div className="flex flex-1 items-center gap-1.5 pl-2 min-w-0">
+                <span
+                  className={`truncate text-sm ${
+                    m.is_self ? "font-semibold text-ps-text" : "text-ps-text"
+                  }`}
+                >
+                  {m.display_name}
+                </span>
+                <TagPills tags={tagsByUser.get(m.user_id)} displayName={m.display_name} />
                 {m.is_self && (
-                  <span className="ml-1.5 rounded bg-ps-amber/20 px-1 py-0.5 text-micro font-bold text-ps-amber">
+                  <span className="shrink-0 rounded bg-ps-amber/20 px-1 py-0.5 text-micro font-bold text-ps-amber">
                     {t('classification.you_label')}
                   </span>
                 )}
-              </span>
+              </div>
               <span className="w-14 text-right font-mono text-sm font-bold text-ps-text">
                 {m.points}
               </span>
@@ -1355,9 +1272,11 @@ function YourGroupCard({
 function AllGroupsView({
   groups,
   myGroupId,
+  tagsByUser,
 }: {
   groups: GroupInfo[];
   myGroupId: string | null;
+  tagsByUser: Map<string, LeaderboardTag[]>;
 }) {
   const t = useT();
 
@@ -1395,18 +1314,21 @@ function AllGroupsView({
                     <span className="w-6 text-center font-mono text-xs font-bold text-ps-text-ter">
                       {rank}
                     </span>
-                    <span
-                      className={`flex-1 truncate pl-2 text-sm ${
-                        m.is_self ? "font-semibold text-ps-text" : "text-ps-text"
-                      }`}
-                    >
-                      {m.display_name}
+                    <div className="flex flex-1 items-center gap-1.5 pl-2 min-w-0">
+                      <span
+                        className={`truncate text-sm ${
+                          m.is_self ? "font-semibold text-ps-text" : "text-ps-text"
+                        }`}
+                      >
+                        {m.display_name}
+                      </span>
+                      <TagPills tags={tagsByUser.get(m.user_id)} displayName={m.display_name} />
                       {m.is_self && (
-                        <span className="ml-1.5 rounded bg-ps-amber/20 px-1 py-0.5 text-micro font-bold text-ps-amber">
+                        <span className="shrink-0 rounded bg-ps-amber/20 px-1 py-0.5 text-micro font-bold text-ps-amber">
                           {t('classification.you_label')}
                         </span>
                       )}
-                    </span>
+                    </div>
                     <span className="w-14 text-right font-mono text-sm font-bold text-ps-text">
                       {m.points}
                     </span>

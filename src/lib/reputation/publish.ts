@@ -29,27 +29,46 @@ export async function publishBehaviouralTags(
 ): Promise<void> {
   const supabase = createServiceClient();
 
-  // Expire previous round's behavioural tags
-  await expirePreviousTags(competitionId, roundId);
-
   if (assignments.length === 0) return;
 
-  // Build rows for insert
-  const rows = assignments.map((a) => ({
-    competition_id: competitionId,
-    user_id: a.userId,
-    round_id: roundId,
-    tag_name: a.tagName,
-    tag_category: a.tagCategory,
-    status: a.tagCategory === "engagement_pressure" ? "active" : "pending",
-    stats: a.stats,
-    assigned_at: new Date().toISOString(),
-    // Engagement pressure tags are immediately active
-    published_at:
-      a.tagCategory === "engagement_pressure"
-        ? new Date().toISOString()
-        : null,
-  }));
+  // Title-holder model: a behavioural tag persists until another member earns
+  // the SAME tag. We no longer blanket-expire previous rounds' tags. Instead,
+  // a tag the current holder already owns is skipped (no churn), and the
+  // hand-off to a new holder happens when the new tag goes active
+  // (see expireSupersededHolders, called from the publish paths).
+  const { data: activeRows } = await supabase
+    .from("member_tags")
+    .select("user_id, tag_name")
+    .eq("competition_id", competitionId)
+    .eq("status", "active")
+    .limit(500);
+
+  const activeHolderByTag = new Map<string, string>();
+  for (const r of (activeRows ?? []) as { user_id: string; tag_name: string }[]) {
+    if (!activeHolderByTag.has(r.tag_name)) {
+      activeHolderByTag.set(r.tag_name, r.user_id);
+    }
+  }
+
+  const now = new Date().toISOString();
+
+  // Build rows for insert, skipping tags the same user already actively holds.
+  const rows = assignments
+    .filter((a) => activeHolderByTag.get(a.tagName) !== a.userId)
+    .map((a) => ({
+      competition_id: competitionId,
+      user_id: a.userId,
+      round_id: roundId,
+      tag_name: a.tagName,
+      tag_category: a.tagCategory,
+      status: a.tagCategory === "engagement_pressure" ? "active" : "pending",
+      stats: a.stats,
+      assigned_at: now,
+      // Engagement pressure tags are immediately active
+      published_at: a.tagCategory === "engagement_pressure" ? now : null,
+    }));
+
+  if (rows.length === 0) return;
 
   const { error } = await supabase.from("member_tags").insert(rows);
 
@@ -61,10 +80,8 @@ export async function publishBehaviouralTags(
   // Behavioural + engagement tags are visible on the leaderboard only.
   // No chat messages — they flood the conversation.
 
-  // Notify admins of pending tags (non-engagement_pressure)
-  const pendingCount = assignments.filter(
-    (a) => a.tagCategory !== "engagement_pressure",
-  ).length;
+  // Notify admins of pending tags (the rows we actually inserted as pending)
+  const pendingCount = rows.filter((r) => r.status === "pending").length;
   if (pendingCount > 0) {
     try {
       await notifyAdminOfPendingTags(competitionId, pendingCount);
@@ -158,33 +175,54 @@ export async function publishEventDrivenTags(
 }
 
 // ---------------------------------------------------------------------------
-// Expire previous round's behavioural tags
+// Title transfer — expire superseded behavioural tag holders
 // ---------------------------------------------------------------------------
 
 /**
- * Set previous round's behavioural tags to 'expired' where status = 'active'.
- * Only affects behavioural tags, not engagement or event-driven.
+ * Behavioural tags are held like a title: once a new holder's tag goes active,
+ * the previous holder of that SAME tag loses it. For each just-activated
+ * behavioural tag we expire every other active row of the same tag_name,
+ * leaving exactly one holder per tag name.
+ *
+ * Also collapses a user's own older active rows of a tag they re-earned.
  *
  * @param competitionId - Competition UUID
- * @param currentRoundId - Current round UUID (tags from OTHER rounds get expired)
+ * @param activatedTags - The behavioural tags that just transitioned to active
  */
-export async function expirePreviousTags(
+export async function expireSupersededHolders(
   competitionId: string,
-  currentRoundId: string,
+  activatedTags: MemberTag[],
 ): Promise<void> {
+  const behavioural = activatedTags.filter(
+    (t) => t.tag_category === "behavioural",
+  );
+  if (behavioural.length === 0) return;
+
   const supabase = createServiceClient();
   const now = new Date().toISOString();
 
-  const { error } = await supabase
-    .from("member_tags")
-    .update({ status: "expired", expired_at: now })
-    .eq("competition_id", competitionId)
-    .eq("tag_category", "behavioural")
-    .eq("status", "active")
-    .neq("round_id", currentRoundId);
+  // One holder per tag name — keep the first activated row for each name.
+  const holderByName = new Map<string, MemberTag>();
+  for (const tag of behavioural) {
+    if (!holderByName.has(tag.tag_name)) holderByName.set(tag.tag_name, tag);
+  }
 
-  if (error) {
-    console.error("[reputation] Failed to expire previous tags:", error);
+  for (const [tagName, holder] of holderByName) {
+    const { error } = await supabase
+      .from("member_tags")
+      .update({ status: "expired", expired_at: now })
+      .eq("competition_id", competitionId)
+      .eq("tag_category", "behavioural")
+      .eq("tag_name", tagName)
+      .eq("status", "active")
+      .neq("id", holder.id);
+
+    if (error) {
+      console.error(
+        `[reputation] Failed to expire superseded holders of ${tagName}:`,
+        error,
+      );
+    }
   }
 }
 
@@ -242,6 +280,11 @@ export async function autoPublishPendingTags(
     .eq("tag_category", "behavioural")
     .in("id", pendingTags.map(t => (t as MemberTag).id))
     .limit(500);
+
+  // Title transfer: expire the previous holder of each newly-active tag.
+  if (publishedTags && publishedTags.length > 0) {
+    await expireSupersededHolders(competitionId, publishedTags as MemberTag[]);
+  }
 
   // Behavioural tags are visible on the leaderboard only — no chat messages.
 }
