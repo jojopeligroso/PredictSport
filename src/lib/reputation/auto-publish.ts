@@ -8,6 +8,7 @@
 import { createServiceClient } from "@/lib/supabase/service";
 import type { MemberTag } from "@/types/database";
 import { getTagDefinition } from "./tag-catalogue";
+import { expireSupersededHolders } from "./publish";
 import {
   insertTagRevealMessage,
   insertTagChangeMessage,
@@ -83,6 +84,13 @@ export async function checkAndPublishExpiredPending(
     .limit(500);
 
   if (!publishedTags || publishedTags.length === 0) return;
+
+  // Title transfer: now that these behavioural tags are active, expire the
+  // previous holder of each tag name so only one member holds it at a time.
+  await expireSupersededHolders(
+    competitionId,
+    publishedTags as MemberTag[],
+  );
 
   // Fetch previous round's expired tags for change detection
   const { data: previousTags } = await supabase
