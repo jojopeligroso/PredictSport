@@ -2,7 +2,7 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import type { ResultFinalisation } from "@/types/tournament";
 import type { PredictionType, EventPredictionType } from "@/types/database";
 import { scorePrediction, buildScoreDerivedWinnerOverrides } from "@/lib/scoring";
-import { eliminateFromFormat } from "@/lib/tournament/format/elimination";
+import { eliminateFromFormat, type EliminationResult } from "@/lib/tournament/format/elimination";
 
 /**
  * Step 1: Confirm individual fixture result for tournament competitions.
@@ -390,6 +390,8 @@ export async function finaliseStage(
   // across all competition instances sharing this tournament.
   // This must happen BEFORE knockout bracket activation so that
   // eliminated entrants are removed before the next phase begins.
+  const eliminationResults: { competitionId: string; classificationId: string; result: EliminationResult }[] = [];
+
   for (const comp of competitions) {
     const { data: formatClassifications } = await supabase
       .from("classifications")
@@ -399,8 +401,22 @@ export async function finaliseStage(
       .in("status", ["active"]);
 
     for (const cls of formatClassifications ?? []) {
-      await eliminateFromFormat(supabase, cls.id, stageId);
+      const result = await eliminateFromFormat(supabase, cls.id, stageId);
+      eliminationResults.push({ competitionId: comp.id, classificationId: cls.id, result });
     }
+  }
+
+  // B4: Generate stage standings snapshots after elimination
+  for (const { competitionId, classificationId, result } of eliminationResults) {
+    await generateStageSnapshot(
+      supabase,
+      classificationId,
+      competitionId,
+      stageId,
+      finalisation.id,
+      finalisedBy,
+      result
+    );
   }
 
   // Check if this completes the group stage → activate knockout bracket
@@ -589,6 +605,70 @@ async function generateWindowSnapshot(
     finalisation_id: finalisationId,
     snapshot_type: "window",
     standings_data: standings,
+    entrant_count: standings.length,
+    generated_by: generatedBy,
+    generation_method: "manual",
+  });
+}
+
+/**
+ * B4: Generate a stage-level standings snapshot after elimination runs.
+ * Captures the full ranked list, who was eliminated, who survived,
+ * and the qualification cutoff position.
+ */
+async function generateStageSnapshot(
+  supabase: SupabaseClient,
+  classificationId: string,
+  competitionId: string,
+  stageId: string,
+  finalisationId: string,
+  generatedBy: string | null,
+  eliminationResult: EliminationResult
+): Promise<void> {
+  const eliminatedSet = new Set(eliminationResult.eliminated_user_ids);
+  const survivorSet = new Set(eliminationResult.survivor_user_ids);
+
+  // Build standings data from the elimination result's standings
+  // Annotate each row with elimination outcome
+  const standings = eliminationResult.standings_at_elimination.map((row) => ({
+    ...row,
+    eliminated: eliminatedSet.has(row.user_id),
+    metadata: {
+      ...row.metadata,
+      elimination_outcome: eliminatedSet.has(row.user_id)
+        ? "eliminated"
+        : survivorSet.has(row.user_id)
+          ? "survived"
+          : "unknown",
+    },
+  }));
+
+  // Determine the qualification cutoff position (last survivor rank)
+  const survivorPositions = standings
+    .map((s, idx) => ({ idx, survived: survivorSet.has(s.user_id) }))
+    .filter((s) => s.survived);
+  const cutoffPosition = survivorPositions.length > 0
+    ? survivorPositions[survivorPositions.length - 1].idx + 1
+    : 0;
+
+  const snapshotMetadata = {
+    eliminated_count: eliminationResult.eliminated_user_ids.length,
+    survivor_count: eliminationResult.survivor_user_ids.length,
+    target_survivors: eliminationResult.target_survivors,
+    tie_overflow: eliminationResult.tie_overflow,
+    cutoff_position: cutoffPosition,
+  };
+
+  await supabase.from("classification_standings_snapshots").insert({
+    classification_id: classificationId,
+    competition_id: competitionId,
+    sporting_stage_id: stageId,
+    finalisation_id: finalisationId,
+    snapshot_type: "stage",
+    standings_data: {
+      standings,
+      elimination_summary: snapshotMetadata,
+    },
     entrant_count: standings.length,
     generated_by: generatedBy,
     generation_method: "manual",
