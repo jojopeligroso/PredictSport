@@ -1080,6 +1080,26 @@ const unluckiest4thPlace: TagDefinition = {
   announced: true,
 };
 
+const mostContested3rdPlace: TagDefinition = {
+  name: "Most Contested 3rd Place",
+  category: "finalisation",
+  priorityTier: 2,
+  metric: "elimination_margin",
+  qualifies: eventNoOp,
+  zScore: eventZScoreNoOp,
+  layer1: "Most Contested 3rd Place",
+  layer2: "You qualified via best-thirds by just {stat} point{suffix}.",
+  layer3: "{name} qualified via best-thirds by just {stat} point{suffix}.",
+  factCard: {
+    fact: "Narrowest margin between qualifying and elimination at the best-third boundary.",
+    statTemplate: "{stat} point{suffix} margin",
+    contextTemplate: "Average margin: {contextStat} points",
+  },
+  visual: { borderColor: "#eab308" },
+  rejectable: false,
+  announced: true,
+};
+
 // ---------------------------------------------------------------------------
 // Exports
 // ---------------------------------------------------------------------------
@@ -1134,6 +1154,7 @@ export const EVENT_DRIVEN_TAGS: TagDefinition[] = [
 /** Finalisation tags — fire at elimination boundaries */
 export const FINALISATION_TAGS: TagDefinition[] = [
   unluckiest4thPlace,
+  mostContested3rdPlace,
 ];
 
 /** All tags in one flat list */

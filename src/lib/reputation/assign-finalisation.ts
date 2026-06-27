@@ -5,6 +5,7 @@
  * from the elimination result to identify tag recipients.
  */
 import type { SupabaseClient } from "@supabase/supabase-js";
+import type { StandingRow } from "@/types/tournament";
 import type { EliminationResult } from "@/lib/tournament/format/elimination";
 import {
   publishFinalisationTags,
@@ -77,6 +78,40 @@ export async function computeAndPublishFinalisationTags(
     }
   }
 
+  // -----------------------------------------------------------------------
+  // Q21: "Most Contested 3rd Place"
+  // 3rd-place finisher who qualified via best-thirds by the narrowest margin —
+  // smallest gap to the first non-qualifier in the best-third ranking.
+  // -----------------------------------------------------------------------
+  const thirdPlaceMargins = computeThirdFourthMargins(
+    standings_at_elimination,
+    survivorSet,
+    eliminatedSet,
+  );
+
+  if (thirdPlaceMargins.length > 0) {
+    // Sort by margin ascending — smallest margin = most contested
+    thirdPlaceMargins.sort((a, b) => a.margin - b.margin);
+    const mostContested = thirdPlaceMargins[0];
+
+    // Compute average margin for context
+    const avgMargin =
+      thirdPlaceMargins.reduce((sum, m) => sum + m.margin, 0) /
+      thirdPlaceMargins.length;
+
+    assignments.push({
+      userId: mostContested.thirdPlaceUserId,
+      tagName: "Most Contested 3rd Place",
+      stats: {
+        display_name:
+          displayNameMap.get(mostContested.thirdPlaceUserId) ?? "Someone",
+        stat: mostContested.margin,
+        suffix: mostContested.margin === 1 ? "" : "s",
+        contextStat: Math.round(avgMargin * 10) / 10,
+      },
+    });
+  }
+
   // Publish all computed finalisation tags
   if (assignments.length > 0) {
     await publishFinalisationTags(competitionId, stageId, assignments);
@@ -86,6 +121,65 @@ export async function computeAndPublishFinalisationTags(
 // ---------------------------------------------------------------------------
 // Helpers
 // ---------------------------------------------------------------------------
+
+interface ThirdFourthMargin {
+  thirdPlaceUserId: string;
+  fourthPlaceUserId: string;
+  margin: number;
+  groupId: string;
+}
+
+/**
+ * For each group, find the 3rd-place survivor and the 4th-place eliminated
+ * player, and compute the points margin between them.
+ *
+ * Only considers groups where 3rd survived and 4th was eliminated
+ * (the classic contested boundary).
+ */
+function computeThirdFourthMargins(
+  standings: StandingRow[],
+  survivorSet: Set<string>,
+  eliminatedSet: Set<string>,
+): ThirdFourthMargin[] {
+  // Group standings by group_id (from GroupStandingRow extension)
+  const byGroup = new Map<string, StandingRow[]>();
+  for (const s of standings) {
+    const groupId =
+      (s as StandingRow & { group_id?: string }).group_id ?? "default";
+    if (!byGroup.has(groupId)) byGroup.set(groupId, []);
+    byGroup.get(groupId)!.push(s);
+  }
+
+  const margins: ThirdFourthMargin[] = [];
+
+  for (const [groupId, groupStandings] of byGroup) {
+    // Sort by position (rank)
+    const sorted = [...groupStandings].sort((a, b) => a.rank - b.rank);
+
+    // Find the last survivor and first eliminated in this group
+    // These are the 3rd/4th at the boundary
+    const survivors = sorted.filter((s) => survivorSet.has(s.user_id));
+    const eliminated = sorted.filter((s) => eliminatedSet.has(s.user_id));
+
+    if (survivors.length === 0 || eliminated.length === 0) continue;
+
+    // Last survivor by rank = closest to the cut line (e.g. 3rd place)
+    const lastSurvivor = survivors[survivors.length - 1];
+    // First eliminated by rank = just below the cut line (e.g. 4th place)
+    const firstEliminated = eliminated[0];
+
+    const margin = lastSurvivor.points - firstEliminated.points;
+
+    margins.push({
+      thirdPlaceUserId: lastSurvivor.user_id,
+      fourthPlaceUserId: firstEliminated.user_id,
+      margin,
+      groupId,
+    });
+  }
+
+  return margins;
+}
 
 /**
  * Batch-resolve display names for a list of user IDs.
