@@ -146,7 +146,8 @@ export function Md1PicksLanding(props: Md1PicksLandingProps) {
         <div className="flex items-start gap-3">
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
-            src="/wc/fifa-wc2026-mark.svg"
+            src="/wc/fifa-wc2026-mark.webp"
+            loading="lazy"
             alt="FIFA World Cup 2026"
             width={44}
             height={44}

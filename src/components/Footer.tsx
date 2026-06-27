@@ -18,7 +18,7 @@ export function Footer() {
         <div className="mt-2 flex items-center justify-center gap-3 text-micro text-ps-text-ter">
           <Link
             href="/privacy"
-            className="transition-colors hover:text-ps-text"
+            className="py-2 transition-colors hover:text-ps-text"
           >
             {t("footer.privacy")}
           </Link>
@@ -27,7 +27,7 @@ export function Footer() {
           </span>
           <Link
             href="/terms"
-            className="transition-colors hover:text-ps-text"
+            className="py-2 transition-colors hover:text-ps-text"
           >
             {t("footer.terms")}
           </Link>

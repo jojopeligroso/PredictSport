@@ -244,7 +244,7 @@ export function ClassificationTabs({
           <button
             key={cls.id}
             onClick={() => { setActiveId(cls.id); setLoading(true); }}
-            className={`whitespace-nowrap rounded-md px-3 py-1.5 text-xs font-semibold transition-colors ${
+            className={`whitespace-nowrap rounded-md px-3 py-1.5 min-h-[44px] text-xs font-semibold transition-colors ${
               cls.id === activeId
                 ? "bg-ps-surface text-ps-text shadow-sm"
                 : "text-ps-text-sec hover:text-ps-text"
@@ -257,7 +257,7 @@ export function ClassificationTabs({
         <button
           key={RIVALS_TAB}
           onClick={() => { setActiveId(RIVALS_TAB); }}
-          className={`whitespace-nowrap rounded-md px-3 py-1.5 text-xs font-semibold transition-colors ${
+          className={`whitespace-nowrap rounded-md px-3 py-1.5 min-h-[44px] text-xs font-semibold transition-colors ${
             activeId === RIVALS_TAB
               ? "bg-ps-amber text-ps-text shadow-sm"
               : "text-ps-text-sec hover:text-ps-text"

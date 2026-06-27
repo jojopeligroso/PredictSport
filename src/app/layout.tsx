@@ -15,8 +15,6 @@ import { getServerLocale } from "@/lib/i18n/server";
 import { isWorldCupShell } from "@/lib/product-mode";
 import "./globals.css";
 
-export const dynamic = "force-dynamic";
-
 const inter = Inter({
   variable: "--font-inter",
   subsets: ["latin"],
@@ -68,7 +66,6 @@ export default async function RootLayout({
       <head>
         <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
         <link rel="manifest" href="/manifest.json" />
-        <link rel="preconnect" href="https://flagcdn.com" crossOrigin="anonymous" />
         <meta name="theme-color" content="#f59e0b" />
         <link rel="icon" href="/icon-192.png" type="image/png" />
         <link rel="apple-touch-icon" href="/apple-touch-icon.png" />

@@ -267,7 +267,7 @@ export function RivalPredictionsTab({
               onClick={goPrev}
               disabled={fixtureIdx === 0}
               aria-label="Previous fixture"
-              className="flex h-[36px] w-[36px] shrink-0 items-center justify-center rounded-md border border-ps-border bg-ps-bg text-ps-text-sec transition-colors hover:bg-ps-chip disabled:opacity-30"
+              className="flex h-[44px] w-[44px] shrink-0 items-center justify-center rounded-md border border-ps-border bg-ps-bg text-ps-text-sec transition-colors hover:bg-ps-chip disabled:opacity-30"
             >
               <svg
                 width="14"
@@ -297,7 +297,7 @@ export function RivalPredictionsTab({
               onClick={goNext}
               disabled={fixtureIdx === fixtures.length - 1}
               aria-label="Next fixture"
-              className="flex h-[36px] w-[36px] shrink-0 items-center justify-center rounded-md border border-ps-border bg-ps-bg text-ps-text-sec transition-colors hover:bg-ps-chip disabled:opacity-30"
+              className="flex h-[44px] w-[44px] shrink-0 items-center justify-center rounded-md border border-ps-border bg-ps-bg text-ps-text-sec transition-colors hover:bg-ps-chip disabled:opacity-30"
             >
               <svg
                 width="14"

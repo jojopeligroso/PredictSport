@@ -21,7 +21,7 @@ export default function GroupStandingsTable({
     <div className="overflow-x-auto">
       <table className="w-full text-sm">
         <thead>
-          <tr className="border-b border-ps-ink/10 text-left font-mono text-xs text-ps-ink/60">
+          <tr className="border-b border-ps-border text-left font-mono text-xs text-ps-text-sec">
             <th className="pb-2 pr-2">#</th>
             <th className="pb-2 pr-2">Team</th>
             <th className="pb-2 pr-1 text-center">P</th>
@@ -42,7 +42,7 @@ export default function GroupStandingsTable({
               <tr
                 key={team.name}
                 className={`
-                  border-b border-ps-ink/5 font-mono
+                  border-b border-ps-border/50 font-mono
                   ${isQualifying ? 'bg-ps-green/5' : ''}
                 `}
               >
@@ -54,7 +54,7 @@ export default function GroupStandingsTable({
                       ${
                         isQualifying
                           ? 'bg-ps-green text-white'
-                          : 'bg-ps-ink/5 text-ps-ink/60'
+                          : 'bg-ps-surface text-ps-text-sec'
                       }
                     `}
                   >
@@ -63,7 +63,7 @@ export default function GroupStandingsTable({
                 </td>
 
                 {/* Team name */}
-                <td className="py-2 pr-2 font-sans font-semibold text-ps-ink">
+                <td className="py-2 pr-2 font-sans font-semibold text-ps-text">
                   <span className="inline-flex items-center gap-1.5">
                     <CountryFlag shape="pill" name={team.name} size={16} />
                     <span>{team.name}</span>
@@ -71,22 +71,22 @@ export default function GroupStandingsTable({
                 </td>
 
                 {/* Stats */}
-                <td className="py-2 pr-1 text-center text-ps-ink/80">
+                <td className="py-2 pr-1 text-center text-ps-text-sec">
                   {team.played ?? ((team.wins ?? 0) + (team.draws ?? 0) + (team.losses ?? 0))}
                 </td>
-                <td className="py-2 pr-1 text-center text-ps-ink/80">
+                <td className="py-2 pr-1 text-center text-ps-text-sec">
                   {team.wins}
                 </td>
-                <td className="py-2 pr-1 text-center text-ps-ink/80">
+                <td className="py-2 pr-1 text-center text-ps-text-sec">
                   {team.draws}
                 </td>
-                <td className="py-2 pr-1 text-center text-ps-ink/80">
+                <td className="py-2 pr-1 text-center text-ps-text-sec">
                   {team.losses}
                 </td>
-                <td className="py-2 pr-1 text-center text-ps-ink/80">
+                <td className="py-2 pr-1 text-center text-ps-text-sec">
                   {team.goalsFor ?? team.gs}
                 </td>
-                <td className="py-2 pr-1 text-center text-ps-ink/80">
+                <td className="py-2 pr-1 text-center text-ps-text-sec">
                   {team.goalsAgainst ?? team.gc}
                 </td>
                 <td
@@ -95,7 +95,7 @@ export default function GroupStandingsTable({
                       ? 'text-ps-green'
                       : (team.goalDifference ?? team.gd ?? 0) < 0
                         ? 'text-ps-red'
-                        : 'text-ps-ink/80'
+                        : 'text-ps-text-sec'
                   }`}
                 >
                   {(team.goalDifference ?? team.gd ?? 0) > 0 ? '+' : ''}
@@ -103,7 +103,7 @@ export default function GroupStandingsTable({
                 </td>
 
                 {/* Points */}
-                <td className="py-2 text-center font-bold text-ps-ink">
+                <td className="py-2 text-center font-bold text-ps-text">
                   {team.points}
                 </td>
               </tr>
@@ -114,7 +114,7 @@ export default function GroupStandingsTable({
 
       {/* Legend */}
       {highlightPositions.length > 0 && (
-        <div className="mt-3 flex items-center gap-2 text-xs text-ps-ink/60">
+        <div className="mt-3 flex items-center gap-2 text-xs text-ps-text-sec">
           <div className="flex items-center gap-1">
             <div className="h-3 w-3 rounded-full bg-ps-green" />
             <span>Qualifies for knockout stage</span>

@@ -379,7 +379,7 @@ export function useRealtimeChat({
       });
     };
 
-    const interval = setInterval(poll, mode === "mini" ? 5000 : 2000);
+    const interval = setInterval(poll, mode === "mini" ? 5000 : 5000);
     return () => clearInterval(interval);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [competitionId, mode, members]);

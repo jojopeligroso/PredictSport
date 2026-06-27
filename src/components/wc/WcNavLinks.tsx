@@ -75,7 +75,7 @@ export function WcNavLinks({
             key={link.href}
             href={link.href}
             className={[
-              "shrink-0 px-3 py-2 text-xs font-semibold transition-colors",
+              "shrink-0 px-3 py-2 min-h-[44px] flex items-center text-xs font-semibold transition-colors",
               active
                 ? "border-b-2 border-ps-amber text-ps-text"
                 : "text-ps-text-sec hover:text-ps-text",
