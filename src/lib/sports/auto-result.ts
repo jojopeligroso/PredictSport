@@ -325,6 +325,13 @@ export async function autoResolveEvent(
     // Score predictions for the confirmed event
     await scoreEventPredictions(supabase, event.id, finalResultData, event.sport as string);
 
+    // Broadcast scoring update so leaderboard clients can refetch
+    await supabase.channel("scoring_events").send({
+      type: "broadcast",
+      event: "scores_updated",
+      payload: { competition_id: event.competition_id, event_id: event.id },
+    }).catch(() => {});
+
     // Notify all members (chat message + push) — fire-and-forget
     notifyResultConfirmed(
       event.id,
@@ -725,6 +732,13 @@ async function propagateResultToSiblings(
 
     // Score predictions for this instance
     await scoreEventPredictions(supabase, sibling.id, resultData, sport);
+
+    // Broadcast scoring update for sibling instance
+    await supabase.channel("scoring_events").send({
+      type: "broadcast",
+      event: "scores_updated",
+      payload: { competition_id: sibling.competition_id, event_id: sibling.id },
+    }).catch(() => {});
 
     // Notify this competition's members
     notifyResultConfirmed(
