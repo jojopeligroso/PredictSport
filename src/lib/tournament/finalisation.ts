@@ -2,6 +2,7 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import type { ResultFinalisation } from "@/types/tournament";
 import type { PredictionType, EventPredictionType } from "@/types/database";
 import { scorePrediction, buildScoreDerivedWinnerOverrides } from "@/lib/scoring";
+import { eliminateFromFormat } from "@/lib/tournament/format/elimination";
 
 /**
  * Step 1: Confirm individual fixture result for tournament competitions.
@@ -384,6 +385,23 @@ export async function finaliseStage(
       finalised_by: finalisedBy,
     })
     .eq("id", stageId);
+
+  // Run format elimination for all format_elimination classifications
+  // across all competition instances sharing this tournament.
+  // This must happen BEFORE knockout bracket activation so that
+  // eliminated entrants are removed before the next phase begins.
+  for (const comp of competitions) {
+    const { data: formatClassifications } = await supabase
+      .from("classifications")
+      .select("id")
+      .eq("competition_id", comp.id)
+      .eq("classification_type", "format_elimination")
+      .in("status", ["active"]);
+
+    for (const cls of formatClassifications ?? []) {
+      await eliminateFromFormat(supabase, cls.id, stageId);
+    }
+  }
 
   // Check if this completes the group stage → activate knockout bracket
   const isGroupStageComplete = await checkGroupStageComplete(supabase, stage.tournament_id);
