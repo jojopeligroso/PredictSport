@@ -84,7 +84,9 @@ export async function POST(request: NextRequest) {
         resolvedId = await findOrProvisionInstance(
           svc,
           competition.tournament_id,
-          (competition.instance_type as "full" | "knockout_only") ?? "full",
+          competition.instance_type === "full" || competition.instance_type === "knockout_only"
+          ? competition.instance_type
+          : "full",
           user.id
         );
       } else {
@@ -113,7 +115,9 @@ export async function POST(request: NextRequest) {
   try {
     const result = await joinCompetitionWithCap(svc, resolvedId, user.id, {
       tournamentId: competition.tournament_id,
-      instanceType: (competition.instance_type as "full" | "knockout_only") ?? "full",
+      instanceType: competition.instance_type === "full" || competition.instance_type === "knockout_only"
+          ? competition.instance_type
+          : "full",
     });
     resolvedId = result.competitionId;
   } catch (err) {

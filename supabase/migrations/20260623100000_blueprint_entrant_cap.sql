@@ -27,6 +27,9 @@ WHERE id = 'a0000000-0000-0000-0000-000000000026'
 
 -- 2. Require every blueprint to choose a cap at creation. The key must be
 --    present; its value may be a number (capped) or null (explicitly unlimited).
+--    NOT VALID skips scanning existing rows (safe because step 1 backfilled the
+--    only existing row), so the migration won't fail if other blueprints are
+--    added before this runs.
 ALTER TABLE public.sporting_tournaments
   ADD CONSTRAINT sporting_tournaments_entrant_cap_chosen
-  CHECK (config ? 'max_entrants_per_instance');
+  CHECK (config ? 'max_entrants_per_instance') NOT VALID;

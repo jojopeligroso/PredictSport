@@ -11,7 +11,7 @@ import { createServiceClient } from "@/lib/supabase/service";
 import { enrollEntrant } from "@/lib/tournament/classification-engine";
 import { addLateEntrant } from "@/lib/tournament/format/group-allocation";
 import { findOrProvisionInstance } from "@/lib/tournament/auto-provision";
-import { joinCompetitionWithCap } from "@/lib/tournament/cap-aware-join";
+import { joinCompetitionWithCap, CompetitionFullError } from "@/lib/tournament/cap-aware-join";
 import { requireDisplayName } from "@/lib/require-display-name";
 import { resolveWcCompetition } from "@/lib/wc/resolve-wc-competition";
 
@@ -54,6 +54,10 @@ export default async function WcJoinOpenPage() {
 
   // Resolve target competition — auto-provision if this instance is full
   let competitionId = comp.id;
+  const instanceType =
+    comp.instance_type === "full" || comp.instance_type === "knockout_only"
+      ? comp.instance_type
+      : "full";
 
   if (comp.max_entrants) {
     const { count } = await svc
@@ -64,12 +68,17 @@ export default async function WcJoinOpenPage() {
     if ((count ?? 0) >= comp.max_entrants) {
       if (comp.tournament_id) {
         // Tournament instance full — find or create a new one
-        competitionId = await findOrProvisionInstance(
-          svc,
-          comp.tournament_id,
-          (comp.instance_type as "full" | "knockout_only") ?? "full",
-          user.id
-        );
+        try {
+          competitionId = await findOrProvisionInstance(
+            svc,
+            comp.tournament_id,
+            instanceType,
+            user.id
+          );
+        } catch (err) {
+          console.error("[join-open] Auto-provision failed:", (err as Error).message);
+          redirect("/wc");
+        }
       } else {
         // Non-tournament shell with hard cap — competition is full
         redirect("/wc");
@@ -89,11 +98,18 @@ export default async function WcJoinOpenPage() {
     // Join the competition. The DB cap trigger backstops the pre-check above:
     // if the instance filled via a concurrent join, the helper provisions/finds
     // the next instance and retries, so competitionId may change here.
-    const joinResult = await joinCompetitionWithCap(svc, competitionId, user.id, {
-      tournamentId: comp.tournament_id,
-      instanceType: (comp.instance_type as "full" | "knockout_only") ?? "full",
-    });
-    competitionId = joinResult.competitionId;
+    try {
+      const joinResult = await joinCompetitionWithCap(svc, competitionId, user.id, {
+        tournamentId: comp.tournament_id,
+        instanceType,
+      });
+      competitionId = joinResult.competitionId;
+    } catch (err) {
+      if (err instanceof CompetitionFullError) {
+        redirect("/wc");
+      }
+      throw err;
+    }
 
     // Enroll in classifications (idempotent)
     await enrollEntrant(svc, competitionId, user.id);

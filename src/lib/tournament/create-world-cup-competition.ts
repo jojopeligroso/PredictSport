@@ -43,6 +43,7 @@ interface CreateWCOptions {
   groupDrawHoursBefore?: number; // Hours before first event to draw groups. Default 24.
   enabledClassifications?: string[]; // e.g. ["overall","format","full_bracket","knockout_bracket"]; omit for all
   skipRounds?: boolean; // When true, skip round creation — auto-provisioned instances share rounds via tournament_id RLS
+  creatorRole?: "admin" | "participant"; // Role for the creator membership. Default "admin".
 }
 
 /**
@@ -192,13 +193,14 @@ export async function createWorldCupCompetition(
     }
   }
 
-  // 4. Add creator as admin member
+  // 4. Add creator as member (admin for manual creation, participant for auto-provisioned instances)
+  const creatorRole = options.creatorRole ?? "admin";
   const { error: memberError } = await supabase
     .from("competition_members")
     .insert({
       competition_id: competitionId,
       user_id: userId,
-      role: "admin",
+      role: creatorRole,
     });
 
   if (memberError) {

@@ -34,13 +34,19 @@ export async function fetchBlueprintEntrantConfig(
   svc: SupabaseClient,
   tournamentId: string,
 ): Promise<BlueprintEntrantConfig> {
-  const { data } = await svc
+  const { data, error } = await svc
     .from("sporting_tournaments")
     .select("config")
     .eq("id", tournamentId)
     .single();
 
-  const result = readBlueprintEntrantConfig(data?.config);
+  if (error || !data) {
+    throw new Error(
+      `[blueprint-config] Failed to fetch blueprint ${tournamentId}: ${error?.message ?? "not found"}`,
+    );
+  }
+
+  const result = readBlueprintEntrantConfig(data.config);
   if (!result.chosen) {
     // Should be unreachable — the DB CHECK requires the key — but surface loudly
     // if a blueprint somehow slipped through, rather than silently capping.
