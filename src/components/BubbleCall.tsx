@@ -4,11 +4,12 @@ interface BubbleCallProps {
 }
 
 /**
- * Bubble Call brand mark — ink speech bubble with amber checkmark inside.
+ * Bubble Call brand mark — outlined speech bubble with amber checkmark inside.
  * Tail points bottom-left. Punchy and social — "calling your prediction".
  *
- * Dark mode: bubble body uses currentColor (inverts to cream in dark mode),
- * amber checkmark stays amber in both modes.
+ * Transparent background: bubble is stroke-only (currentColor) so it
+ * adapts to any theme without creating a visible filled background.
+ * Amber checkmark stays amber in both modes.
  *
  * viewBox 0 0 44 44
  *
@@ -26,6 +27,7 @@ export function BubbleCall({ className = "w-7 h-auto" }: BubbleCallProps) {
     >
       {/*
         Speech bubble body — rounded rect with triangular tail bottom-left.
+        Stroke-only so the background stays transparent on any theme.
         Uses currentColor: ink (#191512) in light mode, cream (#f1ece2) in dark mode.
       */}
       <path
@@ -44,7 +46,10 @@ export function BubbleCall({ className = "w-7 h-auto" }: BubbleCallProps) {
           Q4 4 8 4
           Z
         "
-        fill="currentColor"
+        stroke="currentColor"
+        strokeWidth="2.5"
+        strokeLinejoin="round"
+        fill="none"
       />
 
       {/* Amber checkmark — centered in the bubble body (y=8 to y=28) */}
