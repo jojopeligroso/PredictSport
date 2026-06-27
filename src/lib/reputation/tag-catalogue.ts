@@ -11,7 +11,7 @@ import type { BehaviouralTagMetrics } from "@/types/database";
 
 export interface TagDefinition {
   name: string;
-  category: "behavioural" | "event_driven" | "engagement_pressure";
+  category: "behavioural" | "event_driven" | "engagement_pressure" | "finalisation";
   priorityTier: 1 | 2 | 3 | 4;
   metric: string;
   /** Returns true if the member qualifies based on their metrics and the group */
@@ -1057,6 +1057,30 @@ const aLeagueOfTheirOwn: TagDefinition = {
 };
 
 // ---------------------------------------------------------------------------
+// Finalisation tags — fire at elimination boundaries, no preview window
+// ---------------------------------------------------------------------------
+
+const unluckiest4thPlace: TagDefinition = {
+  name: "Unluckiest 4th Place",
+  category: "finalisation",
+  priorityTier: 2,
+  metric: "elimination_boundary",
+  qualifies: eventNoOp,
+  zScore: eventZScoreNoOp,
+  layer1: "Unluckiest 4th Place",
+  layer2: "You had {stat} points — enough to qualify in most groups, but not yours.",
+  layer3: "{name} had {stat} points — enough to qualify in most groups, but not theirs.",
+  factCard: {
+    fact: "Highest-scoring eliminated player at the group stage boundary.",
+    statTemplate: "{stat} points",
+    contextTemplate: "Lowest survivor: {contextStat} points",
+  },
+  visual: { borderColor: "#64748b" },
+  rejectable: false,
+  announced: true,
+};
+
+// ---------------------------------------------------------------------------
 // Exports
 // ---------------------------------------------------------------------------
 
@@ -1107,11 +1131,17 @@ export const EVENT_DRIVEN_TAGS: TagDefinition[] = [
   theWhistle,
 ];
 
+/** Finalisation tags — fire at elimination boundaries */
+export const FINALISATION_TAGS: TagDefinition[] = [
+  unluckiest4thPlace,
+];
+
 /** All tags in one flat list */
 export const ALL_TAGS: TagDefinition[] = [
   ...BEHAVIOURAL_TAGS,
   ...ENGAGEMENT_TAGS,
   ...EVENT_DRIVEN_TAGS,
+  ...FINALISATION_TAGS,
 ];
 
 /** Look up a tag definition by name */

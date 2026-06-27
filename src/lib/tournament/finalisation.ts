@@ -3,6 +3,7 @@ import type { ResultFinalisation } from "@/types/tournament";
 import type { PredictionType, EventPredictionType } from "@/types/database";
 import { scorePrediction, buildScoreDerivedWinnerOverrides } from "@/lib/scoring";
 import { eliminateFromFormat, type EliminationResult } from "@/lib/tournament/format/elimination";
+import { computeAndPublishFinalisationTags } from "@/lib/reputation/assign-finalisation";
 
 /**
  * Step 1: Confirm individual fixture result for tournament competitions.
@@ -418,6 +419,17 @@ export async function finaliseStage(
       finalisation.id,
       finalisedBy,
       result
+    );
+  }
+
+  // E1/E2: Compute and publish finalisation tags (Unluckiest 4th Place, Most Contested 3rd Place).
+  // Fire-and-forget per competition instance — errors logged but don't block finalisation.
+  for (const { competitionId, result } of eliminationResults) {
+    computeAndPublishFinalisationTags(supabase, competitionId, stageId, result).catch((err) =>
+      console.error(
+        `[finaliseStage] Finalisation tag processing failed for comp ${competitionId}:`,
+        err instanceof Error ? err.message : err
+      )
     );
   }
 

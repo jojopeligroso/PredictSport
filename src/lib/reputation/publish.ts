@@ -245,3 +245,87 @@ export async function autoPublishPendingTags(
 
   // Behavioural tags are visible on the leaderboard only — no chat messages.
 }
+
+// ---------------------------------------------------------------------------
+// Publish finalisation tags (immediately active, chat announcement)
+// ---------------------------------------------------------------------------
+
+export interface FinalisationTagAssignment {
+  userId: string;
+  tagName: string;
+  stats: Record<string, unknown>;
+}
+
+/**
+ * Write finalisation tag assignments to member_tags with status 'active'.
+ * Insert chat messages immediately. These tags fire at elimination boundaries
+ * and have no preview window.
+ *
+ * @param competitionId - Competition UUID
+ * @param stageId - Sporting stage UUID that triggered the elimination
+ * @param assignments - Finalisation tag assignments
+ */
+export async function publishFinalisationTags(
+  competitionId: string,
+  stageId: string,
+  assignments: FinalisationTagAssignment[],
+): Promise<void> {
+  if (assignments.length === 0) return;
+
+  const supabase = createServiceClient();
+  const now = new Date().toISOString();
+
+  // Build rows for insert
+  const rows = assignments.map((a) => ({
+    competition_id: competitionId,
+    user_id: a.userId,
+    tag_name: a.tagName,
+    tag_category: "finalisation" as const,
+    status: "active" as const,
+    stats: a.stats,
+    assigned_at: now,
+    published_at: now,
+  }));
+
+  const { error } = await supabase.from("member_tags").insert(rows);
+
+  if (error) {
+    console.error("[reputation] Failed to insert finalisation tags:", error);
+    return;
+  }
+
+  // Insert chat messages for all finalisation tags (they are rare — one per elimination)
+  for (const assignment of assignments) {
+    const tagDef = getTagDefinition(assignment.tagName);
+    if (!tagDef?.announced) continue;
+
+    const displayName =
+      (assignment.stats.display_name as string) ?? "Someone";
+
+    // Fetch the inserted tag for the chat message
+    const { data: insertedTag } = await supabase
+      .from("member_tags")
+      .select("*")
+      .eq("competition_id", competitionId)
+      .eq("user_id", assignment.userId)
+      .eq("tag_name", assignment.tagName)
+      .eq("tag_category", "finalisation")
+      .order("created_at", { ascending: false })
+      .limit(1)
+      .single();
+
+    if (insertedTag) {
+      await insertTagRevealMessage(
+        competitionId,
+        insertedTag as MemberTag,
+        tagDef,
+        displayName,
+        assignment.stats,
+      );
+    }
+  }
+
+  console.log(
+    `[reputation] Published ${assignments.length} finalisation tags for competition ${competitionId}, stage ${stageId}`,
+  );
+}
