@@ -207,22 +207,26 @@ export async function expireSupersededHolders(
     if (!holderByName.has(tag.tag_name)) holderByName.set(tag.tag_name, tag);
   }
 
-  for (const [tagName, holder] of holderByName) {
-    const { error } = await supabase
-      .from("member_tags")
-      .update({ status: "expired", expired_at: now })
-      .eq("competition_id", competitionId)
-      .eq("tag_category", "behavioural")
-      .eq("tag_name", tagName)
-      .eq("status", "active")
-      .neq("id", holder.id);
+  // Batch into a single query: expire all active behavioural tags for these
+  // tag names, except the rows we want to keep. This replaces N sequential
+  // queries (one per tag name) with one round-trip.
+  const keepIds = [...holderByName.values()].map((t) => t.id);
+  const tagNames = [...holderByName.keys()];
 
-    if (error) {
-      console.error(
-        `[reputation] Failed to expire superseded holders of ${tagName}:`,
-        error,
-      );
-    }
+  const { error } = await supabase
+    .from("member_tags")
+    .update({ status: "expired", expired_at: now })
+    .eq("competition_id", competitionId)
+    .eq("tag_category", "behavioural")
+    .eq("status", "active")
+    .in("tag_name", tagNames)
+    .not("id", "in", `(${keepIds.join(",")})`);
+
+  if (error) {
+    console.error(
+      `[reputation] Failed to expire superseded holders:`,
+      error,
+    );
   }
 }
 

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 
 /**
  * Shared reputation-tag badge used across every leaderboard surface:
@@ -66,8 +66,21 @@ export function LeaderboardTagBadge({
   displayName: string;
 }) {
   const [expanded, setExpanded] = useState(false);
+  const containerRef = useRef<HTMLSpanElement>(null);
   const isGhost = tag.tagName === "Ghost";
   const isGold = tag.definition.visual.gold;
+
+  // Click-outside dismiss
+  useEffect(() => {
+    if (!expanded) return;
+    const handleClick = (e: MouseEvent) => {
+      if (containerRef.current && !containerRef.current.contains(e.target as Node)) {
+        setExpanded(false);
+      }
+    };
+    document.addEventListener("pointerdown", handleClick);
+    return () => document.removeEventListener("pointerdown", handleClick);
+  }, [expanded]);
 
   const interpolate = (tpl: string) =>
     tpl.replace(/\{(\w+)\}/g, (_, key) => {
@@ -77,11 +90,11 @@ export function LeaderboardTagBadge({
     });
 
   return (
-    <span className="shrink-0 relative" onClick={(e) => e.stopPropagation()}>
+    <span className="shrink-0 relative" ref={containerRef} onClick={(e) => e.stopPropagation()}>
       <button
         type="button"
         onClick={() => setExpanded((v) => !v)}
-        className="inline-flex items-center rounded-full px-1.5 py-0.5 transition-opacity hover:opacity-80"
+        className="inline-flex items-center justify-center rounded-full px-1.5 min-h-[44px] min-w-[44px] transition-opacity hover:opacity-80"
         style={{
           backgroundColor: isGold ? "#f59e0b" : tag.definition.visual.borderColor,
           opacity: isGhost ? 0.6 : 1,

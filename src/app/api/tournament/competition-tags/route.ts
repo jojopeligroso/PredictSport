@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { getTagDefinition } from "@/lib/reputation/tag-catalogue";
-import type { MemberTag } from "@/types/database";
 
 /**
  * GET /api/tournament/competition-tags?competitionId=X
@@ -45,7 +44,16 @@ type ResponseTag = {
   };
 };
 
-function toResponseTag(tag: MemberTag, expiresAt: string | null): ResponseTag | null {
+type TagRow = {
+  user_id: string;
+  tag_name: string;
+  tag_category: string;
+  status: string;
+  stats: Record<string, unknown> | null;
+  assigned_at: string;
+};
+
+function toResponseTag(tag: TagRow, expiresAt: string | null): ResponseTag | null {
   const def = getTagDefinition(tag.tag_name);
   if (!def) return null;
   return {
@@ -93,7 +101,7 @@ export async function GET(request: NextRequest) {
   // Fetch all active tags for this competition (bounded by member count).
   const { data: tagRows, error } = await supabase
     .from("member_tags")
-    .select("*")
+    .select("user_id, tag_name, tag_category, status, stats, assigned_at")
     .eq("competition_id", competitionId)
     .eq("status", "active")
     .in("tag_category", ["behavioural", "engagement_pressure", "event_driven"])
@@ -105,7 +113,7 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ error: "Query failed" }, { status: 500 });
   }
 
-  const rows = (tagRows ?? []) as MemberTag[];
+  const rows = (tagRows ?? []) as TagRow[];
   const hasEventTags = rows.some((r) => r.tag_category === "event_driven");
 
   // Fetch fixture start times only if we have event-driven tags to expire.
