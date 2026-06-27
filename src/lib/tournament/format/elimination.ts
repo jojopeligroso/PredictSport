@@ -106,17 +106,17 @@ async function eliminateGroupStage(
   stageKey: string,
   targetSurvivors: number
 ): Promise<EliminationResult> {
-  // Fetch all active groups with target_size for group-size-aware qualification rules
+  // Fetch all groups with target_size for group-size-aware qualification rules
   const { data: groups, error: groupsError } = await supabase
     .from("format_prediction_groups")
-    .select("id, group_number, target_size")
+    .select("id, group_number, target_size, status")
     .eq("classification_id", classificationId)
-    .eq("status", "active")
     .order("group_number", { ascending: true });
 
   if (groupsError) throw new Error(`Failed to fetch groups: ${groupsError.message}`);
 
-  const groupList = (groups ?? []) as { id: string; group_number: number; target_size: number }[];
+  const groupList = ((groups ?? []) as { id: string; group_number: number; target_size: number; status?: string }[])
+    .filter((g) => !g.status || g.status === "active");
 
   // Qualify/eliminate per group based on group size:
   // - 3-player: top 2 qualify, 3rd eliminated (never qualifies)
@@ -271,11 +271,22 @@ async function consolidateSurvivorsIntoKnockoutGroup(
   if (survivorUserIds.length === 0) return;
 
   // Archive all current active groups
-  await supabase
+  // Fetch active group IDs first (safe whether status column exists or not)
+  const { data: activeGroups } = await supabase
     .from("format_prediction_groups")
-    .update({ status: "archived" })
-    .eq("classification_id", classificationId)
-    .eq("status", "active");
+    .select("id, status")
+    .eq("classification_id", classificationId);
+
+  const activeGroupIds = ((activeGroups ?? []) as { id: string; status?: string }[])
+    .filter((g) => !g.status || g.status === "active")
+    .map((g) => g.id);
+
+  if (activeGroupIds.length > 0) {
+    await supabase
+      .from("format_prediction_groups")
+      .update({ status: "archived" })
+      .in("id", activeGroupIds);
+  }
 
   // Determine the next stage name for the new group
   const currentIdx = curveSteps.findIndex((s) => s.stage === currentCurveStage);
@@ -349,13 +360,14 @@ async function eliminateKnockoutStage(
   // In knockout stages, all survivors are in a single active group
   const { data: groups, error: groupsError } = await supabase
     .from("format_prediction_groups")
-    .select("id")
-    .eq("classification_id", classificationId)
-    .eq("status", "active");
+    .select("id, status")
+    .eq("classification_id", classificationId);
 
   if (groupsError) throw new Error(`Failed to fetch knockout groups: ${groupsError.message}`);
 
-  const groupIds = (groups ?? []).map((g: { id: string }) => g.id);
+  const groupIds = ((groups ?? []) as { id: string; status?: string }[])
+    .filter((g) => !g.status || g.status === "active")
+    .map((g) => g.id);
 
   if (groupIds.length === 0) {
     throw new Error(`No active groups found for knockout elimination in classification ${classificationId}`);
@@ -450,12 +462,22 @@ async function eliminateKnockoutStage(
   // Archive current group, create new group for next stage if there are survivors
   // and this isn't the final stage
   if (survivorIds.length > 1) {
-    // Archive current groups
-    await supabase
+    // Archive current groups (use same safe pattern)
+    const { data: koActiveGroups } = await supabase
       .from("format_prediction_groups")
-      .update({ status: "archived" })
-      .eq("classification_id", classificationId)
-      .eq("status", "active");
+      .select("id, status")
+      .eq("classification_id", classificationId);
+
+    const koActiveIds = ((koActiveGroups ?? []) as { id: string; status?: string }[])
+      .filter((g) => !g.status || g.status === "active")
+      .map((g) => g.id);
+
+    if (koActiveIds.length > 0) {
+      await supabase
+        .from("format_prediction_groups")
+        .update({ status: "archived" })
+        .in("id", koActiveIds);
+    }
 
     // Determine next stage name from the curve
     const nextStageName = knockoutStageGroupName(stageKey, survivorIds.length);
