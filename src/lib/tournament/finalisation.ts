@@ -421,6 +421,11 @@ export async function finaliseStage(
     );
   }
 
+  // D3: Post stage elimination system message in competition chat.
+  // One message per competition instance: "Format: N eliminated after [Stage]. M advance to [Next Stage]."
+  // Gated behind chat_enabled on the competition.
+  await postStageEliminationChatMessages(supabase, competitions, eliminationResults, stage.slug, stage.tournament_id);
+
   // Check if this completes the group stage → activate knockout bracket
   const isGroupStageComplete = await checkGroupStageComplete(supabase, stage.tournament_id);
   if (isGroupStageComplete) {
@@ -428,6 +433,101 @@ export async function finaliseStage(
   }
 
   return finalisation as ResultFinalisation;
+}
+
+/**
+ * D3: Post a system chat message in each competition after stage elimination.
+ *
+ * Message: "Format: N eliminated after [Stage Name]. M advance to [Next Stage]."
+ * Only fires for competitions with chat_enabled = true.
+ */
+async function postStageEliminationChatMessages(
+  supabase: SupabaseClient,
+  competitions: { id: string }[],
+  eliminationResults: { competitionId: string; classificationId: string; result: EliminationResult }[],
+  stageSlug: string,
+  tournamentId: string
+): Promise<void> {
+  if (eliminationResults.length === 0) return;
+
+  // Determine stage display names
+  const stageName = slugToDisplayName(stageSlug);
+
+  // Find the next unfinalised stage after this one for context
+  let nextStageName = "the next round";
+
+  const { data: nextStages } = await supabase
+    .from("sporting_stages")
+    .select("slug")
+    .eq("tournament_id", tournamentId)
+    .neq("status", "finalised")
+    .order("stage_order", { ascending: true })
+    .limit(2);
+
+  // The first unfinalised stage might be the one we just finalised (status update
+  // may not have propagated yet), so skip it if it matches
+  const nextStage = (nextStages ?? []).find(
+    (s: { slug: string }) => s.slug !== stageSlug
+  );
+  if (nextStage) {
+    nextStageName = slugToDisplayName(nextStage.slug);
+  }
+
+  // Aggregate per-competition: sum eliminated and survivors across classifications
+  const compStats = new Map<string, { eliminated: number; survivors: number }>();
+  for (const { competitionId, result } of eliminationResults) {
+    const existing = compStats.get(competitionId) ?? { eliminated: 0, survivors: 0 };
+    existing.eliminated = result.eliminated_user_ids.length;
+    existing.survivors = result.survivor_user_ids.length;
+    compStats.set(competitionId, existing);
+  }
+
+  for (const comp of competitions) {
+    const stats = compStats.get(comp.id);
+    if (!stats || (stats.eliminated === 0 && stats.survivors === 0)) continue;
+
+    // Check if chat is enabled for this competition
+    const { data: compRow } = await supabase
+      .from("competitions")
+      .select("chat_enabled")
+      .eq("id", comp.id)
+      .single();
+
+    if (!compRow?.chat_enabled) continue;
+
+    const content = `Format: ${stats.eliminated} eliminated after ${stageName}. ${stats.survivors} advance to ${nextStageName}.`;
+
+    await supabase.from("chat_messages").insert({
+      competition_id: comp.id,
+      user_id: null,
+      content,
+      message_type: "system",
+      metadata: {
+        type: "stage_elimination",
+        stage_slug: stageSlug,
+        eliminated_count: stats.eliminated,
+        survivor_count: stats.survivors,
+      },
+    });
+  }
+}
+
+/**
+ * Convert a DB slug (e.g. "group-matchday-3") to a human-readable name.
+ */
+function slugToDisplayName(slug: string): string {
+  const DISPLAY_MAP: Record<string, string> = {
+    "group-matchday-1": "Group Matchday 1",
+    "group-matchday-2": "Group Matchday 2",
+    "group-matchday-3": "Group Matchday 3",
+    "round-of-32": "Round of 32",
+    "round-of-16": "Round of 16",
+    "quarter-finals": "Quarter-Finals",
+    "semi-finals": "Semi-Finals",
+    "final": "Final",
+    "third-place": "Third Place",
+  };
+  return DISPLAY_MAP[slug] ?? slug.replace(/-/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
 }
 
 /**
