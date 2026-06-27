@@ -449,7 +449,12 @@ async function checkGroupStageComplete(
 }
 
 /**
- * Activate knockout bracket classifications when group stage is complete.
+ * Activate knockout bracket and r32_pick classifications when group stage is complete.
+ *
+ * knockout_bracket — the bracket prediction classification
+ * r32_pick — the R32 team scoring classification (pick-a-team per round)
+ *
+ * Both start as "draft" and are activated together once all group stages are finalised.
  */
 async function activateKnockoutBracket(
   supabase: SupabaseClient,
@@ -460,12 +465,15 @@ async function activateKnockoutBracket(
     .select("id")
     .eq("tournament_id", tournamentId);
 
+  const now = new Date().toISOString();
+  const knockoutClassificationKeys = ["knockout_bracket", "r32_pick"];
+
   for (const comp of competitions ?? []) {
     await supabase
       .from("classifications")
-      .update({ status: "active", updated_at: new Date().toISOString() })
+      .update({ status: "active", updated_at: now })
       .eq("competition_id", comp.id)
-      .eq("classification_key", "knockout_bracket")
+      .in("classification_key", knockoutClassificationKeys)
       .eq("status", "draft");
   }
 }
