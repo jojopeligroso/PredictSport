@@ -107,7 +107,7 @@ export default async function WorldCupLayout({
       <div className="h-1 w-full" style={{ background: "#006847" }} />
       {/* WC Shell nav */}
       <nav className="bg-ps-bg border-b border-ps-border pb-0.5" style={{ borderTop: "2px solid #006847" }}>
-        <div className="mx-auto flex h-12 w-full max-w-[480px] items-center justify-between px-4">
+        <div className="mx-auto flex h-12 w-full max-w-[480px] md:max-w-3xl items-center justify-between px-4">
           <Link href="/wc" className="flex items-center gap-1.5">
             <BrandMark className="h-7 w-auto shrink-0" />
             <span className="text-section-title font-extrabold lowercase tracking-tight text-ps-text">
@@ -137,7 +137,7 @@ export default async function WorldCupLayout({
       </nav>
 
       {needsDisplayName && <DisplayNameModal suggestedName={suggestedName} />}
-      <div className="flex-1" style={{ paddingBottom: 'calc(56px + env(safe-area-inset-bottom, 0px) + 16px)' }}>{children}</div>
+      <div className="mx-auto max-w-[480px] flex-1 md:border-x md:border-ps-border md:shadow-sm" style={{ paddingBottom: 'calc(56px + env(safe-area-inset-bottom, 0px) + 16px)' }}>{children}</div>
 
       {/* Footer brand mark — Section 21 */}
       <footer className="flex justify-center py-8">

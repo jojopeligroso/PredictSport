@@ -12,7 +12,7 @@ export async function getClassificationsForCompetition(
 ): Promise<Classification[]> {
   const { data, error } = await supabase
     .from("classifications")
-    .select("*")
+    .select("id, competition_id, classification_key, classification_type, name, status, scoring_strategy, elimination_strategy, config, source_template_key, created_at, updated_at")
     .eq("competition_id", competitionId)
     .order("created_at", { ascending: true });
 
@@ -57,7 +57,7 @@ export async function getClassificationStandings(
 
   const { data: memberships, error: mbError } = await supabase
     .from("classification_memberships")
-    .select("*")
+    .select("user_id, status")
     .eq("classification_id", classificationId);
 
   if (mbError) throw new Error(`Failed to fetch memberships: ${mbError.message}`);
@@ -111,7 +111,7 @@ export async function getClassificationStandings(
     const userIds = membershipList.map((m) => m.user_id);
     const { data: submissions, error: subError } = await supabase
       .from("bracket_prediction_submissions")
-      .select("*")
+      .select("user_id, bracket_data")
       .eq("classification_id", classificationId)
       .in("user_id", userIds)
       .in("status", ["submitted", "locked"]);
@@ -183,7 +183,7 @@ export async function enrollEntrant(
     // All memberships already exist — return them
     const { data: allMemberships, error } = await supabase
       .from("classification_memberships")
-      .select("*")
+      .select("id, classification_id, competition_id, user_id, status, entered_at, eliminated_at, eliminated_window_id, eliminated_stage_id, elimination_reason, metadata, created_at, updated_at")
       .eq("competition_id", competitionId)
       .eq("user_id", userId);
 
@@ -194,7 +194,7 @@ export async function enrollEntrant(
   const { data, error } = await supabase
     .from("classification_memberships")
     .insert(toInsert)
-    .select("*");
+    .select("id, classification_id, competition_id, user_id, status, entered_at, eliminated_at, eliminated_window_id, eliminated_stage_id, elimination_reason, metadata, created_at, updated_at");
 
   if (error) throw new Error(`Failed to enroll entrant: ${error.message}`);
   return (data ?? []) as ClassificationMembership[];

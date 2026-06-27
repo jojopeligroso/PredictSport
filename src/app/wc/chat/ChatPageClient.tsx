@@ -2,9 +2,14 @@
 
 import { useEffect } from "react";
 import Link from "next/link";
-import { ChatWidget } from "@/components/chat";
+import dynamic from "next/dynamic";
 import { useUnreadChat } from "@/hooks/useUnreadChat";
 import { useT } from "@/lib/i18n";
+
+const ChatWidget = dynamic(
+  () => import("@/components/chat/ChatWidget").then(mod => mod.ChatWidget),
+  { loading: () => <div className="animate-pulse h-32 bg-ps-surface rounded-lg" /> }
+);
 
 interface ChatPageClientProps {
   competitionId: string;

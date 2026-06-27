@@ -60,6 +60,9 @@ interface UseRealtimeChatReturn {
 const PAGE_SIZE = 50;
 export const MINI_SIZE = 20;
 
+/** Explicit column list for chat_messages queries — prevents overfetching if the table gains columns */
+const CHAT_MSG_COLS = "id, competition_id, user_id, content, message_type, mentioned_user_ids, reply_to_id, media_url, media_type, metadata, created_at, updated_at, deleted_at, deleted_by" as const;
+
 /** Tombstone content for deleted messages */
 function tombstoneContent(msg: ChatMessage, t: (k: string) => string): string {
   if (!msg.deleted_at) return msg.content;
@@ -161,7 +164,7 @@ export function useRealtimeChat({
 
       const { data } = await supabase
         .from("chat_messages")
-        .select("*")
+        .select(CHAT_MSG_COLS)
         .eq("competition_id", competitionId)
         .order("created_at", { ascending: false })
         .limit(limit + 1);
@@ -180,7 +183,7 @@ export function useRealtimeChat({
         if (replyIds.length > 0) {
           const { data: parents } = await supabase
             .from("chat_messages")
-            .select("*")
+            .select(CHAT_MSG_COLS)
             .in("id", replyIds);
           parentMessages = parents ?? [];
         }
@@ -336,7 +339,7 @@ export function useRealtimeChat({
       const since = latestTimestampRef.current;
       let query = supabase
         .from("chat_messages")
-        .select("*")
+        .select(CHAT_MSG_COLS)
         .eq("competition_id", competitionId)
         .order("created_at", { ascending: true })
         .limit(50);
@@ -347,7 +350,7 @@ export function useRealtimeChat({
         // No messages yet — fetch the latest batch
         query = supabase
           .from("chat_messages")
-          .select("*")
+          .select(CHAT_MSG_COLS)
           .eq("competition_id", competitionId)
           .order("created_at", { ascending: false })
           .limit(mode === "mini" ? MINI_SIZE : PAGE_SIZE);
@@ -391,7 +394,7 @@ export function useRealtimeChat({
     const oldest = messages[0];
     const { data } = await supabase
       .from("chat_messages")
-      .select("*")
+      .select(CHAT_MSG_COLS)
       .eq("competition_id", competitionId)
       .lt("created_at", oldest.created_at)
       .order("created_at", { ascending: false })

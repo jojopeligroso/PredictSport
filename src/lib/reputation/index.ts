@@ -161,15 +161,15 @@ export async function processEventTags(
   const eventMetrics = (rawMetrics ?? []) as EventTagMetric[];
   if (eventMetrics.length === 0) return;
 
-  // 2. Fetch existing tags for one-time checks
+  // 2. Fetch existing tags for one-time checks (only tag_name + competition_id used)
   const { data: existingRaw } = await supabase
     .from("member_tags")
-    .select("*")
+    .select("tag_name, competition_id")
     .eq("competition_id", competitionId)
     .in("tag_name", ["First Blood", "The Whistle"])
     .limit(100);
 
-  const existingTags = (existingRaw ?? []) as MemberTag[];
+  const existingTags = (existingRaw ?? []) as Pick<MemberTag, "tag_name" | "competition_id">[] as MemberTag[];
 
   // 3. Assign event-driven tags
   const assignments = assignEventDrivenTags(
@@ -290,10 +290,10 @@ export async function rejectTag(
 ): Promise<void> {
   const supabase = createServiceClient();
 
-  // 1. Fetch the tag
+  // 1. Fetch the tag (only the fields needed for ownership/status checks + chat message)
   const { data: raw, error: fetchError } = await supabase
     .from("member_tags")
-    .select("*")
+    .select("user_id, tag_name, status, competition_id")
     .eq("id", tagId)
     .single();
 
@@ -302,7 +302,7 @@ export async function rejectTag(
     return;
   }
 
-  const tag = raw as MemberTag;
+  const tag = raw as Pick<MemberTag, "user_id" | "tag_name" | "status" | "competition_id">;
 
   // 2. Verify ownership
   if (tag.user_id !== userId) {

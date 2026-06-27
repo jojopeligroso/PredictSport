@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import dynamic from "next/dynamic";
 import { EventsSection } from "./EventsSection";
 import { ParticipantsSection } from "./ParticipantsSection";
 import { NominationsSection } from "./NominationsSection";
@@ -12,7 +13,11 @@ import { RoundBuilder } from "./RoundBuilder";
 import type { Competition, Event, CompetitionMember, EventNomination, InviteToken, EventPredictionType, Round, MemberTag } from "@/types/database";
 import { PredictionWindowSelector } from "@/components/tournament/PredictionWindowSelector";
 import { FinalisationPanel } from "@/components/tournament/admin/FinalisationPanel";
-import { ClassificationTabs } from "@/components/tournament/ClassificationTabs";
+
+const ClassificationTabs = dynamic(
+  () => import("@/components/tournament/ClassificationTabs").then(mod => mod.ClassificationTabs),
+  { loading: () => <div className="animate-pulse h-32 bg-ps-surface rounded-lg" /> }
+);
 
 interface EventWithPredictionTypes extends Event {
   event_prediction_types: EventPredictionType[];

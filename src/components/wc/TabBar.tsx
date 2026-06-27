@@ -161,7 +161,7 @@ export function TabBar({ latestChatAt }: TabBarProps) {
       }}
       className="border-t border-ps-border bg-ps-bg"
     >
-      <div className="mx-auto flex h-[56px] max-w-[480px] items-stretch">
+      <div className="mx-auto flex h-[56px] max-w-[480px] md:max-w-3xl items-stretch">
         {tabs.map((tab) => {
           const active = tab.isActive(pathname);
           return (

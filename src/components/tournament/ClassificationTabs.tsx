@@ -2,9 +2,14 @@
 
 import { useState, useEffect, useMemo } from "react";
 import { useSearchParams } from "next/navigation";
+import dynamic from "next/dynamic";
 import { useT, useLocale, type Locale } from "@/lib/i18n";
-import { RivalPredictionsTab } from "@/components/wc/RivalPredictionsTab";
 import { createClient } from "@/lib/supabase/client";
+
+const RivalPredictionsTab = dynamic(
+  () => import("@/components/wc/RivalPredictionsTab").then(mod => mod.RivalPredictionsTab),
+  { loading: () => <div className="animate-pulse h-32 bg-ps-surface rounded-lg" /> }
+);
 
 interface Classification {
   id: string;
