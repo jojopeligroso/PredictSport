@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
-import { finaliseWindow } from "@/lib/tournament/finalisation";
+import { finaliseWindow, finaliseStage } from "@/lib/tournament/finalisation";
 import { processTagsForRound } from "@/lib/reputation";
 import { fixtureFilterFromIds } from "@/lib/tournament/shared-fixtures";
 
@@ -147,8 +147,63 @@ export async function GET(request: Request) {
     }
   }
 
+  // -----------------------------------------------------------------------
+  // Stage-level auto-finalisation
+  // After finalising windows, check if any sporting stage now has ALL its
+  // windows scored AND stage_finalisation_hold = false. If so, auto-finalise
+  // the stage (which triggers elimination, knockout activation, etc.).
+  // -----------------------------------------------------------------------
+  const stagesFinalised: string[] = [];
+  const processedStages = new Set<string>();
+
+  for (const comp of competitions ?? []) {
+    // Get all sporting stages for this tournament that aren't already finalised
+    const { data: stages } = await supabase
+      .from("sporting_stages")
+      .select("id, slug, tournament_id, status, stage_finalisation_hold")
+      .eq("tournament_id", comp.tournament_id)
+      .neq("status", "finalised");
+
+    for (const stage of stages ?? []) {
+      // Skip if already processed by a sibling instance in this cron run
+      if (processedStages.has(stage.id)) continue;
+      processedStages.add(stage.id);
+
+      // Respect the hold flag — admins can prevent auto-finalisation for manual review
+      if (stage.stage_finalisation_hold) {
+        skipped.push(`Stage ${stage.slug}: finalisation held by admin`);
+        continue;
+      }
+
+      // Check if ALL windows for this stage are scored (finalised)
+      const { data: stageWindows } = await supabase
+        .from("rounds")
+        .select("id, status")
+        .eq("sporting_stage_id", stage.id);
+
+      if (!stageWindows || stageWindows.length === 0) continue;
+
+      const allWindowsScored = stageWindows.every(
+        (w: { status: string }) => w.status === "scored"
+      );
+
+      if (!allWindowsScored) continue;
+
+      // All windows scored and hold is off — auto-finalise the stage
+      try {
+        await finaliseStage(supabase, stage.id, null);
+        stagesFinalised.push(stage.slug);
+      } catch (err) {
+        skipped.push(
+          `Stage ${stage.slug}: finalisation error - ${err instanceof Error ? err.message : "unknown"}`
+        );
+      }
+    }
+  }
+
   return NextResponse.json({
     finalised,
+    stagesFinalised: stagesFinalised.length > 0 ? stagesFinalised : undefined,
     skipped,
     tagsProcessed: tagsProcessed.length > 0 ? tagsProcessed : undefined,
     checkedAt: now.toISOString(),

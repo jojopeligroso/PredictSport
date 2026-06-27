@@ -308,7 +308,7 @@ export async function finaliseWindow(
 export async function finaliseStage(
   supabase: SupabaseClient,
   stageId: string,
-  finalisedBy: string
+  finalisedBy: string | null
 ): Promise<ResultFinalisation> {
   // Get the stage
   const { data: stage, error: stageError } = await supabase
@@ -335,8 +335,10 @@ export async function finaliseStage(
     throw new Error("No competitions linked to this tournament");
   }
 
-  // Verify super admin or admin of any linked competition
-  await verifyAdminAccessForTournament(supabase, finalisedBy, competitions.map((c) => c.id));
+  // Verify super admin or admin of any linked competition (skip for automatic/cron finalisations where finalisedBy is null)
+  if (finalisedBy) {
+    await verifyAdminAccessForTournament(supabase, finalisedBy, competitions.map((c) => c.id));
+  }
 
   // For each competition, verify all windows for this stage are scored
   for (const comp of competitions) {
@@ -367,7 +369,7 @@ export async function finaliseStage(
       status: "finalised",
       finalised_at: new Date().toISOString(),
       finalised_by: finalisedBy,
-      finalisation_method: "manual",
+      finalisation_method: finalisedBy ? "manual" : "automatic",
     })
     .select()
     .single();
