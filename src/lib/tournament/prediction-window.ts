@@ -209,11 +209,12 @@ export async function getClassificationsNeedingReconciliation(
 
   for (const cls of classifications) {
 
-    // Check groups exist
+    // Check active groups exist
     const { data: groupCheck } = await supabase
       .from("format_prediction_groups")
       .select("id")
       .eq("classification_id", cls.id)
+      .eq("status", "active")
       .limit(1);
 
     if (groupCheck && groupCheck.length > 0) {

@@ -70,11 +70,12 @@ export async function eliminateFromFormat(
 
   const targetSurvivors = curveStep.remaining;
 
-  // Fetch all groups with target_size for group-size-aware qualification rules
+  // Fetch all active groups with target_size for group-size-aware qualification rules
   const { data: groups, error: groupsError } = await supabase
     .from("format_prediction_groups")
     .select("id, group_number, target_size")
     .eq("classification_id", classificationId)
+    .eq("status", "active")
     .order("group_number", { ascending: true });
 
   if (groupsError) throw new Error(`Failed to fetch groups: ${groupsError.message}`);

@@ -135,11 +135,12 @@ export async function computeBestThirdRanking(
   classificationId: string,
   stageId: string
 ): Promise<ThirdPlaceRow[]> {
-  // Fetch all groups with their target_size for filtering
+  // Fetch all active groups with their target_size for filtering
   const { data: groups, error: groupsError } = await supabase
     .from("format_prediction_groups")
     .select("id, group_name, group_number, target_size")
     .eq("classification_id", classificationId)
+    .eq("status", "active")
     .order("group_number", { ascending: true });
 
   if (groupsError) throw new Error(`Failed to fetch groups: ${groupsError.message}`);

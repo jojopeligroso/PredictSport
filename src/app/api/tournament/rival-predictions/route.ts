@@ -421,7 +421,8 @@ async function getAllGroupMemberships(
     supabase
       .from("format_prediction_groups")
       .select("id, group_name")
-      .eq("classification_id", formatClass.id),
+      .eq("classification_id", formatClass.id)
+      .eq("status", "active"),
     supabase
       .from("format_group_memberships")
       .select("user_id, group_id")

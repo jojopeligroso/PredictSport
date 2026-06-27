@@ -109,6 +109,7 @@ export default async function WcJoinOpenPage() {
         .from("format_prediction_groups")
         .select("id")
         .eq("classification_id", formatCls.id)
+        .eq("status", "active")
         .limit(1);
 
       if (existingGroups && existingGroups.length > 0) {

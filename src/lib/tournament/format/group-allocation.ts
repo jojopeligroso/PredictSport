@@ -199,11 +199,12 @@ export async function addLateEntrant(
   classificationId: string,
   userId: string
 ): Promise<FormatGroupMembership> {
-  // Find current group sizes
+  // Find current active group sizes
   const { data: groups, error: groupError } = await supabase
     .from("format_prediction_groups")
     .select("id, group_number, competition_id")
     .eq("classification_id", classificationId)
+    .eq("status", "active")
     .order("group_number", { ascending: true });
 
   if (groupError) throw new Error(`Failed to fetch groups: ${groupError.message}`);
@@ -318,11 +319,12 @@ export async function reconcileUndersizedGroups(
   supabase: SupabaseClient,
   classificationId: string,
 ): Promise<ReconciliationResult | null> {
-  // Load all groups
+  // Load all active groups
   const { data: groups, error: groupError } = await supabase
     .from("format_prediction_groups")
     .select("id, group_name, group_number, target_size")
     .eq("classification_id", classificationId)
+    .eq("status", "active")
     .order("group_number", { ascending: true });
 
   if (groupError) throw new Error(`Failed to fetch groups: ${groupError.message}`);
@@ -468,11 +470,12 @@ export async function ensureGroupIntegrity(
     }
   }
 
-  // 2. Fix target_size mismatches on all groups
+  // 2. Fix target_size mismatches on all active groups
   const { data: groups } = await supabase
     .from("format_prediction_groups")
     .select("id, group_name, target_size")
-    .eq("classification_id", classificationId);
+    .eq("classification_id", classificationId)
+    .eq("status", "active");
 
   const { data: allMemberships } = await supabase
     .from("format_group_memberships")

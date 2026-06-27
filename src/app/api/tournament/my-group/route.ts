@@ -58,6 +58,7 @@ export async function GET(request: NextRequest) {
     .from("format_prediction_groups")
     .select("id")
     .eq("classification_id", classificationId)
+    .eq("status", "active")
     .limit(1);
 
   const groupsExist = (existingGroups?.length ?? 0) > 0;
@@ -141,11 +142,12 @@ export async function GET(request: NextRequest) {
     }
   }
 
-  // Groups exist — fetch ALL groups with members for full overview
+  // Groups exist — fetch ALL active groups with members for full overview
   const { data: allGroups } = await supabase
     .from("format_prediction_groups")
     .select("id, group_name, group_number, target_size")
     .eq("classification_id", classificationId)
+    .eq("status", "active")
     .order("group_number", { ascending: true });
 
   if (!allGroups || allGroups.length === 0) {
