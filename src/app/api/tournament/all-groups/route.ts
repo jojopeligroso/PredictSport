@@ -26,12 +26,16 @@ export async function GET(request: NextRequest) {
     );
   }
 
-  const { data: groups, error: groupError } = await supabase
+  const { data: rawGroups, error: groupError } = await supabase
     .from("format_prediction_groups")
-    .select("id, group_name, group_number, target_size")
+    .select("id, group_name, group_number, target_size, status")
     .eq("classification_id", classificationId)
-    .eq("status", "active")
     .order("group_number", { ascending: true });
+
+  // Filter active groups in app code — safe when status column doesn't exist yet
+  const groups = (rawGroups ?? []).filter(
+    (g) => !g.status || g.status === "active"
+  );
 
   if (groupError || !groups || groups.length === 0) {
     return NextResponse.json({ status: "no_groups", myGroupId: null, groups: [] });

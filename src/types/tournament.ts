@@ -47,7 +47,7 @@ export interface SportingStage {
   stage_type: StageType;
   config: Record<string, unknown>;
   status: StageStatus;
-  stage_finalisation_hold: boolean;
+  stage_finalisation_hold?: boolean;
   finalised_at: string | null;
   finalised_by: string | null;
   created_at: string;
@@ -145,7 +145,7 @@ export interface FormatPredictionGroup {
   group_name: string;
   group_number: number;
   target_size: number;
-  status: 'active' | 'archived';
+  status?: 'active' | 'archived';
   metadata: Record<string, unknown>;
   created_at: string;
 }

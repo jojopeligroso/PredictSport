@@ -136,15 +136,19 @@ export async function computeBestThirdRanking(
   stageId: string
 ): Promise<ThirdPlaceRow[]> {
   // Fetch all active groups with their target_size for filtering
-  const { data: groups, error: groupsError } = await supabase
+  const { data: rawGroups, error: groupsError } = await supabase
     .from("format_prediction_groups")
-    .select("id, group_name, group_number, target_size")
+    .select("id, group_name, group_number, target_size, status")
     .eq("classification_id", classificationId)
-    .eq("status", "active")
     .order("group_number", { ascending: true });
 
   if (groupsError) throw new Error(`Failed to fetch groups: ${groupsError.message}`);
-  if (!groups || groups.length === 0) return [];
+
+  // Filter active groups in app code — safe when status column doesn't exist yet
+  const groups = (rawGroups ?? []).filter(
+    (g) => !g.status || g.status === "active"
+  );
+  if (groups.length === 0) return [];
 
   const thirdPlaceRows: ThirdPlaceRow[] = [];
 

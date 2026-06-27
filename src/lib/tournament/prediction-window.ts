@@ -210,14 +210,17 @@ export async function getClassificationsNeedingReconciliation(
   for (const cls of classifications) {
 
     // Check active groups exist
-    const { data: groupCheck } = await supabase
+    const { data: groupCheckRaw } = await supabase
       .from("format_prediction_groups")
-      .select("id")
+      .select("id, status")
       .eq("classification_id", cls.id)
-      .eq("status", "active")
-      .limit(1);
+      .limit(100);
 
-    if (groupCheck && groupCheck.length > 0) {
+    // Filter active groups in app code — safe when status column doesn't exist yet
+    const groupCheck = (groupCheckRaw ?? []).filter(
+      (g) => !g.status || g.status === "active"
+    );
+    if (groupCheck.length > 0) {
       result.push({ classificationId: cls.id });
     }
   }

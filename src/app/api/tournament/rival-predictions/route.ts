@@ -420,16 +420,18 @@ async function getAllGroupMemberships(
   const [groupsResult, membershipsResult] = await Promise.all([
     supabase
       .from("format_prediction_groups")
-      .select("id, group_name")
-      .eq("classification_id", formatClass.id)
-      .eq("status", "active"),
+      .select("id, group_name, status")
+      .eq("classification_id", formatClass.id),
     supabase
       .from("format_group_memberships")
       .select("user_id, group_id")
       .eq("classification_id", formatClass.id),
   ]);
 
-  const groups = groupsResult.data ?? [];
+  // Filter active groups in app code — safe when status column doesn't exist yet
+  const groups = (groupsResult.data ?? []).filter(
+    (g) => !g.status || g.status === "active"
+  );
   const memberships = membershipsResult.data ?? [];
 
   const groupNameById = new Map(groups.map((g) => [g.id, g.group_name]));

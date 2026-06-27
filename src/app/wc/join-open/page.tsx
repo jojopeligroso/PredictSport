@@ -105,14 +105,17 @@ export default async function WcJoinOpenPage() {
       .maybeSingle();
 
     if (formatCls) {
-      const { data: existingGroups } = await svc
+      const { data: existingGroupsRaw } = await svc
         .from("format_prediction_groups")
-        .select("id")
+        .select("id, status")
         .eq("classification_id", formatCls.id)
-        .eq("status", "active")
-        .limit(1);
+        .limit(100);
 
-      if (existingGroups && existingGroups.length > 0) {
+      // Filter active groups in app code — safe when status column doesn't exist yet
+      const existingGroups = (existingGroupsRaw ?? []).filter(
+        (g) => !g.status || g.status === "active"
+      );
+      if (existingGroups.length > 0) {
         try {
           await addLateEntrant(svc, formatCls.id, user.id);
         } catch (err) {

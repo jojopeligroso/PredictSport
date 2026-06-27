@@ -200,15 +200,19 @@ export async function addLateEntrant(
   userId: string
 ): Promise<FormatGroupMembership> {
   // Find current active group sizes
-  const { data: groups, error: groupError } = await supabase
+  const { data: rawGroups, error: groupError } = await supabase
     .from("format_prediction_groups")
-    .select("id, group_number, competition_id")
+    .select("id, group_number, competition_id, status")
     .eq("classification_id", classificationId)
-    .eq("status", "active")
     .order("group_number", { ascending: true });
 
   if (groupError) throw new Error(`Failed to fetch groups: ${groupError.message}`);
-  if (!groups || groups.length === 0) {
+
+  // Filter active groups in app code — safe when status column doesn't exist yet
+  const groups = (rawGroups ?? []).filter(
+    (g) => !g.status || g.status === "active"
+  );
+  if (groups.length === 0) {
     throw new Error("No prediction groups exist for this classification");
   }
 
@@ -320,15 +324,19 @@ export async function reconcileUndersizedGroups(
   classificationId: string,
 ): Promise<ReconciliationResult | null> {
   // Load all active groups
-  const { data: groups, error: groupError } = await supabase
+  const { data: rawGroups, error: groupError } = await supabase
     .from("format_prediction_groups")
-    .select("id, group_name, group_number, target_size")
+    .select("id, group_name, group_number, target_size, status")
     .eq("classification_id", classificationId)
-    .eq("status", "active")
     .order("group_number", { ascending: true });
 
   if (groupError) throw new Error(`Failed to fetch groups: ${groupError.message}`);
-  if (!groups || groups.length === 0) return null;
+
+  // Filter active groups in app code — safe when status column doesn't exist yet
+  const groups = (rawGroups ?? []).filter(
+    (g) => !g.status || g.status === "active"
+  );
+  if (groups.length === 0) return null;
 
   // Load all active memberships
   const { data: memberships, error: mbError } = await supabase
@@ -471,11 +479,15 @@ export async function ensureGroupIntegrity(
   }
 
   // 2. Fix target_size mismatches on all active groups
-  const { data: groups } = await supabase
+  const { data: integrityGroupsRaw } = await supabase
     .from("format_prediction_groups")
-    .select("id, group_name, target_size")
-    .eq("classification_id", classificationId)
-    .eq("status", "active");
+    .select("id, group_name, target_size, status")
+    .eq("classification_id", classificationId);
+
+  // Filter active groups in app code — safe when status column doesn't exist yet
+  const groups = (integrityGroupsRaw ?? []).filter(
+    (g) => !g.status || g.status === "active"
+  );
 
   const { data: allMemberships } = await supabase
     .from("format_group_memberships")

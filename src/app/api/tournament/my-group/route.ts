@@ -54,14 +54,17 @@ export async function GET(request: NextRequest) {
     .eq("status", "active");
 
   // Check if groups already exist
-  const { data: existingGroups } = await supabase
+  const { data: existingGroupsRaw } = await supabase
     .from("format_prediction_groups")
-    .select("id")
+    .select("id, status")
     .eq("classification_id", classificationId)
-    .eq("status", "active")
-    .limit(1);
+    .limit(100);
 
-  const groupsExist = (existingGroups?.length ?? 0) > 0;
+  // Filter active groups in app code — safe when status column doesn't exist yet
+  const existingGroups = (existingGroupsRaw ?? []).filter(
+    (g) => !g.status || g.status === "active"
+  );
+  const groupsExist = existingGroups.length > 0;
 
   if (!groupsExist) {
     // Find the next prediction window to compute draw time
@@ -143,12 +146,16 @@ export async function GET(request: NextRequest) {
   }
 
   // Groups exist — fetch ALL active groups with members for full overview
-  const { data: allGroups } = await supabase
+  const { data: allGroupsRaw } = await supabase
     .from("format_prediction_groups")
-    .select("id, group_name, group_number, target_size")
+    .select("id, group_name, group_number, target_size, status")
     .eq("classification_id", classificationId)
-    .eq("status", "active")
     .order("group_number", { ascending: true });
+
+  // Filter active groups in app code — safe when status column doesn't exist yet
+  const allGroups = (allGroupsRaw ?? []).filter(
+    (g) => !g.status || g.status === "active"
+  );
 
   if (!allGroups || allGroups.length === 0) {
     return NextResponse.json({
