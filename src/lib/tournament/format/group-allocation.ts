@@ -114,8 +114,24 @@ function solveGroupComposition(
 export async function allocatePredictionGroups(
   supabase: SupabaseClient,
   classificationId: string,
-  survivorTarget: number
+  survivorTarget: number,
+  options?: { force?: boolean }
 ): Promise<FormatPredictionGroup[]> {
+  // GUARD: Refuse to overwrite existing groups unless explicitly forced.
+  // This prevents accidental redraws caused by query bugs or race conditions.
+  const { data: existingGroups } = await supabase
+    .from("format_prediction_groups")
+    .select("id")
+    .eq("classification_id", classificationId)
+    .limit(1);
+
+  if ((existingGroups?.length ?? 0) > 0 && !options?.force) {
+    throw new Error(
+      `BLOCKED: Groups already exist for classification ${classificationId}. ` +
+      `Refusing to redraw. Pass { force: true } to override.`
+    );
+  }
+
   // Fetch all active members for this classification
   const { data: memberships, error: mbError } = await supabase
     .from("classification_memberships")
@@ -186,6 +202,19 @@ export async function allocatePredictionGroups(
     .insert(membershipInserts);
 
   if (memberError) throw new Error(`Failed to insert group memberships: ${memberError.message}`);
+
+  // Snapshot the draw so it can be recovered if the DB state is lost
+  try {
+    const snapshot = membershipInserts.map((m) => ({
+      group_name: (groups as FormatPredictionGroup[]).find((g) => g.id === m.group_id)?.group_name,
+      user_id: m.user_id,
+      seed_position: m.seed_position,
+    }));
+    console.log(
+      `[group-allocation] DRAW SNAPSHOT classification=${classificationId}:`,
+      JSON.stringify(snapshot)
+    );
+  } catch { /* snapshot logging must never break the draw */ }
 
   return groups as FormatPredictionGroup[];
 }

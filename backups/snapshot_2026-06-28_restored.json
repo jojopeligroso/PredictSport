@@ -1,0 +1,39 @@
+{
+  "timestamp": "2026-06-28T00:55:20.15143+00:00",
+  "description": "Full group restoration complete - all 12 groups confirmed from screenshots + elimination logic. Groups A-G from Niall Parker screenshots (prev session). Groups H-K from leaderboard screenshot. Group C deduced (malonemi top of group + malonemi/Brian same group). Group L by elimination (madrazo79, John Kirwan).",
+  "classification_id": "7f541523-e0ea-4b62-8c1a-51a34beaaa9d",
+  "competition_id": "1a4448e5-a178-45ab-b819-a0dfab370306",
+  "format_groups": [
+    {"id": "dbed7357-d9e4-4988-b653-a6c0d52d18e5", "group_name": "Group A", "group_number": 1, "target_size": 4},
+    {"id": "5c0bae42-deca-4ba0-9aca-4d8ba120d9b1", "group_name": "Group B", "group_number": 2, "target_size": 4},
+    {"id": "cce515e0-4f6a-48a0-b923-1ad416c80b8b", "group_name": "Group C", "group_number": 3, "target_size": 4},
+    {"id": "075f7152-5655-4dd6-89b8-49c3583d4def", "group_name": "Group D", "group_number": 4, "target_size": 4},
+    {"id": "8ad45931-bc0d-449d-b994-b1989cfdba68", "group_name": "Group E", "group_number": 5, "target_size": 4},
+    {"id": "648db845-5177-4f50-9c02-ab1ad7fb9086", "group_name": "Group F", "group_number": 6, "target_size": 4},
+    {"id": "1eb938ae-e89b-45c4-9f20-c062dae1be25", "group_name": "Group G", "group_number": 7, "target_size": 4},
+    {"id": "e2e2c08b-e638-47f8-a04a-8185cb12e0b3", "group_name": "Group H", "group_number": 8, "target_size": 4},
+    {"id": "32103fb5-e415-49cf-8eea-94cc359d45f0", "group_name": "Group I", "group_number": 9, "target_size": 4},
+    {"id": "4bf95f36-6c6e-4a6a-81c1-1f12f7c59f8d", "group_name": "Group J", "group_number": 10, "target_size": 4},
+    {"id": "b07d3963-523f-4e49-b266-0e7bf7ccd586", "group_name": "Group K", "group_number": 11, "target_size": 4},
+    {"id": "60a9d022-4651-4ae6-a0ac-c62375912614", "group_name": "Group L", "group_number": 12, "target_size": 4}
+  ],
+  "format_memberships": {
+    "Group A": ["Martin Manning", "Emily Cullen", "Anuar Saba", "Kevin Mcgrath"],
+    "Group B": ["Keenan Stacey", "AnaIza Garcia", "Jay", "Tomo Jones"],
+    "Group C": ["malonemi", "Brian", "Mick DArcy", "Jes Quigley"],
+    "Group D": ["Niall Parker", "Micheál Meaney", "Ana Rodriguez", "Mauricio Madrazo"],
+    "Group E": ["Paul Parker", "Eoin", "John Joyce", "Mihai Claudiu Soimos"],
+    "Group F": ["Paddy", "The Monageer Marauder", "JolatheJola", "Adri Sanchez"],
+    "Group G": ["Andy Vazquez", "Dimitri Saridakis", "Daniel R. Zapata", "Susana Rodriguez"],
+    "Group H": ["Roberto bagio", "elisagarcia.94", "Bez", "Scroochie"],
+    "Group I": ["Bohs", "Paul Rellis", "Mr. Tiusko", "CDW"],
+    "Group J": ["Raiza g", "brannigan", "Aidan McCabe", "Ricardo Galicia"],
+    "Group K": ["Dom", "Adrian Kilgallon", "Paulo Conano", "jason"],
+    "Group L": ["Michael Cullen", "John Kirwan", "Darren Shannon", "madrazo79"]
+  },
+  "confirmation_sources": {
+    "screenshot_confirmed": ["A", "B", "D", "E", "F", "G", "H", "I", "J", "K"],
+    "deduced_from_scores": ["C"],
+    "deduced_by_elimination": ["L"]
+  }
+}
