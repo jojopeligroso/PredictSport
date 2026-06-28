@@ -52,7 +52,8 @@ export default async function LeaderboardPage() {
 
   const isAdmin = membership?.role === "admin" || membership?.role === "co_admin";
 
-  // Get classifications — exclude bracket types (accessed via More menu)
+  // Get classifications — only Overall + Format shown on leaderboard
+  const LEADERBOARD_KEYS = new Set(["overall", "format"]);
   const { data: classificationsRaw } = await supabase
     .from("classifications")
     .select("id, classification_key, name, classification_type, status")
@@ -60,7 +61,7 @@ export default async function LeaderboardPage() {
     .order("created_at", { ascending: true });
 
   const classifications = (classificationsRaw ?? []).filter(
-    (c) => c.classification_key !== "full_bracket" && c.classification_key !== "knockout_bracket"
+    (c) => LEADERBOARD_KEYS.has(c.classification_key)
   );
 
   const appUrl =
