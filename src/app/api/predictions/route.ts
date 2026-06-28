@@ -358,12 +358,13 @@ export async function DELETE(request: NextRequest) {
     return NextResponse.json({ error: "Event is locked" }, { status: 403 });
   }
 
-  // Fetch both match EPTs so the atomic RPC can delete both rows
+  // Fetch match EPTs so the atomic RPC can delete winner + score,
+  // and we can also clean up head_to_head on reset
   const { data: matchEpts } = await supabase
     .from("event_prediction_types")
     .select("id, prediction_type")
     .eq("event_id", event_id)
-    .in("prediction_type", ["winner", "exact_score"]);
+    .in("prediction_type", ["winner", "exact_score", "head_to_head"]);
 
   const winnerEpt = matchEpts?.find((e) => e.prediction_type === "winner");
   const scoreEpt = matchEpts?.find((e) => e.prediction_type === "exact_score");
@@ -384,6 +385,17 @@ export async function DELETE(request: NextRequest) {
     if (rpcError) {
       console.error("Failed to reset prediction:", rpcError);
       return NextResponse.json({ error: "Failed to reset" }, { status: 500 });
+    }
+
+    // Also delete head_to_head prediction if it exists (knockout matches)
+    const h2hEpt = matchEpts?.find((e) => e.prediction_type === "head_to_head");
+    if (h2hEpt) {
+      await supabase
+        .from("predictions")
+        .delete()
+        .eq("event_id", event_id)
+        .eq("user_id", user.id)
+        .eq("prediction_type", "head_to_head");
     }
 
     // Clean up any reckons chat message for this event

@@ -436,6 +436,27 @@ function MatchPickRow({
     else disclosure.recordConfidenceDismissed();
   }, [setConfidence, disclosure]);
 
+  // ── Knockout: auto-save h2h when picking an outright winner ────────
+  const pickWinnerWithH2H = useCallback(
+    (value: string) => {
+      pickWinner(value);
+      if (h2hEpt && value !== drawOption) {
+        fetch("/api/predictions", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            event_id: event.id,
+            competition_id: competitionId,
+            prediction_type: "head_to_head",
+            event_prediction_type_id: h2hEpt.id,
+            prediction_data: { selection: value },
+          }),
+        }).catch(() => {});
+      }
+    },
+    [pickWinner, h2hEpt, drawOption, event.id, competitionId],
+  );
+
   // Live score values for the hint
   const [liveScore, setLiveScore] = useState({ home: "", away: "" });
   const handleScoreChange = useCallback((h: string, a: string) => {
@@ -450,6 +471,12 @@ function MatchPickRow({
   }, [liveScore, event.sport, winnerOptions]);
 
   const showScoreHint = liveImpliedWinner !== null && currentWinner !== null && liveImpliedWinner !== currentWinner;
+
+  // Derive initial h2h selection for locked display
+  const lockedH2H = isKnockout
+    ? (initialPredictions.find((p) => p.prediction_type === "head_to_head")
+        ?.prediction_data?.selection as string | undefined) ?? null
+    : null;
 
   // ── Read-only locked branch ──────────────────────────────────────────────
   if (isLocked) {
@@ -513,6 +540,11 @@ function MatchPickRow({
                   away,
                   t,
                 )}
+              </p>
+            )}
+            {lockedH2H && currentWinner === drawOption && (
+              <p className="text-micro text-white/55">
+                {t("matches.goes_through")}: <span className="font-semibold">{lockedH2H}</span>
               </p>
             )}
           </>
@@ -579,6 +611,11 @@ function MatchPickRow({
                   away,
                   t,
                 )}
+              </p>
+            )}
+            {lockedH2H && currentWinner === drawOption && (
+              <p className="text-micro text-ps-text-ter">
+                {t("matches.goes_through")}: <span className="font-semibold">{lockedH2H}</span>
               </p>
             )}
           </>
@@ -700,7 +737,7 @@ function MatchPickRow({
       <div className="flex items-center justify-center gap-1.5">
         <button
           type="button"
-          onClick={() => pickWinner(home)}
+          onClick={() => pickWinnerWithH2H(home)}
           aria-pressed={homeSelected}
           className={theme.teamButton(homeSelected)}
         >
@@ -711,7 +748,7 @@ function MatchPickRow({
         {winnerOptions.some((opt) => slotOf(opt, home, away) === "draw") && (
           <button
             type="button"
-            onClick={() => pickWinner(drawOption)}
+            onClick={() => pickWinnerWithH2H(drawOption)}
             aria-pressed={drawSelected}
             className={theme.drawButton(drawSelected)}
           >
@@ -721,7 +758,7 @@ function MatchPickRow({
 
         <button
           type="button"
-          onClick={() => pickWinner(away)}
+          onClick={() => pickWinnerWithH2H(away)}
           aria-pressed={awaySelected}
           className={theme.teamButton(awaySelected)}
         >
@@ -838,8 +875,8 @@ function MatchPickRow({
           </p>
         )}
 
-      {/* ── Who goes through? (knockout only) ── */}
-      {isKnockout && h2hEpt && (
+      {/* ── Who goes through? (knockout only, draw selected) ── */}
+      {isKnockout && h2hEpt && drawSelected && (
         <H2HPicker
           eptId={h2hEpt.id}
           eventId={event.id}
