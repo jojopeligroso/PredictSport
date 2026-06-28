@@ -35,9 +35,9 @@ export function EntrantProfileClient({ data, from }: EntrantProfileClientProps) 
         <PicksByRound picks={data.picks} searchText={searchText} />
       </section>
 
-      {/* Tag history */}
-      {data.allTags.length > 0 && (
-        <TagHistory tags={data.allTags} displayName={data.displayName} />
+      {/* Active tags only */}
+      {data.activeTags.length > 0 && (
+        <TagHistory tags={data.activeTags} displayName={data.displayName} />
       )}
 
       {/* Group membership */}
