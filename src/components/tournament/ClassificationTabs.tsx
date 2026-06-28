@@ -5,6 +5,7 @@ import { useSearchParams } from "next/navigation";
 import dynamic from "next/dynamic";
 import { useT, useLocale, type Locale } from "@/lib/i18n";
 import { createClient } from "@/lib/supabase/client";
+import { ProfileButton } from "@/app/wc/entrant/[userId]/ProfileButton";
 
 const RivalPredictionsTab = dynamic(
   () => import("@/components/wc/RivalPredictionsTab").then(mod => mod.RivalPredictionsTab),
@@ -352,6 +353,7 @@ export function ClassificationTabs({
                 classificationType={active?.classification_type ?? "leaderboard"}
                 selfVisibility={selfVisibility}
                 tagsByUser={tagsByUser}
+                classificationKey={active?.classification_key}
                 onToggleVisibility={async (next) => {
                   const prev = selfVisibility;
                   setSelfVisibility(next);
@@ -428,6 +430,7 @@ function FlipRow({
   selfVisibility,
   onToggleVisibility,
   tag,
+  classificationKey,
 }: {
   row: StandingRow;
   isMe: boolean;
@@ -437,6 +440,7 @@ function FlipRow({
   selfVisibility: "public" | "private";
   onToggleVisibility: (next: "public" | "private") => void;
   tag?: LeaderboardTag;
+  classificationKey?: string;
 }) {
   const t = useT();
   const [flipped, setFlipped] = useState(false);
@@ -506,6 +510,10 @@ function FlipRow({
                 </span>
               )}
             </div>
+            {/* Profile icon — show on format always, on overall only for self or non-private rows */}
+            {(isFormat || isMe || !row.display_name.startsWith("Mystery ")) && (
+              <ProfileButton userId={row.user_id} displayName={row.display_name} from={classificationKey} />
+            )}
             <span className="w-16 shrink-0 text-right font-mono text-sm font-bold text-ps-text">
               {row.points}
             </span>
@@ -656,6 +664,7 @@ function StandingsTable({
   selfVisibility,
   tagsByUser,
   onToggleVisibility,
+  classificationKey,
 }: {
   standings: StandingRow[];
   currentUserId: string;
@@ -663,6 +672,7 @@ function StandingsTable({
   selfVisibility: "public" | "private";
   tagsByUser: Map<string, LeaderboardTag>;
   onToggleVisibility: (next: "public" | "private") => void;
+  classificationKey?: string;
 }) {
   const t = useT();
   const isBracket = classificationType === "bracket_survivor";
@@ -694,6 +704,7 @@ function StandingsTable({
             selfVisibility={selfVisibility}
             onToggleVisibility={onToggleVisibility}
             tag={tagsByUser.get(row.user_id)}
+            classificationKey={classificationKey}
           />
         );
       })}
