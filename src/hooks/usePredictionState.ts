@@ -277,6 +277,41 @@ export function usePredictionState({
           home: homeNum,
           away: awayNum,
         });
+
+        // Score is source of truth: derive the winner from the submitted
+        // score and sync client state. The server RPC already did this
+        // atomically, but commitScore previously ignored the response,
+        // leaving winnerPred stale. Critical for knockout draws — without
+        // this the "Who goes through?" picker never appears after score
+        // commit.
+        const implied = deriveWinnerFromScore(
+          { home: homeNum, away: awayNum },
+          sport,
+          winnerOptions,
+        );
+        if (implied && implied !== currentWinner) {
+          const hadWinner = currentWinner !== null;
+          setWinnerPred((prev) => ({
+            ...(prev ??
+              ({
+                id: `score-derived-${eventId}`,
+                event_prediction_type_id: winnerEptId ?? "",
+                event_id: eventId,
+                user_id: "",
+                prediction_type: "winner",
+                is_correct: null,
+                is_partial: null,
+                points_awarded: null,
+                note_text: null,
+                note_visibility: "private",
+                submitted_at: new Date().toISOString(),
+                updated_at: new Date().toISOString(),
+              } as unknown as Prediction)),
+            prediction_data: { value: implied },
+          }));
+          if (!hadWinner) onWinnerLanded(eventId, true);
+        }
+
         // Green flash if resolving a conflict
         if (feedback.type === "conflict") {
           setFeedback({ type: "success" });
@@ -287,7 +322,7 @@ export function usePredictionState({
         router.refresh();
       }
     },
-    [scoreEptId, scoreDisplay, feedback, submitPrediction, router],
+    [scoreEptId, scoreDisplay, feedback, submitPrediction, router, sport, winnerOptions, currentWinner, eventId, winnerEptId, onWinnerLanded],
   );
 
   // ── Set confidence ─────────────────────────────────────────────────
