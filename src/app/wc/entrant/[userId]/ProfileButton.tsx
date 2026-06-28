@@ -15,10 +15,6 @@ interface ProfileButtonProps {
  * stopPropagation prevents intercepting the FlipRow tap.
  */
 export function ProfileButton({ userId, displayName, from }: ProfileButtonProps) {
-  if (process.env.NEXT_PUBLIC_FEATURE_ENTRANT_PROFILE !== "true") {
-    return null;
-  }
-
   return (
     <Link
       href={`/wc/entrant/${userId}${from ? `?from=${from}` : ""}`}
