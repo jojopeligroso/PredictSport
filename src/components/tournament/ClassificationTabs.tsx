@@ -1586,7 +1586,7 @@ function HistoricalGroupsSection({
       {expanded && (
         <div className="border-t border-ps-border">
           <div className="space-y-2 p-3">
-            {groups.sort((a, b) => a.groupNumber - b.groupNumber).map((group) => (
+            {[...groups].sort((a, b) => a.groupNumber - b.groupNumber).map((group) => (
               <HistoricalGroupCard key={group.id} group={group} />
             ))}
           </div>
