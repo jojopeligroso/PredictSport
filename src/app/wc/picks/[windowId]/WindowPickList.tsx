@@ -296,7 +296,7 @@ function H2HPicker({
   }
   if (isLocked) return null;
 
-  const btnBase = "flex-1 rounded-full py-1.5 text-xs font-semibold transition-colors min-h-[32px]";
+  const btnBase = "flex-1 rounded-full bg-transparent py-1.5 text-xs font-semibold transition-colors min-h-[32px]";
   const unselected = isCard
     ? "border border-white/20 text-white/60 hover:border-white/40"
     : "border border-ps-border text-ps-text-sec hover:border-ps-text-ter";
