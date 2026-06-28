@@ -117,8 +117,9 @@ export function ClassificationTabs({
   // Memoized so the reference is stable across renders — otherwise the
   // my-group fetch effect below (which depends on it) re-runs on every render
   // and refetches in a tight network-throttled loop.
+  const LEADERBOARD_KEYS = new Set(["overall", "format"]);
   const visibleClassifications = useMemo(
-    () => classifications.filter((c) => c.status !== "draft"),
+    () => classifications.filter((c) => c.status !== "draft" && LEADERBOARD_KEYS.has(c.classification_key)),
     [classifications],
   );
   const formatClassification = visibleClassifications.find(
