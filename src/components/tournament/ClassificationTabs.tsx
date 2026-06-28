@@ -72,6 +72,17 @@ interface MyGroupData {
   allGroups?: GroupInfo[];
   myGroupId?: string | null;
   totalMembers?: number;
+  archivedGroups?: GroupInfo[];
+  eliminatedMembers?: EliminatedMember[];
+}
+
+interface EliminatedMember {
+  user_id: string;
+  display_name: string;
+  points: number;
+  is_self: boolean;
+  source_group: string | null;
+  status: string;
 }
 
 interface LeaderboardTag {
@@ -316,13 +327,33 @@ export function ClassificationTabs({
           {active?.classification_key === "format" && (
             groupData?.allGroups && groupData.allGroups.length > 0 ? (
               <div className="mt-4">
-                {groupData.myGroupId && (() => {
-                  const myGroup = groupData.allGroups!.find((g) => g.id === groupData.myGroupId);
-                  return myGroup ? <YourGroupCard group={myGroup} /> : null;
-                })()}
-                <div className={groupData.myGroupId ? "mt-3" : ""}>
-                  <AllGroupsView groups={groupData.allGroups} myGroupId={groupData.myGroupId ?? null} />
-                </div>
+                {/* Knockout stage: active group + eliminated + historical */}
+                {groupData.archivedGroups && groupData.archivedGroups.length > 0 ? (
+                  <>
+                    <KnockoutLeaderboard
+                      group={groupData.allGroups[0]}
+                      currentUserId={currentUserId}
+                    />
+                    {groupData.eliminatedMembers && groupData.eliminatedMembers.length > 0 && (
+                      <EliminatedSection
+                        members={groupData.eliminatedMembers}
+                        stageName="Group Stage"
+                      />
+                    )}
+                    <HistoricalGroupsSection groups={groupData.archivedGroups} />
+                  </>
+                ) : (
+                  /* Group stage: existing layout */
+                  <>
+                    {groupData.myGroupId && (() => {
+                      const myGroup = groupData.allGroups!.find((g) => g.id === groupData.myGroupId);
+                      return myGroup ? <YourGroupCard group={myGroup} /> : null;
+                    })()}
+                    <div className={groupData.myGroupId ? "mt-3" : ""}>
+                      <AllGroupsView groups={groupData.allGroups} myGroupId={groupData.myGroupId ?? null} />
+                    </div>
+                  </>
+                )}
               </div>
             ) : (
               <FormatGroupCard
@@ -1361,6 +1392,263 @@ function YourGroupCard({
           );
         })}
       </div>
+    </div>
+  );
+}
+
+// ============================================================
+// Knockout Leaderboard — active group with gold cutoff line
+// ============================================================
+
+function KnockoutLeaderboard({
+  group,
+  currentUserId,
+}: {
+  group: GroupInfo;
+  currentUserId: string;
+}) {
+  const t = useT();
+  const cutoffPosition = Math.floor(group.members.length / 2);
+
+  return (
+    <div className="overflow-hidden rounded-xl border border-ps-border bg-ps-surface">
+      {/* Header */}
+      <div className="flex items-center justify-between bg-ps-amber/5 px-4 py-3">
+        <h3 className="text-sm font-bold text-ps-text">{group.name}</h3>
+        <span className="text-micro font-medium text-ps-text-ter">
+          {group.members.length} {t('leaderboard.player').toLowerCase()}s
+        </span>
+      </div>
+
+      {/* Column headers */}
+      <div className="flex items-center px-3 py-1.5 text-micro font-semibold text-ps-text-ter border-b border-ps-border">
+        <span className="w-6 text-center">#</span>
+        <span className="flex-1 pl-2">{t('leaderboard.player')}</span>
+        <span className="w-14 text-right">{t('common.pts')}</span>
+      </div>
+
+      {/* Members with cutoff line */}
+      <div className="divide-y divide-ps-border">
+        {group.members.map((m, i) => {
+          const rank = i + 1;
+          const isSelf = m.user_id === currentUserId;
+          const belowCut = rank > cutoffPosition;
+
+          return (
+            <div key={m.user_id}>
+              {/* Gold cutoff line after top half */}
+              {rank === cutoffPosition + 1 && (
+                <div className="relative flex items-center px-3 py-1">
+                  <div className="flex-1 border-t border-dashed border-ps-amber/40" />
+                  <span className="mx-2 whitespace-nowrap text-micro font-semibold text-ps-amber/60">
+                    Top {cutoffPosition} advance
+                  </span>
+                  <div className="flex-1 border-t border-dashed border-ps-amber/40" />
+                </div>
+              )}
+              <div
+                className={`flex items-center px-3 py-2 ${
+                  isSelf ? "bg-ps-amber/10" : belowCut ? "bg-ps-red/[0.03]" : ""
+                }`}
+              >
+                <span className={`w-6 text-center font-mono text-xs font-bold ${
+                  belowCut ? "text-ps-red/60" : "text-ps-text-ter"
+                }`}>
+                  {rank}
+                </span>
+                <span
+                  className={`flex-1 truncate pl-2 text-sm ${
+                    isSelf ? "font-semibold text-ps-text" : belowCut ? "text-ps-text-sec" : "text-ps-text"
+                  }`}
+                >
+                  {m.display_name}
+                  {isSelf && (
+                    <span className="ml-1.5 rounded bg-ps-amber/20 px-1 py-0.5 text-micro font-bold text-ps-amber">
+                      {t('classification.you_label')}
+                    </span>
+                  )}
+                </span>
+                <span className={`w-14 text-right font-mono text-sm font-bold ${
+                  belowCut ? "text-ps-text-sec" : "text-ps-text"
+                }`}>
+                  {m.points}
+                </span>
+              </div>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+// ============================================================
+// Eliminated Section — collapsed list of eliminated members
+// ============================================================
+
+function EliminatedSection({
+  members,
+  stageName,
+}: {
+  members: EliminatedMember[];
+  stageName: string;
+}) {
+  const t = useT();
+  const [expanded, setExpanded] = useState(false);
+
+  return (
+    <div className="mt-3 overflow-hidden rounded-xl border border-ps-red/20 bg-ps-surface">
+      <button
+        type="button"
+        onClick={() => setExpanded(!expanded)}
+        className="flex w-full items-center justify-between px-4 py-3 text-left"
+      >
+        <div className="flex items-center gap-2">
+          <svg
+            className={`h-3.5 w-3.5 text-ps-red/60 transition-transform ${expanded ? "rotate-90" : ""}`}
+            fill="none" viewBox="0 0 24 24" strokeWidth={2.5} stroke="currentColor"
+          >
+            <path strokeLinecap="round" strokeLinejoin="round" d="M8.25 4.5l7.5 7.5-7.5 7.5" />
+          </svg>
+          <span className="text-sm font-semibold text-ps-text-sec">
+            Eliminated after {stageName}
+          </span>
+        </div>
+        <span className="rounded-full bg-ps-red/10 px-2 py-0.5 text-micro font-bold text-ps-red">
+          {members.length}
+        </span>
+      </button>
+
+      {expanded && (
+        <div className="divide-y divide-ps-border border-t border-ps-border">
+          {members.map((m) => (
+            <div
+              key={m.user_id}
+              className={`flex items-center px-3 py-2 opacity-50 ${m.is_self ? "!opacity-100 bg-ps-amber/10" : ""}`}
+            >
+              <span className="w-6 text-center text-micro text-ps-text-ter">-</span>
+              <span className={`flex-1 truncate pl-2 text-sm ${m.is_self ? "font-semibold text-ps-text" : "text-ps-text-sec"}`}>
+                {m.display_name}
+                {m.source_group && (
+                  <span className="ml-1.5 text-micro text-ps-text-ter">({m.source_group})</span>
+                )}
+                {m.is_self && (
+                  <span className="ml-1.5 rounded bg-ps-amber/20 px-1 py-0.5 text-micro font-bold text-ps-amber">
+                    {t('classification.you_label')}
+                  </span>
+                )}
+              </span>
+              <span className="w-14 text-right font-mono text-sm text-ps-text-ter">
+                {m.points}
+              </span>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ============================================================
+// Historical Groups Section — collapsed accordion of group stage results
+// ============================================================
+
+function HistoricalGroupsSection({
+  groups,
+}: {
+  groups: GroupInfo[];
+}) {
+  const [expanded, setExpanded] = useState(false);
+
+  return (
+    <div className="mt-3 overflow-hidden rounded-xl border border-ps-border bg-ps-surface">
+      <button
+        type="button"
+        onClick={() => setExpanded(!expanded)}
+        className="flex w-full items-center justify-between px-4 py-3 text-left"
+      >
+        <div className="flex items-center gap-2">
+          <svg
+            className={`h-3.5 w-3.5 text-ps-text-ter transition-transform ${expanded ? "rotate-90" : ""}`}
+            fill="none" viewBox="0 0 24 24" strokeWidth={2.5} stroke="currentColor"
+          >
+            <path strokeLinecap="round" strokeLinejoin="round" d="M8.25 4.5l7.5 7.5-7.5 7.5" />
+          </svg>
+          <span className="text-sm font-semibold text-ps-text-sec">
+            Group Stage Results
+          </span>
+        </div>
+        <span className="rounded-full bg-ps-chip px-2 py-0.5 text-micro font-bold text-ps-text-ter">
+          {groups.length} groups
+        </span>
+      </button>
+
+      {expanded && (
+        <div className="border-t border-ps-border">
+          <div className="space-y-2 p-3">
+            {groups.sort((a, b) => a.groupNumber - b.groupNumber).map((group) => (
+              <HistoricalGroupCard key={group.id} group={group} />
+            ))}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function HistoricalGroupCard({ group }: { group: GroupInfo }) {
+  const t = useT();
+  const [expanded, setExpanded] = useState(false);
+
+  const statusIcon = (status: string) => {
+    if (status === "qualified_top") return "text-ps-green";
+    if (status === "qualified_third") return "text-orange-400";
+    return "text-ps-red";
+  };
+
+  return (
+    <div className="overflow-hidden rounded-lg border border-ps-border">
+      <button
+        type="button"
+        onClick={() => setExpanded(!expanded)}
+        className="flex w-full items-center justify-between px-3 py-2 text-left"
+      >
+        <span className="text-xs font-bold text-ps-text">{group.name}</span>
+        <svg
+          className={`h-3 w-3 text-ps-text-ter transition-transform ${expanded ? "rotate-90" : ""}`}
+          fill="none" viewBox="0 0 24 24" strokeWidth={2.5} stroke="currentColor"
+        >
+          <path strokeLinecap="round" strokeLinejoin="round" d="M8.25 4.5l7.5 7.5-7.5 7.5" />
+        </svg>
+      </button>
+
+      {expanded && (
+        <div className="divide-y divide-ps-border border-t border-ps-border">
+          {group.members.map((m, i) => {
+            const isEliminated = m.status === "eliminated";
+            return (
+              <div
+                key={m.user_id}
+                className={`flex items-center px-3 py-1.5 ${isEliminated ? "opacity-50" : ""} ${m.is_self ? "!opacity-100 bg-ps-amber/5" : ""}`}
+              >
+                <span className={`w-1.5 h-1.5 rounded-full mr-2 ${statusIcon(m.status)}`} style={{ backgroundColor: "currentColor" }} />
+                <span className={`flex-1 truncate text-xs ${m.is_self ? "font-semibold text-ps-text" : "text-ps-text"}`}>
+                  {m.display_name}
+                  {m.is_self && (
+                    <span className="ml-1 rounded bg-ps-amber/20 px-1 py-0.5 text-micro font-bold text-ps-amber">
+                      {t('classification.you_label')}
+                    </span>
+                  )}
+                </span>
+                <span className="w-12 text-right font-mono text-xs text-ps-text-ter">{m.points}</span>
+                {isEliminated && (
+                  <span className="ml-1.5 rounded bg-ps-red/15 px-1 py-0.5 text-micro font-bold text-ps-red">OUT</span>
+                )}
+              </div>
+            );
+          })}
+        </div>
+      )}
     </div>
   );
 }

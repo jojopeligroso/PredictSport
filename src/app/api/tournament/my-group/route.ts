@@ -156,12 +156,15 @@ export async function GET(request: NextRequest) {
     .eq("classification_id", classificationId)
     .order("group_number", { ascending: true });
 
-  // Filter active groups in app code — safe when status column doesn't exist yet
+  // Separate active and archived groups
   const allGroups = (allGroupsRaw ?? []).filter(
     (g) => !g.status || g.status === "active"
   );
+  const archivedGroups = (allGroupsRaw ?? []).filter(
+    (g) => g.status === "archived"
+  );
 
-  if (!allGroups || allGroups.length === 0) {
+  if (allGroups.length === 0 && archivedGroups.length === 0) {
     return NextResponse.json({
       status: "drawn",
       group: null,
@@ -190,7 +193,7 @@ export async function GET(request: NextRequest) {
     nameMap.set(u.id, u.display_name || "Unknown");
   }
 
-  // Aggregate total points per user from all scored predictions
+  // Aggregate stage-local points per user (Format resets points per stage).
   const pointsMap = new Map<string, number>();
   for (const uid of allUserIds) pointsMap.set(uid, 0);
 
@@ -202,14 +205,39 @@ export async function GET(request: NextRequest) {
       .eq("id", competitionId)
       .single();
 
-    // Sum scored prediction points per user in the database (one row per user)
-    // instead of fetching every prediction row, which exceeded PostgREST's
-    // max-rows cap. See migration 20260616140000_sum_prediction_points_rpc.sql.
-    const { data: pointRows } = await supabase.rpc("sum_prediction_points", {
-      p_user_ids: allUserIds,
-      p_tournament_id: comp?.tournament_id ?? null,
-      p_competition_id: competitionId,
-    });
+    const tournamentId = comp?.tournament_id ?? null;
+
+    // Find the current stage: first non-finalised stage by stage_order.
+    // Sporting stage status may lag behind reality (e.g. 'upcoming' when
+    // rounds are already open/scored), so we can't rely on status='active'.
+    let activeSportingStageId: string | null = null;
+    if (tournamentId) {
+      const { data: currentStage } = await supabase
+        .from("sporting_stages")
+        .select("id")
+        .eq("tournament_id", tournamentId)
+        .neq("status", "finalised")
+        .order("stage_order", { ascending: true })
+        .limit(1)
+        .maybeSingle();
+
+      activeSportingStageId = currentStage?.id ?? null;
+    }
+
+    // Use stage-scoped RPC for Format groups (points reset per stage).
+    // Falls back to tournament-wide sum if no active stage found.
+    const { data: pointRows } = activeSportingStageId
+      ? await supabase.rpc("sum_stage_points", {
+          p_user_ids: allUserIds,
+          p_sporting_stage_id: activeSportingStageId,
+          p_tournament_id: tournamentId,
+          p_competition_id: competitionId,
+        })
+      : await supabase.rpc("sum_prediction_points", {
+          p_user_ids: allUserIds,
+          p_tournament_id: tournamentId,
+          p_competition_id: competitionId,
+        });
 
     for (const r of (pointRows ?? []) as Array<{ user_id: string; total_points: number }>) {
       pointsMap.set(r.user_id, r.total_points ?? 0);
@@ -245,6 +273,59 @@ export async function GET(request: NextRequest) {
     };
   });
 
+  // Build archived group response (historical group stage view)
+  const archivedGroupsResponse = archivedGroups.map((g) => {
+    const gMembers = memberships
+      .filter((m) => m.group_id === g.id)
+      .map((m) => ({
+        user_id: m.user_id,
+        display_name: nameMap.get(m.user_id) ?? "Unknown",
+        points: pointsMap.get(m.user_id) ?? 0,
+        predictions_made: 0,
+        predictions_total: 0,
+        is_self: m.user_id === user.id,
+        status: m.status,
+      }))
+      .sort((a, b) => b.points - a.points);
+
+    return {
+      id: g.id,
+      name: g.group_name,
+      groupNumber: g.group_number,
+      targetSize: g.target_size,
+      members: gMembers,
+    };
+  });
+
+  // Fetch eliminated classification members for the eliminated section
+  const { data: eliminatedMembers } = await svcFetch
+    .from("classification_memberships")
+    .select("user_id")
+    .eq("classification_id", classificationId)
+    .eq("status", "eliminated");
+
+  const eliminatedUserIds = new Set((eliminatedMembers ?? []).map((m) => m.user_id));
+
+  // Build eliminated list with points and source group
+  const eliminatedList = [...eliminatedUserIds].map((uid) => {
+    // Find which archived group they were in
+    const archivedMembership = memberships.find(
+      (m) => m.user_id === uid && archivedGroups.some((g) => g.id === m.group_id)
+    );
+    const sourceGroup = archivedMembership
+      ? archivedGroups.find((g) => g.id === archivedMembership.group_id)
+      : null;
+
+    return {
+      user_id: uid,
+      display_name: nameMap.get(uid) ?? "Unknown",
+      points: pointsMap.get(uid) ?? 0,
+      is_self: uid === user.id,
+      source_group: sourceGroup?.group_name ?? null,
+      status: archivedMembership?.status ?? "eliminated",
+    };
+  }).sort((a, b) => b.points - a.points);
+
   // User's own group for backward compat
   const userGroupData = myGroup
     ? groupsResponse.find((g) => g.id === myGroupId) ?? null
@@ -256,6 +337,8 @@ export async function GET(request: NextRequest) {
       ? { name: userGroupData.name, groupNumber: userGroupData.groupNumber, members: userGroupData.members }
       : null,
     allGroups: groupsResponse,
+    archivedGroups: archivedGroupsResponse,
+    eliminatedMembers: eliminatedList,
     myGroupId,
     totalMembers: totalMembers ?? 0,
   });

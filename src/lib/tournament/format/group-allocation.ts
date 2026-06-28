@@ -117,15 +117,19 @@ export async function allocatePredictionGroups(
   survivorTarget: number,
   options?: { force?: boolean }
 ): Promise<FormatPredictionGroup[]> {
-  // GUARD: Refuse to overwrite existing groups unless explicitly forced.
-  // This prevents accidental redraws caused by query bugs or race conditions.
+  // GUARD: Refuse to overwrite existing ACTIVE groups unless explicitly forced.
+  // Archived groups (from completed elimination stages) are ignored.
   const { data: existingGroups } = await supabase
     .from("format_prediction_groups")
-    .select("id")
+    .select("id, status")
     .eq("classification_id", classificationId)
     .limit(1);
 
-  if ((existingGroups?.length ?? 0) > 0 && !options?.force) {
+  const activeGroups = (existingGroups ?? []).filter(
+    (g) => !g.status || g.status === "active"
+  );
+
+  if (activeGroups.length > 0 && !options?.force) {
     throw new Error(
       `BLOCKED: Groups already exist for classification ${classificationId}. ` +
       `Refusing to redraw. Pass { force: true } to override.`
