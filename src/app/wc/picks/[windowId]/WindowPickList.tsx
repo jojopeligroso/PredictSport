@@ -239,6 +239,98 @@ const CARD_THEME: SurfaceTheme = {
   lockedMutedText: "text-white/55",
 };
 
+// ── H2H "Who goes through?" picker for knockout matches ─────────────
+function H2HPicker({
+  eptId, eventId, competitionId, home, away, points,
+  initialPrediction, isLocked, variant,
+}: {
+  eptId: string;
+  eventId: string;
+  competitionId: string;
+  home: string;
+  away: string;
+  points: number;
+  initialPrediction?: Prediction;
+  isLocked: boolean;
+  variant: "card" | "compact";
+}) {
+  const t = useT();
+  const isCard = variant === "card";
+  const initValue = initialPrediction?.prediction_data?.selection as string | undefined ?? null;
+  const [selected, setSelected] = useState<string | null>(initValue);
+  const [saving, setSaving] = useState(false);
+
+  const pick = useCallback(async (team: string) => {
+    if (isLocked || saving) return;
+    const prev = selected;
+    setSelected(team);
+    setSaving(true);
+    try {
+      const res = await fetch("/api/predictions", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          event_id: eventId,
+          competition_id: competitionId,
+          prediction_type: "head_to_head",
+          event_prediction_type_id: eptId,
+          prediction_data: { selection: team },
+        }),
+      });
+      if (!res.ok) {
+        setSelected(prev);
+      }
+    } catch {
+      setSelected(prev);
+    } finally {
+      setSaving(false);
+    }
+  }, [isLocked, saving, selected, eventId, competitionId, eptId]);
+
+  if (isLocked && selected) {
+    return (
+      <p className={`mt-2 text-center text-xs ${isCard ? "text-white/55" : "text-ps-text-ter"}`}>
+        {t("matches.goes_through")}: <span className="font-semibold">{selected}</span>
+      </p>
+    );
+  }
+  if (isLocked) return null;
+
+  const btnBase = "flex-1 rounded-full py-1.5 text-xs font-semibold transition-colors min-h-[32px]";
+  const unselected = isCard
+    ? "border border-white/20 text-white/60 hover:border-white/40"
+    : "border border-ps-border text-ps-text-sec hover:border-ps-text-ter";
+  const active = isCard
+    ? "border border-ps-amber bg-ps-amber/20 text-white"
+    : "border border-ps-amber bg-ps-amber/10 text-ps-text";
+
+  return (
+    <div className="mt-3 flex flex-col items-center gap-1.5">
+      <p className={`text-xs font-semibold uppercase tracking-wide ${isCard ? "text-white/50" : "text-ps-text-ter"}`}>
+        {t("matches.goes_through")} <span className="font-normal lowercase">+{points}pt</span>
+      </p>
+      <div className="flex w-full gap-1.5">
+        <button
+          type="button"
+          onClick={() => pick(home)}
+          disabled={isLocked || saving}
+          className={`${btnBase} ${selected === home ? active : unselected}`}
+        >
+          {home}
+        </button>
+        <button
+          type="button"
+          onClick={() => pick(away)}
+          disabled={isLocked || saving}
+          className={`${btnBase} ${selected === away ? active : unselected}`}
+        >
+          {away}
+        </button>
+      </div>
+    </div>
+  );
+}
+
 function MatchPickRow({
   competitionId,
   event,
@@ -638,14 +730,13 @@ function MatchPickRow({
         </button>
       </div>
 
-      {isKnockout &&
-        winnerOptions.some((opt) => slotOf(opt, home, away) === "draw") && (
-          <p
-            className={`mt-1 text-center text-xs ${useCardSurface ? "text-white/55" : "text-ps-text-ter"}`}
-          >
-            Draw = goes to pens. Pick who advances below.
-          </p>
-        )}
+      {isKnockout && (
+        <p
+          className={`mt-1 text-center text-xs ${useCardSurface ? "text-white/55" : "text-ps-text-ter"}`}
+        >
+          {t("matches.knockout_90min")}
+        </p>
+      )}
 
       {/* Confidence level — progressive disclosure */}
       {currentWinner && disclosure.phase !== 'invisible' && (
@@ -746,6 +837,23 @@ function MatchPickRow({
             </span>
           </p>
         )}
+
+      {/* ── Who goes through? (knockout only) ── */}
+      {isKnockout && h2hEpt && (
+        <H2HPicker
+          eptId={h2hEpt.id}
+          eventId={event.id}
+          competitionId={competitionId}
+          home={home}
+          away={away}
+          points={h2hEpt.points ?? 1}
+          initialPrediction={initialPredictions.find(
+            (p) => p.prediction_type === "head_to_head"
+          )}
+          isLocked={isLocked}
+          variant={useCardSurface ? "card" : "compact"}
+        />
+      )}
 
       {currentWinner && (
         <div className="mt-1 flex justify-center">

@@ -133,6 +133,8 @@
   "fixtures.stage_sf": "Semi Final",
   "fixtures.stage_3rd": "Tercer Lugar",
   "fixtures.stage_final": "Final",
+  "matches.knockout_90min": "Tu prediccion es para los 90 minutos de juego",
+  "matches.goes_through": "Quien avanza?",
   "picks.all_windows": "Todas las ventanas",
   "picks.prev_window": "← {prevWindowName}",
   "picks.finalised": "Finalizado",
