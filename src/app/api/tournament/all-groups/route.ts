@@ -70,14 +70,35 @@ export async function GET(request: NextRequest) {
       .eq("id", competitionId)
       .single();
 
-    // Sum scored prediction points per user in the database (one row per user)
-    // instead of fetching every prediction row, which exceeded PostgREST's
-    // max-rows cap. See migration 20260616140000_sum_prediction_points_rpc.sql.
-    const { data: pointRows } = await supabase.rpc("sum_prediction_points", {
-      p_user_ids: allUserIds,
-      p_tournament_id: comp?.tournament_id ?? null,
-      p_competition_id: competitionId,
-    });
+    const tournamentId = comp?.tournament_id ?? null;
+
+    // Format groups use stage-local points (reset per stage).
+    // Find the current stage: first non-finalised sporting stage.
+    let stageId: string | null = null;
+    if (tournamentId) {
+      const { data: currentStage } = await supabase
+        .from("sporting_stages")
+        .select("id")
+        .eq("tournament_id", tournamentId)
+        .neq("status", "finalised")
+        .order("stage_order", { ascending: true })
+        .limit(1)
+        .maybeSingle();
+      stageId = currentStage?.id ?? null;
+    }
+
+    const { data: pointRows } = stageId
+      ? await supabase.rpc("sum_stage_points", {
+          p_user_ids: allUserIds,
+          p_sporting_stage_id: stageId,
+          p_tournament_id: tournamentId,
+          p_competition_id: competitionId,
+        })
+      : await supabase.rpc("sum_prediction_points", {
+          p_user_ids: allUserIds,
+          p_tournament_id: tournamentId,
+          p_competition_id: competitionId,
+        });
 
     for (const r of (pointRows ?? []) as Array<{ user_id: string; total_points: number }>) {
       pointsMap.set(r.user_id, r.total_points ?? 0);

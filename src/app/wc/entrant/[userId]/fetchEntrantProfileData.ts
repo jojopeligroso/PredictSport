@@ -502,13 +502,36 @@ export async function fetchEntrantProfileData(
 
     if (groupInfoResult.data && groupMembersResult.data) {
       const memberUserIds = groupMembersResult.data.map((m: { user_id: string }) => m.user_id);
+
+      // Format groups use stage-local points (reset per stage).
+      // Find the current stage: first non-finalised sporting stage.
+      let stageId: string | null = null;
+      if (competition.tournament_id) {
+        const { data: currentStage } = await supabase
+          .from("sporting_stages")
+          .select("id")
+          .eq("tournament_id", competition.tournament_id)
+          .neq("status", "finalised")
+          .order("stage_order", { ascending: true })
+          .limit(1)
+          .maybeSingle();
+        stageId = currentStage?.id ?? null;
+      }
+
       const [groupUserNames, groupPointsResult] = await Promise.all([
         supabase.from("users").select("id, display_name").in("id", memberUserIds),
-        supabase.rpc("sum_prediction_points", {
-          p_user_ids: memberUserIds,
-          p_tournament_id: competition.tournament_id ?? null,
-          p_competition_id: competition.id,
-        }),
+        stageId
+          ? supabase.rpc("sum_stage_points", {
+              p_user_ids: memberUserIds,
+              p_sporting_stage_id: stageId,
+              p_tournament_id: competition.tournament_id ?? null,
+              p_competition_id: competition.id,
+            })
+          : supabase.rpc("sum_prediction_points", {
+              p_user_ids: memberUserIds,
+              p_tournament_id: competition.tournament_id ?? null,
+              p_competition_id: competition.id,
+            }),
       ]);
 
       const nameMap = new Map(
