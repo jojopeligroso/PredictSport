@@ -190,8 +190,8 @@ export function ScoreInput({
           aria-label={`${homeLabel} score`}
           className={[
             "w-[34px] h-[32px] rounded-full border text-center font-mono text-item-label font-semibold text-ps-text outline-none transition-all duration-150 shrink-0",
-            home !== "" ? "bg-white border-ps-amber" : "bg-transparent border-ps-border",
-            "focus:border-ps-amber focus:bg-white",
+            home !== "" ? "bg-ps-surface border-ps-amber" : "bg-transparent border-ps-border",
+            "focus:border-ps-amber focus:bg-ps-surface",
           ].join(" ")}
         />
         <span className="text-xs text-ps-text-ter">&ndash;</span>
@@ -209,8 +209,8 @@ export function ScoreInput({
           aria-label={`${awayLabel} score`}
           className={[
             "w-[34px] h-[32px] rounded-full border text-center font-mono text-item-label font-semibold text-ps-text outline-none transition-all duration-150 shrink-0",
-            away !== "" ? "bg-white border-ps-amber" : "bg-transparent border-ps-border",
-            "focus:border-ps-amber focus:bg-white",
+            away !== "" ? "bg-ps-surface border-ps-amber" : "bg-transparent border-ps-border",
+            "focus:border-ps-amber focus:bg-ps-surface",
           ].join(" ")}
         />
       </div>

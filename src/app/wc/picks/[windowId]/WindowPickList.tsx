@@ -183,8 +183,8 @@ const COMPACT_THEME: SurfaceTheme = {
   scoreInput: (filled) =>
     [
       "w-[34px] h-[32px] rounded-full border text-center font-mono text-base font-semibold text-ps-text outline-none transition-all duration-150 shrink-0",
-      filled ? "bg-white border-ps-amber" : "bg-transparent border-ps-border",
-      "focus:border-ps-amber focus:bg-white",
+      filled ? "bg-ps-surface border-ps-amber" : "bg-transparent border-ps-border",
+      "focus:border-ps-amber focus:bg-ps-surface",
     ].join(" "),
   errorText: "mt-1 text-caption font-medium text-ps-red",
   lockedReadOnly: "rounded-lg border border-ps-border bg-ps-surface px-3 py-2",
