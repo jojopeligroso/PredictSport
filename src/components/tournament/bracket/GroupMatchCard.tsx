@@ -106,7 +106,7 @@ export default function GroupMatchCard({
       ${
         isComplete
           ? 'border-ps-green/30 bg-ps-green/5'
-          : 'border-ps-ink/10 bg-white'
+          : 'border-ps-border bg-ps-surface'
       }
     `}
     >
@@ -115,7 +115,7 @@ export default function GroupMatchCard({
         <div className="flex-1">
           <div className="mb-2 flex items-center gap-1.5">
             <CountryFlag shape="pill" name={match.home_team} size={20} />
-            <p className="text-sm font-semibold text-ps-ink">
+            <p className="text-sm font-semibold text-ps-text">
               {match.home_team}
             </p>
           </div>
@@ -125,20 +125,20 @@ export default function GroupMatchCard({
             value={homeScore}
             onChange={(e) => handleScoreChange('home', e.target.value)}
             placeholder="0"
-            className="w-full rounded border border-ps-ink/20 px-3 py-2 font-mono text-lg font-semibold text-ps-ink focus:border-ps-amber focus:outline-none focus:ring-2 focus:ring-ps-amber/20"
+            className="w-full rounded border border-ps-border-strong px-3 py-2 font-mono text-lg font-semibold text-ps-text focus:border-ps-amber focus:outline-none focus:ring-2 focus:ring-ps-amber/20"
           />
 
           {/* Tries (rugby) */}
           {needsTries && (
             <div className="mt-2">
-              <label className="text-xs text-ps-ink/60">Tries</label>
+              <label className="text-xs text-ps-text-ter">Tries</label>
               <input
                 type="number"
                 min="0"
                 value={homeTries}
                 onChange={(e) => handleTriesChange('home', e.target.value)}
                 placeholder="0"
-                className="w-full rounded border border-ps-ink/10 px-2 py-1 text-sm font-mono text-ps-ink focus:border-ps-amber focus:outline-none"
+                className="w-full rounded border border-ps-border px-2 py-1 text-sm font-mono text-ps-text focus:border-ps-amber focus:outline-none"
               />
             </div>
           )}
@@ -146,7 +146,7 @@ export default function GroupMatchCard({
 
         {/* VS separator */}
         <div className="flex flex-col items-center">
-          <span className="font-mono text-xs text-ps-ink/40">vs</span>
+          <span className="font-mono text-xs text-ps-text-ter">vs</span>
           {isComplete && (
             <span className="mt-1 text-lg">✓</span>
           )}
@@ -156,7 +156,7 @@ export default function GroupMatchCard({
         <div className="flex-1">
           <div className="mb-2 flex items-center gap-1.5">
             <CountryFlag shape="pill" name={match.away_team} size={20} />
-            <p className="text-sm font-semibold text-ps-ink">
+            <p className="text-sm font-semibold text-ps-text">
               {match.away_team}
             </p>
           </div>
@@ -166,20 +166,20 @@ export default function GroupMatchCard({
             value={awayScore}
             onChange={(e) => handleScoreChange('away', e.target.value)}
             placeholder="0"
-            className="w-full rounded border border-ps-ink/20 px-3 py-2 font-mono text-lg font-semibold text-ps-ink focus:border-ps-amber focus:outline-none focus:ring-2 focus:ring-ps-amber/20"
+            className="w-full rounded border border-ps-border-strong px-3 py-2 font-mono text-lg font-semibold text-ps-text focus:border-ps-amber focus:outline-none focus:ring-2 focus:ring-ps-amber/20"
           />
 
           {/* Tries (rugby) */}
           {needsTries && (
             <div className="mt-2">
-              <label className="text-xs text-ps-ink/60">Tries</label>
+              <label className="text-xs text-ps-text-ter">Tries</label>
               <input
                 type="number"
                 min="0"
                 value={awayTries}
                 onChange={(e) => handleTriesChange('away', e.target.value)}
                 placeholder="0"
-                className="w-full rounded border border-ps-ink/10 px-2 py-1 text-sm font-mono text-ps-ink focus:border-ps-amber focus:outline-none"
+                className="w-full rounded border border-ps-border px-2 py-1 text-sm font-mono text-ps-text focus:border-ps-amber focus:outline-none"
               />
             </div>
           )}

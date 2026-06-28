@@ -34,13 +34,13 @@ export default function KnockoutMatchCard({
         ${
           isComplete
             ? 'border-ps-green/30 bg-ps-green/5'
-            : 'border-ps-ink/10 bg-white'
+            : 'border-ps-border bg-ps-surface'
         }
       `}
     >
       {/* Match number */}
       <div className="mb-3 flex items-center justify-between">
-        <span className="font-mono text-xs text-ps-ink/40">
+        <span className="font-mono text-xs text-ps-text-ter">
           Match {matchNumber}
         </span>
         {isComplete && (
@@ -57,8 +57,8 @@ export default function KnockoutMatchCard({
             flex flex-1 flex-col items-center gap-2 rounded-lg border-2 p-4 text-center font-semibold transition-all
             ${
               selectedWinner === homeTeam
-                ? 'border-ps-amber bg-ps-amber/10 text-ps-ink shadow-md'
-                : 'border-ps-ink/10 text-ps-ink/80 hover:border-ps-ink/20 hover:bg-ps-ink/5'
+                ? 'border-ps-amber bg-ps-amber/10 text-ps-text shadow-md'
+                : 'border-ps-border text-ps-text hover:border-ps-border-strong hover:bg-ps-chip'
             }
             ${isTBD ? 'cursor-not-allowed opacity-40' : 'cursor-pointer'}
           `}
@@ -69,7 +69,7 @@ export default function KnockoutMatchCard({
 
         {/* VS separator */}
         <div className="flex items-center">
-          <span className="font-mono text-xs text-ps-ink/40">vs</span>
+          <span className="font-mono text-xs text-ps-text-ter">vs</span>
         </div>
 
         {/* Away team button */}
@@ -80,8 +80,8 @@ export default function KnockoutMatchCard({
             flex flex-1 flex-col items-center gap-2 rounded-lg border-2 p-4 text-center font-semibold transition-all
             ${
               selectedWinner === awayTeam
-                ? 'border-ps-amber bg-ps-amber/10 text-ps-ink shadow-md'
-                : 'border-ps-ink/10 text-ps-ink/80 hover:border-ps-ink/20 hover:bg-ps-ink/5'
+                ? 'border-ps-amber bg-ps-amber/10 text-ps-text shadow-md'
+                : 'border-ps-border text-ps-text hover:border-ps-border-strong hover:bg-ps-chip'
             }
             ${isTBD ? 'cursor-not-allowed opacity-40' : 'cursor-pointer'}
           `}
@@ -93,7 +93,7 @@ export default function KnockoutMatchCard({
 
       {/* TBD warning */}
       {isTBD && (
-        <p className="mt-2 text-xs text-ps-ink/60">
+        <p className="mt-2 text-xs text-ps-text-ter">
           Complete previous rounds to unlock this match
         </p>
       )}

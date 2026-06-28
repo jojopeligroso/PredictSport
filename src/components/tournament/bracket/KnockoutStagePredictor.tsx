@@ -125,14 +125,14 @@ export default function KnockoutStagePredictor({
   return (
     <div className="space-y-6">
       {/* Progress */}
-      <div className="rounded-lg border border-ps-ink/10 bg-white p-4">
+      <div className="rounded-lg border border-ps-border bg-ps-surface p-4">
         <div className="mb-2 flex items-center justify-between text-sm">
-          <span className="font-semibold text-ps-ink">Knockout Progress</span>
-          <span className="text-ps-ink/60">
+          <span className="font-semibold text-ps-text">Knockout Progress</span>
+          <span className="text-ps-text-ter">
             {completedStages} / {totalStages} stages
           </span>
         </div>
-        <div className="h-2 w-full overflow-hidden rounded-full bg-ps-ink/5">
+        <div className="h-2 w-full overflow-hidden rounded-full bg-ps-chip">
           <div
             className="h-full bg-ps-amber transition-all duration-300"
             style={{ width: `${progressPercentage}%` }}
@@ -141,11 +141,11 @@ export default function KnockoutStagePredictor({
       </div>
 
       {/* Stage header */}
-      <div className="rounded-lg border border-ps-ink/10 bg-white p-4">
-        <h2 className="font-display text-xl font-extrabold text-ps-ink">
+      <div className="rounded-lg border border-ps-border bg-ps-surface p-4">
+        <h2 className="font-display text-xl font-extrabold text-ps-text">
           {currentStage.name}
         </h2>
-        <p className="mt-1 text-sm text-ps-ink/60">
+        <p className="mt-1 text-sm text-ps-text-ter">
           Pick the winner for each match ({currentStage.matchCount}{' '}
           {currentStage.matchCount === 1 ? 'match' : 'matches'})
         </p>
@@ -174,10 +174,10 @@ export default function KnockoutStagePredictor({
       {/* Champion display (if final complete) */}
       {champion && (
         <div className="rounded-lg border border-ps-amber/30 bg-ps-amber/10 p-6 text-center">
-          <p className="mb-2 font-mono text-xs uppercase tracking-wide text-ps-ink/60">
+          <p className="mb-2 font-mono text-xs uppercase tracking-wide text-ps-text-ter">
             Your Predicted Champion
           </p>
-          <p className="font-display text-2xl font-extrabold text-ps-ink">
+          <p className="font-display text-2xl font-extrabold text-ps-text">
             {champion}
           </p>
         </div>
@@ -191,8 +191,8 @@ export default function KnockoutStagePredictor({
           w-full rounded-lg px-6 py-4 font-semibold transition-all
           ${
             isStageComplete
-              ? 'bg-ps-amber text-ps-ink hover:bg-ps-amber/90 hover:shadow-md'
-              : 'cursor-not-allowed bg-ps-ink/10 text-ps-ink/40'
+              ? 'bg-ps-amber text-ps-text hover:bg-ps-amber/90 hover:shadow-md'
+              : 'cursor-not-allowed bg-ps-chip text-ps-text-ter'
           }
         `}
       >

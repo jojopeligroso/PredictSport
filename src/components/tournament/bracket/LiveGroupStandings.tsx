@@ -68,7 +68,7 @@ export default function LiveGroupStandings({
       <div className="overflow-x-auto">
         <table className="w-full text-sm">
           <thead>
-            <tr className="border-b border-ps-ink/10 text-left font-mono text-xs text-ps-ink/60">
+            <tr className="border-b border-ps-border text-left font-mono text-xs text-ps-text-ter">
               <th className="pb-2 pr-2">#</th>
               <th className="pb-2 pr-2">Team</th>
               <th className="pb-2 pr-1 text-center">Pts</th>
@@ -87,7 +87,7 @@ export default function LiveGroupStandings({
                 <tr
                   key={team.name}
                   className={`
-                    border-b border-ps-ink/5 font-mono
+                    border-b border-ps-border font-mono
                     ${isQualifying ? 'bg-ps-green/5' : ''}
                     ${isTied && highlightTies ? 'bg-ps-amber/5 border-l-2 border-ps-amber' : ''}
                   `}
@@ -102,7 +102,7 @@ export default function LiveGroupStandings({
                             ? 'bg-ps-green text-white'
                             : isTied && highlightTies
                               ? 'bg-ps-amber text-white'
-                              : 'bg-ps-ink/5 text-ps-ink/60'
+                              : 'bg-ps-chip text-ps-text-ter'
                         }
                       `}
                     >
@@ -111,7 +111,7 @@ export default function LiveGroupStandings({
                   </td>
 
                   {/* Team name */}
-                  <td className="py-2 pr-2 font-sans font-semibold text-ps-ink">
+                  <td className="py-2 pr-2 font-sans font-semibold text-ps-text">
                     <span className="inline-flex items-center gap-1.5">
                       <CountryFlag shape="pill" name={team.name} size={16} />
                       <span>{team.name}</span>
@@ -122,7 +122,7 @@ export default function LiveGroupStandings({
                   </td>
 
                   {/* Points */}
-                  <td className="py-2 pr-1 text-center font-bold text-ps-ink">
+                  <td className="py-2 pr-1 text-center font-bold text-ps-text">
                     {team.points}
                   </td>
 
@@ -133,7 +133,7 @@ export default function LiveGroupStandings({
                         ? 'text-ps-green'
                         : ((team.goalDifference ?? team.gd) ?? 0) < 0
                           ? 'text-ps-red'
-                          : 'text-ps-ink/80'
+                          : 'text-ps-text'
                     }`}
                   >
                     {((team.goalDifference ?? team.gd) ?? 0) > 0 ? '+' : ''}
@@ -141,7 +141,7 @@ export default function LiveGroupStandings({
                   </td>
 
                   {/* Goals For */}
-                  <td className="py-2 pr-1 text-center text-ps-ink/80">
+                  <td className="py-2 pr-1 text-center text-ps-text">
                     {(team.goalsFor ?? team.gs) ?? 0}
                   </td>
                 </tr>
@@ -162,14 +162,14 @@ export default function LiveGroupStandings({
               <div className="flex items-start gap-2">
                 <span className="text-ps-amber">⚠️</span>
                 <div className="flex-1">
-                  <p className="font-semibold text-ps-ink">
+                  <p className="font-semibold text-ps-text">
                     {group.length} teams tied on {group[0].points} points
                   </p>
-                  <p className="mt-1 text-xs text-ps-ink/70">
+                  <p className="mt-1 text-xs text-ps-text-sec">
                     {group.map((t) => t.name).join(', ')}
                   </p>
                   {nextTiebreaker && (
-                    <p className="mt-2 text-xs text-ps-ink/60">
+                    <p className="mt-2 text-xs text-ps-text-ter">
                       Next tiebreaker:{' '}
                       <span className="font-semibold">
                         {formatTiebreakerLabel(nextTiebreaker.type)}
@@ -183,8 +183,8 @@ export default function LiveGroupStandings({
 
           {/* Tiebreaker Hierarchy */}
           {tiebreakers.length > 0 && (
-            <div className="rounded-lg border border-ps-ink/10 bg-ps-cream p-3 text-xs text-ps-ink/60">
-              <p className="font-semibold text-ps-ink/80">
+            <div className="rounded-lg border border-ps-border bg-ps-bg-alt p-3 text-xs text-ps-text-ter">
+              <p className="font-semibold text-ps-text">
                 Tiebreaker hierarchy:
               </p>
               <ol className="mt-1 list-inside list-decimal space-y-0.5">
@@ -199,7 +199,7 @@ export default function LiveGroupStandings({
 
       {/* Legend */}
       {highlightPositions.length > 0 && (
-        <div className="mt-3 flex flex-wrap items-center gap-3 text-xs text-ps-ink/60">
+        <div className="mt-3 flex flex-wrap items-center gap-3 text-xs text-ps-text-ter">
           <div className="flex items-center gap-1">
             <div className="h-3 w-3 rounded-full bg-ps-green" />
             <span>Qualifies for knockout stage</span>

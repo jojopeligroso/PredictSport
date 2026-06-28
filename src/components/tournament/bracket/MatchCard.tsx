@@ -114,8 +114,8 @@ export default function MatchCard({
           onBlur={() => handleScoreBlur(homeScore, awayScore)}
           className={`
             w-[30px] h-[28px] rounded-full border text-center font-mono text-sm font-semibold text-ps-text outline-none transition-all duration-150 shrink-0
-            focus:border-ps-amber focus:bg-white
-            ${homeScore !== '' ? 'bg-white border-ps-amber' : 'bg-transparent border-ps-border'}
+            focus:border-ps-amber focus:bg-ps-surface
+            ${homeScore !== '' ? 'bg-ps-surface border-ps-amber' : 'bg-transparent border-ps-border'}
           `}
         />
 
@@ -147,8 +147,8 @@ export default function MatchCard({
           onBlur={() => handleScoreBlur(homeScore, awayScore)}
           className={`
             w-[30px] h-[28px] rounded-full border text-center font-mono text-sm font-semibold text-ps-text outline-none transition-all duration-150 shrink-0
-            focus:border-ps-amber focus:bg-white
-            ${awayScore !== '' ? 'bg-white border-ps-amber' : 'bg-transparent border-ps-border'}
+            focus:border-ps-amber focus:bg-ps-surface
+            ${awayScore !== '' ? 'bg-ps-surface border-ps-amber' : 'bg-transparent border-ps-border'}
           `}
         />
 

@@ -136,11 +136,11 @@ export default function ScoreCollector({
         <div className="flex items-start gap-3">
           <span className="text-2xl">⚠️</span>
           <div className="flex-1">
-            <h3 className="font-semibold text-ps-ink">
+            <h3 className="font-semibold text-ps-text">
               Your predictions created an exact tie
             </h3>
-            <p className="mt-2 text-sm text-ps-ink/70">{tiebreakerMessage}</p>
-            <p className="mt-3 text-sm font-semibold text-ps-ink/80">
+            <p className="mt-2 text-sm text-ps-text-sec">{tiebreakerMessage}</p>
+            <p className="mt-3 text-sm font-semibold text-ps-text">
               💡 Tip: Predict different scores to avoid ties!
             </p>
           </div>
@@ -155,13 +155,13 @@ export default function ScoreCollector({
       <div className="mb-4 flex items-start gap-3">
         <span className="text-2xl">⚠️</span>
         <div className="flex-1">
-          <h3 className="font-semibold text-ps-ink">
+          <h3 className="font-semibold text-ps-text">
             {tiedTeams.length} teams tied on {tiedTeams[0]?.points ?? 0} points
           </h3>
-          <p className="mt-1 text-sm text-ps-ink/70">
+          <p className="mt-1 text-sm text-ps-text-sec">
             {tiedTeams.map((t) => t.name).join(', ')}
           </p>
-          <p className="mt-2 text-sm font-semibold text-ps-ink/80">
+          <p className="mt-2 text-sm font-semibold text-ps-text">
             {formatTiebreakerLabel(currentTiebreaker.type)} will decide the
             final positions.
           </p>
@@ -170,17 +170,17 @@ export default function ScoreCollector({
 
       {/* Score inputs */}
       <div className="space-y-3">
-        <p className="text-sm font-semibold text-ps-ink">
+        <p className="text-sm font-semibold text-ps-text">
           Please predict scores for these matches:
         </p>
 
         {relevantMatches.map((match) => (
           <div
             key={match.match_id}
-            className="flex items-center gap-3 rounded-lg bg-ps-cream p-3"
+            className="flex items-center gap-3 rounded-lg bg-ps-bg-alt p-3"
           >
             {/* Match info */}
-            <div className="flex-1 text-sm font-medium text-ps-ink">
+            <div className="flex-1 text-sm font-medium text-ps-text">
               {match.home_team} vs {match.away_team}
             </div>
 
@@ -194,10 +194,10 @@ export default function ScoreCollector({
                 onChange={(e) =>
                   handleScoreChange(match.match_id, 'home', e.target.value)
                 }
-                className="w-12 rounded border border-ps-ink/20 bg-white px-2 py-1 text-center font-mono text-sm font-semibold text-ps-ink focus:border-ps-amber focus:outline-none focus:ring-2 focus:ring-ps-amber/20"
+                className="w-12 rounded border border-ps-border-strong bg-ps-surface px-2 py-1 text-center font-mono text-sm font-semibold text-ps-text focus:border-ps-amber focus:outline-none focus:ring-2 focus:ring-ps-amber/20"
                 placeholder="0"
               />
-              <span className="font-mono text-sm text-ps-ink/60">-</span>
+              <span className="font-mono text-sm text-ps-text-ter">-</span>
               <input
                 type="text"
                 inputMode="numeric"
@@ -206,7 +206,7 @@ export default function ScoreCollector({
                 onChange={(e) =>
                   handleScoreChange(match.match_id, 'away', e.target.value)
                 }
-                className="w-12 rounded border border-ps-ink/20 bg-white px-2 py-1 text-center font-mono text-sm font-semibold text-ps-ink focus:border-ps-amber focus:outline-none focus:ring-2 focus:ring-ps-amber/20"
+                className="w-12 rounded border border-ps-border-strong bg-ps-surface px-2 py-1 text-center font-mono text-sm font-semibold text-ps-text focus:border-ps-amber focus:outline-none focus:ring-2 focus:ring-ps-amber/20"
                 placeholder="0"
               />
             </div>
@@ -221,14 +221,14 @@ export default function ScoreCollector({
         className={`mt-4 w-full rounded-lg py-2 font-semibold transition-colors ${
           allScoresEntered
             ? 'bg-ps-amber text-white hover:bg-ps-amber/90'
-            : 'cursor-not-allowed bg-ps-ink/10 text-ps-ink/40'
+            : 'cursor-not-allowed bg-ps-chip text-ps-text-ter'
         }`}
       >
         Apply Scores
       </button>
 
       {!allScoresEntered && (
-        <p className="mt-2 text-center text-xs text-ps-ink/60">
+        <p className="mt-2 text-center text-xs text-ps-text-ter">
           Enter scores for all matches to continue
         </p>
       )}

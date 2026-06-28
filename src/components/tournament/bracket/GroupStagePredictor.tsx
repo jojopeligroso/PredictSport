@@ -53,7 +53,7 @@ export default function GroupStagePredictor({
   const [showStandings, setShowStandings] = useState(false)
 
   if (!template.groups) {
-    return <div className="text-ps-ink">No group stage configured.</div>
+    return <div className="text-ps-text">No group stage configured.</div>
   }
 
   const { count: groupCount, teamsPerGroup } = template.groups
@@ -168,14 +168,14 @@ export default function GroupStagePredictor({
   return (
     <div className="space-y-6">
       {/* Progress bar */}
-      <div className="rounded-lg border border-ps-ink/10 bg-white p-4">
+      <div className="rounded-lg border border-ps-border bg-ps-surface p-4">
         <div className="mb-2 flex items-center justify-between text-sm">
-          <span className="font-semibold text-ps-ink">Group Stage Progress</span>
-          <span className="text-ps-ink/60">
+          <span className="font-semibold text-ps-text">Group Stage Progress</span>
+          <span className="text-ps-text-ter">
             {completedGroups} / {groupCount} groups
           </span>
         </div>
-        <div className="h-2 w-full overflow-hidden rounded-full bg-ps-ink/5">
+        <div className="h-2 w-full overflow-hidden rounded-full bg-ps-chip">
           <div
             className="h-full bg-ps-amber transition-all duration-300"
             style={{ width: `${progressPercentage}%` }}
@@ -200,12 +200,12 @@ export default function GroupStagePredictor({
                 rounded-lg px-4 py-2 font-semibold transition-all
                 ${
                   isSelected
-                    ? 'bg-ps-amber text-ps-ink shadow-md'
+                    ? 'bg-ps-amber text-ps-text shadow-md'
                     : isComplete
                       ? 'bg-ps-green/10 text-ps-green hover:bg-ps-green/20'
-                      : 'bg-white text-ps-ink/60 hover:bg-ps-ink/5'
+                      : 'bg-ps-surface text-ps-text-ter hover:bg-ps-chip'
                 }
-                border ${isSelected ? 'border-ps-amber' : 'border-ps-ink/10'}
+                border ${isSelected ? 'border-ps-amber' : 'border-ps-border'}
               `}
             >
               Group {label}
@@ -216,11 +216,11 @@ export default function GroupStagePredictor({
       </div>
 
       {/* Current group header */}
-      <div className="rounded-lg border border-ps-ink/10 bg-white p-4">
-        <h2 className="font-display text-xl font-extrabold text-ps-ink">
+      <div className="rounded-lg border border-ps-border bg-ps-surface p-4">
+        <h2 className="font-display text-xl font-extrabold text-ps-text">
           Group {selectedGroup}
         </h2>
-        <p className="mt-1 text-sm text-ps-ink/60">
+        <p className="mt-1 text-sm text-ps-text-ter">
           Predict all {currentMatches.length} match scores
         </p>
       </div>
@@ -242,7 +242,7 @@ export default function GroupStagePredictor({
       {/* Standings preview */}
       {showStandings && currentStandings.length > 0 && (
         <div className="rounded-lg border border-ps-green/20 bg-ps-green/5 p-4">
-          <h3 className="mb-3 font-semibold text-ps-ink">
+          <h3 className="mb-3 font-semibold text-ps-text">
             Predicted Standings (Group {selectedGroup})
           </h3>
           <LiveGroupStandings
@@ -262,7 +262,7 @@ export default function GroupStagePredictor({
               team.goalsFor === nextTeam.goalsFor
             )
           }) && (
-            <div className="mt-3 rounded border border-ps-amber/30 bg-ps-amber/10 p-3 text-xs text-ps-ink/80">
+            <div className="mt-3 rounded border border-ps-amber/30 bg-ps-amber/10 p-3 text-xs text-ps-text">
               ⚠️ Warning: Some teams have identical stats. Tiebreakers were applied.
               Consider adjusting scores to make standings more realistic.
             </div>
@@ -278,8 +278,8 @@ export default function GroupStagePredictor({
           w-full rounded-lg px-6 py-4 font-semibold transition-all
           ${
             showStandings
-              ? 'bg-ps-amber text-ps-ink hover:bg-ps-amber/90 hover:shadow-md'
-              : 'cursor-not-allowed bg-ps-ink/10 text-ps-ink/40'
+              ? 'bg-ps-amber text-ps-text hover:bg-ps-amber/90 hover:shadow-md'
+              : 'cursor-not-allowed bg-ps-chip text-ps-text-ter'
           }
         `}
       >
@@ -287,7 +287,7 @@ export default function GroupStagePredictor({
       </button>
 
       {/* Help text */}
-      <p className="text-center text-xs text-ps-ink/60">
+      <p className="text-center text-xs text-ps-text-ter">
         Your progress is saved automatically. You can return later to continue.
       </p>
     </div>
