@@ -53,8 +53,10 @@ export async function GET(request: NextRequest) {
     .eq("classification_id", classificationId)
     .eq("status", "active");
 
-  // Check if groups already exist
-  const { data: existingGroupsRaw } = await supabase
+  // Check if groups already exist — use service client to bypass RLS,
+  // since format_prediction_groups may not have SELECT policies for members.
+  const svcCheck = createServiceClient();
+  const { data: existingGroupsRaw } = await svcCheck
     .from("format_prediction_groups")
     .select("id, status")
     .eq("classification_id", classificationId)
@@ -145,8 +147,10 @@ export async function GET(request: NextRequest) {
     }
   }
 
-  // Groups exist — fetch ALL active groups with members for full overview
-  const { data: allGroupsRaw } = await supabase
+  // Groups exist — fetch ALL active groups with members for full overview.
+  // Use service client because format_prediction_groups RLS may block members.
+  const svcFetch = createServiceClient();
+  const { data: allGroupsRaw } = await svcFetch
     .from("format_prediction_groups")
     .select("id, group_name, group_number, target_size, status")
     .eq("classification_id", classificationId)
@@ -166,8 +170,8 @@ export async function GET(request: NextRequest) {
     });
   }
 
-  // Fetch ALL memberships across all groups
-  const { data: allMemberships } = await supabase
+  // Fetch ALL memberships across all groups — service client for RLS bypass
+  const { data: allMemberships } = await svcFetch
     .from("format_group_memberships")
     .select("group_id, user_id, seed_position, status")
     .eq("classification_id", classificationId);
