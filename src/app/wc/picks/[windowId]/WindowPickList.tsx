@@ -296,13 +296,13 @@ function H2HPicker({
   }
   if (isLocked) return null;
 
-  const btnBase = "flex-1 rounded-full bg-transparent py-1.5 text-xs font-semibold transition-colors min-h-[32px]";
+  const btnBase = "flex-1 rounded-full bg-transparent py-1.5 text-xs font-semibold transition-all duration-150 min-h-[32px] active:scale-[0.97]";
   const unselected = isCard
     ? "border border-white/20 text-white/60 hover:border-white/40"
     : "border border-ps-border text-ps-text-sec hover:border-ps-text-ter";
   const active = isCard
-    ? "border border-ps-amber bg-ps-amber/20 text-white"
-    : "border border-ps-amber bg-ps-amber/10 text-ps-text";
+    ? "border border-ps-amber bg-ps-amber/20 text-white ring-2 ring-ps-amber"
+    : "border border-ps-amber bg-ps-amber/10 text-ps-amber ring-2 ring-ps-amber";
 
   return (
     <div className="mt-3 flex flex-col items-center gap-1.5">
