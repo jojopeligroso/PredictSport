@@ -429,6 +429,7 @@ function MatchPickRow({
     sport: event.sport, winnerEptId: winnerEpt?.id,
     winnerOptions, scoreEptId: scoreEpt?.id,
     isLocked, onWinnerLanded: handleWinnerLandedWithDisclosure,
+    h2hEptId: h2hEpt?.id, drawOption,
   });
   const handleConfidenceChange = useCallback((level: number | null) => {
     setConfidence(level);

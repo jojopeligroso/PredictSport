@@ -49,6 +49,8 @@ export function usePredictionState({
   scoreEptId,
   isLocked,
   onWinnerLanded,
+  h2hEptId,
+  drawOption,
 }: {
   initialPredictions: Prediction[];
   eventId: string;
@@ -59,6 +61,8 @@ export function usePredictionState({
   scoreEptId: string | undefined;
   isLocked: boolean;
   onWinnerLanded: (eventId: string, hasWinner: boolean) => void;
+  h2hEptId?: string;
+  drawOption?: string;
 }) {
   const router = useRouter();
   const t = useT();
@@ -312,6 +316,22 @@ export function usePredictionState({
           if (!hadWinner) onWinnerLanded(eventId, true);
         }
 
+        // Knockout: auto-save H2H when score-derived winner is not Draw
+        const h2hImplied = implied ?? currentWinner;
+        if (h2hEptId && h2hImplied && h2hImplied !== (drawOption ?? "Draw")) {
+          fetch("/api/predictions", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              event_id: eventId,
+              competition_id: competitionId,
+              prediction_type: "head_to_head",
+              event_prediction_type_id: h2hEptId,
+              prediction_data: { selection: h2hImplied },
+            }),
+          }).catch(() => {});
+        }
+
         // Green flash if resolving a conflict
         if (feedback.type === "conflict") {
           setFeedback({ type: "success" });
@@ -322,7 +342,7 @@ export function usePredictionState({
         router.refresh();
       }
     },
-    [scoreEptId, scoreDisplay, feedback, submitPrediction, router, sport, winnerOptions, currentWinner, eventId, winnerEptId, onWinnerLanded],
+    [scoreEptId, scoreDisplay, feedback, submitPrediction, router, sport, winnerOptions, currentWinner, eventId, winnerEptId, onWinnerLanded, h2hEptId, drawOption],
   );
 
   // ── Set confidence ─────────────────────────────────────────────────

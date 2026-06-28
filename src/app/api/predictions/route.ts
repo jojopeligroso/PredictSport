@@ -202,13 +202,16 @@ export async function POST(request: NextRequest) {
       .from("event_prediction_types")
       .select("id, prediction_type, config")
       .eq("event_id", event_id)
-      .in("prediction_type", ["winner", "exact_score"]);
+      .in("prediction_type", ["winner", "exact_score", "head_to_head"]);
 
     const winnerEptRow = matchEpts?.find(
       (e) => e.prediction_type === "winner",
     );
     const scoreEptRow = matchEpts?.find(
       (e) => e.prediction_type === "exact_score",
+    );
+    const h2hEptRow = matchEpts?.find(
+      (e) => e.prediction_type === "head_to_head",
     );
 
     if (!winnerEptRow) {
@@ -273,6 +276,33 @@ export async function POST(request: NextRequest) {
         },
         { status: 403 },
       );
+    }
+
+    // ── Knockout: auto-upsert H2H when winner is not Draw ──────────
+    const serverWinner = rpcResult.server_winner as string | null;
+    if (h2hEptRow && serverWinner && serverWinner !== "Draw") {
+      supabase
+        .rpc("safe_upsert_prediction", {
+          p_ept_id: h2hEptRow.id,
+          p_user_id: user.id,
+          p_type: "head_to_head",
+          p_event_id: event_id,
+          p_data: { selection: serverWinner },
+          p_expected_updated_at: null,
+          p_note_text: null,
+          p_note_visibility: null,
+          p_confidence_level: null,
+        })
+        .then(({ error: h2hErr }) => {
+          if (h2hErr) {
+            console.error("[predictions] H2H auto-upsert failed:", {
+              event_id,
+              user_id: user.id,
+              server_winner: serverWinner,
+              error: h2hErr,
+            });
+          }
+        });
     }
 
     // Return the primary prediction + correction metadata for conflict UX.
