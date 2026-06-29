@@ -180,6 +180,7 @@ async function handleEventPredictions(
       winnerPoints: number;
       scorePoints: number;
       h2hPoints: number;
+      goesThrough: string | null;
       confidenceLevel: number | null;
     }
   >();
@@ -197,6 +198,7 @@ async function handleEventPredictions(
         winnerPoints: 0,
         scorePoints: 0,
         h2hPoints: 0,
+        goesThrough: null as string | null,
         confidenceLevel: null,
       });
     }
@@ -217,6 +219,7 @@ async function handleEventPredictions(
       entry.scorePoints = p.points_awarded ?? 0;
     } else if (p.prediction_type === "head_to_head") {
       entry.h2hPoints = p.points_awarded ?? 0;
+      entry.goesThrough = (data?.selection as string) ?? null;
     }
   }
 
@@ -232,6 +235,7 @@ async function handleEventPredictions(
       winnerCorrect: pred?.winnerCorrect ?? null,
       scoreCorrect: pred?.scoreCorrect ?? null,
       totalPoints: (pred?.winnerPoints ?? 0) + (pred?.scorePoints ?? 0) + (pred?.h2hPoints ?? 0),
+      goesThrough: pred?.goesThrough ?? null,
       isGroupMember: groupMemberships.get(m.user_id)?.isUserGroup ?? false,
       isSelf: m.user_id === userId,
       groupName: groupMemberships.get(m.user_id)?.groupName ?? null,

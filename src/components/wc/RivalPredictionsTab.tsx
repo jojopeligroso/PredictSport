@@ -40,6 +40,7 @@ interface RivalPrediction {
   groupName: string | null;
   groupId: string | null;
   confidenceLevel: number | null;
+  goesThrough: string | null;
 }
 
 interface EventMeta {
@@ -531,13 +532,20 @@ function PredictionRow({
               {t("rivals.no_prediction")}
             </span>
           ) : (
-            <span
-              className={`max-w-[120px] truncate text-body font-semibold ${
-                isPending ? "font-medium text-ps-text-sec" : "text-ps-text"
-              }`}
-            >
-              {row.winner}
-            </span>
+            <div className="flex min-w-0 flex-col">
+              <span
+                className={`max-w-[120px] truncate text-body font-semibold ${
+                  isPending ? "font-medium text-ps-text-sec" : "text-ps-text"
+                }`}
+              >
+                {row.winner}
+              </span>
+              {row.goesThrough && row.goesThrough !== row.winner && (
+                <span className="max-w-[120px] truncate text-micro text-ps-text-ter">
+                  → {row.goesThrough}
+                </span>
+              )}
+            </div>
           )}
 
           {/* Confidence indicator — subtle accent bar */}
@@ -619,6 +627,13 @@ function PredictionRow({
           ) : (
             <span className="text-caption text-ps-text-ter italic">
               {t("rivals.no_score_predicted")}
+            </span>
+          )}
+
+          {/* Goes through (knockout draw predictions) */}
+          {row.goesThrough && row.goesThrough !== row.winner && (
+            <span className="text-caption text-ps-text-sec">
+              → {row.goesThrough}
             </span>
           )}
 
