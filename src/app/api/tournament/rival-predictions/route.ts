@@ -169,7 +169,7 @@ async function handleEventPredictions(
   const members = membersResult.data ?? [];
   const memberIds = new Set(members.map((m) => m.user_id));
 
-  // Build prediction map: user_id -> merged winner + exact_score data
+  // Build prediction map: user_id -> merged winner + exact_score + h2h data
   const predMap = new Map<
     string,
     {
@@ -179,6 +179,7 @@ async function handleEventPredictions(
       scoreCorrect: boolean | null;
       winnerPoints: number;
       scorePoints: number;
+      h2hPoints: number;
       confidenceLevel: number | null;
     }
   >();
@@ -195,6 +196,7 @@ async function handleEventPredictions(
         scoreCorrect: null,
         winnerPoints: 0,
         scorePoints: 0,
+        h2hPoints: 0,
         confidenceLevel: null,
       });
     }
@@ -213,6 +215,8 @@ async function handleEventPredictions(
           : null;
       entry.scoreCorrect = p.is_correct;
       entry.scorePoints = p.points_awarded ?? 0;
+    } else if (p.prediction_type === "head_to_head") {
+      entry.h2hPoints = p.points_awarded ?? 0;
     }
   }
 
@@ -227,7 +231,7 @@ async function handleEventPredictions(
       exactScore: pred?.exactScore ?? null,
       winnerCorrect: pred?.winnerCorrect ?? null,
       scoreCorrect: pred?.scoreCorrect ?? null,
-      totalPoints: (pred?.winnerPoints ?? 0) + (pred?.scorePoints ?? 0),
+      totalPoints: (pred?.winnerPoints ?? 0) + (pred?.scorePoints ?? 0) + (pred?.h2hPoints ?? 0),
       isGroupMember: groupMemberships.get(m.user_id)?.isUserGroup ?? false,
       isSelf: m.user_id === userId,
       groupName: groupMemberships.get(m.user_id)?.groupName ?? null,
@@ -332,6 +336,7 @@ async function handleTeaser(
       scoreCorrect: boolean | null;
       winnerPoints: number;
       scorePoints: number;
+      h2hPoints: number;
     }
   >();
 
@@ -344,6 +349,7 @@ async function handleTeaser(
         scoreCorrect: null,
         winnerPoints: 0,
         scorePoints: 0,
+        h2hPoints: 0,
       });
     }
     const entry = predMap.get(p.user_id)!;
@@ -360,6 +366,8 @@ async function handleTeaser(
           : null;
       entry.scoreCorrect = p.is_correct;
       entry.scorePoints = p.points_awarded ?? 0;
+    } else if (p.prediction_type === "head_to_head") {
+      entry.h2hPoints = p.points_awarded ?? 0;
     }
   }
 
@@ -375,7 +383,7 @@ async function handleTeaser(
         exactScore: pred?.exactScore ?? null,
         winnerCorrect: pred?.winnerCorrect ?? null,
         scoreCorrect: pred?.scoreCorrect ?? null,
-        totalPoints: (pred?.winnerPoints ?? 0) + (pred?.scorePoints ?? 0),
+        totalPoints: (pred?.winnerPoints ?? 0) + (pred?.scorePoints ?? 0) + (pred?.h2hPoints ?? 0),
       };
     });
 
