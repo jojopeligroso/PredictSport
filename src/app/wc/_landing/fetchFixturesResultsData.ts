@@ -25,18 +25,47 @@ export async function fetchFixturesResultsData() {
   const windowEventsByExternalId: Record<string, WindowEvent> = {};
   const fixtureByEventId = new Map<string, WcFixture>();
 
+  // Stage prefixes for knockout events created via admin (different ID scheme
+  // than the static catalogue). We query both so the merge picks up real team
+  // names, confirmed times, and prediction/result linkage.
+  const KO_STAGE_PREFIXES = ["r32", "r16", "qf", "sf", "3rd", "final"] as const;
+  type KoStagePrefix = (typeof KO_STAGE_PREFIXES)[number];
+  const KO_PREFIX_TO_STAGE: Record<KoStagePrefix, WcFixture["stage"]> = {
+    r32: "R32", r16: "R16", qf: "QF", sf: "SF", "3rd": "3RD", final: "FINAL",
+  };
+
   if (competition) {
     const externalIds = WC2026_FIXTURES.map((f) => f.externalId);
     const ff = fixtureFilter(competition);
 
-    const { data: events } = await supabase
+    const eventFields = `id, external_event_id, event_name, sport, start_time, lock_time, pick_reveal_at, status, result_data, result_confirmed, round_id,
+         event_prediction_types (id, event_id, prediction_type, points, partial_points, config)`;
+
+    // Query 1: events matching static fixture catalogue IDs (group stage)
+    const { data: catalogueEvents } = await supabase
       .from("events")
-      .select(
-        `id, external_event_id, event_name, sport, start_time, lock_time, pick_reveal_at, status, result_data, result_confirmed, round_id,
-         event_prediction_types (id, event_id, prediction_type, points, partial_points, config)`,
-      )
+      .select(eventFields)
       .eq(ff.key, ff.value)
       .in("external_event_id", externalIds);
+
+    // Query 2: knockout events using admin-created IDs (manual:wc2026-r32-*, etc.)
+    const koPatterns = KO_STAGE_PREFIXES.map((p) => `manual:wc2026-${p}-%`);
+    const { data: knockoutEvents } = await supabase
+      .from("events")
+      .select(eventFields)
+      .eq(ff.key, ff.value)
+      .or(koPatterns.map((p) => `external_event_id.like.${p}`).join(","));
+
+    // Merge — deduplicate by external_event_id
+    const seenIds = new Set<string>();
+    const events: typeof catalogueEvents = [];
+    for (const e of [...(catalogueEvents ?? []), ...(knockoutEvents ?? [])]) {
+      const eid = (e as { external_event_id: string }).external_event_id;
+      if (eid && !seenIds.has(eid)) {
+        seenIds.add(eid);
+        events.push(e);
+      }
+    }
 
     const roundIds = [
       ...new Set(
@@ -243,8 +272,75 @@ export async function fetchFixturesResultsData() {
     }
   }
 
+  // ── Merge knockout fixtures from DB into the static catalogue ──────────
+  // The static catalogue has placeholder names/times for knockout slots.
+  // When real DB events exist (created by admin after bracket resolves),
+  // we replace the static entries with merged fixtures that carry the DB's
+  // external_event_id, team names, and confirmed kickoff times, but keep
+  // the static fixture's city/stadium and stage metadata.
+  //
+  // Matching: within each stage, sort both static and DB by kickoff time
+  // and pair by position (both lists have the same count per stage).
+  const dbKoEvents: { eid: string; name: string; start: string; stage: WcFixture["stage"] }[] = [];
+  for (const eid of Object.keys(windowEventsByExternalId)) {
+    for (const prefix of KO_STAGE_PREFIXES) {
+      if (eid.startsWith(`manual:wc2026-${prefix}-`)) {
+        const we = windowEventsByExternalId[eid];
+        dbKoEvents.push({
+          eid,
+          name: we.event_name,
+          start: we.start_time,
+          stage: KO_PREFIX_TO_STAGE[prefix],
+        });
+        break;
+      }
+    }
+  }
+
+  let mergedFixtures = WC2026_FIXTURES;
+  if (dbKoEvents.length > 0) {
+    // Group DB events by stage
+    const dbByStage = new Map<WcFixture["stage"], typeof dbKoEvents>();
+    for (const e of dbKoEvents) {
+      const arr = dbByStage.get(e.stage) ?? [];
+      arr.push(e);
+      dbByStage.set(e.stage, arr);
+    }
+
+    // For each stage with DB events, pair with static fixtures by chrono order
+    const replacements = new Map<number, WcFixture>(); // index in WC2026_FIXTURES → replacement
+    for (const [stage, dbEvents] of dbByStage) {
+      const staticIndices = WC2026_FIXTURES
+        .map((f, i) => ({ f, i }))
+        .filter(({ f }) => f.stage === stage)
+        .sort((a, b) => a.f.kickoffUtc.localeCompare(b.f.kickoffUtc));
+      const sortedDb = [...dbEvents].sort((a, b) => a.start.localeCompare(b.start));
+
+      const count = Math.min(staticIndices.length, sortedDb.length);
+      for (let j = 0; j < count; j++) {
+        const sf = staticIndices[j];
+        const db = sortedDb[j];
+        const parts = db.name.split(/\s+vs?\s+/i);
+        const home = parts[0]?.trim() ?? sf.f.home;
+        const away = parts[1]?.trim() ?? sf.f.away;
+        replacements.set(sf.i, {
+          ...sf.f,
+          externalId: db.eid,
+          home,
+          away,
+          kickoffUtc: new Date(db.start).toISOString(),
+          kickoffConfirmed: true,
+        });
+      }
+    }
+
+    if (replacements.size > 0) {
+      mergedFixtures = WC2026_FIXTURES.map((f, i) => replacements.get(i) ?? f);
+    }
+  }
+
   return {
-    fixtures: WC2026_FIXTURES,
+    fixtures: mergedFixtures,
     resultsByExternalId,
     predictionsByExternalId,
     nameOverrides,
