@@ -3,8 +3,6 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { useT, useLocale } from "@/lib/i18n";
-import { confidenceLabel } from "@/lib/reckons-copy";
-import { markRivalConfidenceSeen } from "@/hooks/useConfidenceDisclosure";
 
 function numOrNull(v: unknown): number | null {
   if (v === null || v === undefined) return null;
@@ -548,10 +546,7 @@ function PredictionRow({
             </div>
           )}
 
-          {/* Confidence indicator — subtle accent bar */}
-          {!noPick && row.confidenceLevel != null && (
-            <ConfidenceDot level={row.confidenceLevel} onMount={markRivalConfidenceSeen} />
-          )}
+          {/* Confidence indicator — hidden until progressive disclosure is ready */}
 
           {/* Points pill */}
           <div
@@ -670,27 +665,3 @@ function EyeIcon() {
   );
 }
 
-// ── Confidence indicator ────────────────────────────────────────────────────
-
-/** Accent colors per confidence level (1-5), matching ConfidencePills border scale. */
-const CONFIDENCE_COLORS = [
-  "bg-gray-400",     // 1: Hopeful
-  "bg-amber-600/70", // 2: Leaning
-  "bg-amber-500",    // 3: Confident
-  "bg-orange-500",   // 4: V. Sure
-  "bg-red-500",      // 5: Dead Cert
-];
-
-function ConfidenceDot({ level, onMount }: { level: number; onMount?: () => void }) {
-  useEffect(() => { onMount?.(); }, []); // eslint-disable-line react-hooks/exhaustive-deps
-  const idx = Math.max(0, Math.min(level - 1, CONFIDENCE_COLORS.length - 1));
-  const sizeClass = level === 5 ? "h-[18px] px-2 text-micro" : "h-4 px-1.5 text-micro";
-  return (
-    <span
-      className={`inline-flex shrink-0 items-center rounded-full font-bold uppercase tracking-tight text-white ${sizeClass} ${CONFIDENCE_COLORS[idx]}`}
-      title={confidenceLabel(level)}
-    >
-      {confidenceLabel(level)}
-    </span>
-  );
-}
