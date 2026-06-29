@@ -777,7 +777,7 @@ function MatchPickRow({
       )}
 
       {/* Confidence level — progressive disclosure */}
-      {currentWinner && disclosure.phase !== 'invisible' && (
+      {false && currentWinner && disclosure.phase !== 'invisible' && (
         disclosure.phase === 'hidden' ? (
           <ConfidenceBreadcrumb
             onRestore={disclosure.restore}
