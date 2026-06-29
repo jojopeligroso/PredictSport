@@ -413,9 +413,6 @@ export function RulesContent({
             <FAQ q={t("faq.q_when_join")}>
               {t("faq.a_when_join")}
             </FAQ>
-            <FAQ q={t("faq.q_confidence")}>
-              {t("faq.a_confidence")}
-            </FAQ>
           </FAQGroup>
           <FAQGroup title={t("faq.group_scoring")}>
             <FAQ q={t("faq.q_points_per_match")}>
