@@ -49,6 +49,7 @@ interface WcPicksHubProps {
     fullPredictions: Prediction[];
     competitionId: string | null;
     isMember: boolean;
+    nameOverrides?: Record<string, { home: string; away: string }>;
   };
   /** Data for the Groups tab. */
   groupsData?: {
@@ -155,6 +156,7 @@ export function WcPicksHub({ md1, fixturesData, groupsData }: WcPicksHubProps) {
             fullPredictions={fixturesData.fullPredictions}
             competitionId={fixturesData.competitionId}
             isMember={fixturesData.isMember}
+            nameOverrides={fixturesData.nameOverrides}
           />
         </div>
       )}
@@ -167,6 +169,7 @@ export function WcPicksHub({ md1, fixturesData, groupsData }: WcPicksHubProps) {
             predictionsByExternalId={fixturesData.predictionsByExternalId}
             serverDateIso={fixturesData.serverDateIso}
             mode="results"
+            nameOverrides={fixturesData.nameOverrides}
           />
         </div>
       )}

@@ -62,9 +62,11 @@ interface Props {
   fullPredictions?: Prediction[];
   competitionId?: string | null;
   isMember?: boolean;
+  /** Resolved knockout team names from DB (keyed by externalId). */
+  nameOverrides?: Record<string, { home: string; away: string }>;
 }
 
-export function FixturesTabs({ fixtures, resultsByExternalId, serverDateIso, predictionsByExternalId = {}, mode = "all", windowEventsByExternalId, fixtureByEventId, fullPredictions, competitionId, isMember }: Props) {
+export function FixturesTabs({ fixtures, resultsByExternalId, serverDateIso, predictionsByExternalId = {}, mode = "all", windowEventsByExternalId, fixtureByEventId, fullPredictions, competitionId, isMember, nameOverrides = {} }: Props) {
   const t = useT();
   const { locale } = useLocale();
   // Render server-side with the server's idea of "today", then re-derive on
@@ -112,17 +114,78 @@ export function FixturesTabs({ fixtures, resultsByExternalId, serverDateIso, pre
     if (typeof window === "undefined") return false;
     return localStorage.getItem("ps-bigger-cards") === "true";
   });
-  const hasResults = useMemo(
-    () => Object.values(resultsByExternalId).some((r) => r !== undefined),
-    [resultsByExternalId],
-  );
-
   const [expandedExternalId, setExpandedExternalId] = useState<string | null>(null);
-  const [showConcluded, setShowConcluded] = useState(false);
   const canExpandToPick = mode === "fixtures" && isMember === true && !!windowEventsByExternalId && !!competitionId;
 
   // Smart default: on first client render, pick best non-empty tab
   const tabInitRef = useRef(false);
+
+  // ── Stage chip definitions ──────────────────────────────────────────
+  type StageChip = "MD1" | "MD2" | "MD3" | "R32" | "R16" | "QF" | "SF" | "F";
+  const STAGE_CHIPS: StageChip[] = ["MD1", "MD2", "MD3", "R32", "R16", "QF", "SF", "F"];
+
+  const chipMatchesFixture = useCallback((chip: StageChip, f: WcFixture): boolean => {
+    if (chip === "MD1") return f.stage === "group" && f.matchday === 1;
+    if (chip === "MD2") return f.stage === "group" && f.matchday === 2;
+    if (chip === "MD3") return f.stage === "group" && f.matchday === 3;
+    if (chip === "R32") return f.stage === "R32";
+    if (chip === "R16") return f.stage === "R16";
+    if (chip === "QF") return f.stage === "QF";
+    if (chip === "SF") return f.stage === "SF";
+    if (chip === "F") return f.stage === "3RD" || f.stage === "FINAL";
+    return false;
+  }, []);
+
+  // Per-chip stats: total count + number with results
+  const chipStats = useMemo(() => {
+    const stats: Record<StageChip, { total: number; finished: number }> = {} as Record<StageChip, { total: number; finished: number }>;
+    for (const chip of STAGE_CHIPS) {
+      stats[chip] = { total: 0, finished: 0 };
+    }
+    for (const f of fixtures) {
+      for (const chip of STAGE_CHIPS) {
+        if (chipMatchesFixture(chip, f)) {
+          stats[chip].total++;
+          const r = resultsByExternalId[f.externalId];
+          if (r && (r.homeScore !== null || r.winner !== null)) {
+            stats[chip].finished++;
+          }
+          break;
+        }
+      }
+    }
+    return stats;
+  }, [fixtures, resultsByExternalId, chipMatchesFixture]);
+
+  // Smart default chip: earliest with upcoming fixtures (fixtures mode),
+  // most recent with results (results mode)
+  const defaultChip = useMemo((): StageChip => {
+    if (mode === "fixtures") {
+      // Earliest stage with unfinished fixtures
+      for (const chip of STAGE_CHIPS) {
+        const s = chipStats[chip];
+        if (s.total > 0 && s.finished < s.total) return chip;
+      }
+      // All done — show the last stage
+      return "F";
+    }
+    // Results: most recent stage that has any results
+    for (let i = STAGE_CHIPS.length - 1; i >= 0; i--) {
+      if (chipStats[STAGE_CHIPS[i]].finished > 0) return STAGE_CHIPS[i];
+    }
+    return "MD1";
+  }, [mode, chipStats]);
+
+  const [selectedChip, setSelectedChip] = useState<StageChip | null>(null);
+  // On first client mount, apply smart default
+  const chipInitRef = useRef(false);
+  useEffect(() => {
+    if (chipInitRef.current || mode === "all") return;
+    chipInitRef.current = true;
+    setSelectedChip(defaultChip);
+  }, [defaultChip, mode]);
+
+  const activeChip = selectedChip ?? defaultChip;
 
   const buckets = useMemo(() => {
     const today: WcFixture[] = [];
@@ -162,42 +225,34 @@ export function FixturesTabs({ fixtures, resultsByExternalId, serverDateIso, pre
     setTab("results");
   }, [buckets, mode]);
 
-  // Determine which fixtures to display based on mode
+  // Determine which fixtures to display based on mode + stage chip
   const active = useMemo(() => {
     if (mode === "fixtures") {
-      // All fixtures in chronological order — the tournament schedule
       const sorted = [...fixtures].sort((a, b) => a.kickoffUtc.localeCompare(b.kickoffUtc));
-      if (!showConcluded) {
-        return sorted.filter((f) => {
-          const r = resultsByExternalId[f.externalId];
-          return !(r && (r.homeScore !== null || r.winner !== null));
-        });
-      }
-      return sorted;
+      return sorted.filter((f) => chipMatchesFixture(activeChip, f));
     }
     if (mode === "results") {
-      return buckets.results;
+      // Filter results bucket by selected stage chip
+      return buckets.results.filter((f) => chipMatchesFixture(activeChip, f));
     }
     return buckets[tab];
-  }, [mode, fixtures, buckets, tab, showConcluded, resultsByExternalId]);
+  }, [mode, fixtures, buckets, tab, activeChip, chipMatchesFixture]);
 
-  // Group fixtures by date for "fixtures" mode
+  // Group fixtures by date for fixtures AND results modes (not "all")
   const dateGroups = useMemo(() => {
-    if (mode !== "fixtures") return null;
+    if (mode === "all") return null;
+    const source = mode === "results"
+      ? [...active].sort((a, b) => b.kickoffUtc.localeCompare(a.kickoffUtc))
+      : active; // fixtures mode: already sorted chronologically
     const groups: { label: string; dateKey: string; items: WcFixture[] }[] = [];
     let currentKey = "";
     const intlLocale = locale === "es" ? "es-MX" : "en-GB";
-    for (const f of active) {
+    for (const f of source) {
       const d = new Date(f.kickoffUtc);
-      // Use browser-local date for grouping key (matches localDateIso used
-      // by the bucket logic). toISOString().slice(0,10) would use UTC, which
-      // misgroups fixtures near midnight for users west of UTC.
       const key = localDateIso(d);
       if (key !== currentKey) {
         currentKey = key;
         groups.push({
-          // Omit timeZone to use the browser's local timezone — Intl handles
-          // DST automatically via the IANA tz database.
           label: d.toLocaleDateString(intlLocale, { weekday: "short", day: "numeric", month: "short" }),
           dateKey: key,
           items: [],
@@ -243,21 +298,14 @@ export function FixturesTabs({ fixtures, resultsByExternalId, serverDateIso, pre
         </div>
       )}
 
-      {mode === "fixtures" && (
-        <div className="mt-3">
-          <button
-            type="button"
-            onClick={() => setShowConcluded((v) => !v)}
-            className={[
-              "w-full rounded-lg px-3.5 py-2.5 text-xs font-semibold transition-colors",
-              showConcluded
-                ? "bg-ps-text text-ps-bg dark:bg-ps-bg dark:text-ps-text"
-                : "border border-ps-border bg-ps-surface text-ps-text-sec",
-            ].join(" ")}
-          >
-            {showConcluded ? t('fixtures.hide_concluded') : t('fixtures.show_concluded')}
-          </button>
-        </div>
+      {(mode === "fixtures" || mode === "results") && (
+        <StageChipStrip
+          chips={STAGE_CHIPS}
+          activeChip={activeChip}
+          chipStats={chipStats}
+          onSelect={(chip) => setSelectedChip(chip)}
+          showCompletion={mode === "results"}
+        />
       )}
 
       <div className="mt-4 flex flex-col gap-2">
@@ -289,6 +337,8 @@ export function FixturesTabs({ fixtures, resultsByExternalId, serverDateIso, pre
                     const isLocked = windowEvent ? new Date(windowEvent.lock_time) <= new Date() : true;
                     const isExpandable = !!windowEvent && canExpandToPick && !isFinished && !isLocked;
                     const isExpanded = expandedExternalId === f.externalId;
+                    const fPred = effectivePredictions[f.externalId];
+                    const isResulted = isFinished;
 
                     // Expanded: replace card with WindowPickList
                     if (isExpanded && windowEvent && fixtureByEventId && competitionId) {
@@ -317,18 +367,23 @@ export function FixturesTabs({ fixtures, resultsByExternalId, serverDateIso, pre
                       );
                     }
 
-                    // Collapsed: normal FixtureCard with optional CTA
                     return (
                       <FixtureCard
                         key={f.externalId}
                         fixture={f}
                         result={result}
-                        prediction={undefined}
-                        showCorrectness={false}
+                        prediction={mode === "results" && showPredictions ? fPred : undefined}
+                        showCorrectness={mode === "results" && showPredictions}
                         large={biggerCards}
                         expandable={isExpandable}
-                        onExpand={() => setExpandedExternalId(f.externalId)}
+                        onExpand={isExpandable ? () => setExpandedExternalId(f.externalId) : undefined}
                         locale={locale}
+                        rivalsEventId={
+                          mode === "results" && isResulted && showPredictions && fPred?.eventId
+                            ? fPred.eventId
+                            : undefined
+                        }
+                        nameOverride={nameOverrides[f.externalId]}
                       />
                     );
                   })}
@@ -353,10 +408,72 @@ export function FixturesTabs({ fixtures, resultsByExternalId, serverDateIso, pre
                       ? fPred.eventId
                       : undefined
                   }
+                  nameOverride={nameOverrides[f.externalId]}
                 />
               );
             })}
       </div>
+    </div>
+  );
+}
+
+// ── Stage chip strip ──────────────────────────────────────────────────
+type StageChipId = "MD1" | "MD2" | "MD3" | "R32" | "R16" | "QF" | "SF" | "F";
+
+const CHIP_LABELS: Record<StageChipId, string> = {
+  MD1: "MD1", MD2: "MD2", MD3: "MD3",
+  R32: "R32", R16: "R16", QF: "QF", SF: "SF", F: "F",
+};
+
+function StageChipStrip({
+  chips,
+  activeChip,
+  chipStats,
+  onSelect,
+  showCompletion,
+}: {
+  chips: StageChipId[];
+  activeChip: StageChipId;
+  chipStats: Record<StageChipId, { total: number; finished: number }>;
+  onSelect: (chip: StageChipId) => void;
+  showCompletion: boolean;
+}) {
+  return (
+    <div className="mt-3 flex gap-1" role="tablist" aria-label="Tournament stage">
+      {chips.map((chip) => {
+        const isActive = activeChip === chip;
+        const stats = chipStats[chip];
+        const allDone = stats.total > 0 && stats.finished === stats.total;
+        return (
+          <button
+            key={chip}
+            type="button"
+            role="tab"
+            aria-selected={isActive}
+            onClick={() => onSelect(chip)}
+            className={[
+              "flex-1 flex flex-col items-center gap-0.5 rounded-lg px-1 py-1.5 text-[11px] font-semibold transition-all duration-150",
+              "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ps-amber/50",
+              isActive
+                ? "bg-ps-amber text-ps-bg shadow-sm"
+                : "bg-ps-surface text-ps-text-sec hover:bg-ps-chip hover:text-ps-text",
+            ].join(" ")}
+          >
+            <span className="leading-none">{CHIP_LABELS[chip]}</span>
+            <span
+              className={[
+                "font-mono text-[9px] tabular-nums leading-none",
+                isActive ? "text-ps-bg/70" : "text-ps-text-ter",
+                showCompletion && allDone && !isActive ? "text-ps-green" : "",
+              ].join(" ")}
+            >
+              {showCompletion
+                ? `${stats.finished}/${stats.total}`
+                : stats.total}
+            </span>
+          </button>
+        );
+      })}
     </div>
   );
 }
@@ -444,6 +561,7 @@ function FixtureCard({
   onExpand,
   locale = "en",
   rivalsEventId,
+  nameOverride,
 }: {
   fixture: WcFixture;
   result: FixtureResult | undefined;
@@ -454,10 +572,15 @@ function FixtureCard({
   onExpand?: () => void;
   locale?: string;
   rivalsEventId?: string;
+  nameOverride?: { home: string; away: string };
 }) {
   const t = useT();
   const city = HOST_CITIES[fixture.city as HostCitySlug];
   const kickoff = new Date(fixture.kickoffUtc);
+
+  // Use resolved team names from DB when available (knockout placeholders → real names)
+  const displayHome = nameOverride?.home ?? fixture.home;
+  const displayAway = nameOverride?.away ?? fixture.away;
 
   const isFinished = !!result && (result.homeScore !== null || result.winner !== null);
   const isLocked = prediction
@@ -482,12 +605,12 @@ function FixtureCard({
   const awayInputRef = useRef<HTMLInputElement>(null);
   const abortRef = useRef<AbortController | null>(null);
 
-  // Derive winner options — fallback to fixture team names if EPT has none
+  // Derive winner options — fallback to resolved team names if EPT has none
   const winnerOptions = prediction?.winnerOptions?.length
     ? prediction.winnerOptions
-    : [fixture.home, "Draw", fixture.away];
+    : [displayHome, "Draw", displayAway];
   const drawOption = winnerOptions.find(
-    (opt) => opt !== fixture.home && opt !== fixture.away,
+    (opt) => opt !== displayHome && opt !== displayAway,
   ) ?? "Draw";
 
   const submitPrediction = useCallback(
@@ -549,7 +672,7 @@ function FixtureCard({
       if (latestHome === "" || latestAway === "" || isNaN(h) || isNaN(a) || h < 0 || a < 0) return;
 
       // Derive and set winner atomically
-      const implied = h > a ? fixture.home : a > h ? fixture.away : drawOption;
+      const implied = h > a ? displayHome : a > h ? displayAway : drawOption;
       if (implied !== currentWinner) {
         handlePickWinner(implied);
       }
@@ -558,13 +681,13 @@ function FixtureCard({
         setError(err instanceof Error ? err.message : t("prediction.error_save"));
       });
     },
-    [canPredict, prediction, fixture.home, fixture.away, drawOption, currentWinner, handlePickWinner, submitPrediction],
+    [canPredict, prediction, displayHome, displayAway, drawOption, currentWinner, handlePickWinner, submitPrediction],
   );
 
   // ── Derived display state ──
   const hasPrediction = currentWinner !== null || homeScore !== "" || awayScore !== "";
-  const homeSelected = currentWinner === fixture.home;
-  const awaySelected = currentWinner === fixture.away;
+  const homeSelected = currentWinner === displayHome;
+  const awaySelected = currentWinner === displayAway;
   const drawSelected = currentWinner === drawOption;
 
   // ── Scoring-derived state (for results mode) ──
@@ -644,7 +767,7 @@ function FixtureCard({
               {/* Home team button */}
               <button
                 type="button"
-                onClick={() => handlePickWinner(fixture.home)}
+                onClick={() => handlePickWinner(displayHome)}
                 className={[
                   `flex-1 min-w-0 flex flex-col items-center ${teamPad} rounded-lg transition-all duration-150 cursor-pointer`,
                   homeSelected
@@ -652,14 +775,14 @@ function FixtureCard({
                     : "hover:bg-white/8",
                 ].join(" ")}
               >
-                <CountryFlag shape="pill" name={fixture.home} size={flagSize} />
+                <CountryFlag shape="pill" name={displayHome} size={flagSize} />
                 <span
                   className={[
                     `max-w-full truncate ${teamText} font-semibold text-center leading-tight`,
                     homeSelected ? "text-white" : "text-white/55",
                   ].join(" ")}
                 >
-                  {fixture.home}
+                  {displayHome}
                 </span>
               </button>
 
@@ -679,7 +802,7 @@ function FixtureCard({
                     }
                   }}
                   onBlur={() => handleScoreBlur(homeScore, awayScore)}
-                  aria-label={`${fixture.home} score`}
+                  aria-label={`${displayHome} score`}
                   className={[
                     `${scoreSize} rounded-full border text-center font-mono font-semibold tabular-nums text-white outline-none transition-all duration-150 shrink-0`,
                     homeScore !== ""
@@ -719,7 +842,7 @@ function FixtureCard({
                     setAwayScore(val);
                   }}
                   onBlur={() => handleScoreBlur(homeScore, awayScore)}
-                  aria-label={`${fixture.away} score`}
+                  aria-label={`${displayAway} score`}
                   className={[
                     `${scoreSize} rounded-full border text-center font-mono font-semibold tabular-nums text-white outline-none transition-all duration-150 shrink-0`,
                     awayScore !== ""
@@ -734,7 +857,7 @@ function FixtureCard({
               {/* Away team button */}
               <button
                 type="button"
-                onClick={() => handlePickWinner(fixture.away)}
+                onClick={() => handlePickWinner(displayAway)}
                 className={[
                   `flex-1 min-w-0 flex flex-col items-center ${teamPad} rounded-lg transition-all duration-150 cursor-pointer`,
                   awaySelected
@@ -742,14 +865,14 @@ function FixtureCard({
                     : "hover:bg-white/8",
                 ].join(" ")}
               >
-                <CountryFlag shape="pill" name={fixture.away} size={flagSize} />
+                <CountryFlag shape="pill" name={displayAway} size={flagSize} />
                 <span
                   className={[
                     `max-w-full truncate ${teamText} font-semibold text-center leading-tight`,
                     awaySelected ? "text-white" : "text-white/55",
                   ].join(" ")}
                 >
-                  {fixture.away}
+                  {displayAway}
                 </span>
               </button>
             </div>
@@ -774,15 +897,15 @@ function FixtureCard({
                   : "bg-black/30 shadow-[inset_0_1px_0_rgba(255,255,255,0.08)]",
               ].join(" ")}
             >
-              <CountryFlag shape="pill" name={fixture.home} size={28} />
-              <span className="text-[12px] font-bold text-white shrink-0">{fifaTrigram(fixture.home) ?? fixture.home.slice(0, 3).toUpperCase()}</span>
+              <CountryFlag shape="pill" name={displayHome} size={28} />
+              <span className="text-[12px] font-bold text-white shrink-0">{fifaTrigram(displayHome) ?? displayHome.slice(0, 3).toUpperCase()}</span>
               <span className="flex-1 text-center font-mono text-[18px] font-extrabold tabular-nums text-white drop-shadow-[0_1px_2px_rgba(0,0,0,0.5)]">
                 {result?.homeScore !== null && result?.awayScore !== null
                   ? `${result.homeScore} – ${result.awayScore}`
                   : (result?.winner ?? "Result")}
               </span>
-              <span className="text-[12px] font-bold text-white shrink-0">{fifaTrigram(fixture.away) ?? fixture.away.slice(0, 3).toUpperCase()}</span>
-              <CountryFlag shape="pill" name={fixture.away} size={28} />
+              <span className="text-[12px] font-bold text-white shrink-0">{fifaTrigram(displayAway) ?? displayAway.slice(0, 3).toUpperCase()}</span>
+              <CountryFlag shape="pill" name={displayAway} size={28} />
               <span
                 className={[
                   "rounded-full px-[5px] py-[2px] text-[7px] font-bold uppercase tracking-[0.5px] leading-none shrink-0",
@@ -869,11 +992,11 @@ function FixtureCard({
         {!isFinished && !canPredict && (
           <div className="flex items-center justify-between gap-2">
             <h3 className={`flex flex-wrap items-center gap-1.5 ${large ? "text-lg" : "text-base"} font-bold text-white`}>
-              <CountryFlag shape="pill" name={fixture.home} size={flagSizeRo} />
-              <span>{fixture.home}</span>
+              <CountryFlag shape="pill" name={displayHome} size={flagSizeRo} />
+              <span>{displayHome}</span>
               <span className="mx-0.5 text-white/70">v</span>
-              <CountryFlag shape="pill" name={fixture.away} size={flagSizeRo} />
-              <span>{fixture.away}</span>
+              <CountryFlag shape="pill" name={displayAway} size={flagSizeRo} />
+              <span>{displayAway}</span>
             </h3>
             {expandable && onExpand && (
               <button

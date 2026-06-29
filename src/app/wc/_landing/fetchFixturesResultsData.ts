@@ -19,6 +19,7 @@ export async function fetchFixturesResultsData() {
 
   const resultsByExternalId: Record<string, FixtureResult | undefined> = {};
   const predictionsByExternalId: Record<string, FixturePredictionData> = {};
+  const nameOverrides: Record<string, { home: string; away: string }> = {};
   let isMember = false;
   let fullPredictions: Prediction[] = [];
   const windowEventsByExternalId: Record<string, WindowEvent> = {};
@@ -117,6 +118,20 @@ export async function fetchFixturesResultsData() {
       };
       const fixture = fixtureByExternalId.get(row.external_event_id);
       if (fixture) fixtureByEventId.set(row.id, fixture);
+
+      // Build name overrides for knockout fixtures whose DB event_name has
+      // resolved team names (e.g. "Mexico vs Canada" instead of "Winner A vs Runner-up B")
+      if (fixture && fixture.stage !== "group" && row.event_name) {
+        const parts = row.event_name.split(/\s+vs?\s+/i);
+        if (parts.length === 2 && parts[0].trim() && parts[1].trim()) {
+          const home = parts[0].trim();
+          const away = parts[1].trim();
+          // Only override if the DB name differs from the static placeholder
+          if (home !== fixture.home || away !== fixture.away) {
+            nameOverrides[row.external_event_id] = { home, away };
+          }
+        }
+      }
     }
 
     // Prediction context — only for authenticated users
@@ -232,6 +247,7 @@ export async function fetchFixturesResultsData() {
     fixtures: WC2026_FIXTURES,
     resultsByExternalId,
     predictionsByExternalId,
+    nameOverrides,
     serverDateIso: new Date().toISOString().slice(0, 10),
     windowEventsByExternalId,
     fixtureByEventId,
