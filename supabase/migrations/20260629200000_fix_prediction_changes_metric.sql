@@ -1,18 +1,12 @@
--- Tag computation RPCs for the reputation tag system.
+-- Fix prediction_changes metric: exclude scoring-engine updates.
 --
--- compute_reputation_stats: returns one row per competition member with
---   all metrics needed for behavioural tag assignment (cumulative).
+-- Bug: updated_at > submitted_at + 60s was counting scoring updates (which
+-- set is_correct/points_awarded and bump updated_at). Every scored prediction
+-- matched, so all fully-engaged users had identical prediction_changes = total_predictions.
 --
--- compute_event_tag_metrics: returns one row per competition member who
---   predicted on a specific event, with all fields needed for event-driven
---   tag assignment.
---
--- Both RPCs are SECURITY DEFINER (service-role only) and return bounded
--- result sets (one row per member).
+-- Fix: add AND updated_at < lock_time — genuine prediction changes happen
+-- before lock, scoring updates happen after.
 
--- ============================================================
--- 1. compute_reputation_stats
--- ============================================================
 CREATE OR REPLACE FUNCTION public.compute_reputation_stats(p_competition_id UUID)
 RETURNS TABLE (
   user_id           UUID,
@@ -49,7 +43,6 @@ STABLE
 SET search_path = ''
 AS $$
 WITH
--- All predictions for this competition joined with event metadata
 base AS (
   SELECT
     p.id              AS pred_id,
@@ -71,21 +64,18 @@ base AS (
   WHERE e.competition_id = p_competition_id
 ),
 
--- Total distinct events in the competition
 event_count AS (
   SELECT COUNT(DISTINCT id)::bigint AS cnt
   FROM public.events
   WHERE competition_id = p_competition_id
 ),
 
--- All members of the competition (ensures rows even for users with 0 predictions)
 members AS (
   SELECT cm.user_id
   FROM public.competition_members cm
   WHERE cm.competition_id = p_competition_id
 ),
 
--- Basic aggregate counts per user
 basic_counts AS (
   SELECT
     b.user_id,
@@ -101,7 +91,6 @@ basic_counts AS (
   GROUP BY b.user_id
 ),
 
--- Draw predictions: winner='Draw' OR exact_score where home=away
 draw_counts AS (
   SELECT
     b.user_id,
@@ -122,7 +111,6 @@ draw_counts AS (
   GROUP BY b.user_id
 ),
 
--- Exact score metrics (goal totals, diffs, blowouts, unique scores)
 score_metrics AS (
   SELECT
     b.user_id,
@@ -146,7 +134,6 @@ score_metrics AS (
   GROUP BY b.user_id
 ),
 
--- Most repeated exact score per user (MODE)
 score_mode AS (
   SELECT DISTINCT ON (sub.user_id)
     sub.user_id,
@@ -166,7 +153,6 @@ score_mode AS (
   ) sub
 ),
 
--- Winner prediction values for majority/minority analysis
 winner_values AS (
   SELECT
     b.user_id,
@@ -174,10 +160,9 @@ winner_values AS (
     COALESCE(b.prediction_data->>'selection', b.prediction_data->>'value') AS winner_pick
   FROM base b
   WHERE b.prediction_type = 'winner'
-    AND b.is_correct IS NOT NULL  -- only resolved events
+    AND b.is_correct IS NOT NULL
 ),
 
--- Per-event majority pick (most common winner prediction)
 event_majority AS (
   SELECT DISTINCT ON (sub.event_id)
     sub.event_id,
@@ -190,7 +175,6 @@ event_majority AS (
   ) sub
 ),
 
--- Per-user majority vs minority pick counts
 user_majority AS (
   SELECT
     wv.user_id,
@@ -201,7 +185,6 @@ user_majority AS (
   GROUP BY wv.user_id
 ),
 
--- Submission lead time stats
 timing_stats AS (
   SELECT
     b.user_id,
@@ -215,7 +198,6 @@ timing_stats AS (
   GROUP BY b.user_id
 ),
 
--- Streak computation: gaps-and-islands approach
 ordered_preds AS (
   SELECT
     b.user_id,
@@ -259,7 +241,6 @@ current_streak_calc AS (
   GROUP BY op.user_id
 )
 
--- Assemble final output
 SELECT
   m.user_id,
   COALESCE(bc.total_predictions, 0)::bigint,
@@ -307,11 +288,3 @@ LEFT JOIN timing_stats ts       ON ts.user_id = m.user_id
 LEFT JOIN best_streaks bs       ON bs.user_id = m.user_id
 LEFT JOIN current_streak_calc csc ON csc.user_id = m.user_id;
 $$;
-
-COMMENT ON FUNCTION public.compute_reputation_stats IS
-  'Returns one row per competition member with all metrics needed for behavioural tag assignment. '
-  'Cumulative across all events in the competition. '
-  'Result set bounded by member count (max ~100). '
-  'SECURITY DEFINER — call from service-role only.';
-
--- compute_event_tag_metrics is created by migration 20260623100000_event_tag_metrics_v2.sql

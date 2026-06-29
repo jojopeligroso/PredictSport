@@ -217,7 +217,7 @@ export function ChatMessage({
     // Strip internal metadata tags (e.g. "[reckons:eventId] ") from display
     const systemContent = message.content.replace(/^\[reckons:[^\]]+\]\s*/, "");
 
-    // Tag reveal: announcement text + inline TagRevealCard
+    // Tag reveal: inline TagRevealCard only (card already shows all info)
     if (message.message_type === "system_tag_reveal" && message.metadata) {
       const tagMeta = message.metadata as unknown as TagRevealMetadata;
       if (!tagMeta?.factCard) {
@@ -230,9 +230,6 @@ export function ChatMessage({
       return (
         <div className="flex justify-center py-1">
           <div className="max-w-[85%]">
-            <p className="text-xs text-ps-text-ter italic text-center">
-              {systemContent}
-            </p>
             <TagRevealCard metadata={tagMeta} />
           </div>
         </div>

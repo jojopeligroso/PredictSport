@@ -1,10 +1,11 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import dynamic from "next/dynamic";
 import { useUnreadChat } from "@/hooks/useUnreadChat";
 import { useT } from "@/lib/i18n";
+import type { ChatFilter } from "@/components/chat/ChatWidget";
 
 const ChatWidget = dynamic(
   () => import("@/components/chat/ChatWidget").then(mod => mod.ChatWidget),
@@ -25,6 +26,11 @@ const LEADERBOARD_PILLS = [
   { tab: "rivals", labelKey: "rivals.tab_label" },
 ] as const;
 
+const FEED_TABS: { key: ChatFilter; labelKey: string }[] = [
+  { key: "user", labelKey: "chat.tab_chat" },
+  { key: "system", labelKey: "chat.tab_activity" },
+];
+
 export function ChatPageClient({
   competitionId,
   competitionName,
@@ -34,6 +40,7 @@ export function ChatPageClient({
 }: ChatPageClientProps) {
   const t = useT();
   const { markSeen } = useUnreadChat(null);
+  const [activeTab, setActiveTab] = useState<ChatFilter>("user");
 
   // Mark chat as seen on mount
   useEffect(() => {
@@ -63,9 +70,23 @@ export function ChatPageClient({
         ))}
       </div>
 
-      {/* Header */}
+      {/* Header with feed toggle */}
       <div className="flex items-center justify-between border-b border-ps-border px-4 py-2">
-        <h1 className="text-sm font-bold text-ps-text">{competitionName}</h1>
+        <div className="flex gap-1 rounded-lg bg-ps-chip p-0.5">
+          {FEED_TABS.map(({ key, labelKey }) => (
+            <button
+              key={key}
+              onClick={() => setActiveTab(key)}
+              className={`rounded-md px-3 py-1 text-xs font-semibold transition-colors ${
+                activeTab === key
+                  ? "bg-ps-surface text-ps-text shadow-sm"
+                  : "text-ps-text-ter hover:text-ps-text-sec"
+              }`}
+            >
+              {t(labelKey)}
+            </button>
+          ))}
+        </div>
         <span className="text-xs text-ps-text-ter">
           {t("chat.member_count", { count: memberCount })}
         </span>
@@ -78,6 +99,7 @@ export function ChatPageClient({
           currentUserId={currentUserId}
           currentUserRole={currentUserRole}
           mode="full"
+          filter={activeTab}
         />
       </div>
     </div>

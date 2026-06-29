@@ -651,6 +651,8 @@
   "community.draw": "Draw",
   "community.popular_score": "Popular Score",
   "community.no_scores": "No scores yet",
+  "chat.tab_chat": "Chat",
+  "chat.tab_activity": "Activity",
   "chat.member_count": "{count} members",
   "chat.new_message": "New message in chat",
   "chat.something_to_say": "Have something to say?",

@@ -52,11 +52,14 @@ async function compressImage(file: File): Promise<File> {
   });
 }
 
+export type ChatFilter = "all" | "user" | "system";
+
 interface ChatWidgetProps {
   competitionId: string;
   currentUserId: string;
   currentUserRole: string;
   mode: "mini" | "full";
+  filter?: ChatFilter;
 }
 
 export function ChatWidget({
@@ -64,6 +67,7 @@ export function ChatWidget({
   currentUserId,
   currentUserRole,
   mode,
+  filter = "all",
 }: ChatWidgetProps) {
   const t = useT();
   const {
@@ -312,9 +316,15 @@ export function ChatWidget({
     }
   };
 
-  // Mini mode: show limited messages
+  // Filter + limit messages
+  const filteredMessages =
+    filter === "user"
+      ? messages.filter((m) => m.message_type === "user")
+      : filter === "system"
+        ? messages.filter((m) => m.message_type !== "user")
+        : messages;
   const displayMessages =
-    mode === "mini" ? messages.slice(-MINI_SIZE) : messages;
+    mode === "mini" ? filteredMessages.slice(-MINI_SIZE) : filteredMessages;
 
   // Date separator key — local YYYY-MM-DD
   const localDateKey = (iso: string) => {
@@ -371,15 +381,6 @@ export function ChatWidget({
         mode === "full" ? "h-full" : "max-h-[480px]"
       }`}
     >
-      {/* Header (full mode only — mini mode header is provided by parent) */}
-      {mode === "full" && (
-        <div className="flex items-center justify-between px-3 py-2 border-b border-ps-border">
-          <span className="text-xs font-semibold text-ps-text-sec">
-            {t('chat.header')}
-          </span>
-        </div>
-      )}
-
       {/* Messages area */}
       <div
         ref={scrollRef}
@@ -436,8 +437,8 @@ export function ChatWidget({
         )}
       </div>
 
-      {/* Input area */}
-      <div className="relative border-t border-ps-border px-3 py-2">
+      {/* Input area — hidden on activity feed */}
+      {filter !== "system" && <div className="relative border-t border-ps-border px-3 py-2">
         {(sendError || muteError) && (
           <div className="mb-2 rounded-lg bg-ps-red/10 px-3 py-1.5 text-xs text-ps-red">
             {sendError || muteError}
@@ -549,7 +550,7 @@ export function ChatWidget({
             </div>
           </>
         )}
-      </div>
+      </div>}
     </div>
   );
 }
