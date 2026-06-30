@@ -360,6 +360,8 @@
   "dash.open_full_chat": "Open full chat",
   "dash.expand_chat": "Expand chat",
   "dash.collapse_chat": "Collapse chat",
+  "chat.preview_banner": "Chat is for competition members only",
+  "chat.preview_sub": "Join the competition to talk tactics with your rivals.",
   "dash.group_x": "Group X",
   "picks.collapse_card": "Collapse",
   "picks.edit": "Edit",
