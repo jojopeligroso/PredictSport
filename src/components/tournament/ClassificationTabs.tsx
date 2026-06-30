@@ -753,23 +753,72 @@ function VisibilityToggle({
 }) {
   const t = useT();
   const isPrivate = visibility === "private";
+  const [confirmPending, setConfirmPending] = useState<"public" | "private" | null>(null);
+
   return (
-    <button
-      type="button"
-      onClick={() => onToggle(isPrivate ? "public" : "private")}
-      aria-label={
-        isPrivate
-          ? t('classification.anon_desc')
-          : t('classification.public_desc')
-      }
-      className={`rounded px-1.5 py-0.5 text-micro font-semibold transition-colors ${
-        isPrivate
-          ? "bg-ps-text-ter/15 text-ps-text-ter hover:bg-ps-text-ter/25"
-          : "bg-ps-amber/10 text-ps-amber hover:bg-ps-amber/20"
-      }`}
-    >
-      {isPrivate ? t('classification.anon') : t('classification.hide_me')}
-    </button>
+    <span className="relative">
+      <button
+        type="button"
+        onClick={() => setConfirmPending(isPrivate ? "public" : "private")}
+        aria-label={
+          isPrivate
+            ? t('classification.anon_desc')
+            : t('classification.public_desc')
+        }
+        className={`rounded px-1.5 py-0.5 text-micro font-semibold transition-colors ${
+          isPrivate
+            ? "bg-ps-text-ter/15 text-ps-text-ter hover:bg-ps-text-ter/25"
+            : "bg-ps-amber/10 text-ps-amber hover:bg-ps-amber/20"
+        }`}
+      >
+        {isPrivate ? t('classification.anon') : t('classification.hide_me')}
+      </button>
+
+      {confirmPending && (
+        <>
+          {/* Backdrop to dismiss on outside click */}
+          <div
+            className="fixed inset-0 z-40"
+            onClick={(e) => {
+              e.stopPropagation();
+              setConfirmPending(null);
+            }}
+          />
+          {/* Confirmation popover */}
+          <div
+            className="absolute right-0 top-full mt-1 w-56 bg-ps-surface border border-ps-border rounded-lg shadow-lg p-3 z-50"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <p className="text-xs text-ps-text-sec mb-2">
+              {confirmPending === "private"
+                ? t('classification.confirm_hide')
+                : t('classification.confirm_show')}
+            </p>
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                onClick={() => {
+                  onToggle(confirmPending);
+                  setConfirmPending(null);
+                }}
+                className="bg-ps-amber text-white rounded px-3 py-1.5 text-xs font-semibold min-h-[44px]"
+              >
+                {confirmPending === "private"
+                  ? t('classification.confirm_hide_yes')
+                  : t('classification.confirm_show_yes')}
+              </button>
+              <button
+                type="button"
+                onClick={() => setConfirmPending(null)}
+                className="text-ps-text-sec text-xs font-semibold min-h-[44px] px-3 py-1.5"
+              >
+                {t('common.cancel')}
+              </button>
+            </div>
+          </div>
+        </>
+      )}
+    </span>
   );
 }
 

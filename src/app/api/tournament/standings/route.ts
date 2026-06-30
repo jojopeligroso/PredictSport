@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
-import { applyVisibility } from "@/lib/tournament/visibility";
+import { applyVisibility, type ViewerRole } from "@/lib/tournament/visibility";
 
 /**
  * GET /api/tournament/standings?classificationId=xxx&provisional=true
@@ -21,6 +21,14 @@ export async function GET(request: NextRequest) {
   if (!user) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
+
+  const { data: viewerProfile } = await supabase
+    .from("users")
+    .select("is_super_admin")
+    .eq("id", user.id)
+    .single();
+
+  const viewerRole = viewerProfile?.is_super_admin ? "admin" as const : "member" as const;
 
   const classificationId = request.nextUrl.searchParams.get("classificationId");
   if (!classificationId) {
@@ -234,6 +242,7 @@ export async function GET(request: NextRequest) {
       visibility,
       classification.classification_type,
       user.id,
+      viewerRole,
     );
 
     return NextResponse.json({ standings, provisional: true, selfVisibility, availablePoints });
@@ -262,6 +271,7 @@ export async function GET(request: NextRequest) {
     visibility,
     classification.classification_type,
     user.id,
+    viewerRole,
   );
 
   return NextResponse.json({

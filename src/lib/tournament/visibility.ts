@@ -47,17 +47,39 @@ interface MembershipVisibility {
  *   (race: toggle without ensurePseudonym), we fall back to "Mystery Player"
  *   rather than leak the name.
  */
+export type ViewerRole = "admin" | "member" | "public";
+
 export function applyVisibility<T extends VisibleStandingRow>(
   rows: T[],
   memberships: MembershipVisibility[],
   classificationType: string,
   viewerUserId: string,
+  viewerRole: ViewerRole = "member",
 ): T[] {
   if (classificationType === "format_elimination") return rows;
 
   const byUser = new Map(memberships.map((m) => [m.user_id, m]));
 
   return rows.map((row) => {
+    if (viewerRole === "admin") {
+      // Admins see all real names. For private users, append the pseudonym
+      // so the admin knows what others see.
+      const m = byUser.get(row.user_id);
+      if (m?.display_visibility === "private") {
+        const pseudonym = m.pseudonym ?? "Mystery Player";
+        return { ...row, display_name: `${row.display_name} (${pseudonym})` };
+      }
+      return row;
+    }
+
+    if (viewerRole === "public") {
+      // Public viewers see everyone anonymized — no self-check.
+      const m = byUser.get(row.user_id);
+      const pseudonym = m?.pseudonym ?? "Mystery Player";
+      return { ...row, display_name: pseudonym };
+    }
+
+    // Default 'member' behavior: self sees real name, private users anonymized.
     if (row.user_id === viewerUserId) return row;
     const m = byUser.get(row.user_id);
     if (!m || m.display_visibility !== "private") return row;
