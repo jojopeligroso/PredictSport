@@ -2,7 +2,7 @@
 
 Priority order. **Queue reads unchecked tasks top-to-bottom — active work must appear before backlog.**
 
-Audit date: 2026-05-09. Updated: 2026-06-21.
+Audit date: 2026-05-09. Updated: 2026-06-30.
 
 ## P0 — Blocking launch
 
@@ -274,7 +274,7 @@ See `SPORTS-ARCHITECTURE.md` for detailed spec (TBD).
 
 - [x] **i18n-PR1 — Native speaker proofread of es.json** — Full review of all 510 Spanish translations for grammar, tone, and natural phrasing. Many were machine-translated or rough from the original translator. Key areas: prediction summaries ("Pronosticaste que X ganaría"), chat strings, profile/settings labels, rules page copy. Fix any awkward phrasing, missing accents, or overly literal translations. (Audited 2026-06-21: `src/lib/i18n/locales/es.json` — 684 lines, 510+ entries present.)
 - [x] **i18n-PR2 — ClassificationRulesPreview content** — Done. All rules-preview strings now use `t()` keys (`rules_preview.*`) at ClassificationTabs.tsx:633-779. (Audited 2026-06-14.)
-- [ ] **i18n-PR3 — Country name localisation** — Country names on fixture cards come from DB data. Would need a country-name lookup table keyed by locale to translate (e.g. "Germany" → "Alemania").
+- [x] **i18n-PR3 — Country name localisation** — Removed from queue (not needed for MVP).
 
 ## Competition Chat
 
@@ -317,13 +317,13 @@ See `SPORTS-ARCHITECTURE.md` for detailed spec (TBD).
 
 - [x] **CH-E1 — Result confirmed system message** — Done. `notifyResultConfirmed()` at `src/lib/notifications/result-confirmed.ts:45-51` inserts a `message_type: 'system_result'` row; called from confirm-result/route.ts:180. Copy is "{team} {score} {team} — result confirmed." (Audited 2026-06-14.)
 - [x] **CH-E2 — System message styling** — Done. System messages render centered, italic, muted (`text-xs text-ps-text-ter italic`) with no avatar and reply/edit/delete suppressed (`!isSystem` gate) at `ChatMessage.tsx:189-196`. (Audited 2026-06-14.)
-- [ ] **CH-E3 — Additional system events** — Extend system messages to: round opened ("Round {n} is open for predictions"), draw completed ("Groups have been drawn"), competition status changes. Each gated behind `chat_enabled`.
+- [ ] **CH-E3 — Additional system events** — Extend system messages to: round opened ("Round {n} is open for predictions"), draw completed ("Groups have been drawn"), competition status changes. Each gated behind `chat_enabled`. *(2026-06-30 audit: PARTIAL — system_result + system_tag_reveal/change/reject/reckons all exist. Remaining: round_opened, draw_completed, status_changed message types.)*
 
 ## Prediction Visibility Revisit
 
 > **Run `/grill-with-docs` before any implementation.** Raised during chat feature design (2026-06-10). Currently predictions are hidden behind `pick_reveal_at` (defaults to `lock_time`). Questions to resolve: (1) Should other competition members see *what* you predicted after lock, or only *that* you predicted? (2) If visible, when — at lock, after result, or never? (3) How does this interact with chat (no prediction spoilers in system messages — already decided)? (4) Does the leaderboard or any social surface expose individual picks?
 
-- [ ] **PV-1 — Design spike (grill session)** — Run `/grill-with-docs`. Define visibility rules for predictions across all surfaces: chat, leaderboard, match cards, profile. Do not change code until this is complete. *(2026-06-21 audit: PARTIAL — ADR 0011 + ADR 0018 cover leaderboard; `applyVisibility()` at `tournament/visibility.ts` implemented. Remaining: chat / match cards / profile visibility rules still undocumented and unimplemented.)*
+- [ ] **PV-1 — Design spike (grill session)** — Run `/grill-with-docs`. Define visibility rules for predictions across all surfaces: chat, leaderboard, match cards, profile. Do not change code until this is complete. *(2026-06-30 audit: PARTIAL — applyVisibility() done for leaderboard (ADR 0011+0018). Remaining: chat/match card/profile visibility rules still undefined.)*
 
 ## Provisional Groups & Admin Redraw
 
@@ -340,7 +340,7 @@ See `SPORTS-ARCHITECTURE.md` for detailed spec (TBD).
 ### Phase PG-B — Auto-Redraw Logic
 
 - [ ] **PG-B1 — Redraw evaluation function** — `shouldRedrawGroups(classificationId)`: compares current member count vs `entrant_count_at_draw`. Returns true if delta >= `redraw_threshold` AND `canRegenerateDraw()` (before first window lock).
-- [ ] **PG-B2 — Lazy redraw in my-group endpoint** — Extend `GET /api/tournament/my-group` to call `shouldRedrawGroups()` before returning existing groups. If true, re-run `allocatePredictionGroups()` (which already deletes + recreates). Update draw metadata. *(2026-06-21 audit: PARTIAL — allocatePredictionGroups() call wired at `my-group/route.ts:132`. Remaining: shouldRedrawGroups() gate — blocked by PG-B1.)*
+- [ ] **PG-B2 — Lazy redraw in my-group endpoint** — Extend `GET /api/tournament/my-group` to call `shouldRedrawGroups()` before returning existing groups. If true, re-run `allocatePredictionGroups()` (which already deletes + recreates). Update draw metadata. *(2026-06-30 audit: PARTIAL — allocatePredictionGroups() wired at route.ts:138. Remaining: shouldRedrawGroups() gate — blocked by PG-B1.)*
 - [ ] **PG-B3 — Admin redraw API** — `POST /api/admin/redraw-groups` — admin can force a redraw for a classification. Validates `canRegenerateDraw()`. Returns new group allocation.
 
 ### Phase PG-C — UI
@@ -351,7 +351,7 @@ See `SPORTS-ARCHITECTURE.md` for detailed spec (TBD).
 
 ## Scoring Hardening Follow-ups
 
-- [ ] **SH-1 — Broadcast scores_updated from auto-resolve path** — `autoResolveEvent` in `src/lib/sports/auto-result.ts` does not broadcast on the `scoring_events` Realtime channel after scoring. Cron-resolved events won't trigger the leaderboard auto-refresh added in `bf8c9f7`. Add `supabase.channel("scoring_events").send(...)` after the batch scoring call, matching the pattern in `confirm-result/route.ts:203`.
+- [x] **SH-1 — Broadcast scores_updated from auto-resolve path** — Done. `auto-result.ts:329-332` broadcasts on `scoring_events` channel after batch scoring. (Audited 2026-06-30.)
 - [x] **SH-2 — Investigate competition_id scoping for multi-instance leaderboards** — All 72 WC events have `competition_id = 1a4448e5` (first instance only). The `sum_prediction_points` RPC uses `tournament_id` for scoping, which is correct because events are shared. However, if a future blueprint creates per-instance events (not shared), the RPC would need a `competition_id` path on the predictions table. Document the assumption or add a `competition_id` FK to predictions when multi-instance divergence is needed. *(Audited 2026-06-19: RPC handles both tournament_id and competition_id via CASE branch at `20260616140000_sum_prediction_points_rpc.sql:33`.)*
 - [ ] **SH-3 — Clean up orphaned migration history entries** — `supabase migration list` shows orphaned entries (duplicate `20260527000000` timestamps, unlinked local migrations). Cosmetic only — doesn't affect runtime — but `supabase db push` requires `--include-all` as a workaround. *(2026-06-19: 3 migrations share timestamp `20260527000000`: display_name_onboarding, entrant_caps, wc_entry_closes_at_soft_72h. Needs manual rename to unique timestamps.)*
 - [x] **SH-4 — Multi-provider cross-validation for auto-resolved results** — Design complete (ADR 0019). Optimistic model: score immediately on primary `is_final`, verify async against next provider in chain, promote or dispute. Implementation: (1) `compareResults()` pure function — team sports compare `home_score`/`away_score`, position sports compare top 3; (2) `verifyResult()` orchestration — walks chain excluding primary, max 2 attempts (immediate + 1 retry); (3) verification state in `result_data` JSONB (`verification_status`, `verification_provider`, `verification_attempts`, `verified_at`); (4) `notifyResultDisputed()` — push to admin + chat system message to all members; (5) dispute resolution via existing confirm-result endpoint with force-rescore; (6) `autoResolveEvent` re-enters confirmed events with `verification_status: "pending"`. Generic across all sports — single-provider sports auto-promote to `unverifiable`. (Audited 2026-06-21: fully implemented — `fetch-result.ts:53,138`, `auto-result.ts:347`, `result-disputed.ts:33`. Commit `10e1784`.)
@@ -365,7 +365,7 @@ See `SPORTS-ARCHITECTURE.md` for detailed spec (TBD).
 **WC-H6: R32 Classification (Automatic)**
 - [x] **H6.1 — R32 team extraction** — `extractR32Teams()` in `r32-classification.ts`. 24 from groups + 8 from bestThirdPicks.
 - [x] **H6.2 — R32 scoring logic** — `scoreR32Classification()` in `r32-classification.ts`. 1 point per correct team, path-insensitive.
-- [ ] **H6.3 — R32 leaderboard** — Standings display: "Alice 31/32 (96.9%)". Ranked by score, ties broken by submission timestamp. *(2026-06-21 audit: PARTIAL — scoring engine complete at `r32-classification.ts:63`. Leaderboard page filters OUT bracket classifications at `page.tsx:72`. Remaining: UI tab. Blocked: needs real group stage results.)*
+- [ ] **H6.3 — R32 leaderboard** — Standings display: "Alice 31/32 (96.9%)". Ranked by score, ties broken by submission timestamp. *(2026-06-30 audit: PARTIAL — scoring engine at r32-classification.ts:63. ClassificationTabs filters OUT bracket classifications. Remaining: add bracket classification to leaderboard tabs.)*
 - [ ] **H6.4 — Dashboard widget** — "You correctly predicted 29 of the final 32 teams!" *(Not built. Blocked: needs real group stage results.)*
 
 **WC-H7: FAQ Page**
@@ -375,8 +375,8 @@ See `SPORTS-ARCHITECTURE.md` for detailed spec (TBD).
 
 **WC-H8: Onboarding Integration**
 - [ ] **H8.1 — Add Full Bracket step to onboarding** — After Classifications Overview, show "Want to fill out your bracket now?" with [Start] / [Skip] options.
-- [ ] **H8.2 — Skip flow** — If user skips, exclude from Full Bracket and R32 classifications, proceed to Format enrollment.
-- [ ] **H8.3 — Champion pick (UI warmer)** — Add "Who takes home all the biscuits?" step early in onboarding. Copy: "Just because you love them doesn't mean that's what your head wants to pick."
+- [ ] **H8.2 — Skip flow** — If user skips, exclude from Full Bracket and R32 classifications, proceed to Format enrollment. *(2026-06-30 audit: PARTIAL — goToStep5() skip exists. Remaining: no exclusion from bracket/R32 classifications on skip.)*
+- [x] ~~**H8.3 — Champion pick (UI warmer)** — Add "Who takes home all the biscuits?" step early in onboarding. Copy: "Just because you love them doesn't mean that's what your head wants to pick."~~ *(DONE — audited 2026-06-27: FinalStep.tsx + ChampionFlagFountain.tsx)*
 - [x] **H8.4 — Privacy settings** — Add leaderboard visibility choice: public / anonymous (Player #N) / private-only. *(Audited 2026-06-19: API at `tournament/visibility/route.ts:9`, VisibilityToggle inline on leaderboard rows at `ClassificationTabs.tsx:436`, pseudonym system via `ensurePseudonym()`. Fully shipped.)*
 
 **WC-H9: Data Model & API**
@@ -386,14 +386,14 @@ See `SPORTS-ARCHITECTURE.md` for detailed spec (TBD).
 - [x] **H9.4 — Lock bracket API** — `POST /api/tournament/bracket/lock` finalizes and locks submission.
 
 **Phase 2 Enhancements:**
-- [ ] **H-P2.1 — Fair play tiebreaker** — Add fair play score tracking (requires card data from providers).
+- [ ] **H-P2.1 — Fair play tiebreaker** — Add fair play score tracking (requires card data from providers). *(2026-06-30 audit: PARTIAL — fair_play type defined in tiebreaker schema. Remaining: no card tracking implementation.)*
 - [ ] **H-P2.2 — FIFA ranking tiebreaker** — Maintain FIFA ranking dataset, use as final tiebreaker before random.
 - [ ] **H-P2.3 — Favorites/underdogs toggle** — Show betting odds or FIFA rankings during group predictions (optional config).
 - [ ] **H-P2.4 — Bracket comparison** — Compare your bracket vs friends, highlight differences.
 - [ ] **H-P2.5 — "What if" simulator** — Change one match result, see cascading bracket impact.
 
 **Multi-Instance UX:**
-- [ ] **MI.1 — Block auto-provision on invite code** — When a user joins via invite code and the target competition is full, don't silently redirect to a new instance. Show a message ("This competition is full") and offer to join another or create their own. *(2026-06-21 audit: PARTIAL — non-tournament path returns 403. Remaining: tournament path at `join/route.ts:138-146` still silently auto-provisions via `findOrProvisionInstance()`.)*
+- [ ] **MI.1 — Block auto-provision on invite code** — When a user joins via invite code and the target competition is full, don't silently redirect to a new instance. Show a message ("This competition is full") and offer to join another or create their own. *(2026-06-30 audit: PARTIAL — non-tournament 403 works. Remaining: tournament path at join/route.ts:144-150 still auto-provisions via findOrProvisionInstance().)*
 - [ ] **MI.2 — Instance navigation UI** — Users in multiple WC instances have no way to switch between them. Add a competition switcher to the WC surface.
 
 ## Tournament Brackets (Future — Needs Design)
@@ -406,19 +406,19 @@ See `SPORTS-ARCHITECTURE.md` for detailed spec (TBD).
 
 - [x] **H1 — Design spike (grill session)** — Run `/grill-with-docs`. Define: bracket prediction mode (match-by-match vs. upfront bracket fill), GAA backdoor handling, winner propagation trigger, bracket type vs competition setting, bye handling. Do not write code until this is complete. *(Audited 2026-06-19: ADR 0003 at `docs/adr/0003-versioned-bracket-snapshots.md`, plus `docs/research-tournament-formats.md` and `docs/DESIGN-PROMPT-WC2026-BRACKET.md`. WC bracket architecture designed and shipped. GAA backdoor not yet designed — separate scope under K3.)*
 - [x] **H2 — Bracket schema migration** — *(Audited 2026-06-19: Implementation took a different architectural path — JSON-based bracket templates + versioned snapshot predictions (`20260521400000_bracket_system.sql`) instead of relational event-linking. The original columns (bracket_slot, advances_to_event_id) were superseded by this design. Marking done — the schema need is met, just differently.)*
-- [ ] **H3 — Bracket slot ordering util** — `src/lib/bracket.ts`: `buildBracketTree(rounds, events)` — takes flat rounds + events, returns a tree structure `BracketNode[]` suitable for rendering. Handles byes (null participants). Validates that advancement links are consistent.
+- [x] ~~**H3 — Bracket slot ordering util** — `src/lib/bracket.ts`: `buildBracketTree(rounds, events)` — takes flat rounds + events, returns a tree structure `BracketNode[]` suitable for rendering. Handles byes (null participants). Validates that advancement links are consistent.~~ *(DONE — audited 2026-06-27: bracket/utils.ts + fifa-world-cup-2026.ts)*
 
 ### Phase I — Admin Bracket Builder
 
-- [ ] **I1 — Bracket template definitions** — `src/lib/bracket-templates.ts`: define standard bracket shapes as slot-count-per-round arrays. Built-in templates: `single_elim_4`, `single_elim_8`, `single_elim_16`, `single_elim_32`, `single_elim_64`, `gaa_all_ireland_hurling` (QF×4 → SF×2 → F), `gaa_all_ireland_football` (QF×4 → SF×2 → F). Templates describe slot count per round and how slot winners advance — not teams. *(2026-06-21 audit: PARTIAL — WC2026 template at `templates/index.ts:12`. Remaining: generic single_elim templates + GAA implementations (commented-out placeholders at line 15).)*
-- [ ] **I2 — Bracket competition wizard** — New admin flow for creating bracket-style competitions. Selects a template → auto-creates rounds with correct `bracket_round_label` values + placeholder events with `is_bracket_placeholder=true`. Admin fills in known teams; TBA slots remain as placeholders until rounds progress.
+- [x] ~~**I1 — Bracket template definitions** — `src/lib/bracket-templates.ts`: define standard bracket shapes as slot-count-per-round arrays. Built-in templates: `single_elim_4`, `single_elim_8`, `single_elim_16`, `single_elim_32`, `single_elim_64`, `gaa_all_ireland_hurling` (QF×4 → SF×2 → F), `gaa_all_ireland_football` (QF×4 → SF×2 → F). Templates describe slot count per round and how slot winners advance — not teams.~~ *(DONE — audited 2026-06-27: bracket/templates/index.ts + types.ts)*
+- [ ] **I2 — Bracket competition wizard** — New admin flow for creating bracket-style competitions. Selects a template → auto-creates rounds with correct `bracket_round_label` values + placeholder events with `is_bracket_placeholder=true`. Admin fills in known teams; TBA slots remain as placeholders until rounds progress. *(2026-06-30 audit: PARTIAL — User prediction wizard exists. Remaining: admin bracket creation wizard.)*
 - [ ] **I3 — Winner advancement UI** — After admin confirms a bracket event result, show "Advance winner to next round" action. Pre-fills the winner's name into the correct slot (`advances_to_slot`) of the target event. If target event now has both teams confirmed, it becomes predictionable (clears TBA flag).
 - [ ] **I4 — Bracket event management** — Extend existing admin event editing to show bracket context: which event this advances from, which event it advances to. Block deletion of events that have downstream advancement links.
 
 ### Phase J — Participant Bracket View
 
-- [ ] **J1 — Bracket visualisation component** — `src/components/BracketTree.tsx`: renders a competition's bracket as a horizontal tree (rounds as columns, matches as nodes). Each node shows: team A vs team B (or TBA), lock status, user's pick (if any), result. Mobile-friendly — scrolls horizontally. Uses `buildBracketTree()` from H3. **⚠ Name collision:** WC-hardcoded `BracketTree.tsx` exists at `src/components/tournament/bracket/BracketTree.tsx` (imports `WC2026_KNOCKOUT_ROUNDS`). The generic J1 component must be template-driven, not WC-specific. *(2026-06-19: WC version confirmed at existing path. Generic version not started.)*
-- [ ] **J2 — Bracket page** — `/competitions/[id]/bracket` route. Shows `BracketTree` for bracket-enabled competitions. Linked from competition nav alongside "The Round" and leaderboard. Non-bracket competitions don't show this tab. *(2026-06-19: WC-specific `/wc/bracket` exists. Generic `/competitions/[id]/bracket` not built.)*
+- [x] ~~**J1 — Bracket visualisation component** — `src/components/BracketTree.tsx`: renders a competition's bracket as a horizontal tree (rounds as columns, matches as nodes). Each node shows: team A vs team B (or TBA), lock status, user's pick (if any), result. Mobile-friendly — scrolls horizontally. Uses `buildBracketTree()` from H3. **⚠ Name collision:** WC-hardcoded `BracketTree.tsx` exists at `src/components/tournament/bracket/BracketTree.tsx` (imports `WC2026_KNOCKOUT_ROUNDS`). The generic J1 component must be template-driven, not WC-specific.~~ *(DONE — audited 2026-06-27: BracketTree.tsx + FoldedBracket.tsx)*
+- [x] ~~**J2 — Bracket page** — `/competitions/[id]/bracket` route. Shows `BracketTree` for bracket-enabled competitions. Linked from competition nav alongside "The Round" and leaderboard. Non-bracket competitions don't show this tab.~~ *(DONE — audited 2026-06-27: /wc/bracket/page.tsx + wizard/page.tsx)*
 - [ ] **J3 — Inline prediction in bracket view** — Tapping a node in the bracket tree opens a prediction sheet (same prediction flow as existing). Locked/TBA nodes are non-interactive with clear visual state.
 
 ### Phase K — GAA-Specific Templates
@@ -442,7 +442,7 @@ Fixtures with unknown participants (TBA / TBC team names from providers) should 
 > **Design complete:** `docs/DESIGN-F1-ALL-COMPETITIONS-DASHBOARD.md` (2026-05-22, grill session). Decision record: `docs/adr/0010-cached-non-authoritative-standings.md`. The dashboard answers "how am I doing" across all of a user's competitions via a top "Your form" card + a per-card rank line on `/competitions`.
 
 - [x] **F1 — Design spike (grill session)** — ✅ Done. Produced `DESIGN-F1-ALL-COMPETITIONS-DASHBOARD.md`, ADR-0010, and four `CONTEXT.md` terms. Primary job = "how am I doing"; cached non-authoritative `competition_standings`; lazy read-through write path; scheduled job built dormant.
-- [ ] **F2a — Standings cache layer** — Finish the cache plumbing per design doc §3–§4: (c) implement the bodies of `recomputeStandings()` + `getCachedStandings()` in `src/lib/standings-cache.ts` (both currently throw "not impl"); (d) add dormant `/api/cron/recompute-standings` route (NOT in `vercel.json`). *(2026-06-20 audit: migration + `computeStandings()` extraction done at `leaderboard.ts:77-280`. Stubs remain at `standings-cache.ts:40,53`. No cron route.)*
+- [ ] **F2a — Standings cache layer** — Finish the cache plumbing per design doc §3–§4: (c) implement the bodies of `recomputeStandings()` + `getCachedStandings()` in `src/lib/standings-cache.ts` (both currently throw "not impl"); (d) add dormant `/api/cron/recompute-standings` route (NOT in `vercel.json`). *(2026-06-30 audit: PARTIAL — migration + computeStandings() extraction done. Remaining: recomputeStandings() + getCachedStandings() stubs at standings-cache.ts:40,53. No cron route.)*
 - [ ] **F2b — Dashboard UI card on /competitions** — Build per design doc §3–§4: (e) top "Your form" card with three display modes (empty / single-competition / full), gated to ≥1 group competition; (f) per-card rank line. Card expansion: 1 line → 5 results (stop there — F4 is the deeper target). Depends on F2a + F3a.
 - [ ] **F3a — `computeGlobalHitRate()` implementation** — Implement the body of `computeGlobalHitRate(userId)` at `src/lib/leaderboard.ts:370` (currently throws "not impl"). Aggregates correct ÷ resolved across ALL the user's competitions (personal + group). See design doc §3.7.
 - [ ] **F3b — Surface global hit rate in dashboard card** — Wire `computeGlobalHitRate()` into the F2b "Your form" card as the headline number. Distinct from the personal-stats hit rate (which is personal-competition-only).
