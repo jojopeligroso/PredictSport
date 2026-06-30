@@ -83,6 +83,7 @@ export default async function WcHomePage({
       isCompetitionAdmin={data.isCompetitionAdmin}
       memberRole={data.memberRole}
       lastChatMessage={data.lastChatMessage}
+      isKnockout={data.isKnockout}
       onboarding={onboarding}
     />
   );

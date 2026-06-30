@@ -251,13 +251,23 @@ export class FoireannProvider extends BaseProvider {
       away.goals !== null &&
       away.points !== null;
 
+    // Penalty shootout scores (present when match was decided by penalties)
+    const penHome = home.penalties;
+    const penAway = away.penalties;
+    const hasPenalties =
+      penHome !== null && penAway !== null && penHome !== penAway;
+
     let winner: string | null = null;
     let margin: number | null = null;
 
     if (hasScore) {
       if (homeTotal > awayTotal) winner = home.name;
       else if (awayTotal > homeTotal) winner = away.name;
-      // draw: winner stays null
+      else if (hasPenalties) {
+        // Tied in normal time — penalty winner
+        winner = penHome! > penAway! ? home.name : away.name;
+      }
+      // draw with no penalties: winner stays null
       margin = Math.abs(homeTotal - awayTotal);
     }
 
@@ -279,7 +289,9 @@ export class FoireannProvider extends BaseProvider {
             away_team: away.name,
             home_score: homeTotal,
             away_score: awayTotal,
-            periods: null,
+            periods: hasPenalties
+              ? { penalties: { home: penHome!, away: penAway! } }
+              : null,
           }
         : null,
       winner,
@@ -291,6 +303,10 @@ export class FoireannProvider extends BaseProvider {
             away_goals: awayGoals,
             away_points: awayPoints,
             total_score: homeTotal + awayTotal,
+            ...(hasPenalties && {
+              home_penalties: penHome!,
+              away_penalties: penAway!,
+            }),
           }
         : null,
       raw: fixture,

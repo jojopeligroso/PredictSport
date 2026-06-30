@@ -50,6 +50,7 @@ interface DashboardClientProps {
   isCompetitionAdmin: boolean;
   memberRole: string;
   lastChatMessage: LastChatMessage | null;
+  isKnockout: boolean;
 }
 
 /**
@@ -83,6 +84,7 @@ export function DashboardClient({
   isCompetitionAdmin,
   memberRole,
   lastChatMessage,
+  isKnockout,
 }: DashboardClientProps) {
   const router = useRouter();
   const [expandedEventId, setExpandedEventId] = useState<string | null>(null);
@@ -322,6 +324,7 @@ export function DashboardClient({
           now={now}
           selectedDate={selectedDate}
           onSelectDate={(iso) => setSelectedDate((prev) => (prev === iso ? null : iso))}
+          isKnockout={isKnockout}
         />
       )}
 

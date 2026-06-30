@@ -104,6 +104,8 @@ export interface DashboardData {
   memberRole: string;
   /** Last non-join chat message for the notification card. */
   lastChatMessage: LastChatMessage | null;
+  /** Whether the competition is currently in the knockout stage (round_number > 3). */
+  isKnockout: boolean;
 }
 
 export type DashboardResult =
@@ -536,6 +538,7 @@ export async function fetchDashboardData(): Promise<DashboardResult> {
     isCompetitionAdmin,
     memberRole: membership?.role ?? "participant",
     lastChatMessage,
+    isKnockout: !isGroupStage,
   };
 }
 
