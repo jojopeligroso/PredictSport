@@ -17,6 +17,8 @@ interface TSDBEvent {
   strAwayTeam: string;
   intHomeScore: string | null;
   intAwayScore: string | null;
+  intHomeScoreExtra: string | null;
+  intAwayScoreExtra: string | null;
   strResult: string | null;
   strStatus: string;
 }
@@ -100,8 +102,18 @@ export class TheSportsDBProvider extends BaseProvider {
     const homeScore = event.intHomeScore ? parseInt(event.intHomeScore) : null;
     const awayScore = event.intAwayScore ? parseInt(event.intAwayScore) : null;
     const hasScore = homeScore !== null && awayScore !== null;
+
+    // AP = After Penalties, AET = After Extra Time
     const isFinal =
-      event.strStatus === "Match Finished" || event.strStatus === "FT";
+      event.strStatus === "Match Finished" ||
+      event.strStatus === "FT" ||
+      event.strStatus === "AP" ||
+      event.strStatus === "AET";
+
+    // Penalty shootout scores (e.g. 3-4 on pens)
+    const penHome = event.intHomeScoreExtra ? parseInt(event.intHomeScoreExtra) : null;
+    const penAway = event.intAwayScoreExtra ? parseInt(event.intAwayScoreExtra) : null;
+    const hasPenalties = event.strStatus === "AP" && penHome !== null && penAway !== null;
 
     let winner: string | null = null;
     let margin: number | null = null;
@@ -110,7 +122,12 @@ export class TheSportsDBProvider extends BaseProvider {
     if (hasScore) {
       if (homeScore > awayScore) winner = event.strHomeTeam;
       else if (awayScore > homeScore) winner = event.strAwayTeam;
-      else if (isFinal) winner = "draw";
+      else if (hasPenalties) {
+        // Tied in regular/extra time — penalty winner
+        winner = penHome! > penAway! ? event.strHomeTeam : event.strAwayTeam;
+      } else if (isFinal) {
+        winner = "draw";
+      }
       margin = Math.abs(homeScore - awayScore);
       stats.total_goals = homeScore + awayScore;
     }
@@ -119,6 +136,10 @@ export class TheSportsDBProvider extends BaseProvider {
     if (!winner && event.strResult) {
       winner = event.strResult;
     }
+
+    // Build periods with penalty data if available
+    const periods: Record<string, { home: number; away: number }> | null =
+      hasPenalties ? { penalties: { home: penHome!, away: penAway! } } : null;
 
     return {
       provider: this.name,
@@ -134,7 +155,7 @@ export class TheSportsDBProvider extends BaseProvider {
             away_team: event.strAwayTeam,
             home_score: homeScore,
             away_score: awayScore,
-            periods: null,
+            periods,
           }
         : null,
       winner,

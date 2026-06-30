@@ -42,10 +42,18 @@ function formatStartTime(iso: string): string {
 
 function formatResultData(data: Record<string, unknown> | null): string {
   if (!data) return "\u2014";
-  const { home_score, away_score, winner } = data as Record<string, unknown>;
-  if (home_score !== undefined && away_score !== undefined) {
-    return `${home_score} \u2013 ${away_score}`;
+  const scoreObj = data.score as Record<string, unknown> | undefined;
+  const home = data.home_score ?? scoreObj?.home_score;
+  const away = data.away_score ?? scoreObj?.away_score;
+  if (home !== undefined && away !== undefined) {
+    const periods = (scoreObj?.periods ?? null) as Record<string, { home?: number; away?: number }> | null;
+    const pen = periods?.penalties;
+    const penSuffix = pen?.home !== undefined && pen?.away !== undefined
+      ? ` (${pen.home}\u2013${pen.away} pens)`
+      : "";
+    return `${home} \u2013 ${away}${penSuffix}`;
   }
+  const { winner } = data as Record<string, unknown>;
   if (winner !== undefined) {
     return String(winner);
   }
@@ -124,6 +132,9 @@ export function ResultConfirmation({ windows }: ResultConfirmationProps) {
     {}
   );
   const [manualWinner, setManualWinner] = useState<Record<string, string>>({});
+  const [penaltiesOpen, setPenaltiesOpen] = useState<Record<string, boolean>>({});
+  const [manualPenHome, setManualPenHome] = useState<Record<string, string>>({});
+  const [manualPenAway, setManualPenAway] = useState<Record<string, string>>({});
 
   const confirmedCount = events.filter(
     (e) => confirmedIds.has(e.id) || e.result_confirmed
@@ -247,25 +258,46 @@ export function ResultConfirmation({ windows }: ResultConfirmationProps) {
 
     if (home === undefined && away === undefined && !win) return;
 
+    const homeNum = home !== undefined && home !== "" ? Number(home) : undefined;
+    const awayNum = away !== undefined && away !== "" ? Number(away) : undefined;
+
+    // Penalty data
+    const hasPens = penaltiesOpen[event.id] ?? false;
+    const penH = hasPens ? Number(manualPenHome[event.id] ?? "") : NaN;
+    const penA = hasPens ? Number(manualPenAway[event.id] ?? "") : NaN;
+    const validPens = hasPens && !isNaN(penH) && !isNaN(penA);
+
+    // Build score object with periods if penalties exist
+    const parts = event.event_name.split(/\s+(?:vs?\.?|v)\s+/i);
+    const homeTeam = parts[0]?.trim() ?? "Home";
+    const awayTeam = parts[1]?.trim() ?? "Away";
+
     const resultData: Record<string, unknown> = {};
-    if (home !== undefined && home !== "") resultData.home_score = Number(home);
-    if (away !== undefined && away !== "") resultData.away_score = Number(away);
+    if (homeNum !== undefined) resultData.home_score = homeNum;
+    if (awayNum !== undefined) resultData.away_score = awayNum;
     if (win) resultData.winner = win;
 
+    // Build structured score object
+    if (homeNum !== undefined && awayNum !== undefined) {
+      const scoreObj: Record<string, unknown> = {
+        home_team: homeTeam,
+        away_team: awayTeam,
+        home_score: homeNum,
+        away_score: awayNum,
+        periods: validPens ? { penalties: { home: penH, away: penA } } : null,
+      };
+      resultData.score = scoreObj;
+    }
+
     // Derive winner from scores if not explicitly set
-    if (
-      resultData.home_score !== undefined &&
-      resultData.away_score !== undefined &&
-      !resultData.winner
-    ) {
-      const h = resultData.home_score as number;
-      const a = resultData.away_score as number;
-      // Extract team names from event_name (format: "Team A vs Team B")
-      const parts = event.event_name.split(/\s+(?:vs?\.?|v)\s+/i);
-      if (parts.length === 2) {
-        if (h > a) resultData.winner = parts[0].trim();
-        else if (a > h) resultData.winner = parts[1].trim();
-        else resultData.winner = "draw";
+    if (homeNum !== undefined && awayNum !== undefined && !resultData.winner) {
+      if (homeNum > awayNum) resultData.winner = homeTeam;
+      else if (awayNum > homeNum) resultData.winner = awayTeam;
+      else if (validPens) {
+        // Draw in regular time — winner from penalties
+        resultData.winner = penH > penA ? homeTeam : awayTeam;
+      } else {
+        resultData.winner = "draw";
       }
     }
 
@@ -504,6 +536,63 @@ export function ResultConfirmation({ windows }: ResultConfirmationProps) {
                           className="w-full rounded-lg border border-ps-border bg-ps-bg px-2 py-1.5 font-mono text-sm text-ps-text placeholder:text-ps-text-ter focus:border-ps-amber focus:outline-none focus:ring-1 focus:ring-ps-amber"
                         />
                       </div>
+                    </div>
+                    {/* Penalties toggle + inputs */}
+                    <div>
+                      <label className="flex items-center gap-2 text-xs text-ps-text-sec cursor-pointer">
+                        <input
+                          type="checkbox"
+                          checked={penaltiesOpen[event.id] ?? false}
+                          onChange={(e) =>
+                            setPenaltiesOpen((prev) => ({
+                              ...prev,
+                              [event.id]: e.target.checked,
+                            }))
+                          }
+                          className="rounded border-ps-border accent-ps-amber"
+                        />
+                        Went to penalties
+                      </label>
+                      {(penaltiesOpen[event.id] ?? false) && (
+                        <div className="mt-1.5 flex gap-2">
+                          <div className="flex-1">
+                            <label className="mb-0.5 block text-xs text-ps-text-sec">
+                              Pen H
+                            </label>
+                            <input
+                              type="text"
+                              inputMode="numeric"
+                              value={manualPenHome[event.id] ?? ""}
+                              onChange={(e) =>
+                                setManualPenHome((prev) => ({
+                                  ...prev,
+                                  [event.id]: e.target.value,
+                                }))
+                              }
+                              placeholder="3"
+                              className="w-full rounded-lg border border-ps-border bg-ps-bg px-2 py-1.5 font-mono text-sm text-ps-text placeholder:text-ps-text-ter focus:border-ps-amber focus:outline-none focus:ring-1 focus:ring-ps-amber"
+                            />
+                          </div>
+                          <div className="flex-1">
+                            <label className="mb-0.5 block text-xs text-ps-text-sec">
+                              Pen A
+                            </label>
+                            <input
+                              type="text"
+                              inputMode="numeric"
+                              value={manualPenAway[event.id] ?? ""}
+                              onChange={(e) =>
+                                setManualPenAway((prev) => ({
+                                  ...prev,
+                                  [event.id]: e.target.value,
+                                }))
+                              }
+                              placeholder="4"
+                              className="w-full rounded-lg border border-ps-border bg-ps-bg px-2 py-1.5 font-mono text-sm text-ps-text placeholder:text-ps-text-ter focus:border-ps-amber focus:outline-none focus:ring-1 focus:ring-ps-amber"
+                            />
+                          </div>
+                        </div>
+                      )}
                     </div>
                     <div>
                       <label className="mb-0.5 block text-xs text-ps-text-sec">

@@ -231,6 +231,13 @@ export function RivalPredictionsTab({
   const awayScore = rd ? numOrNull(scoreNested?.away_score ?? rd.away_score ?? rd.awayScore) : null;
   const hasResult = resultConfirmed && homeScore !== null;
 
+  // Extract penalty shootout scores
+  const periodsObj = (typeof scoreNested?.periods === "object" && scoreNested?.periods !== null ? scoreNested.periods : {}) as Record<string, { home?: number; away?: number }>;
+  const penData = periodsObj.penalties;
+  const penHome = penData?.home !== undefined ? Number(penData.home) : null;
+  const penAway = penData?.away !== undefined ? Number(penData.away) : null;
+  const hasPenalties = penHome !== null && penAway !== null && !isNaN(penHome) && !isNaN(penAway);
+
   const intlLocale = locale === "es" ? "es-MX" : "en-GB";
   const fixtureDate = selectedFixture
     ? new Date(selectedFixture.startTime).toLocaleDateString(intlLocale, {
@@ -323,7 +330,7 @@ export function RivalPredictionsTab({
                 </span>
                 <span className="text-caption text-ps-text-ter">·</span>
                 <span className="font-mono text-caption font-semibold text-ps-green">
-                  {homeScore} – {awayScore}
+                  {homeScore} – {awayScore}{hasPenalties ? ` (${penHome}–${penAway} pens)` : ""}
                 </span>
               </div>
             ) : (

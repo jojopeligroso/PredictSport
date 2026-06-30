@@ -107,12 +107,20 @@ export async function fetchFixturesResultsData() {
         !!row.result_confirmed ||
         (!!row.round_id && finalisedRoundIds.has(row.round_id));
 
+      // Extract penalty shootout scores from result_data.score.periods.penalties
+      const periods = (typeof score.periods === "object" && score.periods !== null ? score.periods : {}) as Record<string, { home?: number; away?: number }>;
+      const penalties = periods.penalties;
+      const penaltyHome = numOrNull(penalties?.home ?? null);
+      const penaltyAway = numOrNull(penalties?.away ?? null);
+
       resultsByExternalId[row.external_event_id] = {
         status: row.status,
         homeScore,
         awayScore,
         winner,
         isFinalised,
+        penaltyHome,
+        penaltyAway,
       };
     }
 

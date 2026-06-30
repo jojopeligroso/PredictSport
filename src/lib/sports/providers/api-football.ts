@@ -121,13 +121,30 @@ export class ApiFootballProvider extends BaseProvider {
     const awayScore = fixture.goals.away ?? 0;
     const hasScore = fixture.goals.home !== null;
 
-    const isFinal = fixture.fixture.status.short === "FT";
+    // FT = Full Time, AET = After Extra Time, PEN = After Penalties
+    const isFinal =
+      fixture.fixture.status.short === "FT" ||
+      fixture.fixture.status.short === "AET" ||
+      fixture.fixture.status.short === "PEN";
+
+    const hasPenalties =
+      fixture.fixture.status.short === "PEN" &&
+      fixture.score.penalty.home !== null &&
+      fixture.score.penalty.away !== null;
 
     let winner: string | null = null;
     if (hasScore) {
       if (homeScore > awayScore) winner = fixture.teams.home.name;
       else if (awayScore > homeScore) winner = fixture.teams.away.name;
-      else if (isFinal) winner = "draw";
+      else if (hasPenalties) {
+        // Tied in regular/extra time — penalty winner
+        winner =
+          fixture.score.penalty.home! > fixture.score.penalty.away!
+            ? fixture.teams.home.name
+            : fixture.teams.away.name;
+      } else if (isFinal) {
+        winner = "draw";
+      }
     }
 
     const periods: Record<string, { home: number; away: number }> = {};
@@ -135,6 +152,12 @@ export class ApiFootballProvider extends BaseProvider {
       periods.halftime = {
         home: fixture.score.halftime.home ?? 0,
         away: fixture.score.halftime.away ?? 0,
+      };
+    }
+    if (hasPenalties) {
+      periods.penalties = {
+        home: fixture.score.penalty.home!,
+        away: fixture.score.penalty.away!,
       };
     }
 

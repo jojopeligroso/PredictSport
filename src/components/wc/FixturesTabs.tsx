@@ -17,6 +17,9 @@ export type FixtureResult = {
   awayScore: number | null;
   winner: string | null;
   isFinalised: boolean;
+  /** Penalty shootout scores (e.g. 3-4 on pens) */
+  penaltyHome: number | null;
+  penaltyAway: number | null;
 };
 
 export type FixturePredictionData = {
@@ -899,9 +902,16 @@ function FixtureCard({
             >
               <CountryFlag shape="pill" name={displayHome} size={28} />
               <span className="text-[12px] font-bold text-white shrink-0">{fifaTrigram(displayHome) ?? displayHome.slice(0, 3).toUpperCase()}</span>
-              <span className="flex-1 text-center font-mono text-[18px] font-extrabold tabular-nums text-white drop-shadow-[0_1px_2px_rgba(0,0,0,0.5)]">
+              <span className="flex-1 text-center font-mono font-extrabold tabular-nums text-white drop-shadow-[0_1px_2px_rgba(0,0,0,0.5)]">
                 {result?.homeScore !== null && result?.awayScore !== null
-                  ? `${result.homeScore} – ${result.awayScore}`
+                  ? <>
+                      <span className="text-[18px]">{result.homeScore} – {result.awayScore}</span>
+                      {result.penaltyHome !== null && result.penaltyAway !== null && (
+                        <span className="block text-[10px] font-bold text-white/60 tracking-wide">
+                          ({result.penaltyHome}–{result.penaltyAway} pens)
+                        </span>
+                      )}
+                    </>
                   : (result?.winner ?? "Result")}
               </span>
               <span className="text-[12px] font-bold text-white shrink-0">{fifaTrigram(displayAway) ?? displayAway.slice(0, 3).toUpperCase()}</span>
@@ -912,7 +922,9 @@ function FixtureCard({
                   result?.isFinalised ? "bg-ps-green/80 text-white" : "bg-black/25 text-white/75 ring-1 ring-inset ring-white/15",
                 ].join(" ")}
               >
-                {result?.isFinalised ? "FT" : t('fixtures.result_provisional')}
+                {result?.isFinalised
+                  ? (result.penaltyHome !== null ? "Pens" : "FT")
+                  : t('fixtures.result_provisional')}
               </span>
             </div>
 

@@ -47,6 +47,9 @@ export interface ResultRow {
   scorePoints: number;
   /** User's confidence level (1-5) on their winner prediction, null if not set. */
   userConfidence: number | null;
+  /** Penalty shootout scores, null if match didn't go to penalties. */
+  penaltyHome: number | null;
+  penaltyAway: number | null;
 }
 
 export interface LastChatMessage {
@@ -608,12 +611,22 @@ async function fetchRecentResults(
     const scores = extractResultScores(rd);
     if (!scores) continue;
 
+    // Extract penalty scores from result_data.score.periods.penalties
+    const scoreObj = (typeof rd.score === "object" && rd.score !== null ? rd.score : {}) as Record<string, unknown>;
+    const periods = (typeof scoreObj.periods === "object" && scoreObj.periods !== null ? scoreObj.periods : {}) as Record<string, { home?: number; away?: number }>;
+    const penalties = periods.penalties;
+    const penaltyHome = penalties?.home !== undefined ? Number(penalties.home) : null;
+    const penaltyAway = penalties?.away !== undefined ? Number(penalties.away) : null;
+    const hasPenalties = penaltyHome !== null && penaltyAway !== null && !isNaN(penaltyHome) && !isNaN(penaltyAway);
+
     const winner =
       scores.home > scores.away
         ? "home"
         : scores.away > scores.home
           ? "away"
-          : "draw";
+          : hasPenalties
+            ? (penaltyHome! > penaltyAway! ? "home" : "away")
+            : "draw";
 
     const preds = predsByEventId.get(e.id) ?? [];
     const winnerPred = preds.find((p) => p.prediction_type === "winner");
@@ -649,6 +662,8 @@ async function fetchRecentResults(
       winnerPoints: winnerPred?.points_awarded ?? 0,
       scorePoints: scorePred?.points_awarded ?? 0,
       userConfidence: winnerPred?.confidence_level ?? null,
+      penaltyHome: hasPenalties ? penaltyHome : null,
+      penaltyAway: hasPenalties ? penaltyAway : null,
     });
   }
 

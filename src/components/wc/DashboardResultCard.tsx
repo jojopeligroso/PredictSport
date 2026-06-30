@@ -74,6 +74,8 @@ export function DashboardResultCard({
     scoreCorrect,
     winnerPoints,
     scorePoints,
+    penaltyHome,
+    penaltyAway,
   } = result;
 
   const homeTri =
@@ -115,13 +117,18 @@ export function DashboardResultCard({
       >
         <CountryFlag name={fixture.home} size={22} shape="pill" />
         <span className="text-[11px] font-bold text-ps-text shrink-0">{homeTri}</span>
-        <span className="flex-1 text-center font-mono text-[15px] font-extrabold tabular-nums text-ps-text">
-          {homeScore} – {awayScore}
+        <span className="flex-1 text-center font-mono font-extrabold tabular-nums text-ps-text">
+          <span className="text-[15px]">{homeScore} – {awayScore}</span>
+          {penaltyHome !== null && penaltyAway !== null && (
+            <span className="block text-[9px] font-bold text-ps-text-ter tracking-wide">
+              ({penaltyHome}–{penaltyAway} pens)
+            </span>
+          )}
         </span>
         <span className="text-[11px] font-bold text-ps-text shrink-0">{awayTri}</span>
         <CountryFlag name={fixture.away} size={22} shape="pill" />
         <span className="rounded-full bg-ps-green px-[5px] py-[2px] text-[7px] font-bold uppercase tracking-[0.5px] text-white shrink-0">
-          FT
+          {penaltyHome !== null ? "Pens" : "FT"}
         </span>
       </div>
 
