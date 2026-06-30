@@ -97,7 +97,7 @@ export function StickyPillNav() {
           className="flex shrink-0 items-center rounded-full px-2 py-1.5 transition-opacity hover:opacity-80 active:scale-95"
         >
           <span
-            className="relative inline-block shrink-0 bg-white"
+            className="relative inline-block shrink-0 bg-ps-surface"
             style={{
               width: w,
               height: h,

@@ -481,7 +481,7 @@ function FlipRow({
 
   // Opaque backgrounds needed for backface-visibility to work.
   // Semi-transparent amber bleeds through, so pre-compute the opaque equivalent.
-  const faceBg = isMe ? "bg-[#fef7e8]" : "bg-ps-surface";
+  const faceBg = isMe ? "bg-ps-amber-soft" : "bg-ps-surface";
 
   return (
     <div
@@ -546,7 +546,7 @@ function FlipRow({
             {!isMe && (isFormat || !row.display_name.startsWith("Mystery ")) && (
               <ProfileButton userId={row.user_id} displayName={row.display_name} from={classificationKey} />
             )}
-            <span className="w-16 shrink-0 text-right font-mono text-sm font-bold text-ps-text">
+            <span className={`w-16 shrink-0 text-right font-mono text-sm font-bold ${isMe ? "text-ps-amber" : "text-ps-text"}`}>
               {row.points}
             </span>
             {canFlip && isMe && (
@@ -930,7 +930,7 @@ function FlagToggle() {
       style={{ minWidth: 44, minHeight: 44 }}
     >
       <span
-        className="relative inline-block shrink-0 bg-white"
+        className="relative inline-block shrink-0 bg-ps-surface"
         style={{
           width: w,
           height: h,
@@ -1469,7 +1469,7 @@ function KnockoutLeaderboard({
                   )}
                 </span>
                 <span className={`w-14 text-right font-mono text-sm font-bold ${
-                  belowCut ? "text-ps-text-sec" : "text-ps-text"
+                  isSelf ? "text-ps-amber" : belowCut ? "text-ps-text-sec" : "text-ps-text"
                 }`}>
                   {m.points}
                 </span>

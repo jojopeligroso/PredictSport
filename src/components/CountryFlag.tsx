@@ -87,11 +87,11 @@ export function CountryFlag({
         <span
           aria-label={`Slot ${placeholder}`}
           role="img"
-          className={`relative inline-block shrink-0 bg-white ${className}`}
+          className={`relative inline-block shrink-0 bg-ps-surface ${className}`}
           style={outerStyle}
         >
           <span
-            className="flex items-center justify-center bg-white text-ps-ink"
+            className="flex items-center justify-center bg-ps-surface text-ps-text"
             style={innerStyle}
           >
             <span
@@ -110,7 +110,7 @@ export function CountryFlag({
         <span
           aria-label={`${label} flag (unknown)`}
           role="img"
-          className={`relative inline-block shrink-0 bg-white ${className}`}
+          className={`relative inline-block shrink-0 bg-ps-surface ${className}`}
           style={outerStyle}
         >
           <span className="block bg-ps-chip" style={innerStyle} />
@@ -120,10 +120,10 @@ export function CountryFlag({
 
     return (
       <span
-        className={`relative inline-block shrink-0 bg-white ${className}`}
+        className={`relative inline-block shrink-0 bg-ps-surface ${className}`}
         style={outerStyle}
       >
-        <span className="block bg-white" style={innerStyle}>
+        <span className="block bg-ps-surface" style={innerStyle}>
           <img
             src={url}
             alt={`${label} flag`}

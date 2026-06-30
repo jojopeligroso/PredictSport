@@ -65,7 +65,7 @@ export function LanguageToggle() {
       className="flex items-center gap-1 rounded-md px-1.5 py-1 transition-opacity hover:opacity-80 active:scale-95"
     >
       <span
-        className="relative inline-block shrink-0 bg-white"
+        className="relative inline-block shrink-0 bg-ps-surface"
         style={{
           width,
           height,
@@ -75,7 +75,7 @@ export function LanguageToggle() {
         }}
       >
         <span
-          className="block bg-white"
+          className="block bg-ps-surface"
           style={{
             position: 'absolute',
             top: BORDER,
