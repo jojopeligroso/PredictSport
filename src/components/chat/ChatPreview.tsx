@@ -28,12 +28,12 @@ export function ChatPreview() {
           {/* Message 1 — sender */}
           <div className="flex flex-col items-start">
             <span className="mb-0.5 ml-1 text-micro font-semibold text-ps-text-ter">
-              Mystery Hawk
+              Hawk
             </span>
             <div className="max-w-[75%] rounded-2xl rounded-tl-md bg-ps-chip px-3 py-2">
               <p className="text-sm text-ps-text">
                 <span className="font-semibold text-ps-amber">
-                  @Mystery Otter
+                  @Otter
                 </span>{" "}
                 are you still feeling confident after that performance? Don't
                 see them getting to the final four
@@ -44,7 +44,7 @@ export function ChatPreview() {
           {/* Message 2 — reply */}
           <div className="flex flex-col items-start">
             <span className="mb-0.5 ml-1 text-micro font-semibold text-ps-text-ter">
-              Mystery Otter
+              Otter
             </span>
             <div className="max-w-[75%] rounded-2xl rounded-tl-md bg-ps-chip px-3 py-2">
               <p className="text-sm text-ps-text">in Messi we trust</p>

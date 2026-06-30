@@ -542,8 +542,8 @@ function FlipRow({
                 </span>
               )}
             </div>
-            {/* Profile icon — other users only; on overall hide private ("Mystery") rows */}
-            {!isMe && (isFormat || !row.display_name.startsWith("Mystery ")) && (
+            {/* Profile icon — always show for other users (anonymised names still link to profiles) */}
+            {!isMe && (
               <ProfileButton userId={row.user_id} displayName={row.display_name} from={classificationKey} />
             )}
             <span className={`w-16 shrink-0 text-right font-mono text-sm font-bold ${isMe ? "text-ps-amber" : "text-ps-text"}`}>

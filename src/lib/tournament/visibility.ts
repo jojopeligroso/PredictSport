@@ -44,7 +44,7 @@ interface MembershipVisibility {
  * - The viewer always sees their own real name (caller renders the YOU chip).
  * - Other rows whose membership is `private` get their `display_name`
  *   swapped for the persisted pseudonym. If a pseudonym is somehow missing
- *   (race: toggle without ensurePseudonym), we fall back to "Mystery Player"
+ *   (race: toggle without ensurePseudonym), we fall back to "Anonymous"
  *   rather than leak the name.
  */
 export type ViewerRole = "admin" | "member" | "public";
@@ -74,7 +74,7 @@ export function applyVisibility<T extends VisibleStandingRow>(
       // so the admin knows what others see.
       const m = byUser.get(row.user_id);
       if (m?.display_visibility === "private") {
-        const pseudonym = m.pseudonym ?? "Mystery Player";
+        const pseudonym = m.pseudonym ?? "Anonymous";
         return { ...row, display_name: `${row.display_name} (${pseudonym})` };
       }
       return row;
@@ -97,7 +97,7 @@ export function applyVisibility<T extends VisibleStandingRow>(
     if (!m || m.display_visibility !== "private") return row;
     return {
       ...row,
-      display_name: m.pseudonym ?? "Mystery Player",
+      display_name: m.pseudonym ?? "Anonymous",
     };
   });
 }
@@ -136,7 +136,7 @@ export async function ensurePseudonym(
   const seed = hashSeed(`${userId}:${classificationId}`);
   let pseudonym = "";
   for (let i = 0; i < MYSTERY_ANIMALS.length; i++) {
-    const candidate = `Mystery ${MYSTERY_ANIMALS[(seed + i) % MYSTERY_ANIMALS.length]}`;
+    const candidate = MYSTERY_ANIMALS[(seed + i) % MYSTERY_ANIMALS.length];
     if (!used.has(candidate)) {
       pseudonym = candidate;
       break;
@@ -148,8 +148,8 @@ export async function ensurePseudonym(
   if (!pseudonym) {
     const base = MYSTERY_ANIMALS[seed % MYSTERY_ANIMALS.length];
     let suffix = 2;
-    while (used.has(`Mystery ${base} ${suffix}`)) suffix++;
-    pseudonym = `Mystery ${base} ${suffix}`;
+    while (used.has(`${base} ${suffix}`)) suffix++;
+    pseudonym = `${base} ${suffix}`;
   }
 
   await supabase
@@ -169,14 +169,14 @@ export async function ensurePseudonym(
 export function generatePseudonym(userId: string, usedNames: Set<string>): string {
   const seed = hashSeed(userId);
   for (let i = 0; i < MYSTERY_ANIMALS.length; i++) {
-    const candidate = `Mystery ${MYSTERY_ANIMALS[(seed + i) % MYSTERY_ANIMALS.length]}`;
+    const candidate = MYSTERY_ANIMALS[(seed + i) % MYSTERY_ANIMALS.length];
     if (!usedNames.has(candidate)) return candidate;
   }
   // All 60 animals taken — add numeric suffix
   const base = MYSTERY_ANIMALS[seed % MYSTERY_ANIMALS.length];
   let suffix = 2;
-  while (usedNames.has(`Mystery ${base} ${suffix}`)) suffix++;
-  return `Mystery ${base} ${suffix}`;
+  while (usedNames.has(`${base} ${suffix}`)) suffix++;
+  return `${base} ${suffix}`;
 }
 
 function hashSeed(input: string): number {
