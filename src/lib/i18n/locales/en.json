@@ -109,6 +109,8 @@
   "fixtures.results": "Results",
   "fixtures.hide_picks": "Hide picks",
   "fixtures.show_picks": "Show picks",
+  "fixtures.hide_results": "Hide results",
+  "fixtures.show_results": "Show results",
   "fixtures.show_correct_wrong": "Show correct / wrong",
   "fixtures.on": "On",
   "fixtures.off": "Off",

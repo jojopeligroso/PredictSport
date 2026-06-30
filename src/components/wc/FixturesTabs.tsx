@@ -118,6 +118,16 @@ export function FixturesTabs({ fixtures, resultsByExternalId, serverDateIso, pre
     if (typeof window === "undefined") return false;
     return localStorage.getItem("ps-bigger-cards") === "true";
   });
+  // Fixtures mode: hide results by default so the tab is purely a schedule.
+  const [showResultsInFixtures, setShowResultsInFixtures] = useState(() => {
+    if (typeof window === "undefined") return false;
+    return localStorage.getItem("ps-fixtures-show-results") === "true";
+  });
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    localStorage.setItem("ps-fixtures-show-results", String(showResultsInFixtures));
+  }, [showResultsInFixtures]);
+
   const [expandedExternalId, setExpandedExternalId] = useState<string | null>(null);
   const canExpandToPick = mode === "fixtures" && isMember === true && !!windowEventsByExternalId && !!competitionId;
 
@@ -312,6 +322,21 @@ export function FixturesTabs({ fixtures, resultsByExternalId, serverDateIso, pre
         />
       )}
 
+      {mode === "fixtures" && (
+        <div className="mt-3 rounded-lg border border-ps-border bg-ps-surface px-3 py-2">
+          <div className="flex items-center justify-between">
+            <span className="text-xs text-ps-text-sec">
+              {showResultsInFixtures ? t('fixtures.hide_results') : t('fixtures.show_results')}
+            </span>
+            <ToggleSwitch
+              label=""
+              checked={showResultsInFixtures}
+              onChange={() => setShowResultsInFixtures((v) => !v)}
+            />
+          </div>
+        </div>
+      )}
+
       <div className="mt-4 flex flex-col gap-2">
         {active.length === 0 && (
           <p className="rounded-xl border border-ps-border bg-ps-surface px-4 py-8 text-center text-sm text-ps-text-sec">
@@ -375,7 +400,7 @@ export function FixturesTabs({ fixtures, resultsByExternalId, serverDateIso, pre
                       <FixtureCard
                         key={f.externalId}
                         fixture={f}
-                        result={result}
+                        result={mode === "fixtures" && !showResultsInFixtures ? undefined : result}
                         prediction={mode === "results" && showPredictions ? fPred : undefined}
                         showCorrectness={mode === "results" && showPredictions}
                         large={biggerCards}

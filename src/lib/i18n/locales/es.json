@@ -109,6 +109,8 @@
   "fixtures.results": "Resultados",
   "fixtures.hide_picks": "Ocultar pronósticos",
   "fixtures.show_picks": "Mostrar pronósticos",
+  "fixtures.hide_results": "Ocultar resultados",
+  "fixtures.show_results": "Mostrar resultados",
   "fixtures.show_correct_wrong": "Mostrar aciertos / errores",
   "fixtures.on": "Activado",
   "fixtures.off": "Desactivado",
