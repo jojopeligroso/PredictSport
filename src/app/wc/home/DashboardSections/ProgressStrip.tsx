@@ -36,6 +36,14 @@ export function ProgressStrip({
               onSelectDate={onSelectDate}
             />
           )}
+          <div className="mx-auto mt-3 max-w-[360px] rounded-lg border border-ps-violet/30 bg-ps-violet/10 px-3 py-2 text-left">
+            <p className="text-micro font-bold uppercase tracking-wide text-ps-violet">
+              {t('dash.knockout_bonus_title')}
+            </p>
+            <p className="mt-0.5 text-caption leading-snug text-ps-text-sec">
+              {t('dash.knockout_bonus_body')}
+            </p>
+          </div>
           <p className="mt-1 text-caption font-semibold uppercase tracking-wide text-ps-text-sec">
             {t('dash.picks_progress', { picked, total })}
           </p>

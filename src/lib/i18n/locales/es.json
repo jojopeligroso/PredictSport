@@ -86,6 +86,8 @@
   "dash.anorak": "Anorak",
   "dash.see_all_groups": "Mostrar todos los grupos",
   "dash.groups_drawn_message": "Los grupos se definirán antes del primer partido.",
+  "dash.knockout_bonus_title": "Punto Bonus de Eliminatorias",
+  "dash.knockout_bonus_body": "Si predices empate, elige qué equipo avanza para ganar +1 punto bonus.",
   "dash.no_prediction": "Sin pronóstico",
   "dash.winner_points": "+{points} ganador",
   "dash.score_points": "+{points} marcador",

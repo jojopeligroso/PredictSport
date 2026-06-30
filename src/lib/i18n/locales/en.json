@@ -86,6 +86,8 @@
   "dash.anorak": "Anorak",
   "dash.see_all_groups": "See all groups →",
   "dash.groups_drawn_message": "Groups will be drawn before the first match.",
+  "dash.knockout_bonus_title": "Knockout Stage Bonus Point",
+  "dash.knockout_bonus_body": "If you predict a draw, pick which team goes through for +1 bonus point.",
   "dash.no_prediction": "No prediction",
   "dash.winner_points": "+{points} winner",
   "dash.score_points": "+{points} score",
