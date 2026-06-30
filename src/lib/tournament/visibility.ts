@@ -60,6 +60,14 @@ export function applyVisibility<T extends VisibleStandingRow>(
 
   const byUser = new Map(memberships.map((m) => [m.user_id, m]));
 
+  // Track used pseudonyms to avoid collisions in the public view.
+  // Pre-seed with any stored pseudonyms so generated ones don't clash.
+  const usedNames = new Set<string>(
+    viewerRole === "public"
+      ? memberships.filter((m) => m.pseudonym).map((m) => m.pseudonym!)
+      : [],
+  );
+
   return rows.map((row) => {
     if (viewerRole === "admin") {
       // Admins see all real names. For private users, append the pseudonym
@@ -74,8 +82,12 @@ export function applyVisibility<T extends VisibleStandingRow>(
 
     if (viewerRole === "public") {
       // Public viewers see everyone anonymized — no self-check.
+      // Use stored pseudonym if available, otherwise generate a
+      // deterministic one from the user_id so each player gets a
+      // unique animal name even if they never toggled "Hide me".
       const m = byUser.get(row.user_id);
-      const pseudonym = m?.pseudonym ?? "Mystery Player";
+      const pseudonym = m?.pseudonym ?? generatePseudonym(row.user_id, usedNames);
+      usedNames.add(pseudonym);
       return { ...row, display_name: pseudonym };
     }
 
@@ -147,6 +159,24 @@ export async function ensurePseudonym(
     .eq("user_id", userId);
 
   return pseudonym;
+}
+
+/**
+ * Generate a deterministic pseudonym from a user_id, avoiding collisions
+ * with names already in `usedNames`. Same algorithm as ensurePseudonym
+ * but synchronous and non-persisting — for read-only public views.
+ */
+export function generatePseudonym(userId: string, usedNames: Set<string>): string {
+  const seed = hashSeed(userId);
+  for (let i = 0; i < MYSTERY_ANIMALS.length; i++) {
+    const candidate = `Mystery ${MYSTERY_ANIMALS[(seed + i) % MYSTERY_ANIMALS.length]}`;
+    if (!usedNames.has(candidate)) return candidate;
+  }
+  // All 60 animals taken — add numeric suffix
+  const base = MYSTERY_ANIMALS[seed % MYSTERY_ANIMALS.length];
+  let suffix = 2;
+  while (usedNames.has(`Mystery ${base} ${suffix}`)) suffix++;
+  return `Mystery ${base} ${suffix}`;
 }
 
 function hashSeed(input: string): number {

@@ -1,5 +1,5 @@
 import { createServiceClient } from "@/lib/supabase/service";
-import { applyVisibility } from "@/lib/tournament/visibility";
+import { applyVisibility, generatePseudonym } from "@/lib/tournament/visibility";
 import { ShowcaseClient } from "./ShowcaseClient";
 
 export const dynamic = "force-dynamic";
@@ -207,6 +207,11 @@ export default async function ShowcasePage() {
         }>).map((r) => [r.user_id, r.total_points ?? 0])
       );
 
+      // Build collision-free pseudonyms for public view
+      const formatUsedNames = new Set<string>(
+        [...pseudonymMap.values()].filter((v): v is string => v != null)
+      );
+
       for (const group of groups as Array<{
         id: string;
         group_name: string;
@@ -214,9 +219,9 @@ export default async function ShowcasePage() {
         const members = (groupMembers ?? [])
           .filter((m: { group_id: string }) => m.group_id === group.id)
           .map((m: { user_id: string }) => {
-            // Public view: always use pseudonym
-            const pseudonym =
-              pseudonymMap.get(m.user_id) ?? "Mystery Player";
+            const stored = pseudonymMap.get(m.user_id);
+            const pseudonym = stored ?? generatePseudonym(m.user_id, formatUsedNames);
+            formatUsedNames.add(pseudonym);
             return {
               display_name: pseudonym,
               points: pointsMap.get(m.user_id) ?? 0,
