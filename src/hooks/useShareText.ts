@@ -71,10 +71,10 @@ function formatPredictionLine(input: PredictionShareInput): string {
  * Example: "BRA 2-1 SUI - You: 2-1 +13pts"
  */
 function formatResultLine(result: ResultRow): string {
-  const { fixture, homeScore, awayScore, userScorePick, userWinnerPick, winnerPoints, scorePoints } = result;
+  const { fixture, homeScore, awayScore, userScorePick, userWinnerPick, winnerPoints, scorePoints, h2hPoints } = result;
   const homeTri = teamTri(fixture.home);
   const awayTri = teamTri(fixture.away);
-  const totalPts = winnerPoints + scorePoints;
+  const totalPts = winnerPoints + scorePoints + h2hPoints;
 
   let line = `${homeTri} ${homeScore}-${awayScore} ${awayTri}`;
 
@@ -165,7 +165,7 @@ export function useResultShareText(
 
     const lines = predictedResults.map(formatResultLine);
     const totalPoints = predictedResults.reduce(
-      (sum, r) => sum + r.winnerPoints + r.scorePoints,
+      (sum, r) => sum + r.winnerPoints + r.scorePoints + r.h2hPoints,
       0,
     );
     const correct = predictedResults.filter((r) => r.winnerCorrect).length;

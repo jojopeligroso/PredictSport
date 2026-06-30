@@ -37,6 +37,7 @@ export type FixturePredictionData = {
   scoreCorrect?: boolean | null;
   winnerPoints?: number;
   scorePoints?: number;
+  h2hPoints?: number;
   userConfidence?: number | null;
 };
 
@@ -698,7 +699,8 @@ function FixtureCard({
   const scoreCorrect = prediction?.scoreCorrect ?? null;
   const winnerPoints = prediction?.winnerPoints ?? 0;
   const scorePoints = prediction?.scorePoints ?? 0;
-  const totalPoints = winnerPoints + scorePoints;
+  const h2hPoints = prediction?.h2hPoints ?? 0;
+  const totalPoints = winnerPoints + scorePoints + h2hPoints;
   const bothCorrect = winnerCorrect === true && scoreCorrect === true;
   const isWrong = hasPrediction && winnerCorrect === false;
   const isJackpot = bothCorrect; // exact score = shimmer

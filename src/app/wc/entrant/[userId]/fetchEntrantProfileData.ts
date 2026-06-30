@@ -49,6 +49,7 @@ export interface EntrantPick {
   scoreCorrect: boolean | null;
   winnerPoints: number;
   scorePoints: number;
+  h2hPoints: number;
 }
 
 export interface EntrantTagRow {
@@ -346,6 +347,7 @@ export async function fetchEntrantProfileData(
     if (!ev) continue;
     const winnerPred = preds.find((p) => p.prediction_type === "winner");
     const scorePred = preds.find((p) => p.prediction_type === "exact_score");
+    const h2hPred = preds.find((p) => p.prediction_type === "head_to_head");
 
     let scorePick: { home: number; away: number } | null = null;
     if (scorePred?.prediction_data) {
@@ -372,6 +374,7 @@ export async function fetchEntrantProfileData(
       scoreCorrect: scorePred?.is_correct ?? null,
       winnerPoints: winnerPred?.points_awarded ?? 0,
       scorePoints: scorePred?.points_awarded ?? 0,
+      h2hPoints: h2hPred?.points_awarded ?? 0,
     });
   }
 
@@ -395,6 +398,7 @@ export async function fetchEntrantProfileData(
       scoreCorrect: null,
       winnerPoints: 0,
       scorePoints: 0,
+      h2hPoints: 0,
     });
   }
 

@@ -74,6 +74,7 @@ export function DashboardResultCard({
     scoreCorrect,
     winnerPoints,
     scorePoints,
+    h2hPoints,
     penaltyHome,
     penaltyAway,
   } = result;
@@ -87,7 +88,7 @@ export function DashboardResultCard({
   const bothCorrect = winnerCorrect === true && scoreCorrect === true;
   const wrong = hasPrediction && winnerCorrect === false;
 
-  const totalPoints = winnerPoints + scorePoints;
+  const totalPoints = winnerPoints + scorePoints + h2hPoints;
   const isJackpot = bothCorrect; // exact score = shimmer
 
   // Prediction display: "Team" or "Team H–A"
@@ -202,7 +203,7 @@ export function computeMatchdaySummary(results: ResultRow[]): {
     if (r.userWinnerPick !== null) {
       totalPredicted++;
       if (r.winnerCorrect) correctCount++;
-      totalPoints += r.winnerPoints + r.scorePoints;
+      totalPoints += r.winnerPoints + r.scorePoints + r.h2hPoints;
     }
   }
   return { correctCount, totalPredicted, totalPoints };

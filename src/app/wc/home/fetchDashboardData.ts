@@ -45,6 +45,8 @@ export interface ResultRow {
   winnerPoints: number;
   /** Points awarded for exact score prediction. */
   scorePoints: number;
+  /** Points awarded for head-to-head (advancing team) prediction. */
+  h2hPoints: number;
   /** User's confidence level (1-5) on their winner prediction, null if not set. */
   userConfidence: number | null;
   /** Penalty shootout scores, null if match didn't go to penalties. */
@@ -636,6 +638,9 @@ async function fetchRecentResults(
     const scorePred = preds.find(
       (p) => p.prediction_type === "exact_score",
     );
+    const h2hPred = preds.find(
+      (p) => p.prediction_type === "head_to_head",
+    );
 
     // Extract user's winner pick value
     const userWinnerPick: string | null =
@@ -664,6 +669,7 @@ async function fetchRecentResults(
       scoreCorrect: scorePred ? (scorePred.is_correct ?? false) : null,
       winnerPoints: winnerPred?.points_awarded ?? 0,
       scorePoints: scorePred?.points_awarded ?? 0,
+      h2hPoints: h2hPred?.points_awarded ?? 0,
       userConfidence: winnerPred?.confidence_level ?? null,
       penaltyHome: hasPenalties ? penaltyHome : null,
       penaltyAway: hasPenalties ? penaltyAway : null,

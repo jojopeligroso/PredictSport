@@ -134,7 +134,7 @@ function PickRow({ pick }: { pick: EntrantPick }) {
     }
   }
 
-  const totalPoints = pick.winnerPoints + pick.scorePoints;
+  const totalPoints = pick.winnerPoints + pick.scorePoints + pick.h2hPoints;
 
   return (
     <div className="px-3 py-2.5">

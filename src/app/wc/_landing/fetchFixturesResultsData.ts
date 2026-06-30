@@ -243,6 +243,10 @@ export async function fetchFixturesResultsData() {
           (p: { prediction_type: string }) =>
             p.prediction_type === "exact_score",
         );
+        const h2hPred = eventPreds.find(
+          (p: { prediction_type: string }) =>
+            p.prediction_type === "head_to_head",
+        );
 
         const currentWinner: string | null =
           (winnerPred?.prediction_data?.value as string) ??
@@ -274,6 +278,7 @@ export async function fetchFixturesResultsData() {
           scoreCorrect: scorePred ? ((scorePred as { is_correct?: boolean | null }).is_correct ?? null) : null,
           winnerPoints: (winnerPred as { points_awarded?: number })?.points_awarded ?? 0,
           scorePoints: (scorePred as { points_awarded?: number })?.points_awarded ?? 0,
+          h2hPoints: (h2hPred as { points_awarded?: number })?.points_awarded ?? 0,
           userConfidence: (winnerPred as { confidence_level?: number | null })?.confidence_level ?? null,
         };
       }
