@@ -287,6 +287,44 @@ export async function autoResolveEvent(
       };
     }
 
+    // 7b. Knockout guard: if the provider reports a draw but the event
+    //     has a H2H "who goes through?" prediction (allow_draw: false),
+    //     the match must continue to ET/penalties. Don't confirm until
+    //     the provider returns a non-draw winner (status AP or AET).
+    const isDrawResult =
+      result.winner === "draw" ||
+      (result.score &&
+        result.score.home_score === result.score.away_score &&
+        (!result.winner || result.winner === "draw"));
+
+    if (isDrawResult) {
+      const { data: knockoutEpt } = await supabase
+        .from("event_prediction_types")
+        .select("id")
+        .eq("event_id", event.id)
+        .eq("prediction_type", "head_to_head")
+        .limit(1);
+
+      if (knockoutEpt && knockoutEpt.length > 0) {
+        const provisionalData = {
+          ...resultData,
+          ...resultToPlainObject(result),
+          auto_result_status: "provisional",
+        };
+        await supabase
+          .from("events")
+          .update({ result_data: provisionalData })
+          .eq("id", event.id);
+
+        return {
+          ...base,
+          status: "no_result",
+          provider: result.provider,
+          message: "knockout match drawn at FT — waiting for ET/penalties result",
+        };
+      }
+    }
+
     // 8. Confirm and score (is_final = true)
     const finalResultData = {
       ...resultToPlainObject(result),

@@ -103,17 +103,21 @@ export class TheSportsDBProvider extends BaseProvider {
     const awayScore = event.intAwayScore ? parseInt(event.intAwayScore) : null;
     const hasScore = homeScore !== null && awayScore !== null;
 
-    // AP = After Penalties, AET = After Extra Time
+    // AP = After Penalties, AET = After Extra Time, PEN = Penalties
     const isFinal =
       event.strStatus === "Match Finished" ||
       event.strStatus === "FT" ||
       event.strStatus === "AP" ||
-      event.strStatus === "AET";
+      event.strStatus === "AET" ||
+      event.strStatus === "PEN";
 
     // Penalty shootout scores (e.g. 3-4 on pens)
     const penHome = event.intHomeScoreExtra ? parseInt(event.intHomeScoreExtra) : null;
     const penAway = event.intAwayScoreExtra ? parseInt(event.intAwayScoreExtra) : null;
-    const hasPenalties = event.strStatus === "AP" && penHome !== null && penAway !== null;
+    const hasPenalties =
+      (event.strStatus === "AP" || event.strStatus === "PEN") &&
+      penHome !== null &&
+      penAway !== null;
 
     let winner: string | null = null;
     let margin: number | null = null;
