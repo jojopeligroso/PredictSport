@@ -82,6 +82,56 @@ export async function insertTagRevealMessage(
 }
 
 // ---------------------------------------------------------------------------
+// Event-level tag message (no user assignment)
+// ---------------------------------------------------------------------------
+
+/**
+ * Insert a system_tag_reveal chat message for an event-level tag
+ * (e.g. "Nobody Saw That Coming") that isn't assigned to any individual.
+ */
+export async function insertEventTagMessage(
+  competitionId: string,
+  tagDef: TagDefinition,
+  stats: Record<string, unknown>,
+): Promise<void> {
+  const supabase = createServiceClient();
+
+  const vars = { ...stats };
+  const content = interpolate(tagDef.layer3, vars);
+
+  const metadata = {
+    tagId: null,
+    tagName: tagDef.name,
+    layer1: tagDef.layer1,
+    layer2: interpolate(tagDef.layer2, vars),
+    factCard: {
+      fact: tagDef.factCard.fact,
+      stat: interpolate(tagDef.factCard.statTemplate, vars),
+      context: interpolate(tagDef.factCard.contextTemplate, vars),
+    },
+    visual: {
+      borderColor: tagDef.visual.borderColor,
+      gold: tagDef.visual.gold ?? false,
+      opacity: tagDef.visual.opacity ?? 1,
+    },
+    userId: null,
+    displayName: null,
+  };
+
+  const { error } = await supabase.from("chat_messages").insert({
+    competition_id: competitionId,
+    user_id: null,
+    content,
+    message_type: "system_tag_reveal",
+    metadata,
+  });
+
+  if (error) {
+    console.error("[reputation] Failed to insert event tag message:", error);
+  }
+}
+
+// ---------------------------------------------------------------------------
 // Tag change message
 // ---------------------------------------------------------------------------
 

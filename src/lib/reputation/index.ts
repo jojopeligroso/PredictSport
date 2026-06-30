@@ -17,7 +17,7 @@ import {
   publishBehaviouralTags,
   publishEventDrivenTags,
 } from "./publish";
-import { insertTagRejectMessage } from "./chat-messages";
+import { insertTagRejectMessage, insertEventTagMessage } from "./chat-messages";
 import { getTagDefinition } from "./tag-catalogue";
 
 // ---------------------------------------------------------------------------
@@ -68,11 +68,14 @@ export async function processTagsForRound(
     totalFixtures > 0 ? (resultedFixtures / totalFixtures) * 100 : 0;
 
   // 3. Assign tags
-  const assignments = assignBehaviouralTags(
+  const rawAssignments = assignBehaviouralTags(
     metrics,
     totalFixtures,
     completionPct,
   );
+
+  // 3b. Dedup: if >3 people would get the same tag, it's not distinctive — skip it
+  const assignments = dedupTagAssignments(rawAssignments);
 
   // 4. Publish
   await publishBehaviouralTags(competitionId, roundId, assignments);
@@ -172,12 +175,36 @@ export async function processEventTags(
   const existingTags = (existingRaw ?? []) as Pick<MemberTag, "tag_name" | "competition_id">[] as MemberTag[];
 
   // 3. Assign event-driven tags
-  const assignments = assignEventDrivenTags(
+  const rawAssignments = assignEventDrivenTags(
     eventMetrics,
     competitionId,
     eventId,
     existingTags,
   );
+
+  // 3b. Dedup: if >3 people would get the same tag, skip it
+  const assignments = dedupEventTagAssignments(rawAssignments);
+
+  // 3c. "Nobody Saw That Coming" — event-level tag when 0 correct winner predictions
+  const predicted = eventMetrics.filter((m) => m.predicted);
+  const winnersCorrectCount = predicted.filter((m) => m.winner_correct).length;
+  if (winnersCorrectCount === 0 && predicted.length >= 4) {
+    const tagDef = getTagDefinition("Nobody Saw That Coming");
+    if (tagDef) {
+      // Build context string from the event result
+      const firstMetric = eventMetrics[0];
+      const eventName = firstMetric?.display_name
+        ? `${predicted.length} predictions, 0 correct`
+        : "";
+      await insertEventTagMessage(competitionId, tagDef, {
+        stat: predicted.length,
+        contextStat: eventName,
+      });
+      console.log(
+        `[reputation] "Nobody Saw That Coming" for event ${eventId} (0/${predicted.length} correct)`,
+      );
+    }
+  }
 
   if (assignments.length === 0) return;
 
@@ -270,6 +297,36 @@ async function throttleEventTags(
 
   return result;
 }
+
+// ---------------------------------------------------------------------------
+// Tag dedup: >3 same tag = not distinctive, skip entirely
+// ---------------------------------------------------------------------------
+
+/** Max recipients for the same tag name before it's considered non-distinctive */
+const MAX_SAME_TAG = 3;
+
+function dedupTagAssignments<T extends { tagName: string }>(
+  assignments: T[],
+): T[] {
+  const countByTag = new Map<string, number>();
+  for (const a of assignments) {
+    countByTag.set(a.tagName, (countByTag.get(a.tagName) ?? 0) + 1);
+  }
+  const filtered = assignments.filter(
+    (a) => (countByTag.get(a.tagName) ?? 0) <= MAX_SAME_TAG,
+  );
+  for (const [tag, count] of countByTag) {
+    if (count > MAX_SAME_TAG) {
+      console.log(
+        `[reputation] Skipped "${tag}" — ${count} recipients exceeds max ${MAX_SAME_TAG}`,
+      );
+    }
+  }
+  return filtered;
+}
+
+// Alias for event tags (same logic, different type)
+const dedupEventTagAssignments = dedupTagAssignments;
 
 // ---------------------------------------------------------------------------
 // rejectTag

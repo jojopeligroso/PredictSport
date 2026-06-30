@@ -939,6 +939,26 @@ const theWhistle: TagDefinition = {
   announced: true,
 };
 
+const nobodySawThatComing: TagDefinition = {
+  name: "Nobody Saw That Coming",
+  category: "event_driven",
+  priorityTier: 1,
+  metric: "zero_correct_winners",
+  qualifies: eventNoOp,
+  zScore: eventZScoreNoOp,
+  layer1: "Nobody Saw That Coming",
+  layer2: "Not a single person predicted this result.",
+  layer3: "Nobody predicted this result. Not one person.",
+  factCard: {
+    fact: "Zero participants predicted the correct outcome.",
+    statTemplate: "0 out of {stat} correct",
+    contextTemplate: "{contextStat}",
+  },
+  visual: { borderColor: "#dc2626", gold: true },
+  rejectable: false,
+  announced: true,
+};
+
 // ---------------------------------------------------------------------------
 // Behavioural tags — new additions
 // ---------------------------------------------------------------------------
@@ -1133,6 +1153,7 @@ export const ENGAGEMENT_TAGS: TagDefinition[] = [
 
 /** Event-driven tags */
 export const EVENT_DRIVEN_TAGS: TagDefinition[] = [
+  nobodySawThatComing,
   aLeagueOfTheirOwn,
   crystalBall,
   theProfessor,
