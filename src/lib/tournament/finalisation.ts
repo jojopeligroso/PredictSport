@@ -4,6 +4,8 @@ import type { PredictionType, EventPredictionType } from "@/types/database";
 import { scorePrediction, buildScoreDerivedWinnerOverrides } from "@/lib/scoring";
 import { eliminateFromFormat, type EliminationResult } from "@/lib/tournament/format/elimination";
 import { computeAndPublishFinalisationTags } from "@/lib/reputation/assign-finalisation";
+import { getProvidersForSport } from "@/lib/sports/registry";
+import type { Sport } from "@/lib/sports/types";
 
 /**
  * Step 1: Confirm individual fixture result for tournament competitions.
@@ -15,10 +17,10 @@ export async function confirmTournamentResult(
   resultData: Record<string, unknown>,
   confirmedBy: string
 ): Promise<{ scored: number; errors: number }> {
-  // Fetch event's competition_id for admin check
+  // Fetch event's competition_id, external_event_id, and sport for access checks
   const { data: eventRow } = await supabase
     .from("events")
-    .select("competition_id")
+    .select("competition_id, external_event_id, sport")
     .eq("id", eventId)
     .single();
 
@@ -26,8 +28,18 @@ export async function confirmTournamentResult(
     throw new Error("Event not found");
   }
 
-  // Verify super admin or competition admin
+  // Verify super admin or competition admin (basic access)
   await verifyAdminAccess(supabase, confirmedBy, eventRow.competition_id);
+
+  // Stricter guard: non-custom events or events with 2+ API providers
+  // require super_admin — normal admins can only confirm custom/manual events
+  // for sports with a single API source.
+  await verifyConfirmPermission(
+    supabase,
+    confirmedBy,
+    eventRow.external_event_id,
+    eventRow.sport,
+  );
 
   // Atomically confirm (prevent double-scoring)
   const { data: confirmedEvent, error: updateError } = await supabase
@@ -616,6 +628,53 @@ async function verifyAdminAccess(
   if (member?.role === "admin" || member?.role === "co_admin") return;
 
   throw new Error("Only super admins or competition admins can perform this action");
+}
+
+/**
+ * Guard: normal admins can only confirm results for custom events (no
+ * external provider, or external_event_id starts with "manual:") whose
+ * sport has fewer than 2 real API providers. Everything else requires
+ * super_admin so that auto-result + cross-verification can do its job.
+ */
+async function verifyConfirmPermission(
+  supabase: SupabaseClient,
+  userId: string,
+  externalEventId: string | null,
+  sport: string | null,
+): Promise<void> {
+  // Super admins bypass all restrictions
+  const { data: adminUser } = await supabase
+    .from("users")
+    .select("is_super_admin")
+    .eq("id", userId)
+    .single();
+
+  if (adminUser?.is_super_admin) return;
+
+  // Check 1: must be a custom/manual event
+  const isCustom =
+    !externalEventId || externalEventId.startsWith("manual:");
+
+  if (!isCustom) {
+    throw new Error(
+      "Only super admins can confirm results for provider-linked events. " +
+      "Use the auto-result system or ask a super admin.",
+    );
+  }
+
+  // Check 2: sport must have fewer than 2 real API providers
+  if (sport) {
+    const providers = getProvidersForSport(sport as Sport);
+    const realProviders = providers.filter(
+      (p) => p.name !== "fixture-pool" && p.name !== "manual",
+    );
+    if (realProviders.length >= 2) {
+      throw new Error(
+        "Only super admins can confirm results for sports with multiple API providers. " +
+        "Use the auto-result system or ask a super admin.",
+      );
+    }
+  }
 }
 
 /**
