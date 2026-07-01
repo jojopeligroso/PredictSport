@@ -141,9 +141,17 @@ export class TheSportsDBProvider extends BaseProvider {
       winner = event.strResult;
     }
 
-    // Build periods with penalty data if available
+    // Build periods: penalty data for AP/PEN, extra_time flag for AET.
+    // AET: TheSportsDB bakes ET goals into intHomeScore/intAwayScore, so the
+    // main score is the aggregate. We flag via periods.extra_time so the scorer
+    // knows FT was a draw and can score winner/exact_score against FT, not AET.
+    const isAfterExtraTime = event.strStatus === "AET";
     const periods: Record<string, { home: number; away: number }> | null =
-      hasPenalties ? { penalties: { home: penHome!, away: penAway! } } : null;
+      hasPenalties
+        ? { penalties: { home: penHome!, away: penAway! } }
+        : isAfterExtraTime && hasScore
+          ? { extra_time: { home: homeScore, away: awayScore } }
+          : null;
 
     return {
       provider: this.name,

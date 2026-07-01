@@ -171,7 +171,15 @@ function scoreWinner(
   if (score && options.length >= 2) {
     const homeScore = Number(score.home_score ?? 0);
     const awayScore = Number(score.away_score ?? 0);
-    if (homeScore > awayScore) {
+
+    // AET override: when periods.extra_time exists, the stored score is the
+    // AET aggregate (includes ET goals). FT was definitionally a draw — score
+    // the winner (1X2) prediction against that. H2H (2 options) is unaffected
+    // because it asks "who goes through", not "who wins in 90 minutes".
+    const scorePeriods = score.periods as Record<string, Record<string, number>> | undefined;
+    if (scorePeriods?.extra_time && options.length >= 3) {
+      actual = "draw";
+    } else if (homeScore > awayScore) {
       actual = normalizeStr(options[0]);
     } else if (awayScore > homeScore) {
       actual = normalizeStr(options[options.length - 1]);
@@ -432,6 +440,8 @@ function scoreHeadToHead(
 
   // Positional derivation from score when config options are available.
   // Same principle as scoreWinner: options[0] = home, last = away.
+  // H2H is "who advances" — when the 90-min score is a draw, fall through
+  // to result.winner to determine who actually advanced (via ET/penalties).
   const h2hScore = result.score as Record<string, unknown> | undefined;
   if (h2hScore && options.length >= 2) {
     const homeScore = Number(h2hScore.home_score ?? 0);
@@ -440,6 +450,16 @@ function scoreHeadToHead(
       actual = normalizeStr(options[0]);
     } else if (awayScore > homeScore) {
       actual = normalizeStr(options[options.length - 1]);
+    } else if (result.winner && normalizeStr(result.winner) !== "draw") {
+      // 90-min score is level — use result.winner for the advancing team
+      const winnerNorm = normalizeStr(result.winner);
+      if (winnerNorm === normalizeStr(h2hScore.home_team)) {
+        actual = normalizeStr(options[0]);
+      } else if (winnerNorm === normalizeStr(h2hScore.away_team)) {
+        actual = normalizeStr(options[options.length - 1]);
+      } else {
+        actual = winnerNorm;
+      }
     } else {
       actual = "draw";
     }
@@ -748,6 +768,18 @@ function scoreExactScore(
   const score = result.score as Record<string, unknown> | undefined;
   if (!score) {
     return { is_correct: null, is_partial: false, points_awarded: 0 };
+  }
+
+  // AET: stored score is the aggregate (includes ET goals), not the 90-min score.
+  // FT was definitionally a draw. Non-draw predictions are wrong; draw predictions
+  // are voided (we don't know the exact FT score from TheSportsDB).
+  const scorePeriods = score.periods as Record<string, Record<string, number>> | undefined;
+  if (scorePeriods?.extra_time) {
+    const predIsDrawScore = Number(predHome) === Number(predAway);
+    if (predIsDrawScore) {
+      return { is_correct: null, is_partial: false, points_awarded: 0 };
+    }
+    return { is_correct: false, is_partial: false, points_awarded: 0 };
   }
 
   const resultHomeScore = Number(score.home_score ?? score.home ?? 0);
