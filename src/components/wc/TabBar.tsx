@@ -171,7 +171,7 @@ export function TabBar({ latestChatAt }: TabBarProps) {
               aria-label={t(tab.key)}
               aria-current={active ? "page" : undefined}
               className={[
-                "group relative flex flex-1 flex-col items-center justify-center gap-px transition-colors duration-150",
+                "group relative flex flex-1 flex-col items-center justify-center gap-px active:scale-95 transition-colors transition-transform duration-150",
                 active ? "text-ps-amber" : "text-ps-text-ter",
               ].join(" ")}
             >
@@ -181,11 +181,11 @@ export function TabBar({ latestChatAt }: TabBarProps) {
                   "absolute inset-x-2 inset-y-1 rounded-xl transition-colors duration-150",
                   active
                     ? "bg-ps-amber/10"
-                    : "bg-transparent group-active:bg-ps-text/10",
+                    : "bg-transparent group-active:bg-ps-amber/15",
                 ].join(" ")}
                 aria-hidden
               />
-              <span className="relative">
+              <span className="relative group-active:translate-y-[1px] transition-transform duration-75">
                 {tab.icon}
                 {!!tab.badge && tab.badge > 0 && (
                   <span className="absolute -right-2 -top-1 flex h-3.5 min-w-[14px] items-center justify-center rounded-full bg-ps-amber px-0.5 text-micro font-bold leading-none text-white">

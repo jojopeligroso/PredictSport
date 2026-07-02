@@ -5,6 +5,7 @@ import { useT, useLocale } from "@/lib/i18n";
 import { CountryFlag } from "@/components/CountryFlag";
 import { fifaTrigram } from "@/lib/tournament/fifa-codes";
 import { HOST_CITIES, type HostCitySlug } from "@/lib/wc/host-cities";
+import { CascadeCard } from "@/components/CascadeCard";
 import { WindowPickList } from "@/app/wc/picks/[windowId]/WindowPickList";
 import type { WindowEvent } from "@/app/wc/picks/[windowId]/WindowPickList";
 import type { WcFixture } from "@/lib/wc/fixtures";
@@ -339,7 +340,7 @@ export function FixturesTabs({ fixtures, resultsByExternalId, serverDateIso, pre
         </div>
       )}
 
-      <div className="mt-4 flex flex-col gap-2">
+      <div className="mt-4 flex flex-col gap-2 overflow-hidden">
         {active.length === 0 && (
           <p className="rounded-xl border border-ps-border bg-ps-surface px-4 py-8 text-center text-sm text-ps-text-sec">
             {mode === "fixtures"
@@ -360,8 +361,8 @@ export function FixturesTabs({ fixtures, resultsByExternalId, serverDateIso, pre
                 <h3 className="mb-1.5 mt-3 first:mt-0 font-mono text-micro font-bold uppercase tracking-[0.18em] text-ps-text-sec">
                   {group.label}
                 </h3>
-                <div className="space-y-2">
-                  {group.items.map((f) => {
+                <div className="space-y-2 overflow-hidden">
+                  {group.items.map((f, index) => {
                     const windowEvent = canExpandToPick ? windowEventsByExternalId?.[f.externalId] : undefined;
                     const result = resultsByExternalId[f.externalId];
                     const isFinished = !!result && (result.homeScore !== null || result.winner !== null);
@@ -377,70 +378,74 @@ export function FixturesTabs({ fixtures, resultsByExternalId, serverDateIso, pre
                         (p) => p.event_id === windowEvent.id
                       );
                       return (
-                        <div key={f.externalId} className="relative animate-in fade-in duration-200">
-                          <button
-                            type="button"
-                            onClick={() => setExpandedExternalId(null)}
-                            className="absolute right-2 top-2 z-10 flex h-9 w-9 items-center justify-center rounded-full bg-black/30 text-white/80 backdrop-blur-sm transition-colors hover:bg-black/50 hover:text-white"
-                            aria-label="Close prediction"
-                          >
-                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M18 6L6 18" /><path d="M6 6l12 12" /></svg>
-                          </button>
-                          <WindowPickList
-                            competitionId={competitionId}
-                            events={[windowEvent]}
-                            predictions={eventPredictions}
-                            windowLocked={false}
-                            surface="card"
-                            fixtureByEventId={fixtureByEventId}
-                          />
-                        </div>
+                        <CascadeCard key={f.externalId} index={index}>
+                          <div className="relative">
+                            <button
+                              type="button"
+                              onClick={() => setExpandedExternalId(null)}
+                              className="absolute right-2 top-2 z-10 flex h-9 w-9 items-center justify-center rounded-full bg-black/30 text-white/80 backdrop-blur-sm transition-colors hover:bg-black/50 hover:text-white"
+                              aria-label="Close prediction"
+                            >
+                              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M18 6L6 18" /><path d="M6 6l12 12" /></svg>
+                            </button>
+                            <WindowPickList
+                              competitionId={competitionId}
+                              events={[windowEvent]}
+                              predictions={eventPredictions}
+                              windowLocked={false}
+                              surface="card"
+                              fixtureByEventId={fixtureByEventId}
+                            />
+                          </div>
+                        </CascadeCard>
                       );
                     }
 
                     return (
-                      <FixtureCard
-                        key={f.externalId}
-                        fixture={f}
-                        result={mode === "fixtures" && !showResultsInFixtures ? undefined : result}
-                        prediction={mode === "results" && showPredictions ? fPred : undefined}
-                        showCorrectness={mode === "results" && showPredictions}
-                        large={biggerCards}
-                        expandable={isExpandable}
-                        onExpand={isExpandable ? () => setExpandedExternalId(f.externalId) : undefined}
-                        locale={locale}
-                        rivalsEventId={
-                          mode === "results" && isResulted && showPredictions && fPred?.eventId
-                            ? fPred.eventId
-                            : undefined
-                        }
-                        nameOverride={nameOverrides[f.externalId]}
-                      />
+                      <CascadeCard key={f.externalId} index={index}>
+                        <FixtureCard
+                          fixture={f}
+                          result={mode === "fixtures" && !showResultsInFixtures ? undefined : result}
+                          prediction={mode === "results" && showPredictions ? fPred : undefined}
+                          showCorrectness={mode === "results" && showPredictions}
+                          large={biggerCards}
+                          expandable={isExpandable}
+                          onExpand={isExpandable ? () => setExpandedExternalId(f.externalId) : undefined}
+                          locale={locale}
+                          rivalsEventId={
+                            mode === "results" && isResulted && showPredictions && fPred?.eventId
+                              ? fPred.eventId
+                              : undefined
+                          }
+                          nameOverride={nameOverrides[f.externalId]}
+                        />
+                      </CascadeCard>
                     );
                   })}
                 </div>
               </div>
             ))
-          : active.map((f) => {
+          : active.map((f, index) => {
               const fResult = resultsByExternalId[f.externalId];
               const fPred = effectivePredictions[f.externalId];
               const isResulted = !!fResult && (fResult.homeScore !== null || fResult.winner !== null);
               return (
-                <FixtureCard
-                  key={f.externalId}
-                  fixture={f}
-                  result={fResult}
-                  prediction={showPredictions ? fPred : undefined}
-                  showCorrectness={showPredictions}
-                  large={biggerCards}
-                  locale={locale}
-                  rivalsEventId={
-                    mode === "results" && isResulted && showPredictions && fPred?.eventId
-                      ? fPred.eventId
-                      : undefined
-                  }
-                  nameOverride={nameOverrides[f.externalId]}
-                />
+                <CascadeCard key={f.externalId} index={index}>
+                  <FixtureCard
+                    fixture={f}
+                    result={fResult}
+                    prediction={showPredictions ? fPred : undefined}
+                    showCorrectness={showPredictions}
+                    large={biggerCards}
+                    locale={locale}
+                    rivalsEventId={
+                      mode === "results" && isResulted && showPredictions && fPred?.eventId
+                        ? fPred.eventId
+                        : undefined
+                    }
+                    nameOverride={nameOverrides[f.externalId]}
+                  />
+                </CascadeCard>
               );
             })}
       </div>

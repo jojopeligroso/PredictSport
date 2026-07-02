@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useT } from "@/lib/i18n";
+import { CascadeCard } from "@/components/CascadeCard";
 import { DashboardPickRow } from "@/components/wc/DashboardPickRow";
 import { OnboardingSection } from "@/components/wc/OnboardingFlow";
 import { WcJoinCard } from "@/components/wc/WcJoinCard";
@@ -48,8 +49,8 @@ export function PicksSection({
             <p className="mb-1.5 text-caption font-semibold uppercase tracking-wide text-ps-text-ter">
               {t('dash.your_picks')}
             </p>
-            <div className="flex flex-col gap-1.5">
-              {filteredEvents.map((event) => {
+            <div className="flex flex-col gap-1.5 overflow-hidden">
+              {filteredEvents.map((event, index) => {
                 const fixture = fixtureByEventId.get(event.id);
                 if (!fixture) return null;
                 const status = getPickStatus(event, predictions, liveEnabled);
@@ -57,18 +58,19 @@ export function PicksSection({
                 const isLiveExpanded =
                   status === "in_progress" && !collapsedLiveIds.has(event.id);
                 return (
-                  <DashboardPickRow
-                    key={event.id}
-                    fixture={fixture}
-                    predictions={predictions}
-                    status={status}
-                    event={event}
-                    competitionId={competitionId}
-                    fixtureByEventId={fixtureByEventId}
-                    windowLocked={windowLocked}
-                    expanded={isLiveExpanded || expandedEventId === event.id}
-                    onToggle={() => onToggleEvent(event.id, status)}
-                  />
+                  <CascadeCard key={event.id} index={index}>
+                    <DashboardPickRow
+                      fixture={fixture}
+                      predictions={predictions}
+                      status={status}
+                      event={event}
+                      competitionId={competitionId}
+                      fixtureByEventId={fixtureByEventId}
+                      windowLocked={windowLocked}
+                      expanded={isLiveExpanded || expandedEventId === event.id}
+                      onToggle={() => onToggleEvent(event.id, status)}
+                    />
+                  </CascadeCard>
                 );
               })}
             </div>

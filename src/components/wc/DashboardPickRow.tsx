@@ -122,7 +122,7 @@ export function DashboardPickRow({
           ? `${fixture.home} vs ${fixture.away} — ${t('picks.live')}`
           : t('picks.tap_to_pick', { home: fixture.home, away: fixture.away })
       }
-      className="w-full text-left"
+      className="w-full text-left active:scale-[0.98] transition-transform duration-75"
     >
       <FixtureCardSurface
         city={fixture.city}
