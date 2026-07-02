@@ -368,6 +368,18 @@ html[data-theme="dark"] .ps-island:not(.wc-theme .ps-island) {
   }
 }
 
+/* ── Rise entrance — fade + subtle lift for table rows / ranked lists ── */
+@keyframes ps-rise-in {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
 /* Hide scrollbars in scroll containers */
 .ps-scroll::-webkit-scrollbar { display: none; }
 .ps-scroll { scrollbar-width: none; }

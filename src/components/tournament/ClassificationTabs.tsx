@@ -6,6 +6,7 @@ import dynamic from "next/dynamic";
 import { useT, useLocale, type Locale } from "@/lib/i18n";
 import { createClient } from "@/lib/supabase/client";
 import { ProfileButton } from "@/app/wc/entrant/[userId]/ProfileButton";
+import { CascadeCard } from "@/components/CascadeCard";
 
 const RivalPredictionsTab = dynamic(
   () => import("@/components/wc/RivalPredictionsTab").then(mod => mod.RivalPredictionsTab),
@@ -711,7 +712,7 @@ function StandingsTable({
   const isFormat = classificationType === "format_elimination";
 
   return (
-    <div className="divide-y divide-ps-border rounded-xl border border-ps-border bg-ps-surface">
+    <div className="divide-y divide-ps-border overflow-hidden rounded-xl border border-ps-border bg-ps-surface">
       {/* Header */}
       <div className="flex items-center px-3 py-2 text-xs font-semibold text-ps-text-ter">
         <span className="w-8 text-center">#</span>
@@ -721,23 +722,24 @@ function StandingsTable({
         </span>
       </div>
 
-      {standings.map((row) => {
+      {standings.map((row, i) => {
         const isMe = row.user_id === currentUserId;
         const isEliminated = row.eliminated || row.status === "eliminated" || row.status === "dead";
 
         return (
-          <FlipRow
-            key={row.user_id}
-            row={row}
-            isMe={isMe}
-            isEliminated={isEliminated}
-            isFormat={isFormat}
-            isBracket={isBracket}
-            selfVisibility={selfVisibility}
-            onToggleVisibility={onToggleVisibility}
-            tag={tagsByUser.get(row.user_id)}
-            classificationKey={classificationKey}
-          />
+          <CascadeCard key={row.user_id} index={i} speed="rise">
+            <FlipRow
+              row={row}
+              isMe={isMe}
+              isEliminated={isEliminated}
+              isFormat={isFormat}
+              isBracket={isBracket}
+              selfVisibility={selfVisibility}
+              onToggleVisibility={onToggleVisibility}
+              tag={tagsByUser.get(row.user_id)}
+              classificationKey={classificationKey}
+            />
+          </CascadeCard>
         );
       })}
     </div>
@@ -1231,27 +1233,28 @@ function FormatGroupCard({
     return (
       <div className="mt-4 rounded-xl border border-ps-border bg-ps-surface p-4">
         <h3 className="text-sm font-bold text-ps-text">{group.name}</h3>
-        <div className="mt-3 divide-y divide-ps-border rounded-lg border border-ps-border">
-          {group.members.map((m) => (
-            <div
-              key={m.user_id}
-              className={`flex items-center px-3 py-2.5 ${m.is_self ? "bg-ps-amber/5" : ""}`}
-            >
-              <span className={`flex-1 text-sm ${m.is_self ? "font-semibold text-ps-text" : "text-ps-text"}`}>
-                {m.display_name}
-                {m.is_self && (
-                  <span className="ml-1.5 rounded bg-ps-amber/20 px-1 py-0.5 text-micro font-bold text-ps-amber">
-                    {t('classification.you_label')}
-                  </span>
-                )}
-              </span>
-              <span className="w-12 text-center font-mono text-xs text-ps-text-ter">
-                {m.predictions_made}/{m.predictions_total}
-              </span>
-              <span className="w-14 text-right font-mono text-xs font-bold text-ps-text">
-                {m.points} {t('common.pts')}
-              </span>
-            </div>
+        <div className="mt-3 divide-y divide-ps-border overflow-hidden rounded-lg border border-ps-border">
+          {group.members.map((m, i) => (
+            <CascadeCard key={m.user_id} index={i} speed="rise">
+              <div
+                className={`flex items-center px-3 py-2.5 ${m.is_self ? "bg-ps-amber/5" : ""}`}
+              >
+                <span className={`flex-1 text-sm ${m.is_self ? "font-semibold text-ps-text" : "text-ps-text"}`}>
+                  {m.display_name}
+                  {m.is_self && (
+                    <span className="ml-1.5 rounded bg-ps-amber/20 px-1 py-0.5 text-micro font-bold text-ps-amber">
+                      {t('classification.you_label')}
+                    </span>
+                  )}
+                </span>
+                <span className="w-12 text-center font-mono text-xs text-ps-text-ter">
+                  {m.predictions_made}/{m.predictions_total}
+                </span>
+                <span className="w-14 text-right font-mono text-xs font-bold text-ps-text">
+                  {m.points} {t('common.pts')}
+                </span>
+              </div>
+            </CascadeCard>
           ))}
         </div>
       </div>
@@ -1407,37 +1410,38 @@ function YourGroupCard({
       )}
 
       {/* Members with zone indicators */}
-      <div className="divide-y divide-ps-border">
+      <div className="divide-y divide-ps-border overflow-hidden">
         {group.members.map((m, i) => {
           const rank = i + 1;
           const zone = getQualificationZone(rank, groupSize);
 
           return (
-            <div
-              key={m.user_id}
-              className={`flex items-center border-l-[3px] px-3 py-2 ${zoneStyles[zone]} ${
-                m.is_self ? "!bg-ps-amber/10" : ""
-              }`}
-            >
-              <span className="w-6 text-center font-mono text-xs font-bold text-ps-text-ter">
-                {rank}
-              </span>
-              <span
-                className={`flex-1 truncate pl-2 text-sm ${
-                  m.is_self ? "font-semibold text-ps-text" : "text-ps-text"
+            <CascadeCard key={m.user_id} index={i} speed="rise">
+              <div
+                className={`flex items-center border-l-[3px] px-3 py-2 ${zoneStyles[zone]} ${
+                  m.is_self ? "!bg-ps-amber/10" : ""
                 }`}
               >
-                {m.display_name}
-                {m.is_self && (
-                  <span className="ml-1.5 rounded bg-ps-amber/20 px-1 py-0.5 text-micro font-bold text-ps-amber">
-                    {t('classification.you_label')}
-                  </span>
-                )}
-              </span>
-              <span className="w-14 text-right font-mono text-sm font-bold text-ps-text">
-                {m.points}
-              </span>
-            </div>
+                <span className="w-6 text-center font-mono text-xs font-bold text-ps-text-ter">
+                  {rank}
+                </span>
+                <span
+                  className={`flex-1 truncate pl-2 text-sm ${
+                    m.is_self ? "font-semibold text-ps-text" : "text-ps-text"
+                  }`}
+                >
+                  {m.display_name}
+                  {m.is_self && (
+                    <span className="ml-1.5 rounded bg-ps-amber/20 px-1 py-0.5 text-micro font-bold text-ps-amber">
+                      {t('classification.you_label')}
+                    </span>
+                  )}
+                </span>
+                <span className="w-14 text-right font-mono text-sm font-bold text-ps-text">
+                  {m.points}
+                </span>
+              </div>
+            </CascadeCard>
           );
         })}
       </div>
@@ -1477,53 +1481,55 @@ function KnockoutLeaderboard({
       </div>
 
       {/* Members with cutoff line */}
-      <div className="divide-y divide-ps-border">
+      <div className="divide-y divide-ps-border overflow-hidden">
         {group.members.map((m, i) => {
           const rank = i + 1;
           const isSelf = m.user_id === currentUserId;
           const belowCut = rank > cutoffPosition;
 
           return (
-            <div key={m.user_id}>
-              {/* Gold cutoff line after top half */}
-              {rank === cutoffPosition + 1 && (
-                <div className="relative flex items-center px-3 py-1">
-                  <div className="flex-1 border-t border-dashed border-ps-amber/40" />
-                  <span className="mx-2 whitespace-nowrap text-micro font-semibold text-ps-amber/60">
-                    Top {cutoffPosition} advance
-                  </span>
-                  <div className="flex-1 border-t border-dashed border-ps-amber/40" />
-                </div>
-              )}
-              <div
-                className={`flex items-center px-3 py-2 ${
-                  isSelf ? "bg-ps-amber/10" : belowCut ? "bg-ps-red/[0.03]" : ""
-                }`}
-              >
-                <span className={`w-6 text-center font-mono text-xs font-bold ${
-                  belowCut ? "text-ps-red/60" : "text-ps-text-ter"
-                }`}>
-                  {rank}
-                </span>
-                <span
-                  className={`flex-1 truncate pl-2 text-sm ${
-                    isSelf ? "font-semibold text-ps-text" : belowCut ? "text-ps-text-sec" : "text-ps-text"
+            <CascadeCard key={m.user_id} index={i} speed="rise">
+              <div>
+                {/* Gold cutoff line after top half */}
+                {rank === cutoffPosition + 1 && (
+                  <div className="relative flex items-center px-3 py-1">
+                    <div className="flex-1 border-t border-dashed border-ps-amber/40" />
+                    <span className="mx-2 whitespace-nowrap text-micro font-semibold text-ps-amber/60">
+                      Top {cutoffPosition} advance
+                    </span>
+                    <div className="flex-1 border-t border-dashed border-ps-amber/40" />
+                  </div>
+                )}
+                <div
+                  className={`flex items-center px-3 py-2 ${
+                    isSelf ? "bg-ps-amber/10" : belowCut ? "bg-ps-red/[0.03]" : ""
                   }`}
                 >
-                  {m.display_name}
-                  {isSelf && (
-                    <span className="ml-1.5 rounded bg-ps-amber/20 px-1 py-0.5 text-micro font-bold text-ps-amber">
-                      {t('classification.you_label')}
-                    </span>
-                  )}
-                </span>
-                <span className={`w-14 text-right font-mono text-sm font-bold ${
-                  isSelf ? "text-ps-amber" : belowCut ? "text-ps-text-sec" : "text-ps-text"
-                }`}>
-                  {m.points}
-                </span>
+                  <span className={`w-6 text-center font-mono text-xs font-bold ${
+                    belowCut ? "text-ps-red/60" : "text-ps-text-ter"
+                  }`}>
+                    {rank}
+                  </span>
+                  <span
+                    className={`flex-1 truncate pl-2 text-sm ${
+                      isSelf ? "font-semibold text-ps-text" : belowCut ? "text-ps-text-sec" : "text-ps-text"
+                    }`}
+                  >
+                    {m.display_name}
+                    {isSelf && (
+                      <span className="ml-1.5 rounded bg-ps-amber/20 px-1 py-0.5 text-micro font-bold text-ps-amber">
+                        {t('classification.you_label')}
+                      </span>
+                    )}
+                  </span>
+                  <span className={`w-14 text-right font-mono text-sm font-bold ${
+                    isSelf ? "text-ps-amber" : belowCut ? "text-ps-text-sec" : "text-ps-text"
+                  }`}>
+                    {m.points}
+                  </span>
+                </div>
               </div>
-            </div>
+            </CascadeCard>
           );
         })}
       </div>
@@ -1569,28 +1575,29 @@ function EliminatedSection({
       </button>
 
       {expanded && (
-        <div className="divide-y divide-ps-border border-t border-ps-border">
-          {members.map((m) => (
-            <div
-              key={m.user_id}
-              className={`flex items-center px-3 py-2 opacity-50 ${m.is_self ? "!opacity-100 bg-ps-amber/10" : ""}`}
-            >
-              <span className="w-6 text-center text-micro text-ps-text-ter">-</span>
-              <span className={`flex-1 truncate pl-2 text-sm ${m.is_self ? "font-semibold text-ps-text" : "text-ps-text-sec"}`}>
-                {m.display_name}
-                {m.source_group && (
-                  <span className="ml-1.5 text-micro text-ps-text-ter">({m.source_group})</span>
-                )}
-                {m.is_self && (
-                  <span className="ml-1.5 rounded bg-ps-amber/20 px-1 py-0.5 text-micro font-bold text-ps-amber">
-                    {t('classification.you_label')}
-                  </span>
-                )}
-              </span>
-              <span className="w-14 text-right font-mono text-sm text-ps-text-ter">
-                {m.points}
-              </span>
-            </div>
+        <div className="divide-y divide-ps-border overflow-hidden border-t border-ps-border">
+          {members.map((m, i) => (
+            <CascadeCard key={m.user_id} index={i} speed="rise">
+              <div
+                className={`flex items-center px-3 py-2 opacity-50 ${m.is_self ? "!opacity-100 bg-ps-amber/10" : ""}`}
+              >
+                <span className="w-6 text-center text-micro text-ps-text-ter">-</span>
+                <span className={`flex-1 truncate pl-2 text-sm ${m.is_self ? "font-semibold text-ps-text" : "text-ps-text-sec"}`}>
+                  {m.display_name}
+                  {m.source_group && (
+                    <span className="ml-1.5 text-micro text-ps-text-ter">({m.source_group})</span>
+                  )}
+                  {m.is_self && (
+                    <span className="ml-1.5 rounded bg-ps-amber/20 px-1 py-0.5 text-micro font-bold text-ps-amber">
+                      {t('classification.you_label')}
+                    </span>
+                  )}
+                </span>
+                <span className="w-14 text-right font-mono text-sm text-ps-text-ter">
+                  {m.points}
+                </span>
+              </div>
+            </CascadeCard>
           ))}
         </div>
       )}
@@ -1672,28 +1679,29 @@ function HistoricalGroupCard({ group }: { group: GroupInfo }) {
       </button>
 
       {expanded && (
-        <div className="divide-y divide-ps-border border-t border-ps-border">
+        <div className="divide-y divide-ps-border overflow-hidden border-t border-ps-border">
           {group.members.map((m, i) => {
             const isEliminated = m.status === "eliminated";
             return (
-              <div
-                key={m.user_id}
-                className={`flex items-center px-3 py-1.5 ${isEliminated ? "opacity-50" : ""} ${m.is_self ? "!opacity-100 bg-ps-amber/5" : ""}`}
-              >
-                <span className={`w-1.5 h-1.5 rounded-full mr-2 ${statusIcon(m.status)}`} style={{ backgroundColor: "currentColor" }} />
-                <span className={`flex-1 truncate text-xs ${m.is_self ? "font-semibold text-ps-text" : "text-ps-text"}`}>
-                  {m.display_name}
-                  {m.is_self && (
-                    <span className="ml-1 rounded bg-ps-amber/20 px-1 py-0.5 text-micro font-bold text-ps-amber">
-                      {t('classification.you_label')}
-                    </span>
+              <CascadeCard key={m.user_id} index={i} speed="rise">
+                <div
+                  className={`flex items-center px-3 py-1.5 ${isEliminated ? "opacity-50" : ""} ${m.is_self ? "!opacity-100 bg-ps-amber/5" : ""}`}
+                >
+                  <span className={`w-1.5 h-1.5 rounded-full mr-2 ${statusIcon(m.status)}`} style={{ backgroundColor: "currentColor" }} />
+                  <span className={`flex-1 truncate text-xs ${m.is_self ? "font-semibold text-ps-text" : "text-ps-text"}`}>
+                    {m.display_name}
+                    {m.is_self && (
+                      <span className="ml-1 rounded bg-ps-amber/20 px-1 py-0.5 text-micro font-bold text-ps-amber">
+                        {t('classification.you_label')}
+                      </span>
+                    )}
+                  </span>
+                  <span className="w-12 text-right font-mono text-xs text-ps-text-ter">{m.points}</span>
+                  {isEliminated && (
+                    <span className="ml-1.5 rounded bg-ps-red/15 px-1 py-0.5 text-micro font-bold text-ps-red">OUT</span>
                   )}
-                </span>
-                <span className="w-12 text-right font-mono text-xs text-ps-text-ter">{m.points}</span>
-                {isEliminated && (
-                  <span className="ml-1.5 rounded bg-ps-red/15 px-1 py-0.5 text-micro font-bold text-ps-red">OUT</span>
-                )}
-              </div>
+                </div>
+              </CascadeCard>
             );
           })}
         </div>
@@ -1736,35 +1744,36 @@ function AllGroupsView({
             </div>
 
             {/* Members */}
-            <div className="divide-y divide-ps-border">
+            <div className="divide-y divide-ps-border overflow-hidden">
               {group.members.map((m, i) => {
                 const rank = i + 1;
                 return (
-                  <div
-                    key={m.user_id}
-                    className={`flex items-center px-3 py-2 ${
-                      m.is_self ? "bg-ps-amber/5" : ""
-                    }`}
-                  >
-                    <span className="w-6 text-center font-mono text-xs font-bold text-ps-text-ter">
-                      {rank}
-                    </span>
-                    <span
-                      className={`flex-1 truncate pl-2 text-sm ${
-                        m.is_self ? "font-semibold text-ps-text" : "text-ps-text"
+                  <CascadeCard key={m.user_id} index={i} speed="rise">
+                    <div
+                      className={`flex items-center px-3 py-2 ${
+                        m.is_self ? "bg-ps-amber/5" : ""
                       }`}
                     >
-                      {m.display_name}
-                      {m.is_self && (
-                        <span className="ml-1.5 rounded bg-ps-amber/20 px-1 py-0.5 text-micro font-bold text-ps-amber">
-                          {t('classification.you_label')}
-                        </span>
-                      )}
-                    </span>
-                    <span className="w-14 text-right font-mono text-sm font-bold text-ps-text">
-                      {m.points}
-                    </span>
-                  </div>
+                      <span className="w-6 text-center font-mono text-xs font-bold text-ps-text-ter">
+                        {rank}
+                      </span>
+                      <span
+                        className={`flex-1 truncate pl-2 text-sm ${
+                          m.is_self ? "font-semibold text-ps-text" : "text-ps-text"
+                        }`}
+                      >
+                        {m.display_name}
+                        {m.is_self && (
+                          <span className="ml-1.5 rounded bg-ps-amber/20 px-1 py-0.5 text-micro font-bold text-ps-amber">
+                            {t('classification.you_label')}
+                          </span>
+                        )}
+                      </span>
+                      <span className="w-14 text-right font-mono text-sm font-bold text-ps-text">
+                        {m.points}
+                      </span>
+                    </div>
+                  </CascadeCard>
                 );
               })}
             </div>

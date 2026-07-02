@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { useT, useLocale } from "@/lib/i18n";
+import { CascadeCard } from "@/components/CascadeCard";
 
 function numOrNull(v: unknown): number | null {
   if (v === null || v === undefined) return null;
@@ -368,22 +369,24 @@ export function RivalPredictionsTab({
             <div className="h-4 w-4 animate-spin rounded-full border-2 border-ps-text-ter border-t-ps-text" />
           </div>
         ) : (
-          <div>
+          <div className="overflow-hidden">
             {sortedPredictions.map((row, i) => (
-              <div key={row.userId}>
-                {groupHeaders.has(i) && (
-                  <div className="border-t border-ps-border/50 bg-ps-bg px-4 py-1.5">
-                    <span className="font-mono text-micro font-bold uppercase tracking-[0.12em] text-ps-text-ter">
-                      {groupHeaders.get(i)}
-                    </span>
-                  </div>
-                )}
-                <PredictionRow
-                  row={row}
-                  rank={i + 1}
-                  hasResult={hasResult}
-                />
-              </div>
+              <CascadeCard key={row.userId} index={i} speed="rise">
+                <div>
+                  {groupHeaders.has(i) && (
+                    <div className="border-t border-ps-border/50 bg-ps-bg px-4 py-1.5">
+                      <span className="font-mono text-micro font-bold uppercase tracking-[0.12em] text-ps-text-ter">
+                        {groupHeaders.get(i)}
+                      </span>
+                    </div>
+                  )}
+                  <PredictionRow
+                    row={row}
+                    rank={i + 1}
+                    hasResult={hasResult}
+                  />
+                </div>
+              </CascadeCard>
             ))}
 
             {/* Scroll hint when list is long */}

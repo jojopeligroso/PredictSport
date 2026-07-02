@@ -9,6 +9,7 @@ import {
   type SportKey,
   toSportKey,
 } from "@/components/ui";
+import { CascadeCard } from "@/components/CascadeCard";
 
 const AVATAR_PALETTE = [
   "#f59e0b",
@@ -175,29 +176,30 @@ export function PersonDetail({
                     ? "var(--ps-amber-deep)"
                     : "var(--ps-red)";
               return (
-                <div
-                  key={p.id}
-                  className="flex items-center gap-2.5 px-3 py-2.5"
-                  style={{
-                    borderBottom: i < predictions.length - 1 ? "1px solid var(--ps-border)" : "none",
-                  }}
-                >
-                  <span className="w-[22px] text-center text-base">{sportCfg.emoji}</span>
-                  <div className="flex-1 min-w-0">
-                    <p className="text-caption font-bold leading-snug text-ps-text">
-                      {p.eventName}
-                    </p>
-                    <p className="mt-0.5 text-micro text-ps-text-sec">
-                      {p.pickValue} <span className="text-ps-text-ter">vs</span> {p.resultValue}
-                    </p>
-                  </div>
-                  <span
-                    className="text-caption font-extrabold tabular-nums"
-                    style={{ color: stateColor }}
+                <CascadeCard key={p.id} index={i} speed="rise">
+                  <div
+                    className="flex items-center gap-2.5 px-3 py-2.5"
+                    style={{
+                      borderBottom: i < predictions.length - 1 ? "1px solid var(--ps-border)" : "none",
+                    }}
                   >
-                    +{p.pointsAwarded}
-                  </span>
-                </div>
+                    <span className="w-[22px] text-center text-base">{sportCfg.emoji}</span>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-caption font-bold leading-snug text-ps-text">
+                        {p.eventName}
+                      </p>
+                      <p className="mt-0.5 text-micro text-ps-text-sec">
+                        {p.pickValue} <span className="text-ps-text-ter">vs</span> {p.resultValue}
+                      </p>
+                    </div>
+                    <span
+                      className="text-caption font-extrabold tabular-nums"
+                      style={{ color: stateColor }}
+                    >
+                      +{p.pointsAwarded}
+                    </span>
+                  </div>
+                </CascadeCard>
               );
             })}
           </div>

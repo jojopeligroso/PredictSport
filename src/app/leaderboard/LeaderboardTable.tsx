@@ -9,6 +9,7 @@ import {
   SectionHeader,
   SendToThread,
 } from "@/components/ui";
+import { CascadeCard } from "@/components/CascadeCard";
 import { psDefaultLeaderboardCopy } from "@/lib/whatsapp";
 
 // -- Types for data passed from the server component --
@@ -665,14 +666,15 @@ export function LeaderboardTable({ entries }: { entries: LeaderboardEntry[] }) {
 
       {/* Podium cards — stacked vertically */}
       {podium.length > 0 && (
-        <div className="flex flex-col gap-2">
-          {podium.map((entry) => (
-            <PodiumCard
-              key={entry.user_id}
-              entry={entry}
-              onExpand={() => toggleExpand(entry.user_id)}
-              isExpanded={expandedUserId === entry.user_id}
-            />
+        <div className="flex flex-col gap-2 overflow-hidden">
+          {podium.map((entry, i) => (
+            <CascadeCard key={entry.user_id} index={i} speed="slow">
+              <PodiumCard
+                entry={entry}
+                onExpand={() => toggleExpand(entry.user_id)}
+                isExpanded={expandedUserId === entry.user_id}
+              />
+            </CascadeCard>
           ))}
         </div>
       )}
@@ -683,13 +685,14 @@ export function LeaderboardTable({ entries }: { entries: LeaderboardEntry[] }) {
           <SectionHeader label="The Rest" accent="var(--ps-blue)" />
           <div className="mt-3 overflow-hidden rounded-2xl border border-ps-border bg-ps-surface">
             {rest.map((entry, idx) => (
-              <TableRow
-                key={entry.user_id}
-                entry={entry}
-                onExpand={() => toggleExpand(entry.user_id)}
-                isExpanded={expandedUserId === entry.user_id}
-                isLast={idx === rest.length - 1}
-              />
+              <CascadeCard key={entry.user_id} index={idx} speed="rise">
+                <TableRow
+                  entry={entry}
+                  onExpand={() => toggleExpand(entry.user_id)}
+                  isExpanded={expandedUserId === entry.user_id}
+                  isLast={idx === rest.length - 1}
+                />
+              </CascadeCard>
             ))}
           </div>
         </div>
@@ -704,13 +707,14 @@ export function LeaderboardTable({ entries }: { entries: LeaderboardEntry[] }) {
           </p>
           <div className="overflow-hidden rounded-2xl border border-ps-border bg-ps-surface">
             {unqualifiedEntries.map((entry, idx) => (
-              <TableRow
-                key={entry.user_id}
-                entry={entry}
-                onExpand={() => toggleExpand(entry.user_id)}
-                isExpanded={expandedUserId === entry.user_id}
-                isLast={idx === unqualifiedEntries.length - 1}
-              />
+              <CascadeCard key={entry.user_id} index={idx} speed="rise">
+                <TableRow
+                  entry={entry}
+                  onExpand={() => toggleExpand(entry.user_id)}
+                  isExpanded={expandedUserId === entry.user_id}
+                  isLast={idx === unqualifiedEntries.length - 1}
+                />
+              </CascadeCard>
             ))}
           </div>
         </div>
