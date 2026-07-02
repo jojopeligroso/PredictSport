@@ -13,6 +13,7 @@ import {
   joinCutoffWarningState,
 } from "@/lib/wc/join-cutoff";
 import { PredictionBanner } from "@/components/wc/PredictionBanner";
+import { CascadeCard } from "@/components/CascadeCard";
 import {
   computeDayStatus,
   getDailyLockTimes,
@@ -335,8 +336,8 @@ function Sections({
     .reduce((sum, s) => sum + s.events.length, 0);
 
   return (
-    <div className="mx-auto w-full max-w-[480px] px-4">
-      {visibleSections.map((s) => {
+    <div className="mx-auto w-full max-w-[480px] px-4 overflow-hidden">
+      {visibleSections.map((s, sectionIndex) => {
         const status = s.status ?? "upcoming";
         const isComplete = status === "complete";
         const isCollapsed =
@@ -354,7 +355,8 @@ function Sections({
             predictions.some((p) => p.event_id === e.id),
           ).length;
           return (
-            <section key={s.domId} id={s.domId} className="mt-2 scroll-mt-20">
+            <CascadeCard key={`${s.domId}-collapsed`} index={sectionIndex}>
+            <section id={s.domId} className="mt-2 scroll-mt-20">
               <button
                 onClick={() => {
                   if (isComplete) {
@@ -399,11 +401,13 @@ function Sections({
                 </svg>
               </button>
             </section>
+            </CascadeCard>
           );
         }
 
         return (
-          <section key={s.domId} id={s.domId} className="mt-5 scroll-mt-20">
+          <CascadeCard key={`${s.domId}-expanded`} index={sectionIndex}>
+          <section id={s.domId} className="mt-5 scroll-mt-20">
             <div className="mb-2 flex items-center justify-between gap-2 border-b border-ps-border pb-1.5">
               <div className="flex items-center gap-2">
                 {/* Status icon beside heading */}
@@ -480,6 +484,7 @@ function Sections({
               showCardCountdown={s.isGroupSection}
             />
           </section>
+          </CascadeCard>
         );
       })}
 
