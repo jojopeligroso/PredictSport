@@ -85,6 +85,51 @@ const COUNTRY_ALIASES: Record<string, string> = {
   "ir iran": "iran",
 };
 
+/**
+ * Groups of interchangeable team name variants. When a provider text
+ * search fails (e.g. TheSportsDB's searchevents.php), we retry with
+ * each alternate form from the matching group.
+ */
+const TEAM_NAME_GROUPS: string[][] = [
+  ["DR Congo", "Congo DR"],
+  ["Bosnia-Herzegovina", "Bosnia and Herzegovina", "Bosnia & Herzegovina"],
+  ["Ivory Coast", "Cote d'Ivoire"],
+  ["Czechia", "Czech Republic"],
+  ["Turkiye", "Turkey"],
+  ["USA", "United States"],
+  ["South Korea", "Korea Republic"],
+  ["Iran", "IR Iran"],
+];
+
+/**
+ * Generate alternate event names by swapping known team name variants.
+ * E.g. "England vs Congo DR" → ["England vs DR Congo"]
+ */
+function generateSearchVariants(eventName: string): string[] {
+  const lower = eventName.toLowerCase();
+  const variants = new Set<string>();
+
+  for (const group of TEAM_NAME_GROUPS) {
+    for (const member of group) {
+      if (lower.includes(member.toLowerCase())) {
+        for (const alt of group) {
+          if (alt.toLowerCase() !== member.toLowerCase()) {
+            const regex = new RegExp(
+              member.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"),
+              "i"
+            );
+            const variant = eventName.replace(regex, alt);
+            if (variant !== eventName) variants.add(variant);
+          }
+        }
+        break; // found match in this group, check next group
+      }
+    }
+  }
+
+  return Array.from(variants);
+}
+
 /** Strip diacritics (é→e, ü→u, ç→c etc.) for uniform tokenization. */
 function stripDiacritics(s: string): string {
   return s.normalize("NFD").replace(/[\u0300-\u036f]/g, "");
@@ -206,27 +251,47 @@ export async function autoResolveEvent(
     } else {
       // Need to search for a match
       const startDate = event.start_time.slice(0, 10); // YYYY-MM-DD
-      const candidates = await searchEvents(
-        event.sport as Sport,
-        event.event_name,
-        { date: startDate, providerLeague: event.provider_league ?? undefined }
-      );
-
-      // Score and filter candidates
       const eventStartMs = new Date(event.start_time).getTime();
       const oneDayMs = 24 * 3600000;
 
-      const scored = candidates
-        .map((c) => ({
-          candidate: c,
-          score: tokenOverlapScore(event.event_name, c.event_name),
-        }))
-        .filter((c) => {
-          if (c.score < 0.6) return false;
-          const candidateMs = new Date(c.candidate.start_time).getTime();
-          return Math.abs(candidateMs - eventStartMs) <= oneDayMs;
-        })
-        .sort((a, b) => b.score - a.score);
+      // Search and score helper — Jaccard always scored against the
+      // original event name so country aliases normalise both sides.
+      const searchAndScore = async (searchName: string) => {
+        const candidates = await searchEvents(
+          event.sport as Sport,
+          searchName,
+          { date: startDate, providerLeague: event.provider_league ?? undefined }
+        );
+        return candidates
+          .map((c) => ({
+            candidate: c,
+            score: tokenOverlapScore(event.event_name, c.event_name),
+          }))
+          .filter((c) => {
+            if (c.score < 0.6) return false;
+            const candidateMs = new Date(c.candidate.start_time).getTime();
+            return Math.abs(candidateMs - eventStartMs) <= oneDayMs;
+          })
+          .sort((a, b) => b.score - a.score);
+      };
+
+      let scored = await searchAndScore(event.event_name);
+
+      // If no confident match, retry with alternate team name variants.
+      // Providers use inconsistent naming (e.g. TheSportsDB "DR Congo"
+      // vs our "Congo DR") and their text-search APIs need the right form.
+      if (scored.length === 0) {
+        const variants = generateSearchVariants(event.event_name);
+        for (const variant of variants) {
+          scored = await searchAndScore(variant);
+          if (scored.length > 0) {
+            console.log(
+              `[results-cron] variant search hit: "${event.event_name}" → "${variant}" found ${scored.length} candidate(s)`,
+            );
+            break;
+          }
+        }
+      }
 
       if (scored.length === 1) {
         // Single confident match — cache the provider ID in result_data
