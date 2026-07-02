@@ -1,5 +1,6 @@
 import type { PredictionType, EventPredictionType } from "@/types/database";
 import { deriveWinnerFromScore } from "@/lib/score-format";
+import { normalizeTeamName } from "@/lib/sports/team-aliases";
 
 interface ScoringResult {
   is_correct: boolean | null;
@@ -188,10 +189,12 @@ function scoreWinner(
     } else if (result.winner) {
       // Knockout tie (penalties): winner can't be derived from score.
       // Map result.winner to the correct option via home/away team name.
-      const winnerNorm = normalizeStr(result.winner);
-      if (winnerNorm === normalizeStr(score.home_team)) {
+      // Uses normalizeTeamName (with alias resolution) because providers
+      // return inconsistent naming (e.g. "Congo DR" vs "DR Congo").
+      const winnerNorm = normalizeTeamName(result.winner);
+      if (winnerNorm === normalizeTeamName(score.home_team)) {
         actual = normalizeStr(options[0]);
-      } else if (winnerNorm === normalizeStr(score.away_team)) {
+      } else if (winnerNorm === normalizeTeamName(score.away_team)) {
         actual = normalizeStr(options[options.length - 1]);
       } else {
         actual = winnerNorm;

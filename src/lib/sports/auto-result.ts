@@ -8,6 +8,7 @@ import type { Sport } from "./types";
 import { notifyResultConfirmed } from "@/lib/notifications/result-confirmed";
 import { notifyResultDisputed } from "@/lib/notifications/result-disputed";
 import { processEventTags, checkRoundCompletionAndProcessTags } from "@/lib/reputation";
+import { TEAM_ALIASES, applyTeamAliases } from "@/lib/sports/team-aliases";
 
 // ---------------------------------------------------------------------------
 // Types
@@ -57,33 +58,7 @@ const STOPWORDS = new Set([
   "junior",
 ]);
 
-/**
- * Country name aliases: maps alternate spellings/abbreviations to a
- * canonical form so Jaccard matching works across providers.
- * Keys MUST be lowercase.
- */
-const COUNTRY_ALIASES: Record<string, string> = {
-  "usa": "united states",
-  "u.s.a.": "united states",
-  "us": "united states",
-  "czechia": "czech republic",
-  "turkiye": "turkey",
-  "türkiye": "turkey",
-  "curacao": "curaçao",
-  "curaçao": "curacao",
-  "bosnia & herzegovina": "bosnia herzegovina",
-  "bosnia and herzegovina": "bosnia herzegovina",
-  "bosnia-herzegovina": "bosnia herzegovina",
-  "dr congo": "congo dr",
-  "congo dr": "dr congo",
-  "ivory coast": "cote divoire",
-  "cote d'ivoire": "ivory coast",
-  "côte d'ivoire": "ivory coast",
-  "korea republic": "south korea",
-  "republic of korea": "south korea",
-  "iran": "ir iran",
-  "ir iran": "iran",
-};
+// Team name aliases imported from @/lib/sports/team-aliases (TEAM_ALIASES, applyTeamAliases)
 
 /**
  * Groups of interchangeable team name variants. When a provider text
@@ -135,24 +110,13 @@ function stripDiacritics(s: string): string {
   return s.normalize("NFD").replace(/[\u0300-\u036f]/g, "");
 }
 
-/** Apply country aliases to a lowercased string before tokenizing. */
-function applyAliases(s: string): string {
-  let result = s;
-  for (const [alias, canonical] of Object.entries(COUNTRY_ALIASES)) {
-    // Word-boundary–safe replacement (alias may contain spaces)
-    const pattern = new RegExp(`\\b${alias.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}\\b`, "g");
-    result = result.replace(pattern, canonical);
-  }
-  return result;
-}
-
 export function tokenOverlapScore(a: string, b: string): number {
   const normalize = (s: string): Set<string> => {
     let cleaned = stripDiacritics(s.toLowerCase());
     cleaned = cleaned
       .replace(/\bvs?\b|\bversus\b|\bat\b/g, " ")
       .replace(/[^a-z0-9\s]/g, " ");
-    cleaned = applyAliases(cleaned);
+    cleaned = applyTeamAliases(cleaned);
     const tokens = cleaned
       .split(/\s+/)
       .filter((t) => t.length > 0 && !STOPWORDS.has(t));
