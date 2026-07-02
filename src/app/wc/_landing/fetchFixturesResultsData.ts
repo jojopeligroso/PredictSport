@@ -121,6 +121,7 @@ export async function fetchFixturesResultsData() {
         isFinalised,
         penaltyHome,
         penaltyAway,
+        isAET: !!periods.extra_time,
       };
     }
 

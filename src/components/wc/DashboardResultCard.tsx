@@ -77,6 +77,7 @@ export function DashboardResultCard({
     h2hPoints,
     penaltyHome,
     penaltyAway,
+    isAET,
   } = result;
 
   const homeTri =
@@ -129,7 +130,7 @@ export function DashboardResultCard({
         <span className="text-[11px] font-bold text-ps-text shrink-0">{awayTri}</span>
         <CountryFlag name={fixture.away} size={22} shape="pill" />
         <span className="rounded-full bg-ps-green px-[5px] py-[2px] text-[7px] font-bold uppercase tracking-[0.5px] text-white shrink-0">
-          {penaltyHome !== null ? "Pens" : "FT"}
+          {penaltyHome !== null ? "Pens" : isAET ? "AET" : "FT"}
         </span>
       </div>
 

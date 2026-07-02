@@ -52,6 +52,8 @@ export interface ResultRow {
   /** Penalty shootout scores, null if match didn't go to penalties. */
   penaltyHome: number | null;
   penaltyAway: number | null;
+  /** True when the match went to extra time (AET). */
+  isAET: boolean;
 }
 
 export interface LastChatMessage {
@@ -673,6 +675,7 @@ async function fetchRecentResults(
       userConfidence: winnerPred?.confidence_level ?? null,
       penaltyHome: hasPenalties ? penaltyHome : null,
       penaltyAway: hasPenalties ? penaltyAway : null,
+      isAET: !!periods.extra_time,
     });
   }
 

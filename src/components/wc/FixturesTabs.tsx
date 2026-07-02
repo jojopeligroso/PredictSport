@@ -20,6 +20,8 @@ export type FixtureResult = {
   /** Penalty shootout scores (e.g. 3-4 on pens) */
   penaltyHome: number | null;
   penaltyAway: number | null;
+  /** True when the match went to extra time. */
+  isAET: boolean;
 };
 
 export type FixturePredictionData = {
@@ -950,7 +952,7 @@ function FixtureCard({
                 ].join(" ")}
               >
                 {result?.isFinalised
-                  ? (result.penaltyHome !== null ? "Pens" : "FT")
+                  ? (result.penaltyHome !== null ? "Pens" : result.isAET ? "AET" : "FT")
                   : t('fixtures.result_provisional')}
               </span>
             </div>
