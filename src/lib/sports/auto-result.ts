@@ -9,6 +9,7 @@ import { notifyResultConfirmed } from "@/lib/notifications/result-confirmed";
 import { notifyResultDisputed } from "@/lib/notifications/result-disputed";
 import { processEventTags, checkRoundCompletionAndProcessTags } from "@/lib/reputation";
 import { TEAM_ALIASES, applyTeamAliases } from "@/lib/sports/team-aliases";
+import { advanceKnockoutWinners } from "@/lib/tournament/bracket/advance";
 
 // ---------------------------------------------------------------------------
 // Types
@@ -410,6 +411,17 @@ export async function autoResolveEvent(
     // Process reputation tags (fire-and-forget)
     processEventTags(event.competition_id, event.id).catch(() => {});
     checkRoundCompletionAndProcessTags(event.competition_id, event.id).catch(() => {});
+
+    // Advance knockout bracket: propagate winner into downstream fixtures
+    if (event.external_event_id?.startsWith("wc2026-ko-")) {
+      advanceKnockoutWinners(supabase, {
+        event_name: event.event_name,
+        external_event_id: event.external_event_id,
+        result_data: finalResultData,
+      }).catch((err) => {
+        console.error("[auto-resolve] Bracket advancement failed:", err);
+      });
+    }
 
     // Propagate result to sibling events (same fixture across other
     // competition instances). One real-world match = one result,

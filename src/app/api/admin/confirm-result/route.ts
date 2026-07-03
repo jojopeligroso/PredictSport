@@ -7,6 +7,7 @@ import { requireDisplayName } from "@/lib/require-display-name";
 import type { PredictionType, EventPredictionType } from "@/types/database";
 import { notifyResultConfirmed } from "@/lib/notifications/result-confirmed";
 import { processEventTags, checkRoundCompletionAndProcessTags } from "@/lib/reputation";
+import { advanceKnockoutWinners } from "@/lib/tournament/bracket/advance";
 
 interface ConfirmResultBody {
   event_id: string;
@@ -280,6 +281,18 @@ export async function POST(request: Request) {
     const result = (batchResult as Array<{ scored: number; errors: number }>)?.[0];
     scored = result?.scored ?? scores.length;
     errors = result?.errors ?? 0;
+  }
+
+  // Advance knockout bracket: propagate winner into downstream fixtures
+  if (event.external_event_id?.startsWith("wc2026-ko-")) {
+    const svcForAdvance = createServiceClient();
+    advanceKnockoutWinners(svcForAdvance, {
+      event_name: event.event_name as string,
+      external_event_id: event.external_event_id as string,
+      result_data: resultData as Record<string, unknown>,
+    }).catch((err) => {
+      console.error("[confirm-result] Bracket advancement failed:", err);
+    });
   }
 
   // Broadcast scoring update so leaderboard clients can refetch
