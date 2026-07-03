@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useT } from "@/lib/i18n";
+import { CommunityPicksCard } from "@/components/wc/CommunityPicksCard";
 import { DashboardPickRow } from "@/components/wc/DashboardPickRow";
 import { LiveChatDrawer } from "@/components/wc/LiveChatDrawer";
 import { LiveModeToggle } from "@/components/wc/LiveModeToggle";
@@ -42,8 +43,9 @@ interface LiveViewProps {
  * Layout (top → bottom):
  *  1. Live-mode toggle (lets the user exit back to the normal dashboard)
  *  2. Live score card(s) — DashboardPickRow with in-progress score chip
- *  3. Chat drawer — tall variant, fully expandable
- *  4. Windowed leaderboard — user ±3, Overall/Format tabs only
+ *  3. The Field — rival predictions split + most popular exact scores
+ *  4. Chat drawer — tall variant, fully expandable
+ *  5. Windowed leaderboard — user ±3, Format/Overall tabs only
  *
  * The normal dashboard returns automatically when the sport window
  * concludes (DashboardClient's 180s refresh clears the live state).
@@ -128,7 +130,21 @@ export function LiveView({
         </div>
       </section>
 
-      {/* 3. Chat — tall drawer, fully expandable */}
+      {/* 3. The Field — rival predictions bar chart + most popular exact scores */}
+      {isMember && (
+        <section className="ps-island mt-5">
+          <p className="mb-1.5 flex items-center gap-2 text-caption font-semibold uppercase tracking-wide text-ps-text-ter">
+            {t("dash.the_field")}
+            <span className="inline-flex items-center gap-1 rounded-full bg-ps-red/90 px-1.5 py-0.5 text-micro font-bold normal-case text-white">
+              <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-white" />
+              {t("picks.live")}
+            </span>
+          </p>
+          <CommunityPicksCard competitionId={competitionId} island />
+        </section>
+      )}
+
+      {/* 4. Chat — tall drawer, fully expandable */}
       {chatEnabled && isMember && currentUserId && (
         <section className="mt-5">
           <LiveChatDrawer
@@ -142,7 +158,7 @@ export function LiveView({
         </section>
       )}
 
-      {/* 4. Windowed leaderboard — user ±3, Overall/Format only */}
+      {/* 5. Windowed leaderboard — user ±3, Format/Overall */}
       <LiveLeaderboard
         overallClassificationId={overallClassificationId}
         formatClassificationId={formatClassificationId}
