@@ -122,8 +122,8 @@ export function LiveLeaderboard({
                 onClick={() => setTab(key)}
                 className={`rounded-full px-3 py-1 text-caption font-semibold transition-colors ${
                   tab === key
-                    ? "bg-ps-text text-ps-bg"
-                    : "text-ps-text-ter hover:text-ps-text"
+                    ? "border border-ps-border bg-ps-surface text-ps-text"
+                    : "border border-transparent text-ps-text-ter hover:text-ps-text"
                 }`}
               >
                 {label}

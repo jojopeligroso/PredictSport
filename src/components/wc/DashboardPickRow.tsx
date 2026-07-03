@@ -39,6 +39,18 @@ interface DashboardPickRowProps {
  *  - in_progress: red pulsing "LIVE" badge, auto-expanded, locked prediction
  *  - unpicked: plain card + "Pick →" CTA
  */
+function stageLabel(stage: WcFixture["stage"], t: (key: string) => string): string {
+  switch (stage) {
+    case "R32": return t('fixtures.stage_r32');
+    case "R16": return t('fixtures.stage_r16');
+    case "QF": return t('fixtures.stage_qf');
+    case "SF": return t('fixtures.stage_sf');
+    case "3RD": return t('fixtures.stage_3rd');
+    case "FINAL": return t('fixtures.stage_final');
+    default: return stage;
+  }
+}
+
 export function DashboardPickRow({
   fixture,
   predictions,
@@ -139,7 +151,9 @@ export function DashboardPickRow({
         city={fixture.city}
         headerLeft={
           <span>
-            {t('fixtures.stage_group', { group: fixture.group ?? '', matchday: fixture.matchday ?? '' })}
+            {fixture.stage === "group"
+              ? t('fixtures.stage_group', { group: fixture.group ?? '', matchday: fixture.matchday ?? '' })
+              : stageLabel(fixture.stage, t)}
           </span>
         }
         headerRight={

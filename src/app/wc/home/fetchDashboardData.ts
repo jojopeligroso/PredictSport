@@ -15,6 +15,68 @@ const WINDOW_SIZE_DAYS = 8;
 
 type EventRowWithExternal = WindowEvent & { external_event_id: string | null };
 
+// ---------------------------------------------------------------------------
+// Knockout fixture fallback
+// ---------------------------------------------------------------------------
+// Knockout events are created by the bracket flow with external ids like
+// `manual:wc2026-r32-15`, which never match the static catalogue's
+// `wc2026-ko-m{n}` keys. Without a fallback, fixtureByEventId misses and the
+// dashboard (and live view) silently drops these events entirely.
+
+const KO_EXT_ID_RE = /^manual:wc2026-(r32|r16|qf|sf|3rd|final)-\d+$/;
+const KO_PREFIX_TO_STAGE: Record<string, WcFixture["stage"]> = {
+  r32: "R32",
+  r16: "R16",
+  qf: "QF",
+  sf: "SF",
+  "3rd": "3RD",
+  final: "FINAL",
+};
+
+/**
+ * Synthesise a WcFixture from a knockout event row: real team names from
+ * event_name, real kickoff from start_time, and the city (drives card colour
+ * only) borrowed from the nearest same-stage catalogue slot by kickoff time.
+ * Returns null for non-knockout ids or unresolved "Winner K vs 3rd-place"
+ * names that don't split cleanly.
+ */
+function knockoutFallbackFixture(row: EventRowWithExternal): WcFixture | null {
+  const m = row.external_event_id?.match(KO_EXT_ID_RE);
+  if (!m) return null;
+  const stage = KO_PREFIX_TO_STAGE[m[1]];
+
+  const parts = row.event_name.split(/\s+vs?\s+/i);
+  const home = parts[0]?.trim();
+  const away = parts[1]?.trim();
+  if (parts.length !== 2 || !home || !away) return null;
+
+  const startMs = new Date(row.start_time).getTime();
+  let nearest: WcFixture | null = null;
+  let nearestDelta = Infinity;
+  for (const f of WC2026_FIXTURES) {
+    if (f.stage !== stage) continue;
+    const delta = Math.abs(new Date(f.kickoffUtc).getTime() - startMs);
+    if (delta < nearestDelta) {
+      nearestDelta = delta;
+      nearest = f;
+    }
+  }
+  if (!nearest) return null;
+
+  return {
+    externalId: row.external_event_id!,
+    stage,
+    group: null,
+    matchday: null,
+    matchNumber: null,
+    home,
+    away,
+    kickoffConfirmed: true,
+    kickoffUtc: new Date(row.start_time).toISOString(),
+    city: nearest.city,
+  };
+}
+
 export interface DatePillSummary {
   iso: string;
   weekday: string;
@@ -270,7 +332,9 @@ export async function fetchDashboardData(): Promise<DashboardResult> {
   const fixtureByEventId = new Map<string, WcFixture>();
   for (const row of eventRows) {
     if (!row.external_event_id) continue;
-    const fixture = fixtureByExternalId.get(row.external_event_id);
+    const fixture =
+      fixtureByExternalId.get(row.external_event_id) ??
+      knockoutFallbackFixture(row);
     if (fixture) fixtureByEventId.set(row.id, fixture);
   }
 
