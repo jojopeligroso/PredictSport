@@ -284,7 +284,7 @@ export async function POST(request: Request) {
   }
 
   // Advance knockout bracket: propagate winner into downstream fixtures
-  if (event.external_event_id?.startsWith("wc2026-ko-")) {
+  if (event.external_event_id?.match(/^manual:wc2026-(r32|r16|qf|sf|3rd|final)-/)) {
     const svcForAdvance = createServiceClient();
     advanceKnockoutWinners(svcForAdvance, {
       event_name: event.event_name as string,

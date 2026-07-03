@@ -6,39 +6,39 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 
 // ---------------------------------------------------------------------------
-// Slot ↔ match-number mapping
+// Slot ↔ external_event_id mapping
 // ---------------------------------------------------------------------------
-// Slot IDs:  r32_m1..r32_m16, r16_m1..r16_m8, qf_m1..qf_m4, sf_m1..sf_m2, final
-// Match nums: 73..88 (R32), 89..96 (R16), 97..100 (QF), 101..102 (SF), 103 (3RD), 104 (FINAL)
+// DB uses: manual:wc2026-r32-{n}, manual:wc2026-r16-{n}, manual:wc2026-qf-{n},
+//          manual:wc2026-sf-{n}, manual:wc2026-3rd-1, manual:wc2026-final-1
 
-function slotToMatchNumber(slot: string): number {
-  if (slot === "final") return 104;
-  if (slot === "third_place_match") return 103;
+function slotToExtId(slot: string): string | null {
+  if (slot === "final") return "manual:wc2026-final-1";
+  if (slot === "third_place_match") return "manual:wc2026-3rd-1";
   const m = slot.match(/^(r32|r16|qf|sf)_m(\d+)$/);
-  if (!m) return 0;
-  const offsets: Record<string, number> = { r32: 72, r16: 88, qf: 96, sf: 100 };
-  return offsets[m[1]] + parseInt(m[2]);
+  if (!m) return null;
+  return `manual:wc2026-${m[1]}-${m[2]}`;
 }
 
-function matchNumberToExtId(n: number): string {
-  return `wc2026-ko-m${n}`;
+function extIdToSlot(extId: string): string | null {
+  const m = extId.match(/^manual:wc2026-(r32|r16|qf|sf)-(\d+)$/);
+  if (m) return `${m[1]}_m${m[2]}`;
+  if (extId === "manual:wc2026-final-1") return "final";
+  if (extId === "manual:wc2026-3rd-1") return "third_place_match";
+  return null;
 }
 
 // ---------------------------------------------------------------------------
 // Advancement map: source slot → downstream slots that receive the winner/loser
 // ---------------------------------------------------------------------------
-// Built from KNOCKOUT_FEEDERS in wc2026-knockout-tree.ts. Each entry says:
-// "The winner of slot X feeds into slot Y at position home/away."
 
 interface Advancement {
   targetSlot: string;
-  targetMatchNumber: number;
   position: "home" | "away";
   type: "winner" | "loser";
 }
 
-// KNOCKOUT_FEEDERS maps targetSlot → [homeFeeder, awayFeeder].
-// We invert it: sourceSlot → [{target, position, type}]
+// KNOCKOUT_FEEDERS: targetSlot → [homeFeeder, awayFeeder]
+// Matches the tree in wc2026-knockout-tree.ts
 const KNOCKOUT_FEEDERS: Record<string, [string, string]> = {
   r16_m1: ["r32_m2", "r32_m5"],
   r16_m2: ["r32_m1", "r32_m3"],
@@ -55,16 +55,14 @@ const KNOCKOUT_FEEDERS: Record<string, [string, string]> = {
   sf_m1: ["qf_m1", "qf_m2"],
   sf_m2: ["qf_m3", "qf_m4"],
   final: ["sf_m1", "sf_m2"],
-  // 3rd-place match gets the LOSERS of the semi-finals
   third_place_match: ["sf_m1", "sf_m2"],
 };
 
-// Invert: source slot → what it feeds
+// Invert: source slot → what it feeds into
 const ADVANCEMENT_MAP = new Map<string, Advancement[]>();
 
 for (const [targetSlot, [homeFeeder, awayFeeder]] of Object.entries(KNOCKOUT_FEEDERS)) {
   const isThirdPlace = targetSlot === "third_place_match";
-  const targetMatchNumber = slotToMatchNumber(targetSlot);
 
   for (const [feeder, position] of [
     [homeFeeder, "home"],
@@ -73,25 +71,10 @@ for (const [targetSlot, [homeFeeder, awayFeeder]] of Object.entries(KNOCKOUT_FEE
     if (!ADVANCEMENT_MAP.has(feeder)) ADVANCEMENT_MAP.set(feeder, []);
     ADVANCEMENT_MAP.get(feeder)!.push({
       targetSlot,
-      targetMatchNumber,
       position,
       type: isThirdPlace ? "loser" : "winner",
     });
   }
-}
-
-// ---------------------------------------------------------------------------
-// Match number → slot ID (reverse lookup)
-// ---------------------------------------------------------------------------
-
-function matchNumberToSlot(n: number): string | null {
-  if (n === 104) return "final";
-  if (n === 103) return "third_place_match";
-  if (n >= 101 && n <= 102) return `sf_m${n - 100}`;
-  if (n >= 97 && n <= 100) return `qf_m${n - 96}`;
-  if (n >= 89 && n <= 96) return `r16_m${n - 88}`;
-  if (n >= 73 && n <= 88) return `r32_m${n - 72}`;
-  return null;
 }
 
 // ---------------------------------------------------------------------------
@@ -114,12 +97,9 @@ export async function advanceKnockoutWinners(
 ): Promise<string[]> {
   const updated: string[] = [];
 
-  // Parse match number from external_event_id
-  const matchNumStr = event.external_event_id?.match(/wc2026-ko-m(\d+)/)?.[1];
-  if (!matchNumStr) return updated;
+  if (!event.external_event_id) return updated;
 
-  const matchNum = parseInt(matchNumStr);
-  const sourceSlot = matchNumberToSlot(matchNum);
+  const sourceSlot = extIdToSlot(event.external_event_id);
   if (!sourceSlot) return updated;
 
   const advancements = ADVANCEMENT_MAP.get(sourceSlot);
@@ -142,7 +122,8 @@ export async function advanceKnockoutWinners(
     const teamName = adv.type === "winner" ? winner : loser;
     if (!teamName) continue;
 
-    const targetExtId = matchNumberToExtId(adv.targetMatchNumber);
+    const targetExtId = slotToExtId(adv.targetSlot);
+    if (!targetExtId) continue;
 
     // Fetch the target event
     const { data: targetEvent } = await supabase
@@ -166,18 +147,11 @@ export async function advanceKnockoutWinners(
 
     const newName = `${targetHome} vs ${targetAway}`;
 
-    // Both resolved = no more W/L prefixes
-    const bothResolved =
-      !/^[WL]\d+$/.test(targetHome) &&
-      !/^[WL]\d+$/.test(targetAway) &&
-      !targetHome.includes("Winner") &&
-      !targetHome.includes("Runner-up") &&
-      !targetHome.includes("3rd") &&
-      !targetAway.includes("Winner") &&
-      !targetAway.includes("Runner-up") &&
-      !targetAway.includes("3rd") &&
-      targetHome !== "TBD" &&
-      targetAway !== "TBD";
+    // Both resolved when neither side is a placeholder
+    const isPlaceholder = (s: string) =>
+      /^[WL]\d+$/.test(s) || s === "TBD" || s.includes("Winner") ||
+      s.includes("Runner-up") || s.includes("3rd");
+    const bothResolved = !isPlaceholder(targetHome) && !isPlaceholder(targetAway);
 
     const updatePayload: Record<string, unknown> = { event_name: newName };
     if (bothResolved) {
@@ -194,15 +168,25 @@ export async function advanceKnockoutWinners(
       continue;
     }
 
-    // When both teams are resolved, update the winner prediction type options
+    // When both teams are resolved, update prediction type options
     if (bothResolved) {
+      // Update winner options
       await supabase
         .from("event_prediction_types")
         .update({
-          config: { options: [targetHome, targetAway, "Draw"] },
+          config: { options: [targetHome, "Draw", targetAway] },
         })
         .eq("event_id", targetEvent.id)
         .eq("prediction_type", "winner");
+
+      // Update h2h options (no draw for knockout advancement)
+      await supabase
+        .from("event_prediction_types")
+        .update({
+          config: { label: "Who goes through?", options: [targetHome, targetAway], allow_draw: false },
+        })
+        .eq("event_id", targetEvent.id)
+        .eq("prediction_type", "head_to_head");
     }
 
     updated.push(newName);

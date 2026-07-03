@@ -413,7 +413,7 @@ export async function autoResolveEvent(
     checkRoundCompletionAndProcessTags(event.competition_id, event.id).catch(() => {});
 
     // Advance knockout bracket: propagate winner into downstream fixtures
-    if (event.external_event_id?.startsWith("wc2026-ko-")) {
+    if (event.external_event_id?.match(/^manual:wc2026-(r32|r16|qf|sf|3rd|final)-/)) {
       advanceKnockoutWinners(supabase, {
         event_name: event.event_name,
         external_event_id: event.external_event_id,
