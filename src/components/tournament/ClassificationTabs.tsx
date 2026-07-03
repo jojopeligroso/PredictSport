@@ -262,6 +262,7 @@ export function ClassificationTabs({
         if (!cancelled) {
           setGroupData(data);
           setGroupHasLiveEvents(Boolean(data?.hasLiveEvents));
+          if (data?.hasLiveEvents) setLiveEventsExist(true);
         }
       })
       .catch(() => {

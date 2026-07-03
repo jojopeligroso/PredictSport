@@ -44,21 +44,38 @@ export function LiveChatDrawer({
   lastMessage,
   tall = false,
 }: LiveChatDrawerProps) {
-  const [expanded, setExpanded] = useState(false);
+  const [mode, setMode] = useState<"collapsed" | "peek" | "full">("collapsed");
 
-  return expanded ? (
-    <ExpandedDrawer
-      competitionId={competitionId}
-      currentUserId={currentUserId}
-      currentUserRole={currentUserRole}
-      memberCount={memberCount}
-      tall={tall}
-      onCollapse={() => setExpanded(false)}
-    />
-  ) : (
+  if (mode === "full") {
+    return (
+      <ExpandedDrawer
+        competitionId={competitionId}
+        currentUserId={currentUserId}
+        currentUserRole={currentUserRole}
+        memberCount={memberCount}
+        tall={tall}
+        onCollapse={() => setMode("collapsed")}
+      />
+    );
+  }
+
+  if (mode === "peek") {
+    return (
+      <PeekDrawer
+        competitionId={competitionId}
+        currentUserId={currentUserId}
+        currentUserRole={currentUserRole}
+        memberCount={memberCount}
+        onCollapse={() => setMode("collapsed")}
+        onExpand={() => setMode("full")}
+      />
+    );
+  }
+
+  return (
     <CollapsedTeaser
       lastMessage={lastMessage}
-      onExpand={() => setExpanded(true)}
+      onExpand={() => setMode("peek")}
     />
   );
 }
@@ -123,6 +140,186 @@ function CollapsedTeaser({
         />
       </svg>
     </button>
+  );
+}
+
+/* ── Peek Drawer — modest expansion, last 5 messages + input ───────── */
+
+const PEEK_MESSAGES = 5;
+
+function PeekDrawer({
+  competitionId,
+  currentUserId,
+  currentUserRole,
+  memberCount,
+  onCollapse,
+  onExpand,
+}: {
+  competitionId: string;
+  currentUserId: string;
+  currentUserRole: string;
+  memberCount: number;
+  onCollapse: () => void;
+  onExpand: () => void;
+}) {
+  const {
+    messages,
+    members,
+    isLoading,
+    sendMessage,
+    isSending,
+    mutedUntil,
+    deleteMessage,
+    editMessage,
+  } = useRealtimeChat({ competitionId, currentUserId, mode: "mini" });
+
+  const [inputValue, setInputValue] = useState("");
+  const scrollRef = useRef<HTMLDivElement>(null);
+  const prevMessageCount = useRef(0);
+
+  const isMuted = mutedUntil ? new Date(mutedUntil) > new Date() : false;
+
+  useEffect(() => {
+    if (messages.length > prevMessageCount.current && scrollRef.current) {
+      scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
+    }
+    prevMessageCount.current = messages.length;
+  }, [messages.length]);
+
+  const displayMessages = messages
+    .filter(
+      (m) => m.message_type === "user" || m.message_type === "system_reckons",
+    )
+    .slice(-PEEK_MESSAGES);
+
+  const groupPositions = displayMessages.map((msg, i) => {
+    const prev = i > 0 ? displayMessages[i - 1] : null;
+    const next = i < displayMessages.length - 1 ? displayMessages[i + 1] : null;
+
+    const canGroupWith = (a: typeof msg, b: typeof msg) =>
+      a.user_id === b.user_id &&
+      a.message_type !== "system" &&
+      b.message_type !== "system" &&
+      !a.deleted_at &&
+      !b.deleted_at &&
+      Math.abs(
+        new Date(b.created_at).getTime() - new Date(a.created_at).getTime(),
+      ) <= GROUP_WINDOW_MS;
+
+    const isFirstInGroup = !prev || !canGroupWith(prev, msg);
+    const isLastInGroup = !next || !canGroupWith(msg, next);
+
+    return { isFirstInGroup, isLastInGroup };
+  });
+
+  const handleSend = useCallback(async () => {
+    const content = inputValue.trim();
+    if (!content || isSending) return;
+    setInputValue("");
+    try {
+      await sendMessage({ content });
+    } catch {
+      setInputValue(content);
+    }
+  }, [inputValue, isSending, sendMessage]);
+
+  const handleKeyDown = useCallback(
+    (e: React.KeyboardEvent<HTMLInputElement>) => {
+      if (e.key === "Enter" && !e.shiftKey) {
+        e.preventDefault();
+        handleSend();
+      }
+    },
+    [handleSend],
+  );
+
+  return (
+    <div className="rounded-xl border border-ps-border border-l-2 border-l-ps-amber bg-ps-surface overflow-hidden">
+      {/* Header — tap to expand full or collapse */}
+      <div className="flex items-center justify-between border-b border-ps-border px-3" style={{ height: 36 }}>
+        <button
+          type="button"
+          onClick={onExpand}
+          className="flex items-center gap-1 text-xs font-semibold uppercase tracking-wider text-ps-text-sec"
+        >
+          Chat
+          <svg className="h-3 w-3 text-ps-text-ter" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" d="M5 15l7-7 7 7" />
+          </svg>
+        </button>
+        <button
+          type="button"
+          onClick={onCollapse}
+          className="flex h-6 w-6 items-center justify-center rounded-md text-ps-text-sec transition-colors hover:bg-ps-bg-alt hover:text-ps-text"
+          aria-label="Close chat"
+        >
+          <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
+          </svg>
+        </button>
+      </div>
+
+      {/* Messages — compact height */}
+      <div
+        ref={scrollRef}
+        className="overflow-y-auto overflow-x-hidden px-3 py-1.5"
+        style={{ maxHeight: 180 }}
+      >
+        {isLoading ? (
+          <div className="flex items-center justify-center py-4">
+            <span className="text-micro text-ps-text-ter">Loading...</span>
+          </div>
+        ) : displayMessages.length === 0 ? (
+          <div className="flex items-center justify-center py-4">
+            <span className="text-micro text-ps-text-ter">
+              No messages yet. Say something.
+            </span>
+          </div>
+        ) : (
+          displayMessages.map((msg, i) => (
+            <ChatMessage
+              key={msg.id}
+              message={msg}
+              currentUserId={currentUserId}
+              currentUserRole={currentUserRole}
+              members={members}
+              isFirstInGroup={groupPositions[i].isFirstInGroup}
+              isLastInGroup={groupPositions[i].isLastInGroup}
+              onDelete={deleteMessage}
+              onEdit={editMessage}
+            />
+          ))
+        )}
+      </div>
+
+      {/* Input bar */}
+      <div className="border-t border-ps-border px-3 py-2" style={{ height: 48 }}>
+        {isMuted ? (
+          <div className="flex h-full items-center justify-center text-micro italic text-ps-text-ter">
+            You are muted.
+          </div>
+        ) : (
+          <div className="flex items-center gap-2">
+            <input
+              type="text"
+              value={inputValue}
+              onChange={(e) => setInputValue(e.target.value)}
+              onKeyDown={handleKeyDown}
+              placeholder="Type a message..."
+              maxLength={2000}
+              className="flex-1 rounded-xl border border-ps-border bg-ps-bg px-3 py-1.5 text-sm text-ps-text placeholder:text-ps-text-ter focus:outline-none focus:ring-1 focus:ring-ps-amber"
+            />
+            <button
+              onClick={handleSend}
+              disabled={!inputValue.trim() || isSending}
+              className="rounded-xl bg-ps-amber px-3 py-1.5 text-sm font-bold text-ps-bg hover:opacity-90 disabled:opacity-40"
+            >
+              {isSending ? "..." : "Send"}
+            </button>
+          </div>
+        )}
+      </div>
+    </div>
   );
 }
 
