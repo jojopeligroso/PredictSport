@@ -375,32 +375,34 @@ describe("scoreProgression", () => {
 describe("scoreExactScore — AET matches", () => {
   const ept = { points: 3, partial_points: 0, config: null };
 
-  // Belgium 3-2 Senegal AET (FT was 2-2, Belgium scored in ET)
+  // Belgium 3-2 Senegal AET (FT was 2-2, Belgium scored 1 goal in ET)
+  // TheSportsDB: home_score/away_score = AET aggregate; extra_time = ET-only goals
   const aetResultWithFT = {
     score: {
       home_team: "Belgium", away_team: "Senegal",
       home_score: 3, away_score: 2,
       periods: {
         full_time: { home: 2, away: 2 },
-        extra_time: { home: 3, away: 2 },
+        extra_time: { home: 1, away: 0 }, // ET-only goals (Belgium +1, Senegal +0)
       },
     },
     winner: "Belgium",
   };
 
   // Same match but without FT breakdown (TheSportsDB only)
+  // FT must be derived: AET aggregate (3-2) minus ET goals (1-0) = FT 2-2
   const aetResultNoFT = {
     score: {
       home_team: "Belgium", away_team: "Senegal",
       home_score: 3, away_score: 2,
       periods: {
-        extra_time: { home: 3, away: 2 },
+        extra_time: { home: 1, away: 0 }, // ET-only goals — FT derived as 3-1=2, 2-0=2
       },
     },
     winner: "Belgium",
   };
 
-  // Penalty match (FT was 1-1)
+  // Penalty match with FT breakdown (FT was 1-1)
   const penResultWithFT = {
     score: {
       home_team: "Brazil", away_team: "Argentina",
@@ -411,6 +413,19 @@ describe("scoreExactScore — AET matches", () => {
       },
     },
     winner: "Argentina",
+  };
+
+  // Penalty match WITHOUT FT breakdown (TheSportsDB format — the Australia vs Egypt bug)
+  // home_score/away_score IS the FT score for penalty-only matches with no extra_time key
+  const penResultNoFT = {
+    score: {
+      home_team: "Australia", away_team: "Egypt",
+      home_score: 1, away_score: 1,
+      periods: {
+        penalties: { home: 2, away: 4 },
+      },
+    },
+    winner: "Egypt",
   };
 
   it("AET with FT breakdown: correct FT prediction scores 3 pts", () => {
@@ -432,13 +447,21 @@ describe("scoreExactScore — AET matches", () => {
     expect(r.points_awarded).toBe(0);
   });
 
-  it("AET without FT breakdown: draw prediction is voided (null)", () => {
+  it("AET without FT breakdown: correct FT prediction scores 3 pts (FT derived from ET goals)", () => {
+    // FT derived: 3-1=2, 2-0=2 → FT 2-2; prediction 2-2 is correct
     const r = scorePrediction("exact_score", { home: 2, away: 2 }, aetResultNoFT, ept);
-    expect(r.is_correct).toBeNull();
+    expect(r.is_correct).toBe(true);
+    expect(r.points_awarded).toBe(3);
+  });
+
+  it("AET without FT breakdown: AET aggregate prediction is wrong", () => {
+    // 3-2 is the AET total, not FT — should not score
+    const r = scorePrediction("exact_score", { home: 3, away: 2 }, aetResultNoFT, ept);
+    expect(r.is_correct).toBe(false);
     expect(r.points_awarded).toBe(0);
   });
 
-  it("AET without FT breakdown: non-draw prediction is wrong", () => {
+  it("AET without FT breakdown: wrong FT prediction scores 0", () => {
     const r = scorePrediction("exact_score", { home: 3, away: 1 }, aetResultNoFT, ept);
     expect(r.is_correct).toBe(false);
     expect(r.points_awarded).toBe(0);
@@ -452,6 +475,19 @@ describe("scoreExactScore — AET matches", () => {
 
   it("Penalties with FT: wrong prediction scores 0", () => {
     const r = scorePrediction("exact_score", { home: 0, away: 0 }, penResultWithFT, ept);
+    expect(r.is_correct).toBe(false);
+    expect(r.points_awarded).toBe(0);
+  });
+
+  it("Penalties without FT (TheSportsDB): correct FT prediction scores 3 pts", () => {
+    // Australia vs Egypt: home_score/away_score = FT 1-1, no extra_time key
+    const r = scorePrediction("exact_score", { home: 1, away: 1 }, penResultNoFT, ept);
+    expect(r.is_correct).toBe(true);
+    expect(r.points_awarded).toBe(3);
+  });
+
+  it("Penalties without FT (TheSportsDB): wrong FT prediction scores 0", () => {
+    const r = scorePrediction("exact_score", { home: 0, away: 0 }, penResultNoFT, ept);
     expect(r.is_correct).toBe(false);
     expect(r.points_awarded).toBe(0);
   });
