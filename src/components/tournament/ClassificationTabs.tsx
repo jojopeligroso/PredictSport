@@ -156,6 +156,8 @@ export function ClassificationTabs({
   const [hasLiveEvents, setHasLiveEvents] = useState(false);
   const [groupHasLiveEvents, setGroupHasLiveEvents] = useState(false);
   const [groupFetchKey, setGroupFetchKey] = useState(0);
+  const [liveMode, setLiveMode] = useState(true);
+  const [liveEventsExist, setLiveEventsExist] = useState(false);
 
   // Listen for scoring broadcasts to auto-refresh standings
   useEffect(() => {
@@ -199,15 +201,15 @@ export function ClassificationTabs({
     if (!activeId) return;
     let cancelled = false;
 
-    fetch(
-      `/api/tournament/standings?classificationId=${activeId}&competitionId=${competitionId}&provisional=true&live=true`
-    )
+    const standingsUrl = `/api/tournament/standings?classificationId=${activeId}&competitionId=${competitionId}&provisional=true${liveMode ? "&live=true" : ""}`;
+    fetch(standingsUrl)
       .then((res) => res.json())
       .then((data) => {
         if (!cancelled) {
           setStandings(data?.standings ?? []);
           setSelfVisibility(data?.selfVisibility === "private" ? "private" : "public");
           setHasLiveEvents(Boolean(data?.hasLiveEvents));
+          if (data?.hasLiveEvents) setLiveEventsExist(true);
           setLoadedId(activeId);
           setLoading(false);
         }
@@ -221,7 +223,7 @@ export function ClassificationTabs({
       });
 
     return () => { cancelled = true; };
-  }, [activeId, competitionId, fetchKey]);
+  }, [activeId, competitionId, fetchKey, liveMode]);
 
   // While matches are live, poll standings every 60s (paused when the tab is
   // hidden) so provisional points update without a manual refresh.
@@ -352,6 +354,11 @@ export function ClassificationTabs({
         />
       )}
 
+      {/* Live / Confirmed toggle — visible when live events exist */}
+      {activeId !== RIVALS_TAB && liveEventsExist && (
+        <LiveConfirmedToggle liveMode={liveMode} onToggle={() => { setLiveMode((m) => !m); setLoading(true); }} />
+      )}
+
       {/* ── Classification content (hidden when Rival Predictions tab is active) ── */}
       {activeId !== RIVALS_TAB && (
         <>
@@ -431,7 +438,7 @@ export function ClassificationTabs({
                 standings={standings}
                 currentUserId={currentUserId}
                 classificationType={active?.classification_type ?? "leaderboard"}
-                isLive={hasLiveEvents}
+                isLive={hasLiveEvents && liveMode}
                 selfVisibility={selfVisibility}
                 tagsByUser={tagsByUser}
                 classificationKey={active?.classification_key}
@@ -469,6 +476,48 @@ export function ClassificationTabs({
             )}
         </>
       )}
+    </div>
+  );
+}
+
+function LiveConfirmedToggle({
+  liveMode,
+  onToggle,
+}: {
+  liveMode: boolean;
+  onToggle: () => void;
+}) {
+  const t = useT();
+
+  return (
+    <div className="mt-3 flex items-center justify-center">
+      <div className="inline-flex rounded-lg bg-ps-bg p-1">
+        <button
+          type="button"
+          onClick={() => { if (!liveMode) onToggle(); }}
+          className={`flex items-center gap-1.5 rounded-md px-3 py-1.5 text-xs font-semibold transition-colors ${
+            liveMode
+              ? "bg-ps-surface text-ps-text shadow-sm"
+              : "text-ps-text-sec hover:text-ps-text"
+          }`}
+        >
+          <span className="inline-flex h-2 w-2 items-center justify-center">
+            <span className={`h-1.5 w-1.5 rounded-full ${liveMode ? "animate-pulse bg-ps-red" : "bg-ps-text-ter/40"}`} />
+          </span>
+          {t('leaderboard.as_it_stands')}
+        </button>
+        <button
+          type="button"
+          onClick={() => { if (liveMode) onToggle(); }}
+          className={`rounded-md px-3 py-1.5 text-xs font-semibold transition-colors ${
+            !liveMode
+              ? "bg-ps-surface text-ps-text shadow-sm"
+              : "text-ps-text-sec hover:text-ps-text"
+          }`}
+        >
+          {t('leaderboard.confirmed')}
+        </button>
+      </div>
     </div>
   );
 }

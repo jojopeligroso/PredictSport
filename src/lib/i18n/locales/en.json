@@ -502,6 +502,7 @@
   "leaderboard.see_full_table": "See full table →",
   "leaderboard.player": "Player",
   "leaderboard.as_it_stands": "As it stands",
+  "leaderboard.confirmed": "Confirmed",
   "classification.no_config": "No classifications configured yet.",
   "classification.format_draw_in": "Format groups drawn in",
   "classification.know_group_in": "You'll know your group in",
