@@ -1,5 +1,5 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
-import { fetchResult, verifyResult, type VerificationStatus } from "./fetch-result";
+import { fetchResult, verifyResult, enrichAETFullTimeScore, type VerificationStatus } from "./fetch-result";
 import { searchEvents } from "./search-events";
 import { getTimingForSport } from "./timing";
 import { scorePrediction, buildScoreDerivedWinnerOverrides } from "@/lib/scoring";
@@ -355,11 +355,18 @@ export async function autoResolveEvent(
       }
     }
 
-    // 8. Confirm and score (is_final = true)
-    const finalResultData = {
+    // 8. Enrich AET results with FT score from API-Football (if primary
+    //    provider didn't include it). This allows exact_score to be scored
+    //    against the 90-minute score rather than the AET aggregate.
+    const finalResultData: Record<string, unknown> = {
       ...resultToPlainObject(result),
       auto_result_status: "confirmed",
     };
+    const score = finalResultData.score as Record<string, unknown> | undefined;
+    const periods = score?.periods as Record<string, Record<string, number>> | undefined;
+    if (periods?.extra_time && !periods.full_time) {
+      await enrichAETFullTimeScore(finalResultData, event.event_name, event.start_time);
+    }
 
     const { data: confirmedEvent, error: updateError } = await supabase
       .from("events")

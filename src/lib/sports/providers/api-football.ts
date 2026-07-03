@@ -147,11 +147,25 @@ export class ApiFootballProvider extends BaseProvider {
       }
     }
 
+    const isAET = fixture.fixture.status.short === "AET";
+
     const periods: Record<string, { home: number; away: number }> = {};
     if (fixture.score.halftime.home !== null) {
       periods.halftime = {
         home: fixture.score.halftime.home ?? 0,
         away: fixture.score.halftime.away ?? 0,
+      };
+    }
+    if (fixture.score.fulltime.home !== null) {
+      periods.full_time = {
+        home: fixture.score.fulltime.home ?? 0,
+        away: fixture.score.fulltime.away ?? 0,
+      };
+    }
+    if ((isAET || hasPenalties) && fixture.score.extratime.home !== null) {
+      periods.extra_time = {
+        home: fixture.score.extratime.home ?? 0,
+        away: fixture.score.extratime.away ?? 0,
       };
     }
     if (hasPenalties) {

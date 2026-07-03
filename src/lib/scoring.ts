@@ -773,11 +773,22 @@ function scoreExactScore(
     return { is_correct: null, is_partial: false, points_awarded: 0 };
   }
 
-  // AET: stored score is the aggregate (includes ET goals), not the 90-min score.
-  // FT was definitionally a draw. Non-draw predictions are wrong; draw predictions
-  // are voided (we don't know the exact FT score from TheSportsDB).
+  // AET/Penalties: stored score is the aggregate (includes ET goals), not the 90-min score.
+  // FT was definitionally a draw. Use periods.full_time if available (from API-Football
+  // enrichment); otherwise non-draw predictions are wrong, draw predictions are voided.
   const scorePeriods = score.periods as Record<string, Record<string, number>> | undefined;
-  if (scorePeriods?.extra_time) {
+  const hasPenalties = !!scorePeriods?.penalties;
+  const hasExtraTime = !!scorePeriods?.extra_time;
+
+  if (hasExtraTime || hasPenalties) {
+    if (scorePeriods?.full_time) {
+      // FT score available — compare against it
+      const ftHome = scorePeriods.full_time.home;
+      const ftAway = scorePeriods.full_time.away;
+      const correct = Number(predHome) === ftHome && Number(predAway) === ftAway;
+      return { is_correct: correct, is_partial: false, points_awarded: correct ? fullPoints : 0 };
+    }
+    // No FT breakdown: non-draw predictions are wrong, draw predictions are voided
     const predIsDrawScore = Number(predHome) === Number(predAway);
     if (predIsDrawScore) {
       return { is_correct: null, is_partial: false, points_awarded: 0 };

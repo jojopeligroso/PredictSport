@@ -1,5 +1,6 @@
 import type { NormalizedResult, ResultScore, ResultPosition, Sport } from "./types";
 import { getProvidersForSport } from "./registry";
+import { searchEvents } from "./search-events";
 
 /**
  * Fetch the result for a sporting event by trying providers in priority order.
@@ -200,4 +201,80 @@ export async function verifyResult(
     verifierScore: null,
     verifierIsFinal: null,
   };
+}
+
+// ---------------------------------------------------------------------------
+// AET full-time score enrichment
+// ---------------------------------------------------------------------------
+
+/**
+ * When a result has extra_time in periods but no full_time breakdown,
+ * attempt a secondary fetch from API-Football (which provides score.fulltime)
+ * to enrich the result with the FT score. This allows the exact_score scorer
+ * to compare against the 90-minute score rather than the AET aggregate.
+ *
+ * Mutates resultData in place if FT score is found.
+ */
+export async function enrichAETFullTimeScore(
+  resultData: Record<string, unknown>,
+  eventName: string,
+  startTime: string,
+): Promise<boolean> {
+  const score = resultData.score as Record<string, unknown> | undefined;
+  if (!score) return false;
+
+  const periods = score.periods as Record<string, Record<string, number>> | undefined;
+  if (!periods?.extra_time) return false;
+  if (periods.full_time) return false; // Already has FT score
+
+  // Search API-Football by team name and date
+  const startDate = startTime.slice(0, 10);
+  const providers = getProvidersForSport("soccer");
+  const apiFootball = providers.find((p) => p.name === "api-football");
+  if (!apiFootball) return false;
+
+  try {
+    // Extract one team name from "TeamA vs TeamB" for search
+    const teamName = eventName.split(/\s+vs?\s+/i)[0]?.trim();
+    if (!teamName) return false;
+
+    const candidates = await apiFootball.searchEvents("soccer", teamName, {
+      date: startDate,
+      limit: 5,
+    });
+
+    // Find a match with overlapping team names
+    const eventNameLower = eventName.toLowerCase();
+    const match = candidates.find((c) => {
+      const parts = c.event_name.toLowerCase().split(/\s+vs?\s+/);
+      return parts.some((p) => eventNameLower.includes(p.trim()));
+    });
+
+    if (!match) return false;
+
+    // Fetch the full result from API-Football
+    const afResult = await apiFootball.getResult("soccer", match.external_event_id);
+    if (!afResult?.score?.periods) return false;
+
+    const afPeriods = afResult.score.periods as Record<string, { home: number; away: number }>;
+    if (!afPeriods.full_time) return false;
+
+    // Verify the FT score is a draw (sanity check — ET only happens after a draw)
+    if (afPeriods.full_time.home !== afPeriods.full_time.away) {
+      console.warn(
+        `[enrich-aet] API-Football FT score is not a draw for "${eventName}": ${afPeriods.full_time.home}-${afPeriods.full_time.away}`,
+      );
+      return false;
+    }
+
+    // Enrich the periods with FT score
+    periods.full_time = afPeriods.full_time;
+    console.log(
+      `[enrich-aet] Enriched "${eventName}" with FT score: ${afPeriods.full_time.home}-${afPeriods.full_time.away}`,
+    );
+    return true;
+  } catch (err) {
+    console.error(`[enrich-aet] Failed for "${eventName}":`, err);
+    return false;
+  }
 }

@@ -368,6 +368,124 @@ describe("scoreProgression", () => {
 // Edge cases
 // ══════════════════════════════════════════════════════════════════════════
 
+// ══════════════════════════════════════════════════════════════════════════
+// AET exact_score — score against FT when periods.full_time is available
+// ══════════════════════════════════════════════════════════════════════════
+
+describe("scoreExactScore — AET matches", () => {
+  const ept = { points: 3, partial_points: 0, config: null };
+
+  // Belgium 3-2 Senegal AET (FT was 2-2, Belgium scored in ET)
+  const aetResultWithFT = {
+    score: {
+      home_team: "Belgium", away_team: "Senegal",
+      home_score: 3, away_score: 2,
+      periods: {
+        full_time: { home: 2, away: 2 },
+        extra_time: { home: 3, away: 2 },
+      },
+    },
+    winner: "Belgium",
+  };
+
+  // Same match but without FT breakdown (TheSportsDB only)
+  const aetResultNoFT = {
+    score: {
+      home_team: "Belgium", away_team: "Senegal",
+      home_score: 3, away_score: 2,
+      periods: {
+        extra_time: { home: 3, away: 2 },
+      },
+    },
+    winner: "Belgium",
+  };
+
+  // Penalty match (FT was 1-1)
+  const penResultWithFT = {
+    score: {
+      home_team: "Brazil", away_team: "Argentina",
+      home_score: 1, away_score: 1,
+      periods: {
+        full_time: { home: 1, away: 1 },
+        penalties: { home: 3, away: 4 },
+      },
+    },
+    winner: "Argentina",
+  };
+
+  it("AET with FT breakdown: correct FT prediction scores 3 pts", () => {
+    const r = scorePrediction("exact_score", { home: 2, away: 2 }, aetResultWithFT, ept);
+    expect(r.is_correct).toBe(true);
+    expect(r.points_awarded).toBe(3);
+  });
+
+  it("AET with FT breakdown: wrong FT prediction scores 0", () => {
+    const r = scorePrediction("exact_score", { home: 1, away: 1 }, aetResultWithFT, ept);
+    expect(r.is_correct).toBe(false);
+    expect(r.points_awarded).toBe(0);
+  });
+
+  it("AET with FT breakdown: non-draw prediction scores 0", () => {
+    const r = scorePrediction("exact_score", { home: 3, away: 2 }, aetResultWithFT, ept);
+    // 3-2 is the AET aggregate, not FT — should be wrong
+    expect(r.is_correct).toBe(false);
+    expect(r.points_awarded).toBe(0);
+  });
+
+  it("AET without FT breakdown: draw prediction is voided (null)", () => {
+    const r = scorePrediction("exact_score", { home: 2, away: 2 }, aetResultNoFT, ept);
+    expect(r.is_correct).toBeNull();
+    expect(r.points_awarded).toBe(0);
+  });
+
+  it("AET without FT breakdown: non-draw prediction is wrong", () => {
+    const r = scorePrediction("exact_score", { home: 3, away: 1 }, aetResultNoFT, ept);
+    expect(r.is_correct).toBe(false);
+    expect(r.points_awarded).toBe(0);
+  });
+
+  it("Penalties with FT: correct FT prediction scores 3 pts", () => {
+    const r = scorePrediction("exact_score", { home: 1, away: 1 }, penResultWithFT, ept);
+    expect(r.is_correct).toBe(true);
+    expect(r.points_awarded).toBe(3);
+  });
+
+  it("Penalties with FT: wrong prediction scores 0", () => {
+    const r = scorePrediction("exact_score", { home: 0, away: 0 }, penResultWithFT, ept);
+    expect(r.is_correct).toBe(false);
+    expect(r.points_awarded).toBe(0);
+  });
+});
+
+// ══════════════════════════════════════════════════════════════════════════
+// AET winner scoring — Draw is correct for 1X2 when match went to ET
+// ══════════════════════════════════════════════════════════════════════════
+
+describe("scoreWinner — AET matches", () => {
+  const ept = { points: 2, partial_points: 0, config: { options: ["Belgium", "Draw", "Senegal"] } };
+
+  const aetResult = {
+    score: {
+      home_team: "Belgium", away_team: "Senegal",
+      home_score: 3, away_score: 2,
+      periods: { extra_time: { home: 3, away: 2 } },
+    },
+    winner: "Belgium",
+  };
+
+  it("Draw prediction is correct (FT was a draw)", () => {
+    const r = scorePrediction("winner", { value: "Draw" }, aetResult, ept);
+    expect(r.is_correct).toBe(true);
+    expect(r.points_awarded).toBe(2);
+  });
+
+  it("Belgium prediction is wrong (FT was a draw, not a Belgium win)", () => {
+    const r = scorePrediction("winner", { value: "Belgium" }, aetResult, ept);
+    expect(r.is_correct).toBe(false);
+    expect(r.points_awarded).toBe(0);
+  });
+});
+
 describe("edge cases", () => {
   it("unknown prediction type → void", () => {
     const r = scorePrediction("unknown_type" as never, {}, {}, { points: 10, partial_points: 0, config: null });

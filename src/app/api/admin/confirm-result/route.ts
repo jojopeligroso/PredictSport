@@ -8,6 +8,7 @@ import type { PredictionType, EventPredictionType } from "@/types/database";
 import { notifyResultConfirmed } from "@/lib/notifications/result-confirmed";
 import { processEventTags, checkRoundCompletionAndProcessTags } from "@/lib/reputation";
 import { advanceKnockoutWinners } from "@/lib/tournament/bracket/advance";
+import { enrichAETFullTimeScore } from "@/lib/sports/fetch-result";
 
 interface ConfirmResultBody {
   event_id: string;
@@ -169,6 +170,21 @@ export async function POST(request: Request) {
         { error: "Result has already been confirmed for this event" },
         { status: 409 }
       );
+    }
+  }
+
+  // Enrich AET results with FT score from API-Football if needed
+  const rdScore = (resultData as Record<string, unknown>).score as Record<string, unknown> | undefined;
+  const rdPeriods = rdScore?.periods as Record<string, Record<string, number>> | undefined;
+  if (rdPeriods?.extra_time && !rdPeriods.full_time) {
+    const enriched = await enrichAETFullTimeScore(
+      resultData as Record<string, unknown>,
+      event.event_name as string,
+      event.start_time as string,
+    );
+    if (enriched) {
+      // Persist the enriched result_data back to the event
+      await supabase.from("events").update({ result_data: resultData }).eq("id", body.event_id);
     }
   }
 
