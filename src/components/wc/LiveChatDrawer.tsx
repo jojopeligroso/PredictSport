@@ -15,9 +15,12 @@ interface LiveChatDrawerProps {
     senderAvatar: string | null;
     content: string;
   } | null;
+  /** Full-height expansion for the live view (70vh vs the default 42vh mini). */
+  tall?: boolean;
 }
 
 const DRAWER_MESSAGES = 8;
+const DRAWER_MESSAGES_TALL = 40;
 const GROUP_WINDOW_MS = 10 * 60 * 1000;
 
 /**
@@ -39,6 +42,7 @@ export function LiveChatDrawer({
   currentUserRole,
   memberCount,
   lastMessage,
+  tall = false,
 }: LiveChatDrawerProps) {
   const [expanded, setExpanded] = useState(false);
 
@@ -48,6 +52,7 @@ export function LiveChatDrawer({
       currentUserId={currentUserId}
       currentUserRole={currentUserRole}
       memberCount={memberCount}
+      tall={tall}
       onCollapse={() => setExpanded(false)}
     />
   ) : (
@@ -128,12 +133,14 @@ function ExpandedDrawer({
   currentUserId,
   currentUserRole,
   memberCount,
+  tall,
   onCollapse,
 }: {
   competitionId: string;
   currentUserId: string;
   currentUserRole: string;
   memberCount: number;
+  tall: boolean;
   onCollapse: () => void;
 }) {
   const {
@@ -162,7 +169,9 @@ function ExpandedDrawer({
   }, [messages.length]);
 
   // Show last N messages
-  const displayMessages = messages.slice(-DRAWER_MESSAGES);
+  const displayMessages = messages.slice(
+    -(tall ? DRAWER_MESSAGES_TALL : DRAWER_MESSAGES),
+  );
 
   // Compute grouping: consecutive messages from same sender within 10 min
   const groupPositions = displayMessages.map((msg, i) => {
@@ -209,7 +218,7 @@ function ExpandedDrawer({
   return (
     <div
       className="rounded-xl border border-ps-border border-l-2 border-l-ps-amber bg-ps-surface overflow-hidden"
-      style={{ height: "min(42vh, 330px)" }}
+      style={{ height: tall ? "min(70vh, 560px)" : "min(42vh, 330px)" }}
     >
       {/* Header bar — 36px */}
       <div className="flex items-center justify-between border-b border-ps-border px-3" style={{ height: 36 }}>

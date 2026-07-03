@@ -74,8 +74,10 @@ export interface DashboardData {
   fixtureByEventId: Map<string, WcFixture>;
   /** Most recent completed matchday results with user prediction outcomes. */
   recentResults: ResultRow[];
-  /** Classification IDs for group/standings lookup. */
+  /** Format classification id for group/standings lookup. */
   classificationId: string | null;
+  /** Overall classification id (live-view leaderboard tabs). */
+  overallClassificationId: string | null;
   /** Competition invite code (null if no code or entry closed). */
   inviteCode: string | null;
   /** When entry closes. */
@@ -170,13 +172,13 @@ export async function fetchDashboardData(): Promise<DashboardResult> {
             .eq("user_id", user.id)
             .maybeSingle()
         : Promise.resolve({ data: null }),
-      // Format classification (for group table / standings)
+      // Overall + Format classifications (group table, standings, live leaderboard)
       supabase
         .from("classifications")
-        .select("id")
+        .select("id, classification_key")
         .eq("competition_id", competition.id)
-        .eq("classification_key", "format")
-        .maybeSingle(),
+        .in("classification_key", ["overall", "format"])
+        .limit(2),
     ]);
 
   // Prefer actionable round; fall back to most recent scored round
@@ -185,7 +187,14 @@ export async function fetchDashboardData(): Promise<DashboardResult> {
   const isMember = resolvedIsMember;
   const isCompetitionAdmin = membership?.role === "admin" || membership?.role === "co_admin";
   const memberCount = memberCountResult.count ?? 0;
-  const classificationId = classificationResult.data?.id ?? null;
+  const classificationRows = (classificationResult.data ?? []) as {
+    id: string;
+    classification_key: string;
+  }[];
+  const classificationId =
+    classificationRows.find((c) => c.classification_key === "format")?.id ?? null;
+  const overallClassificationId =
+    classificationRows.find((c) => c.classification_key === "overall")?.id ?? null;
 
   if (!currentRound) return { ready: false };
 
@@ -527,6 +536,7 @@ export async function fetchDashboardData(): Promise<DashboardResult> {
     fixtureByEventId,
     recentResults,
     classificationId,
+    overallClassificationId,
     todayGroups,
     todayGroupEvents,
     inviteCode,

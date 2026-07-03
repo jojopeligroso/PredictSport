@@ -18,6 +18,7 @@ import {
   ProgressStrip,
   InviteSection,
   LiveSection,
+  LiveView,
   ResultsSection,
   GroupSection,
   SocialSection,
@@ -33,6 +34,7 @@ interface DashboardClientProps {
   fixtureByEventId: Map<string, WcFixture>;
   recentResults: ResultRow[];
   classificationId: string | null;
+  overallClassificationId: string | null;
   todayGroups: string[];
   todayGroupEvents: Map<string, WindowEvent[]>;
   inviteCode: string | null;
@@ -67,6 +69,7 @@ export function DashboardClient({
   fixtureByEventId,
   recentResults,
   classificationId,
+  overallClassificationId,
   todayGroups,
   todayGroupEvents,
   inviteCode,
@@ -204,6 +207,12 @@ export function DashboardClient({
   // Effective live treatment -- only when a live event exists AND the user
   // hasn't turned Live mode off.
   const liveMode = liveEventExists && liveEnabled;
+
+  // Events currently in progress -- drive the LiveView score cards.
+  const liveEvents = useMemo(
+    () => filteredEvents.filter((e) => getPickStatus(e, predictions, true) === "in_progress"),
+    [filteredEvents, predictions],
+  );
 
   // Count picks progress
   const { picked, total } = useMemo(() => {
@@ -418,6 +427,34 @@ export function DashboardClient({
 
   if (onboarding) {
     return <OnboardingFlow>{dashboard}</OnboardingFlow>;
+  }
+
+  // Live view replaces the entire dashboard while matches are in progress.
+  // Returns to the default dashboard when the sport window concludes (the
+  // 180s refresh above clears the live state) or the user toggles Live off.
+  if (liveMode) {
+    return (
+      <LiveView
+        competitionId={competitionId}
+        liveEvents={liveEvents}
+        predictions={predictions}
+        fixtureByEventId={fixtureByEventId}
+        windowLocked={windowLocked}
+        currentUserId={currentUserId}
+        chatEnabled={chatEnabled}
+        isMember={isMember}
+        memberRole={memberRole}
+        memberCount={memberCount}
+        lastChatMessage={lastChatMessage}
+        overallClassificationId={overallClassificationId}
+        formatClassificationId={classificationId}
+        liveEnabled={liveEnabled}
+        toggle={toggle}
+        showPrompt={showPrompt}
+        acceptAlwaysOff={acceptAlwaysOff}
+        declinePrompt={declinePrompt}
+      />
+    );
   }
 
   return dashboard;

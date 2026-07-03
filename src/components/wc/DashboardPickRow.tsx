@@ -5,6 +5,8 @@ import { CountryFlag } from "@/components/CountryFlag";
 import { FixtureCardSurface } from "@/components/wc/FixtureCardSurface";
 import { WindowPickList } from "@/app/wc/picks/[windowId]/WindowPickList";
 import { fifaTrigram } from "@/lib/tournament/fifa-codes";
+import { LiveScoreChip } from "@/components/wc/LiveScoreChip";
+import type { LiveScorePayload } from "@/hooks/useLiveScores";
 import type { WindowEvent } from "@/app/wc/picks/[windowId]/WindowPickList";
 import type { WcFixture } from "@/lib/wc/fixtures";
 import type { Prediction } from "@/types/database";
@@ -21,6 +23,8 @@ interface DashboardPickRowProps {
   windowLocked: boolean;
   expanded: boolean;
   onToggle: () => void;
+  /** In-progress score (from useLiveScores) — shown between the trigrams while live. */
+  liveScore?: LiveScorePayload | null;
 }
 
 /**
@@ -45,6 +49,7 @@ export function DashboardPickRow({
   windowLocked,
   expanded,
   onToggle,
+  liveScore,
 }: DashboardPickRowProps) {
   const t = useT();
   const { locale } = useLocale();
@@ -74,6 +79,7 @@ export function DashboardPickRow({
   });
 
   const isLive = status === "in_progress";
+  const showLiveScore = isLive && liveScore != null;
 
   // When expanded, render only the WindowPickList card (it supplies its own
   // FixtureCardSurface via surface="card").
@@ -94,6 +100,11 @@ export function DashboardPickRow({
             <span className="mr-1 inline-flex items-center gap-1 rounded-full bg-ps-red/90 px-1.5 py-0.5 text-micro font-bold text-white">
               <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-white" />
               {t('picks.live')}
+            </span>
+          )}
+          {showLiveScore && (
+            <span className="mr-1 inline-flex items-center gap-1 text-ps-text">
+              {homeTrigram} <LiveScoreChip score={liveScore} size="sm" /> {awayTrigram}
             </span>
           )}
           {t('picks.collapse_card')}
@@ -132,9 +143,13 @@ export function DashboardPickRow({
           </span>
         }
         headerRight={
-          <span>
-            {timeStr} · {dateStr}
-          </span>
+          showLiveScore ? (
+            <span className="font-mono font-semibold">{liveScore.status}</span>
+          ) : (
+            <span>
+              {timeStr} · {dateStr}
+            </span>
+          )
         }
         hasPick={hasPick}
       >
@@ -143,7 +158,11 @@ export function DashboardPickRow({
           <CountryFlag name={fixture.home} size={20} shape="pill" />
           <span className="text-base font-bold text-white">{homeTrigram}</span>
 
-          <span className="mx-1 text-xs text-white/60">vs</span>
+          {showLiveScore ? (
+            <LiveScoreChip score={liveScore} className="mx-1 text-white" />
+          ) : (
+            <span className="mx-1 text-xs text-white/60">vs</span>
+          )}
 
           {/* Away team */}
           <span className="text-base font-bold text-white">{awayTrigram}</span>
