@@ -81,7 +81,7 @@ const TEAM_NAME_GROUPS: string[][] = [
  * Generate alternate event names by swapping known team name variants.
  * E.g. "England vs Congo DR" → ["England vs DR Congo"]
  */
-function generateSearchVariants(eventName: string): string[] {
+export function generateSearchVariants(eventName: string): string[] {
   const lower = eventName.toLowerCase();
   const variants = new Set<string>();
 

@@ -1,6 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { applyVisibility, type ViewerRole } from "@/lib/tournament/visibility";
+import { scorePrediction, buildScoreDerivedWinnerOverrides } from "@/lib/scoring";
+import { getTimingForSport } from "@/lib/sports/timing";
+import type { PredictionType } from "@/types/database";
 
 /**
  * GET /api/tournament/standings?classificationId=xxx&provisional=true
@@ -68,6 +71,7 @@ export async function GET(request: NextRequest) {
     visibility.find((v) => v.user_id === user.id)?.display_visibility ?? "public";
 
   const provisional = request.nextUrl.searchParams.get("provisional") === "true";
+  const liveRequested = request.nextUrl.searchParams.get("live") === "true";
 
   if (provisional) {
     // Get active members
@@ -176,6 +180,119 @@ export async function GET(request: NextRequest) {
       });
     }
 
+    // ── Live provisional overlay ─────────────────────────────────────────
+    // When ?live=true, add provisionally-computed points from in-progress
+    // matches (events.result_data.live, written by /api/results/live) on top
+    // of the confirmed baseline. Computed in memory only — never written to
+    // predictions.points_awarded.
+    let hasLiveEvents = false;
+    let liveEventIds: string[] = [];
+
+    if (liveRequested) {
+      const nowMs = Date.now();
+      let liveQuery = supabase
+        .from("events")
+        .select(
+          isFormat && activeSportingStageId
+            ? "id, sport, start_time, result_data, rounds!inner(sporting_stage_id)"
+            : "id, sport, start_time, result_data"
+        )
+        .eq("result_confirmed", false)
+        .lte("start_time", new Date(nowMs).toISOString())
+        .gte("start_time", new Date(nowMs - 10 * 3600000).toISOString())
+        .limit(100);
+
+      if (isFormat && activeSportingStageId) {
+        liveQuery = liveQuery.eq("rounds.sporting_stage_id", activeSportingStageId);
+      }
+      liveQuery = tournamentId
+        ? liveQuery.eq("tournament_id", tournamentId)
+        : liveQuery.eq("competition_id", classification.competition_id);
+
+      const { data: liveCandidates } = await liveQuery;
+
+      type LiveScore = { homeScore: number; awayScore: number; status: string; fetchedAt: string };
+      const liveEvents = ((liveCandidates ?? []) as unknown as Array<{
+        id: string; sport: string; start_time: string;
+        result_data: Record<string, unknown> | null;
+      }>).filter((e) => {
+        // Per-sport live window (soccer 3h, golf 9h, ...) — mirrors /api/results/live
+        const startMs = new Date(e.start_time).getTime();
+        const windowMs = (getTimingForSport(e.sport).checkAfterHours + 1) * 3600000;
+        if (nowMs >= startMs + windowMs) return false;
+        const liveData = e.result_data?.live as LiveScore | undefined;
+        return typeof liveData?.homeScore === "number" && typeof liveData?.awayScore === "number";
+      });
+
+      if (liveEvents.length > 0) {
+        hasLiveEvents = true;
+        liveEventIds = liveEvents.map((e) => e.id);
+
+        // Session (anon) client: RLS only exposes other users' predictions
+        // after pick_reveal_at — unrevealed picks are correctly excluded from
+        // the provisional overlay.
+        const [{ data: eptRows }, { data: livePreds }] = await Promise.all([
+          supabase
+            .from("event_prediction_types")
+            .select("event_id, prediction_type, points, partial_points, config")
+            .in("event_id", liveEventIds)
+            .limit(2000),
+          supabase
+            .from("predictions")
+            .select("user_id, event_id, prediction_type, prediction_data")
+            .in("event_id", liveEventIds)
+            .in("user_id", userIds)
+            .limit(5000),
+        ]);
+
+        for (const event of liveEvents) {
+          const liveData = event.result_data!.live as LiveScore;
+          const resultData: Record<string, unknown> = {
+            score: { home_score: liveData.homeScore, away_score: liveData.awayScore },
+          };
+
+          const epts = (eptRows ?? []).filter((r) => r.event_id === event.id);
+          const eptMap = new Map(epts.map((r) => [r.prediction_type as string, r]));
+          const eventPreds = ((livePreds ?? []) as Array<{
+            user_id: string; event_id: string; prediction_type: string;
+            prediction_data: Record<string, unknown>;
+          }>).filter((p) => p.event_id === event.id);
+
+          // Score is source of truth: derive each user's implied winner from
+          // their exact-score pick before scoring the winner prediction.
+          const winnerOpts =
+            ((eptMap.get("winner")?.config as Record<string, unknown> | null)
+              ?.options as string[] | undefined) ?? [];
+          const winnerOverrides = buildScoreDerivedWinnerOverrides(
+            eventPreds, winnerOpts, event.sport,
+          );
+
+          for (const pred of eventPreds) {
+            const ept = eptMap.get(pred.prediction_type);
+            if (!ept) continue;
+            let predData = pred.prediction_data;
+            if (pred.prediction_type === "winner") {
+              const override = winnerOverrides.get(pred.user_id);
+              if (override) predData = override;
+            }
+            try {
+              const scored = scorePrediction(
+                pred.prediction_type as PredictionType,
+                predData,
+                resultData,
+                { points: ept.points, partial_points: ept.partial_points, config: ept.config },
+              );
+              if (scored.points_awarded > 0) {
+                pointsMap.set(pred.user_id, (pointsMap.get(pred.user_id) ?? 0) + scored.points_awarded);
+              }
+            } catch {
+              // Provisional only — a scorer that can't handle mid-match data is skipped
+            }
+          }
+        }
+      }
+    }
+
     // Get display names + available points (max possible from confirmed events).
     // Format: only count events in the current stage.
     let eventsFilter;
@@ -245,7 +362,14 @@ export async function GET(request: NextRequest) {
       viewerRole,
     );
 
-    return NextResponse.json({ standings, provisional: true, selfVisibility, availablePoints });
+    return NextResponse.json({
+      standings,
+      provisional: true,
+      selfVisibility,
+      availablePoints,
+      hasLiveEvents,
+      liveEventIds,
+    });
   }
 
   // Return latest finalised snapshot

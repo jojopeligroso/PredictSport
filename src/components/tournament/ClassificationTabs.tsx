@@ -153,6 +153,7 @@ export function ClassificationTabs({
   const [groupData, setGroupData] = useState<MyGroupData | null>(null);
   const [fetchKey, setFetchKey] = useState(0);
   const [tagsByUser, setTagsByUser] = useState<Map<string, LeaderboardTag>>(new Map());
+  const [hasLiveEvents, setHasLiveEvents] = useState(false);
 
   // Listen for scoring broadcasts to auto-refresh standings
   useEffect(() => {
@@ -197,13 +198,14 @@ export function ClassificationTabs({
     let cancelled = false;
 
     fetch(
-      `/api/tournament/standings?classificationId=${activeId}&competitionId=${competitionId}&provisional=true`
+      `/api/tournament/standings?classificationId=${activeId}&competitionId=${competitionId}&provisional=true&live=true`
     )
       .then((res) => res.json())
       .then((data) => {
         if (!cancelled) {
           setStandings(data?.standings ?? []);
           setSelfVisibility(data?.selfVisibility === "private" ? "private" : "public");
+          setHasLiveEvents(Boolean(data?.hasLiveEvents));
           setLoadedId(activeId);
           setLoading(false);
         }
@@ -218,6 +220,23 @@ export function ClassificationTabs({
 
     return () => { cancelled = true; };
   }, [activeId, competitionId, fetchKey]);
+
+  // While matches are live, poll standings every 60s (paused when the tab is
+  // hidden) so provisional points update without a manual refresh.
+  useEffect(() => {
+    if (!hasLiveEvents) return;
+    const interval = setInterval(() => {
+      if (!document.hidden) setFetchKey((k) => k + 1);
+    }, 60_000);
+    const onVisible = () => {
+      if (!document.hidden) setFetchKey((k) => k + 1);
+    };
+    document.addEventListener("visibilitychange", onVisible);
+    return () => {
+      clearInterval(interval);
+      document.removeEventListener("visibilitychange", onVisible);
+    };
+  }, [hasLiveEvents]);
 
   // Fetch group data when format tab is active
   useEffect(() => {
@@ -384,6 +403,7 @@ export function ClassificationTabs({
                 standings={standings}
                 currentUserId={currentUserId}
                 classificationType={active?.classification_type ?? "leaderboard"}
+                isLive={hasLiveEvents}
                 selfVisibility={selfVisibility}
                 tagsByUser={tagsByUser}
                 classificationKey={active?.classification_key}
@@ -694,6 +714,7 @@ function StandingsTable({
   standings,
   currentUserId,
   classificationType,
+  isLive = false,
   selfVisibility,
   tagsByUser,
   onToggleVisibility,
@@ -702,6 +723,7 @@ function StandingsTable({
   standings: StandingRow[];
   currentUserId: string;
   classificationType: string;
+  isLive?: boolean;
   selfVisibility: "public" | "private";
   tagsByUser: Map<string, LeaderboardTag>;
   onToggleVisibility: (next: "public" | "private") => void;
@@ -716,7 +738,15 @@ function StandingsTable({
       {/* Header */}
       <div className="flex items-center px-3 py-2 text-xs font-semibold text-ps-text-ter">
         <span className="w-8 text-center">#</span>
-        <span className="flex-1 pl-2">{t('leaderboard.player')}</span>
+        <span className="flex-1 pl-2">
+          {t('leaderboard.player')}
+          {isLive && (
+            <span className="ml-2 inline-flex items-center gap-1 rounded-full bg-ps-red/90 px-1.5 py-0.5 align-middle text-micro font-bold text-white">
+              <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-white" />
+              {t('picks.live')}
+            </span>
+          )}
+        </span>
         <span className="w-16 text-right">
           {isBracket ? t('classification.correct') : t('common.pts')}
         </span>
