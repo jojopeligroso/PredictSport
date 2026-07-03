@@ -168,10 +168,13 @@ function ExpandedDrawer({
     prevMessageCount.current = messages.length;
   }, [messages.length]);
 
-  // Show last N messages
-  const displayMessages = messages.slice(
-    -(tall ? DRAWER_MESSAGES_TALL : DRAWER_MESSAGES),
-  );
+  // Show last N social messages — user chat + reckons, never the system
+  // activity feed (mirrors the "Chat" tab on /wc/chat and the teaser query).
+  const displayMessages = messages
+    .filter(
+      (m) => m.message_type === "user" || m.message_type === "system_reckons",
+    )
+    .slice(-(tall ? DRAWER_MESSAGES_TALL : DRAWER_MESSAGES));
 
   // Compute grouping: consecutive messages from same sender within 10 min
   const groupPositions = displayMessages.map((msg, i) => {

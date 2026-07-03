@@ -36,7 +36,10 @@ export function LiveLeaderboard({
   currentUserId,
 }: LiveLeaderboardProps) {
   const t = useT();
-  const [tab, setTab] = useState<TabKey>("overall");
+  // Format is the default lens when available; fall back to Overall.
+  const [tab, setTab] = useState<TabKey>(
+    formatClassificationId ? "format" : "overall"
+  );
   const [rowsByTab, setRowsByTab] = useState<Partial<Record<TabKey, StandingRow[]>>>({});
   const [expanded, setExpanded] = useState(false);
 
