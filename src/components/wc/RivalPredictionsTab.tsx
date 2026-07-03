@@ -389,14 +389,6 @@ export function RivalPredictionsTab({
               </CascadeCard>
             ))}
 
-            {/* Scroll hint when list is long */}
-            {sortedPredictions.length > 8 && (
-              <div className="border-t border-ps-border/50 px-4 py-2.5 text-center text-caption font-medium text-ps-text-ter">
-                {t("rivals.scroll_more", {
-                  count: predictions.length - 8,
-                })}
-              </div>
-            )}
           </div>
         )}
 
