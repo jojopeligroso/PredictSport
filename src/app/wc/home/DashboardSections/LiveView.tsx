@@ -7,7 +7,9 @@ import { DashboardPickRow } from "@/components/wc/DashboardPickRow";
 import { LiveChatDrawer } from "@/components/wc/LiveChatDrawer";
 import { LiveModeToggle } from "@/components/wc/LiveModeToggle";
 import { useLiveScores } from "@/hooks/useLiveScores";
+import { fifaTrigram } from "@/lib/tournament/fifa-codes";
 import { LiveLeaderboard } from "./LiveLeaderboard";
+import type { ScoreboardMatch } from "./LiveLeaderboard";
 import type { WindowEvent } from "@/app/wc/picks/[windowId]/WindowPickList";
 import type { WcFixture } from "@/lib/wc/fixtures";
 import type { Prediction } from "@/types/database";
@@ -77,6 +79,25 @@ export function LiveView({
   const [expandedIds, setExpandedIds] = useState<Set<string>>(new Set());
 
   const liveScores = useLiveScores(liveEvents.map((e) => e.id));
+
+  // Compact scoreboard for the "As it stands" leaderboard island.
+  const scoreboard: ScoreboardMatch[] = liveEvents.flatMap((event) => {
+    const fixture = fixtureByEventId.get(event.id);
+    if (!fixture) return [];
+    const live = liveScores[event.id];
+    return [
+      {
+        id: event.id,
+        homeTrigram:
+          fifaTrigram(fixture.home) ?? fixture.home.slice(0, 3).toUpperCase(),
+        awayTrigram:
+          fifaTrigram(fixture.away) ?? fixture.away.slice(0, 3).toUpperCase(),
+        homeScore: live?.homeScore ?? null,
+        awayScore: live?.awayScore ?? null,
+        status: live?.status ?? null,
+      },
+    ];
+  });
 
   const toggleExpanded = (eventId: string) => {
     setExpandedIds((prev) => {
@@ -163,6 +184,7 @@ export function LiveView({
         overallClassificationId={overallClassificationId}
         formatClassificationId={formatClassificationId}
         currentUserId={currentUserId}
+        scoreboard={scoreboard}
       />
     </div>
   );

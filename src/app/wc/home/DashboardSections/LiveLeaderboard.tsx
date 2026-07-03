@@ -11,10 +11,21 @@ interface StandingRow {
   eliminated?: boolean;
 }
 
+export interface ScoreboardMatch {
+  id: string;
+  homeTrigram: string;
+  awayTrigram: string;
+  homeScore: number | null;
+  awayScore: number | null;
+  status: string | null;
+}
+
 interface LiveLeaderboardProps {
   overallClassificationId: string | null;
   formatClassificationId: string | null;
   currentUserId: string | null;
+  /** Compact live scoreboard rendered above the table ("As it stands"). */
+  scoreboard?: ScoreboardMatch[];
 }
 
 type TabKey = "overall" | "format";
@@ -34,6 +45,7 @@ export function LiveLeaderboard({
   overallClassificationId,
   formatClassificationId,
   currentUserId,
+  scoreboard,
 }: LiveLeaderboardProps) {
   const t = useT();
   // Format is the default lens when available; fall back to Overall.
@@ -114,30 +126,58 @@ export function LiveLeaderboard({
 
   return (
     <section className="ps-island mt-5">
-      {/* Header: tabs + LIVE pill */}
-      <div className="mb-2 flex items-center justify-between">
-        <div className="flex gap-1">
-          {tabs.map(({ key, label }) =>
-            classificationIds[key] ? (
-              <button
-                key={key}
-                type="button"
-                onClick={() => setTab(key)}
-                className={`rounded-full px-3 py-1 text-caption font-semibold transition-colors ${
-                  tab === key
-                    ? "border border-ps-border bg-ps-surface text-ps-text"
-                    : "border border-transparent text-ps-text-ter hover:text-ps-text"
-                }`}
-              >
-                {label}
-              </button>
-            ) : null
-          )}
-        </div>
-        <span className="inline-flex items-center gap-1 rounded-full bg-ps-red/90 px-2 py-0.5 text-micro font-bold text-white">
+      {/* "As it stands" header + LIVE pill */}
+      <p className="mb-1.5 flex items-center gap-2 text-caption font-semibold uppercase tracking-wide text-ps-text-ter">
+        {t("leaderboard.as_it_stands")}
+        <span className="inline-flex items-center gap-1 rounded-full bg-ps-red/90 px-1.5 py-0.5 text-micro font-bold normal-case text-white">
           <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-white" />
           {t("picks.live")}
         </span>
+      </p>
+
+      {/* Compact live scoreboard */}
+      {scoreboard && scoreboard.length > 0 && (
+        <div className="mb-2 grid grid-cols-2 gap-1.5">
+          {scoreboard.map((m) => (
+            <div
+              key={m.id}
+              className="flex items-center justify-center gap-2 rounded-lg border border-ps-border bg-ps-surface px-2 py-1.5"
+            >
+              <span className="font-mono text-sm font-bold tabular-nums text-ps-text">
+                {m.homeTrigram}{" "}
+                {m.homeScore != null && m.awayScore != null
+                  ? `${m.homeScore}–${m.awayScore}`
+                  : "–"}{" "}
+                {m.awayTrigram}
+              </span>
+              {m.status && (
+                <span className="font-mono text-micro font-semibold text-ps-red">
+                  {m.status}
+                </span>
+              )}
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* Tabs */}
+      <div className="mb-2 flex gap-1">
+        {tabs.map(({ key, label }) =>
+          classificationIds[key] ? (
+            <button
+              key={key}
+              type="button"
+              onClick={() => setTab(key)}
+              className={`rounded-full px-3 py-1 text-caption font-semibold transition-colors ${
+                tab === key
+                  ? "border border-ps-border bg-ps-surface text-ps-text"
+                  : "border border-transparent text-ps-text-ter hover:text-ps-text"
+              }`}
+            >
+              {label}
+            </button>
+          ) : null
+        )}
       </div>
 
       <div className="overflow-hidden rounded-xl border border-ps-border bg-ps-surface">
