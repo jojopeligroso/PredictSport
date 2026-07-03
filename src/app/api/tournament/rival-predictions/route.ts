@@ -169,6 +169,22 @@ async function handleEventPredictions(
   const members = membersResult.data ?? [];
   const memberIds = new Set(members.map((m) => m.user_id));
 
+  // Overall points for sort tiebreaker (one row per user via RPC — no row-limit risk)
+  const memberIdArray = [...memberIds];
+  const { data: overallPointRows } = await supabase.rpc("sum_prediction_points", {
+    p_user_ids: memberIdArray,
+    p_tournament_id: tournamentId,
+    p_competition_id: competitionId,
+  });
+  const overallRankMap = new Map<string, number>();
+  const sortedByPoints = [...(overallPointRows ?? []) as Array<{ user_id: string; total_points: number }>]
+    .sort((a, b) => (b.total_points ?? 0) - (a.total_points ?? 0));
+  sortedByPoints.forEach((r, i) => overallRankMap.set(r.user_id, i + 1));
+  // Users with no scored predictions get bottom rank
+  for (const uid of memberIdArray) {
+    if (!overallRankMap.has(uid)) overallRankMap.set(uid, memberIdArray.length);
+  }
+
   // Build prediction map: user_id -> merged winner + exact_score + h2h data
   const predMap = new Map<
     string,
@@ -244,12 +260,29 @@ async function handleEventPredictions(
     };
   });
 
-  // Sort: exact correct > winner correct > wrong > pending > no pick, then points desc
+  // Sort with overall rank tiebreaker
+  const hasResult = event.result_confirmed;
   rows.sort((a, b) => {
     const ao = predSortOrder(a);
     const bo = predSortOrder(b);
     if (ao !== bo) return ao - bo;
-    return b.totalPoints - a.totalPoints;
+
+    if (!hasResult) {
+      // Before result: group by winner prediction, then exact score, then overall rank
+      if (a.winner !== b.winner) {
+        if (a.winner === null) return 1;
+        if (b.winner === null) return -1;
+        return a.winner.localeCompare(b.winner);
+      }
+      const aScore = a.exactScore ? `${a.exactScore.home}-${a.exactScore.away}` : "\uffff";
+      const bScore = b.exactScore ? `${b.exactScore.home}-${b.exactScore.away}` : "\uffff";
+      if (aScore !== bScore) return aScore.localeCompare(bScore);
+      return (overallRankMap.get(a.userId) ?? 999) - (overallRankMap.get(b.userId) ?? 999);
+    }
+
+    // After result: by fixture points desc, then overall rank
+    if (b.totalPoints !== a.totalPoints) return b.totalPoints - a.totalPoints;
+    return (overallRankMap.get(a.userId) ?? 999) - (overallRankMap.get(b.userId) ?? 999);
   });
 
   return NextResponse.json({
@@ -272,7 +305,7 @@ async function handleEventPredictions(
   });
 }
 
-// ── Dashboard teaser (group members only, most recent revealed event) ───────
+// ── Dashboard teaser (2 above / 2 below user in standings) ───────────────────
 
 async function handleTeaser(
   supabase: SupabaseClient,
@@ -280,17 +313,91 @@ async function handleTeaser(
   tournamentId: string | null,
   userId: string,
 ) {
-  // Get group member IDs first — if no group, nothing to show
-  const allMemberships = await getAllGroupMemberships(supabase, competitionId, userId);
-  const groupMemberIds = [...allMemberships.entries()]
-    .filter(([, info]) => info.isUserGroup)
-    .map(([uid]) => uid);
-  if (groupMemberIds.length === 0) {
+  // 1. Get all members + format group info + format elimination status in parallel
+  const [membersResult, groupMemberships, formatStatusResult] = await Promise.all([
+    supabase
+      .from("competition_members")
+      .select("user_id, users(display_name)")
+      .eq("competition_id", competitionId),
+    getAllGroupMemberships(supabase, competitionId, userId),
+    // Check if user is eliminated from format
+    (async () => {
+      const { data: formatClass } = await supabase
+        .from("classifications")
+        .select("id")
+        .eq("competition_id", competitionId)
+        .eq("classification_key", "format")
+        .maybeSingle();
+      if (!formatClass) return null;
+      const { data: membership } = await supabase
+        .from("classification_memberships")
+        .select("status")
+        .eq("classification_id", formatClass.id)
+        .eq("user_id", userId)
+        .maybeSingle();
+      return membership?.status ?? "active";
+    })(),
+  ]);
+
+  const members = membersResult.data ?? [];
+  if (members.length === 0) {
     return NextResponse.json({ event: null, predictions: [] });
   }
 
-  // Find the most recently revealed event
-  const baseQuery = supabase
+  const allMemberIds = members.map((m) => m.user_id);
+
+  // Fetch overall points for standings ranking
+  const { data: pointRows } = await supabase.rpc("sum_prediction_points", {
+    p_user_ids: allMemberIds,
+    p_tournament_id: tournamentId,
+    p_competition_id: competitionId,
+  });
+
+  const overallPointsMap = new Map<string, number>();
+  for (const r of (pointRows ?? []) as Array<{ user_id: string; total_points: number }>) {
+    overallPointsMap.set(r.user_id, r.total_points ?? 0);
+  }
+
+  // 2. Determine which pool to use: group standings or overall standings
+  const userGroupInfo = groupMemberships.get(userId);
+  const isEliminated = formatStatusResult === "eliminated" || formatStatusResult === "dead";
+  const useGroupPool = userGroupInfo && !isEliminated;
+
+  let rankedNeighbourIds: string[];
+
+  if (useGroupPool) {
+    // Group standings: rank members of user's group by points
+    const groupMembers = [...groupMemberships.entries()]
+      .filter(([, info]) => info.groupId === userGroupInfo.groupId)
+      .map(([uid]) => uid);
+    const ranked = groupMembers
+      .map((uid) => ({ uid, pts: overallPointsMap.get(uid) ?? 0 }))
+      .sort((a, b) => b.pts - a.pts);
+    const myIdx = ranked.findIndex((r) => r.uid === userId);
+    const start = Math.max(0, myIdx - 2);
+    const end = Math.min(ranked.length, myIdx + 3); // +3 to include 2 below
+    rankedNeighbourIds = ranked.slice(start, end)
+      .map((r) => r.uid)
+      .filter((uid) => uid !== userId);
+  } else {
+    // Overall standings: rank all members by points
+    const ranked = allMemberIds
+      .map((uid) => ({ uid, pts: overallPointsMap.get(uid) ?? 0 }))
+      .sort((a, b) => b.pts - a.pts);
+    const myIdx = ranked.findIndex((r) => r.uid === userId);
+    const start = Math.max(0, myIdx - 2);
+    const end = Math.min(ranked.length, myIdx + 3);
+    rankedNeighbourIds = ranked.slice(start, end)
+      .map((r) => r.uid)
+      .filter((uid) => uid !== userId);
+  }
+
+  if (rankedNeighbourIds.length === 0) {
+    return NextResponse.json({ event: null, predictions: [] });
+  }
+
+  // 3. Find the most recently revealed event
+  const eventsQuery = supabase
     .from("events")
     .select(
       "id, event_name, lock_time, pick_reveal_at, start_time, result_confirmed, result_data, external_event_id",
@@ -298,15 +405,15 @@ async function handleTeaser(
     .order("start_time", { ascending: false });
 
   const { data: events } = tournamentId
-    ? await baseQuery.eq("tournament_id", tournamentId)
-    : await baseQuery.eq("competition_id", competitionId);
+    ? await eventsQuery.eq("tournament_id", tournamentId)
+    : await eventsQuery.eq("competition_id", competitionId);
 
   const revealed = (events ?? []).find((e) => isRevealed(e));
   if (!revealed) {
     return NextResponse.json({ event: null, predictions: [] });
   }
 
-  // Fetch predictions + display names for group members
+  // 4. Fetch predictions + names for neighbours
   const [predsResult, usersResult, memberCountResult] = await Promise.all([
     supabase
       .from("predictions")
@@ -314,11 +421,11 @@ async function handleTeaser(
         "user_id, prediction_type, prediction_data, is_correct, points_awarded",
       )
       .eq("event_id", revealed.id)
-      .in("user_id", groupMemberIds),
+      .in("user_id", rankedNeighbourIds),
     supabase
       .from("users")
       .select("id, display_name")
-      .in("id", groupMemberIds),
+      .in("id", rankedNeighbourIds),
     supabase
       .from("competition_members")
       .select("id", { count: "exact", head: true })
@@ -375,21 +482,19 @@ async function handleTeaser(
     }
   }
 
-  // Build rows — exclude self
-  const rows = groupMemberIds
-    .filter((uid) => uid !== userId)
-    .map((uid) => {
-      const pred = predMap.get(uid);
-      return {
-        userId: uid,
-        displayName: nameMap.get(uid) ?? "Unknown",
-        winner: pred?.winner ?? null,
-        exactScore: pred?.exactScore ?? null,
-        winnerCorrect: pred?.winnerCorrect ?? null,
-        scoreCorrect: pred?.scoreCorrect ?? null,
-        totalPoints: (pred?.winnerPoints ?? 0) + (pred?.scorePoints ?? 0) + (pred?.h2hPoints ?? 0),
-      };
-    });
+  // Build rows in standings order (preserve the ranked neighbour order)
+  const rows = rankedNeighbourIds.map((uid) => {
+    const pred = predMap.get(uid);
+    return {
+      userId: uid,
+      displayName: nameMap.get(uid) ?? "Unknown",
+      winner: pred?.winner ?? null,
+      exactScore: pred?.exactScore ?? null,
+      winnerCorrect: pred?.winnerCorrect ?? null,
+      scoreCorrect: pred?.scoreCorrect ?? null,
+      totalPoints: (pred?.winnerPoints ?? 0) + (pred?.scorePoints ?? 0) + (pred?.h2hPoints ?? 0),
+    };
+  });
 
   return NextResponse.json({
     event: {
