@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 import { fetchResult } from "@/lib/sports/fetch-result";
 import { searchEvents } from "@/lib/sports/search-events";
+import { getProvidersForSport } from "@/lib/sports/registry";
 import { getTimingForSport } from "@/lib/sports/timing";
 import {
   tokenOverlapScore,
@@ -86,12 +87,45 @@ async function resolveProviderId(rows: LiveEventRow[]): Promise<string | null> {
   const eventStartMs = new Date(rep.start_time).getTime();
   const oneDayMs = 24 * 3600000;
 
+  const isUsableCandidate = (c: { provider: string; external_event_id: string }) =>
+    c.provider !== "fixture_pool" &&
+    c.provider !== "manual" &&
+    !!c.external_event_id &&
+    c.external_event_id !== "undefined" &&
+    !c.external_event_id.startsWith("manual:");
+
   const searchAndScore = async (searchName: string) => {
+    // First try the standard search chain (may return fixturePool results)
     const candidates = await searchEvents(rep.sport as Sport, searchName, {
       date: startDate,
       providerLeague: rep.provider_league ?? undefined,
     });
-    return candidates
+    const usable = candidates.filter(isUsableCandidate);
+
+    // If standard search only returned fixturePool/manual results, try each
+    // external provider directly (ESPN, TheSportsDB, etc.)
+    let allCandidates = usable;
+    if (usable.length === 0) {
+      const providers = getProvidersForSport(rep.sport as Sport);
+      for (const provider of providers) {
+        if (provider.name === "fixture_pool" || provider.name === "manual") continue;
+        try {
+          const results = await provider.searchEvents(rep.sport as Sport, searchName, {
+            date: startDate,
+            providerLeague: rep.provider_league ?? undefined,
+          });
+          const filtered = results.filter(isUsableCandidate);
+          if (filtered.length > 0) {
+            allCandidates = filtered;
+            break; // take first provider with usable results
+          }
+        } catch {
+          /* skip provider errors */
+        }
+      }
+    }
+
+    return allCandidates
       .map((c) => ({
         candidate: c,
         score: tokenOverlapScore(rep.event_name, c.event_name),
@@ -112,8 +146,13 @@ async function resolveProviderId(rows: LiveEventRow[]): Promise<string | null> {
     }
   }
 
-  // Only trust a single confident match (ambiguity = skip this tick)
-  return scored.length === 1 ? scored[0].candidate.external_event_id : null;
+  // Only trust a single confident match (ambiguity = skip this tick).
+  // Guard against providers that return undefined/empty external_event_id.
+  if (scored.length === 1) {
+    const id = scored[0].candidate.external_event_id;
+    return id && id !== "undefined" ? id : null;
+  }
+  return null;
 }
 
 export async function GET(request: Request) {

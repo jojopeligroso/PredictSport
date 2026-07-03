@@ -3,6 +3,7 @@ import { createClient } from "@/lib/supabase/server";
 import { createServiceClient } from "@/lib/supabase/service";
 import { allocatePredictionGroups } from "@/lib/tournament/format/group-allocation";
 import { getEliminationCurve } from "@/lib/tournament/format/elimination";
+import { applyLiveOverlay } from "@/lib/tournament/live-overlay";
 import type { Classification } from "@/types/tournament";
 
 /**
@@ -196,6 +197,7 @@ export async function GET(request: NextRequest) {
   // Aggregate stage-local points per user (Format resets points per stage).
   const pointsMap = new Map<string, number>();
   for (const uid of allUserIds) pointsMap.set(uid, 0);
+  let hasLiveEvents = false;
 
   if (allUserIds.length > 0) {
     // Resolve tournament_id for shared fixture scoring
@@ -242,6 +244,19 @@ export async function GET(request: NextRequest) {
     for (const r of (pointRows ?? []) as Array<{ user_id: string; total_points: number }>) {
       pointsMap.set(r.user_id, r.total_points ?? 0);
     }
+
+    // ── Live provisional overlay ─────────────────────────────────────────
+    // Add provisionally-scored points from in-progress matches on top of
+    // confirmed baseline, matching the pattern in /api/tournament/standings.
+    const live = await applyLiveOverlay(supabase, {
+      userIds: allUserIds,
+      pointsMap,
+      tournamentId,
+      competitionId,
+      activeSportingStageId,
+      isFormat: true,
+    });
+    hasLiveEvents = live.hasLiveEvents;
   }
 
   // Identify user's group
@@ -365,5 +380,6 @@ export async function GET(request: NextRequest) {
     eliminatedMembers: eliminatedList,
     myGroupId,
     totalMembers: totalMembers ?? 0,
+    hasLiveEvents,
   });
 }

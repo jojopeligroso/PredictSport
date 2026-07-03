@@ -258,7 +258,7 @@ export async function autoResolveEvent(
         }
       }
 
-      if (scored.length === 1) {
+      if (scored.length === 1 && scored[0].candidate.external_event_id && scored[0].candidate.external_event_id !== "undefined") {
         // Single confident match — cache the provider ID in result_data
         // (don't overwrite external_event_id — it's the key used by WC2026_FIXTURES)
         resolvedExternalId = scored[0].candidate.external_event_id;

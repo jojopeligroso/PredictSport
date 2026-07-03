@@ -154,6 +154,8 @@ export function ClassificationTabs({
   const [fetchKey, setFetchKey] = useState(0);
   const [tagsByUser, setTagsByUser] = useState<Map<string, LeaderboardTag>>(new Map());
   const [hasLiveEvents, setHasLiveEvents] = useState(false);
+  const [groupHasLiveEvents, setGroupHasLiveEvents] = useState(false);
+  const [groupFetchKey, setGroupFetchKey] = useState(0);
 
   // Listen for scoring broadcasts to auto-refresh standings
   useEffect(() => {
@@ -238,11 +240,13 @@ export function ClassificationTabs({
     };
   }, [hasLiveEvents]);
 
-  // Fetch group data when format tab is active
+  // Fetch group data when format tab is active; re-fetch on groupFetchKey
+  // changes (driven by the live-polling effect below).
   useEffect(() => {
     const active = visibleClassifications.find((c) => c.id === activeId);
     if (active?.classification_key !== "format") {
       setGroupData(null);
+      setGroupHasLiveEvents(false);
       return;
     }
 
@@ -253,14 +257,37 @@ export function ClassificationTabs({
     )
       .then((res) => res.json())
       .then((data) => {
-        if (!cancelled) setGroupData(data);
+        if (!cancelled) {
+          setGroupData(data);
+          setGroupHasLiveEvents(Boolean(data?.hasLiveEvents));
+        }
       })
       .catch(() => {
-        if (!cancelled) setGroupData(null);
+        if (!cancelled) {
+          setGroupData(null);
+          setGroupHasLiveEvents(false);
+        }
       });
 
     return () => { cancelled = true; };
-  }, [activeId, competitionId, visibleClassifications]);
+  }, [activeId, competitionId, visibleClassifications, groupFetchKey]);
+
+  // While group matches are live, poll group data every 60s (paused when
+  // the tab is hidden) so provisional points update in the group view.
+  useEffect(() => {
+    if (!groupHasLiveEvents) return;
+    const interval = setInterval(() => {
+      if (!document.hidden) setGroupFetchKey((k) => k + 1);
+    }, 60_000);
+    const onVisible = () => {
+      if (!document.hidden) setGroupFetchKey((k) => k + 1);
+    };
+    document.addEventListener("visibilitychange", onVisible);
+    return () => {
+      clearInterval(interval);
+      document.removeEventListener("visibilitychange", onVisible);
+    };
+  }, [groupHasLiveEvents]);
 
   const isLoading = loading || loadedId !== activeId;
 
@@ -353,6 +380,7 @@ export function ClassificationTabs({
                     <KnockoutLeaderboard
                       group={groupData.allGroups[0]}
                       currentUserId={currentUserId}
+                      isLive={groupHasLiveEvents}
                     />
                     {groupData.eliminatedMembers && groupData.eliminatedMembers.length > 0 && (
                       <EliminatedSection
@@ -367,10 +395,10 @@ export function ClassificationTabs({
                   <>
                     {groupData.myGroupId && (() => {
                       const myGroup = groupData.allGroups!.find((g) => g.id === groupData.myGroupId);
-                      return myGroup ? <YourGroupCard group={myGroup} /> : null;
+                      return myGroup ? <YourGroupCard group={myGroup} isLive={groupHasLiveEvents} /> : null;
                     })()}
                     <div className={groupData.myGroupId ? "mt-3" : ""}>
-                      <AllGroupsView groups={groupData.allGroups} myGroupId={groupData.myGroupId ?? null} />
+                      <AllGroupsView groups={groupData.allGroups} myGroupId={groupData.myGroupId ?? null} isLive={groupHasLiveEvents} />
                     </div>
                   </>
                 )}
@@ -1397,8 +1425,10 @@ function QualificationRuleSummary({ groupSize }: { groupSize: number }) {
 
 function YourGroupCard({
   group,
+  isLive = false,
 }: {
   group: GroupInfo;
+  isLive?: boolean;
 }) {
   const t = useT();
   const groupSize = group.members.length;
@@ -1419,6 +1449,12 @@ function YourGroupCard({
             <span className="rounded bg-ps-amber/20 px-1.5 py-0.5 text-micro font-bold text-ps-amber">
               {t('classification.you_label')}
             </span>
+            {isLive && (
+              <span className="inline-flex items-center gap-1 rounded-full bg-ps-red/90 px-1.5 py-0.5 text-micro font-bold text-white">
+                <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-white" />
+                {t('picks.live')}
+              </span>
+            )}
           </div>
           <QualificationRuleSummary groupSize={groupSize} />
         </div>
@@ -1486,9 +1522,11 @@ function YourGroupCard({
 function KnockoutLeaderboard({
   group,
   currentUserId,
+  isLive = false,
 }: {
   group: GroupInfo;
   currentUserId: string;
+  isLive?: boolean;
 }) {
   const t = useT();
   const cutoffPosition = Math.floor(group.members.length / 2);
@@ -1497,7 +1535,15 @@ function KnockoutLeaderboard({
     <div className="overflow-hidden rounded-xl border border-ps-border bg-ps-surface">
       {/* Header */}
       <div className="flex items-center justify-between bg-ps-amber/5 px-4 py-3">
-        <h3 className="text-sm font-bold text-ps-text">{group.name}</h3>
+        <div className="flex items-center gap-2">
+          <h3 className="text-sm font-bold text-ps-text">{group.name}</h3>
+          {isLive && (
+            <span className="inline-flex items-center gap-1 rounded-full bg-ps-red/90 px-1.5 py-0.5 text-micro font-bold text-white">
+              <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-white" />
+              {t('picks.live')}
+            </span>
+          )}
+        </div>
         <span className="text-micro font-medium text-ps-text-ter">
           {group.members.length} {t('leaderboard.player').toLowerCase()}s
         </span>
@@ -1747,9 +1793,11 @@ function HistoricalGroupCard({ group }: { group: GroupInfo }) {
 function AllGroupsView({
   groups,
   myGroupId,
+  isLive = false,
 }: {
   groups: GroupInfo[];
   myGroupId: string | null;
+  isLive?: boolean;
 }) {
   const t = useT();
 
@@ -1767,7 +1815,15 @@ function AllGroupsView({
           >
             {/* Group header */}
             <div className="flex items-center justify-between px-3 py-2">
-              <h3 className="text-sm font-bold text-ps-text">{group.name}</h3>
+              <div className="flex items-center gap-2">
+                <h3 className="text-sm font-bold text-ps-text">{group.name}</h3>
+                {isLive && (
+                  <span className="inline-flex items-center gap-1 rounded-full bg-ps-red/90 px-1.5 py-0.5 text-micro font-bold text-white">
+                    <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-white" />
+                    {t('picks.live')}
+                  </span>
+                )}
+              </div>
               <span className="text-micro font-medium text-ps-text-ter">
                 {t('group.players_count', { count: group.members.length })}
               </span>
