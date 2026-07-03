@@ -773,28 +773,36 @@ function scoreExactScore(
     return { is_correct: null, is_partial: false, points_awarded: 0 };
   }
 
-  // AET/Penalties: stored score is the aggregate (includes ET goals), not the 90-min score.
-  // FT was definitionally a draw. Use periods.full_time if available (from API-Football
-  // enrichment); otherwise non-draw predictions are wrong, draw predictions are voided.
+  // AET/Penalties handling:
+  // - TheSportsDB stores the 90-min FT score in home_score/away_score.
+  //   periods.extra_time holds ET goals; periods.penalties holds shootout scores.
+  // - When extra_time is present, home_score/away_score is the AET aggregate and
+  //   can't be used for exact_score without a full_time breakdown.
+  // - When penalties are present WITHOUT extra_time, home_score/away_score IS the
+  //   FT score (match went straight from 90 min to penalties). Fall through to
+  //   normal comparison in that case.
   const scorePeriods = score.periods as Record<string, Record<string, number>> | undefined;
-  const hasPenalties = !!scorePeriods?.penalties;
   const hasExtraTime = !!scorePeriods?.extra_time;
 
-  if (hasExtraTime || hasPenalties) {
-    if (scorePeriods?.full_time) {
-      // FT score available — compare against it
-      const ftHome = scorePeriods.full_time.home;
-      const ftAway = scorePeriods.full_time.away;
-      const correct = Number(predHome) === ftHome && Number(predAway) === ftAway;
-      return { is_correct: correct, is_partial: false, points_awarded: correct ? fullPoints : 0 };
-    }
-    // No FT breakdown: non-draw predictions are wrong, draw predictions are voided
+  if (scorePeriods?.full_time) {
+    // FT breakdown available (API-Football enrichment) — use it regardless of AET/pens
+    const ftHome = scorePeriods.full_time.home;
+    const ftAway = scorePeriods.full_time.away;
+    const correct = Number(predHome) === ftHome && Number(predAway) === ftAway;
+    return { is_correct: correct, is_partial: false, points_awarded: correct ? fullPoints : 0 };
+  }
+
+  if (hasExtraTime) {
+    // AET but no FT breakdown: stored score is AET aggregate, FT was a draw.
+    // Non-draw predictions are wrong; draw predictions voided (can't verify exact FT score).
     const predIsDrawScore = Number(predHome) === Number(predAway);
     if (predIsDrawScore) {
       return { is_correct: null, is_partial: false, points_awarded: 0 };
     }
     return { is_correct: false, is_partial: false, points_awarded: 0 };
   }
+
+  // Penalty-only (no extra time): home_score/away_score is the FT score. Fall through.
 
   const resultHomeScore = Number(score.home_score ?? score.home ?? 0);
   const resultAwayScore = Number(score.away_score ?? score.away ?? 0);
