@@ -166,11 +166,13 @@ export async function allocatePredictionGroups(
   // Build group chunks according to composition
   const chunks = distributeIntoGroups(shuffled, composition);
 
-  // Delete any existing groups + memberships (regeneration path)
+  // Delete only ACTIVE groups + memberships (regeneration path).
+  // Archived groups from completed stages are preserved.
   await supabase
     .from("format_prediction_groups")
     .delete()
-    .eq("classification_id", classificationId);
+    .eq("classification_id", classificationId)
+    .neq("status", "archived");
 
   // Insert new groups
   const groupInserts = chunks.map((chunk, idx) => ({

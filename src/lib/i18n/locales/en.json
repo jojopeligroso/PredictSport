@@ -710,5 +710,6 @@
   "format_knockout_advance": "Top {count} advance",
   "format_eliminated_after": "Eliminated after {stage}",
   "format_group_stage_results": "Group Stage Results",
+  "format_results_suffix": "Results",
   "format_n_groups": "{count} groups"
 }

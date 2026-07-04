@@ -392,38 +392,50 @@ export function ClassificationTabs({
 
           {/* Format: Your Group card + All groups view, OR single-group preview */}
           {active?.classification_key === "format" && (
-            groupData?.allGroups && groupData.allGroups.length > 0 ? (
-              <div className="mt-4">
-                {/* Knockout stage: active group + eliminated + historical */}
-                {groupData.archivedGroups && groupData.archivedGroups.length > 0 ? (
-                  <>
-                    <KnockoutLeaderboard
-                      group={groupData.allGroups[0]}
-                      currentUserId={currentUserId}
-                      isLive={groupHasLiveEvents}
-                    />
-                    {groupData.eliminatedMembers && groupData.eliminatedMembers.length > 0 && (
-                      <EliminatedSection
-                        members={groupData.eliminatedMembers}
-                        stageName="Group Stage"
+            groupData?.allGroups && groupData.allGroups.length > 0 ? (() => {
+              // Knockout mode: single active group that isn't a group-stage group
+              const isKnockout = groupData.allGroups.length === 1 &&
+                !groupData.allGroups[0].name.startsWith("Group ");
+
+              // Split archived groups into knockout stages and group-stage groups
+              const knockoutArchived = (groupData.archivedGroups ?? []).filter(
+                (g) => !g.name.startsWith("Group ")
+              );
+              const groupStageArchived = (groupData.archivedGroups ?? []).filter(
+                (g) => g.name.startsWith("Group ")
+              );
+
+              return (
+                <div className="mt-4">
+                  {isKnockout ? (
+                    <>
+                      <KnockoutLeaderboard
+                        group={groupData.allGroups[0]}
+                        currentUserId={currentUserId}
+                        isLive={groupHasLiveEvents}
                       />
-                    )}
-                    <HistoricalGroupsSection groups={groupData.archivedGroups} />
-                  </>
-                ) : (
-                  /* Group stage: existing layout */
-                  <>
-                    {groupData.myGroupId && (() => {
-                      const myGroup = groupData.allGroups!.find((g) => g.id === groupData.myGroupId);
-                      return myGroup ? <YourGroupCard group={myGroup} isLive={groupHasLiveEvents} /> : null;
-                    })()}
-                    <div className={groupData.myGroupId ? "mt-3" : ""}>
-                      <AllGroupsView groups={groupData.allGroups} myGroupId={groupData.myGroupId ?? null} isLive={groupHasLiveEvents} />
-                    </div>
-                  </>
-                )}
-              </div>
-            ) : (
+                      {knockoutArchived.length > 0 && (
+                        <KnockoutResultsSection groups={knockoutArchived} />
+                      )}
+                      {groupStageArchived.length > 0 && (
+                        <HistoricalGroupsSection groups={groupStageArchived} />
+                      )}
+                    </>
+                  ) : (
+                    /* Group stage: existing layout */
+                    <>
+                      {groupData.myGroupId && (() => {
+                        const myGroup = groupData.allGroups!.find((g) => g.id === groupData.myGroupId);
+                        return myGroup ? <YourGroupCard group={myGroup} isLive={groupHasLiveEvents} /> : null;
+                      })()}
+                      <div className={groupData.myGroupId ? "mt-3" : ""}>
+                        <AllGroupsView groups={groupData.allGroups} myGroupId={groupData.myGroupId ?? null} isLive={groupHasLiveEvents} />
+                      </div>
+                    </>
+                  )}
+                </div>
+              );
+            })() : (
               <FormatGroupCard
                 groupData={groupData}
                 displayName={currentDisplayName ?? "You"}
@@ -1787,6 +1799,99 @@ function EliminatedSection({
               </div>
             </CascadeCard>
           ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ============================================================
+// Knockout Results Section — collapsed accordion for each archived knockout group
+// ============================================================
+
+function KnockoutResultsSection({
+  groups,
+}: {
+  groups: GroupInfo[];
+}) {
+  const t = useT();
+
+  return (
+    <>
+      {[...groups].sort((a, b) => b.groupNumber - a.groupNumber).map((group) => (
+        <KnockoutResultAccordion key={group.id} group={group} />
+      ))}
+    </>
+  );
+}
+
+function KnockoutResultAccordion({ group }: { group: GroupInfo }) {
+  const t = useT();
+  const [expanded, setExpanded] = useState(false);
+  const cutoff = Math.floor(group.members.length / 2);
+
+  return (
+    <div className="mt-3 overflow-hidden rounded-xl border border-ps-border bg-ps-surface">
+      <button
+        type="button"
+        onClick={() => setExpanded(!expanded)}
+        className="flex w-full items-center justify-between px-4 py-3 text-left"
+      >
+        <div className="flex items-center gap-2">
+          <svg
+            className={`h-3.5 w-3.5 text-ps-text-ter transition-transform ${expanded ? "rotate-90" : ""}`}
+            fill="none" viewBox="0 0 24 24" strokeWidth={2.5} stroke="currentColor"
+          >
+            <path strokeLinecap="round" strokeLinejoin="round" d="M8.25 4.5l7.5 7.5-7.5 7.5" />
+          </svg>
+          <span className="text-sm font-semibold text-ps-text-sec">
+            {group.name} {t('format_results_suffix')}
+          </span>
+        </div>
+        <span className="rounded-full bg-ps-chip px-2 py-0.5 text-micro font-bold text-ps-text-ter">
+          {group.members.length} {t('leaderboard.player').toLowerCase()}s
+        </span>
+      </button>
+
+      {expanded && (
+        <div className="divide-y divide-ps-border overflow-hidden border-t border-ps-border">
+          {group.members.map((m, i) => {
+            const rank = i + 1;
+            const eliminated = m.status === "eliminated";
+            return (
+              <CascadeCard key={m.user_id} index={i} speed="rise">
+                <div
+                  className={`flex items-center px-3 py-2 ${
+                    eliminated ? "opacity-50" : ""
+                  } ${m.is_self ? "!opacity-100 bg-ps-amber/5" : ""}`}
+                >
+                  <span className={`w-6 text-center font-mono text-xs font-bold ${
+                    rank > cutoff ? "text-ps-red/60" : "text-ps-text-ter"
+                  }`}>
+                    {rank}
+                  </span>
+                  <span className={`flex-1 truncate pl-2 text-sm ${
+                    m.is_self ? "font-semibold text-ps-text" : "text-ps-text"
+                  }`}>
+                    {m.display_name}
+                    {m.is_self && (
+                      <span className="ml-1.5 rounded bg-ps-amber/20 px-1 py-0.5 text-micro font-bold text-ps-amber">
+                        {t('classification.you_label')}
+                      </span>
+                    )}
+                  </span>
+                  <span className="w-14 text-right font-mono text-sm text-ps-text-ter">
+                    {m.points}
+                  </span>
+                  {eliminated && (
+                    <span className="ml-1.5 rounded bg-ps-red/15 px-1 py-0.5 text-micro font-bold text-ps-red">
+                      OUT
+                    </span>
+                  )}
+                </div>
+              </CascadeCard>
+            );
+          })}
         </div>
       )}
     </div>

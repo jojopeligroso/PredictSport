@@ -86,7 +86,21 @@ export async function GET(request: NextRequest) {
       });
     }
 
-    const userIds = memberships.map((m: { user_id: string }) => m.user_id);
+    // For Format classifications, only show active (non-eliminated) members.
+    // Eliminated members are out of the competition and shouldn't appear.
+    const isFormat = classification.classification_type === "format_elimination";
+    const relevantMemberships = isFormat
+      ? memberships.filter((m: { status: string }) => m.status === "active")
+      : memberships;
+    const userIds = relevantMemberships.map((m: { user_id: string }) => m.user_id);
+
+    if (userIds.length === 0) {
+      return NextResponse.json({
+        standings: [],
+        provisional: true,
+        selfVisibility,
+      });
+    }
 
     // Get all predictions for this competition (tournament-aware)
     const { data: compForTournament } = await supabase
@@ -100,7 +114,6 @@ export async function GET(request: NextRequest) {
     // Format classification: points reset per sporting stage (stage-local).
     // Find the current active stage so we can scope the queries.
     let activeSportingStageId: string | null = null;
-    const isFormat = classification.classification_type === "format_elimination";
 
     if (isFormat && tournamentId) {
       // Find the current stage: first non-finalised stage by stage_order.

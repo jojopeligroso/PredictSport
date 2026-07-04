@@ -30,6 +30,18 @@ export interface EliminationResult {
   standings_at_elimination: StandingRow[];
 }
 
+/** Get the next available group_number for a classification. */
+async function nextGroupNumber(supabase: SupabaseClient, classificationId: string): Promise<number> {
+  const { data } = await supabase
+    .from("format_prediction_groups")
+    .select("group_number")
+    .eq("classification_id", classificationId)
+    .order("group_number", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+  return ((data as { group_number: number } | null)?.group_number ?? 0) + 1;
+}
+
 // ============================================================
 // Run elimination after a sporting stage is finalised
 // ============================================================
@@ -308,13 +320,14 @@ async function consolidateSurvivorsIntoKnockoutGroup(
   if (clsError) throw new Error(`Failed to fetch classification for consolidation: ${clsError.message}`);
 
   // Create one new active group for all survivors
+  const nextNum = await nextGroupNumber(supabase, classificationId);
   const { data: newGroup, error: groupError } = await supabase
     .from("format_prediction_groups")
     .insert({
       classification_id: classificationId,
       competition_id: cls.competition_id,
       group_name: groupName,
-      group_number: 1,
+      group_number: nextNum,
       target_size: survivorUserIds.length,
       status: "active",
       metadata: { consolidated_from: "group_stage" },
@@ -489,13 +502,14 @@ async function eliminateKnockoutStage(
       .single();
 
     if (cls) {
+      const nextKoNum = await nextGroupNumber(supabase, classificationId);
       const { data: newGroup, error: newGroupError } = await supabase
         .from("format_prediction_groups")
         .insert({
           classification_id: classificationId,
           competition_id: cls.competition_id,
           group_name: nextStageName,
-          group_number: 1,
+          group_number: nextKoNum,
           target_size: survivorIds.length,
           status: "active",
           metadata: { consolidated_from: stageKey },

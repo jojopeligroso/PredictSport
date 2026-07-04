@@ -63,11 +63,10 @@ export async function GET(request: NextRequest) {
     .eq("classification_id", classificationId)
     .limit(100);
 
-  // Filter active groups in app code — safe when status column doesn't exist yet
-  const existingGroups = (existingGroupsRaw ?? []).filter(
-    (g) => !g.status || g.status === "active"
-  );
-  const groupsExist = existingGroups.length > 0;
+  // Groups exist if ANY groups exist (active OR archived).
+  // Only active groups are missing before the initial draw.
+  // After elimination, archived groups remain — don't trigger a re-draw.
+  const groupsExist = (existingGroupsRaw ?? []).length > 0;
 
   if (!groupsExist) {
     // Find the next prediction window to compute draw time
