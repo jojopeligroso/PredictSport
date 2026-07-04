@@ -53,6 +53,8 @@ interface DashboardClientProps {
   memberRole: string;
   lastChatMessage: LastChatMessage | null;
   isKnockout: boolean;
+  currentRoundName: string | null;
+  roundNumber: number;
 }
 
 /**
@@ -88,6 +90,8 @@ export function DashboardClient({
   memberRole,
   lastChatMessage,
   isKnockout,
+  currentRoundName,
+  roundNumber,
 }: DashboardClientProps) {
   const router = useRouter();
   const [expandedEventId, setExpandedEventId] = useState<string | null>(null);
@@ -350,6 +354,7 @@ export function DashboardClient({
         collapsedLiveIds={collapsedLiveIds}
         expandedEventId={expandedEventId}
         onToggleEvent={onToggleEvent}
+        currentRoundName={currentRoundName}
       />
 
       {/* 3. Invite Friends */}
@@ -421,6 +426,7 @@ export function DashboardClient({
         windowLocked={windowLocked}
         groupStandings={groupStandings}
         bracketProgress={bracketProgress}
+        roundNumber={roundNumber}
       />
     </div>
   );
@@ -453,6 +459,7 @@ export function DashboardClient({
         showPrompt={showPrompt}
         acceptAlwaysOff={acceptAlwaysOff}
         declinePrompt={declinePrompt}
+        currentRoundName={currentRoundName}
       />
     );
   }

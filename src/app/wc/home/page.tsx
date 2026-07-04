@@ -85,6 +85,8 @@ export default async function WcHomePage({
       memberRole={data.memberRole}
       lastChatMessage={data.lastChatMessage}
       isKnockout={data.isKnockout}
+      currentRoundName={data.currentRoundName}
+      roundNumber={data.roundNumber}
       onboarding={onboarding}
     />
   );

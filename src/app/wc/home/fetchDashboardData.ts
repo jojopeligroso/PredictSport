@@ -174,6 +174,10 @@ export interface DashboardData {
   lastChatMessage: LastChatMessage | null;
   /** Whether the competition is currently in the knockout stage (round_number > 3). */
   isKnockout: boolean;
+  /** DB name of the current round (e.g. "Group Matchday 1", "Round of 16"). */
+  currentRoundName: string | null;
+  /** Current round number (1-8). Used for stage-aware UI copy. */
+  roundNumber: number;
 }
 
 export type DashboardResult =
@@ -205,7 +209,7 @@ export async function fetchDashboardData(): Promise<DashboardResult> {
       // Actionable round: draft/open/locked — lowest round_number first
       supabase
         .from("rounds")
-        .select("id, status, round_number")
+        .select("id, status, round_number, name")
         .eq(ff.key, ff.value)
         .in("status", ["draft", "open", "locked"])
         .order("round_number", { ascending: true })
@@ -214,7 +218,7 @@ export async function fetchDashboardData(): Promise<DashboardResult> {
       // Fallback: most recently scored round (for result display when no actionable round)
       supabase
         .from("rounds")
-        .select("id, status, round_number")
+        .select("id, status, round_number, name")
         .eq(ff.key, ff.value)
         .eq("status", "scored")
         .order("round_number", { ascending: false })
@@ -617,6 +621,8 @@ export async function fetchDashboardData(): Promise<DashboardResult> {
     memberRole: membership?.role ?? "participant",
     lastChatMessage,
     isKnockout: !isGroupStage,
+    currentRoundName: currentRound.name ?? null,
+    roundNumber: currentRound.round_number,
   };
 }
 

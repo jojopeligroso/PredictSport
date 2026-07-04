@@ -17,7 +17,20 @@ interface TournamentSectionProps {
   groupStandings?: Record<string, TeamWithStats[]>;
   bracketProgress: { pct: number; label: string } | null;
   knockoutActive?: boolean;
+  roundNumber?: number;
 }
+
+/** Map round_number (from wc2026-template) to a translation key. */
+const ROUND_SUBTITLE_KEY: Record<number, string> = {
+  1: "dash.bracket_sub_groups",
+  2: "dash.bracket_sub_groups",
+  3: "dash.bracket_sub_groups",
+  4: "dash.bracket_sub_r32",
+  5: "dash.bracket_sub_r16",
+  6: "dash.bracket_sub_qf",
+  7: "dash.bracket_sub_sf",
+  8: "dash.bracket_sub_final",
+};
 
 export function TournamentSection({
   todayGroups,
@@ -28,11 +41,17 @@ export function TournamentSection({
   groupStandings,
   bracketProgress,
   knockoutActive,
+  roundNumber,
 }: TournamentSectionProps) {
   const t = useT();
 
   // Once knockout stage is active, show bracket card instead of groups
   const showKnockout = knockoutActive || todayGroups.length === 0;
+
+  // Dynamic subtitle based on current tournament stage
+  const subtitleKey = roundNumber
+    ? ROUND_SUBTITLE_KEY[roundNumber] ?? "dash.bracket_sub_knockout"
+    : "dash.bracket_sub_knockout";
 
   return (
     <>
@@ -51,9 +70,7 @@ export function TournamentSection({
                   </span>
                 </div>
                 <span className="text-caption text-ps-text-ter">
-                  {bracketProgress
-                    ? bracketProgress.label
-                    : "Knockout stage is live"}
+                  {t(subtitleKey)}
                 </span>
               </div>
               <div className="flex items-center gap-2">
