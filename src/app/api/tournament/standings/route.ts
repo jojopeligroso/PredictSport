@@ -296,7 +296,13 @@ export async function GET(request: NextRequest) {
     );
 
     const rawStandings = [...pointsMap.entries()]
-      .sort((a, b) => b[1] - a[1])
+      .sort((a, b) => {
+        if (b[1] !== a[1]) return b[1] - a[1];
+        // Tiebreaker: advanced players rank above eliminated
+        const aElim = memberships.find((m: { user_id: string }) => m.user_id === a[0])?.status === "eliminated" ? 1 : 0;
+        const bElim = memberships.find((m: { user_id: string }) => m.user_id === b[0])?.status === "eliminated" ? 1 : 0;
+        return aElim - bElim;
+      })
       .map(([userId, points], idx) => ({
         rank: idx + 1,
         user_id: userId,
