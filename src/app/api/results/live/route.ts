@@ -243,19 +243,53 @@ export async function GET(request: Request) {
       continue;
     }
 
-    const raw = result.raw as { strStatus?: string; status?: { type?: { description?: string } } } | null;
+    const raw = result.raw as {
+      strStatus?: string;
+      status?: {
+        displayClock?: string;
+        period?: number;
+        type?: { description?: string };
+      };
+    } | null;
     const providerStatus = raw?.strStatus ?? "";
     const espnDescription = raw?.status?.type?.description ?? "";
-    const resolvedStatus = providerStatus || (result.is_final ? "FT" : "LIVE");
+    const espnPeriod = raw?.status?.period ?? 0;
+
+    // ESPN soccer: status.displayClock is the match minute (e.g. "59'",
+    // "90'+3'", "105'"). Extract the leading number. Soccer only — other
+    // sports use countdown clocks where this would be misleading.
+    let espnMinute = "";
+    if (rep.sport === "soccer" && raw?.status?.displayClock) {
+      const m = raw.status.displayClock.match(/^(\d+)/);
+      if (m) espnMinute = m[1];
+    }
+
+    // Status priority: TSDB strStatus (minute number or ET/AET/PEN/HT) →
+    // ESPN named states (HT/PEN) → ESPN match minute → generic fallback.
+    let resolvedStatus: string;
+    if (providerStatus) {
+      resolvedStatus = providerStatus;
+    } else if (espnDescription === "Halftime") {
+      resolvedStatus = "HT";
+    } else if (espnDescription === "Penalty Kicks") {
+      resolvedStatus = "PEN";
+    } else if (espnMinute) {
+      resolvedStatus = espnMinute;
+    } else {
+      resolvedStatus = result.is_final ? "FT" : "LIVE";
+    }
 
     // Detect if the match is in extra time / penalties.
     // During regulation, snapshot the current score as ftScore.
     // Once ET/PEN starts, preserve the last regulation ftScore.
+    // ESPN soccer: period 1-2 = halves, 3+ = extra time / shootout.
     const isOvertime =
       /^(ET|AET|PEN)$/i.test(providerStatus) ||
       (/^\d+$/.test(providerStatus) && Number(providerStatus) > 90) ||
       espnDescription === "Overtime" ||
-      espnDescription === "Penalty Kicks";
+      espnDescription === "Penalty Kicks" ||
+      (rep.sport === "soccer" && espnPeriod > 2) ||
+      (espnMinute !== "" && Number(espnMinute) > 90);
 
     for (const row of rows) {
       const existingLive = (row.result_data as Record<string, unknown> | null)?.live as Record<string, unknown> | undefined;

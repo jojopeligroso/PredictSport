@@ -152,7 +152,7 @@ export function LiveLeaderboard({
               </span>
               {m.status && (
                 <span className="font-mono text-micro font-semibold text-ps-red">
-                  {m.status}
+                  {/^\d+$/.test(m.status) ? `${m.status}'` : m.status}
                 </span>
               )}
             </div>

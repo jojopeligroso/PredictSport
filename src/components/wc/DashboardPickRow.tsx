@@ -158,7 +158,9 @@ export function DashboardPickRow({
         }
         headerRight={
           showLiveScore ? (
-            <span className="font-mono font-semibold">{liveScore.status}</span>
+            <span className="font-mono font-semibold">
+              {/^\d+$/.test(liveScore.status) ? `${liveScore.status}'` : liveScore.status}
+            </span>
           ) : (
             <span>
               {timeStr} · {dateStr}
