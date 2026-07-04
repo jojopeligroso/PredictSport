@@ -31,6 +31,12 @@ import type { Sport } from "@/lib/sports/types";
  * are fetched once and the live payload is written to every sibling row.
  *
  * SECURITY: Protected by CRON_SECRET (same pattern as /api/results/cron).
+ *
+ * RATE-LIMIT NOTE: API-Football has a 4/hr limit and its budget is better
+ * spent on authoritative result confirmation + AET enrichment in the 15-min
+ * results cron. This route therefore excludes api-football from both
+ * provider ID resolution and result fetching, routing live polling through
+ * ESPN (free, no key required) as the first real provider for soccer.
  */
 
 interface LiveEventRow {
@@ -57,6 +63,12 @@ function liveWindowMs(sport: string): number {
   return (getTimingForSport(sport).checkAfterHours + 1) * 3600000;
 }
 
+/**
+ * Providers to exclude from live polling. API-Football's 4/hr budget is
+ * reserved for authoritative result confirmation in the 15-min cron.
+ */
+const LIVE_EXCLUDED_PROVIDERS = ["api-football"];
+
 /** Canonical fixture key: strip the `manual:` prefix used by WC fixtures. */
 function canonicalExternalId(id: string | null): string | null {
   if (!id) return null;
@@ -70,7 +82,10 @@ function canonicalExternalId(id: string | null): string | null {
  * 3. provider text search scored by token overlap (same rules as
  *    autoResolveEvent: >= 0.6, within +/- 1 day, single confident match)
  */
-async function resolveProviderId(rows: LiveEventRow[]): Promise<string | null> {
+async function resolveProviderId(
+  rows: LiveEventRow[],
+  excludeProviders?: string[]
+): Promise<string | null> {
   for (const row of rows) {
     const cached = row.result_data?.provider_event_id as string | undefined;
     if (cached) return cached;
@@ -90,6 +105,7 @@ async function resolveProviderId(rows: LiveEventRow[]): Promise<string | null> {
   const isUsableCandidate = (c: { provider: string; external_event_id: string }) =>
     c.provider !== "fixture_pool" &&
     c.provider !== "manual" &&
+    !(excludeProviders?.includes(c.provider)) &&
     !!c.external_event_id &&
     c.external_event_id !== "undefined" &&
     !c.external_event_id.startsWith("manual:");
@@ -109,6 +125,7 @@ async function resolveProviderId(rows: LiveEventRow[]): Promise<string | null> {
       const providers = getProvidersForSport(rep.sport as Sport);
       for (const provider of providers) {
         if (provider.name === "fixture_pool" || provider.name === "manual") continue;
+        if (excludeProviders?.includes(provider.name)) continue;
         try {
           const results = await provider.searchEvents(rep.sport as Sport, searchName, {
             date: startDate,
@@ -217,7 +234,7 @@ export async function GET(request: Request) {
 
     let providerId: string | null = null;
     try {
-      providerId = await resolveProviderId(rows);
+      providerId = await resolveProviderId(rows, LIVE_EXCLUDED_PROVIDERS);
     } catch (err) {
       console.error(`[live-cron] resolve failed for "${rep.event_name}":`, err);
     }
@@ -231,7 +248,8 @@ export async function GET(request: Request) {
       result = await fetchResult(
         rep.sport as Sport,
         providerId,
-        rep.provider_league ?? undefined
+        rep.provider_league ?? undefined,
+        { excludeProviders: LIVE_EXCLUDED_PROVIDERS }
       );
     } catch (err) {
       console.error(`[live-cron] fetch failed for "${rep.event_name}":`, err);

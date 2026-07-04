@@ -13,11 +13,14 @@ import { searchEvents } from "./search-events";
 export async function fetchResult(
   sport: Sport,
   externalEventId: string,
-  providerLeague?: string
+  providerLeague?: string,
+  options?: { excludeProviders?: string[] }
 ): Promise<NormalizedResult | null> {
   const providers = getProvidersForSport(sport);
+  const exclude = options?.excludeProviders;
 
   for (const provider of providers) {
+    if (exclude?.includes(provider.name)) continue;
     try {
       const result = await provider.getResult(sport, externalEventId, providerLeague);
       if (result) return result;
