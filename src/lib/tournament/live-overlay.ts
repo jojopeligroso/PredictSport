@@ -39,6 +39,7 @@ export interface LivePrediction {
 export interface LiveOverlayResult {
   hasLiveEvents: boolean;
   liveEventIds: string[];
+  livePredictions: LivePrediction[];
 }
 
 export interface LiveOverlayOptions {
@@ -222,7 +223,7 @@ export async function applyLiveOverlay(
   } = opts;
 
   if (userIds.length === 0) {
-    return { hasLiveEvents: false, liveEventIds: [] };
+    return { hasLiveEvents: false, liveEventIds: [], livePredictions: [] };
   }
 
   const nowMs = Date.now();
@@ -262,7 +263,7 @@ export async function applyLiveOverlay(
   );
 
   if (liveEvents.length === 0) {
-    return { hasLiveEvents: false, liveEventIds: [] };
+    return { hasLiveEvents: false, liveEventIds: [], livePredictions: [] };
   }
 
   const liveEventIds = liveEvents.map((e) => e.id);
@@ -292,5 +293,5 @@ export async function applyLiveOverlay(
     pointsMap,
   );
 
-  return { hasLiveEvents: true, liveEventIds };
+  return { hasLiveEvents: true, liveEventIds, livePredictions: (livePreds ?? []) as LivePrediction[] };
 }

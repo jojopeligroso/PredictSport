@@ -164,6 +164,12 @@ export function ClassificationTabs({
     status: string;
     start_time: string;
   }>>([]);
+  const [livePredictionsByUser, setLivePredictionsByUser] = useState<Record<string, Array<{
+    event_id: string;
+    home_score: number;
+    away_score: number;
+  }>>>({});
+  const [showPicks, setShowPicks] = useState(false);
 
   // Listen for scoring broadcasts to auto-refresh standings
   useEffect(() => {
@@ -217,6 +223,7 @@ export function ClassificationTabs({
           setHasLiveEvents(Boolean(data?.hasLiveEvents));
           if (data?.hasLiveEvents) setLiveEventsExist(true);
           setLiveMatches(data?.liveMatches ?? []);
+          setLivePredictionsByUser(data?.livePredictionsByUser ?? {});
           setLoadedId(activeId);
           setLoading(false);
         }
@@ -364,7 +371,12 @@ export function ClassificationTabs({
 
       {/* Live / Confirmed toggle — visible when live events exist */}
       {activeId !== RIVALS_TAB && liveEventsExist && (
-        <LiveConfirmedToggle liveMode={liveMode} onToggle={() => { setLiveMode((m) => !m); setLoading(true); }} />
+        <div className="mt-3 flex items-center justify-center gap-2">
+          <LiveConfirmedToggle liveMode={liveMode} onToggle={() => { setLiveMode((m) => !m); setLoading(true); }} />
+          {liveMode && hasLiveEvents && (
+            <ShowPicksToggle showPicks={showPicks} onToggle={() => setShowPicks((s) => !s)} />
+          )}
+        </div>
       )}
 
       {/* Live match ticker — shows scores + minute when in live mode */}
@@ -467,6 +479,9 @@ export function ClassificationTabs({
                 selfVisibility={selfVisibility}
                 tagsByUser={tagsByUser}
                 classificationKey={active?.classification_key}
+                showPicks={showPicks}
+                livePredictionsByUser={livePredictionsByUser}
+                liveMatches={liveMatches}
                 onToggleVisibility={async (next) => {
                   const prev = selfVisibility;
                   setSelfVisibility(next);
@@ -515,7 +530,7 @@ function LiveConfirmedToggle({
   const t = useT();
 
   return (
-    <div className="mt-3 flex items-center justify-center">
+    <div className="flex items-center justify-center">
       <div className="inline-flex rounded-lg bg-ps-bg p-1">
         <button
           type="button"
@@ -544,6 +559,37 @@ function LiveConfirmedToggle({
         </button>
       </div>
     </div>
+  );
+}
+
+function ShowPicksToggle({
+  showPicks,
+  onToggle,
+}: {
+  showPicks: boolean;
+  onToggle: () => void;
+}) {
+  const t = useT();
+
+  return (
+    <button
+      type="button"
+      onClick={onToggle}
+      className={`inline-flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-xs font-semibold transition-colors ${
+        showPicks
+          ? "bg-ps-surface text-ps-text shadow-sm border border-ps-border"
+          : "border border-ps-border/50 text-ps-text-ter hover:text-ps-text hover:border-ps-border"
+      }`}
+    >
+      <svg className="h-3.5 w-3.5" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+        {showPicks ? (
+          <path d="M8 3C4.5 3 2 8 2 8s2.5 5 6 5 6-5 6-5-2.5-5-6-5ZM8 11a3 3 0 1 1 0-6 3 3 0 0 1 0 6Z" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round" />
+        ) : (
+          <path d="M2 2l12 12M6.5 6.5a2.1 2.1 0 0 0 3 3M4 4.5C2.8 5.7 2 8 2 8s2.5 5 6 5c1.2 0 2.3-.4 3.2-1M14 8s-.7-1.5-2-3" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round" />
+        )}
+      </svg>
+      {t('leaderboard.show_picks')}
+    </button>
   );
 }
 
@@ -636,6 +682,9 @@ function FlipRow({
   onToggleVisibility,
   tag,
   classificationKey,
+  showPicks = false,
+  livePredictions,
+  liveMatches,
 }: {
   row: StandingRow;
   isMe: boolean;
@@ -646,11 +695,15 @@ function FlipRow({
   onToggleVisibility: (next: "public" | "private") => void;
   tag?: LeaderboardTag;
   classificationKey?: string;
+  showPicks?: boolean;
+  livePredictions?: Array<{ event_id: string; home_score: number; away_score: number }>;
+  liveMatches?: Array<{ id: string; event_name: string; home_score: number; away_score: number; status: string; start_time: string }>;
 }) {
   const t = useT();
   const [flipped, setFlipped] = useState(false);
   const hasAccuracy = row.accuracy?.outcome != null || row.accuracy?.exact != null;
-  const canFlip = hasAccuracy && !isBracket;
+  const hasPredictions = livePredictions && livePredictions.length > 0;
+  const canFlip = (!showPicks && hasPredictions) || (hasAccuracy && !isBracket);
 
   // Opaque backgrounds needed for backface-visibility to work.
   // Semi-transparent amber bleeds through, so pre-compute the opaque equivalent.
@@ -715,6 +768,17 @@ function FlipRow({
                 </span>
               )}
             </div>
+            {/* Inline prediction chips (visible when showPicks toggle is on) */}
+            {showPicks && hasPredictions && (
+              <span className="mx-1.5 shrink-0 font-mono text-xs font-semibold text-ps-text-sec">
+                {livePredictions!.map((p, i) => (
+                  <span key={p.event_id}>
+                    {i > 0 && <span className="text-ps-text-ter"> · </span>}
+                    {p.home_score}–{p.away_score}
+                  </span>
+                ))}
+              </span>
+            )}
             {/* Profile icon — always show for other users (anonymised names still link to profiles) */}
             {!isMe && (
               <ProfileButton userId={row.user_id} displayName={row.display_name} from={classificationKey} />
@@ -742,44 +806,67 @@ function FlipRow({
               transform: "rotateX(180deg)",
             }}
           >
-            <div className="flex flex-1 items-center">
-              {/* Outcome */}
-              <div className="flex flex-1 items-center gap-1.5 min-w-0">
-                <span className="shrink-0 text-xl font-extrabold tabular-nums leading-none tracking-tight text-ps-green">
-                  {row.accuracy?.outcome ? `${row.accuracy.outcome.pct}%` : "\u2014"}
+            {/* Show predictions on back when toggle is off but predictions exist */}
+            {!showPicks && hasPredictions ? (
+              <div className="flex flex-1 items-center min-w-0">
+                <span className={`truncate text-sm ${isMe ? "font-bold text-ps-text" : "text-ps-text"}`}>
+                  {row.display_name}
                 </span>
-                <div className="flex flex-col min-w-0">
-                  <span className="text-caption font-semibold text-ps-text-sec leading-tight">
-                    {t('stats.outcome')}
+                <span className="ml-auto shrink-0 font-mono text-sm font-bold tabular-nums text-ps-text-sec">
+                  {livePredictions!.map((p, i) => {
+                    const match = liveMatches?.find((m) => m.id === p.event_id);
+                    const trigrams = match?.event_name?.split(" vs ") ?? [];
+                    return (
+                      <span key={p.event_id} className="inline-flex items-center">
+                        {i > 0 && <span className="mx-1.5 text-ps-text-ter">·</span>}
+                        {trigrams[0] && <span className="text-micro font-semibold text-ps-text-ter">{trigrams[0].slice(0, 3).toUpperCase()}</span>}
+                        <span className={`mx-1 ${isMe ? "text-ps-amber" : "text-ps-text"}`}>{p.home_score}–{p.away_score}</span>
+                        {trigrams[1] && <span className="text-micro font-semibold text-ps-text-ter">{trigrams[1].slice(0, 3).toUpperCase()}</span>}
+                      </span>
+                    );
+                  })}
+                </span>
+              </div>
+            ) : (
+              <div className="flex flex-1 items-center">
+                {/* Outcome */}
+                <div className="flex flex-1 items-center gap-1.5 min-w-0">
+                  <span className="shrink-0 text-xl font-extrabold tabular-nums leading-none tracking-tight text-ps-green">
+                    {row.accuracy?.outcome ? `${row.accuracy.outcome.pct}%` : "\u2014"}
                   </span>
-                  <span className="font-mono text-caption text-ps-text-ter leading-tight">
-                    {row.accuracy?.outcome
-                      ? `${row.accuracy.outcome.correct}/${row.accuracy.outcome.total}`
-                      : ""}
+                  <div className="flex flex-col min-w-0">
+                    <span className="text-caption font-semibold text-ps-text-sec leading-tight">
+                      {t('stats.outcome')}
+                    </span>
+                    <span className="font-mono text-caption text-ps-text-ter leading-tight">
+                      {row.accuracy?.outcome
+                        ? `${row.accuracy.outcome.correct}/${row.accuracy.outcome.total}`
+                        : ""}
+                    </span>
+                  </div>
+                </div>
+
+                {/* Divider */}
+                <div className="mx-2.5 h-6 w-px shrink-0 bg-ps-border-strong" />
+
+                {/* Exact Score */}
+                <div className="flex flex-1 items-center gap-1.5 min-w-0">
+                  <span className="shrink-0 text-xl font-extrabold tabular-nums leading-none tracking-tight text-ps-amber">
+                    {row.accuracy?.exact ? `${row.accuracy.exact.pct}%` : "\u2014"}
                   </span>
+                  <div className="flex flex-col min-w-0">
+                    <span className="text-caption font-semibold text-ps-text-sec leading-tight">
+                      {t('stats.exact_score')}
+                    </span>
+                    <span className="font-mono text-caption text-ps-text-ter leading-tight">
+                      {row.accuracy?.exact
+                        ? `${row.accuracy.exact.correct}/${row.accuracy.exact.total}`
+                        : ""}
+                    </span>
+                  </div>
                 </div>
               </div>
-
-              {/* Divider */}
-              <div className="mx-2.5 h-6 w-px shrink-0 bg-ps-border-strong" />
-
-              {/* Exact Score */}
-              <div className="flex flex-1 items-center gap-1.5 min-w-0">
-                <span className="shrink-0 text-xl font-extrabold tabular-nums leading-none tracking-tight text-ps-amber">
-                  {row.accuracy?.exact ? `${row.accuracy.exact.pct}%` : "\u2014"}
-                </span>
-                <div className="flex flex-col min-w-0">
-                  <span className="text-caption font-semibold text-ps-text-sec leading-tight">
-                    {t('stats.exact_score')}
-                  </span>
-                  <span className="font-mono text-caption text-ps-text-ter leading-tight">
-                    {row.accuracy?.exact
-                      ? `${row.accuracy.exact.correct}/${row.accuracy.exact.total}`
-                      : ""}
-                  </span>
-                </div>
-              </div>
-            </div>
+            )}
 
             {/* Flip-back icon */}
             <svg
@@ -871,6 +958,9 @@ function StandingsTable({
   tagsByUser,
   onToggleVisibility,
   classificationKey,
+  showPicks = false,
+  livePredictionsByUser = {},
+  liveMatches = [],
 }: {
   standings: StandingRow[];
   currentUserId: string;
@@ -880,6 +970,9 @@ function StandingsTable({
   tagsByUser: Map<string, LeaderboardTag>;
   onToggleVisibility: (next: "public" | "private") => void;
   classificationKey?: string;
+  showPicks?: boolean;
+  livePredictionsByUser?: Record<string, Array<{ event_id: string; home_score: number; away_score: number }>>;
+  liveMatches?: Array<{ id: string; event_name: string; home_score: number; away_score: number; status: string; start_time: string }>;
 }) {
   const t = useT();
   const isBracket = classificationType === "bracket_survivor";
@@ -920,6 +1013,9 @@ function StandingsTable({
               onToggleVisibility={onToggleVisibility}
               tag={tagsByUser.get(row.user_id)}
               classificationKey={classificationKey}
+              showPicks={showPicks}
+              livePredictions={livePredictionsByUser[row.user_id]}
+              liveMatches={liveMatches}
             />
           </CascadeCard>
         );

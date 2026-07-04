@@ -206,6 +206,11 @@ export async function GET(request: NextRequest) {
       status: string;
       start_time: string;
     }> = [];
+    const livePredictionsByUser: Record<string, Array<{
+      event_id: string;
+      home_score: number;
+      away_score: number;
+    }>> = {};
 
     if (liveRequested) {
       const live = await applyLiveOverlay(supabase, {
@@ -218,6 +223,23 @@ export async function GET(request: NextRequest) {
       });
       hasLiveEvents = live.hasLiveEvents;
       liveEventIds = live.liveEventIds;
+
+      // Build per-user prediction map for client display (only exact_score)
+      if (hasLiveEvents && live.livePredictions) {
+        for (const pred of live.livePredictions) {
+          if (pred.prediction_type !== "exact_score") continue;
+          const pd = pred.prediction_data as { home_score?: number; away_score?: number };
+          if (pd.home_score == null || pd.away_score == null) continue;
+          if (!livePredictionsByUser[pred.user_id]) {
+            livePredictionsByUser[pred.user_id] = [];
+          }
+          livePredictionsByUser[pred.user_id].push({
+            event_id: pred.event_id,
+            home_score: pd.home_score,
+            away_score: pd.away_score,
+          });
+        }
+      }
 
       // Fetch live match details for the client-side ticker
       if (liveEventIds.length > 0) {
@@ -329,6 +351,7 @@ export async function GET(request: NextRequest) {
       hasLiveEvents,
       liveEventIds,
       liveMatches,
+      livePredictionsByUser,
     });
   }
 

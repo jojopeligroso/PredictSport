@@ -510,6 +510,8 @@
   "leaderboard.player": "Player",
   "leaderboard.as_it_stands": "As it stands",
   "leaderboard.confirmed": "Confirmed",
+  "leaderboard.show_picks": "Picks",
+  "leaderboard.pick": "Pick",
   "classification.no_config": "No classifications configured yet.",
   "classification.format_draw_in": "Format groups drawn in",
   "classification.know_group_in": "You'll know your group in",
