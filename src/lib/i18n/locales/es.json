@@ -699,5 +699,9 @@
   "push.multi_event_more_body": "{events} +{extra} más cierran pronto",
   "dash.matchday_summary": "{correct}/{total} correctos · +{points} pts",
   "dash.results_correct_count": "{correct}/{total}",
-  "dash.results_pts": "+{points} pts"
+  "dash.results_pts": "+{points} pts",
+  "format_knockout_advance": "Top {count} avanzan",
+  "format_eliminated_after": "Eliminados tras {stage}",
+  "format_group_stage_results": "Resultados de fase de grupos",
+  "format_n_groups": "{count} grupos"
 }

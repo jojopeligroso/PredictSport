@@ -13,6 +13,8 @@ const RivalPredictionsTab = dynamic(
   { loading: () => <div className="animate-pulse h-32 bg-ps-surface rounded-lg" /> }
 );
 
+const LEADERBOARD_KEYS = new Set(["overall", "format"]);
+
 interface Classification {
   id: string;
   classification_key: string;
@@ -126,10 +128,6 @@ export function ClassificationTabs({
   const initialRivalEventId = searchParams.get("eventId");
   const tabParam = searchParams.get("tab");
 
-  // Memoized so the reference is stable across renders — otherwise the
-  // my-group fetch effect below (which depends on it) re-runs on every render
-  // and refetches in a tight network-throttled loop.
-  const LEADERBOARD_KEYS = new Set(["overall", "format"]);
   const visibleClassifications = useMemo(
     () => classifications.filter((c) => c.status !== "draft" && LEADERBOARD_KEYS.has(c.classification_key)),
     [classifications],
@@ -468,7 +466,7 @@ export function ClassificationTabs({
                     });
                     if (!res.ok) throw new Error("toggle failed");
                     const data = await fetch(
-                      `/api/tournament/standings?classificationId=${activeId}&competitionId=${competitionId}`,
+                      `/api/tournament/standings?classificationId=${activeId}&competitionId=${competitionId}&provisional=true&live=true`,
                     ).then((r) => r.json());
                     setStandings(data?.standings ?? []);
                   } catch {
@@ -1685,7 +1683,7 @@ function KnockoutLeaderboard({
                   <div className="relative flex items-center px-3 py-1">
                     <div className="flex-1 border-t border-dashed border-ps-amber/40" />
                     <span className="mx-2 whitespace-nowrap text-micro font-semibold text-ps-amber/60">
-                      Top {cutoffPosition} advance
+                      {t('format_knockout_advance', { count: cutoffPosition })}
                     </span>
                     <div className="flex-1 border-t border-dashed border-ps-amber/40" />
                   </div>
@@ -1756,7 +1754,7 @@ function EliminatedSection({
             <path strokeLinecap="round" strokeLinejoin="round" d="M8.25 4.5l7.5 7.5-7.5 7.5" />
           </svg>
           <span className="text-sm font-semibold text-ps-text-sec">
-            Eliminated after {stageName}
+            {t('format_eliminated_after', { stage: stageName })}
           </span>
         </div>
         <span className="rounded-full bg-ps-red/10 px-2 py-0.5 text-micro font-bold text-ps-red">
@@ -1804,6 +1802,7 @@ function HistoricalGroupsSection({
 }: {
   groups: GroupInfo[];
 }) {
+  const t = useT();
   const [expanded, setExpanded] = useState(false);
 
   return (
@@ -1821,11 +1820,11 @@ function HistoricalGroupsSection({
             <path strokeLinecap="round" strokeLinejoin="round" d="M8.25 4.5l7.5 7.5-7.5 7.5" />
           </svg>
           <span className="text-sm font-semibold text-ps-text-sec">
-            Group Stage Results
+            {t('format_group_stage_results')}
           </span>
         </div>
         <span className="rounded-full bg-ps-chip px-2 py-0.5 text-micro font-bold text-ps-text-ter">
-          {groups.length} groups
+          {t('format_n_groups', { count: groups.length })}
         </span>
       </button>
 

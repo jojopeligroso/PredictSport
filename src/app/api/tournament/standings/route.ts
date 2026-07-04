@@ -245,6 +245,7 @@ export async function GET(request: NextRequest) {
       } else {
         eventsFilter = eventsFilter.eq("competition_id", classification.competition_id);
       }
+      eventsFilter = eventsFilter.limit(5000);
     } else {
       eventsFilter = tournamentId
         ? supabase
@@ -252,11 +253,13 @@ export async function GET(request: NextRequest) {
             .select("id")
             .eq("tournament_id", tournamentId)
             .eq("result_confirmed", true)
+            .limit(5000)
         : supabase
             .from("events")
             .select("id")
             .eq("competition_id", classification.competition_id)
-            .eq("result_confirmed", true);
+            .eq("result_confirmed", true)
+            .limit(5000);
     }
 
     const [{ data: users }, { data: confirmedEvents }] = await Promise.all([
@@ -270,7 +273,8 @@ export async function GET(request: NextRequest) {
       const { data: epts } = await supabase
         .from("event_prediction_types")
         .select("points")
-        .in("event_id", confirmedEventIds);
+        .in("event_id", confirmedEventIds)
+        .limit(5000);
       availablePoints = (epts ?? []).reduce((sum: number, r: { points: number }) => sum + r.points, 0);
     }
 

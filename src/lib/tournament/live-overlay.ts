@@ -270,6 +270,7 @@ export async function applyLiveOverlay(
   // Session (anon) client: RLS only exposes other users' predictions
   // after pick_reveal_at — unrevealed picks are correctly excluded from
   // the provisional overlay.
+  const predLimit = Math.min(userIds.length * liveEvents.length * 10, 50000);
   const [{ data: eptRows }, { data: livePreds }] = await Promise.all([
     supabase
       .from("event_prediction_types")
@@ -281,7 +282,7 @@ export async function applyLiveOverlay(
       .select("user_id, event_id, prediction_type, prediction_data")
       .in("event_id", liveEventIds)
       .in("user_id", userIds)
-      .limit(5000),
+      .limit(predLimit),
   ]);
 
   computeLivePoints(
