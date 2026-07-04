@@ -77,6 +77,7 @@ interface MyGroupData {
   totalMembers?: number;
   archivedGroups?: GroupInfo[];
   eliminatedMembers?: EliminatedMember[];
+  eliminationStages?: { stageName: string; members: EliminatedMember[] }[];
 }
 
 interface EliminatedMember {
@@ -402,12 +403,20 @@ export function ClassificationTabs({
                       currentUserId={currentUserId}
                       isLive={groupHasLiveEvents}
                     />
-                    {groupData.eliminatedMembers && groupData.eliminatedMembers.length > 0 && (
-                      <EliminatedSection
-                        members={groupData.eliminatedMembers}
-                        stageName="Group Stage"
-                      />
-                    )}
+                    {groupData.eliminationStages && groupData.eliminationStages.length > 0
+                      ? groupData.eliminationStages.map((stage) => (
+                          <EliminatedSection
+                            key={stage.stageName}
+                            members={stage.members}
+                            stageName={stage.stageName}
+                          />
+                        ))
+                      : groupData.eliminatedMembers && groupData.eliminatedMembers.length > 0 && (
+                          <EliminatedSection
+                            members={groupData.eliminatedMembers}
+                            stageName="Group Stage"
+                          />
+                        )}
                     <HistoricalGroupsSection groups={groupData.archivedGroups} />
                   </>
                 ) : (
