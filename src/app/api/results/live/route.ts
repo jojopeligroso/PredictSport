@@ -243,20 +243,38 @@ export async function GET(request: Request) {
       continue;
     }
 
-    const raw = result.raw as { strStatus?: string } | null;
-    const livePayload: Record<string, unknown> = {
-      homeScore: result.score.home_score,
-      awayScore: result.score.away_score,
-      status: raw?.strStatus ?? (result.is_final ? "FT" : "LIVE"),
-      fetchedAt: result.fetched_at,
-    };
-    // Pass period data (full_time / extra_time) through to the live overlay
-    // so scoreExactScore can derive the FT score during AET matches.
-    if (result.score.periods) {
-      livePayload.periods = result.score.periods;
-    }
+    const raw = result.raw as { strStatus?: string; status?: { type?: { description?: string } } } | null;
+    const providerStatus = raw?.strStatus ?? "";
+    const espnDescription = raw?.status?.type?.description ?? "";
+    const resolvedStatus = providerStatus || (result.is_final ? "FT" : "LIVE");
+
+    // Detect if the match is in extra time / penalties.
+    // During regulation, snapshot the current score as ftScore.
+    // Once ET/PEN starts, preserve the last regulation ftScore.
+    const isOvertime =
+      /^(ET|AET|PEN)$/i.test(providerStatus) ||
+      (/^\d+$/.test(providerStatus) && Number(providerStatus) > 90) ||
+      espnDescription === "Overtime" ||
+      espnDescription === "Penalty Kicks";
 
     for (const row of rows) {
+      const existingLive = (row.result_data as Record<string, unknown> | null)?.live as Record<string, unknown> | undefined;
+
+      // During regulation, snapshot the current score as ftScore.
+      // During overtime, preserve the last regulation snapshot.
+      const ftScore = isOvertime
+        ? (existingLive?.ftScore ?? null)
+        : { home: result.score.home_score, away: result.score.away_score };
+
+      const livePayload: Record<string, unknown> = {
+        homeScore: result.score.home_score,
+        awayScore: result.score.away_score,
+        status: resolvedStatus,
+        fetchedAt: result.fetched_at,
+      };
+      if (ftScore) livePayload.ftScore = ftScore;
+      if (result.score.periods) livePayload.periods = result.score.periods;
+
       // `.eq("result_confirmed", false)` guards against clobbering a result
       // confirmed by the 15-min cron between our read and this write.
       const { error: updateError } = await supabase
@@ -282,7 +300,7 @@ export async function GET(request: Request) {
     }
 
     console.log(
-      `[live-cron] "${rep.event_name}" ${livePayload.homeScore}-${livePayload.awayScore} (${livePayload.status}) → ${rows.length} row(s)`
+      `[live-cron] "${rep.event_name}" ${result.score.home_score}-${result.score.away_score} (${resolvedStatus}) → ${rows.length} row(s)`
     );
   }
 

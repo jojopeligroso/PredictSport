@@ -11,6 +11,7 @@ export interface LiveScore {
   status: string;
   fetchedAt: string;
   periods?: Record<string, { home: number; away: number }>;
+  ftScore?: { home: number; away: number };
 }
 
 export interface LiveEvent {
@@ -95,17 +96,24 @@ export function computeLivePoints(
       (/^\d+$/.test(status) && Number(status) > 90) ||
       (event.sport === "soccer" && elapsedMinutes > 115);
 
+    // During extra time, use the snapshotted FT score (captured by
+    // the live cron during regulation) instead of the AET aggregate.
+    // This makes BOTH scoreExactScore and scoreWinner work correctly:
+    // exact_score compares against the FT score, winner derives "draw"
+    // from equal scores.
+    const useScore = isExtraTime && liveData.ftScore
+      ? liveData.ftScore
+      : { home: liveData.homeScore, away: liveData.awayScore };
+
     const scoreObj: Record<string, unknown> = {
-      home_score: liveData.homeScore,
-      away_score: liveData.awayScore,
+      home_score: useScore.home,
+      away_score: useScore.away,
     };
 
-    if (isExtraTime) {
-      // Use real period data from the provider when available (ESPN
-      // linescores give us full_time + extra_time). This lets
-      // scoreExactScore derive the correct FT score during AET.
-      // Fall back to a synthetic marker so scoreWinner still derives
-      // "draw" even without period breakdown.
+    if (isExtraTime && !liveData.ftScore) {
+      // No FT snapshot available — add a synthetic periods marker
+      // so scoreWinner at least derives "draw". scoreExactScore will
+      // use the aggregate (imprecise but better than nothing).
       scoreObj.periods = liveData.periods ?? {
         extra_time: { home: 0, away: 0 },
       };
