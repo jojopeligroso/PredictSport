@@ -8,24 +8,24 @@ import { WC2026_KNOCKOUT_ROUNDS } from "@/lib/bracket/adapters/fifa-world-cup-20
  * the embedded KO editor in /wc/picks/[windowId].
  */
 const KNOCKOUT_FEEDERS: Record<string, [string, string]> = {
-  // R16 (Article 12.7) — M89..M96
-  r16_m1: ["r32_m2", "r32_m5"],   // M89 = W74 v W77
-  r16_m2: ["r32_m1", "r32_m3"],   // M90 = W73 v W75
-  r16_m3: ["r32_m4", "r32_m6"],   // M91 = W76 v W78
-  r16_m4: ["r32_m7", "r32_m8"],   // M92 = W79 v W80
-  r16_m5: ["r32_m11", "r32_m12"], // M93 = W83 v W84
-  r16_m6: ["r32_m9", "r32_m10"],  // M94 = W81 v W82
-  r16_m7: ["r32_m14", "r32_m16"], // M95 = W86 v W88
-  r16_m8: ["r32_m13", "r32_m15"], // M96 = W85 v W87
-  // QF (Article 12.8) — M97..M100
-  qf_m1: ["r16_m1", "r16_m2"], // M97 = W89 v W90
-  qf_m2: ["r16_m5", "r16_m6"], // M98 = W93 v W94
-  qf_m3: ["r16_m3", "r16_m4"], // M99 = W91 v W92
-  qf_m4: ["r16_m7", "r16_m8"], // M100 = W95 v W96
-  // SF (Article 12.9) — M101..M102
-  sf_m1: ["qf_m1", "qf_m2"], // M101 = W97 v W98
-  sf_m2: ["qf_m3", "qf_m4"], // M102 = W99 v W100
-  // Final (Article 12.11) — M104
+  // R16 — synced with advance.ts (source of truth for DB advancement)
+  r16_m1: ["r32_m1", "r32_m4"],
+  r16_m2: ["r32_m3", "r32_m6"],
+  r16_m3: ["r32_m2", "r32_m5"],
+  r16_m4: ["r32_m7", "r32_m8"],
+  r16_m5: ["r32_m12", "r32_m11"],
+  r16_m6: ["r32_m10", "r32_m9"],
+  r16_m7: ["r32_m15", "r32_m14"],
+  r16_m8: ["r32_m13", "r32_m16"],
+  // QF — M97..M100
+  qf_m1: ["r16_m1", "r16_m2"],
+  qf_m2: ["r16_m5", "r16_m6"],
+  qf_m3: ["r16_m3", "r16_m4"],
+  qf_m4: ["r16_m7", "r16_m8"],
+  // SF — M101..M102
+  sf_m1: ["qf_m1", "qf_m2"],
+  sf_m2: ["qf_m3", "qf_m4"],
+  // Final — M104
   final: ["sf_m1", "sf_m2"],
 };
 
