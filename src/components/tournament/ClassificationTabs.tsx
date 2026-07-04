@@ -158,6 +158,14 @@ export function ClassificationTabs({
   const [groupFetchKey, setGroupFetchKey] = useState(0);
   const [liveMode, setLiveMode] = useState(true);
   const [liveEventsExist, setLiveEventsExist] = useState(false);
+  const [liveMatches, setLiveMatches] = useState<Array<{
+    id: string;
+    event_name: string;
+    home_score: number;
+    away_score: number;
+    status: string;
+    start_time: string;
+  }>>([]);
 
   // Listen for scoring broadcasts to auto-refresh standings
   useEffect(() => {
@@ -210,6 +218,7 @@ export function ClassificationTabs({
           setSelfVisibility(data?.selfVisibility === "private" ? "private" : "public");
           setHasLiveEvents(Boolean(data?.hasLiveEvents));
           if (data?.hasLiveEvents) setLiveEventsExist(true);
+          setLiveMatches(data?.liveMatches ?? []);
           setLoadedId(activeId);
           setLoading(false);
         }
@@ -358,6 +367,11 @@ export function ClassificationTabs({
       {/* Live / Confirmed toggle — visible when live events exist */}
       {activeId !== RIVALS_TAB && liveEventsExist && (
         <LiveConfirmedToggle liveMode={liveMode} onToggle={() => { setLiveMode((m) => !m); setLoading(true); }} />
+      )}
+
+      {/* Live match ticker — shows scores + minute when in live mode */}
+      {activeId !== RIVALS_TAB && liveMode && liveMatches.length > 0 && (
+        <LiveMatchTicker matches={liveMatches} />
       )}
 
       {/* ── Classification content (hidden when Rival Predictions tab is active) ── */}
@@ -519,6 +533,56 @@ function LiveConfirmedToggle({
           {t('leaderboard.confirmed')}
         </button>
       </div>
+    </div>
+  );
+}
+
+function LiveMatchTicker({
+  matches,
+}: {
+  matches: Array<{
+    event_name: string;
+    home_score: number;
+    away_score: number;
+    status: string;
+    start_time: string;
+  }>;
+}) {
+  return (
+    <div className="mt-2 space-y-1.5">
+      {matches.map((m, i) => {
+        const parts = m.event_name.split(" vs ");
+        const home = parts[0]?.trim() ?? m.event_name;
+        const away = parts[1]?.trim() ?? "";
+        // Format status: if it's a bare number, show as minute with apostrophe
+        const statusLabel = /^\d+$/.test(m.status) ? `${m.status}'` : m.status;
+
+        return (
+          <div
+            key={i}
+            className="flex items-center justify-between rounded-lg border border-ps-red/20 bg-ps-red/5 px-3 py-2"
+          >
+            <span className="flex-1 truncate text-right text-xs font-semibold text-ps-text">
+              {home}
+            </span>
+            <div className="mx-2 flex items-center gap-1.5">
+              <span className="font-mono text-sm font-bold text-ps-text">
+                {m.home_score}
+              </span>
+              <span className="text-xs text-ps-text-ter">-</span>
+              <span className="font-mono text-sm font-bold text-ps-text">
+                {m.away_score}
+              </span>
+            </div>
+            <span className="flex-1 truncate text-xs font-semibold text-ps-text">
+              {away}
+            </span>
+            <span className="ml-2 shrink-0 rounded-full bg-ps-red/15 px-1.5 py-0.5 text-micro font-bold text-ps-red">
+              {statusLabel}
+            </span>
+          </div>
+        );
+      })}
     </div>
   );
 }

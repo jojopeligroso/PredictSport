@@ -185,6 +185,14 @@ export async function GET(request: NextRequest) {
     // predictions.points_awarded.
     let hasLiveEvents = false;
     let liveEventIds: string[] = [];
+    let liveMatches: Array<{
+      id: string;
+      event_name: string;
+      home_score: number;
+      away_score: number;
+      status: string;
+      start_time: string;
+    }> = [];
 
     if (liveRequested) {
       const live = await applyLiveOverlay(supabase, {
@@ -197,6 +205,28 @@ export async function GET(request: NextRequest) {
       });
       hasLiveEvents = live.hasLiveEvents;
       liveEventIds = live.liveEventIds;
+
+      // Fetch live match details for the client-side ticker
+      if (liveEventIds.length > 0) {
+        const { data: liveEvt } = await supabase
+          .from("events")
+          .select("id, event_name, result_data, start_time")
+          .in("id", liveEventIds);
+
+        liveMatches = (liveEvt ?? []).map(
+          (e: { id: string; event_name: string; result_data: Record<string, unknown> | null; start_time: string }) => {
+            const ld = (e.result_data as { live?: { homeScore: number; awayScore: number; status: string } } | null)?.live;
+            return {
+              id: e.id,
+              event_name: e.event_name,
+              home_score: ld?.homeScore ?? 0,
+              away_score: ld?.awayScore ?? 0,
+              status: ld?.status ?? "LIVE",
+              start_time: e.start_time,
+            };
+          },
+        );
+      }
     }
 
     // Get display names + available points (max possible from confirmed events).
@@ -275,6 +305,7 @@ export async function GET(request: NextRequest) {
       availablePoints,
       hasLiveEvents,
       liveEventIds,
+      liveMatches,
     });
   }
 

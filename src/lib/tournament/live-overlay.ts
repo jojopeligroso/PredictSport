@@ -77,12 +77,29 @@ export function computeLivePoints(
 
     scoredEventIds.push(event.id);
 
-    const resultData: Record<string, unknown> = {
-      score: {
-        home_score: liveData.homeScore,
-        away_score: liveData.awayScore,
-      },
+    // Detect extra time / penalties from the live status.
+    // TheSportsDB reports status as "ET", "AET", "PEN", or a minute
+    // number (e.g. "105"). Minutes > 90 indicate extra time.
+    const status = (liveData.status ?? "").toUpperCase();
+    const isExtraTime =
+      status === "ET" ||
+      status === "AET" ||
+      status === "PEN" ||
+      (/^\d+$/.test(status) && Number(status) > 90);
+
+    const scoreObj: Record<string, unknown> = {
+      home_score: liveData.homeScore,
+      away_score: liveData.awayScore,
     };
+
+    // When in extra time, add a periods.extra_time marker so scoreWinner
+    // derives "draw" (FT was definitionally a draw). The actual ET goal
+    // counts don't matter for winner derivation — only presence matters.
+    if (isExtraTime) {
+      scoreObj.periods = { extra_time: { home: 0, away: 0 } };
+    }
+
+    const resultData: Record<string, unknown> = { score: scoreObj };
 
     const epts = eptRows.filter((r) => r.event_id === event.id);
     const eptMap = new Map(epts.map((r) => [r.prediction_type, r]));
@@ -102,6 +119,13 @@ export function computeLivePoints(
     for (const pred of eventPreds) {
       const ept = eptMap.get(pred.prediction_type);
       if (!ept) continue;
+
+      // During extra time, we can't derive the FT score from the AET
+      // aggregate — skip exact_score scoring entirely. The live
+      // aggregate includes ET goals so comparing against it is wrong.
+      if (pred.prediction_type === "exact_score" && isExtraTime) {
+        continue;
+      }
 
       let predData = pred.prediction_data;
       if (pred.prediction_type === "winner") {
@@ -126,8 +150,11 @@ export function computeLivePoints(
             (pointsMap.get(pred.user_id) ?? 0) + scored.points_awarded,
           );
         }
-      } catch {
-        // Provisional only — a scorer that can't handle mid-match data is skipped
+      } catch (err) {
+        console.error(
+          `[live-overlay] scoring error for user=${pred.user_id} event=${event.id} type=${pred.prediction_type}:`,
+          err,
+        );
       }
     }
   }
