@@ -364,8 +364,27 @@ export async function autoResolveEvent(
     };
     const score = finalResultData.score as Record<string, unknown> | undefined;
     const periods = score?.periods as Record<string, Record<string, number>> | undefined;
-    if (periods?.extra_time && !periods.full_time) {
-      await enrichAETFullTimeScore(finalResultData, event.event_name, event.start_time);
+    if ((periods?.extra_time || periods?.penalties) && !periods?.full_time) {
+      const enriched = await enrichAETFullTimeScore(finalResultData, event.event_name, event.start_time);
+
+      // Fallback: if API-Football enrichment failed, use the live-cron's
+      // ftScore snapshot (captured during regulation before ET started).
+      // Accept only if the snapshot is a draw (ET only follows a draw).
+      if (!enriched && resultData?.live) {
+        const liveData = resultData.live as { ftScore?: { home: number; away: number } } | undefined;
+        if (
+          liveData?.ftScore &&
+          typeof liveData.ftScore.home === "number" &&
+          typeof liveData.ftScore.away === "number" &&
+          liveData.ftScore.home === liveData.ftScore.away
+        ) {
+          const enrichedPeriods = (finalResultData.score as Record<string, unknown>).periods as Record<string, Record<string, number>>;
+          enrichedPeriods.full_time = liveData.ftScore as unknown as Record<string, number>;
+          console.log(
+            `[auto-result] Enriched "${event.event_name}" FT from live snapshot: ${liveData.ftScore.home}-${liveData.ftScore.away}`,
+          );
+        }
+      }
     }
 
     const { data: confirmedEvent, error: updateError } = await supabase

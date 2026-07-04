@@ -208,10 +208,16 @@ export async function verifyResult(
 // ---------------------------------------------------------------------------
 
 /**
- * When a result has extra_time in periods but no full_time breakdown,
- * attempt a secondary fetch from API-Football (which provides score.fulltime)
- * to enrich the result with the FT score. This allows the exact_score scorer
- * to compare against the 90-minute score rather than the AET aggregate.
+ * When a result has extra_time or penalties in periods but no full_time
+ * breakdown, attempt a secondary fetch from API-Football (which provides
+ * score.fulltime) to enrich the result with the FT score. This allows
+ * exact_score to be scored against the 90-minute score rather than the
+ * AET aggregate.
+ *
+ * Penalties imply ET was played (in knockouts pens only follow ET), so
+ * even when the primary provider reports only `penalties` without
+ * `extra_time`, the stored aggregate may include ET goals and needs FT
+ * enrichment.
  *
  * Mutates resultData in place if FT score is found.
  */
@@ -224,7 +230,8 @@ export async function enrichAETFullTimeScore(
   if (!score) return false;
 
   const periods = score.periods as Record<string, Record<string, number>> | undefined;
-  if (!periods?.extra_time) return false;
+  // ET or pens both indicate the match went beyond 90 minutes.
+  if (!periods?.extra_time && !periods?.penalties) return false;
   if (periods.full_time) return false; // Already has FT score
 
   // Search API-Football by team name and date
