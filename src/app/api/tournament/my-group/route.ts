@@ -287,38 +287,34 @@ export async function GET(request: NextRequest) {
     };
   });
 
-  // Compute cumulative points for archived groups (frozen snapshot, not stage-scoped)
-  const archivedUserIds = memberships
-    .filter((m) => archivedGroups.some((g) => g.id === m.group_id))
-    .map((m) => m.user_id);
+  // Read frozen stage results for archived groups from immutable stage_results table.
+  // Each archived group has per-user points captured at stage conclusion.
+  const archivedGroupIds = archivedGroups.map((g) => g.id);
+  const stageResultsByGroup = new Map<string, Map<string, number>>();
 
-  const cumulativePointsMap = new Map<string, number>();
-  if (archivedUserIds.length > 0) {
-    const { data: comp } = await supabase
-      .from("competitions")
-      .select("tournament_id")
-      .eq("id", competitionId)
-      .single();
+  if (archivedGroupIds.length > 0) {
+    const { data: stageResults } = await svcFetch
+      .from("stage_results")
+      .select("group_id, user_id, points")
+      .in("group_id", archivedGroupIds);
 
-    const { data: cumulativeRows } = await supabase.rpc("sum_prediction_points", {
-      p_user_ids: archivedUserIds,
-      p_tournament_id: comp?.tournament_id ?? null,
-      p_competition_id: competitionId,
-    });
-
-    for (const r of (cumulativeRows ?? []) as Array<{ user_id: string; total_points: number }>) {
-      cumulativePointsMap.set(r.user_id, r.total_points ?? 0);
+    for (const sr of stageResults ?? []) {
+      if (!stageResultsByGroup.has(sr.group_id)) {
+        stageResultsByGroup.set(sr.group_id, new Map());
+      }
+      stageResultsByGroup.get(sr.group_id)!.set(sr.user_id, sr.points ?? 0);
     }
   }
 
-  // Build archived group response (historical group stage view — cumulative points)
+  // Build archived group response using frozen stage_results points
   const archivedGroupsResponse = archivedGroups.map((g) => {
+    const groupPoints = stageResultsByGroup.get(g.id);
     const gMembers = memberships
       .filter((m) => m.group_id === g.id)
       .map((m) => ({
         user_id: m.user_id,
         display_name: nameMap.get(m.user_id) ?? "Unknown",
-        points: cumulativePointsMap.get(m.user_id) ?? 0,
+        points: groupPoints?.get(m.user_id) ?? 0,
         predictions_made: 0,
         predictions_total: 0,
         is_self: m.user_id === user.id,
@@ -344,7 +340,7 @@ export async function GET(request: NextRequest) {
 
   const eliminatedUserIds = new Set((eliminatedMembers ?? []).map((m) => m.user_id));
 
-  // Build eliminated list with points and source group
+  // Build eliminated list with points from their archived group's stage_results
   const eliminatedList = [...eliminatedUserIds].map((uid) => {
     // Find which archived group they were in
     const archivedMembership = memberships.find(
@@ -354,10 +350,13 @@ export async function GET(request: NextRequest) {
       ? archivedGroups.find((g) => g.id === archivedMembership.group_id)
       : null;
 
+    // Get points from stage_results for their source group
+    const groupPoints = sourceGroup ? stageResultsByGroup.get(sourceGroup.id) : null;
+
     return {
       user_id: uid,
       display_name: nameMap.get(uid) ?? "Unknown",
-      points: cumulativePointsMap.get(uid) ?? pointsMap.get(uid) ?? 0,
+      points: groupPoints?.get(uid) ?? pointsMap.get(uid) ?? 0,
       is_self: uid === user.id,
       source_group: sourceGroup?.group_name ?? null,
       status: archivedMembership?.status ?? "eliminated",
