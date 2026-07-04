@@ -80,12 +80,19 @@ export function computeLivePoints(
     // Detect extra time / penalties from the live status.
     // TheSportsDB reports status as "ET", "AET", "PEN", or a minute
     // number (e.g. "105"). Minutes > 90 indicate extra time.
+    // ESPN doesn't provide strStatus at all — falls back to "LIVE" for
+    // all in-progress matches. Use elapsed wall-time as a fallback:
+    // a soccer match with halftime + stoppage = ~110-115 min. If the
+    // match has been running > 115 min, it's almost certainly in ET.
     const status = (liveData.status ?? "").toUpperCase();
+    const elapsedMinutes =
+      (Date.now() - new Date(event.start_time).getTime()) / 60_000;
     const isExtraTime =
       status === "ET" ||
       status === "AET" ||
       status === "PEN" ||
-      (/^\d+$/.test(status) && Number(status) > 90);
+      (/^\d+$/.test(status) && Number(status) > 90) ||
+      (event.sport === "soccer" && elapsedMinutes > 115);
 
     const scoreObj: Record<string, unknown> = {
       home_score: liveData.homeScore,
