@@ -244,12 +244,17 @@ export async function GET(request: Request) {
     }
 
     const raw = result.raw as { strStatus?: string } | null;
-    const livePayload = {
+    const livePayload: Record<string, unknown> = {
       homeScore: result.score.home_score,
       awayScore: result.score.away_score,
       status: raw?.strStatus ?? (result.is_final ? "FT" : "LIVE"),
       fetchedAt: result.fetched_at,
     };
+    // Pass period data (full_time / extra_time) through to the live overlay
+    // so scoreExactScore can derive the FT score during AET matches.
+    if (result.score.periods) {
+      livePayload.periods = result.score.periods;
+    }
 
     for (const row of rows) {
       // `.eq("result_confirmed", false)` guards against clobbering a result

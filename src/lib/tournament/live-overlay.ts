@@ -10,6 +10,7 @@ export interface LiveScore {
   awayScore: number;
   status: string;
   fetchedAt: string;
+  periods?: Record<string, { home: number; away: number }>;
 }
 
 export interface LiveEvent {
@@ -99,11 +100,15 @@ export function computeLivePoints(
       away_score: liveData.awayScore,
     };
 
-    // When in extra time, add a periods.extra_time marker so scoreWinner
-    // derives "draw" (FT was definitionally a draw). The actual ET goal
-    // counts don't matter for winner derivation — only presence matters.
     if (isExtraTime) {
-      scoreObj.periods = { extra_time: { home: 0, away: 0 } };
+      // Use real period data from the provider when available (ESPN
+      // linescores give us full_time + extra_time). This lets
+      // scoreExactScore derive the correct FT score during AET.
+      // Fall back to a synthetic marker so scoreWinner still derives
+      // "draw" even without period breakdown.
+      scoreObj.periods = liveData.periods ?? {
+        extra_time: { home: 0, away: 0 },
+      };
     }
 
     const resultData: Record<string, unknown> = { score: scoreObj };
@@ -126,13 +131,6 @@ export function computeLivePoints(
     for (const pred of eventPreds) {
       const ept = eptMap.get(pred.prediction_type);
       if (!ept) continue;
-
-      // During extra time, we can't derive the FT score from the AET
-      // aggregate — skip exact_score scoring entirely. The live
-      // aggregate includes ET goals so comparing against it is wrong.
-      if (pred.prediction_type === "exact_score" && isExtraTime) {
-        continue;
-      }
 
       let predData = pred.prediction_data;
       if (pred.prediction_type === "winner") {

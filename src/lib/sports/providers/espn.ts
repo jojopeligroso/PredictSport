@@ -13,6 +13,7 @@ interface ESPNCompetitor {
   homeAway?: "home" | "away";
   winner?: boolean;
   order?: number;
+  linescores?: Array<{ value: number }>;
 }
 
 interface ESPNStatusType {
@@ -304,6 +305,27 @@ export class ESPNProvider extends BaseProvider {
     else if (away?.winner) winner = awayName;
     else if (isFinal && homeScore === awayScore) winner = "draw";
 
+    // Extract period data from ESPN linescores when available.
+    // Soccer: linescores = [1st half, 2nd half, ...ET periods].
+    // If > 2 periods exist, periods 3+ are extra time.
+    let periods: Record<string, { home: number; away: number }> | null = null;
+    const homeLS = home?.linescores;
+    const awayLS = away?.linescores;
+    if (homeLS && awayLS && homeLS.length > 2) {
+      const ftHome = (homeLS[0]?.value ?? 0) + (homeLS[1]?.value ?? 0);
+      const ftAway = (awayLS[0]?.value ?? 0) + (awayLS[1]?.value ?? 0);
+      let etHome = 0;
+      let etAway = 0;
+      for (let i = 2; i < homeLS.length; i++) {
+        etHome += homeLS[i]?.value ?? 0;
+        etAway += awayLS[i]?.value ?? 0;
+      }
+      periods = {
+        full_time: { home: ftHome, away: ftAway },
+        extra_time: { home: etHome, away: etAway },
+      };
+    }
+
     return {
       provider: this.name,
       fetched_at: new Date().toISOString(),
@@ -317,7 +339,7 @@ export class ESPNProvider extends BaseProvider {
         away_team: awayName,
         home_score: homeScore,
         away_score: awayScore,
-        periods: null,
+        periods,
       },
       winner,
       margin: Math.abs(homeScore - awayScore),
