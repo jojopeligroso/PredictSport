@@ -128,10 +128,25 @@ export interface VerificationResult {
 }
 
 /**
+ * Providers excluded from verification.
+ *
+ * API-Football has a 4 req/hr rate limit. Its budget is better spent on
+ * AET full-time score enrichment (enrichAETFullTimeScore) than on
+ * cross-validation. TheSportsDB is free and covers soccer verification.
+ * This mirrors the LIVE_EXCLUDED_PROVIDERS pattern in the live cron.
+ */
+const VERIFICATION_EXCLUDED_PROVIDERS = new Set(["api-football"]);
+
+/**
  * Verify a primary result by fetching from the next provider in the chain.
  *
  * Walks the provider registry for the sport, skipping the provider that
  * returned the primary result, and compares via compareResults().
+ *
+ * When the cached externalEventId belongs to a different provider format
+ * (e.g. ESPN ID passed to TheSportsDB), getResult() will return null.
+ * In that case, if eventName and startTime are provided, we search the
+ * verifier provider's own index to resolve its native ID, then retry.
  *
  * Returns:
  * - "verified" if scores match (regardless of verifier is_final)
@@ -144,25 +159,43 @@ export async function verifyResult(
   sport: Sport,
   externalEventId: string,
   providerLeague?: string,
+  eventName?: string,
+  startTime?: string,
 ): Promise<VerificationResult> {
   const providers = getProvidersForSport(sport);
 
   for (const provider of providers) {
-    // Skip the primary provider and non-result providers (fixturePool, manual)
+    // Skip the primary provider, rate-limited providers, and non-result providers
     if (
       provider.name === primaryResult.provider ||
       provider.name === "fixture-pool" ||
-      provider.name === "manual"
+      provider.name === "manual" ||
+      VERIFICATION_EXCLUDED_PROVIDERS.has(provider.name)
     ) {
       continue;
     }
 
     try {
-      const verifierResult = await provider.getResult(
+      let verifierResult = await provider.getResult(
         sport,
         externalEventId,
         providerLeague,
       );
+
+      // If direct lookup failed and we have event metadata, search for
+      // the provider's own ID by name+date (same pattern as enrichAETFullTimeScore)
+      if (!verifierResult && eventName) {
+        const resolvedId = await resolveVerifierEventId(
+          provider,
+          sport,
+          eventName,
+          startTime,
+        );
+        if (resolvedId) {
+          verifierResult = await provider.getResult(sport, resolvedId, providerLeague);
+        }
+      }
+
       if (!verifierResult) continue;
 
       const verdict = compareResults(primaryResult, verifierResult);
@@ -204,6 +237,77 @@ export async function verifyResult(
     verifierScore: null,
     verifierIsFinal: null,
   };
+}
+
+/**
+ * Resolve a verifier provider's native event ID by searching its index.
+ *
+ * Uses the same name-matching heuristic as enrichAETFullTimeScore:
+ * extracts one team name, searches the provider, and checks for name
+ * overlap. Only returns an ID when there's exactly one confident match
+ * (both team names present and within 24h of the expected start time).
+ */
+async function resolveVerifierEventId(
+  provider: import("./types").SportsProvider,
+  sport: Sport,
+  eventName: string,
+  startTime?: string,
+): Promise<string | null> {
+  try {
+    const searchDate = startTime?.slice(0, 10); // YYYY-MM-DD from ISO string
+    const teamName = eventName.split(/\s+vs?\s+/i)[0]?.trim();
+    if (!teamName) return null;
+
+    const candidates = await provider.searchEvents(sport, teamName, {
+      date: searchDate,
+      limit: 10,
+    });
+
+    if (candidates.length === 0) return null;
+
+    const eventNameLower = eventName.toLowerCase();
+    const eventStartMs = startTime ? new Date(startTime).getTime() : null;
+    const oneDayMs = 24 * 3600000;
+
+    // Score candidates by name overlap and time proximity
+    const matches = candidates.filter((c) => {
+      // Both team names must appear in the candidate (simple bidirectional check)
+      const candidateLower = c.event_name.toLowerCase();
+      const parts = eventNameLower.split(/\s+vs?\s+/);
+      const hasOverlap = parts.some((p) => candidateLower.includes(p.trim()));
+      if (!hasOverlap) return false;
+
+      // Time proximity check: within 24h
+      if (eventStartMs) {
+        const candidateMs = new Date(c.start_time).getTime();
+        if (Math.abs(candidateMs - eventStartMs) > oneDayMs) return false;
+      }
+
+      return !!c.external_event_id && c.external_event_id !== "undefined";
+    });
+
+    // Only use the result if there's exactly one confident match
+    if (matches.length === 1) {
+      console.log(
+        `[verify] resolved ${provider.name} ID for "${eventName}": ${matches[0].external_event_id}`,
+      );
+      return matches[0].external_event_id;
+    }
+
+    if (matches.length > 1) {
+      console.log(
+        `[verify] ambiguous ${provider.name} search for "${eventName}": ${matches.length} candidates, skipping`,
+      );
+    }
+
+    return null;
+  } catch (err) {
+    console.error(
+      `[verify] ${provider.name} search failed for "${eventName}":`,
+      err,
+    );
+    return null;
+  }
 }
 
 // ---------------------------------------------------------------------------

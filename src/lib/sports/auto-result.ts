@@ -546,6 +546,8 @@ async function triggerVerification(
     event.sport as Sport,
     resolvedId,
     event.provider_league ?? undefined,
+    event.event_name,
+    event.start_time,
   );
 
   const updatedData: Record<string, unknown> = {
@@ -648,6 +650,8 @@ async function retryVerification(
     event.sport as Sport,
     resolvedId,
     event.provider_league ?? undefined,
+    event.event_name,
+    event.start_time,
   );
 
   const updatedData: Record<string, unknown> = {
