@@ -1,7 +1,8 @@
 "use client";
 
 import { useState } from "react";
-import { useT } from "@/lib/i18n";
+import { useT, useLocale } from "@/lib/i18n";
+import { localiseRoundName } from "@/lib/tournament/round-display";
 import { CommunityPicksCard } from "@/components/wc/CommunityPicksCard";
 import { DashboardPickRow } from "@/components/wc/DashboardPickRow";
 import { LiveChatDrawer } from "@/components/wc/LiveChatDrawer";
@@ -37,6 +38,7 @@ interface LiveViewProps {
   showPrompt: boolean;
   acceptAlwaysOff: () => void;
   declinePrompt: () => void;
+  currentRoundName: string | null;
 }
 
 /**
@@ -71,8 +73,10 @@ export function LiveView({
   showPrompt,
   acceptAlwaysOff,
   declinePrompt,
+  currentRoundName,
 }: LiveViewProps) {
   const t = useT();
+  const { locale } = useLocale();
 
   // In the live view, cards default to COLLAPSED (score visible in the card)
   // — opposite of the normal dashboard's auto-expand behaviour.
@@ -122,7 +126,7 @@ export function LiveView({
       {/* 2. Live score cards */}
       <section className="mt-5">
         <p className="mb-1.5 flex items-center gap-2 text-caption font-semibold uppercase tracking-wide text-ps-text-ter">
-          {t("dash.your_picks")}
+          {t("dash.your_picks", { round: localiseRoundName(currentRoundName, locale) })}
           <span className="inline-flex items-center gap-1 rounded-full bg-ps-red/90 px-1.5 py-0.5 text-micro font-bold normal-case text-white">
             <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-white" />
             {t("picks.live")}

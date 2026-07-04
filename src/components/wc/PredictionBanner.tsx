@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useMemo } from "react";
-import { useT } from "@/lib/i18n";
+import { useT, useLocale } from "@/lib/i18n";
 import type { WindowEvent } from "@/app/wc/picks/[windowId]/WindowPickList";
 import type { Prediction } from "@/types/database";
 
@@ -13,8 +13,9 @@ function computeRevealTime(event: WindowEvent): Date {
   return new Date(new Date(event.lock_time).getTime() + REVEAL_OFFSET_MS);
 }
 
-function formatLockLocal(lockTime: string): string {
-  return new Intl.DateTimeFormat(undefined, {
+function formatLockLocal(lockTime: string, locale: string): string {
+  const intlLocale = locale === "es" ? "es-MX" : "en-GB";
+  return new Intl.DateTimeFormat(intlLocale, {
     weekday: "short",
     month: "short",
     day: "numeric",
@@ -80,6 +81,7 @@ interface PredictionBannerProps {
 
 export function PredictionBanner({ events, predictions }: PredictionBannerProps) {
   const t = useT();
+  const { locale } = useLocale();
   const [dismissed, setDismissed] = useState(true); // Start dismissed to avoid flash
   const [, setTick] = useState(0); // Force re-render for live countdown
 
@@ -184,7 +186,7 @@ export function PredictionBanner({ events, predictions }: PredictionBannerProps)
             ? t("wc.banner_pick_locks", { count: 1 })
             : t("wc.banner_picks_lock", { count: urgentEvents.length })}
         </span>
-        {formatLockLocal(new Date(earliestLock).toISOString())}
+        {formatLockLocal(new Date(earliestLock).toISOString(), locale)}
       </p>
       <button
         onClick={handleDismiss}

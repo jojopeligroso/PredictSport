@@ -1,7 +1,8 @@
 "use client";
 
 import Link from "next/link";
-import { useT } from "@/lib/i18n";
+import { useT, useLocale } from "@/lib/i18n";
+import { localiseRoundName } from "@/lib/tournament/round-display";
 import { CascadeCard } from "@/components/CascadeCard";
 import { DashboardPickRow } from "@/components/wc/DashboardPickRow";
 import { OnboardingSection } from "@/components/wc/OnboardingFlow";
@@ -24,6 +25,7 @@ interface PicksSectionProps {
   collapsedLiveIds: Set<string>;
   expandedEventId: string | null;
   onToggleEvent: (eventId: string, status: PickStatus) => void;
+  currentRoundName: string | null;
 }
 
 export function PicksSection({
@@ -38,8 +40,10 @@ export function PicksSection({
   collapsedLiveIds,
   expandedEventId,
   onToggleEvent,
+  currentRoundName,
 }: PicksSectionProps) {
   const t = useT();
+  const { locale } = useLocale();
 
   if (isMember) {
     return (
@@ -47,7 +51,7 @@ export function PicksSection({
         {filteredEvents.length > 0 && (
           <section className="mt-5">
             <p className="mb-1.5 text-caption font-semibold uppercase tracking-wide text-ps-text-ter">
-              {t('dash.your_picks')}
+              {t('dash.your_picks', { round: localiseRoundName(currentRoundName, locale) })}
             </p>
             <div className="flex flex-col gap-1.5 overflow-hidden">
               {filteredEvents.map((event, index) => {

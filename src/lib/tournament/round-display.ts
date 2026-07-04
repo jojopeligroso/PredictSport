@@ -44,6 +44,56 @@ export function formatRoundDisplayName(dbName: string): string {
 }
 
 /**
+ * Locale-specific round name translations.
+ * Maps normalised DB round names to localised labels.
+ * Falls back to the English formatRoundDisplayName() output.
+ */
+const ROUND_NAMES_ES: Record<string, string> = {
+  "Matchday 1": "Jornada 1",
+  "Matchday 2": "Jornada 2",
+  "Matchday 3": "Jornada 3",
+  "Round of 32": "Dieciseisavos de final",
+  "Round of 16": "Octavos de final",
+  "Quarter-Finals": "Cuartos de final",
+  "Quarter-finals": "Cuartos de final",
+  "Semi-Finals": "Semifinales",
+  "Semi-finals": "Semifinales",
+  "Final": "Final",
+  // Abbreviations from test data
+  "MD1": "Jornada 1",
+  "MD2": "Jornada 2",
+  "MD3": "Jornada 3",
+  "R32": "Dieciseisavos de final",
+  "R16": "Octavos de final",
+  "QF": "Cuartos de final",
+  "SF": "Semifinales",
+};
+
+/**
+ * Returns a locale-aware display name for a DB round.
+ *
+ * @example
+ * localiseRoundName("Group Matchday 1", "en") // → "Matchday 1"
+ * localiseRoundName("Group Matchday 1", "es") // → "Jornada 1"
+ * localiseRoundName("Round of 16", "es")      // → "Octavos de final"
+ * localiseRoundName(null, "en")               // → "Round 1"
+ */
+export function localiseRoundName(
+  dbName: string | null | undefined,
+  locale: string,
+): string {
+  if (!dbName) return locale === "es" ? "Ronda 1" : "Round 1";
+
+  const displayName = formatRoundDisplayName(dbName);
+
+  if (locale === "es") {
+    return ROUND_NAMES_ES[displayName] ?? ROUND_NAMES_ES[dbName] ?? displayName;
+  }
+
+  return displayName;
+}
+
+/**
  * Generates a round-aware CTA string for the /wc surface.
  *
  * Falls back to a generic prompt when no active round name is available.
