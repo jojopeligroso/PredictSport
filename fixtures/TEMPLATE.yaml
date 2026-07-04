@@ -77,7 +77,7 @@ sporting_events:
 #   visibility: private  # private (invite only) | public
 #   status: draft        # draft (hidden from participants) | active
 #   allow_prediction_updates: false
-#   lock_default_minutes: 30   # Default: lock 30min before start_time
+#   lock_default_minutes: 10   # Default: lock 10min before start_time
 #   scoring_rules:
 #     preset: classic_quiz
 #     points:

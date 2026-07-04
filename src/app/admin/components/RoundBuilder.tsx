@@ -903,7 +903,7 @@ function Step3Review({
 
     try {
       const events = fixtureConfigs.map((fc) => {
-        const lockTime = subtractMinutes(fc.fixture.startTime, lockDefaultMinutes ?? 5);
+        const lockTime = subtractMinutes(fc.fixture.startTime, lockDefaultMinutes ?? 10);
         return {
           event_name:
             fc.fixture.homeTeam && fc.fixture.awayTeam

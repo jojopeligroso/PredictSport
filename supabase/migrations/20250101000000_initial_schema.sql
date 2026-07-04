@@ -26,7 +26,7 @@ create table public.competitions (
   visibility text not null default 'private' check (visibility in ('public', 'private')),
   status text not null default 'draft' check (status in ('draft', 'active', 'completed')),
   scoring_rules jsonb not null default '{}',
-  lock_default_minutes integer not null default 5,
+  lock_default_minutes integer not null default 10,
   allow_nominations boolean not null default true,
   created_by uuid not null references public.users(id),
   invite_code text unique not null default encode(gen_random_bytes(6), 'hex'),

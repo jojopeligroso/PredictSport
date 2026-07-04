@@ -516,7 +516,7 @@ export function CreateCompetitionForm({ alwaysOpen = false }: CreateCompetitionF
     const startISO = dateTimeLocalToISO(manualStartTime);
     const lockISO = manualLockTime
       ? dateTimeLocalToISO(manualLockTime)
-      : subtractMinutes(startISO, 30);
+      : subtractMinutes(startISO, 10);
 
     // Parse options text: split by "/" or "," trimming whitespace
     const options = manualOptionsText
@@ -569,7 +569,7 @@ export function CreateCompetitionForm({ alwaysOpen = false }: CreateCompetitionF
           event_name: f.event_name,
           sport: f.sport,
           start_time: f.start_time,
-          lock_time: f.lock_time ?? subtractMinutes(f.start_time, 30),
+          lock_time: f.lock_time ?? subtractMinutes(f.start_time, 10),
           external_event_id: f.external_event_id ?? undefined,
           prediction_type_configs: predConfigs,
         };

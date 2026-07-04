@@ -539,7 +539,7 @@ async function upsertEvent(
 }
 
 async function ingestCompetition(sb: SupabaseClient, fixture: CompetitionFile): Promise<void> {
-  const lockDefaultMinutes = fixture.competition.lock_default_minutes ?? 30;
+  const lockDefaultMinutes = fixture.competition.lock_default_minutes ?? 10;
 
   const comp = await upsertCompetition(sb, fixture.competition);
   console.log(

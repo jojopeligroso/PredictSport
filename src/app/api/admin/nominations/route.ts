@@ -122,7 +122,7 @@ export async function PATCH(request: Request) {
       .eq("id", body.competition_id)
       .single();
 
-    const lockDefaultMinutes = comp?.lock_default_minutes ?? 5;
+    const lockDefaultMinutes = comp?.lock_default_minutes ?? 10;
 
     const startTime =
       overrides.start_time ??
