@@ -361,35 +361,9 @@ export async function GET(request: NextRequest) {
       points: cumulativePointsMap.get(uid) ?? pointsMap.get(uid) ?? 0,
       is_self: uid === user.id,
       source_group: sourceGroup?.group_name ?? null,
-      eliminated_after: sourceGroup?.group_name ?? "Group Stage",
       status: archivedMembership?.status ?? "eliminated",
     };
   }).sort((a, b) => b.points - a.points);
-
-  // Group eliminated members by stage for multi-section display
-  const eliminationStages: { stageName: string; members: typeof eliminatedList }[] = [];
-  const stageMap = new Map<string, typeof eliminatedList>();
-  for (const m of eliminatedList) {
-    const stage = m.eliminated_after;
-    const list = stageMap.get(stage) ?? [];
-    list.push(m);
-    stageMap.set(stage, list);
-  }
-  // Order: most recent knockout stages first, group stage last
-  const STAGE_ORDER: Record<string, number> = {
-    "Round of 16": 1,
-    "Round of 32": 2,
-    "Quarter-Finals": 3,
-    "Semi-Finals": 4,
-  };
-  const sortedStageNames = [...stageMap.keys()].sort((a, b) => {
-    const aOrder = STAGE_ORDER[a] ?? 99;
-    const bOrder = STAGE_ORDER[b] ?? 99;
-    return aOrder - bOrder;
-  });
-  for (const stageName of sortedStageNames) {
-    eliminationStages.push({ stageName, members: stageMap.get(stageName)! });
-  }
 
   // User's own group for backward compat
   const userGroupData = myGroup
@@ -404,7 +378,6 @@ export async function GET(request: NextRequest) {
     allGroups: groupsResponse,
     archivedGroups: archivedGroupsResponse,
     eliminatedMembers: eliminatedList,
-    eliminationStages,
     myGroupId,
     totalMembers: totalMembers ?? 0,
     hasLiveEvents,
