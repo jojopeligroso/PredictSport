@@ -40,14 +40,14 @@ interface Advancement {
 // KNOCKOUT_FEEDERS: targetSlot → [homeFeeder, awayFeeder]
 // Matches the tree in wc2026-knockout-tree.ts
 const KNOCKOUT_FEEDERS: Record<string, [string, string]> = {
-  r16_m1: ["r32_m2", "r32_m5"],
-  r16_m2: ["r32_m1", "r32_m3"],
-  r16_m3: ["r32_m4", "r32_m6"],
+  r16_m1: ["r32_m1", "r32_m4"],
+  r16_m2: ["r32_m3", "r32_m6"],
+  r16_m3: ["r32_m2", "r32_m5"],
   r16_m4: ["r32_m7", "r32_m8"],
-  r16_m5: ["r32_m11", "r32_m12"],
-  r16_m6: ["r32_m9", "r32_m10"],
-  r16_m7: ["r32_m14", "r32_m16"],
-  r16_m8: ["r32_m13", "r32_m15"],
+  r16_m5: ["r32_m12", "r32_m11"],
+  r16_m6: ["r32_m10", "r32_m9"],
+  r16_m7: ["r32_m15", "r32_m14"],
+  r16_m8: ["r32_m13", "r32_m16"],
   qf_m1: ["r16_m1", "r16_m2"],
   qf_m2: ["r16_m5", "r16_m6"],
   qf_m3: ["r16_m3", "r16_m4"],

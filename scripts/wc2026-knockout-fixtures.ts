@@ -55,26 +55,26 @@ export const WC2026_KNOCKOUT_FIXTURES: WCKnockoutFixture[] = [
   { matchNumber: 88, stage: 'R32', home: 'Winner F',    away: 'Runner-up C',          kickoffUtc: '2026-06-29T22:00:00Z', kickoffConfirmed: false, city: 'monterrey' },
 
   // ── Round of 16 (8 matches) ──────────────────────────────────────────────
-  { matchNumber: 89, stage: 'R16', home: 'W73',  away: 'W75', kickoffUtc: '2026-07-04T20:00:00Z', kickoffConfirmed: false, city: 'houston' },
-  { matchNumber: 90, stage: 'R16', home: 'W74',  away: 'W77', kickoffUtc: '2026-07-04T22:00:00Z', kickoffConfirmed: false, city: 'philadelphia' },
-  { matchNumber: 91, stage: 'R16', home: 'W76',  away: 'W78', kickoffUtc: '2026-07-05T22:00:00Z', kickoffConfirmed: false, city: 'new-york-new-jersey' },
-  { matchNumber: 92, stage: 'R16', home: 'W79',  away: 'W80', kickoffUtc: '2026-07-05T20:00:00Z', kickoffConfirmed: false, city: 'mexico-city' },
-  { matchNumber: 93, stage: 'R16', home: 'W81',  away: 'W82', kickoffUtc: '2026-07-06T22:00:00Z', kickoffConfirmed: false, city: 'seattle' },
-  { matchNumber: 94, stage: 'R16', home: 'W83',  away: 'W84', kickoffUtc: '2026-07-06T20:00:00Z', kickoffConfirmed: false, city: 'dallas' },
-  { matchNumber: 95, stage: 'R16', home: 'W85',  away: 'W87', kickoffUtc: '2026-07-07T22:00:00Z', kickoffConfirmed: false, city: 'vancouver' },
-  { matchNumber: 96, stage: 'R16', home: 'W86',  away: 'W88', kickoffUtc: '2026-07-07T20:00:00Z', kickoffConfirmed: false, city: 'atlanta' },
+  { matchNumber: 89, stage: 'R16', home: 'W73',  away: 'W75', kickoffUtc: '2026-07-04T17:00:00Z', kickoffConfirmed: true, city: 'houston' },
+  { matchNumber: 90, stage: 'R16', home: 'W74',  away: 'W77', kickoffUtc: '2026-07-04T21:00:00Z', kickoffConfirmed: true, city: 'philadelphia' },
+  { matchNumber: 91, stage: 'R16', home: 'W76',  away: 'W78', kickoffUtc: '2026-07-05T20:00:00Z', kickoffConfirmed: true, city: 'new-york-new-jersey' },
+  { matchNumber: 92, stage: 'R16', home: 'W79',  away: 'W80', kickoffUtc: '2026-07-06T00:00:00Z', kickoffConfirmed: true, city: 'mexico-city' },
+  { matchNumber: 93, stage: 'R16', home: 'W81',  away: 'W82', kickoffUtc: '2026-07-06T19:00:00Z', kickoffConfirmed: true, city: 'seattle' },
+  { matchNumber: 94, stage: 'R16', home: 'W83',  away: 'W84', kickoffUtc: '2026-07-07T00:00:00Z', kickoffConfirmed: true, city: 'dallas' },
+  { matchNumber: 95, stage: 'R16', home: 'W85',  away: 'W87', kickoffUtc: '2026-07-07T16:00:00Z', kickoffConfirmed: true, city: 'vancouver' },
+  { matchNumber: 96, stage: 'R16', home: 'W86',  away: 'W88', kickoffUtc: '2026-07-07T20:00:00Z', kickoffConfirmed: true, city: 'atlanta' },
 
   // ── Quarter-finals (4 matches) ───────────────────────────────────────────
-  { matchNumber: 97, stage: 'QF',  home: 'W89',  away: 'W90', kickoffUtc: '2026-07-09T20:00:00Z', kickoffConfirmed: false, city: 'boston' },
-  { matchNumber: 98, stage: 'QF',  home: 'W93',  away: 'W94', kickoffUtc: '2026-07-10T20:00:00Z', kickoffConfirmed: false, city: 'los-angeles' },
-  { matchNumber: 99, stage: 'QF',  home: 'W91',  away: 'W92', kickoffUtc: '2026-07-11T20:00:00Z', kickoffConfirmed: false, city: 'miami' },
-  { matchNumber: 100, stage: 'QF', home: 'W95',  away: 'W96', kickoffUtc: '2026-07-11T22:00:00Z', kickoffConfirmed: false, city: 'kansas-city' },
+  { matchNumber: 97, stage: 'QF',  home: 'W89',  away: 'W90', kickoffUtc: '2026-07-09T20:00:00Z', kickoffConfirmed: true, city: 'boston' },
+  { matchNumber: 98, stage: 'QF',  home: 'W93',  away: 'W94', kickoffUtc: '2026-07-10T19:00:00Z', kickoffConfirmed: true, city: 'los-angeles' },
+  { matchNumber: 99, stage: 'QF',  home: 'W91',  away: 'W92', kickoffUtc: '2026-07-11T21:00:00Z', kickoffConfirmed: true, city: 'miami' },
+  { matchNumber: 100, stage: 'QF', home: 'W95',  away: 'W96', kickoffUtc: '2026-07-12T01:00:00Z', kickoffConfirmed: true, city: 'kansas-city' },
 
   // ── Semi-finals (2 matches) ──────────────────────────────────────────────
-  { matchNumber: 101, stage: 'SF', home: 'W97',  away: 'W98',  kickoffUtc: '2026-07-14T20:00:00Z', kickoffConfirmed: false, city: 'dallas' },
-  { matchNumber: 102, stage: 'SF', home: 'W99',  away: 'W100', kickoffUtc: '2026-07-15T20:00:00Z', kickoffConfirmed: false, city: 'atlanta' },
+  { matchNumber: 101, stage: 'SF', home: 'W97',  away: 'W98',  kickoffUtc: '2026-07-14T19:00:00Z', kickoffConfirmed: true, city: 'dallas' },
+  { matchNumber: 102, stage: 'SF', home: 'W99',  away: 'W100', kickoffUtc: '2026-07-15T19:00:00Z', kickoffConfirmed: true, city: 'atlanta' },
 
   // ── Third place + Final ──────────────────────────────────────────────────
-  { matchNumber: 103, stage: '3RD',   home: 'L101', away: 'L102', kickoffUtc: '2026-07-18T20:00:00Z', kickoffConfirmed: false, city: 'miami' },
-  { matchNumber: 104, stage: 'FINAL', home: 'W101', away: 'W102', kickoffUtc: '2026-07-19T19:00:00Z', kickoffConfirmed: false, city: 'new-york-new-jersey' },
+  { matchNumber: 103, stage: '3RD',   home: 'L101', away: 'L102', kickoffUtc: '2026-07-18T21:00:00Z', kickoffConfirmed: true, city: 'miami' },
+  { matchNumber: 104, stage: 'FINAL', home: 'W101', away: 'W102', kickoffUtc: '2026-07-19T19:00:00Z', kickoffConfirmed: true, city: 'new-york-new-jersey' },
 ];

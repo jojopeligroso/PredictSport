@@ -190,6 +190,50 @@ export async function GET(request: Request) {
     }
   }
 
+  // ── Auto-conclude rounds where all events are confirmed ──────────────────
+  // Find rounds in "open" or "locked" status where every event has
+  // result_confirmed = true. Transition them to "scored".
+  let roundsConcluded = 0;
+
+  const { data: openRounds } = await supabase
+    .from("rounds")
+    .select("id, name, competition_id")
+    .in("status", ["open", "locked"]);
+
+  for (const round of openRounds ?? []) {
+    // Count total events and confirmed events in this round
+    const { count: totalEvents } = await supabase
+      .from("events")
+      .select("id", { count: "exact", head: true })
+      .eq("round_id", round.id);
+
+    if (!totalEvents || totalEvents === 0) continue;
+
+    const { count: confirmedEvents } = await supabase
+      .from("events")
+      .select("id", { count: "exact", head: true })
+      .eq("round_id", round.id)
+      .eq("result_confirmed", true);
+
+    if (confirmedEvents === totalEvents) {
+      const { error: roundErr } = await supabase
+        .from("rounds")
+        .update({ status: "scored" })
+        .eq("id", round.id);
+
+      if (roundErr) {
+        console.error(
+          `[results-cron] Failed to conclude round "${round.name}": ${roundErr.message}`
+        );
+      } else {
+        console.log(
+          `[results-cron] Auto-concluded round "${round.name}" (${round.id}) → scored`
+        );
+        roundsConcluded++;
+      }
+    }
+  }
+
   return NextResponse.json({
     ok: true,
     checked_at: now.toISOString(),
@@ -200,5 +244,6 @@ export async function GET(request: Request) {
     skipped: counts.skipped,
     errors: counts.error,
     manual_alerts_sent: manualAlertsSent,
+    rounds_concluded: roundsConcluded,
   });
 }
