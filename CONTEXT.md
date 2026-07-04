@@ -429,3 +429,10 @@ _Avoid_: Tag card (ambiguous with profile tag display)
 
 The 6–8 hour period between tag computation and tag publication during which the [[Competition Admin]] can review and [[Tag Suppression|suppress]] upcoming tags. Tags are computed after result confirmation but held in a pending state until the preview window expires. If no admin action is taken, tags auto-publish.
 _Avoid_: Review period, approval window (admin suppresses, never approves)
+
+---
+
+## Entrant Profile
+
+A competition-scoped page showing a single [[Entrant]]'s picks, points, accuracy, [[Reputation Tag]] history, and [[Prediction Group]] membership within one [[Competition Instance]]. Cannot link to any cross-competition or platform-level profile — competition isolation is a white-label requirement. Accessed via a person icon on leaderboard rows (Overall and Format). Gated by [[Pick Reveal]] — only revealed picks are shown. Self-viewing is permitted.
+_Avoid_: User profile, player page, cross-competition profile

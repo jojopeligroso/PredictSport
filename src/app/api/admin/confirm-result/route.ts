@@ -8,6 +8,7 @@ import type { PredictionType, EventPredictionType } from "@/types/database";
 import { notifyResultConfirmed } from "@/lib/notifications/result-confirmed";
 import { processEventTags, checkRoundCompletionAndProcessTags } from "@/lib/reputation";
 import { advanceKnockoutWinners } from "@/lib/tournament/bracket/advance";
+import { checkAndAdvanceRound } from "@/lib/tournament/round-progression";
 import { enrichAETFullTimeScore } from "@/lib/sports/fetch-result";
 
 interface ConfirmResultBody {
@@ -334,6 +335,11 @@ export async function POST(request: Request) {
   // Check if round is fully resulted → trigger behavioural tags (fire-and-forget)
   checkRoundCompletionAndProcessTags(competitionId as string, body.event_id).catch((err) => {
     console.error("[confirm-result] Round tag processing failed:", err);
+  });
+
+  // Auto-advance to next round if all events in current round are confirmed (fire-and-forget)
+  checkAndAdvanceRound(body.event_id, competitionId as string).catch((err) => {
+    console.error("[confirm-result] Round progression failed:", err);
   });
 
   return NextResponse.json({

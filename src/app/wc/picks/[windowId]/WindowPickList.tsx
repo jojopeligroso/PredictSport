@@ -14,6 +14,7 @@ import { ConfidencePills, ConfidenceIntroCard, ConfidenceBreadcrumb } from "@/co
 import { useConfidenceDisclosure } from "@/hooks/useConfidenceDisclosure";
 import { ScoreInput } from "@/components/ScoreInput";
 import { FixtureCardSurface } from "@/components/wc/FixtureCardSurface";
+import { CascadeCard } from "@/components/CascadeCard";
 
 import { deriveWinnerFromScore } from "@/lib/score-format";
 import { getPredictionSummary } from "@/lib/prediction-summary";
@@ -1170,19 +1171,20 @@ export function WindowPickList({
   const stackGap = surface === "card" ? "space-y-3" : "space-y-2";
 
   return (
-    <div className={stackGap}>
-      {events.map((event) => (
-        <MatchPickRow
-          key={event.id}
-          competitionId={competitionId}
-          event={event}
-          initialPredictions={predsByEvent.get(event.id) ?? []}
-          windowLocked={windowLocked}
-          onWinnerLanded={handleWinnerLanded}
-          surface={surface}
-          fixture={fixtureByEventId?.get(event.id)}
-          showCardCountdown={showCardCountdown}
-        />
+    <div className={`${stackGap} overflow-hidden`}>
+      {events.map((event, i) => (
+        <CascadeCard key={event.id} index={i}>
+          <MatchPickRow
+            competitionId={competitionId}
+            event={event}
+            initialPredictions={predsByEvent.get(event.id) ?? []}
+            windowLocked={windowLocked}
+            onWinnerLanded={handleWinnerLanded}
+            surface={surface}
+            fixture={fixtureByEventId?.get(event.id)}
+            showCardCountdown={showCardCountdown}
+          />
+        </CascadeCard>
       ))}
     </div>
   );

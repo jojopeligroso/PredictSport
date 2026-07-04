@@ -5,6 +5,7 @@ import { resolveWcCompetition } from "@/lib/wc/resolve-wc-competition";
 import { fixtureFilter } from "@/lib/tournament/shared-fixtures";
 import { PicksClient } from "./PicksClient";
 import { EmbeddedBracketKoEditor } from "./EmbeddedBracketKoEditor";
+import { FormatScoringExplainer } from "./FormatScoringExplainer";
 import { PredictionBanner } from "@/components/wc/PredictionBanner";
 import type { WindowEvent } from "./WindowPickList";
 import type { Prediction } from "@/types/database";
@@ -117,13 +118,38 @@ export default async function WindowPicksPage({
   // into the wizard's tiebreakers + best-thirds flow; (b) bracket-edit mode,
   // which swaps the read-only locked KO card for an inline bracket editor
   // when the round is locked for picks but the bracket itself is still open.
-  const { data: bracketCls } = await supabase
-    .from("classifications")
-    .select("id, status")
-    .eq("competition_id", competition.id)
-    .eq("classification_key", "full_bracket")
-    .eq("status", "active")
-    .maybeSingle();
+  //
+  // Also look up the format classification membership to decide whether to
+  // show the Format scoring explainer on the picks page.
+  const [{ data: bracketCls }, { data: formatCls }] = await Promise.all([
+    supabase
+      .from("classifications")
+      .select("id, status")
+      .eq("competition_id", competition.id)
+      .eq("classification_key", "full_bracket")
+      .eq("status", "active")
+      .maybeSingle(),
+    supabase
+      .from("classifications")
+      .select("id")
+      .eq("competition_id", competition.id)
+      .eq("classification_key", "format")
+      .eq("status", "active")
+      .maybeSingle(),
+  ]);
+
+  let isFormatActive = false;
+  if (formatCls) {
+    const { data: formatMembership } = await supabase
+      .from("classification_memberships")
+      .select("status")
+      .eq("classification_id", formatCls.id)
+      .eq("user_id", user.id)
+      .maybeSingle();
+    isFormatActive =
+      formatMembership?.status === "active" ||
+      formatMembership?.status === "winner";
+  }
 
   type BracketSubmissionRow = {
     bracket_data: BracketSubmissionData | null;
@@ -226,6 +252,8 @@ export default async function WindowPicksPage({
       <div className="mt-3">
         <PredictionBanner events={events} predictions={predictions} />
       </div>
+
+      {isFormatActive && <FormatScoringExplainer />}
 
       {(isFinalised || (isWindowLocked && !isFinalised)) && (
         <div className="mt-2 inline-block rounded-full bg-ps-amber/20 px-3 py-1 text-xs font-semibold text-ps-amber">

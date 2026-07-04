@@ -319,6 +319,29 @@ See `SPORTS-ARCHITECTURE.md` for detailed spec (TBD).
 - [x] **CH-E2 — System message styling** — Done. System messages render centered, italic, muted (`text-xs text-ps-text-ter italic`) with no avatar and reply/edit/delete suppressed (`!isSystem` gate) at `ChatMessage.tsx:189-196`. (Audited 2026-06-14.)
 - [ ] **CH-E3 — Additional system events** — Extend system messages to: round opened ("Round {n} is open for predictions"), draw completed ("Groups have been drawn"), competition status changes. Each gated behind `chat_enabled`. *(2026-07-01 audit: PARTIAL — system_result, system_join, system_reckons, system_tag_reveal/change/reject, system_round_summary all exist in CHECK constraint + ChatMessage.tsx:221-251. Remaining: round_opened, draw_completed, status_changed message types.)*
 
+## Auto Round Progression
+
+> When the final event in a round has its result confirmed, the next round should automatically open. White-label comps (WC): always on, not admin-adjustable. Custom comps: same default, admin can toggle off.
+
+- [ ] **ARP-1 — Auto-open next round on final result confirmation** — After `confirm-result` or `autoResolveEvent` scores the last event in a round, check if all events in that round are `result_confirmed = true`. If yes, find the next round (by `round_number`) and set its status to open/active. Trigger point: the confirm-result API route and `autoResolveEvent` in `auto-result.ts`. Must be idempotent (re-confirming a result doesn't break anything).
+- [ ] **ARP-2 — Competition-level toggle** — Add `auto_round_progression boolean default true` to `competitions`. White-label competitions (those instantiated from a tournament blueprint) ignore this flag (always true). Custom competitions respect it. Admin UI checkbox in competition settings (only visible for custom comps).
+- [ ] **ARP-3 — System chat message on round open** — When a round auto-opens, insert a system chat message "Round {n} is open for predictions" (ties into CH-E3). Gated behind `chat_enabled`.
+- [ ] **ARP-4 — Push notification on round open** — Send push notification to all competition members when a new round opens (if opted in). Reuse existing notification infrastructure.
+
+## Live Features — Testing & Verification
+
+> "As it stands" live scoreboard (commit f5d1b37) and live provisional scoring for Format groups (PR #23 by dimakis).
+
+- [ ] **LIVE-T1 — "As it stands" scoreboard on leaderboard** — Verify the live scoreboard renders on the leaderboard island during active matches. Check: provisional points update, positions shift correctly, scoreboard disappears when no matches are live.
+- [ ] **LIVE-T2 — Format group live provisional scores** — Verify the Format tab group view shows live provisional points during a match. Points and positions should update in real-time, matching the existing Overall standings behavior.
+- [ ] **LIVE-T3 — LIVE badges on group headers** — Verify LIVE badge appears on YourGroupCard, KnockoutLeaderboard, and AllGroupsView headers when events are live. Badge should disappear when no matches are live.
+- [ ] **LIVE-T4 — Polling behavior** — Verify 60s polling starts when `hasLiveEvents: true` and stops when no matches are live. Polling should pause when tab is hidden (Page Visibility API). Check Network tab in DevTools.
+- [ ] **LIVE-T5 — PR #23 code review fixes** — Address review findings before merge: (a) prediction query limit of 5000 risks silent truncation; (b) no `.limit()` on confirmed events query in standings route (PostgREST 1k cap); (c) silent catch in live-overlay scorer swallows errors; (d) `LEADERBOARD_KEYS` defined inside component body (stale useMemo dep); (e) visibility toggle refetch drops `?provisional=true&live=true`; (f) 4 hardcoded English strings not using `t()`.
+
+## AET Display — 90-Minute Scoreline
+
+- [ ] **AET-1 — Show FT scoreline for AET matches** — When a match goes to extra time, the result card shows the AET aggregate (e.g. 3-2) but users also want to see the 90-minute FT score (e.g. 2-2). TheSportsDB doesn't provide the FT breakdown for AET matches — need to source from API-Football (`fulltime` score object) or ESPN. Add FT score to `result_data.score.periods.full_time` during ingestion, display as secondary line on result cards ("FT: 2-2") below the aggregate. Affects: `thesportsdb.ts` normalizer, `auto-result.ts` provider chain, `DashboardResultCard.tsx`, `FixturesTabs.tsx`.
+
 ## Prediction Visibility Revisit
 
 > **Run `/grill-with-docs` before any implementation.** Raised during chat feature design (2026-06-10). Currently predictions are hidden behind `pick_reveal_at` (defaults to `lock_time`). Questions to resolve: (1) Should other competition members see *what* you predicted after lock, or only *that* you predicted? (2) If visible, when — at lock, after result, or never? (3) How does this interact with chat (no prediction spoilers in system messages — already decided)? (4) Does the leaderboard or any social surface expose individual picks?

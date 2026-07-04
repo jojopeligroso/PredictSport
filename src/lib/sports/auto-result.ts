@@ -10,6 +10,7 @@ import { notifyResultDisputed } from "@/lib/notifications/result-disputed";
 import { processEventTags, checkRoundCompletionAndProcessTags } from "@/lib/reputation";
 import { TEAM_ALIASES, applyTeamAliases } from "@/lib/sports/team-aliases";
 import { advanceKnockoutWinners } from "@/lib/tournament/bracket/advance";
+import { checkAndAdvanceRound } from "@/lib/tournament/round-progression";
 
 // ---------------------------------------------------------------------------
 // Types
@@ -449,6 +450,11 @@ export async function autoResolveEvent(
       });
     }
 
+    // Auto-advance to next round if all events in current round are confirmed (fire-and-forget)
+    checkAndAdvanceRound(event.id, event.competition_id).catch((err) => {
+      console.error("[auto-resolve] Round progression failed:", err);
+    });
+
     // Propagate result to sibling events (same fixture across other
     // competition instances). One real-world match = one result,
     // regardless of how many instances were created from the blueprint.
@@ -856,6 +862,9 @@ async function propagateResultToSiblings(
     // Process reputation tags for sibling instance
     processEventTags(sibling.competition_id, sibling.id).catch(() => {});
     checkRoundCompletionAndProcessTags(sibling.competition_id, sibling.id).catch(() => {});
+
+    // Auto-advance round for sibling competition (fire-and-forget)
+    checkAndAdvanceRound(sibling.id, sibling.competition_id).catch(() => {});
 
     console.log(
       `[auto-result] propagated result to sibling ${sibling.id} (competition ${sibling.competition_id})`,

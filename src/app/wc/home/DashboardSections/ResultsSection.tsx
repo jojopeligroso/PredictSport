@@ -8,6 +8,7 @@ import {
   computeMovement,
 } from "@/components/wc/DashboardResultCard";
 import { OnboardingSection } from "@/components/wc/OnboardingFlow";
+import { CascadeCard } from "@/components/CascadeCard";
 import type { ResultRow } from "../fetchDashboardData";
 
 interface ResultsSectionProps {
@@ -56,14 +57,15 @@ export function ResultsSection({
           <section className="ps-panel mt-5">
             <div className="rounded-xl border border-ps-border bg-ps-surface p-4">
               <ResultsHeader results={windowedResults} t={t} />
-              <div className="mt-3 space-y-0 divide-y divide-ps-border">
-                {visibleResults.map((r) => (
-                  <DashboardResultCard
-                    key={r.fixture.externalId}
-                    result={r}
-                    movement={computeMovement(r)}
-                    streak={streakByExternalId.get(r.fixture.externalId) ?? 0}
-                  />
+              <div className="mt-3 space-y-0 divide-y divide-ps-border overflow-hidden">
+                {visibleResults.map((r, i) => (
+                  <CascadeCard key={r.fixture.externalId} index={i}>
+                    <DashboardResultCard
+                      result={r}
+                      movement={computeMovement(r)}
+                      streak={streakByExternalId.get(r.fixture.externalId) ?? 0}
+                    />
+                  </CascadeCard>
                 ))}
               </div>
               {canExpandResults && remainingResultsCount > 0 && (
