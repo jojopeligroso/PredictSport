@@ -227,16 +227,7 @@ export async function GET(request: NextRequest) {
       liveEventIds = live.liveEventIds;
 
       // Build per-user prediction map for client display (exact_score + winner)
-      console.log("[standings] live overlay result:", {
-        hasLiveEvents: live.hasLiveEvents,
-        liveEventIds: live.liveEventIds,
-        livePredictionsCount: live.livePredictions?.length ?? 0,
-        samplePred: live.livePredictions?.[0] ? {
-          user_id: live.livePredictions[0].user_id,
-          prediction_type: live.livePredictions[0].prediction_type,
-          has_prediction_data: !!live.livePredictions[0].prediction_data,
-        } : null,
-      });
+      console.log(`[dbg] live=${live.hasLiveEvents} evts=${live.liveEventIds.length} preds=${live.livePredictions?.length ?? 0}`);
       if (hasLiveEvents && live.livePredictions) {
         for (const pred of live.livePredictions) {
           if (pred.prediction_type === "exact_score") {
