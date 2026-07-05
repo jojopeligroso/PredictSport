@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { createServiceClient } from "@/lib/supabase/server";
+import { createServiceClient } from "@/lib/supabase/service";
 import { applyLiveOverlay } from "@/lib/tournament/live-overlay";
 
 export async function GET() {
