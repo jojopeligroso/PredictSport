@@ -771,7 +771,7 @@ function FlipRow({
             {/* Inline prediction chips (visible when showPicks toggle is on) */}
             {showPicks && hasPredictions && (
               <span className="mx-1.5 shrink-0 font-mono text-xs font-semibold text-ps-text-sec">
-                {livePredictions!.map((p, i) => (
+                {livePredictions!.filter((p) => p.home_score != null && p.away_score != null).map((p, i) => (
                   <span key={p.event_id}>
                     {i > 0 && <span className="text-ps-text-ter"> · </span>}
                     {p.home_score}–{p.away_score}
@@ -813,7 +813,7 @@ function FlipRow({
                   {row.display_name}
                 </span>
                 <span className="ml-auto shrink-0 font-mono text-sm font-bold tabular-nums text-ps-text-sec">
-                  {livePredictions!.map((p, i) => {
+                  {livePredictions!.filter((p) => p.home_score != null && p.away_score != null).map((p, i) => {
                     const match = liveMatches?.find((m) => m.id === p.event_id);
                     const trigrams = match?.event_name?.split(" vs ") ?? [];
                     return (
