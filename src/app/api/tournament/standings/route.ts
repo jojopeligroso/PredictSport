@@ -227,31 +227,34 @@ export async function GET(request: NextRequest) {
       liveEventIds = live.liveEventIds;
 
       // Build per-user prediction map for client display (exact_score + winner)
-      console.log(`[dbg] live=${live.hasLiveEvents} evts=${live.liveEventIds.length} preds=${live.livePredictions?.length ?? 0}`);
       if (hasLiveEvents && live.livePredictions) {
         for (const pred of live.livePredictions) {
+          const pd = pred.prediction_data as Record<string, unknown>;
           if (pred.prediction_type === "exact_score") {
-            const pd = pred.prediction_data as { home_score?: number; away_score?: number };
-            if (pd.home_score == null || pd.away_score == null) continue;
+            // prediction_data shape: { home: number, away: number }
+            const home = pd.home as number | undefined;
+            const away = pd.away as number | undefined;
+            if (home == null || away == null) continue;
             if (!livePredictionsByUser[pred.user_id]) {
               livePredictionsByUser[pred.user_id] = [];
             }
             livePredictionsByUser[pred.user_id].push({
               event_id: pred.event_id,
               prediction_type: "exact_score",
-              home_score: pd.home_score,
-              away_score: pd.away_score,
+              home_score: home,
+              away_score: away,
             });
           } else if (pred.prediction_type === "winner") {
-            const pd = pred.prediction_data as { winner?: string };
-            if (!pd.winner) continue;
+            // prediction_data shape: { value: string }
+            const winner = pd.value as string | undefined;
+            if (!winner) continue;
             if (!livePredictionsByUser[pred.user_id]) {
               livePredictionsByUser[pred.user_id] = [];
             }
             livePredictionsByUser[pred.user_id].push({
               event_id: pred.event_id,
               prediction_type: "winner",
-              winner: pd.winner,
+              winner,
             });
           }
         }
