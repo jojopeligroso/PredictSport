@@ -6,6 +6,7 @@ import { eliminateFromFormat, type EliminationResult } from "@/lib/tournament/fo
 import { computeAndPublishFinalisationTags } from "@/lib/reputation/assign-finalisation";
 import { getProvidersForSport } from "@/lib/sports/registry";
 import type { Sport } from "@/lib/sports/types";
+import { createServiceClient } from "@/lib/supabase/service";
 
 /**
  * Step 1: Confirm individual fixture result for tournament competitions.
@@ -372,39 +373,44 @@ export async function finaliseStage(
     }
   }
 
-  // Create stage finalisation record (using first competition for now)
-  const { data: finalisation, error: finError } = await supabase
+  // Idempotent: reuse existing stage finalisation record if one exists (allows safe retries
+  // when a prior run created the record but failed during elimination before marking the stage finalised)
+  let finalisation: { id: string };
+  const { data: existingFin } = await supabase
     .from("result_finalisations")
-    .insert({
-      competition_id: competitions[0].id,
-      sporting_stage_id: stageId,
-      finalisation_type: "stage",
-      status: "finalised",
-      finalised_at: new Date().toISOString(),
-      finalised_by: finalisedBy,
-      finalisation_method: finalisedBy ? "manual" : "automatic",
-    })
-    .select()
-    .single();
+    .select("id")
+    .eq("sporting_stage_id", stageId)
+    .eq("finalisation_type", "stage")
+    .maybeSingle();
 
-  if (finError || !finalisation) {
-    throw new Error(`Failed to create stage finalisation: ${finError?.message}`);
+  if (existingFin) {
+    finalisation = existingFin;
+  } else {
+    const { data: newFin, error: finError } = await supabase
+      .from("result_finalisations")
+      .insert({
+        competition_id: competitions[0].id,
+        sporting_stage_id: stageId,
+        finalisation_type: "stage",
+        status: "finalised",
+        finalised_at: new Date().toISOString(),
+        finalised_by: finalisedBy,
+        finalisation_method: finalisedBy ? "manual" : "automatic",
+      })
+      .select()
+      .single();
+
+    if (finError || !newFin) {
+      throw new Error(`Failed to create stage finalisation: ${finError?.message}`);
+    }
+    finalisation = newFin;
   }
-
-  // Update sporting stage status
-  await supabase
-    .from("sporting_stages")
-    .update({
-      status: "finalised",
-      finalised_at: new Date().toISOString(),
-      finalised_by: finalisedBy,
-    })
-    .eq("id", stageId);
 
   // Run format elimination for all format_elimination classifications
   // across all competition instances sharing this tournament.
   // This must happen BEFORE knockout bracket activation so that
   // eliminated entrants are removed before the next phase begins.
+  // NOTE: Stage status is updated AFTER elimination succeeds (atomicity fix).
   const eliminationResults: { competitionId: string; classificationId: string; result: EliminationResult }[] = [];
 
   for (const comp of competitions) {
@@ -421,6 +427,13 @@ export async function finaliseStage(
     }
   }
 
+  // Write immutable stage_results rows BEFORE generating snapshots.
+  // Uses service-role client (stage_results has no authenticated INSERT policy).
+  // Idempotent via unique index + ignoreDuplicates.
+  for (const { competitionId, classificationId, result } of eliminationResults) {
+    await writeStageResults(classificationId, competitionId, stageId, result);
+  }
+
   // B4: Generate stage standings snapshots after elimination
   for (const { competitionId, classificationId, result } of eliminationResults) {
     await generateStageSnapshot(
@@ -433,6 +446,17 @@ export async function finaliseStage(
       result
     );
   }
+
+  // COMMIT POINT: mark stage as finalised only after elimination + snapshots succeed.
+  // If any step above threw, the stage remains unfinalised and can be safely retried.
+  await supabase
+    .from("sporting_stages")
+    .update({
+      status: "finalised",
+      finalised_at: new Date().toISOString(),
+      finalised_by: finalisedBy,
+    })
+    .eq("id", stageId);
 
   // E1/E2: Compute and publish finalisation tags (Unluckiest 4th Place, Most Contested 3rd Place).
   // Fire-and-forget per competition instance — errors logged but don't block finalisation.
@@ -854,4 +878,61 @@ async function generateStageSnapshot(
     generated_by: generatedBy,
     generation_method: "manual",
   });
+}
+
+/**
+ * Write immutable per-user stage_results rows at stage conclusion.
+ * Uses service-role client (table has no INSERT policy for authenticated users).
+ * Idempotent via unique index (sporting_stage_id, group_id, user_id) + ignoreDuplicates.
+ */
+async function writeStageResults(
+  classificationId: string,
+  competitionId: string,
+  stageId: string,
+  eliminationResult: EliminationResult
+): Promise<void> {
+  const { standings_at_elimination, eliminated_user_ids, survivor_user_ids, source_group_ids } = eliminationResult;
+  if (standings_at_elimination.length === 0) return;
+
+  const eliminatedSet = new Set(eliminated_user_ids);
+  const survivorSet = new Set(survivor_user_ids);
+
+  const rows = standings_at_elimination.map((row, idx) => {
+    // group_id is present at runtime on GroupStandingRow but typed as StandingRow
+    const groupId = (row as { group_id?: string }).group_id ?? source_group_ids[0] ?? null;
+
+    let status: string;
+    if (eliminatedSet.has(row.user_id)) {
+      status = "eliminated";
+    } else if (survivorSet.has(row.user_id)) {
+      status = "advanced";
+    } else {
+      status = "advanced"; // fallback — should not happen
+    }
+
+    return {
+      competition_id: competitionId,
+      classification_id: classificationId,
+      sporting_stage_id: stageId,
+      group_id: groupId,
+      user_id: row.user_id,
+      rank: (row as { group_position?: number }).group_position ?? idx + 1,
+      points: row.points,
+      exact_hits: row.tie_break_values?.exact_hits ?? 0,
+      outcome_hits: row.tie_break_values?.outcome_hits ?? 0,
+      status,
+    };
+  });
+
+  const svc = createServiceClient();
+  const { error } = await svc
+    .from("stage_results")
+    .upsert(rows, { onConflict: "sporting_stage_id,group_id,user_id", ignoreDuplicates: true });
+
+  if (error) {
+    console.error("[writeStageResults] Failed to write stage_results:", error.message);
+    throw new Error(`Failed to write stage_results: ${error.message}`);
+  }
+
+  console.log(`[writeStageResults] Wrote ${rows.length} rows for stage ${stageId}, classification ${classificationId}`);
 }

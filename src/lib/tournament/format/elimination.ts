@@ -28,6 +28,8 @@ export interface EliminationResult {
   tie_overflow: number;
   /** Ranked standings used for elimination decisions (for snapshot) */
   standings_at_elimination: StandingRow[];
+  /** Group IDs that were active before archival — needed for stage_results snapshot */
+  source_group_ids: string[];
 }
 
 /** Get the next available group_number for a classification. */
@@ -264,6 +266,7 @@ async function eliminateGroupStage(
     target_survivors: targetSurvivors,
     tie_overflow: tieOverflow,
     standings_at_elimination: allStandings,
+    source_group_ids: groupList.map((g) => g.id),
   };
 }
 
@@ -407,12 +410,38 @@ async function eliminateKnockoutStage(
       target_survivors: targetSurvivors,
       tie_overflow: 0,
       standings_at_elimination: [],
+      source_group_ids: groupIds,
     };
   }
 
   // Compute flat standings for all members using stage-local points
   // Use the first (should be only) active group's standings
   const standings = await computeFormatGroupStandings(supabase, groupIds[0], stageId);
+
+  // Inject cumulative overall points/exact_hits from prior stage_results
+  // for tiebreakers 2 & 3 in compareEntrantScoreWithOverall
+  const memberUserIds = standings.map((s) => s.user_id);
+  if (memberUserIds.length > 0) {
+    const { data: priorResults } = await supabase
+      .from("stage_results")
+      .select("user_id, points, exact_hits")
+      .eq("classification_id", classificationId)
+      .in("user_id", memberUserIds);
+
+    if (priorResults && priorResults.length > 0) {
+      const cumulativePoints = new Map<string, number>();
+      const cumulativeExact = new Map<string, number>();
+      for (const r of priorResults) {
+        cumulativePoints.set(r.user_id, (cumulativePoints.get(r.user_id) ?? 0) + (r.points ?? 0));
+        cumulativeExact.set(r.user_id, (cumulativeExact.get(r.user_id) ?? 0) + (r.exact_hits ?? 0));
+      }
+      for (const row of standings) {
+        row.tie_break_values.overall_points = cumulativePoints.get(row.user_id) ?? 0;
+        row.tie_break_values.overall_exact_hits = cumulativeExact.get(row.user_id) ?? 0;
+      }
+    }
+  }
+
   const sorted = standings.sort((a, b) => {
     // Sort by stage-local points descending, then tiebreakers
     return compareEntrantScoreWithOverall(a, b);
@@ -544,6 +573,7 @@ async function eliminateKnockoutStage(
     target_survivors: targetSurvivors,
     tie_overflow: tieOverflow,
     standings_at_elimination: sorted,
+    source_group_ids: groupIds,
   };
 }
 
