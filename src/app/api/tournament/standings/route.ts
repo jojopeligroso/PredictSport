@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
+import { createServiceClient } from "@/lib/supabase/service";
 import { applyVisibility, type ViewerRole } from "@/lib/tournament/visibility";
 import { applyLiveOverlay } from "@/lib/tournament/live-overlay";
 
@@ -341,35 +342,28 @@ export async function GET(request: NextRequest) {
     const overallPointsMap = new Map<string, number>();
     const overallExactMap = new Map<string, number>();
     if (isFormat && tournamentId) {
-      const [overallResult, accResult] = await Promise.all([
-        supabase.rpc("sum_prediction_points", {
+      // Use service client to bypass RLS on predictions table —
+      // the authenticated user's session can't read other users' predictions
+      // via SECURITY INVOKER RPCs, which returns 0 rows for the tiebreaker.
+      const svc = createServiceClient();
+      const [{ data: overallRows }, { data: overallAccRows }] = await Promise.all([
+        svc.rpc("sum_prediction_points", {
           p_user_ids: userIds,
           p_tournament_id: tournamentId,
           p_competition_id: classification.competition_id,
         }),
-        supabase.rpc("prediction_accuracy_stats", {
+        svc.rpc("prediction_accuracy_stats", {
           p_user_ids: userIds,
           p_tournament_id: tournamentId,
           p_competition_id: classification.competition_id,
         }),
       ]);
-      if (overallResult.error) {
-        console.error("[standings] sum_prediction_points error:", overallResult.error.message);
-      }
-      if (accResult.error) {
-        console.error("[standings] prediction_accuracy_stats error:", accResult.error.message);
-      }
-      const overallRows = overallResult.data;
-      const overallAccRows = accResult.data;
-      console.log("[standings] overallRows count:", (overallRows ?? []).length, "accRows count:", (overallAccRows ?? []).length);
       for (const r of (overallRows ?? []) as Array<{ user_id: string; total_points: number }>) {
         overallPointsMap.set(r.user_id, r.total_points ?? 0);
       }
       for (const r of (overallAccRows ?? []) as Array<{ user_id: string; score_correct: number }>) {
         overallExactMap.set(r.user_id, r.score_correct ?? 0);
       }
-    } else {
-      console.log("[standings] skipped overall tiebreaker fetch: isFormat=", isFormat, "tournamentId=", tournamentId);
     }
 
     const rawStandings = [...pointsMap.entries()]
@@ -397,8 +391,6 @@ export async function GET(request: NextRequest) {
         status: memberships.find((m: { user_id: string }) => m.user_id === userId)?.status ?? "active",
         eliminated: memberships.find((m: { user_id: string }) => m.user_id === userId)?.status === "eliminated",
         accuracy: accuracyMap.get(userId) ?? { outcome: null, exact: null },
-        _tb_overall: overallPointsMap.get(userId) ?? -1,
-        _tb_exact: overallExactMap.get(userId) ?? -1,
       }));
 
     const standings = applyVisibility(
@@ -418,18 +410,6 @@ export async function GET(request: NextRequest) {
       liveEventIds,
       liveMatches,
       livePredictionsByUser,
-      _debug_tiebreaker: isFormat ? {
-        isFormat,
-        tournamentId,
-        overallPointsMapSize: overallPointsMap.size,
-        overallExactMapSize: overallExactMap.size,
-        overallPoints: Object.fromEntries(
-          [...overallPointsMap.entries()].map(([uid, pts]) => [nameMap.get(uid) ?? uid, pts])
-        ),
-        exactScores: Object.fromEntries(
-          [...overallExactMap.entries()].map(([uid, pts]) => [nameMap.get(uid) ?? uid, pts])
-        ),
-      } : undefined,
     });
   }
 
