@@ -195,6 +195,7 @@ export async function GET(request: NextRequest) {
 
   // Aggregate stage-local points per user (Format resets points per stage).
   const pointsMap = new Map<string, number>();
+  const overallPointsMap = new Map<string, number>();
   for (const uid of allUserIds) pointsMap.set(uid, 0);
   let hasLiveEvents = false;
 
@@ -256,6 +257,21 @@ export async function GET(request: NextRequest) {
       isFormat: true,
     });
     hasLiveEvents = live.hasLiveEvents;
+
+    // ── Tiebreaker: overall tournament points ───────────────────────────
+    // When stage points are equal, sort by tournament-wide overall points.
+    // Uses service client to bypass RLS (same pattern as standings route).
+    if (tournamentId) {
+      const svcTie = createServiceClient();
+      const { data: overallRows } = await svcTie.rpc("sum_prediction_points", {
+        p_user_ids: allUserIds,
+        p_tournament_id: tournamentId,
+        p_competition_id: competitionId,
+      });
+      for (const r of (overallRows ?? []) as Array<{ user_id: string; total_points: number }>) {
+        overallPointsMap.set(r.user_id, r.total_points ?? 0);
+      }
+    }
   }
 
   // Identify user's group
@@ -276,7 +292,12 @@ export async function GET(request: NextRequest) {
         is_self: m.user_id === user.id,
         status: m.status,
       }))
-      .sort((a, b) => b.points - a.points);
+      .sort((a, b) => {
+        if (b.points !== a.points) return b.points - a.points;
+        const aOverall = overallPointsMap.get(a.user_id) ?? 0;
+        const bOverall = overallPointsMap.get(b.user_id) ?? 0;
+        return bOverall - aOverall;
+      });
 
     return {
       id: g.id,
@@ -320,7 +341,12 @@ export async function GET(request: NextRequest) {
         is_self: m.user_id === user.id,
         status: m.status,
       }))
-      .sort((a, b) => b.points - a.points);
+      .sort((a, b) => {
+        if (b.points !== a.points) return b.points - a.points;
+        const aOverall = overallPointsMap.get(a.user_id) ?? 0;
+        const bOverall = overallPointsMap.get(b.user_id) ?? 0;
+        return bOverall - aOverall;
+      });
 
     return {
       id: g.id,
