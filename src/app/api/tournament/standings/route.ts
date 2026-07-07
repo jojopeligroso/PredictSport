@@ -341,7 +341,7 @@ export async function GET(request: NextRequest) {
     const overallPointsMap = new Map<string, number>();
     const overallExactMap = new Map<string, number>();
     if (isFormat && tournamentId) {
-      const [{ data: overallRows }, { data: overallAccRows }] = await Promise.all([
+      const [overallResult, accResult] = await Promise.all([
         supabase.rpc("sum_prediction_points", {
           p_user_ids: userIds,
           p_tournament_id: tournamentId,
@@ -353,12 +353,23 @@ export async function GET(request: NextRequest) {
           p_competition_id: classification.competition_id,
         }),
       ]);
+      if (overallResult.error) {
+        console.error("[standings] sum_prediction_points error:", overallResult.error.message);
+      }
+      if (accResult.error) {
+        console.error("[standings] prediction_accuracy_stats error:", accResult.error.message);
+      }
+      const overallRows = overallResult.data;
+      const overallAccRows = accResult.data;
+      console.log("[standings] overallRows count:", (overallRows ?? []).length, "accRows count:", (overallAccRows ?? []).length);
       for (const r of (overallRows ?? []) as Array<{ user_id: string; total_points: number }>) {
         overallPointsMap.set(r.user_id, r.total_points ?? 0);
       }
       for (const r of (overallAccRows ?? []) as Array<{ user_id: string; score_correct: number }>) {
         overallExactMap.set(r.user_id, r.score_correct ?? 0);
       }
+    } else {
+      console.log("[standings] skipped overall tiebreaker fetch: isFormat=", isFormat, "tournamentId=", tournamentId);
     }
 
     const rawStandings = [...pointsMap.entries()]
