@@ -166,8 +166,10 @@ export function ClassificationTabs({
   }>>([]);
   const [livePredictionsByUser, setLivePredictionsByUser] = useState<Record<string, Array<{
     event_id: string;
-    home_score: number;
-    away_score: number;
+    prediction_type: string;
+    home_score?: number;
+    away_score?: number;
+    winner?: string;
   }>>>({});
   const [showPicks, setShowPicks] = useState(false);
 
@@ -208,6 +210,11 @@ export function ClassificationTabs({
 
     return () => { cancelled = true; };
   }, [competitionId]);
+
+  // Reset showPicks when switching tabs
+  useEffect(() => {
+    setShowPicks(false);
+  }, [activeId]);
 
   useEffect(() => {
     if (!activeId) return;
@@ -370,7 +377,7 @@ export function ClassificationTabs({
       )}
 
       {/* Live / Confirmed toggle — visible when live events exist */}
-      {activeId !== RIVALS_TAB && liveEventsExist && (
+      {activeId !== RIVALS_TAB && hasLiveEvents && (
         <div className="mt-3 flex items-center justify-center gap-2">
           <LiveConfirmedToggle liveMode={liveMode} onToggle={() => { setLiveMode((m) => !m); setLoading(true); }} />
           {liveMode && hasLiveEvents && (
@@ -696,7 +703,7 @@ function FlipRow({
   tag?: LeaderboardTag;
   classificationKey?: string;
   showPicks?: boolean;
-  livePredictions?: Array<{ event_id: string; home_score: number; away_score: number }>;
+  livePredictions?: Array<{ event_id: string; prediction_type: string; home_score?: number; away_score?: number; winner?: string }>;
   liveMatches?: Array<{ id: string; event_name: string; home_score: number; away_score: number; status: string; start_time: string }>;
 }) {
   const t = useT();
@@ -771,10 +778,12 @@ function FlipRow({
             {/* Inline prediction chips (visible when showPicks toggle is on) */}
             {showPicks && hasPredictions && (
               <span className="mx-1.5 shrink-0 font-mono text-xs font-semibold text-ps-text-sec">
-                {livePredictions!.filter((p) => p.home_score != null && p.away_score != null).map((p, i) => (
+                {livePredictions!.map((p, i) => (
                   <span key={p.event_id}>
                     {i > 0 && <span className="text-ps-text-ter"> · </span>}
-                    {p.home_score}–{p.away_score}
+                    {p.prediction_type === "exact_score" && p.home_score != null && p.away_score != null
+                      ? `${p.home_score}–${p.away_score}`
+                      : p.winner ?? "?"}
                   </span>
                 ))}
               </span>
@@ -813,15 +822,23 @@ function FlipRow({
                   {row.display_name}
                 </span>
                 <span className="ml-auto shrink-0 font-mono text-sm font-bold tabular-nums text-ps-text-sec">
-                  {livePredictions!.filter((p) => p.home_score != null && p.away_score != null).map((p, i) => {
+                  {livePredictions!.map((p, i) => {
                     const match = liveMatches?.find((m) => m.id === p.event_id);
                     const trigrams = match?.event_name?.split(" vs ") ?? [];
+                    if (p.prediction_type === "exact_score" && p.home_score != null && p.away_score != null) {
+                      return (
+                        <span key={p.event_id} className="inline-flex items-center">
+                          {i > 0 && <span className="mx-1.5 text-ps-text-ter">·</span>}
+                          {trigrams[0] && <span className="text-micro font-semibold text-ps-text-ter">{trigrams[0].slice(0, 3).toUpperCase()}</span>}
+                          <span className={`mx-1 ${isMe ? "text-ps-amber" : "text-ps-text"}`}>{p.home_score}–{p.away_score}</span>
+                          {trigrams[1] && <span className="text-micro font-semibold text-ps-text-ter">{trigrams[1].slice(0, 3).toUpperCase()}</span>}
+                        </span>
+                      );
+                    }
                     return (
                       <span key={p.event_id} className="inline-flex items-center">
                         {i > 0 && <span className="mx-1.5 text-ps-text-ter">·</span>}
-                        {trigrams[0] && <span className="text-micro font-semibold text-ps-text-ter">{trigrams[0].slice(0, 3).toUpperCase()}</span>}
-                        <span className={`mx-1 ${isMe ? "text-ps-amber" : "text-ps-text"}`}>{p.home_score}–{p.away_score}</span>
-                        {trigrams[1] && <span className="text-micro font-semibold text-ps-text-ter">{trigrams[1].slice(0, 3).toUpperCase()}</span>}
+                        <span className={`${isMe ? "text-ps-amber" : "text-ps-text"}`}>{p.winner ?? "?"}</span>
                       </span>
                     );
                   })}
@@ -971,7 +988,7 @@ function StandingsTable({
   onToggleVisibility: (next: "public" | "private") => void;
   classificationKey?: string;
   showPicks?: boolean;
-  livePredictionsByUser?: Record<string, Array<{ event_id: string; home_score: number; away_score: number }>>;
+  livePredictionsByUser?: Record<string, Array<{ event_id: string; prediction_type: string; home_score?: number; away_score?: number; winner?: string }>>;
   liveMatches?: Array<{ id: string; event_name: string; home_score: number; away_score: number; status: string; start_time: string }>;
 }) {
   const t = useT();
