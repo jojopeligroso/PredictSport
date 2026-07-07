@@ -336,17 +336,28 @@ export async function GET(request: NextRequest) {
       (users ?? []).map((u: { id: string; display_name: string }) => [u.id, u.display_name])
     );
 
-    // For Format classifications, fetch overall (tournament-wide) points
-    // as a secondary tiebreaker when stage points are equal.
+    // For Format classifications, fetch tournament-wide overall points and
+    // exact score counts as tiebreakers when stage points are equal.
     const overallPointsMap = new Map<string, number>();
+    const overallExactMap = new Map<string, number>();
     if (isFormat && tournamentId) {
-      const { data: overallRows } = await supabase.rpc("sum_prediction_points", {
-        p_user_ids: userIds,
-        p_tournament_id: tournamentId,
-        p_competition_id: classification.competition_id,
-      });
+      const [{ data: overallRows }, { data: overallAccRows }] = await Promise.all([
+        supabase.rpc("sum_prediction_points", {
+          p_user_ids: userIds,
+          p_tournament_id: tournamentId,
+          p_competition_id: classification.competition_id,
+        }),
+        supabase.rpc("prediction_accuracy_stats", {
+          p_user_ids: userIds,
+          p_tournament_id: tournamentId,
+          p_competition_id: classification.competition_id,
+        }),
+      ]);
       for (const r of (overallRows ?? []) as Array<{ user_id: string; total_points: number }>) {
         overallPointsMap.set(r.user_id, r.total_points ?? 0);
+      }
+      for (const r of (overallAccRows ?? []) as Array<{ user_id: string; score_correct: number }>) {
+        overallExactMap.set(r.user_id, r.score_correct ?? 0);
       }
     }
 
@@ -358,7 +369,11 @@ export async function GET(request: NextRequest) {
         const aOverall = overallPointsMap.get(a[0]) ?? 0;
         const bOverall = overallPointsMap.get(b[0]) ?? 0;
         if (bOverall !== aOverall) return bOverall - aOverall;
-        // Tertiary: active above eliminated (only relevant for finalised stages)
+        // Tertiary: tournament-wide exact score hits descending
+        const aExact = overallExactMap.get(a[0]) ?? 0;
+        const bExact = overallExactMap.get(b[0]) ?? 0;
+        if (bExact !== aExact) return bExact - aExact;
+        // Quaternary: active above eliminated (only relevant for finalised stages)
         const aElim = memberships.find((m: { user_id: string }) => m.user_id === a[0])?.status === "eliminated" ? 1 : 0;
         const bElim = memberships.find((m: { user_id: string }) => m.user_id === b[0])?.status === "eliminated" ? 1 : 0;
         return aElim - bElim;
