@@ -397,6 +397,8 @@ export async function GET(request: NextRequest) {
         status: memberships.find((m: { user_id: string }) => m.user_id === userId)?.status ?? "active",
         eliminated: memberships.find((m: { user_id: string }) => m.user_id === userId)?.status === "eliminated",
         accuracy: accuracyMap.get(userId) ?? { outcome: null, exact: null },
+        _tb_overall: overallPointsMap.get(userId) ?? -1,
+        _tb_exact: overallExactMap.get(userId) ?? -1,
       }));
 
     const standings = applyVisibility(
