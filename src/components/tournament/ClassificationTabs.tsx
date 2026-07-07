@@ -211,9 +211,10 @@ export function ClassificationTabs({
     return () => { cancelled = true; };
   }, [competitionId]);
 
-  // Reset showPicks when switching tabs
+  // Reset per-tab state when switching tabs
   useEffect(() => {
     setShowPicks(false);
+    setLiveEventsExist(false);
   }, [activeId]);
 
   useEffect(() => {
@@ -377,7 +378,7 @@ export function ClassificationTabs({
       )}
 
       {/* Live / Confirmed toggle — visible when live events exist */}
-      {activeId !== RIVALS_TAB && hasLiveEvents && (
+      {activeId !== RIVALS_TAB && (hasLiveEvents || liveEventsExist) && (
         <div className="mt-3 flex items-center justify-center gap-2">
           <LiveConfirmedToggle liveMode={liveMode} onToggle={() => { setLiveMode((m) => !m); setLoading(true); }} />
           {liveMode && hasLiveEvents && (
