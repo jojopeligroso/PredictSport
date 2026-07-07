@@ -416,6 +416,18 @@ export async function GET(request: NextRequest) {
       liveEventIds,
       liveMatches,
       livePredictionsByUser,
+      _debug_tiebreaker: isFormat ? {
+        isFormat,
+        tournamentId,
+        overallPointsMapSize: overallPointsMap.size,
+        overallExactMapSize: overallExactMap.size,
+        overallPoints: Object.fromEntries(
+          [...overallPointsMap.entries()].map(([uid, pts]) => [nameMap.get(uid) ?? uid, pts])
+        ),
+        exactScores: Object.fromEntries(
+          [...overallExactMap.entries()].map(([uid, pts]) => [nameMap.get(uid) ?? uid, pts])
+        ),
+      } : undefined,
     });
   }
 
