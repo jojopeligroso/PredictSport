@@ -336,10 +336,29 @@ export async function GET(request: NextRequest) {
       (users ?? []).map((u: { id: string; display_name: string }) => [u.id, u.display_name])
     );
 
+    // For Format classifications, fetch overall (tournament-wide) points
+    // as a secondary tiebreaker when stage points are equal.
+    const overallPointsMap = new Map<string, number>();
+    if (isFormat && tournamentId) {
+      const { data: overallRows } = await supabase.rpc("sum_prediction_points", {
+        p_user_ids: userIds,
+        p_tournament_id: tournamentId,
+        p_competition_id: classification.competition_id,
+      });
+      for (const r of (overallRows ?? []) as Array<{ user_id: string; total_points: number }>) {
+        overallPointsMap.set(r.user_id, r.total_points ?? 0);
+      }
+    }
+
     const rawStandings = [...pointsMap.entries()]
       .sort((a, b) => {
+        // Primary: stage points descending
         if (b[1] !== a[1]) return b[1] - a[1];
-        // Tiebreaker: advanced players rank above eliminated
+        // Secondary: overall (tournament-wide) points descending
+        const aOverall = overallPointsMap.get(a[0]) ?? 0;
+        const bOverall = overallPointsMap.get(b[0]) ?? 0;
+        if (bOverall !== aOverall) return bOverall - aOverall;
+        // Tertiary: active above eliminated (only relevant for finalised stages)
         const aElim = memberships.find((m: { user_id: string }) => m.user_id === a[0])?.status === "eliminated" ? 1 : 0;
         const bElim = memberships.find((m: { user_id: string }) => m.user_id === b[0])?.status === "eliminated" ? 1 : 0;
         return aElim - bElim;
