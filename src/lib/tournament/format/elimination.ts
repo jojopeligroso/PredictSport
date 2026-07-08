@@ -386,7 +386,20 @@ async function eliminateKnockoutStage(
     .map((g) => g.id);
 
   if (groupIds.length === 0) {
-    throw new Error(`No active groups found for knockout elimination in classification ${classificationId}`);
+    // No active groups — classification may have too few members or groups
+    // were never created for this stage. Return a no-op result so sibling
+    // competitions don't block stage finalisation.
+    return {
+      stage_id: stageId,
+      classification_id: classificationId,
+      survivor_user_ids: [],
+      eliminated_user_ids: [],
+      survivors: 0,
+      target_survivors: 0,
+      tie_overflow: 0,
+      standings_at_elimination: [],
+      source_group_ids: [],
+    };
   }
 
   // Fetch all active members across groups (should be one group, but handle edge cases)

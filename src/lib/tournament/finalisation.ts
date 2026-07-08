@@ -422,6 +422,34 @@ export async function finaliseStage(
       .in("status", ["active"]);
 
     for (const cls of formatClassifications ?? []) {
+      // Idempotency: skip if elimination already ran for this classification+stage
+      // (stage_results rows exist from a prior partial run)
+      const { count: existingResults } = await supabase
+        .from("stage_results")
+        .select("id", { count: "exact", head: true })
+        .eq("classification_id", cls.id)
+        .eq("sporting_stage_id", stageId);
+
+      if ((existingResults ?? 0) > 0) {
+        // Already processed — push a no-op result so snapshots still generate
+        eliminationResults.push({
+          competitionId: comp.id,
+          classificationId: cls.id,
+          result: {
+            stage_id: stageId,
+            classification_id: cls.id,
+            survivor_user_ids: [],
+            eliminated_user_ids: [],
+            survivors: 0,
+            target_survivors: 0,
+            tie_overflow: 0,
+            standings_at_elimination: [],
+            source_group_ids: [],
+          },
+        });
+        continue;
+      }
+
       const result = await eliminateFromFormat(supabase, cls.id, stageId);
       eliminationResults.push({ competitionId: comp.id, classificationId: cls.id, result });
     }
