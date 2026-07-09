@@ -259,7 +259,8 @@ export async function POST(request: Request) {
       predType,
       predData,
       resultData as Record<string, unknown>,
-      eptData
+      eptData,
+      winnerOpts
     );
 
     scores.push({

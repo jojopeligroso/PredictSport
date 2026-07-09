@@ -754,7 +754,7 @@ async function scoreEventPredictions(
       if (override) predData = override;
     }
 
-    const scoreResult = scorePrediction(predType, predData, resultData, eptData);
+    const scoreResult = scorePrediction(predType, predData, resultData, eptData, winnerOpts);
 
     scores.push({
       id: prediction.id as string,

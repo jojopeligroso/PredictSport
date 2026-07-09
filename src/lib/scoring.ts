@@ -18,7 +18,10 @@ export function scorePrediction(
   predictionType: PredictionType,
   predictionData: Record<string, unknown>,
   resultData: Record<string, unknown>,
-  ept: Pick<EventPredictionType, "points" | "partial_points" | "config">
+  ept: Pick<EventPredictionType, "points" | "partial_points" | "config">,
+  /** Winner EPT options — pass to exact_score so it can detect home/away
+   *  swaps between event name order and provider result order. */
+  eventOptions?: string[]
 ): ScoringResult {
   const fullPoints = ept.points;
   const partialPoints = ept.partial_points;
@@ -52,7 +55,7 @@ export function scorePrediction(
       return scoreProgression(predictionData, resultData, fullPoints, partialPoints, ept.config);
 
     case "exact_score":
-      return scoreExactScore(predictionData, resultData, fullPoints);
+      return scoreExactScore(predictionData, resultData, fullPoints, eventOptions);
 
     default:
       return { is_correct: null, is_partial: false, points_awarded: 0 };
@@ -726,7 +729,8 @@ function scoreProgression(
 function scoreExactScore(
   prediction: Record<string, unknown>,
   result: Record<string, unknown>,
-  fullPoints: number
+  fullPoints: number,
+  eventOptions?: string[]
 ): ScoringResult {
   const predHome = prediction.home;
   const predAway = prediction.away;
@@ -783,6 +787,22 @@ function scoreExactScore(
     return { is_correct: null, is_partial: false, points_awarded: 0 };
   }
 
+  // Detect home/away swap: prediction.home is the first team in the event
+  // name (eventOptions[0]), but score.home_score is the provider's home team.
+  // When these don't match, swap the result scores for comparison.
+  let swapped = false;
+  if (eventOptions && eventOptions.length >= 2 && score.home_team) {
+    const eventHome = normalizeTeamName(eventOptions[0]);
+    const scoreHome = normalizeTeamName(score.home_team);
+    if (eventHome !== scoreHome) {
+      // Check the away team matches instead (confirms swap, not just unknown team)
+      const scoreAway = normalizeTeamName(score.away_team);
+      if (eventHome === scoreAway) {
+        swapped = true;
+      }
+    }
+  }
+
   // AET/Penalties: derive the FT score from whatever TheSportsDB provides.
   //
   // TheSportsDB stores:
@@ -814,16 +834,20 @@ function scoreExactScore(
       ftAway = Number(score.away_score ?? score.away ?? 0);
     }
 
-    const correct = Number(predHome) === ftHome && Number(predAway) === ftAway;
+    // Apply swap if provider home/away differs from event name order
+    const correct = swapped
+      ? Number(predHome) === ftAway && Number(predAway) === ftHome
+      : Number(predHome) === ftHome && Number(predAway) === ftAway;
     return { is_correct: correct, is_partial: false, points_awarded: correct ? fullPoints : 0 };
   }
 
   const resultHomeScore = Number(score.home_score ?? score.home ?? 0);
   const resultAwayScore = Number(score.away_score ?? score.away ?? 0);
 
-  const correct =
-    Number(predHome) === resultHomeScore &&
-    Number(predAway) === resultAwayScore;
+  // Apply swap if provider home/away differs from event name order
+  const correct = swapped
+    ? Number(predHome) === resultAwayScore && Number(predAway) === resultHomeScore
+    : Number(predHome) === resultHomeScore && Number(predAway) === resultAwayScore;
 
   return {
     is_correct: correct,

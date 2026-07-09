@@ -157,6 +157,7 @@ export function computeLivePoints(
             partial_points: ept.partial_points,
             config: ept.config,
           },
+          winnerOpts,
         );
         if (scored.points_awarded > 0) {
           pointsMap.set(
