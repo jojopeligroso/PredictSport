@@ -144,6 +144,25 @@ export function buildScoreDerivedWinnerOverrides(
 }
 
 // ---------------------------------------------------------------------------
+// Helpers
+// ---------------------------------------------------------------------------
+
+/**
+ * Map a team name to its matching config option using alias-aware
+ * normalization. Returns the normalizeStr form of the matching option,
+ * or null if no option matches.
+ */
+function mapTeamToOption(teamName: string, options: unknown[]): string | null {
+  const teamNorm = normalizeTeamName(teamName);
+  for (const opt of options) {
+    if (normalizeTeamName(opt) === teamNorm) {
+      return normalizeStr(opt);
+    }
+  }
+  return null;
+}
+
+// ---------------------------------------------------------------------------
 // Scorers
 // ---------------------------------------------------------------------------
 
@@ -164,10 +183,11 @@ function scoreWinner(
 
   let actual: string;
 
-  // When score + config options are available, use positional derivation.
-  // This avoids provider name mismatches (e.g., ESPN "United States" vs
-  // option "USA"). Options are seeded as [home, "Draw", away], matching
-  // the score's home/away order — so index 0 = home win, last = away win.
+  // Map the winning team to its config option using team name matching
+  // (with alias resolution via normalizeTeamName). This replaces the old
+  // positional derivation (options[0] = home win) which assumed event name
+  // order matched the provider's home/away designation — bracket-derived
+  // event names and provider home/away are independent systems.
   const score = result.score as Record<string, unknown> | undefined;
   if (score && options.length >= 2) {
     const homeScore = Number(score.home_score ?? 0);
@@ -180,25 +200,19 @@ function scoreWinner(
     const scorePeriods = score.periods as Record<string, Record<string, number>> | undefined;
     if (scorePeriods?.extra_time && options.length >= 3) {
       actual = "draw";
-    } else if (homeScore > awayScore) {
-      actual = normalizeStr(options[0]);
-    } else if (awayScore > homeScore) {
-      actual = normalizeStr(options[options.length - 1]);
+    } else if (homeScore !== awayScore) {
+      // Determine the winning team NAME from the score, then find the
+      // matching option via alias-aware comparison.
+      const winningTeamName = homeScore > awayScore
+        ? String(score.home_team ?? "")
+        : String(score.away_team ?? "");
+      actual = mapTeamToOption(winningTeamName, options) ?? normalizeStr(winningTeamName);
     } else if (options.length >= 3) {
       actual = "draw";
     } else if (result.winner) {
       // Knockout tie (penalties): winner can't be derived from score.
-      // Map result.winner to the correct option via home/away team name.
-      // Uses normalizeTeamName (with alias resolution) because providers
-      // return inconsistent naming (e.g. "Congo DR" vs "DR Congo").
-      const winnerNorm = normalizeTeamName(result.winner);
-      if (winnerNorm === normalizeTeamName(score.home_team)) {
-        actual = normalizeStr(options[0]);
-      } else if (winnerNorm === normalizeTeamName(score.away_team)) {
-        actual = normalizeStr(options[options.length - 1]);
-      } else {
-        actual = winnerNorm;
-      }
+      // Map result.winner to an option via alias-aware comparison.
+      actual = mapTeamToOption(String(result.winner), options) ?? normalizeStr(result.winner);
     } else {
       return { is_correct: null, is_partial: false, points_awarded: 0 };
     }
@@ -218,22 +232,23 @@ function scoreWinner(
     return { is_correct: null, is_partial: false, points_awarded: 0 };
   }
 
-  // Cross-check: when positional derivation was used AND result.winner exists,
-  // verify they agree. A mismatch suggests a home/away swap or data error.
-  if (score && options.length >= 2 && result.winner && actual !== "draw") {
-    const providerWinner = normalizeStr(result.winner);
-    // Map provider's winner through team names to an option
-    let providerMapped: string | null = null;
-    if (providerWinner === normalizeStr(score.home_team)) {
-      providerMapped = normalizeStr(options[0]);
-    } else if (providerWinner === normalizeStr(score.away_team)) {
-      providerMapped = normalizeStr(options[options.length - 1]);
-    }
-    if (providerMapped && providerMapped !== actual) {
+  // Cross-check: when score + result.winner both exist, verify the
+  // score-derived winner agrees with the explicit result.winner field.
+  // A mismatch indicates inconsistent provider data.
+  if (score && result.winner && actual !== "draw") {
+    const hScore = Number(score.home_score ?? 0);
+    const aScore = Number(score.away_score ?? 0);
+    const scoreDerivedTeam = hScore > aScore
+      ? normalizeTeamName(score.home_team)
+      : aScore > hScore
+        ? normalizeTeamName(score.away_team)
+        : null;
+    if (scoreDerivedTeam && scoreDerivedTeam !== normalizeTeamName(result.winner)) {
       console.warn(
-        `[scoring] CROSS-CHECK MISMATCH: positional="${actual}" vs provider="${providerMapped}" ` +
-        `(result.winner="${result.winner}", home_team="${score.home_team}", away_team="${score.away_team}", ` +
-        `score=${score.home_score}-${score.away_score}, options=${JSON.stringify(options)})`
+        `[scoring] CROSS-CHECK MISMATCH: score says "${scoreDerivedTeam}" won but ` +
+        `result.winner="${result.winner}" (home_team="${score.home_team}", ` +
+        `away_team="${score.away_team}", score=${score.home_score}-${score.away_score}, ` +
+        `options=${JSON.stringify(options)})`
       );
     }
   }
@@ -441,28 +456,23 @@ function scoreHeadToHead(
 
   let actual: string;
 
-  // Positional derivation from score when config options are available.
-  // Same principle as scoreWinner: options[0] = home, last = away.
+  // Map the winning/advancing team to its config option using team name
+  // matching (alias-aware). Same principle as scoreWinner — no positional
+  // assumption about options order vs provider home/away.
   // H2H is "who advances" — when the 90-min score is a draw, fall through
   // to result.winner to determine who actually advanced (via ET/penalties).
   const h2hScore = result.score as Record<string, unknown> | undefined;
   if (h2hScore && options.length >= 2) {
     const homeScore = Number(h2hScore.home_score ?? 0);
     const awayScore = Number(h2hScore.away_score ?? 0);
-    if (homeScore > awayScore) {
-      actual = normalizeStr(options[0]);
-    } else if (awayScore > homeScore) {
-      actual = normalizeStr(options[options.length - 1]);
+    if (homeScore !== awayScore) {
+      const winningTeam = homeScore > awayScore
+        ? String(h2hScore.home_team ?? "")
+        : String(h2hScore.away_team ?? "");
+      actual = mapTeamToOption(winningTeam, options) ?? normalizeStr(winningTeam);
     } else if (result.winner && normalizeStr(result.winner) !== "draw") {
       // 90-min score is level — use result.winner for the advancing team
-      const winnerNorm = normalizeStr(result.winner);
-      if (winnerNorm === normalizeStr(h2hScore.home_team)) {
-        actual = normalizeStr(options[0]);
-      } else if (winnerNorm === normalizeStr(h2hScore.away_team)) {
-        actual = normalizeStr(options[options.length - 1]);
-      } else {
-        actual = winnerNorm;
-      }
+      actual = mapTeamToOption(String(result.winner), options) ?? normalizeStr(result.winner);
     } else {
       actual = "draw";
     }
@@ -550,16 +560,16 @@ function scoreMargin(
   let actualMargin: number;
   let actualWinner: string;
 
-  // Positional derivation from score when options are available
+  // Map the winning team to its config option using team name matching
   if (result.score && options.length >= 2) {
     const score = result.score as Record<string, unknown>;
     const homeScore = Number(score.home_score ?? 0);
     const awayScore = Number(score.away_score ?? 0);
     actualMargin = Math.abs(homeScore - awayScore);
-    actualWinner =
-      homeScore > awayScore
-        ? normalizeStr(options[0])
-        : normalizeStr(options[options.length - 1]);
+    const winningTeam = homeScore > awayScore
+      ? String(score.home_team ?? "")
+      : String(score.away_team ?? "");
+    actualWinner = mapTeamToOption(winningTeam, options) ?? normalizeStr(winningTeam);
   } else if (result.margin !== undefined && result.margin !== null && result.winner) {
     actualMargin = Math.abs(Number(result.margin));
     actualWinner = normalizeStr(result.winner);
