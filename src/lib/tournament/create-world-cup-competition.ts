@@ -69,7 +69,7 @@ export async function createWorldCupCompetition(
         exact_score_bonus: 3,
         knockout_advancing_team: 1,
       },
-      lock_default_minutes: 30,
+      lock_default_minutes: 10,
       allow_nominations: false,
       allow_prediction_updates: true,
       max_entrants: options.maxEntrants ?? null,
