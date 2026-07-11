@@ -311,19 +311,22 @@ export async function GET(request: NextRequest) {
   // Read frozen stage results for archived groups from immutable stage_results table.
   // Each archived group has per-user points captured at stage conclusion.
   const archivedGroupIds = archivedGroups.map((g) => g.id);
-  const stageResultsByGroup = new Map<string, Map<string, number>>();
+  const stageResultsByGroup = new Map<string, Map<string, { points: number; status: string }>>();
 
   if (archivedGroupIds.length > 0) {
     const { data: stageResults } = await svcFetch
       .from("stage_results")
-      .select("group_id, user_id, points")
+      .select("group_id, user_id, points, status")
       .in("group_id", archivedGroupIds);
 
     for (const sr of stageResults ?? []) {
       if (!stageResultsByGroup.has(sr.group_id)) {
         stageResultsByGroup.set(sr.group_id, new Map());
       }
-      stageResultsByGroup.get(sr.group_id)!.set(sr.user_id, sr.points ?? 0);
+      stageResultsByGroup.get(sr.group_id)!.set(sr.user_id, {
+        points: sr.points ?? 0,
+        status: sr.status ?? "eliminated",
+      });
     }
   }
 
@@ -332,15 +335,18 @@ export async function GET(request: NextRequest) {
     const groupPoints = stageResultsByGroup.get(g.id);
     const gMembers = memberships
       .filter((m) => m.group_id === g.id)
-      .map((m) => ({
-        user_id: m.user_id,
-        display_name: nameMap.get(m.user_id) ?? "Unknown",
-        points: groupPoints?.get(m.user_id) ?? 0,
-        predictions_made: 0,
-        predictions_total: 0,
-        is_self: m.user_id === user.id,
-        status: m.status,
-      }))
+      .map((m) => {
+        const sr = groupPoints?.get(m.user_id);
+        return {
+          user_id: m.user_id,
+          display_name: nameMap.get(m.user_id) ?? "Unknown",
+          points: sr?.points ?? 0,
+          predictions_made: 0,
+          predictions_total: 0,
+          is_self: m.user_id === user.id,
+          status: sr?.status ?? m.status,
+        };
+      })
       .sort((a, b) => {
         if (b.points !== a.points) return b.points - a.points;
         const aOverall = overallPointsMap.get(a.user_id) ?? 0;
@@ -382,10 +388,10 @@ export async function GET(request: NextRequest) {
     return {
       user_id: uid,
       display_name: nameMap.get(uid) ?? "Unknown",
-      points: groupPoints?.get(uid) ?? pointsMap.get(uid) ?? 0,
+      points: groupPoints?.get(uid)?.points ?? pointsMap.get(uid) ?? 0,
       is_self: uid === user.id,
       source_group: sourceGroup?.group_name ?? null,
-      status: archivedMembership?.status ?? "eliminated",
+      status: groupPoints?.get(uid)?.status ?? archivedMembership?.status ?? "eliminated",
     };
   }).sort((a, b) => b.points - a.points);
 
