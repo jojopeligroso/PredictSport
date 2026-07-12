@@ -135,6 +135,69 @@ export interface ClassificationStandingsSnapshot {
 }
 
 // ============================================================
+// Classification Phases
+// ============================================================
+
+export type PhaseStatus = "pending" | "active" | "finalised";
+export type ScoringScope = "stage_local" | "cumulative" | "none";
+export type BranchType = "winners" | "losers" | "merge" | "continuation";
+export type StageRole = "scoring" | "elimination_trigger" | "scoring_and_trigger";
+
+export interface BestThirdsConfig {
+  auto_qualify_group_sizes: number[];
+  eligible_group_sizes: number[];
+  never_qualify_group_sizes: number[];
+}
+
+export interface QualificationRules {
+  method: "top_n_per_group_with_best_thirds" | "top_n_flat" | "bracket_seed" | "direct";
+  /** For group phases: how many per group auto-qualify */
+  qualify_per_group?: number;
+  /** For knockout phases: total survivors from this phase */
+  target_survivors?: number;
+  best_thirds?: BestThirdsConfig;
+  tie_handling?: "both_advance" | "tiebreaker" | "random";
+}
+
+export interface PoolStructure {
+  type: "grouped" | "single";
+  group_count?: number;
+  group_sizes?: number[];
+  parameters?: Record<string, unknown>;
+}
+
+export interface ClassificationPhase {
+  id: string;
+  classification_id: string;
+  phase_key: string;
+  phase_name: string;
+  phase_order: number;
+  entry_count: number | null;
+  exit_count: number | null;
+  qualification_rules: QualificationRules;
+  pool_structure: PoolStructure;
+  tiebreaker_rules: Record<string, unknown> | null;
+  scoring_scope: ScoringScope;
+  source_phase_id: string | null;
+  branch_type: BranchType | null;
+  status: PhaseStatus;
+  activated_at: string | null;
+  finalised_at: string | null;
+  config: Record<string, unknown>;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface ClassificationPhaseStage {
+  id: string;
+  phase_id: string;
+  sporting_stage_id: string;
+  stage_role: StageRole;
+  stage_order_within_phase: number;
+  created_at: string;
+}
+
+// ============================================================
 // Format Prediction Groups
 // ============================================================
 
@@ -145,6 +208,7 @@ export interface FormatPredictionGroup {
   group_name: string;
   group_number: number;
   target_size: number;
+  phase_id: string | null;
   status?: 'active' | 'archived';
   metadata: Record<string, unknown>;
   created_at: string;

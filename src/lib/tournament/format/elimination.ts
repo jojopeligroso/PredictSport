@@ -1,5 +1,5 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
-import type { Classification, StandingRow } from "@/types/tournament";
+import type { Classification, StandingRow, ClassificationPhase, QualificationRules } from "@/types/tournament";
 import { generateEliminationCurve, type CurveStep } from "./curve-generator";
 import { eliminateEntrant } from "../membership";
 import { computeFormatGroupStandings, computeBestThirdRanking } from "./scoring";
@@ -45,6 +45,56 @@ async function nextGroupNumber(supabase: SupabaseClient, classificationId: strin
 }
 
 // ============================================================
+// DB-driven phase lookup
+// ============================================================
+
+/**
+ * Load the classification phase that contains the given sporting stage.
+ * Returns null if the stage isn't mapped to any phase (legacy data or
+ * classification types that don't use phases).
+ */
+async function loadPhaseForStage(
+  supabase: SupabaseClient,
+  classificationId: string,
+  stageId: string
+): Promise<ClassificationPhase | null> {
+  const { data, error } = await supabase
+    .from("classification_phases")
+    .select(`
+      id, classification_id, phase_key, phase_name, phase_order,
+      entry_count, exit_count, qualification_rules, pool_structure,
+      tiebreaker_rules, scoring_scope, source_phase_id, branch_type,
+      status, config, created_at, updated_at,
+      phase_stages:classification_phase_stages!inner(sporting_stage_id)
+    `)
+    .eq("classification_id", classificationId)
+    .eq("phase_stages.sporting_stage_id", stageId)
+    .maybeSingle();
+
+  if (error || !data) return null;
+
+  return data as unknown as ClassificationPhase;
+}
+
+/**
+ * Look up the display name of the next phase in sequence.
+ */
+async function loadNextPhaseName(
+  supabase: SupabaseClient,
+  classificationId: string,
+  currentPhaseOrder: number
+): Promise<string | null> {
+  const { data } = await supabase
+    .from("classification_phases")
+    .select("phase_name")
+    .eq("classification_id", classificationId)
+    .eq("phase_order", currentPhaseOrder + 1)
+    .maybeSingle();
+
+  return (data as { phase_name: string } | null)?.phase_name ?? null;
+}
+
+// ============================================================
 // Run elimination after a sporting stage is finalised
 // ============================================================
 
@@ -76,8 +126,20 @@ export async function eliminateFromFormat(
   const stageKey = stage.slug as string;
   const stageType = stage.stage_type as "group" | "knockout";
 
-  // Map DB slug (e.g. "group-matchday-3") to curve stage name (e.g. "group_stage")
-  const curveStage = mapStageToCurveStep(stageKey);
+  // Try DB-driven phase lookup; fall back to hardcoded mapping on any error
+  let phase: ClassificationPhase | null = null;
+  let nextPhaseName: string | null = null;
+  try {
+    phase = await loadPhaseForStage(supabase, classificationId, stageId);
+    if (phase) {
+      nextPhaseName = await loadNextPhaseName(supabase, classificationId, phase.phase_order);
+    }
+  } catch {
+    // Fall through to hardcoded path
+  }
+
+  // Map stage to curve step — DB-driven phase_key or hardcoded slug mapping
+  const curveStage = phase?.phase_key ?? mapStageToCurveStep(stageKey);
   const curveStep = curveSteps.find((s) => s.stage === curveStage);
 
   if (!curveStep) {
@@ -92,17 +154,18 @@ export async function eliminateFromFormat(
   let result: EliminationResult;
 
   if (stageType === "group") {
+    const qualRules = phase?.qualification_rules as QualificationRules | undefined;
     result = await eliminateGroupStage(
-      supabase, classificationId, stageId, stageKey, targetSurvivors
+      supabase, classificationId, stageId, stageKey, targetSurvivors, qualRules
     );
     // B1: After group-stage elimination, consolidate survivors into one knockout group
     await consolidateSurvivorsIntoKnockoutGroup(
-      supabase, classificationId, result.survivor_user_ids, curveStage, curveSteps
+      supabase, classificationId, result.survivor_user_ids, curveStage, curveSteps, nextPhaseName
     );
   } else {
     // B2: Knockout stage — flat leaderboard cut
     result = await eliminateKnockoutStage(
-      supabase, classificationId, stageId, stageKey, targetSurvivors
+      supabase, classificationId, stageId, stageKey, targetSurvivors, nextPhaseName
     );
   }
 
@@ -118,7 +181,8 @@ async function eliminateGroupStage(
   classificationId: string,
   stageId: string,
   stageKey: string,
-  targetSurvivors: number
+  targetSurvivors: number,
+  qualRules?: QualificationRules
 ): Promise<EliminationResult> {
   // Fetch all groups with target_size for group-size-aware qualification rules
   const { data: groups, error: groupsError } = await supabase
@@ -132,10 +196,8 @@ async function eliminateGroupStage(
   const groupList = ((groups ?? []) as { id: string; group_number: number; target_size: number; status?: string }[])
     .filter((g) => !g.status || g.status === "active");
 
-  // Qualify/eliminate per group based on group size:
-  // - 3-player: top 2 qualify, 3rd eliminated (never qualifies)
-  // - 4-player: top 2 qualify, 3rd enters best-third pool, 4th eliminated
-  // - 5-player: top 2 qualify, 3rd auto-qualifies, 4th-5th eliminated
+  // Qualify/eliminate per group based on qualification rules.
+  // DB-driven (qualRules) when available, hardcoded fallback otherwise.
   //
   // Tie rule: when two entrants are tied on meaningful metrics (points,
   // exact_hits, outcome_hits) at any elimination boundary, both advance.
@@ -145,13 +207,25 @@ async function eliminateGroupStage(
   let tieOverflow = 0;
   const allStandings: StandingRow[] = [];
 
+  // Base auto-qualify count per group (DB: qualify_per_group, fallback: 2)
+  const baseQualifyCount = qualRules?.qualify_per_group ?? 2;
+
   for (const group of groupList) {
     const standings = await computeFormatGroupStandings(supabase, group.id, stageId);
     const sorted = standings.sort((a, b) => a.group_position - b.group_position);
     allStandings.push(...sorted);
 
-    // Auto-qualify boundary: top 2 always, top 3 for 5-player groups
-    const autoQualifyUpTo = group.target_size === 5 ? 3 : 2;
+    // Extra auto-qualify slot for groups in auto_qualify_group_sizes (e.g. 5-player: 3rd auto-qualifies)
+    const isAutoQualifyGroup = qualRules?.best_thirds?.auto_qualify_group_sizes
+      ? qualRules.best_thirds.auto_qualify_group_sizes.includes(group.target_size)
+      : group.target_size === 5;
+    const autoQualifyUpTo = isAutoQualifyGroup ? baseQualifyCount + 1 : baseQualifyCount;
+
+    // Best-third eligibility for groups in eligible_group_sizes (e.g. 4-player: 3rd enters pool)
+    const isBestThirdEligible = qualRules?.best_thirds?.eligible_group_sizes
+      ? qualRules.best_thirds.eligible_group_sizes.includes(group.target_size)
+      : group.target_size === 4;
+
     const lastAutoQualifier = autoQualifyUpTo <= sorted.length
       ? sorted[autoQualifyUpTo - 1]
       : null;
@@ -166,8 +240,8 @@ async function eliminateGroupStage(
         // Tied with last auto-qualifier on meaningful metrics — promote
         qualifyingUserIds.add(userId);
         tieOverflow++;
-      } else if (idx === 2 && group.target_size === 4) {
-        // 3rd in 4-player group → best-third pool (handled below)
+      } else if (idx === autoQualifyUpTo && isBestThirdEligible) {
+        // First position outside auto-qualify range in eligible group → best-third pool (handled below)
       } else {
         // Eliminated (not tied with last qualifier)
         eliminatedDirectly.push(userId);
@@ -281,7 +355,8 @@ async function consolidateSurvivorsIntoKnockoutGroup(
   classificationId: string,
   survivorUserIds: string[],
   currentCurveStage: string,
-  curveSteps: CurveStep[]
+  curveSteps: CurveStep[],
+  nextPhaseName?: string | null
 ): Promise<void> {
   if (survivorUserIds.length === 0) return;
 
@@ -309,9 +384,8 @@ async function consolidateSurvivorsIntoKnockoutGroup(
     ? curveSteps[currentIdx + 1]
     : null;
 
-  const groupName = nextStep
-    ? curveStageToDisplayName(nextStep.stage)
-    : `Knockout (${survivorUserIds.length})`;
+  const groupName = nextPhaseName
+    ?? (nextStep ? curveStageToDisplayName(nextStep.stage) : `Knockout (${survivorUserIds.length})`);
 
   // Fetch competition_id from classification
   const { data: cls, error: clsError } = await supabase
@@ -371,7 +445,8 @@ async function eliminateKnockoutStage(
   classificationId: string,
   stageId: string,
   stageKey: string,
-  targetSurvivors: number
+  targetSurvivors: number,
+  nextPhaseName?: string | null
 ): Promise<EliminationResult> {
   // In knockout stages, all survivors are in a single active group
   const { data: groups, error: groupsError } = await supabase
@@ -534,8 +609,8 @@ async function eliminateKnockoutStage(
         .in("id", koActiveIds);
     }
 
-    // Determine next stage name from the curve
-    const nextStageName = knockoutStageGroupName(stageKey, survivorIds.length);
+    // Determine next stage name — DB-driven or hardcoded fallback
+    const nextStageName = nextPhaseName ?? knockoutStageGroupName(stageKey, survivorIds.length);
 
     const { data: cls } = await supabase
       .from("classifications")
