@@ -13,7 +13,7 @@ interface ESPNCompetitor {
   homeAway?: "home" | "away";
   winner?: boolean;
   order?: number;
-  linescores?: Array<{ value: number }>;
+  linescores?: Array<{ value?: number; displayValue?: string }>;
 }
 
 interface ESPNStatusType {
@@ -308,22 +308,28 @@ export class ESPNProvider extends BaseProvider {
     // Extract period data from ESPN linescores when available.
     // Soccer: linescores = [1st half, 2nd half, ...ET periods].
     // If > 2 periods exist, periods 3+ are extra time.
+    // ESPN scoreboard uses { value: number }, summary uses { displayValue: string }.
     let periods: Record<string, { home: number; away: number }> | null = null;
     const homeLS = home?.linescores;
     const awayLS = away?.linescores;
     if (homeLS && awayLS && homeLS.length > 2) {
-      const ftHome = (homeLS[0]?.value ?? 0) + (homeLS[1]?.value ?? 0);
-      const ftAway = (awayLS[0]?.value ?? 0) + (awayLS[1]?.value ?? 0);
+      const lsVal = (ls: { value?: number; displayValue?: string }) =>
+        ls.value ?? (ls.displayValue ? Number(ls.displayValue) : 0);
+      const ftHome = lsVal(homeLS[0] ?? {}) + lsVal(homeLS[1] ?? {});
+      const ftAway = lsVal(awayLS[0] ?? {}) + lsVal(awayLS[1] ?? {});
       let etHome = 0;
       let etAway = 0;
       for (let i = 2; i < homeLS.length; i++) {
-        etHome += homeLS[i]?.value ?? 0;
-        etAway += awayLS[i]?.value ?? 0;
+        etHome += lsVal(homeLS[i] ?? {});
+        etAway += lsVal(awayLS[i] ?? {});
       }
-      periods = {
-        full_time: { home: ftHome, away: ftAway },
-        extra_time: { home: etHome, away: etAway },
-      };
+      // Validate: period sums must equal total score, otherwise data is garbage
+      if (ftHome + etHome === homeScore && ftAway + etAway === awayScore) {
+        periods = {
+          full_time: { home: ftHome, away: ftAway },
+          extra_time: { home: etHome, away: etAway },
+        };
+      }
     }
 
     return {

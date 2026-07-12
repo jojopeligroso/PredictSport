@@ -365,7 +365,18 @@ export async function autoResolveEvent(
     };
     const score = finalResultData.score as Record<string, unknown> | undefined;
     const periods = score?.periods as Record<string, Record<string, number>> | undefined;
-    if ((periods?.extra_time || periods?.penalties) && !periods?.full_time) {
+    // Validate periods: if full_time + extra_time don't sum to the total score,
+    // the period data is garbage (e.g. ESPN returned all-zero linescores).
+    // Clear invalid full_time so enrichment can attempt to fix it.
+    const hasET = periods?.extra_time || periods?.penalties;
+    if (hasET && periods?.full_time && score) {
+      const ftPlusEt = (periods.full_time.home ?? 0) + (periods.extra_time?.home ?? 0);
+      const ftPlusEtAway = (periods.full_time.away ?? 0) + (periods.extra_time?.away ?? 0);
+      if (ftPlusEt !== Number(score.home_score ?? 0) || ftPlusEtAway !== Number(score.away_score ?? 0)) {
+        delete periods.full_time;
+      }
+    }
+    if (hasET && !periods?.full_time) {
       const enriched = await enrichAETFullTimeScore(finalResultData, event.event_name, event.start_time);
 
       // Fallback: if API-Football enrichment failed, use the live-cron's
