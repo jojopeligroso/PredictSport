@@ -156,9 +156,19 @@ A UI-level concept, never stored in the database. Computed from the user's auth 
 
 ---
 
-## Stage
+## Tournament Stage
 
-A phase of the tournament after which Format elimination occurs. During the group stage, all three matchdays form a single stage — elimination happens after Matchday 3, not after each matchday. During knockouts, each round is its own stage (Round of 32, Round of 16, Quarter-finals, Semi-finals, Final). The Final stage includes the third-place match — one prediction window, two fixtures. User-facing label is always lowercase "stage" with no qualifier. "Sporting Stage" is not used.
+An ordered division of the [[Fixture Catalogue]] defined on the [[Tournament Blueprint]]. Shared across all [[Competition Instance]]s. Represents real-world tournament structure — "Group Stage", "Round of 16", "Quarter-finals". A tournament may have exactly one Stage (e.g. a league season or a Six Nations championship). Stored in `sporting_stages`. User-facing label is always lowercase "stage" with no qualifier.
+_Avoid_: Sporting Stage, Phase (when referring to the fixture-calendar division)
+
+---
+
+## Classification Phase
+
+A segment of a [[Classification]]'s lifecycle. Each Phase carries its own scoring scope, pool structure, and (optional) transition rule at its boundary. Bound to one or more [[Tournament Stage]]s. Every classification has at least one Phase. The sequence of Phases IS the classification's structure — what was previously called the "elimination curve" is a sequence of Phases with transition rules.
+
+The mapping between Classification Phase and Tournament Stage is flexible: 1:1 (WC Format), many-to-one (Swiss CL: one league stage, three classification phases), or parallel (GAA backdoor: same stage feeds two branching phases). A Phase without a transition rule is valid — it determines fixtures or seedings without eliminating anyone.
+_Avoid_: Stage (when referring to classification lifecycle), Step (ambiguous)
 
 ---
 
@@ -300,44 +310,37 @@ _Avoid_: Clone, fork, spin-up
 
 ---
 
-## Prediction Group
-
-A mini-leaderboard of participants within a [[Format Classification]]. The standard group size is 4. Groups are drawn randomly when the draw window opens and are immutable once drawn — participants are never moved between existing groups. Late entrants are placed into the most recently created group or a new group. Group composition follows modular-4 arithmetic: `N mod 4` determines whether the final group has 0, 1, 2, or 3 remainder participants.
-_Avoid_: Team, pod, pool
-
----
-
 ## Remainder
 
-The count of participants (0, 1, 2, or 3) that do not fill a complete [[Prediction Group]] of 4 after dividing the total entrant count by 4. Formally: `N mod 4`. A remainder of 0 is ideal (all groups of 4). A remainder of 3 forms a viable group. A remainder of 1 or 2 produces an [[Undersized Group]] that requires [[Reconciliation]] at lock time. At most 1 group of 3 and at most 2 groups of 5 can exist after reconciliation.
+The count of participants (0, 1, 2, or 3) that do not fill a complete [[Pool]] of the target size after dividing the total entrant count. Formally: `N mod targetSize`. A remainder of 0 is ideal (all pools at target size). A remainder of `targetSize - 1` forms a viable pool. Smaller remainders produce an [[Undersized Pool]] that requires [[Reconciliation]] at lock time.
 _Avoid_: Dangler, leftover, overflow
 
 ---
 
-## Undersized Group
+## Undersized Pool
 
-A [[Prediction Group]] with fewer than 3 members at lock time. Not viable for competitive play — both members would auto-qualify with no elimination pressure. Dissolved during [[Reconciliation]]; its members are absorbed into the nearest viable groups.
+A [[Pool]] with fewer than 3 members at lock time. Not viable for competitive play — both members would auto-qualify with no elimination pressure. Dissolved during [[Reconciliation]]; its members are absorbed into the nearest viable pools.
 _Avoid_: Incomplete group, short group
 
 ---
 
 ## Reconciliation
 
-The automatic, one-time process that runs when the first [[Event]] in the competition locks. Resolves [[Undersized Group]]s by absorbing their members into the nearest viable [[Prediction Group]]s (highest group_number first, preserving earlier groups). A remainder of 1 produces one [[Expanded Group]]. A remainder of 2 produces two Expanded Groups. A remainder of 3 is left as a valid group of 3. Idempotent — stamps `groups_reconciled_at` in the classification config after execution.
+The automatic, one-time process that runs when the first [[Event]] in the competition locks. Resolves [[Undersized Pool]]s by absorbing their members into the nearest viable [[Pool]]s (highest pool number first, preserving earlier pools). A remainder of 1 produces one [[Expanded Pool]]. A remainder of 2 produces two Expanded Pools. A remainder of `targetSize - 1` is left as a valid smaller pool. Idempotent — stamps `groups_reconciled_at` in the classification config after execution.
 _Avoid_: Rebalancing, redistribution, merge
 
 ---
 
-## Expanded Group
+## Expanded Pool
 
-A [[Prediction Group]] whose size changed from 4 to 5 after absorbing a [[Remainder]] participant during [[Reconciliation]]. Third place in an Expanded Group auto-qualifies for the next stage (instead of entering the best-third pool as in a standard group of 4).
+A [[Pool]] whose size increased by 1 after absorbing a [[Remainder]] participant during [[Reconciliation]]. The [[Transition Rule]] for the phase determines how the extra position is handled (e.g. in WC groups of 4→5, third place auto-qualifies instead of entering the best-third pool).
 _Avoid_: Oversized group, inflated group
 
 ---
 
 ## Rival Predictions
 
-The feature surface where participants view other members' predictions for revealed events. Two manifestations: a **dashboard teaser** (group-scoped, single most-recent fixture, one row per [[Prediction Group]] rival) and a **leaderboard tab** (competition-scoped, all members' predictions for one browsable fixture at a time). Predictions are only visible after [[Pick Reveal]] time — never before.
+The feature surface where participants view other members' predictions for revealed events. Two manifestations: a **dashboard teaser** (pool-scoped, single most-recent fixture, one row per [[Pool]] rival) and a **leaderboard tab** (competition-scoped, all members' predictions for one browsable fixture at a time). Predictions are only visible after [[Pick Reveal]] time — never before.
 _Avoid_: Community predictions (that term is used for aggregated poll-style data, not per-member views), other people's picks
 
 ---
@@ -434,5 +437,81 @@ _Avoid_: Review period, approval window (admin suppresses, never approves)
 
 ## Entrant Profile
 
-A competition-scoped page showing a single [[Entrant]]'s picks, points, accuracy, [[Reputation Tag]] history, and [[Prediction Group]] membership within one [[Competition Instance]]. Cannot link to any cross-competition or platform-level profile — competition isolation is a white-label requirement. Accessed via a person icon on leaderboard rows (Overall and Format). Gated by [[Pick Reveal]] — only revealed picks are shown. Self-viewing is permitted.
+A competition-scoped page showing a single [[Entrant]]'s picks, points, accuracy, [[Reputation Tag]] history, and [[Pool]] membership within one [[Competition Instance]]. Cannot link to any cross-competition or platform-level profile — competition isolation is a white-label requirement. Accessed via a person icon on leaderboard rows (Overall and Format). Gated by [[Pick Reveal]] — only revealed picks are shown. Self-viewing is permitted.
 _Avoid_: User profile, player page, cross-competition profile
+
+---
+
+## Classification
+
+A parallel scoring lens on a [[Competition Instance]]. Participants make one set of predictions; those predictions are evaluated through every Classification independently. Each Classification has its own leaderboard. Elimination from one never affects another.
+
+---
+
+## Format
+
+A [[Classification]] type that tracks participants through [[Classification Phase]]s. May eliminate, re-group, re-seed, or simply score — the phases define the behaviour. The other classification types (Overall, The Cut, bracket predictions) don't use phase machinery.
+_Avoid_: Format elimination (elimination is optional), format classification (redundant)
+
+---
+
+## Pool
+
+A group of participants within a [[Classification Phase]] who compete against each other on a mini-leaderboard. Size and composition are defined per-phase. Pools are drawn randomly when the draw window opens and are immutable once drawn — participants are never moved between existing pools. Late entrants are placed into the most recently created pool or a new pool. Pools can persist across phases, dissolve into a flat ranking, or be redrawn entirely at a phase boundary.
+_Avoid_: Group (ambiguous with tournament groups), Prediction Group (legacy term), Container
+
+---
+
+## Transition Rule
+
+The mechanism applied at the boundary between two [[Classification Phase]]s. Determines who survives, who is eliminated, and how survivors are allocated to the next phase's [[Pool]]s. Examples: top-N per pool, best thirds across pools, wildcard, Swiss pairing, per-event H2H winner. A phase with no Transition Rule is terminal or non-eliminative.
+_Avoid_: Elimination rule (elimination is one possible outcome), qualification rule
+
+---
+
+## Scoring Scope
+
+Whether a [[Classification Phase]] scores from zero ("phase-local") or carries forward cumulative points from prior phases. Defined per-phase.
+_Avoid_: Points mode, scoring lens (lens already means Classification)
+
+---
+
+## Phase Binding
+
+The link between a [[Classification Phase]] and one or more [[Tournament Stage]]s. Determines which fixtures count for scoring in that phase.
+_Avoid_: Stage mapping, stage link
+
+---
+
+## Entrant Curve
+
+The sequence of participant counts across [[Classification Phase]]s: e.g. `[48, 32, 16, 8, 4, 2, 1]`. Derived from the phase sequence and [[Transition Rule]]s, not stored independently. Replaces "elimination curve."
+_Avoid_: Elimination curve (elimination is optional)
+
+---
+
+## Classification Template
+
+The blueprint-level definition of a [[Classification]] that gets instantiated per [[Competition Instance]]. Lives on the [[Tournament Blueprint]]. Specifies: classification type ([[Format]], Overall, The Cut, etc.), the full sequence of [[Classification Phase]]s, [[Pool]] sizes, [[Transition Rule]]s, [[Scoring Scope]] per phase, and [[Phase Binding]]s. When a Competition Instance is instantiated from a Blueprint, each Template produces one Classification.
+_Avoid_: Classification config, classification definition
+
+---
+
+## Membership Status
+
+A participant's current state within a single [[Classification]]: **active** (competing in the current phase), **eliminated** (removed at a phase boundary by a [[Transition Rule]]), or **winner** (terminal state). Drives UI rendering — eliminated participants see archive views, active participants see live pools.
+_Avoid_: Classification status (ambiguous with classification lifecycle), participant state
+
+---
+
+## Phase Finalisation
+
+The event when a [[Classification Phase]] concludes, its [[Transition Rule]] fires, and [[Membership Status]]es are updated. Produces a standings snapshot, applies the transition rule, allocates survivors to the next phase's [[Pool]]s, and marks eliminated participants. Can be automatic (triggered when all fixtures in the [[Phase Binding]] have confirmed results) or manual (triggered by the [[Super Administrator]]). The mechanism — automatic vs manual, with or without safety gates — is an implementation decision, not part of the domain definition.
+_Avoid_: Stage finalisation (ambiguous with [[Tournament Stage]])
+
+---
+
+## Track
+
+A named sequence of [[Classification Phase]]s that a subset of participants follows through the classification. In a linear format (WC), there is one Track — everyone follows the same phase sequence. In branching formats, multiple Tracks exist in parallel. Examples: GAA main path vs qualifier backdoor; double elimination winners vs losers; IPL top-2 qualifier vs eliminator. [[Transition Rule]]s can move participants between Tracks. A participant is on exactly one Track at any given time.
+_Avoid_: Path (too generic), Branch (collides with git), Bracket (already overloaded)

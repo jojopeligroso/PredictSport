@@ -31,23 +31,9 @@ The active product is the `/wc` surface. All real users interact here. Generic r
 | `/wc/*` (primary) | `src/app/wc/layout.tsx` | WC-branded nav (BrandMark, WcNavLinks, UserMenu, MobileNav) | **TabBar** — fixed bottom, 4 tabs | N/A |
 | Generic routes | `src/app/layout.tsx` | NavBar + Footer | None | `GlobalChromeGuard` hides this chrome on `/wc` |
 
-**TabBar** (`src/components/wc/TabBar.tsx`) — the primary navigation for all engaged users on `/wc`:
+**TabBar** (`src/components/wc/TabBar.tsx`) — fixed bottom nav for engaged users: Home, Picks, Board, Chat. Rendered in `wc/layout.tsx` as `{engaged && <TabBar />}`. z-40, 52px + safe-area-inset-bottom.
 
-| Tab | Icon | Route | Active when |
-|-----|------|-------|-------------|
-| Home | House | `/wc/home` | path starts with `/wc/home` |
-| Picks | Crosshair | `/wc` | path is `/wc` or starts with `/wc/picks` |
-| Board | Trophy | `/wc/leaderboard` | path starts with `/wc/leaderboard` |
-| Chat | Speech bubble | `/wc/chat` | path starts with `/wc/chat` |
-
-Rendered in `wc/layout.tsx:160` as `{engaged && <TabBar />}` — visible to all authenticated competition members across every `/wc` page. Fixed position, 52px height + safe-area-inset-bottom, z-40.
-
-**Other infrastructure components rendered by layouts:**
-- `DisplayNameModal` — blocks interaction until display name is set (z-60)
-- `PushNotificationPrompt` — push notification opt-in (z-50, auto-triggers after 800ms)
-- `InstallPrompt` / `PwaInstallGuide` — PWA install prompts (z-50)
-- `ServiceWorkerRegistration` — registers `/sw.js` for PWA
-- `ThemeProvider` / `LocaleProvider` — theme and i18n context
+**Layout infrastructure:** `DisplayNameModal` (z-60), `PushNotificationPrompt` (z-50), `InstallPrompt`/`PwaInstallGuide` (z-50), `ServiceWorkerRegistration`, `ThemeProvider`, `LocaleProvider`.
 
 ### Key Directories
 
@@ -90,21 +76,7 @@ Competition Instance → CompetitionMembers → ClassificationMemberships
 
 ### Sports Provider System
 
-Provider abstraction in `src/lib/sports/`. `BaseProvider` handles fetch, rate limiting, timeouts. Registry chains providers per sport — first non-null result wins.
-
-| Provider | Sports | Key Needed | Cost |
-|----------|--------|------------|------|
-| OpenF1 | F1 | No | Free |
-| API-Football | Soccer | `API_FOOTBALL_KEY` | Free (100 req/day) |
-| TheSportsDB | Soccer, Golf, Rugby, Tennis | No | Free |
-| ESPN | NFL, NHL, NBA, MLB, Soccer, Rugby, Golf, Tennis, Snooker | No | Free (unofficial) |
-| BallDontLie | NBA (+paid: NFL, MLB, NHL) | `BALLDONTLIE_KEY` | Free NBA |
-| MLB Stats | MLB | No | Free |
-| TheRacingAPI | Horse Racing | `THERACING_API_KEY` | Free tier |
-| Foireann | GAA | `FOIREANN_API_KEY` | Free |
-| Manual | All (fallback) | N/A | N/A |
-
-**Adding a sport/provider:** Add to `Sport` type → create provider extending `BaseProvider` → register in `registry.ts` → add env var to `.env.local.example`.
+Provider abstraction in `src/lib/sports/`. `BaseProvider` handles fetch, rate limiting, timeouts. Registry chains providers per sport — first non-null result wins. 9 providers: OpenF1, API-Football, TheSportsDB, ESPN, BallDontLie, MLB Stats, TheRacingAPI, Foireann, Manual. See `registry.ts` for sport mappings and `.env.local.example` for API keys.
 
 ### API Routes
 
@@ -210,12 +182,6 @@ This project runs on **Vercel Hobby (free)**. These limits bite silently:
 3. **100 deploys/day** — each push to `master` triggers a deploy. Multi-session days can burn through this fast. If deploys stop triggering, this limit may be the cause.
 4. **6000 build min/month** — Next.js builds take ~1–2 min each. At 20+ deploys/day this adds up. No way to check remaining minutes via API.
 
-## Gotchas — Supabase PostgREST Row Limits
-
-1. **PostgREST silently caps query results at 1,000 rows.** Supabase's hosted PostgREST returns a maximum of 1,000 rows by default (`PGRST_DB_MAX_ROWS`). No error, no warning — the result is simply truncated. Any `.select()` query that could exceed 1,000 rows **MUST** include `.limit(N)` or `.range(from, to)`. This caused zero points on the leaderboard when scored predictions exceeded 1,000 rows — the JS aggregation loop only summed what PostgREST returned.
-
-2. **Never aggregate in JavaScript what the database can aggregate in SQL.** Fetching individual rows and summing in a JS loop means (a) you hit the row limit silently, (b) you transfer orders of magnitude more data than needed, (c) you burn serverless CPU on work Postgres does in milliseconds. **Use a Postgres RPC with `SUM() GROUP BY`** so the database returns one row per group, not one row per input record. The current `.limit(10000)` band-aid works at 48 users but the proper fix is an RPC.
-
 ## Gotchas — RLS vs Service Client
 
 1. **Cap check counts MUST use service client.** RLS SELECT on `competition_members` requires `is_competition_member(competition_id)`. A non-member joining via `/api/join` gets `count = 0` from the anon client — the cap check passes and the user walks into a full competition. All entrant cap counts must use `createServiceClient()`. The `/wc/join-open` page got this right; `/api/join` did not (fixed 2026-06-21). The `max_entrants` cap is per-competition (currently 48 for WC, will vary for future blueprints).
@@ -254,6 +220,10 @@ This project runs on **Vercel Hobby (free)**. These limits bite silently:
 4. **After writing any migration that creates or alters RLS policies**, mentally simulate: "What happens if someone calls this table directly via PostgREST with a crafted payload?" If the answer is "they can escalate privileges or impersonate system actions," the policy needs tightening.
 
 5. **SECURITY DEFINER functions MUST have `SET search_path = ''`** and explicit `REVOKE ALL FROM PUBLIC` unless the function is intentionally callable by all roles. Without these, any role (including `anon`) can call the function, and search_path hijacking is possible.
+
+## Gotchas — Design System
+
+1. **Never use hardcoded `bg-white` on interactive elements.** Use `bg-ps-surface` instead (white in light mode, dark in dark mode). `bg-white` with semantic text tokens (`text-ps-text`) produces invisible text in dark mode. Dead tokens: `ps-ink`, `ps-cream` — use `ps-text`/`ps-text-sec`/`ps-text-ter` and `ps-bg-alt`. Acceptable: `bg-white/N` (translucent tints), toggle dots, elements with `dark:bg-ps-surface`. Before pushing UI: `grep -rn "bg-white[^/]" src/ --include="*.tsx"`.
 
 ## Multi-Session Warning
 
