@@ -64,14 +64,18 @@ async function loadPhaseForStage(
       id, classification_id, phase_key, phase_name, phase_order,
       entry_count, exit_count, qualification_rules, pool_structure,
       tiebreaker_rules, scoring_scope, source_phase_id, branch_type,
-      status, config, created_at, updated_at,
+      status, activated_at, finalised_at, config, created_at, updated_at,
       phase_stages:classification_phase_stages!inner(sporting_stage_id)
     `)
     .eq("classification_id", classificationId)
     .eq("phase_stages.sporting_stage_id", stageId)
     .maybeSingle();
 
-  if (error || !data) return null;
+  if (error) {
+    console.warn(`[loadPhaseForStage] DB error, falling back to hardcoded:`, error.message);
+    return null;
+  }
+  if (!data) return null;
 
   return data as unknown as ClassificationPhase;
 }
@@ -84,13 +88,16 @@ async function loadNextPhaseName(
   classificationId: string,
   currentPhaseOrder: number
 ): Promise<string | null> {
-  const { data } = await supabase
+  const { data, error } = await supabase
     .from("classification_phases")
     .select("phase_name")
     .eq("classification_id", classificationId)
     .eq("phase_order", currentPhaseOrder + 1)
     .maybeSingle();
 
+  if (error) {
+    console.warn(`[loadNextPhaseName] DB error, falling back to hardcoded:`, error.message);
+  }
   return (data as { phase_name: string } | null)?.phase_name ?? null;
 }
 
@@ -154,7 +161,9 @@ export async function eliminateFromFormat(
   let result: EliminationResult;
 
   if (stageType === "group") {
-    const qualRules = phase?.qualification_rules as QualificationRules | undefined;
+    // Only use DB-driven rules for recognised methods; fall back to hardcoded for unknown
+    const rawRules = phase?.qualification_rules as QualificationRules | undefined;
+    const qualRules = rawRules?.method === "top_n_per_group_with_best_thirds" ? rawRules : undefined;
     result = await eliminateGroupStage(
       supabase, classificationId, stageId, stageKey, targetSurvivors, qualRules
     );
