@@ -303,6 +303,8 @@ export class ESPNProvider extends BaseProvider {
     let winner: string | null = null;
     if (home?.winner) winner = homeName;
     else if (away?.winner) winner = awayName;
+    else if (isFinal && homeScore > awayScore) winner = homeName;
+    else if (isFinal && awayScore > homeScore) winner = awayName;
     else if (isFinal && homeScore === awayScore) winner = "draw";
 
     // Extract period data from ESPN linescores when available.

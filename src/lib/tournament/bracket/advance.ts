@@ -110,7 +110,10 @@ export async function advanceKnockoutWinners(
   if (!resultData) return updated;
 
   const winner = resultData.winner as string | null;
-  if (!winner) return updated;
+  if (!winner) {
+    console.warn(`[advance] Skipping bracket advancement for ${event.event_name}: winner is null in result_data`);
+    return updated;
+  }
 
   // Derive loser from event_name
   const parts = (event.event_name as string).split(/\s+vs?\s+/i);

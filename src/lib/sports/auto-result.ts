@@ -529,9 +529,11 @@ async function triggerVerification(
     .update({ result_data: withPending })
     .eq("id", event.id);
 
-  // Resolve the external ID for verification
+  // Resolve the external ID for verification — prefer the provider's native
+  // ID stored in result_data over the event's manual:* external_event_id
   const resolvedId =
     (currentResultData.provider_event_id as string | undefined) ??
+    (currentResultData.external_event_id as string | undefined) ??
     (event.external_event_id?.startsWith("manual:")
       ? null
       : event.external_event_id);
@@ -572,10 +574,43 @@ async function triggerVerification(
     updatedData.verified_at = new Date().toISOString();
   }
 
+  // Safety net: if primary has null winner but score is unambiguous, derive
+  // the winner and backfill it. This catches any provider that returns a valid
+  // score but fails to set the winner field.
+  const primaryWinner = currentResultData.winner as string | null;
+  const primaryScore = currentResultData.score as {
+    home_score: number; away_score: number; home_team: string; away_team: string;
+  } | null;
+  if (
+    !primaryWinner && primaryScore &&
+    typeof primaryScore.home_score === "number" &&
+    typeof primaryScore.away_score === "number" &&
+    primaryScore.home_score !== primaryScore.away_score
+  ) {
+    const derivedWinner = primaryScore.home_score > primaryScore.away_score
+      ? primaryScore.home_team
+      : primaryScore.away_team;
+    updatedData.winner = derivedWinner;
+    console.warn(
+      `[verify] Backfilled null winner with "${derivedWinner}" for ${event.event_name}` +
+      ` (score: ${primaryScore.home_score}-${primaryScore.away_score})`,
+    );
+  }
+
   await supabase
     .from("events")
     .update({ result_data: updatedData })
     .eq("id", event.id);
+
+  // If we backfilled a winner, re-trigger bracket advancement
+  if (updatedData.winner && !primaryWinner && event.external_event_id) {
+    const { advanceKnockoutWinners } = await import("@/lib/tournament/bracket/advance");
+    advanceKnockoutWinners(supabase, {
+      event_name: event.event_name,
+      external_event_id: event.external_event_id,
+      result_data: updatedData,
+    }).catch((err) => console.error(`[verify] bracket re-advance failed:`, err));
+  }
 
   // Handle dispute notification
   if (vResult.status === "disputed" && vResult.verifierScore) {
@@ -628,9 +663,10 @@ async function retryVerification(
     return { ...base, status: "skipped", message: "verification promoted to unverifiable" };
   }
 
-  // Resolve external ID
+  // Resolve external ID — same fallback chain as triggerVerification
   const resolvedId =
     (resultData.provider_event_id as string | undefined) ??
+    (resultData.external_event_id as string | undefined) ??
     (event.external_event_id?.startsWith("manual:")
       ? null
       : event.external_event_id);
