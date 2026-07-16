@@ -83,7 +83,7 @@ export async function fetchMd1PicksData() {
 
     if (!windowStartIso) {
       // All group fixtures confirmed — fall through to knockout below
-      return fetchKnockoutFallback(supabase, competition.id, ff, archive ? null : user, archive ? false : resolvedIsMember);
+      return fetchKnockoutFallback(supabase, competition.id, ff, archive ? null : user, resolvedIsMember, archive);
     }
 
     // Take 8 fixture-dates from window_start (skipping dates with no fixtures)
@@ -102,7 +102,7 @@ export async function fetchMd1PicksData() {
     windowLocked = false;
   } else {
     // All group rounds scored — fall through to knockout
-    return fetchKnockoutFallback(supabase, competition.id, ff, archive ? null : user, archive ? false : resolvedIsMember);
+    return fetchKnockoutFallback(supabase, competition.id, ff, archive ? null : user, resolvedIsMember, archive);
   }
 
   const events: WindowEvent[] = eventRows.map((row) => ({
@@ -163,6 +163,7 @@ async function fetchKnockoutFallback(
   ff: { key: "tournament_id" | "competition_id"; value: string },
   user: { id: string } | null,
   resolvedIsMember: boolean,
+  archive: boolean,
 ) {
   const { data: koRound } = await supabase
     .from("rounds")
@@ -207,9 +208,9 @@ async function fetchKnockoutFallback(
     if (fixture) fixtureByEventId.set(row.id, fixture);
   }
 
-  const isMember = resolvedIsMember;
+  const isMember = archive ? true : resolvedIsMember;
   let predictions: Prediction[] = [];
-  if (user) {
+  if (!archive && user) {
     if (isMember && events.length > 0) {
       const eventIds = events.map((e) => e.id);
       const { data: predRows } = await supabase
