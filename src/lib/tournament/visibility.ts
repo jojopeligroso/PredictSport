@@ -24,6 +24,27 @@ const MYSTERY_ANIMALS = [
   "Siskin", "Crossbill",
 ] as const;
 
+/**
+ * Surnames for display-site pseudonyms. Mix of Mexican, Irish, French,
+ * Polish, and British — paired with MYSTERY_ANIMALS to create full names.
+ * Stable: don't reorder. The index is derived from the user_id hash.
+ */
+const DISPLAY_SURNAMES = [
+  // Mexican
+  "López", "García", "Hernández", "Ramírez", "Torres",
+  "Flores", "Cruz", "Morales", "Reyes", "Mendoza",
+  // Irish
+  "Lynch", "Murphy", "O'Brien", "Kelly", "Doyle",
+  "Walsh", "Byrne", "Ryan", "O'Sullivan", "Brennan",
+  // French
+  "Dupont",
+  // Polish
+  "Kowalski", "Nowak",
+  // British
+  "Smith", "Clarke", "Thompson", "Edwards", "Hughes",
+  "Bennett", "Ward", "Palmer", "Hart", "Fletcher",
+] as const;
+
 export interface VisibleStandingRow {
   user_id: string;
   display_name: string;
@@ -66,9 +87,10 @@ export function applyVisibility<T extends VisibleStandingRow>(
   const byUser = new Map(memberships.map((m) => [m.user_id, m]));
 
   // Track used pseudonyms to avoid collisions in the public view.
-  // Pre-seed with any stored pseudonyms so generated ones don't clash.
+  // Pre-seed with stored pseudonyms so generated ones don't clash —
+  // except in archive mode where we generate fresh "Animal Surname" names.
   const usedNames = new Set<string>(
-    viewerRole === "public"
+    viewerRole === "public" && !isArchive
       ? memberships.filter((m) => m.pseudonym).map((m) => m.pseudonym!)
       : [],
   );
@@ -87,11 +109,13 @@ export function applyVisibility<T extends VisibleStandingRow>(
 
     if (viewerRole === "public") {
       // Public viewers see everyone anonymized — no self-check.
-      // Use stored pseudonym if available, otherwise generate a
-      // deterministic one from the user_id so each player gets a
-      // unique animal name even if they never toggled "Hide me".
+      // On the display site, always generate fresh "Animal Surname"
+      // pseudonyms (ignore stored animal-only pseudonyms).
+      // On the normal site, prefer stored pseudonyms for consistency.
       const m = byUser.get(row.user_id);
-      const pseudonym = m?.pseudonym ?? generatePseudonym(row.user_id, usedNames);
+      const pseudonym = isArchive
+        ? generatePseudonym(row.user_id, usedNames)
+        : (m?.pseudonym ?? generatePseudonym(row.user_id, usedNames));
       usedNames.add(pseudonym);
       return { ...row, display_name: pseudonym };
     }
@@ -170,9 +194,35 @@ export async function ensurePseudonym(
  * Generate a deterministic pseudonym from a user_id, avoiding collisions
  * with names already in `usedNames`. Same algorithm as ensurePseudonym
  * but synchronous and non-persisting — for read-only public views.
+ *
+ * On the archive/display site, produces full names like "Badger Lynch"
+ * by pairing the animal with a surname from DISPLAY_SURNAMES.
  */
 export function generatePseudonym(userId: string, usedNames: Set<string>): string {
   const seed = hashSeed(userId);
+  const isArchive =
+    typeof process !== "undefined" &&
+    (process.env?.NEXT_PUBLIC_PRODUCT_MODE === "world_cup_2026_archive" ||
+     process.env?.PRODUCT_MODE === "world_cup_2026_archive");
+
+  if (isArchive) {
+    // Full name: "Animal Surname" — deterministic from user_id
+    const animal = MYSTERY_ANIMALS[seed % MYSTERY_ANIMALS.length];
+    const surname = DISPLAY_SURNAMES[hashSeed(`${userId}:surname`) % DISPLAY_SURNAMES.length];
+    const candidate = `${animal} ${surname}`;
+    if (!usedNames.has(candidate)) return candidate;
+    // Collision: walk animals until we find an unused combo
+    for (let i = 1; i < MYSTERY_ANIMALS.length; i++) {
+      const alt = `${MYSTERY_ANIMALS[(seed + i) % MYSTERY_ANIMALS.length]} ${surname}`;
+      if (!usedNames.has(alt)) return alt;
+    }
+    // Extreme fallback
+    let suffix = 2;
+    while (usedNames.has(`${candidate} ${suffix}`)) suffix++;
+    return `${candidate} ${suffix}`;
+  }
+
+  // Standard mode: animal-only pseudonyms
   for (let i = 0; i < MYSTERY_ANIMALS.length; i++) {
     const candidate = MYSTERY_ANIMALS[(seed + i) % MYSTERY_ANIMALS.length];
     if (!usedNames.has(candidate)) return candidate;
