@@ -15,12 +15,15 @@ type ResolveResult = {
  * user object with WC_ARCHIVE_DEMO_USER_ID so data fetchers pull that user's
  * predictions, group, bracket — simulating the full member experience.
  */
+/** Instance #1 competition and demo viewer — hardcoded for the display site. */
+const ARCHIVE_COMPETITION_ID = "1a4448e5-a178-45ab-b819-a0dfab370306";
+const ARCHIVE_DEMO_USER_ID = "8c7e2e1b-0564-4d86-93e2-85ecf00f1e00";
+
 export const resolveWcArchive = cache(async (): Promise<ResolveResult> => {
-  const competitionId = process.env.WC_ARCHIVE_COMPETITION_ID;
-  const demoUserId = process.env.WC_ARCHIVE_DEMO_USER_ID;
-  if (!competitionId) {
-    return { competition: null, user: null, isMember: false };
-  }
+  const competitionId =
+    process.env.WC_ARCHIVE_COMPETITION_ID || ARCHIVE_COMPETITION_ID;
+  const demoUserId =
+    process.env.WC_ARCHIVE_DEMO_USER_ID || ARCHIVE_DEMO_USER_ID;
 
   const supabase = createServiceClient();
   const { data: competition } = await supabase
