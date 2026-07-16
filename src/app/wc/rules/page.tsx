@@ -5,7 +5,8 @@
  * passes props to the RulesContent client component.
  */
 import { Metadata } from "next";
-import { createClient } from "@/lib/supabase/server";
+import { getReadClient } from "@/lib/wc/archive-client";
+import { isWorldCupArchive } from "@/lib/product-mode";
 import { WcBrandedTitle } from "@/components/wc/WcBrandedTitle";
 import { RulesContent } from "@/components/wc/RulesContent";
 import { getServerT } from "@/lib/i18n/server";
@@ -22,15 +23,17 @@ export const metadata: Metadata = {
 
 export default async function WcRulesPage() {
   const t = await getServerT();
-  const { competition: wcComp, user, isMember } = await resolveWcCompetition({
+  const archive = isWorldCupArchive();
+  const { competition: wcComp, user, isMember: resolvedIsMember } = await resolveWcCompetition({
     statuses: ["active", "draft"],
   });
+  const isMember = archive ? true : resolvedIsMember;
 
   // Get earliest lock_time across WC matchday 1
   let firstLockTime: string | null = null;
 
   if (wcComp) {
-    const supabase = await createClient();
+    const supabase = await getReadClient();
     const ff = fixtureFilter(wcComp);
     const { data: md1Round } = await supabase
       .from("rounds")
@@ -64,7 +67,7 @@ export default async function WcRulesPage() {
       />
       <RulesContent
         isMember={isMember}
-        isAuthenticated={!!user}
+        isAuthenticated={archive ? true : !!user}
         firstLockTime={firstLockTime}
       />
     </div>

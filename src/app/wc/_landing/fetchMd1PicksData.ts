@@ -116,7 +116,7 @@ export async function fetchMd1PicksData() {
     event_prediction_types: row.event_prediction_types,
   }));
 
-  const isMember = archive ? false : resolvedIsMember;
+  const isMember = archive ? true : resolvedIsMember;
   let predictions: Prediction[] = [];
   if (!archive && user) {
     if (isMember && events.length > 0) {
@@ -149,7 +149,7 @@ export async function fetchMd1PicksData() {
     predictions,
     fixtureByEventId,
     isMember,
-    isAuthenticated: archive ? false : Boolean(user),
+    isAuthenticated: archive ? true : Boolean(user),
     windowLocked,
   };
 }

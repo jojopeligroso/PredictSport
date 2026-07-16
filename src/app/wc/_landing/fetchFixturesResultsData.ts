@@ -127,7 +127,7 @@ export async function fetchFixturesResultsData() {
       };
     }
 
-    isMember = resolvedIsMember;
+    isMember = archive ? true : resolvedIsMember;
 
     // Build WindowEvent objects for expand-to-pick
     const fixtureByExternalId = new Map<string, WcFixture>();

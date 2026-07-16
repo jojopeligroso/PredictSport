@@ -37,14 +37,7 @@ export default async function WorldCupLayout({
 
             <WcNavLinks engaged={true} variant="desktop" />
 
-            <div className="flex items-center gap-1">
-              <LanguageToggle />
-              <MobileNav
-                isLoggedIn={false}
-                displayName="Viewer"
-                avatarUrl={null}
-              />
-            </div>
+            <LanguageToggle />
           </div>
 
           <WcNavLinks engaged={true} variant="mobile" />
