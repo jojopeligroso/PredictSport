@@ -102,6 +102,8 @@ type TabDef = {
 interface TabBarProps {
   /** ISO timestamp of the latest chat message (for unread badge). */
   latestChatAt?: string | null;
+  /** When true, hide the Chat tab (archive/display mode). */
+  archiveMode?: boolean;
 }
 
 /**
@@ -112,12 +114,12 @@ interface TabBarProps {
  *   // Place inside the /wc layout, outside any scrolling container
  *   <TabBar latestChatAt={latestChatAt} />
  */
-export function TabBar({ latestChatAt }: TabBarProps) {
+export function TabBar({ latestChatAt, archiveMode }: TabBarProps) {
   const pathname = usePathname();
   const t = useT();
   const { unreadCount } = useUnreadChat(latestChatAt);
 
-  const tabs: TabDef[] = [
+  const allTabs: TabDef[] = [
     {
       key: "tab.home",
       href: "/wc/home",
@@ -144,6 +146,8 @@ export function TabBar({ latestChatAt }: TabBarProps) {
       badge: unreadCount,
     },
   ];
+
+  const tabs = archiveMode ? allTabs.filter((t) => t.key !== "tab.chat") : allTabs;
 
   return (
     <nav

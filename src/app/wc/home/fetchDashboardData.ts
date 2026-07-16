@@ -1,4 +1,5 @@
-import { createClient } from "@/lib/supabase/server";
+import { getReadClient } from "@/lib/wc/archive-client";
+import { isWorldCupArchive } from "@/lib/product-mode";
 import { WC2026_FIXTURES, type WcFixture } from "@/lib/wc/fixtures";
 import { describeDraftProgress } from "@/lib/bracket/bracket-progress";
 import { computeGroupStandings } from "@/lib/wc/compute-group-standings";
@@ -195,8 +196,9 @@ export async function fetchDashboardData(): Promise<DashboardResult> {
 
   if (!competition) return { ready: false };
 
-  const supabase = await createClient();
+  const supabase = await getReadClient();
   const ff = fixtureFilter(competition);
+  const archive = isWorldCupArchive();
 
   // 2. Parallel fetches: round (actionable + scored fallback), member count, membership, classification
   const [
@@ -230,7 +232,7 @@ export async function fetchDashboardData(): Promise<DashboardResult> {
         .select("id", { count: "exact", head: true })
         .eq("competition_id", competition.id),
       // User membership role (membership already resolved, but need role for admin check)
-      user
+      !archive && user
         ? supabase
             .from("competition_members")
             .select("id, role")
@@ -426,7 +428,7 @@ export async function fetchDashboardData(): Promise<DashboardResult> {
 
   // 5. Fetch predictions for all round events (hero picks + group accordion)
   let predictions: Prediction[] = [];
-  if (user && isMember && eventRows.length > 0) {
+  if (!archive && user && isMember && eventRows.length > 0) {
     const eventIds = eventRows.map((e) => e.id);
     const { data: predRows } = await supabase
       .from("predictions")
@@ -510,12 +512,9 @@ export async function fetchDashboardData(): Promise<DashboardResult> {
     ? false
     : currentRound.status === "locked" || currentRound.status === "scored";
 
-  // 7. Bracket progress
-  // Group picks must be counted across ALL group-stage events for the
-  // competition, not just the current round's eventRows. Otherwise the
-  // progress bar resets/undercounts once the dashboard round advances.
+  // 7. Bracket progress (skip in archive mode — no viewer predictions)
   let bracketProgress: { pct: number; label: string } | null = null;
-  if (user && isMember) {
+  if (!archive && user && isMember) {
     const [bracketSubResult, groupEventsResult] = await Promise.all([
       supabase
         .from("bracket_prediction_submissions")
@@ -559,16 +558,15 @@ export async function fetchDashboardData(): Promise<DashboardResult> {
     }
   }
 
-  // Invite code — only show if entry is still open and competition isn't full
-  const entryClosesAt = competition.entry_closes_at ?? null;
+  // Invite code — skip in archive mode (no joining); only show if entry is still open
+  const entryClosesAt = archive ? null : (competition.entry_closes_at ?? null);
   const competitionFull = competition.max_entrants && memberCount >= competition.max_entrants;
-  const entryOpen = !competitionFull && (!entryClosesAt || new Date(entryClosesAt) > now);
+  const entryOpen = !archive && !competitionFull && (!entryClosesAt || new Date(entryClosesAt) > now);
   const inviteCode = entryOpen ? (competition.invite_code ?? null) : null;
 
-  // Last chat message for notification card (non-join, non-result, non-deleted).
-  // Reckons are social content — include them in the preview.
+  // Last chat message for notification card — skip in archive mode (no chat)
   let lastChatMessage: LastChatMessage | null = null;
-  if (competition.chat_enabled) {
+  if (!archive && competition.chat_enabled) {
     const { data: msg } = await supabase
       .from("chat_messages")
       .select("content, created_at, user_id")
@@ -610,15 +608,15 @@ export async function fetchDashboardData(): Promise<DashboardResult> {
     inviteCode,
     entryClosesAt,
     memberCount,
-    isMember,
-    isAuthenticated: Boolean(user),
+    isMember: archive ? false : isMember,
+    isAuthenticated: archive ? false : Boolean(user),
     windowLocked,
     bracketProgress,
     groupStandings,
     datePills,
-    chatEnabled: competition.chat_enabled ?? true,
-    isCompetitionAdmin,
-    memberRole: membership?.role ?? "participant",
+    chatEnabled: archive ? false : (competition.chat_enabled ?? true),
+    isCompetitionAdmin: archive ? false : isCompetitionAdmin,
+    memberRole: archive ? "participant" : (membership?.role ?? "participant"),
     lastChatMessage,
     isKnockout: !isGroupStage,
     currentRoundName: currentRound.name ?? null,
@@ -630,7 +628,7 @@ export async function fetchDashboardData(): Promise<DashboardResult> {
 // Recent results helper
 // ---------------------------------------------------------------------------
 
-type SupabaseClient = Awaited<ReturnType<typeof createClient>>;
+type SupabaseClient = Awaited<ReturnType<typeof getReadClient>>;
 
 async function fetchRecentResults(
   supabase: SupabaseClient,

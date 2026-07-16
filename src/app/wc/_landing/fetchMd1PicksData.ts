@@ -1,4 +1,5 @@
-import { createClient } from "@/lib/supabase/server";
+import { getReadClient } from "@/lib/wc/archive-client";
+import { isWorldCupArchive } from "@/lib/product-mode";
 import { WC2026_FIXTURES, type WcFixture } from "@/lib/wc/fixtures";
 import { utcDateIso } from "@/lib/wc/daily-lock";
 import { resolveWcCompetition } from "@/lib/wc/resolve-wc-competition";
@@ -29,8 +30,9 @@ export async function fetchMd1PicksData() {
 
   if (!competition) return { ready: false as const };
 
-  const supabase = await createClient();
+  const supabase = await getReadClient();
   const ff = fixtureFilter(competition);
+  const archive = isWorldCupArchive();
 
   // Fetch all group-stage rounds (round_number 1-3)
   const { data: groupRounds } = await supabase
@@ -81,7 +83,7 @@ export async function fetchMd1PicksData() {
 
     if (!windowStartIso) {
       // All group fixtures confirmed — fall through to knockout below
-      return fetchKnockoutFallback(supabase, competition.id, ff, user, resolvedIsMember);
+      return fetchKnockoutFallback(supabase, competition.id, ff, archive ? null : user, archive ? false : resolvedIsMember);
     }
 
     // Take 8 fixture-dates from window_start (skipping dates with no fixtures)
@@ -100,7 +102,7 @@ export async function fetchMd1PicksData() {
     windowLocked = false;
   } else {
     // All group rounds scored — fall through to knockout
-    return fetchKnockoutFallback(supabase, competition.id, ff, user, resolvedIsMember);
+    return fetchKnockoutFallback(supabase, competition.id, ff, archive ? null : user, archive ? false : resolvedIsMember);
   }
 
   const events: WindowEvent[] = eventRows.map((row) => ({
@@ -114,9 +116,9 @@ export async function fetchMd1PicksData() {
     event_prediction_types: row.event_prediction_types,
   }));
 
-  const isMember = resolvedIsMember;
+  const isMember = archive ? false : resolvedIsMember;
   let predictions: Prediction[] = [];
-  if (user) {
+  if (!archive && user) {
     if (isMember && events.length > 0) {
       const eventIds = events.map((e) => e.id);
       const { data: predRows } = await supabase
@@ -147,7 +149,7 @@ export async function fetchMd1PicksData() {
     predictions,
     fixtureByEventId,
     isMember,
-    isAuthenticated: Boolean(user),
+    isAuthenticated: archive ? false : Boolean(user),
     windowLocked,
   };
 }
@@ -156,7 +158,7 @@ export async function fetchMd1PicksData() {
  * Fallback: all group rounds scored → fetch the first actionable knockout round.
  */
 async function fetchKnockoutFallback(
-  supabase: Awaited<ReturnType<typeof createClient>>,
+  supabase: Awaited<ReturnType<typeof getReadClient>>,
   competitionId: string,
   ff: { key: "tournament_id" | "competition_id"; value: string },
   user: { id: string } | null,

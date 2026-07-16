@@ -12,7 +12,7 @@ import { ThemeProvider, themeInitScript } from "@/components/ThemeProvider";
 const displayInitScript = `(function(){try{if(localStorage.getItem('ps-bigger-cards')==='true'){document.documentElement.dataset.display='large';}}catch(e){}})();`;
 import { LocaleProvider } from "@/lib/i18n";
 import { getServerLocale } from "@/lib/i18n/server";
-import { isWorldCupShell } from "@/lib/product-mode";
+import { isWorldCupShell, isWorldCupArchive } from "@/lib/product-mode";
 import "./globals.css";
 
 const inter = Inter({
@@ -56,6 +56,7 @@ export default async function RootLayout({
   children: React.ReactNode;
 }>) {
   const shellMode = isWorldCupShell();
+  const archiveMode = isWorldCupArchive();
   const locale = await getServerLocale();
 
   return (
@@ -72,6 +73,7 @@ export default async function RootLayout({
         <meta name="apple-mobile-web-app-capable" content="yes" />
         <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
         <meta name="apple-mobile-web-app-title" content="sportspredict." />
+        {archiveMode && <meta name="robots" content="noindex, nofollow" />}
         <script dangerouslySetInnerHTML={{ __html: themeInitScript }} />
         <script dangerouslySetInnerHTML={{ __html: displayInitScript }} />
       </head>

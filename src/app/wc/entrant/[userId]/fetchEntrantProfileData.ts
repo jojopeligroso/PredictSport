@@ -1,4 +1,6 @@
-import { createClient } from "@/lib/supabase/server";
+import { getReadClient } from "@/lib/wc/archive-client";
+import { isWorldCupArchive } from "@/lib/product-mode";
+import { generatePseudonym } from "@/lib/tournament/visibility";
 import { resolveWcCompetition } from "@/lib/wc/resolve-wc-competition";
 import { fixtureFilter, fixtureFilterFromIds } from "@/lib/tournament/shared-fixtures";
 import { getTagDefinition } from "@/lib/reputation/tag-catalogue";
@@ -122,9 +124,10 @@ export async function fetchEntrantProfileData(
 
   if (!competition) return { found: false, reason: "no_competition" };
 
-  const supabase = await createClient();
-  const viewerUserId = user?.id ?? null;
-  const isSelf = viewerUserId === targetUserId;
+  const supabase = await getReadClient();
+  const archive = isWorldCupArchive();
+  const viewerUserId = archive ? null : (user?.id ?? null);
+  const isSelf = archive ? false : (viewerUserId === targetUserId);
   const ff = fixtureFilter(competition);
   const rf = fixtureFilterFromIds(competition.id, competition.tournament_id);
 
@@ -166,8 +169,8 @@ export async function fetchEntrantProfileData(
   const overallClassId = overallClassResult.data?.id ?? null;
   const formatClassId = formatClassResult.data?.id ?? null;
 
-  // ── Privacy check: if viewer is not self, check Overall visibility ──
-  if (!isSelf && overallClassId) {
+  // ── Privacy check: skip in archive mode (show profile but anonymised) ──
+  if (!archive && !isSelf && overallClassId) {
     const { data: visMembership } = await supabase
       .from("classification_memberships")
       .select("display_visibility")
@@ -567,10 +570,24 @@ export async function fetchEntrantProfileData(
     }
   }
 
+  // ── Archive anonymisation ──
+  let displayName: string = targetUserResult.data.display_name;
+  if (archive) {
+    const usedNames = new Set<string>();
+    displayName = generatePseudonym(targetUserId, usedNames);
+    if (group) {
+      // Anonymise all group member names with deterministic pseudonyms
+      for (const member of group.members) {
+        member.displayName = generatePseudonym(member.userId, usedNames);
+        usedNames.add(member.displayName);
+      }
+    }
+  }
+
   return {
     found: true,
     targetUserId,
-    displayName: targetUserResult.data.display_name,
+    displayName,
     competitionId: competition.id,
     rank,
     totalPoints,

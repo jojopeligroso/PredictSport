@@ -9,12 +9,65 @@ import { DisplayNameModal } from "@/components/DisplayNameModal";
 import { LanguageToggle } from "@/components/LanguageToggle";
 import { getServerT } from "@/lib/i18n/server";
 import { resolveWcCompetition } from "@/lib/wc/resolve-wc-competition";
+import { isWorldCupArchive } from "@/lib/product-mode";
 
 export default async function WorldCupLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
+  /* ── Archive / display mode ─────────────────────────────────────────
+   * Skip all auth queries; show full nav with anonymised names.
+   * resolveWcCompetition already handles archive mode (user: null).
+   */
+  if (isWorldCupArchive()) {
+    const t = await getServerT();
+
+    return (
+      <div className="wc-theme min-h-screen bg-ps-bg">
+        <div className="h-1 w-full" style={{ background: "#006847" }} />
+        <nav className="bg-ps-bg border-b border-ps-border pb-0.5" style={{ borderTop: "2px solid #006847" }}>
+          <div className="mx-auto flex h-12 w-full max-w-[480px] md:max-w-3xl items-center justify-between px-4">
+            <Link href="/wc" className="flex items-center gap-1.5">
+              <BrandMark className="h-7 w-auto shrink-0" />
+              <span className="text-section-title font-extrabold lowercase tracking-tight text-ps-text">
+                sports<span className="text-ps-amber">predict.</span>
+              </span>
+            </Link>
+
+            <WcNavLinks engaged={true} variant="desktop" />
+
+            <div className="flex items-center gap-1">
+              <LanguageToggle />
+              <MobileNav
+                isLoggedIn={false}
+                displayName="Viewer"
+                avatarUrl={null}
+              />
+            </div>
+          </div>
+
+          <WcNavLinks engaged={true} variant="mobile" />
+        </nav>
+
+        {/* Archive banner */}
+        <div className="bg-amber-100 dark:bg-amber-900/30 text-amber-800 dark:text-amber-200 text-center text-xs py-1 font-medium">
+          Display mode — all names anonymised
+        </div>
+
+        <div className="mx-auto max-w-[480px] flex-1 md:border-x md:border-ps-border md:shadow-sm" style={{ paddingBottom: 'calc(56px + env(safe-area-inset-bottom, 0px) + 16px)' }}>{children}</div>
+
+        <footer className="flex justify-center py-8">
+          <Link href="/" className="opacity-30 transition-opacity hover:opacity-50">
+            <BrandMark className="h-6 w-auto" />
+          </Link>
+        </footer>
+
+        <TabBar archiveMode />
+      </div>
+    );
+  }
+
   const supabase = await createClient();
   const {
     data: { user: authUser },

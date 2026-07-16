@@ -56,7 +56,12 @@ export function applyVisibility<T extends VisibleStandingRow>(
   viewerUserId: string,
   viewerRole: ViewerRole = "member",
 ): T[] {
-  if (classificationType === "format_elimination") return rows;
+  // Format elimination normally shows real names (the survival ladder needs
+  // them). On the archive/display site, anonymise everything.
+  const isArchive =
+    typeof process !== "undefined" &&
+    process.env?.NEXT_PUBLIC_PRODUCT_MODE === "world_cup_2026_archive";
+  if (classificationType === "format_elimination" && !isArchive) return rows;
 
   const byUser = new Map(memberships.map((m) => [m.user_id, m]));
 

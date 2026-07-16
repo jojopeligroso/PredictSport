@@ -1,4 +1,4 @@
-import { createClient } from "@/lib/supabase/server";
+import { getReadClient } from "@/lib/wc/archive-client";
 import { redirect } from "next/navigation";
 import Link from "next/link";
 import type { BracketSubmissionData } from "@/types/tournament";
@@ -13,6 +13,7 @@ import {
 import { describeDraftProgress } from "@/lib/bracket/bracket-progress";
 import { getServerT } from "@/lib/i18n/server";
 import { resolveWcCompetition } from "@/lib/wc/resolve-wc-competition";
+import { isWorldCupArchive } from "@/lib/product-mode";
 import { fixtureFilter } from "@/lib/tournament/shared-fixtures";
 
 export const dynamic = "force-dynamic";
@@ -23,9 +24,10 @@ export const dynamic = "force-dynamic";
  */
 export default async function BracketPage() {
   const t = await getServerT();
+  const archive = isWorldCupArchive();
   const { competition, user } = await resolveWcCompetition();
 
-  if (!user) {
+  if (!user && !archive) {
     redirect("/login?next=/wc/bracket");
   }
 
@@ -37,7 +39,7 @@ export default async function BracketPage() {
     );
   }
 
-  const supabase = await createClient();
+  const supabase = await getReadClient();
 
   // Get bracket classifications
   const { data: classifications } = await supabase
@@ -46,29 +48,35 @@ export default async function BracketPage() {
     .eq("competition_id", competition.id)
     .eq("classification_type", "bracket_survivor");
 
-  // Get user's bracket submissions
-  const { data: submissions } = await supabase
-    .from("bracket_prediction_submissions")
-    .select("id, classification_id, status, version_number, submitted_at, locked_at, bracket_data")
-    .eq("competition_id", competition.id)
-    .eq("user_id", user.id)
-    .neq("status", "superseded");
+  // In archive mode there's no user — skip user-specific bracket queries
+  const submissions = user
+    ? (await supabase
+        .from("bracket_prediction_submissions")
+        .select("id, classification_id, status, version_number, submitted_at, locked_at, bracket_data")
+        .eq("competition_id", competition.id)
+        .eq("user_id", user.id)
+        .neq("status", "superseded")).data
+    : null;
 
   // Group-stage progress now comes from `predictions` rows (per the 2026-05-23
   // unified-predictions amendment), not from `bracket_data.groupsV2`. One
   // count is enough for both bracket classifications shown on this page.
   const ff = fixtureFilter(competition);
-  const eventsJoinField = ff.key === "tournament_id" ? "tournament_id" : "competition_id";
-  const { count: groupPicksCount } = await supabase
-    .from("predictions")
-    .select(`event_id, events!inner(${eventsJoinField}, external_event_id)`, {
-      count: "exact",
-      head: true,
-    })
-    .eq("user_id", user.id)
-    .eq("prediction_type", "winner")
-    .eq(`events.${eventsJoinField}`, ff.value)
-    .like("events.external_event_id", "manual:wc2026-grp-%");
+  let groupPicksCount: number | null = 0;
+  if (user) {
+    const eventsJoinField = ff.key === "tournament_id" ? "tournament_id" : "competition_id";
+    const result = await supabase
+      .from("predictions")
+      .select(`event_id, events!inner(${eventsJoinField}, external_event_id)`, {
+        count: "exact",
+        head: true,
+      })
+      .eq("user_id", user.id)
+      .eq("prediction_type", "winner")
+      .eq(`events.${eventsJoinField}`, ff.value)
+      .like("events.external_event_id", "manual:wc2026-grp-%");
+    groupPicksCount = result.count;
+  }
 
   const submissionMap = new Map(
     (submissions ?? []).map(
@@ -104,7 +112,7 @@ export default async function BracketPage() {
   let posterRankings: Record<string, string[]> = {};
   let posterMatchups: Record<string, { home: string; away: string }> = {};
   let posterData: BracketSubmissionData | null = null;
-  if (hasAnyProgress) {
+  if (hasAnyProgress && user) {
     // Build live rankings from `predictions` (source of truth post 2026-05-23).
     const { groups: groupData } = await loadGroupDataAndEventMap(supabase, {
       userId: user.id,
@@ -180,7 +188,7 @@ export default async function BracketPage() {
                 />
               </div>
 
-              {isAvailable && !submission && (
+              {isAvailable && !submission && !archive && (
                 <Link
                   href={`/wc/bracket/wizard?classificationId=${cls.id}`}
                   className="mt-4 block w-full rounded-lg bg-ps-text px-4 py-2.5 text-center text-sm font-semibold text-ps-bg transition-all hover:opacity-90 active:scale-[0.98]"
@@ -220,7 +228,7 @@ export default async function BracketPage() {
                           </>
                         )}
                       </span>
-                      {submission.status !== "locked" && (
+                      {submission.status !== "locked" && !archive && (
                         <Link
                           href={`/wc/bracket/wizard?classificationId=${cls.id}`}
                           className="text-xs font-bold text-ps-amber hover:underline"

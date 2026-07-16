@@ -4,6 +4,7 @@ import { createClient } from "@/lib/supabase/server";
 import { fetchDashboardData } from "./fetchDashboardData";
 import { DashboardClient } from "./DashboardClient";
 import { checkAndPublishExpiredPending } from "@/lib/reputation/auto-publish";
+import { isWorldCupArchive } from "@/lib/product-mode";
 
 export const dynamic = "force-dynamic";
 
@@ -30,7 +31,8 @@ export default async function WcHomePage({
   const data = await fetchDashboardData();
 
   // Side effect: auto-publish any pending tags past the 6-hour preview window
-  if (data.ready && data.competitionId) {
+  // Skip in archive mode — read-only, no mutations
+  if (data.ready && data.competitionId && !isWorldCupArchive()) {
     checkAndPublishExpiredPending(data.competitionId).catch(() => {
       // Non-critical — log happens inside the function
     });

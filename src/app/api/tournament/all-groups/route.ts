@@ -1,19 +1,33 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
+import { createServiceClient } from "@/lib/supabase/service";
+import { isWorldCupArchive } from "@/lib/product-mode";
+import { generatePseudonym } from "@/lib/tournament/visibility";
 
 /**
  * GET /api/tournament/all-groups?classificationId=X&competitionId=Y
  *
  * Returns ALL format prediction groups with members for the group overview.
+ * Archive mode: all names anonymised, no auth required.
  */
 export async function GET(request: NextRequest) {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const archiveMode = isWorldCupArchive();
 
-  if (!user) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  let supabase: Awaited<ReturnType<typeof createClient>>;
+  let userId = "";
+
+  if (archiveMode) {
+    supabase = createServiceClient() as Awaited<ReturnType<typeof createClient>>;
+  } else {
+    supabase = await createClient();
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+
+    if (!user) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+    userId = user.id;
   }
 
   const classificationId = request.nextUrl.searchParams.get("classificationId");
@@ -55,8 +69,17 @@ export async function GET(request: NextRequest) {
     .in("id", allUserIds);
 
   const nameMap = new Map<string, string>();
-  for (const u of users ?? []) {
-    nameMap.set(u.id, u.display_name || "Unknown");
+  if (archiveMode) {
+    const usedNames = new Set<string>();
+    for (const u of users ?? []) {
+      const pseudo = generatePseudonym(u.id, usedNames);
+      usedNames.add(pseudo);
+      nameMap.set(u.id, pseudo);
+    }
+  } else {
+    for (const u of users ?? []) {
+      nameMap.set(u.id, u.display_name || "Unknown");
+    }
   }
 
   const pointsMap = new Map<string, number>();
@@ -105,7 +128,7 @@ export async function GET(request: NextRequest) {
     }
   }
 
-  const myMembership = memberships.find((m) => m.user_id === user.id);
+  const myMembership = userId ? memberships.find((m) => m.user_id === userId) : null;
   const myGroupId = myMembership?.group_id ?? null;
 
   const responseGroups = groups.map((g) => {
@@ -115,7 +138,7 @@ export async function GET(request: NextRequest) {
         user_id: m.user_id,
         display_name: nameMap.get(m.user_id) ?? "Unknown",
         points: pointsMap.get(m.user_id) ?? 0,
-        is_self: m.user_id === user.id,
+        is_self: !!userId && m.user_id === userId,
         status: m.status,
       }))
       .sort((a, b) => b.points - a.points);

@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
+import { createServiceClient } from "@/lib/supabase/service";
+import { isWorldCupArchive } from "@/lib/product-mode";
 import { fixtureFilterFromIds } from "@/lib/tournament/shared-fixtures";
 
 /**
@@ -12,15 +14,25 @@ import { fixtureFilterFromIds } from "@/lib/tournament/shared-fixtures";
  *   { fixture: { home, away, eventId }, outcomeSplit: { home, draw, away, total },
  *     topScores: [{ home, away, count, pct }] }
  *   or { fixture: null } if no fixture is revealed yet.
+ *
+ * Archive mode: no auth required, uses service client for RLS bypass.
  */
 export async function GET(request: NextRequest) {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const archiveMode = isWorldCupArchive();
 
-  if (!user) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  let supabase: Awaited<ReturnType<typeof createClient>>;
+
+  if (archiveMode) {
+    supabase = createServiceClient() as Awaited<ReturnType<typeof createClient>>;
+  } else {
+    supabase = await createClient();
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+
+    if (!user) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
   }
 
   const competitionId = request.nextUrl.searchParams.get("competitionId");

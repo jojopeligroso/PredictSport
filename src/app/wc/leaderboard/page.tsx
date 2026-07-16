@@ -1,10 +1,11 @@
-import { createClient } from "@/lib/supabase/server";
+import { getReadClient } from "@/lib/wc/archive-client";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { ClassificationTabs } from "@/components/tournament/ClassificationTabs";
 import { InviteCodeBanner } from "@/components/InviteCodeBanner";
 import { getServerT } from "@/lib/i18n/server";
 import { resolveWcCompetition } from "@/lib/wc/resolve-wc-competition";
+import { isWorldCupArchive } from "@/lib/product-mode";
 
 export const dynamic = "force-dynamic";
 
@@ -13,9 +14,10 @@ export const dynamic = "force-dynamic";
  */
 export default async function LeaderboardPage() {
   const t = await getServerT();
+  const archive = isWorldCupArchive();
   const { competition, user } = await resolveWcCompetition();
 
-  if (!user) {
+  if (!user && !archive) {
     redirect("/login?next=/wc/leaderboard");
   }
 
@@ -27,27 +29,32 @@ export default async function LeaderboardPage() {
     );
   }
 
-  const supabase = await createClient();
+  const supabase = await getReadClient();
 
-  // Get user display name
-  const { data: profile } = await supabase
-    .from("users")
-    .select("display_name")
-    .eq("id", user.id)
-    .single();
+  // Get user display name (skip in archive mode — no user)
+  const profile = user
+    ? (await supabase
+        .from("users")
+        .select("display_name")
+        .eq("id", user.id)
+        .single()).data
+    : null;
 
-  // Get member count + user's role
-  const [{ count: memberCount }, { data: membership }] = await Promise.all([
+  // Get member count + user's role (skip role lookup in archive mode)
+  const [{ count: memberCount }, membership] = await Promise.all([
     supabase
       .from("competition_members")
       .select("id", { count: "exact", head: true })
       .eq("competition_id", competition.id),
-    supabase
-      .from("competition_members")
-      .select("role")
-      .eq("competition_id", competition.id)
-      .eq("user_id", user.id)
-      .maybeSingle(),
+    user
+      ? supabase
+          .from("competition_members")
+          .select("role")
+          .eq("competition_id", competition.id)
+          .eq("user_id", user.id)
+          .maybeSingle()
+          .then((r) => r.data)
+      : Promise.resolve(null),
   ]);
 
   const isAdmin = membership?.role === "admin" || membership?.role === "co_admin";
@@ -70,6 +77,7 @@ export default async function LeaderboardPage() {
 
   const competitionFull = competition.max_entrants && (memberCount ?? 0) >= competition.max_entrants;
   const showInvite =
+    !archive &&
     competition.invite_code &&
     competition.status === "active" &&
     !competitionFull &&
@@ -83,7 +91,7 @@ export default async function LeaderboardPage() {
         <ClassificationTabs
           classifications={classifications ?? []}
           competitionId={competition.id}
-          currentUserId={user.id}
+          currentUserId={user?.id ?? ""}
           inviteCode={competition.invite_code ?? null}
           kickoffIso="2026-06-11T15:00:00Z"
           memberCount={memberCount ?? 0}

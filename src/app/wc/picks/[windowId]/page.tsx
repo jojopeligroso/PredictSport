@@ -1,4 +1,4 @@
-import { createClient } from "@/lib/supabase/server";
+import { getReadClient } from "@/lib/wc/archive-client";
 import { redirect, notFound } from "next/navigation";
 import Link from "next/link";
 import { resolveWcCompetition } from "@/lib/wc/resolve-wc-competition";
@@ -14,6 +14,7 @@ import { WC2026_STAGE_IDS } from "@/lib/tournament/create-world-cup-competition"
 import { WC2026_GROUPS } from "@/lib/bracket/adapters/fifa-world-cup-2026";
 import { loadGroupDataFromPredictions } from "@/lib/tournament/bracket/adapters/predictions-to-group-data";
 import { groupDataToRankings } from "@/lib/tournament/bracket/group-ranking";
+import { isWorldCupArchive } from "@/lib/product-mode";
 
 type KoRoundKey = "r32" | "r16" | "qf" | "sf" | "final";
 
@@ -42,16 +43,18 @@ export default async function WindowPicksPage({
 }) {
   const { windowId } = await params;
 
+  const archive = isWorldCupArchive();
+
   // Use resolveWcCompetition so instance #2 users get their own competition, not instance #1.
   const { competition, user } = await resolveWcCompetition({
     statuses: ["active", "draft", "completed"],
   });
 
-  if (!user) {
+  if (!user && !archive) {
     redirect(`/login?next=/wc/picks/${windowId}`);
   }
 
-  const supabase = await createClient();
+  const supabase = await getReadClient();
 
   const { data: round } = await supabase
     .from("rounds")
@@ -67,18 +70,24 @@ export default async function WindowPicksPage({
   // not round.competition_id (which is always instance #1's id for shared fixtures).
   // If competition is null (non-member / unenrolled), redirect to join.
   if (!competition) {
+    if (archive) {
+      notFound();
+    }
     redirect(`/wc/join?next=/wc/picks/${windowId}`);
   }
 
-  const { data: membership } = await supabase
-    .from("competition_members")
-    .select("id")
-    .eq("competition_id", competition.id)
-    .eq("user_id", user.id)
-    .maybeSingle();
+  // Skip membership check in archive mode — no user
+  if (!archive) {
+    const { data: membership } = await supabase
+      .from("competition_members")
+      .select("id")
+      .eq("competition_id", competition.id)
+      .eq("user_id", user!.id)
+      .maybeSingle();
 
-  if (!membership) {
-    redirect(`/wc/join?next=/wc/picks/${windowId}`);
+    if (!membership) {
+      redirect(`/wc/join?next=/wc/picks/${windowId}`);
+    }
   }
 
   const ff = fixtureFilter(competition);
@@ -121,52 +130,61 @@ export default async function WindowPicksPage({
   //
   // Also look up the format classification membership to decide whether to
   // show the Format scoring explainer on the picks page.
-  const [{ data: bracketCls }, { data: formatCls }] = await Promise.all([
-    supabase
-      .from("classifications")
-      .select("id, status")
-      .eq("competition_id", competition.id)
-      .eq("classification_key", "full_bracket")
-      .eq("status", "active")
-      .maybeSingle(),
-    supabase
-      .from("classifications")
-      .select("id")
-      .eq("competition_id", competition.id)
-      .eq("classification_key", "format")
-      .eq("status", "active")
-      .maybeSingle(),
-  ]);
-
+  //
+  // In archive mode, skip all user-specific classification/bracket queries.
+  let bracketCls: { id: string; status: string } | null = null;
   let isFormatActive = false;
-  if (formatCls) {
-    const { data: formatMembership } = await supabase
-      .from("classification_memberships")
-      .select("status")
-      .eq("classification_id", formatCls.id)
-      .eq("user_id", user.id)
-      .maybeSingle();
-    isFormatActive =
-      formatMembership?.status === "active" ||
-      formatMembership?.status === "winner";
-  }
 
   type BracketSubmissionRow = {
     bracket_data: BracketSubmissionData | null;
     status: string;
   };
   let bracketSubmission: BracketSubmissionRow | null = null;
-  if (bracketCls) {
-    const { data: sub } = await supabase
-      .from("bracket_prediction_submissions")
-      .select("bracket_data, status")
-      .eq("competition_id", competition.id)
-      .eq("classification_id", bracketCls.id)
-      .eq("user_id", user.id)
-      .neq("status", "superseded")
-      .maybeSingle();
-    bracketSubmission = (sub as BracketSubmissionRow | null) ?? null;
+
+  if (user) {
+    const [{ data: bracketClsData }, { data: formatCls }] = await Promise.all([
+      supabase
+        .from("classifications")
+        .select("id, status")
+        .eq("competition_id", competition.id)
+        .eq("classification_key", "full_bracket")
+        .eq("status", "active")
+        .maybeSingle(),
+      supabase
+        .from("classifications")
+        .select("id")
+        .eq("competition_id", competition.id)
+        .eq("classification_key", "format")
+        .eq("status", "active")
+        .maybeSingle(),
+    ]);
+    bracketCls = bracketClsData;
+
+    if (formatCls) {
+      const { data: formatMembership } = await supabase
+        .from("classification_memberships")
+        .select("status")
+        .eq("classification_id", formatCls.id)
+        .eq("user_id", user.id)
+        .maybeSingle();
+      isFormatActive =
+        formatMembership?.status === "active" ||
+        formatMembership?.status === "winner";
+    }
+
+    if (bracketCls) {
+      const { data: sub } = await supabase
+        .from("bracket_prediction_submissions")
+        .select("bracket_data, status")
+        .eq("competition_id", competition.id)
+        .eq("classification_id", bracketCls.id)
+        .eq("user_id", user.id)
+        .neq("status", "superseded")
+        .maybeSingle();
+      bracketSubmission = (sub as BracketSubmissionRow | null) ?? null;
+    }
   }
+
   const bracketIsLocked = bracketSubmission?.status === "locked";
 
   const bracketHandoffClassificationId =
@@ -180,11 +198,12 @@ export default async function WindowPicksPage({
   // events, but the bracket classification still wants their pick — so we
   // render the wizard's KnockoutStageStep inline. Decisions persist to
   // bracket_data.knockoutPicks via /api/tournament/bracket/submit.
+  // Disabled in archive mode (read-only).
   const koRoundKey: KoRoundKey | null = round.sporting_stage_id
     ? (STAGE_TO_ROUND_KEY[round.sporting_stage_id] ?? null)
     : null;
   const showBracketEditMode = Boolean(
-    koRoundKey && isWindowLocked && bracketCls && !bracketIsLocked,
+    !archive && koRoundKey && isWindowLocked && bracketCls && !bracketIsLocked,
   );
 
   let bracketEditPayload:
@@ -196,7 +215,7 @@ export default async function WindowPicksPage({
         existingBracketData: BracketSubmissionData | null;
       }
     | null = null;
-  if (showBracketEditMode && koRoundKey && bracketCls) {
+  if (showBracketEditMode && koRoundKey && bracketCls && user) {
     const groups = await loadGroupDataFromPredictions(supabase, {
       userId: user.id,
       competitionId: competition.id,
@@ -214,18 +233,18 @@ export default async function WindowPicksPage({
   }
 
   const eventIds = events.map((e) => e.id);
-  const { data: predictionsRaw } =
-    eventIds.length > 0
-      ? await supabase
-          .from("predictions")
-          .select(
-            "id, event_prediction_type_id, event_id, user_id, prediction_type, prediction_data, is_correct, is_partial, points_awarded, note_text, note_visibility, submitted_at, updated_at, confidence_level",
-          )
-          .eq("user_id", user.id)
-          .in("event_id", eventIds)
-      : { data: [] };
-
-  const predictions = (predictionsRaw ?? []) as Prediction[];
+  // In archive mode, skip user prediction fetch (no user)
+  let predictions: Prediction[] = [];
+  if (user && eventIds.length > 0) {
+    const { data: predictionsRaw } = await supabase
+      .from("predictions")
+      .select(
+        "id, event_prediction_type_id, event_id, user_id, prediction_type, prediction_data, is_correct, is_partial, points_awarded, note_text, note_visibility, submitted_at, updated_at, confidence_level",
+      )
+      .eq("user_id", user.id)
+      .in("event_id", eventIds);
+    predictions = (predictionsRaw ?? []) as Prediction[];
+  }
 
   return (
     <div className="mx-auto max-w-[480px] px-4 pt-6 pb-16">
@@ -282,7 +301,7 @@ export default async function WindowPicksPage({
             competitionId={competition.id}
             events={events}
             predictions={predictions}
-            windowLocked={isWindowLocked}
+            windowLocked={archive || isWindowLocked}
             matchdayName={round.name}
             nextWindowId={nextWindow?.id ?? null}
             nextWindowName={nextWindow?.name ?? null}

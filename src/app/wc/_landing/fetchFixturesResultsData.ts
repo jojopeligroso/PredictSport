@@ -1,4 +1,5 @@
-import { createClient } from "@/lib/supabase/server";
+import { getReadClient } from "@/lib/wc/archive-client";
+import { isWorldCupArchive } from "@/lib/product-mode";
 import { WC2026_FIXTURES, type WcFixture } from "@/lib/wc/fixtures";
 import { resolveWcCompetition } from "@/lib/wc/resolve-wc-competition";
 import { fixtureFilter } from "@/lib/tournament/shared-fixtures";
@@ -15,7 +16,8 @@ import type { Prediction, EventPredictionType } from "@/types/database";
 export async function fetchFixturesResultsData() {
   const { competition, user, isMember: resolvedIsMember } = await resolveWcCompetition();
 
-  const supabase = await createClient();
+  const supabase = await getReadClient();
+  const archive = isWorldCupArchive();
 
   const resultsByExternalId: Record<string, FixtureResult | undefined> = {};
   const predictionsByExternalId: Record<string, FixturePredictionData> = {};
@@ -172,8 +174,8 @@ export async function fetchFixturesResultsData() {
       }
     }
 
-    // Prediction context — only for authenticated users
-    if (user) {
+    // Prediction context — only for authenticated users (skip in archive mode)
+    if (!archive && user) {
       const eventIds = (events ?? [])
         .map((e: { id: string }) => e.id)
         .filter(Boolean);

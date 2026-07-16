@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { createServiceClient } from "@/lib/supabase/service";
+import { isWorldCupArchive } from "@/lib/product-mode";
 import { applyVisibility, type ViewerRole } from "@/lib/tournament/visibility";
 import { applyLiveOverlay } from "@/lib/tournament/live-overlay";
 
@@ -13,24 +14,37 @@ import { applyLiveOverlay } from "@/lib/tournament/live-overlay";
  * All rows pass through `applyVisibility()` so private members appear as
  * their stable Mystery {Animal} pseudonym to non-self viewers. Format
  * classification is exempt (always real names). See ADR 0011.
+ *
+ * Archive mode: no auth required, all names anonymised (ViewerRole = "public").
  */
 export async function GET(request: NextRequest) {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const archiveMode = isWorldCupArchive();
 
-  if (!user) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  let supabase: Awaited<ReturnType<typeof createClient>>;
+  let userId = "";
+  let viewerRole: ViewerRole = "public";
+
+  if (archiveMode) {
+    supabase = createServiceClient() as Awaited<ReturnType<typeof createClient>>;
+  } else {
+    supabase = await createClient();
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+
+    if (!user) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+    userId = user.id;
+
+    const { data: viewerProfile } = await supabase
+      .from("users")
+      .select("is_super_admin")
+      .eq("id", user.id)
+      .single();
+
+    viewerRole = viewerProfile?.is_super_admin ? "admin" as const : "member" as const;
   }
-
-  const { data: viewerProfile } = await supabase
-    .from("users")
-    .select("is_super_admin")
-    .eq("id", user.id)
-    .single();
-
-  const viewerRole = viewerProfile?.is_super_admin ? "admin" as const : "member" as const;
 
   const classificationId = request.nextUrl.searchParams.get("classificationId");
   if (!classificationId) {
@@ -67,7 +81,7 @@ export async function GET(request: NextRequest) {
   // returned so the UI can render the toggle in the right state without a
   // second roundtrip.
   const selfVisibility =
-    visibility.find((v) => v.user_id === user.id)?.display_visibility ?? "public";
+    visibility.find((v) => v.user_id === userId)?.display_visibility ?? "public";
 
   const provisional = request.nextUrl.searchParams.get("provisional") === "true";
   const liveRequested = request.nextUrl.searchParams.get("live") === "true";
@@ -397,14 +411,14 @@ export async function GET(request: NextRequest) {
       rawStandings,
       visibility,
       classification.classification_type,
-      user.id,
+      userId,
       viewerRole,
     );
 
     return NextResponse.json({
       standings,
       provisional: true,
-      selfVisibility,
+      ...(!archiveMode && { selfVisibility }),
       availablePoints,
       hasLiveEvents,
       liveEventIds,
@@ -435,7 +449,7 @@ export async function GET(request: NextRequest) {
     (snapshot.standings_data ?? []) as Array<{ user_id: string; display_name: string }>,
     visibility,
     classification.classification_type,
-    user.id,
+    userId,
     viewerRole,
   );
 
@@ -444,6 +458,6 @@ export async function GET(request: NextRequest) {
     provisional: false,
     snapshot_type: snapshot.snapshot_type,
     generated_at: snapshot.generated_at,
-    selfVisibility,
+    ...(!archiveMode && { selfVisibility }),
   });
 }

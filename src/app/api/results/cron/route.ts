@@ -34,6 +34,11 @@ function getServiceClient() {
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
 export async function GET(request: Request) {
+  // Archive mode: no cron processing on the display site.
+  if (process.env.NEXT_PUBLIC_PRODUCT_MODE === "world_cup_2026_archive") {
+    return NextResponse.json({ skipped: true, reason: "archive_mode" });
+  }
+
   // Verify cron secret -- Vercel sends this automatically for cron jobs
   const authHeader = request.headers.get("authorization");
   const cronSecret = process.env.CRON_SECRET;
