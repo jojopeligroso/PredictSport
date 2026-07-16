@@ -71,6 +71,22 @@ export default async function LeaderboardPage() {
     (c) => LEADERBOARD_KEYS.has(c.classification_key)
   );
 
+  // Fetch format phases for historical stage browsing (display site)
+  const formatClassification = classifications.find(
+    (c) => c.classification_type === "format_elimination"
+  );
+  let formatPhases: Array<{ id: string; phase_name: string; phase_order: number; status: string }> = [];
+  if (formatClassification) {
+    const { data: phases } = await supabase
+      .from("classification_phases")
+      .select("id, phase_name, phase_order, status")
+      .eq("classification_id", formatClassification.id)
+      .order("phase_order", { ascending: true });
+    formatPhases = (phases ?? []).filter(
+      (p) => p.status === "finalised" || p.status === "active"
+    );
+  }
+
   const appUrl =
     process.env.NEXT_PUBLIC_APP_URL ?? "https://predictsport-rust.vercel.app";
   const joinUrl = `${appUrl}/join`;
@@ -98,6 +114,7 @@ export default async function LeaderboardPage() {
           maxEntrants={competition.max_entrants ?? null}
           minEntrants={competition.min_entrants ?? null}
           currentDisplayName={profile?.display_name || t('common.you')}
+          formatPhases={formatPhases}
         />
       </div>
 

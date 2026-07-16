@@ -111,6 +111,7 @@ export function ClassificationTabs({
   maxEntrants,
   minEntrants,
   currentDisplayName,
+  formatPhases,
 }: {
   classifications: Classification[];
   competitionId: string;
@@ -121,6 +122,7 @@ export function ClassificationTabs({
   maxEntrants?: number | null;
   minEntrants?: number | null;
   currentDisplayName?: string;
+  formatPhases?: Array<{ id: string; phase_name: string; phase_order: number; status: string }>;
 }) {
   const t = useT();
   const searchParams = useSearchParams();
@@ -144,6 +146,10 @@ export function ClassificationTabs({
     }
     return formatClassification?.id ?? visibleClassifications[0]?.id ?? "";
   });
+  // Phase selector for format classification historical views
+  const [selectedPhaseId, setSelectedPhaseId] = useState<string | null>(null);
+  const [phaseName, setPhaseName] = useState<string | null>(null);
+
   const [standings, setStandings] = useState<StandingRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [loadedId, setLoadedId] = useState<string>("");
@@ -215,13 +221,17 @@ export function ClassificationTabs({
   useEffect(() => {
     setShowPicks(false);
     setLiveEventsExist(false);
+    setSelectedPhaseId(null);
+    setPhaseName(null);
   }, [activeId]);
 
   useEffect(() => {
     if (!activeId) return;
     let cancelled = false;
 
-    const standingsUrl = `/api/tournament/standings?classificationId=${activeId}&competitionId=${competitionId}&provisional=true${liveMode ? "&live=true" : ""}`;
+    const standingsUrl = selectedPhaseId
+      ? `/api/tournament/standings?classificationId=${activeId}&competitionId=${competitionId}&phaseId=${selectedPhaseId}`
+      : `/api/tournament/standings?classificationId=${activeId}&competitionId=${competitionId}&provisional=true${liveMode ? "&live=true" : ""}`;
     fetch(standingsUrl)
       .then((res) => res.json())
       .then((data) => {
@@ -232,6 +242,7 @@ export function ClassificationTabs({
           if (data?.hasLiveEvents) setLiveEventsExist(true);
           setLiveMatches(data?.liveMatches ?? []);
           setLivePredictionsByUser(data?.livePredictionsByUser ?? {});
+          setPhaseName(data?.phaseName ?? null);
           setLoadedId(activeId);
           setLoading(false);
         }
@@ -245,7 +256,7 @@ export function ClassificationTabs({
       });
 
     return () => { cancelled = true; };
-  }, [activeId, competitionId, fetchKey, liveMode]);
+  }, [activeId, competitionId, fetchKey, liveMode, selectedPhaseId]);
 
   // While matches are live, poll standings every 60s (paused when the tab is
   // hidden) so provisional points update without a manual refresh.
@@ -479,6 +490,40 @@ export function ClassificationTabs({
                 />
               </div>
             ) : (
+              <>
+              {/* Phase selector — browse historical format stages */}
+              {formatPhases && formatPhases.length > 0 && active?.classification_type === "format_elimination" && (
+                <div className="flex flex-wrap gap-1.5 mb-3">
+                  <button
+                    onClick={() => { setSelectedPhaseId(null); setLoading(true); setFetchKey((k) => k + 1); }}
+                    className={`rounded-full px-3 py-1 text-xs font-semibold transition-colors ${
+                      !selectedPhaseId
+                        ? "bg-ps-amber text-white"
+                        : "bg-ps-surface border border-ps-border text-ps-text-sec hover:border-ps-amber"
+                    }`}
+                  >
+                    Current
+                  </button>
+                  {formatPhases.filter((p) => p.status === "finalised").map((p) => (
+                    <button
+                      key={p.id}
+                      onClick={() => { setSelectedPhaseId(p.id); setLoading(true); }}
+                      className={`rounded-full px-3 py-1 text-xs font-semibold transition-colors ${
+                        selectedPhaseId === p.id
+                          ? "bg-ps-amber text-white"
+                          : "bg-ps-surface border border-ps-border text-ps-text-sec hover:border-ps-amber"
+                      }`}
+                    >
+                      {p.phase_name}
+                    </button>
+                  ))}
+                </div>
+              )}
+              {phaseName && selectedPhaseId && (
+                <p className="text-xs text-ps-text-ter mb-2 font-mono uppercase tracking-wider">
+                  {phaseName} — final standings
+                </p>
+              )}
               <StandingsTable
                 standings={standings}
                 currentUserId={currentUserId}
@@ -509,6 +554,7 @@ export function ClassificationTabs({
                   }
                 }}
               />
+              </>
             )}
           </div>
           )}

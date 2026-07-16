@@ -85,6 +85,67 @@ export async function GET(request: NextRequest) {
 
   const provisional = request.nextUrl.searchParams.get("provisional") === "true";
   const liveRequested = request.nextUrl.searchParams.get("live") === "true";
+  const phaseId = request.nextUrl.searchParams.get("phaseId");
+
+  // Historical phase view: return the stage snapshot for a specific phase.
+  if (phaseId) {
+    const { data: phase } = await supabase
+      .from("classification_phases")
+      .select("id, phase_name, status")
+      .eq("id", phaseId)
+      .eq("classification_id", classificationId)
+      .single();
+
+    if (!phase) {
+      return NextResponse.json({ error: "Phase not found" }, { status: 404 });
+    }
+
+    // Find the stage snapshot generated closest after this phase was finalised
+    const { data: snapshot } = await supabase
+      .from("classification_standings_snapshots")
+      .select("standings_data, snapshot_type, generated_at")
+      .eq("classification_id", classificationId)
+      .eq("snapshot_type", "stage")
+      .order("generated_at", { ascending: true })
+      .limit(50);
+
+    // Match snapshots to phases by order — snapshots are generated sequentially
+    const { data: allPhases } = await supabase
+      .from("classification_phases")
+      .select("id, phase_order")
+      .eq("classification_id", classificationId)
+      .eq("status", "finalised")
+      .order("phase_order", { ascending: true });
+
+    const phaseIndex = (allPhases ?? []).findIndex((p) => p.id === phaseId);
+    const stageSnapshot = (snapshot ?? [])[phaseIndex];
+
+    if (!stageSnapshot) {
+      return NextResponse.json({
+        standings: [],
+        provisional: false,
+        phaseName: phase.phase_name,
+        message: "No snapshot for this phase",
+      });
+    }
+
+    const standings = applyVisibility(
+      (stageSnapshot.standings_data ?? []) as Array<{ user_id: string; display_name: string }>,
+      visibility,
+      classification.classification_type,
+      userId,
+      viewerRole,
+    );
+
+    return NextResponse.json({
+      standings,
+      provisional: false,
+      phaseName: phase.phase_name,
+      phaseStatus: phase.status,
+      generated_at: stageSnapshot.generated_at,
+      ...(!archiveMode && { selfVisibility }),
+    });
+  }
 
   if (provisional) {
     // Get active members
