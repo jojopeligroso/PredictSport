@@ -232,7 +232,7 @@ export async function fetchDashboardData(): Promise<DashboardResult> {
         .select("id", { count: "exact", head: true })
         .eq("competition_id", competition.id),
       // User membership role (membership already resolved, but need role for admin check)
-      !archive && user
+      user
         ? supabase
             .from("competition_members")
             .select("id, role")
@@ -428,7 +428,7 @@ export async function fetchDashboardData(): Promise<DashboardResult> {
 
   // 5. Fetch predictions for all round events (hero picks + group accordion)
   let predictions: Prediction[] = [];
-  if (!archive && user && isMember && eventRows.length > 0) {
+  if (user && isMember && eventRows.length > 0) {
     const eventIds = eventRows.map((e) => e.id);
     const { data: predRows } = await supabase
       .from("predictions")
@@ -512,9 +512,9 @@ export async function fetchDashboardData(): Promise<DashboardResult> {
     ? false
     : currentRound.status === "locked" || currentRound.status === "scored";
 
-  // 7. Bracket progress (skip in archive mode — no viewer predictions)
+  // 7. Bracket progress
   let bracketProgress: { pct: number; label: string } | null = null;
-  if (!archive && user && isMember) {
+  if (user && isMember) {
     const [bracketSubResult, groupEventsResult] = await Promise.all([
       supabase
         .from("bracket_prediction_submissions")
@@ -608,8 +608,8 @@ export async function fetchDashboardData(): Promise<DashboardResult> {
     inviteCode,
     entryClosesAt,
     memberCount,
-    isMember: archive ? true : isMember,
-    isAuthenticated: archive ? true : Boolean(user),
+    isMember,
+    isAuthenticated: Boolean(user),
     windowLocked,
     bracketProgress,
     groupStandings,

@@ -50,7 +50,7 @@ export default async function WindowPicksPage({
     statuses: ["active", "draft", "completed"],
   });
 
-  if (!user && !archive) {
+  if (!user) {
     redirect(`/login?next=/wc/picks/${windowId}`);
   }
 
@@ -76,7 +76,7 @@ export default async function WindowPicksPage({
     redirect(`/wc/join?next=/wc/picks/${windowId}`);
   }
 
-  // Skip membership check in archive mode — no user
+  // Skip membership check in archive mode — synthetic user has no DB row
   if (!archive) {
     const { data: membership } = await supabase
       .from("competition_members")
@@ -131,7 +131,7 @@ export default async function WindowPicksPage({
   // Also look up the format classification membership to decide whether to
   // show the Format scoring explainer on the picks page.
   //
-  // In archive mode, skip all user-specific classification/bracket queries.
+  // Skip classification/bracket queries when not authenticated.
   let bracketCls: { id: string; status: string } | null = null;
   let isFormatActive = false;
 
@@ -233,7 +233,6 @@ export default async function WindowPicksPage({
   }
 
   const eventIds = events.map((e) => e.id);
-  // In archive mode, skip user prediction fetch (no user)
   let predictions: Prediction[] = [];
   if (user && eventIds.length > 0) {
     const { data: predictionsRaw } = await supabase

@@ -17,7 +17,7 @@ export default async function LeaderboardPage() {
   const archive = isWorldCupArchive();
   const { competition, user } = await resolveWcCompetition();
 
-  if (!user && !archive) {
+  if (!user) {
     redirect("/login?next=/wc/leaderboard");
   }
 
@@ -31,7 +31,7 @@ export default async function LeaderboardPage() {
 
   const supabase = await getReadClient();
 
-  // Get user display name (skip in archive mode — no user)
+  // Get user display name
   const profile = user
     ? (await supabase
         .from("users")
@@ -40,7 +40,7 @@ export default async function LeaderboardPage() {
         .single()).data
     : null;
 
-  // Get member count + user's role (skip role lookup in archive mode)
+  // Get member count + user's role
   const [{ count: memberCount }, membership] = await Promise.all([
     supabase
       .from("competition_members")

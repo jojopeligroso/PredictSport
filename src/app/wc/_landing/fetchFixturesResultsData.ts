@@ -1,5 +1,4 @@
 import { getReadClient } from "@/lib/wc/archive-client";
-import { isWorldCupArchive } from "@/lib/product-mode";
 import { WC2026_FIXTURES, type WcFixture } from "@/lib/wc/fixtures";
 import { resolveWcCompetition } from "@/lib/wc/resolve-wc-competition";
 import { fixtureFilter } from "@/lib/tournament/shared-fixtures";
@@ -17,7 +16,6 @@ export async function fetchFixturesResultsData() {
   const { competition, user, isMember: resolvedIsMember } = await resolveWcCompetition();
 
   const supabase = await getReadClient();
-  const archive = isWorldCupArchive();
 
   const resultsByExternalId: Record<string, FixtureResult | undefined> = {};
   const predictionsByExternalId: Record<string, FixturePredictionData> = {};
@@ -127,7 +125,7 @@ export async function fetchFixturesResultsData() {
       };
     }
 
-    isMember = archive ? true : resolvedIsMember;
+    isMember = resolvedIsMember;
 
     // Build WindowEvent objects for expand-to-pick
     const fixtureByExternalId = new Map<string, WcFixture>();
@@ -174,8 +172,8 @@ export async function fetchFixturesResultsData() {
       }
     }
 
-    // Prediction context — only for authenticated users (skip in archive mode)
-    if (!archive && user) {
+    // Prediction context — only for authenticated users
+    if (user) {
       const eventIds = (events ?? [])
         .map((e: { id: string }) => e.id)
         .filter(Boolean);

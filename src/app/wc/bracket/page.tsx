@@ -27,7 +27,7 @@ export default async function BracketPage() {
   const archive = isWorldCupArchive();
   const { competition, user } = await resolveWcCompetition();
 
-  if (!user && !archive) {
+  if (!user) {
     redirect("/login?next=/wc/bracket");
   }
 
@@ -48,7 +48,7 @@ export default async function BracketPage() {
     .eq("competition_id", competition.id)
     .eq("classification_type", "bracket_survivor");
 
-  // In archive mode there's no user — skip user-specific bracket queries
+  // Skip user-specific bracket queries when not authenticated
   const submissions = user
     ? (await supabase
         .from("bracket_prediction_submissions")

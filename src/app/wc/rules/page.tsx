@@ -6,7 +6,6 @@
  */
 import { Metadata } from "next";
 import { getReadClient } from "@/lib/wc/archive-client";
-import { isWorldCupArchive } from "@/lib/product-mode";
 import { WcBrandedTitle } from "@/components/wc/WcBrandedTitle";
 import { RulesContent } from "@/components/wc/RulesContent";
 import { getServerT } from "@/lib/i18n/server";
@@ -23,11 +22,10 @@ export const metadata: Metadata = {
 
 export default async function WcRulesPage() {
   const t = await getServerT();
-  const archive = isWorldCupArchive();
   const { competition: wcComp, user, isMember: resolvedIsMember } = await resolveWcCompetition({
     statuses: ["active", "draft"],
   });
-  const isMember = archive ? true : resolvedIsMember;
+  const isMember = resolvedIsMember;
 
   // Get earliest lock_time across WC matchday 1
   let firstLockTime: string | null = null;
@@ -67,7 +65,7 @@ export default async function WcRulesPage() {
       />
       <RulesContent
         isMember={isMember}
-        isAuthenticated={archive ? true : !!user}
+        isAuthenticated={!!user}
         firstLockTime={firstLockTime}
       />
     </div>

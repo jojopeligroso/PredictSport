@@ -1,5 +1,4 @@
 import { getReadClient } from "@/lib/wc/archive-client";
-import { isWorldCupArchive } from "@/lib/product-mode";
 import { WC2026_FIXTURES, type WcFixture } from "@/lib/wc/fixtures";
 import { utcDateIso } from "@/lib/wc/daily-lock";
 import { resolveWcCompetition } from "@/lib/wc/resolve-wc-competition";
@@ -32,7 +31,6 @@ export async function fetchMd1PicksData() {
 
   const supabase = await getReadClient();
   const ff = fixtureFilter(competition);
-  const archive = isWorldCupArchive();
 
   // Fetch all group-stage rounds (round_number 1-3)
   const { data: groupRounds } = await supabase
@@ -83,7 +81,7 @@ export async function fetchMd1PicksData() {
 
     if (!windowStartIso) {
       // All group fixtures confirmed — fall through to knockout below
-      return fetchKnockoutFallback(supabase, competition.id, ff, archive ? null : user, resolvedIsMember, archive);
+      return fetchKnockoutFallback(supabase, competition.id, ff, user, resolvedIsMember);
     }
 
     // Take 8 fixture-dates from window_start (skipping dates with no fixtures)
@@ -102,7 +100,7 @@ export async function fetchMd1PicksData() {
     windowLocked = false;
   } else {
     // All group rounds scored — fall through to knockout
-    return fetchKnockoutFallback(supabase, competition.id, ff, archive ? null : user, resolvedIsMember, archive);
+    return fetchKnockoutFallback(supabase, competition.id, ff, user, resolvedIsMember);
   }
 
   const events: WindowEvent[] = eventRows.map((row) => ({
@@ -116,9 +114,9 @@ export async function fetchMd1PicksData() {
     event_prediction_types: row.event_prediction_types,
   }));
 
-  const isMember = archive ? true : resolvedIsMember;
+  const isMember = resolvedIsMember;
   let predictions: Prediction[] = [];
-  if (!archive && user) {
+  if (user) {
     if (isMember && events.length > 0) {
       const eventIds = events.map((e) => e.id);
       const { data: predRows } = await supabase
@@ -149,7 +147,7 @@ export async function fetchMd1PicksData() {
     predictions,
     fixtureByEventId,
     isMember,
-    isAuthenticated: archive ? true : Boolean(user),
+    isAuthenticated: Boolean(user),
     windowLocked,
   };
 }
@@ -163,7 +161,6 @@ async function fetchKnockoutFallback(
   ff: { key: "tournament_id" | "competition_id"; value: string },
   user: { id: string } | null,
   resolvedIsMember: boolean,
-  archive: boolean,
 ) {
   const { data: koRound } = await supabase
     .from("rounds")
@@ -208,9 +205,9 @@ async function fetchKnockoutFallback(
     if (fixture) fixtureByEventId.set(row.id, fixture);
   }
 
-  const isMember = archive ? true : resolvedIsMember;
+  const isMember = resolvedIsMember;
   let predictions: Prediction[] = [];
-  if (!archive && user) {
+  if (user) {
     if (isMember && events.length > 0) {
       const eventIds = events.map((e) => e.id);
       const { data: predRows } = await supabase

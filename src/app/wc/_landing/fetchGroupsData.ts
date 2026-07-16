@@ -1,5 +1,4 @@
 import { getReadClient } from "@/lib/wc/archive-client";
-import { isWorldCupArchive } from "@/lib/product-mode";
 import { computeGroupStandings } from "@/lib/wc/compute-group-standings";
 import { resolveWcCompetition } from "@/lib/wc/resolve-wc-competition";
 import { fixtureFilter } from "@/lib/tournament/shared-fixtures";
@@ -22,7 +21,6 @@ export async function fetchGroupsData() {
 
   const supabase = await getReadClient();
   const ff = fixtureFilter(competition);
-  const archive = isWorldCupArchive();
 
   const { data: eventsRaw } = await supabase
     .from("events")
@@ -62,7 +60,7 @@ export async function fetchGroupsData() {
   const standingsPromise = computeGroupStandings(supabase, competition.id);
 
   let predictions: Prediction[] = [];
-  if (!archive && user && eventRows.length > 0) {
+  if (user && eventRows.length > 0) {
     const eventIds = eventRows.map((e) => e.id);
     const { data: predRows } = await supabase
       .from("predictions")
