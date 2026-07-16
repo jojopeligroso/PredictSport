@@ -8,7 +8,7 @@ import type { Sport } from "./types";
 import { notifyResultConfirmed } from "@/lib/notifications/result-confirmed";
 import { notifyResultDisputed } from "@/lib/notifications/result-disputed";
 import { processEventTags, checkRoundCompletionAndProcessTags } from "@/lib/reputation";
-import { TEAM_ALIASES, applyTeamAliases } from "@/lib/sports/team-aliases";
+import { TEAM_ALIASES, applyTeamAliases, generateSearchVariants } from "@/lib/sports/team-aliases";
 import { advanceKnockoutWinners } from "@/lib/tournament/bracket/advance";
 import { checkAndAdvanceRound } from "@/lib/tournament/round-progression";
 
@@ -62,50 +62,8 @@ const STOPWORDS = new Set([
 
 // Team name aliases imported from @/lib/sports/team-aliases (TEAM_ALIASES, applyTeamAliases)
 
-/**
- * Groups of interchangeable team name variants. When a provider text
- * search fails (e.g. TheSportsDB's searchevents.php), we retry with
- * each alternate form from the matching group.
- */
-const TEAM_NAME_GROUPS: string[][] = [
-  ["DR Congo", "Congo DR"],
-  ["Bosnia-Herzegovina", "Bosnia and Herzegovina", "Bosnia & Herzegovina"],
-  ["Ivory Coast", "Cote d'Ivoire"],
-  ["Czechia", "Czech Republic"],
-  ["Turkiye", "Turkey"],
-  ["USA", "United States"],
-  ["South Korea", "Korea Republic"],
-  ["Iran", "IR Iran"],
-];
-
-/**
- * Generate alternate event names by swapping known team name variants.
- * E.g. "England vs Congo DR" → ["England vs DR Congo"]
- */
-export function generateSearchVariants(eventName: string): string[] {
-  const lower = eventName.toLowerCase();
-  const variants = new Set<string>();
-
-  for (const group of TEAM_NAME_GROUPS) {
-    for (const member of group) {
-      if (lower.includes(member.toLowerCase())) {
-        for (const alt of group) {
-          if (alt.toLowerCase() !== member.toLowerCase()) {
-            const regex = new RegExp(
-              member.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"),
-              "i"
-            );
-            const variant = eventName.replace(regex, alt);
-            if (variant !== eventName) variants.add(variant);
-          }
-        }
-        break; // found match in this group, check next group
-      }
-    }
-  }
-
-  return Array.from(variants);
-}
+// Team name variant groups and generateSearchVariants() moved to
+// @/lib/sports/team-aliases to avoid circular dependencies.
 
 /** Strip diacritics (é→e, ü→u, ç→c etc.) for uniform tokenization. */
 function stripDiacritics(s: string): string {

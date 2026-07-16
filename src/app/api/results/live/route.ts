@@ -4,10 +4,8 @@ import { fetchResult } from "@/lib/sports/fetch-result";
 import { searchEvents } from "@/lib/sports/search-events";
 import { getProvidersForSport } from "@/lib/sports/registry";
 import { getTimingForSport } from "@/lib/sports/timing";
-import {
-  tokenOverlapScore,
-  generateSearchVariants,
-} from "@/lib/sports/auto-result";
+import { tokenOverlapScore } from "@/lib/sports/auto-result";
+import { generateSearchVariants } from "@/lib/sports/team-aliases";
 import type { Sport } from "@/lib/sports/types";
 
 /**

@@ -4,6 +4,7 @@
  * event_names. Also updates prediction type options when both teams resolve.
  */
 import type { SupabaseClient } from "@supabase/supabase-js";
+import { normalizeTeamName } from "@/lib/sports/team-aliases";
 
 // ---------------------------------------------------------------------------
 // Slot ↔ external_event_id mapping
@@ -119,7 +120,7 @@ export async function advanceKnockoutWinners(
   const parts = (event.event_name as string).split(/\s+vs?\s+/i);
   const homeTeam = parts[0]?.trim();
   const awayTeam = parts[1]?.trim();
-  const loser = winner === homeTeam ? awayTeam : homeTeam;
+  const loser = normalizeTeamName(winner) === normalizeTeamName(homeTeam) ? awayTeam : homeTeam;
 
   for (const adv of advancements) {
     const teamName = adv.type === "winner" ? winner : loser;

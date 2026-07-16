@@ -57,3 +57,48 @@ export function normalizeTeamName(val: unknown): string {
   const s = stripDiacritics(String(val ?? "").trim().toLowerCase());
   return applyTeamAliases(s);
 }
+
+/**
+ * Groups of interchangeable team name variants for provider text searches.
+ * When a provider search fails (e.g. TheSportsDB's searchevents.php),
+ * we retry with each alternate form from the matching group.
+ */
+const TEAM_NAME_GROUPS: string[][] = [
+  ["DR Congo", "Congo DR"],
+  ["Bosnia-Herzegovina", "Bosnia and Herzegovina", "Bosnia & Herzegovina"],
+  ["Ivory Coast", "Cote d'Ivoire"],
+  ["Czechia", "Czech Republic"],
+  ["Turkiye", "Turkey"],
+  ["USA", "United States"],
+  ["South Korea", "Korea Republic"],
+  ["Iran", "IR Iran"],
+];
+
+/**
+ * Generate alternate event names by swapping known team name variants.
+ * E.g. "England vs Congo DR" → ["England vs DR Congo"]
+ */
+export function generateSearchVariants(eventName: string): string[] {
+  const lower = eventName.toLowerCase();
+  const variants = new Set<string>();
+
+  for (const group of TEAM_NAME_GROUPS) {
+    for (const member of group) {
+      if (lower.includes(member.toLowerCase())) {
+        for (const alt of group) {
+          if (alt.toLowerCase() !== member.toLowerCase()) {
+            const regex = new RegExp(
+              member.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"),
+              "i"
+            );
+            const variant = eventName.replace(regex, alt);
+            if (variant !== eventName) variants.add(variant);
+          }
+        }
+        break;
+      }
+    }
+  }
+
+  return Array.from(variants);
+}

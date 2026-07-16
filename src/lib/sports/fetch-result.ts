@@ -1,6 +1,7 @@
 import type { NormalizedResult, ResultScore, ResultPosition, Sport } from "./types";
 import { getProvidersForSport } from "./registry";
 import { searchEvents } from "./search-events";
+import { normalizeTeamName, generateSearchVariants } from "./team-aliases";
 
 /**
  * Fetch the result for a sporting event by trying providers in priority order.
@@ -258,23 +259,39 @@ async function resolveVerifierEventId(
     const teamName = eventName.split(/\s+vs?\s+/i)[0]?.trim();
     if (!teamName) return null;
 
-    const candidates = await provider.searchEvents(sport, teamName, {
+    let candidates = await provider.searchEvents(sport, teamName, {
       date: searchDate,
       limit: 10,
     });
 
+    // If no results, retry with alias variants (e.g. "USA" → "United States")
+    if (candidates.length === 0) {
+      const variants = generateSearchVariants(eventName);
+      for (const variant of variants) {
+        const altTeam = variant.split(/\s+vs?\s+/i)[0]?.trim();
+        if (altTeam && altTeam !== teamName) {
+          candidates = await provider.searchEvents(sport, altTeam, {
+            date: searchDate,
+            limit: 10,
+          });
+          if (candidates.length > 0) break;
+        }
+      }
+    }
+
     if (candidates.length === 0) return null;
 
-    const eventNameLower = eventName.toLowerCase();
     const eventStartMs = startTime ? new Date(startTime).getTime() : null;
     const oneDayMs = 24 * 3600000;
 
+    // Extract normalized team names from the event for alias-aware matching
+    const eventParts = eventName.split(/\s+vs?\s+/i).map((p) => normalizeTeamName(p.trim()));
+
     // Score candidates by name overlap and time proximity
     const matches = candidates.filter((c) => {
-      // Both team names must appear in the candidate (simple bidirectional check)
-      const candidateLower = c.event_name.toLowerCase();
-      const parts = eventNameLower.split(/\s+vs?\s+/);
-      const hasOverlap = parts.some((p) => candidateLower.includes(p.trim()));
+      // Check if any of our team names (alias-normalized) appear in the candidate
+      const candidateNorm = normalizeTeamName(c.event_name);
+      const hasOverlap = eventParts.some((p) => candidateNorm.includes(p));
       if (!hasOverlap) return false;
 
       // Time proximity check: within 24h
