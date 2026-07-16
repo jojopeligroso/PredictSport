@@ -4,6 +4,10 @@ import { fetchFixturesResultsData } from "./_landing/fetchFixturesResultsData";
 import { fetchGroupsData } from "./_landing/fetchGroupsData";
 import { WcPicksHub } from "./_landing/WcPicksHub";
 import { getServerT } from "@/lib/i18n/server";
+import { isWorldCupArchive } from "@/lib/product-mode";
+import { getReadClient } from "@/lib/wc/archive-client";
+import { resolveWcCompetition } from "@/lib/wc/resolve-wc-competition";
+import { fixtureFilter } from "@/lib/tournament/shared-fixtures";
 
 export const dynamic = "force-dynamic";
 
@@ -24,6 +28,22 @@ export default async function WorldCupLanding() {
 
   if (!md1Data.ready) return <ComingSoonPanel t={t} />;
 
+  // On the display site, fetch all rounds so visitors can browse every stage.
+  let allRounds: Array<{ id: string; name: string; round_number: number; status: string }> = [];
+  if (isWorldCupArchive()) {
+    const { competition } = await resolveWcCompetition();
+    if (competition) {
+      const supabase = await getReadClient();
+      const ff = fixtureFilter(competition);
+      const { data } = await supabase
+        .from("rounds")
+        .select("id, name, round_number, status")
+        .eq(ff.key, ff.value)
+        .order("round_number", { ascending: true });
+      allRounds = data ?? [];
+    }
+  }
+
   return (
     <WcPicksHub
       md1={{
@@ -37,6 +57,7 @@ export default async function WorldCupLanding() {
       }}
       fixturesData={fixturesData}
       groupsData={groupsData}
+      allRounds={allRounds}
     />
   );
 }

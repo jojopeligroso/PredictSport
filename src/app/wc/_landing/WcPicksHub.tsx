@@ -58,9 +58,11 @@ interface WcPicksHubProps {
     predictions: Prediction[];
     groupStandings?: Record<string, TeamWithStats[]>;
   } | null;
+  /** All rounds — used on the display site for the round index. */
+  allRounds?: Array<{ id: string; name: string; round_number: number; status: string }>;
 }
 
-export function WcPicksHub({ md1, fixturesData, groupsData }: WcPicksHubProps) {
+export function WcPicksHub({ md1, fixturesData, groupsData, allRounds }: WcPicksHubProps) {
   const t = useT();
   const searchParams = useSearchParams();
   const initialTab = parseTab(searchParams.get("tab"));
@@ -133,15 +135,43 @@ export function WcPicksHub({ md1, fixturesData, groupsData }: WcPicksHubProps) {
 
       {/* Tab content — each tab provides its own container */}
       {activeTab === "upcoming" && (
-        <Md1PicksLanding
-          competitionId={md1.competitionId}
-          events={md1.events}
-          predictions={md1.predictions}
-          fixtureByEventId={md1.fixtureByEventId}
-          isMember={md1.isMember}
-          isAuthenticated={md1.isAuthenticated}
-          windowLocked={md1.windowLocked}
-        />
+        <>
+          <Md1PicksLanding
+            competitionId={md1.competitionId}
+            events={md1.events}
+            predictions={md1.predictions}
+            fixtureByEventId={md1.fixtureByEventId}
+            isMember={md1.isMember}
+            isAuthenticated={md1.isAuthenticated}
+            windowLocked={md1.windowLocked}
+          />
+          {/* Round index — display site only */}
+          {allRounds && allRounds.length > 0 && (
+            <div className="mx-auto max-w-[480px] px-4 pt-6 pb-8">
+              <h3 className="font-mono text-micro font-bold uppercase tracking-[0.18em] text-ps-text-ter mb-3">
+                Browse all rounds
+              </h3>
+              <div className="flex flex-col gap-1.5">
+                {allRounds.map((r) => (
+                  <a
+                    key={r.id}
+                    href={`/wc/picks/${r.id}`}
+                    className="flex items-center justify-between rounded-lg border border-ps-border bg-ps-surface px-4 py-3 transition-colors hover:border-ps-amber"
+                  >
+                    <span className="text-sm font-semibold text-ps-text">{r.name}</span>
+                    <span className={`text-xs font-mono uppercase tracking-wider ${
+                      r.status === "scored" ? "text-ps-green" :
+                      r.status === "open" ? "text-ps-amber" :
+                      "text-ps-text-ter"
+                    }`}>
+                      {r.status === "scored" ? "Completed" : r.status === "open" ? "Live" : r.status}
+                    </span>
+                  </a>
+                ))}
+              </div>
+            </div>
+          )}
+        </>
       )}
 
       {activeTab === "fixtures" && (
