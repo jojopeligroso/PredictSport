@@ -560,6 +560,30 @@ function scoreMargin(
   const predictedTeam = normalizeStr(prediction.team);
   const options = Array.isArray(config?.options) ? (config.options as unknown[]) : [];
 
+  // No-result void: rain-affected / abandoned matches have no winning margin.
+  // Mirrors the both-DNF void path in head_to_head.
+  const resultStatus = normalizeStr(result.status ?? result.result_type);
+  if (
+    result.is_no_result === true ||
+    resultStatus === "no_result" ||
+    resultStatus === "abandoned"
+  ) {
+    return { is_correct: null, is_partial: false, points_awarded: 0 };
+  }
+
+  // Cricket margins are dual-unit: a side batting first wins "by runs", a side
+  // chasing wins "by wickets". When config.unit_mode is set (e.g. cricket's
+  // "auto"), read the actual unit from the result and, if the prediction names
+  // a unit, require it to match. Sports without unit_mode are unaffected.
+  const unitMode = normalizeStr(config?.unit_mode);
+  const predictedUnit = normalizeStr(prediction.unit);
+  const resultStats = (result.stats as Record<string, unknown> | undefined) ?? undefined;
+  const actualUnit = normalizeStr(
+    result.margin_unit ??
+      resultStats?.margin_unit ??
+      (result.score as Record<string, unknown> | undefined)?.margin_unit
+  );
+
   let actualMargin: number;
   let actualWinner: string;
 
@@ -587,6 +611,19 @@ function scoreMargin(
         : normalizeStr(score.away_team);
   } else {
     return { is_correct: null, is_partial: false, points_awarded: 0 };
+  }
+
+  // Dual-unit override: for cricket, the run-difference derived above is wrong
+  // when the win was by wickets, so prefer the provider's authoritative winning
+  // margin, and reject a correct team but wrong unit (e.g. predicted "by runs",
+  // won "by wickets").
+  if (unitMode) {
+    if (result.margin !== undefined && result.margin !== null) {
+      actualMargin = Math.abs(Number(result.margin));
+    }
+    if (predictedUnit && actualUnit && predictedUnit !== actualUnit) {
+      return { is_correct: false, is_partial: false, points_awarded: 0 };
+    }
   }
 
   if (predictedTeam !== actualWinner) {
