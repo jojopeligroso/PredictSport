@@ -49,7 +49,7 @@ const sportProviders: Record<Sport, SportsProvider[]> = {
   cricket: [providers.fixturePool, providers.espn, providers.theSportsDB, providers.manual],
   athletics: [providers.fixturePool, providers.theSportsDB, providers.manual],
   snooker: [providers.fixturePool, providers.espn, providers.manual],
-  baseball: [providers.fixturePool, providers.espn, providers.ballDontLie],
+  baseball: [providers.fixturePool, providers.mlbStats, providers.espn, providers.ballDontLie, providers.manual],
   american_football: [providers.fixturePool, providers.espn, providers.ballDontLie],
   basketball: [providers.fixturePool, providers.ballDontLie, providers.espn],
   ice_hockey: [providers.fixturePool, providers.espn, providers.ballDontLie],
