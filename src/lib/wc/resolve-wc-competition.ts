@@ -1,5 +1,7 @@
 import { cache } from "react";
 import { createClient } from "@/lib/supabase/server";
+import { isWorldCupArchive } from "@/lib/product-mode";
+import { resolveWcArchive } from "@/lib/wc/resolve-wc-archive";
 import type { User } from "@supabase/supabase-js";
 import type { Competition } from "@/types/database";
 
@@ -85,6 +87,11 @@ const resolveWcCompetitionCached = cache(
 export async function resolveWcCompetition(opts?: {
   statuses?: string[];
 }): Promise<ResolveResult> {
+  // Archive/display mode: use hardcoded instance #2 + synthetic viewer
+  if (isWorldCupArchive()) {
+    return resolveWcArchive();
+  }
+
   const statuses = opts?.statuses ?? ["active", "draft", "completed"];
   const key = statuses.slice().sort().join(",");
   return resolveWcCompetitionCached(key);

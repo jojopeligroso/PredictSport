@@ -1,6 +1,8 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
+import { isWorldCupArchive } from "@/lib/product-mode";
+import { resolveWcArchive } from "@/lib/wc/resolve-wc-archive";
 import { fetchDashboardData } from "./fetchDashboardData";
 import { DashboardClient } from "./DashboardClient";
 import { checkAndPublishExpiredPending } from "@/lib/reputation/auto-publish";
@@ -22,15 +24,21 @@ export default async function WcHomePage({
   const params = await searchParams;
   const onboarding = params.onboarding === "true";
 
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  let user;
+  if (isWorldCupArchive()) {
+    const archive = await resolveWcArchive();
+    user = archive.user;
+  } else {
+    const supabase = await createClient();
+    const { data } = await supabase.auth.getUser();
+    user = data.user;
+  }
 
   const data = await fetchDashboardData();
 
   // Side effect: auto-publish any pending tags past the 6-hour preview window
-  if (data.ready && data.competitionId) {
+  // Stripped in archive mode — no writes.
+  if (data.ready && data.competitionId && !isWorldCupArchive()) {
     checkAndPublishExpiredPending(data.competitionId).catch(() => {
       // Non-critical — log happens inside the function
     });
