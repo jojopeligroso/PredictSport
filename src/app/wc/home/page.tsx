@@ -1,10 +1,11 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
+import { isWorldCupArchive } from "@/lib/product-mode";
+import { resolveWcArchive } from "@/lib/wc/resolve-wc-archive";
 import { fetchDashboardData } from "./fetchDashboardData";
 import { DashboardClient } from "./DashboardClient";
 import { checkAndPublishExpiredPending } from "@/lib/reputation/auto-publish";
-import { isWorldCupArchive } from "@/lib/product-mode";
 
 export const dynamic = "force-dynamic";
 
@@ -23,10 +24,15 @@ export default async function WcHomePage({
   const params = await searchParams;
   const onboarding = params.onboarding === "true";
 
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  let user;
+  if (isWorldCupArchive()) {
+    const archive = await resolveWcArchive();
+    user = archive.user;
+  } else {
+    const supabase = await createClient();
+    const { data } = await supabase.auth.getUser();
+    user = data.user;
+  }
 
   const data = await fetchDashboardData();
 

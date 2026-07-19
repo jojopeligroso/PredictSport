@@ -122,6 +122,9 @@ export const SPORT_CONFIG: Record<
 /** Map DB sport values to UI sport keys (handles formula_1 -> f1 etc.) */
 export function toSportKey(sport: string): SportKey {
   if (sport === 'formula_1') return 'f1';
+  // Gaelic football and hurling share the GAA styling (hurley emoji + "GAA"
+  // label) rather than falling through to the soccer default.
+  if (sport === 'gaelic_football' || sport === 'hurling') return 'gaa';
   const lower = sport.toLowerCase() as SportKey;
   return lower in SPORT_CONFIG ? lower : 'soccer';
 }

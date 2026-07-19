@@ -17,7 +17,7 @@ export async function fetchResult(
   providerLeague?: string,
   options?: { excludeProviders?: string[] }
 ): Promise<NormalizedResult | null> {
-  const providers = getProvidersForSport(sport);
+  const providers = getProvidersForSport(sport, providerLeague);
   const exclude = options?.excludeProviders;
 
   for (const provider of providers) {
@@ -163,7 +163,7 @@ export async function verifyResult(
   eventName?: string,
   startTime?: string,
 ): Promise<VerificationResult> {
-  const providers = getProvidersForSport(sport);
+  const providers = getProvidersForSport(sport, providerLeague);
 
   for (const provider of providers) {
     // Skip the primary provider, rate-limited providers, and non-result providers

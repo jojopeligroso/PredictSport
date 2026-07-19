@@ -120,7 +120,7 @@ async function resolveProviderId(
     // external provider directly (ESPN, TheSportsDB, etc.)
     let allCandidates = usable;
     if (usable.length === 0) {
-      const providers = getProvidersForSport(rep.sport as Sport);
+      const providers = getProvidersForSport(rep.sport as Sport, rep.provider_league ?? undefined);
       for (const provider of providers) {
         if (provider.name === "fixture_pool" || provider.name === "manual") continue;
         if (excludeProviders?.includes(provider.name)) continue;

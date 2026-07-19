@@ -87,9 +87,11 @@ const resolveWcCompetitionCached = cache(
 export async function resolveWcCompetition(opts?: {
   statuses?: string[];
 }): Promise<ResolveResult> {
+  // Archive/display mode: use hardcoded instance #2 + synthetic viewer
   if (isWorldCupArchive()) {
     return resolveWcArchive();
   }
+
   const statuses = opts?.statuses ?? ["active", "draft", "completed"];
   const key = statuses.slice().sort().join(",");
   return resolveWcCompetitionCached(key);
