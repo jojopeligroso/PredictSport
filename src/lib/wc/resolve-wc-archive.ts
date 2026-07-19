@@ -15,9 +15,9 @@ type ResolveResult = {
  * user object with WC_ARCHIVE_DEMO_USER_ID so data fetchers pull that user's
  * predictions, group, bracket — simulating the full member experience.
  */
-/** Instance #1 competition and demo viewer — hardcoded for the display site. */
-const ARCHIVE_COMPETITION_ID = "1a4448e5-a178-45ab-b819-a0dfab370306";
-const ARCHIVE_DEMO_USER_ID = "8c7e2e1b-0564-4d86-93e2-85ecf00f1e00";
+/** Instance #3 (display) competition and demo viewer — hardcoded for the display site. */
+const ARCHIVE_COMPETITION_ID = "11b22173-a17e-48e2-895b-3c12b1d78f52";
+const ARCHIVE_DEMO_USER_ID = "a1c5e324-d2ea-4ee6-9c1b-8f30e1aaf42e";
 
 export const resolveWcArchive = cache(async (): Promise<ResolveResult> => {
   const competitionId =
