@@ -91,7 +91,7 @@ export async function GET(request: NextRequest) {
   if (phaseId) {
     const { data: phase } = await supabase
       .from("classification_phases")
-      .select("id, phase_name, status")
+      .select("id, phase_name, status, finalised_at")
       .eq("id", phaseId)
       .eq("classification_id", classificationId)
       .single();
@@ -101,24 +101,23 @@ export async function GET(request: NextRequest) {
     }
 
     // Find the stage snapshot generated closest after this phase was finalised
-    const { data: snapshot } = await supabase
+    let snapshotQuery = supabase
       .from("classification_standings_snapshots")
       .select("standings_data, snapshot_type, generated_at")
       .eq("classification_id", classificationId)
       .eq("snapshot_type", "stage")
-      .order("generated_at", { ascending: true })
-      .limit(50);
+      .order("generated_at", { ascending: true });
 
-    // Match snapshots to phases by order — snapshots are generated sequentially
-    const { data: allPhases } = await supabase
-      .from("classification_phases")
-      .select("id, phase_order")
-      .eq("classification_id", classificationId)
-      .eq("status", "finalised")
-      .order("phase_order", { ascending: true });
+    if (phase.finalised_at) {
+      // Phase has a finalised_at timestamp — find the snapshot right after it
+      snapshotQuery = snapshotQuery.gte("generated_at", phase.finalised_at).limit(1);
+    } else {
+      // Active phase — no snapshot yet (shouldn't happen since only finalised phases have snapshots)
+      snapshotQuery = snapshotQuery.limit(50);
+    }
 
-    const phaseIndex = (allPhases ?? []).findIndex((p) => p.id === phaseId);
-    const stageSnapshot = (snapshot ?? [])[phaseIndex];
+    const { data: snapshots } = await snapshotQuery;
+    const stageSnapshot = snapshots?.[0] ?? null;
 
     if (!stageSnapshot) {
       return NextResponse.json({

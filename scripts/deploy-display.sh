@@ -8,6 +8,12 @@
 set -euo pipefail
 cd "$(dirname "$0")/.."
 
+BRANCH=$(git branch --show-current)
+if [ "$BRANCH" != "master" ]; then
+  echo "ERROR: Must deploy from master branch (currently on $BRANCH)"
+  exit 1
+fi
+
 ENVFILE=".env.production"
 VERCEL_BAK=".vercel/project.json.bak"
 

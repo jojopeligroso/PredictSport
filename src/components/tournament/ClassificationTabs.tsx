@@ -799,7 +799,7 @@ function FlipRow({
                   {t('classification.you_label')}
                 </span>
               )}
-              {isMe && !isFormat && (
+              {isMe && !isFormat && process.env.NEXT_PUBLIC_PRODUCT_MODE !== "world_cup_2026_archive" && (
                 <span onClick={(e) => e.stopPropagation()}>
                   <VisibilityToggle
                     visibility={selfVisibility}

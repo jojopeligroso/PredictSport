@@ -23,7 +23,6 @@ const SHELL_ALLOWED = [
 
 /** Routes accessible in archive (display) mode — read-only surfaces only. */
 const ARCHIVE_ALLOWED = [
-  "/wc",
   "/wc/home",
   "/wc/leaderboard",
   "/wc/bracket",
@@ -35,6 +34,7 @@ const ARCHIVE_ALLOWED = [
   "/api/tournament/standings",
   "/api/tournament/all-groups",
   "/api/tournament/community-picks",
+  "/api/tournament/my-group",
 ];
 
 export async function middleware(request: NextRequest) {
@@ -45,7 +45,7 @@ export async function middleware(request: NextRequest) {
       return NextResponse.redirect(new URL("/wc", request.url));
     }
 
-    const allowed = ARCHIVE_ALLOWED.some(
+    const allowed = pathname === "/wc" || ARCHIVE_ALLOWED.some(
       (p) => pathname === p || pathname.startsWith(p + "/"),
     );
     if (!allowed) {
