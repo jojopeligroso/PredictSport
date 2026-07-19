@@ -49,7 +49,15 @@ export async function middleware(request: NextRequest) {
       (p) => pathname === p || pathname.startsWith(p + "/"),
     );
     if (!allowed) {
+      if (pathname.startsWith("/api")) {
+        return new NextResponse("Forbidden", { status: 403 });
+      }
       return NextResponse.redirect(new URL("/wc", request.url));
+    }
+
+    // Block non-GET requests even on allowed paths (archive = read-only).
+    if (request.method !== "GET") {
+      return new NextResponse("Forbidden", { status: 403 });
     }
 
     // No auth session in archive mode — skip cookie refresh entirely.

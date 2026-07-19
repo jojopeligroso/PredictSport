@@ -80,7 +80,7 @@ export default async function RootLayout({
       <body className="min-h-full flex flex-col bg-ps-bg text-ps-text">
         <ThemeProvider>
           <LocaleProvider>
-            {!shellMode && (
+            {!shellMode && !archiveMode && (
               <GlobalChromeGuard>
                 <NavBar />
               </GlobalChromeGuard>
@@ -88,14 +88,18 @@ export default async function RootLayout({
             <main className="flex flex-1 flex-col">
               {children}
             </main>
-            {!shellMode && (
+            {!shellMode && !archiveMode && (
               <GlobalChromeGuard>
                 <Footer />
               </GlobalChromeGuard>
             )}
-            <PushPromptWrapper />
-            <ServiceWorkerRegistration />
-            <InstallPrompt />
+            {!archiveMode && (
+              <>
+                <PushPromptWrapper />
+                <ServiceWorkerRegistration />
+                <InstallPrompt />
+              </>
+            )}
           </LocaleProvider>
         </ThemeProvider>
       </body>

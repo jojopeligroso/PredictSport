@@ -6,6 +6,7 @@ import { InviteCodeBanner } from "@/components/InviteCodeBanner";
 import { getServerT } from "@/lib/i18n/server";
 import { resolveWcCompetition } from "@/lib/wc/resolve-wc-competition";
 import { isWorldCupArchive } from "@/lib/product-mode";
+import { generatePseudonym } from "@/lib/tournament/visibility";
 
 export const dynamic = "force-dynamic";
 
@@ -31,14 +32,17 @@ export default async function LeaderboardPage() {
 
   const supabase = await getReadClient();
 
-  // Get user display name
-  const profile = user
-    ? (await supabase
-        .from("users")
-        .select("display_name")
-        .eq("id", user.id)
-        .single()).data
-    : null;
+  // Get user display name — in archive mode generate a pseudonym instead of
+  // leaking the demo user's real name.
+  const profile = archive
+    ? null
+    : user
+      ? (await supabase
+          .from("users")
+          .select("display_name")
+          .eq("id", user.id)
+          .single()).data
+      : null;
 
   // Get member count + user's role
   const [{ count: memberCount }, membership] = await Promise.all([
@@ -113,7 +117,7 @@ export default async function LeaderboardPage() {
           memberCount={memberCount ?? 0}
           maxEntrants={competition.max_entrants ?? null}
           minEntrants={competition.min_entrants ?? null}
-          currentDisplayName={profile?.display_name || t('common.you')}
+          currentDisplayName={archive ? generatePseudonym(user.id, new Set()) : (profile?.display_name || t('common.you'))}
           formatPhases={formatPhases}
         />
       </div>
