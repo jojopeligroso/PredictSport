@@ -81,7 +81,7 @@ export function applyVisibility<T extends VisibleStandingRow>(
   // them). On the archive/display site, anonymise everything.
   const isArchive =
     typeof process !== "undefined" &&
-    process.env?.NEXT_PUBLIC_PRODUCT_MODE === "world_cup_2026_archive";
+    process.env.NEXT_PUBLIC_PRODUCT_MODE === "world_cup_2026_archive";
   if (classificationType === "format_elimination" && !isArchive) return rows;
 
   const byUser = new Map(memberships.map((m) => [m.user_id, m]));
@@ -202,8 +202,8 @@ export function generatePseudonym(userId: string, usedNames: Set<string>): strin
   const seed = hashSeed(userId);
   const isArchive =
     typeof process !== "undefined" &&
-    (process.env?.NEXT_PUBLIC_PRODUCT_MODE === "world_cup_2026_archive" ||
-     process.env?.PRODUCT_MODE === "world_cup_2026_archive");
+    (process.env.NEXT_PUBLIC_PRODUCT_MODE === "world_cup_2026_archive" ||
+     process.env.PRODUCT_MODE === "world_cup_2026_archive");
 
   if (isArchive) {
     // Full name: "Animal Surname" — deterministic from user_id
