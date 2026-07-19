@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
+import { createServiceClient } from "@/lib/supabase/service";
+import { isWorldCupArchive } from "@/lib/product-mode";
 import type { SupabaseClient } from "@supabase/supabase-js";
 
 const REVEAL_OFFSET_MS = 5 * 60_000; // 5 minutes
@@ -32,10 +34,21 @@ function predSortOrder(row: {
 }
 
 export async function GET(req: NextRequest) {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const archiveMode = isWorldCupArchive();
+
+  let supabase: Awaited<ReturnType<typeof createClient>>;
+  let user: { id: string } | null = null;
+
+  if (archiveMode) {
+    supabase = createServiceClient() as Awaited<ReturnType<typeof createClient>>;
+    const demoUserId = process.env.WC_ARCHIVE_DEMO_USER_ID || "e5094c4a-148c-5358-a6ae-cafcd8ad5ebf";
+    user = { id: demoUserId };
+  } else {
+    supabase = await createClient();
+    const { data: { user: authUser } } = await supabase.auth.getUser();
+    user = authUser;
+  }
+
   if (!user) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
@@ -49,16 +62,18 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ error: "Missing competitionId" }, { status: 400 });
   }
 
-  // Verify membership
-  const { data: membership } = await supabase
-    .from("competition_members")
-    .select("id")
-    .eq("competition_id", competitionId)
-    .eq("user_id", user.id)
-    .maybeSingle();
+  // Verify membership (skip in archive mode — demo user is always a member)
+  if (!archiveMode) {
+    const { data: membership } = await supabase
+      .from("competition_members")
+      .select("id")
+      .eq("competition_id", competitionId)
+      .eq("user_id", user.id)
+      .maybeSingle();
 
-  if (!membership) {
-    return NextResponse.json({ error: "Not a member" }, { status: 403 });
+    if (!membership) {
+      return NextResponse.json({ error: "Not a member" }, { status: 403 });
+    }
   }
 
   // Resolve tournament_id for shared fixtures

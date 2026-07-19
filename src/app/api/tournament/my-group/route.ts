@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { createServiceClient } from "@/lib/supabase/service";
+import { isWorldCupArchive } from "@/lib/product-mode";
 import { allocatePredictionGroups } from "@/lib/tournament/format/group-allocation";
 import { getEliminationCurve } from "@/lib/tournament/format/elimination";
 import { applyLiveOverlay } from "@/lib/tournament/live-overlay";
@@ -13,10 +14,20 @@ import type { Classification } from "@/types/tournament";
  * with countdown. Triggers lazy group draw if draw window has opened.
  */
 export async function GET(request: NextRequest) {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const archiveMode = isWorldCupArchive();
+
+  let supabase: Awaited<ReturnType<typeof createClient>>;
+  let user: { id: string } | null = null;
+
+  if (archiveMode) {
+    supabase = createServiceClient() as Awaited<ReturnType<typeof createClient>>;
+    const demoUserId = process.env.WC_ARCHIVE_DEMO_USER_ID || "e5094c4a-148c-5358-a6ae-cafcd8ad5ebf";
+    user = { id: demoUserId };
+  } else {
+    supabase = await createClient();
+    const { data: { user: authUser } } = await supabase.auth.getUser();
+    user = authUser;
+  }
 
   if (!user) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
