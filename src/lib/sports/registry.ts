@@ -3,12 +3,17 @@ import { OpenF1Provider } from "./providers/openf1";
 import { TheSportsDBProvider } from "./providers/thesportsdb";
 import { ApiFootballProvider } from "./providers/api-football";
 import { MLBStatsProvider } from "./providers/mlb-stats";
+import { MLBStatsWinterProvider } from "./providers/mlb-stats-winter";
 import { ESPNProvider } from "./providers/espn";
 import { BallDontLieProvider } from "./providers/balldontlie";
 import { TheRacingAPIProvider } from "./providers/theracing-api";
 import { ManualProvider } from "./providers/manual";
 import { FoireannProvider } from "./providers/foireann";
 import { FixturePoolProvider } from "./providers/fixture-pool";
+import { LIDOMProvider } from "./providers/winter/lidom";
+import { LMPProvider } from "./providers/winter/lmp";
+import { LVBPProvider } from "./providers/winter/lvbp";
+import { LBPRCProvider } from "./providers/winter/lbprc";
 
 /** Singleton provider instances */
 const providers = {
@@ -17,11 +22,17 @@ const providers = {
   theSportsDB: new TheSportsDBProvider(),
   ballDontLie: new BallDontLieProvider(),
   mlbStats: new MLBStatsProvider(),
+  mlbStatsWinter: new MLBStatsWinterProvider(),
   espn: new ESPNProvider(),
   theRacingAPI: new TheRacingAPIProvider(),
   foireann: new FoireannProvider(),
   manual: new ManualProvider(),
   fixturePool: new FixturePoolProvider(),
+  // Winter league official APIs (skeletons — return null until implemented)
+  lidomApi: new LIDOMProvider(),
+  lmpApi: new LMPProvider(),
+  lvbpApi: new LVBPProvider(),
+  lbprcApi: new LBPRCProvider(),
 } as const;
 
 /**
@@ -55,7 +66,34 @@ const sportProviders: Record<Sport, SportsProvider[]> = {
   ice_hockey: [providers.fixturePool, providers.espn, providers.ballDontLie],
 };
 
-export function getProvidersForSport(sport: Sport): SportsProvider[] {
+/**
+ * League-specific provider chains, keyed by providerLeague prefix.
+ *
+ * When an event has a providerLeague matching one of these keys, this chain
+ * is used instead of the generic sport-level chain. League-specific official
+ * APIs sit before mlb-stats-winter — when they return null (not yet
+ * implemented), the chain falls through to the working MLB Stats source.
+ *
+ * For Caribbean Series, ESPN is included as a working cross-check source.
+ */
+const leagueProviders: Record<string, SportsProvider[]> = {
+  "winter/lidom":     [providers.fixturePool, providers.lidomApi, providers.mlbStatsWinter, providers.manual],
+  "winter/lmp":       [providers.fixturePool, providers.lmpApi, providers.mlbStatsWinter, providers.manual],
+  "winter/lvbp":      [providers.fixturePool, providers.lvbpApi, providers.mlbStatsWinter, providers.manual],
+  "winter/lbprc":     [providers.fixturePool, providers.lbprcApi, providers.mlbStatsWinter, providers.manual],
+  "winter/caribbean": [providers.fixturePool, providers.mlbStatsWinter, providers.espn, providers.manual],
+};
+
+/**
+ * Get the provider chain for a sport, optionally narrowed by providerLeague.
+ *
+ * If providerLeague matches a league-specific chain, that chain is returned.
+ * Otherwise falls back to the sport-level chain.
+ */
+export function getProvidersForSport(sport: Sport, providerLeague?: string): SportsProvider[] {
+  if (providerLeague && leagueProviders[providerLeague]) {
+    return leagueProviders[providerLeague];
+  }
   return sportProviders[sport] ?? [providers.manual];
 }
 

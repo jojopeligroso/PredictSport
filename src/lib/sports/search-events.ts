@@ -17,7 +17,7 @@ export async function searchEvents(
   query: string,
   options?: { date?: string; dateTo?: string; limit?: number; providerLeague?: string }
 ): Promise<SearchableEvent[]> {
-  const providers = getProvidersForSport(sport);
+  const providers = getProvidersForSport(sport, options?.providerLeague);
 
   for (const provider of providers) {
     if (provider.name === "manual") continue;
