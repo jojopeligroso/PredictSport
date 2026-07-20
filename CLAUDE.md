@@ -150,6 +150,7 @@ When creating events via Supabase API/SQL (not through admin UI), always verify:
 3. **`event_prediction_types`** rows are created for each prediction type on the event.
 4. **`round_id`** is set if the event belongs to a round.
 5. **`config.options`** on `winner` prediction types must list the team/participant names for A/B selection buttons. Without `config.options`, the UI falls back to a free-text input. For head-to-head matches: `{"options": ["Team A", "Team B"]}`. Use short team names (e.g. "Wexford" not "Wexford GAA Hurling").
+6. **Baseball `winner` configs must have exactly 2 options — never a "Draw" entry.** Baseball is a no-draw sport: `deriveWinnerFromScore` (`src/lib/score-format.ts`) returns `null` on tied scores for baseball, and the SQL `derive_winner_from_score` (migration `20260620000000`) only derives "Draw" when the options array has ≥3 entries. Seeding a baseball winner EPT with 3+ options would silently write "Draw" on tied scores. Users must explicitly declare the extra-innings winner on ties.
 
 ## MCP Servers
 
