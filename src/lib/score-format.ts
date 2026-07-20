@@ -10,6 +10,10 @@ const STANDARD_SCORE_SPORTS: Sport[] = [
 
 const GAA_SPORTS: Sport[] = ["gaa", "gaelic_football", "hurling"];
 
+/** Sports where a draw is impossible — a tied entered score must NOT derive a
+ *  winner; the user must explicitly declare one (e.g. baseball extra innings). */
+const NO_DRAW_SPORTS: Sport[] = ["baseball"];
+
 /** Sports that cannot have exact_score predictions.
  *  Position-based sports have no score, cricket scores are too variable (multi-format, innings). */
 const NO_EXACT_SCORE_SPORTS: Sport[] = [
@@ -52,7 +56,11 @@ export function deriveWinnerFromScore(
   const awayScore = Number(score.away);
 
   if (isNaN(homeScore) || isNaN(awayScore)) return null;
-  if (homeScore === awayScore) return "Draw";
+  if (homeScore === awayScore) {
+    // No-draw sports (baseball): tie does not imply a result — winner must be declared.
+    if (NO_DRAW_SPORTS.includes(sport as Sport)) return null;
+    return "Draw";
+  }
   return homeScore > awayScore ? (options[0] ?? null) : (options[options.length - 1] ?? null);
 }
 

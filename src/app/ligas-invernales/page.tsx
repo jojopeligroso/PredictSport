@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { Bi } from "@/components/ligas/Bi";
+import { ligaVars } from "@/components/ligas/theme";
 
 /**
  * /ligas-invernales hub — public, no auth required.
@@ -115,10 +116,11 @@ export default function LigasInvernalesHub() {
           <Link
             key={card.slug}
             href={`/ligas-invernales/${card.slug}`}
-            className="rounded-2xl border border-ps-border bg-ps-surface p-4 transition-all duration-150 hover:border-ps-amber active:scale-[0.98] motion-reduce:transition-none"
+            style={ligaVars(card.slug)}
+            className="rounded-2xl border border-ps-border bg-ps-surface p-4 transition-all duration-150 hover:border-liga active:scale-[0.98] motion-reduce:transition-none"
           >
             <div className="flex items-center justify-between">
-              <span className="rounded-md bg-ps-bg-alt px-2 py-0.5 font-mono text-micro font-bold uppercase tracking-[0.12em] text-ps-text-sec">
+              <span className="rounded-md bg-liga/15 px-2 py-0.5 font-mono text-micro font-bold uppercase tracking-[0.12em] text-liga-deep dark:text-liga">
                 {card.code}
               </span>
               <span className="font-mono text-micro text-ps-text-ter">

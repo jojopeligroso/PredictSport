@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { AuthRequired } from "@/components/AuthRequired";
 import { Bi } from "@/components/ligas/Bi";
+import { ligaVars } from "@/components/ligas/theme";
 import { createClient } from "@/lib/supabase/server";
 
 export const dynamic = "force-dynamic";
@@ -131,15 +132,19 @@ async function TodasContent() {
             const start = monthIndex(t.starts_at, 0);
             const end = monthIndex(t.ends_at, 4);
             return (
-              <div key={t.id} className="col-span-5 grid grid-cols-5">
+              <div
+                key={t.id}
+                className="col-span-5 grid grid-cols-5"
+                style={ligaVars(prefix)}
+              >
                 <div
-                  className="flex h-6 items-center justify-center rounded-md bg-ps-amber/20"
+                  className="flex h-6 items-center justify-center rounded-md bg-liga/20"
                   style={{
                     gridColumnStart: start + 1,
                     gridColumnEnd: end + 2,
                   }}
                 >
-                  <span className="font-mono text-micro font-bold uppercase tracking-[0.12em] text-ps-amber-deep">
+                  <span className="font-mono text-micro font-bold uppercase tracking-[0.12em] text-liga-deep dark:text-liga">
                     {meta?.code ?? prefix}
                   </span>
                 </div>
@@ -158,10 +163,11 @@ async function TodasContent() {
             <Link
               key={t.id}
               href={`/ligas-invernales/${prefix}`}
-              className="block rounded-2xl border border-ps-border bg-ps-surface p-4 transition-all duration-150 hover:border-ps-amber active:scale-[0.98] motion-reduce:transition-none"
+              style={ligaVars(prefix)}
+              className="block rounded-2xl border border-ps-border bg-ps-surface p-4 transition-all duration-150 hover:border-liga active:scale-[0.98] motion-reduce:transition-none"
             >
               <div className="flex items-center justify-between">
-                <span className="rounded-md bg-ps-bg-alt px-2 py-0.5 font-mono text-micro font-bold uppercase tracking-[0.12em] text-ps-text-sec">
+                <span className="rounded-md bg-liga/15 px-2 py-0.5 font-mono text-micro font-bold uppercase tracking-[0.12em] text-liga-deep dark:text-liga">
                   {meta?.code ?? prefix}
                 </span>
                 <span className="font-mono text-micro text-ps-text-ter">

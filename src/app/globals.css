@@ -155,6 +155,11 @@ html[data-theme="dark"] {
   --color-ps-purple: var(--ps-purple);
   --color-ps-purple-soft: var(--ps-purple-soft);
 
+  /* Liga theming — per-league accent set via inline --liga-accent vars;
+     falls back to amber when no league var is present. */
+  --color-liga: var(--liga-accent, var(--ps-amber));
+  --color-liga-deep: var(--liga-accent-deep, var(--ps-amber-deep));
+
   /* Shadows */
   --shadow-ps-rest: var(--ps-shadow-rest);
   --shadow-ps-raised: var(--ps-shadow-raised);

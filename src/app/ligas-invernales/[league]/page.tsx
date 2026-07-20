@@ -1,6 +1,8 @@
+import Link from "next/link";
 import { notFound } from "next/navigation";
 import { AuthRequired } from "@/components/AuthRequired";
 import { Bi } from "@/components/ligas/Bi";
+import { ligaVars } from "@/components/ligas/theme";
 import { createClient } from "@/lib/supabase/server";
 
 export const dynamic = "force-dynamic";
@@ -119,10 +121,10 @@ async function LeagueContent({ league }: { league: string }) {
   const season = seasonLabel(tournament.slug);
 
   return (
-    <main className="pt-8">
+    <main className="pt-8" style={ligaVars(league)}>
       {/* League header */}
       <header>
-        <span className="rounded-md bg-ps-bg-alt px-2 py-0.5 font-mono text-micro font-bold uppercase tracking-[0.12em] text-ps-text-sec">
+        <span className="rounded-md bg-liga/15 px-2 py-0.5 font-mono text-micro font-bold uppercase tracking-[0.12em] text-liga-deep dark:text-liga">
           {meta.code}
         </span>
         <h1 className="mt-3 font-display text-2xl font-extrabold leading-tight tracking-tight text-ps-text">
@@ -137,7 +139,7 @@ async function LeagueContent({ league }: { league: string }) {
 
       {/* Pre-season state */}
       <section className="mt-5 rounded-2xl border border-ps-border bg-ps-surface p-4">
-        <p className="font-mono text-micro font-bold uppercase tracking-[0.18em] text-ps-amber-deep">
+        <p className="font-mono text-micro font-bold uppercase tracking-[0.18em] text-liga-deep dark:text-liga">
           <Bi es={`Temporada ${season}`} en={`${season} Season`} />
         </p>
         <p className="mt-1 font-mono text-sm text-ps-text">
@@ -147,6 +149,14 @@ async function LeagueContent({ league }: { league: string }) {
           />
         </p>
       </section>
+
+      {/* Picks CTA */}
+      <Link
+        href={`/ligas-invernales/${league}/picks`}
+        className="mt-4 block rounded-xl bg-liga px-4 py-3 text-center font-display text-sm font-extrabold text-white transition-all duration-150 hover:opacity-90 active:scale-[0.98] motion-reduce:transition-none"
+      >
+        <Bi es="Hacer mis picks" en="Make my picks" />
+      </Link>
 
       {/* Competitive arc */}
       <section className="mt-6">
@@ -180,7 +190,7 @@ async function LeagueContent({ league }: { league: string }) {
                   className={`shrink-0 rounded-md px-2 py-0.5 font-mono text-micro font-bold uppercase tracking-[0.12em] ${
                     stage.stage_type === "group"
                       ? "bg-ps-bg-alt text-ps-text-sec"
-                      : "bg-ps-amber/15 text-ps-amber-deep"
+                      : "bg-liga/15 text-liga-deep dark:text-liga"
                   }`}
                 >
                   {stage.stage_type}

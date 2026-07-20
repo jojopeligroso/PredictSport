@@ -46,7 +46,7 @@ export async function POST(request: NextRequest) {
       .from("competitions")
       .select("id, entry_closes_at")
       .eq("id", openJoinCompId)
-      .eq("product_mode", "world_cup_2026_shell")
+      .in("product_mode", ["world_cup_2026_shell", "predictsport_full"])
       .in("status", ["draft", "active"])
       .single();
 
