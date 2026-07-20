@@ -36,6 +36,7 @@ BEGIN
     'baseball',
     'sdc',
     '{
+      "max_entrants_per_instance": 48,
       "governing_body": "Confederación de Béisbol Profesional del Caribe (CBPC)",
       "region": "Caribbean",
       "num_teams": 6,

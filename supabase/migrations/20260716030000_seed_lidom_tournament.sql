@@ -42,6 +42,7 @@ VALUES (
   'baseball',
   'lidom_2025_26',
   '{
+    "max_entrants_per_instance": 48,
     "governing_body": "LIDOM",
     "region": "Dominican Republic",
     "team_count": 6,

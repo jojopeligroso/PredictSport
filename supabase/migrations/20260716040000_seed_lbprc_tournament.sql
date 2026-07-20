@@ -44,6 +44,7 @@ VALUES (
   'baseball',
   'lbprc_2025_26',
   '{
+    "max_entrants_per_instance": 48,
     "governing_body": "LBPRC",
     "region": "Puerto Rico",
     "team_count": 6,

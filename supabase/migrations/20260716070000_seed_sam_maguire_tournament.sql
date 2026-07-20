@@ -29,6 +29,7 @@ VALUES (
   'gaelic_football',
   'sam_maguire_2026',
   '{
+    "max_entrants_per_instance": 48,
     "governing_body": "GAA",
     "cup": "Sam Maguire",
     "tier": 1,

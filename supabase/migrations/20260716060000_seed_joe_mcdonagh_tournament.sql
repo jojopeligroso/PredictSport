@@ -17,6 +17,7 @@ VALUES (
   'hurling',
   'joe_mcdonagh_2026',
   '{
+    "max_entrants_per_instance": 48,
     "governing_body": "GAA",
     "cup": "Joe McDonagh",
     "tier": 2,
