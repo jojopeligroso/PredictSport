@@ -24,6 +24,7 @@ VALUES (
   'hurling',
   'liam_maccarthy_2026',
   '{
+    "max_entrants_per_instance": 48,
     "governing_body": "GAA",
     "cup": "Liam MacCarthy",
     "tier": 1,

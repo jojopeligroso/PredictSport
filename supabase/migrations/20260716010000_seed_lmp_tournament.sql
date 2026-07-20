@@ -37,6 +37,7 @@ VALUES (
   'baseball',
   'lmp_2025_26',
   '{
+    "max_entrants_per_instance": 48,
     "governing_body": "LMP",
     "region": "Mexico",
     "team_count": 10,

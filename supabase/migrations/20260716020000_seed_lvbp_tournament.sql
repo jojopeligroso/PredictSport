@@ -45,6 +45,7 @@ VALUES (
   'baseball',
   'lvbp_2025_26',
   '{
+    "max_entrants_per_instance": 48,
     "governing_body": "LVBP",
     "region": "Venezuela",
     "team_count": 8,

@@ -39,6 +39,7 @@ VALUES (
   'cricket',
   'the_hundred_2026',
   '{
+    "max_entrants_per_instance": 48,
     "governing_body": "ECB",
     "ball_format": "100-ball",
     "team_count": 8,

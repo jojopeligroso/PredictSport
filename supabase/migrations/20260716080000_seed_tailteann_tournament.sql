@@ -20,6 +20,7 @@ VALUES (
   'gaelic_football',
   'tailteann_cup_2026',
   '{
+    "max_entrants_per_instance": 48,
     "governing_body": "GAA",
     "cup": "Tailteann",
     "tier": 2,
