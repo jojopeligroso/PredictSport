@@ -30,12 +30,21 @@ function flagUrl(code: string) {
 
 /* ── Component ──────────────────────────────────────────────────────── */
 
-export function LanguageToggle() {
+export function LanguageToggle({
+  esFlag = ES_FLAG,
+  enFlag: enFlagProp,
+}: {
+  /** Flag shown while in Spanish mode (default: Mexico). */
+  esFlag?: string;
+  /** Flag shown while in English mode (default: random US/CA/IE). */
+  enFlag?: string;
+} = {}) {
   const { locale, setLocale } = useLocale();
   // Pick the English flag once per mount — stable for the session
-  const [enFlag] = useState(pickEnglishFlag);
+  const [randomEnFlag] = useState(pickEnglishFlag);
+  const enFlag = enFlagProp ?? randomEnFlag;
 
-  const currentFlag = locale === 'es' ? ES_FLAG : enFlag;
+  const currentFlag = locale === 'es' ? esFlag : enFlag;
   const nextLocale: Locale = locale === 'es' ? 'en' : 'es';
   const label = locale === 'es' ? 'Switch to English' : 'Cambiar a español';
 

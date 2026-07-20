@@ -1,5 +1,6 @@
 import { notFound } from "next/navigation";
 import { AuthRequired } from "@/components/AuthRequired";
+import { Bi } from "@/components/ligas/Bi";
 import { createClient } from "@/lib/supabase/server";
 
 export const dynamic = "force-dynamic";
@@ -46,10 +47,10 @@ interface TournamentRow {
   ends_at: string | null;
 }
 
-function formatDate(iso: string | null): string {
+function formatDate(iso: string | null, locale: "es-MX" | "en-US"): string {
   if (!iso) return "—";
   const d = new Date(iso);
-  return d.toLocaleDateString("es-MX", {
+  return d.toLocaleDateString(locale, {
     day: "numeric",
     month: "short",
     year: "numeric",
@@ -128,26 +129,29 @@ async function LeagueContent({ league }: { league: string }) {
           {tournament.name}
         </h1>
         <p className="mt-1 text-sm font-semibold text-ps-text-sec">
-          {meta.countryEs}
-          {meta.countryEn !== meta.countryEs && ` / ${meta.countryEn}`}
-          {" · "}Béisbol / Baseball
+          <Bi es={meta.countryEs} en={meta.countryEn} />
+          {" · "}
+          <Bi es="Béisbol" en="Baseball" />
         </p>
       </header>
 
       {/* Pre-season state */}
       <section className="mt-5 rounded-2xl border border-ps-border bg-ps-surface p-4">
         <p className="font-mono text-micro font-bold uppercase tracking-[0.18em] text-ps-amber-deep">
-          Temporada {season} / {season} Season
+          <Bi es={`Temporada ${season}`} en={`${season} Season`} />
         </p>
         <p className="mt-1 font-mono text-sm text-ps-text">
-          {formatDate(tournament.starts_at)} – {formatDate(tournament.ends_at)}
+          <Bi
+            es={`${formatDate(tournament.starts_at, "es-MX")} – ${formatDate(tournament.ends_at, "es-MX")}`}
+            en={`${formatDate(tournament.starts_at, "en-US")} – ${formatDate(tournament.ends_at, "en-US")}`}
+          />
         </p>
       </section>
 
       {/* Competitive arc */}
       <section className="mt-6">
         <h2 className="font-display text-lg font-extrabold text-ps-text">
-          Formato <span className="text-ps-text-sec">/ Format</span>
+          <Bi es="Formato" en="Format" />
         </h2>
         <ol className="mt-3 space-y-2">
           {stageRows.map((stage) => {
@@ -190,7 +194,7 @@ async function LeagueContent({ league }: { league: string }) {
       {/* Team roster */}
       <section className="mt-6">
         <h2 className="font-display text-lg font-extrabold text-ps-text">
-          Equipos <span className="text-ps-text-sec">/ Teams</span>
+          <Bi es="Equipos" en="Teams" />
         </h2>
         {teams.length > 0 ? (
           <ul className="mt-3 grid grid-cols-1 gap-1.5 sm:grid-cols-2">
@@ -205,8 +209,9 @@ async function LeagueContent({ league }: { league: string }) {
           </ul>
         ) : (
           <p className="mt-3 text-sm text-ps-text-sec">
-            {teamComposition ??
-              "Equipos por confirmar / Teams to be confirmed"}
+            {teamComposition ?? (
+              <Bi es="Equipos por confirmar" en="Teams to be confirmed" />
+            )}
           </p>
         )}
       </section>

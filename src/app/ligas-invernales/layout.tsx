@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { BrandMark } from "@/components/BrandMark";
+import { LigasLanguageToggle } from "@/components/ligas/LigasLanguageToggle";
 
 /**
  * /ligas-invernales — Caribbean winter baseball surface.
@@ -23,12 +24,15 @@ export default function LigasInvernalesLayout({
               ligas invernales<span className="text-ps-amber">.</span>
             </span>
           </Link>
-          <Link
-            href="/"
-            className="text-xs font-semibold text-ps-text-sec hover:text-ps-text"
-          >
-            sports<span className="text-ps-amber">predict.</span>
-          </Link>
+          <div className="flex items-center gap-2">
+            <LigasLanguageToggle />
+            <Link
+              href="/"
+              className="text-xs font-semibold text-ps-text-sec hover:text-ps-text"
+            >
+              sports<span className="text-ps-amber">predict.</span>
+            </Link>
+          </div>
         </div>
       </nav>
 

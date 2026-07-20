@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { AuthRequired } from "@/components/AuthRequired";
+import { Bi } from "@/components/ligas/Bi";
 import { createClient } from "@/lib/supabase/server";
 
 export const dynamic = "force-dynamic";
@@ -26,7 +27,13 @@ const LEAGUE_META: Record<
   sdc: { countryEs: "Caribe", countryEn: "Caribbean", code: "SdC" },
 };
 
-const MONTHS = ["Oct", "Nov", "Dic", "Ene", "Feb"];
+const MONTHS: { es: string; en: string }[] = [
+  { es: "Oct", en: "Oct" },
+  { es: "Nov", en: "Nov" },
+  { es: "Dic", en: "Dec" },
+  { es: "Ene", en: "Jan" },
+  { es: "Feb", en: "Feb" },
+];
 
 interface TournamentRow {
   id: string;
@@ -48,10 +55,14 @@ function leaguePrefix(slug: string): string {
   return slug.split("-")[0];
 }
 
-function formatWindow(starts: string | null, ends: string | null): string {
+function formatWindow(
+  starts: string | null,
+  ends: string | null,
+  locale: "es-MX" | "en-US"
+): string {
   if (!starts || !ends) return "—";
   const fmt = (iso: string) =>
-    new Date(iso).toLocaleDateString("es-MX", { month: "short", year: "numeric" });
+    new Date(iso).toLocaleDateString(locale, { month: "short", year: "numeric" });
   return `${fmt(starts)} – ${fmt(ends)}`;
 }
 
@@ -96,25 +107,22 @@ async function TodasContent() {
     <main className="pt-8">
       <header>
         <h1 className="font-display text-2xl font-extrabold tracking-tight text-ps-text">
-          Todas las Ligas
+          <Bi es="Todas las Ligas" en="All Leagues" />
         </h1>
-        <p className="mt-1 text-sm font-semibold text-ps-text-sec">
-          All Leagues
-        </p>
       </header>
 
       {/* Combined timeline */}
       <section className="mt-6 rounded-2xl border border-ps-border bg-ps-surface p-4">
         <h2 className="font-mono text-micro font-bold uppercase tracking-[0.18em] text-ps-text-sec">
-          Calendario Oct → Feb / Oct → Feb Calendar
+          <Bi es="Calendario Oct → Feb" en="Oct → Feb Calendar" />
         </h2>
         <div className="mt-3 grid grid-cols-5 gap-y-2">
           {MONTHS.map((m) => (
             <span
-              key={m}
+              key={m.es}
               className="text-center font-mono text-micro font-bold uppercase text-ps-text-ter"
             >
-              {m}
+              <Bi es={m.es} en={m.en} />
             </span>
           ))}
           {rows.map((t) => {
@@ -157,23 +165,21 @@ async function TodasContent() {
                   {meta?.code ?? prefix}
                 </span>
                 <span className="font-mono text-micro text-ps-text-ter">
-                  {stageCounts.get(t.id) ?? 0} etapas / stages
+                  {stageCounts.get(t.id) ?? 0}{" "}
+                  <Bi es="etapas" en="stages" />
                 </span>
               </div>
               <h3 className="mt-2 font-display text-base font-extrabold leading-tight text-ps-text">
                 {t.name}
               </h3>
               <p className="mt-1 text-xs text-ps-text-ter">
-                {meta
-                  ? `${meta.countryEs}${
-                      meta.countryEn !== meta.countryEs
-                        ? ` / ${meta.countryEn}`
-                        : ""
-                    }`
-                  : ""}
+                {meta && <Bi es={meta.countryEs} en={meta.countryEn} />}
                 {" · "}
                 <span className="font-mono">
-                  {formatWindow(t.starts_at, t.ends_at)}
+                  <Bi
+                    es={formatWindow(t.starts_at, t.ends_at, "es-MX")}
+                    en={formatWindow(t.starts_at, t.ends_at, "en-US")}
+                  />
                 </span>
               </p>
             </Link>
@@ -181,7 +187,10 @@ async function TodasContent() {
         })}
         {rows.length === 0 && (
           <p className="text-sm text-ps-text-sec">
-            No hay ligas disponibles todavía. / No leagues available yet.
+            <Bi
+              es="No hay ligas disponibles todavía."
+              en="No leagues available yet."
+            />
           </p>
         )}
       </section>

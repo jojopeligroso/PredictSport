@@ -1,9 +1,10 @@
 import Link from "next/link";
+import { Bi } from "@/components/ligas/Bi";
 
 /**
  * /ligas-invernales hub — public, no auth required.
  *
- * Bilingual: LatAm Spanish primary, English alongside. Factual copy only.
+ * Bilingual: LatAm Spanish / English via the locale toggle. Factual copy only.
  */
 
 interface LeagueCard {
@@ -88,30 +89,23 @@ export default function LigasInvernalesHub() {
       {/* Hero */}
       <header>
         <h1 className="font-display text-3xl font-extrabold tracking-tight text-ps-text">
-          Tu Liga Local
+          <Bi es="Tu Liga Local" en="Your Local League" />
         </h1>
-        <p className="mt-1 text-sm font-semibold text-ps-text-sec">
-          Your Local League
-        </p>
       </header>
 
       {/* Intro */}
       <section className="mt-5 space-y-2">
         <p className="text-sm text-ps-text-sec">
-          El béisbol invernal del Caribe: las ligas profesionales de México,
-          Venezuela, República Dominicana y Puerto Rico juegan de octubre a
-          enero, y sus campeones se enfrentan en la Serie del Caribe en febrero.
-        </p>
-        <p className="text-sm text-ps-text-ter">
-          Caribbean winter baseball: the professional leagues of Mexico,
-          Venezuela, the Dominican Republic and Puerto Rico run from October to
-          January, and their champions meet at the Serie del Caribe in February.
+          <Bi
+            es="El béisbol invernal del Caribe: las ligas profesionales de México, Venezuela, República Dominicana y Puerto Rico juegan de octubre a enero, y sus campeones se enfrentan en la Serie del Caribe en febrero."
+            en="Caribbean winter baseball: the professional leagues of Mexico, Venezuela, the Dominican Republic and Puerto Rico run from October to January, and their champions meet at the Serie del Caribe in February."
+          />
         </p>
         <p className="text-sm text-ps-text-sec">
-          Elige tu liga y predice los resultados.{" "}
-          <span className="text-ps-text-ter">
-            Pick your league and predict the results.
-          </span>
+          <Bi
+            es="Elige tu liga y predice los resultados."
+            en="Pick your league and predict the results."
+          />
         </p>
       </section>
 
@@ -128,24 +122,17 @@ export default function LigasInvernalesHub() {
                 {card.code}
               </span>
               <span className="font-mono text-micro text-ps-text-ter">
-                {card.windowEs}
-                {card.windowEn !== card.windowEs && ` / ${card.windowEn}`}
+                <Bi es={card.windowEs} en={card.windowEn} />
               </span>
             </div>
             <h2 className="mt-3 font-display text-base font-extrabold leading-tight text-ps-text">
-              {card.nameEs}
+              <Bi es={card.nameEs} en={card.nameEn ?? card.nameEs} />
             </h2>
-            {card.nameEn && (
-              <p className="text-sm font-semibold text-ps-text-sec">
-                {card.nameEn}
-              </p>
-            )}
             <p className="mt-1 text-xs text-ps-text-ter">
-              {card.countryEs}
-              {card.countryEn !== card.countryEs && ` / ${card.countryEn}`}
+              <Bi es={card.countryEs} en={card.countryEn} />
               {" · "}
               <span className="font-mono">{card.teams}</span>{" "}
-              {card.slug === "todas" ? "" : "equipos / teams"}
+              {card.slug === "todas" ? "" : <Bi es="equipos" en="teams" />}
             </p>
           </Link>
         ))}
