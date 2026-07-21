@@ -137,6 +137,21 @@ async function LeagueContent({ league }: { league: string }) {
         </p>
       </header>
 
+      {/* Caribbean Series — champions-of-champions intro */}
+      {league === "sdc" && (
+        <section className="mt-5 rounded-2xl border border-liga/40 bg-liga/5 p-4">
+          <p className="font-mono text-micro font-bold uppercase tracking-[0.18em] text-liga-deep dark:text-liga">
+            <Bi es="La final del Caribe" en="The Caribbean final" />
+          </p>
+          <p className="mt-2 text-sm text-ps-text-sec">
+            <Bi
+              es="Los campeones de México, Venezuela, República Dominicana y Puerto Rico se enfrentan en febrero. Los equipos se confirman cuando cada liga corona a su campeón."
+              en="The champions of Mexico, Venezuela, the Dominican Republic and Puerto Rico meet in February. Teams are confirmed once each league crowns its winner."
+            />
+          </p>
+        </section>
+      )}
+
       {/* Pre-season state */}
       <section className="mt-5 rounded-2xl border border-ps-border bg-ps-surface p-4">
         <p className="font-mono text-micro font-bold uppercase tracking-[0.18em] text-liga-deep dark:text-liga">

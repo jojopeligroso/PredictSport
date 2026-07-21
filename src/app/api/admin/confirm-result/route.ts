@@ -3,6 +3,7 @@ import { createClient } from "@/lib/supabase/server";
 import { createServiceClient } from "@/lib/supabase/service";
 import { verifyCompetitionAdmin } from "@/lib/admin";
 import { scorePrediction, buildScoreDerivedWinnerOverrides } from "@/lib/scoring";
+import { isSystemBEvent, scoreSystemBEvent } from "@/lib/ligas/score-event";
 import { requireDisplayName } from "@/lib/require-display-name";
 import type { PredictionType, EventPredictionType } from "@/types/database";
 import { notifyResultConfirmed } from "@/lib/notifications/result-confirmed";
@@ -238,37 +239,55 @@ export async function POST(request: Request) {
     points_awarded: number;
   }> = [];
 
-  for (const prediction of predictions ?? []) {
-    const predType = prediction.prediction_type as PredictionType;
-    const ept = eptMap.get(predType);
-
-    const eptData = ept ?? {
-      points: 10,
-      partial_points: 0,
-      config: null,
-    };
-
-    // For winner predictions, use score-derived value if available
-    let predData = prediction.prediction_data as Record<string, unknown>;
-    if (predType === "winner") {
-      const override = winnerOverrides.get(prediction.user_id as string);
-      if (override) predData = override;
-    }
-
-    const result = scorePrediction(
-      predType,
-      predData,
-      resultData as Record<string, unknown>,
-      eptData,
-      winnerOpts
+  // Winter-league (System B) events score their three calls jointly — the
+  // winner gates the game and a correct exact score doubles the total — so the
+  // generic per-row scorer is bypassed for them.
+  if (isSystemBEvent(winnerEpt?.config as Record<string, unknown> | null)) {
+    scores.push(
+      ...scoreSystemBEvent(
+        (predictions ?? []) as Array<{
+          id: string;
+          user_id: string;
+          prediction_type: string;
+          prediction_data: Record<string, unknown>;
+        }>,
+        resultData as Record<string, unknown>,
+        winnerOpts,
+      ),
     );
+  } else {
+    for (const prediction of predictions ?? []) {
+      const predType = prediction.prediction_type as PredictionType;
+      const ept = eptMap.get(predType);
 
-    scores.push({
-      id: prediction.id as string,
-      is_correct: result.is_correct,
-      is_partial: result.is_partial,
-      points_awarded: result.points_awarded,
-    });
+      const eptData = ept ?? {
+        points: 10,
+        partial_points: 0,
+        config: null,
+      };
+
+      // For winner predictions, use score-derived value if available
+      let predData = prediction.prediction_data as Record<string, unknown>;
+      if (predType === "winner") {
+        const override = winnerOverrides.get(prediction.user_id as string);
+        if (override) predData = override;
+      }
+
+      const result = scorePrediction(
+        predType,
+        predData,
+        resultData as Record<string, unknown>,
+        eptData,
+        winnerOpts
+      );
+
+      scores.push({
+        id: prediction.id as string,
+        is_correct: result.is_correct,
+        is_partial: result.is_partial,
+        points_awarded: result.points_awarded,
+      });
+    }
   }
 
   let scored = 0;
