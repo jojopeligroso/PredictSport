@@ -6,11 +6,16 @@ import { isLeagueSlug } from "@/components/ligas/leagues";
 import { LeagueIdentity } from "@/components/ligas/LeagueLogo";
 import { ligaVars } from "@/components/ligas/theme";
 import { LigaPicksClient } from "@/components/ligas/LigaPicksClient";
+import { LigaResults } from "@/components/ligas/LigaResults";
 import { createClient } from "@/lib/supabase/server";
 import type {
   LigaPicksEvent,
   LigaPicksPrediction,
 } from "@/components/ligas/LigaPicksClient";
+import type {
+  LigaResultEvent,
+  LigaResultPrediction,
+} from "@/components/ligas/LigaResults";
 
 export const dynamic = "force-dynamic";
 
@@ -145,6 +150,32 @@ async function PicksContent({ league }: { league: string }) {
     predictions = (predictionRows ?? []) as LigaPicksPrediction[];
   }
 
+  // Resulted games + how the user's picks scored — the "score" step of the loop.
+  const { data: resultedRows } = await supabase
+    .from("events")
+    .select(
+      "id, event_name, result_data, event_prediction_types (id, prediction_type, points)",
+    )
+    .eq("competition_id", instance.id)
+    .eq("status", "resulted")
+    .order("start_time", { ascending: false })
+    .limit(20);
+
+  const resulted = (resultedRows ?? []) as unknown as LigaResultEvent[];
+  let resultPredictions: LigaResultPrediction[] = [];
+  if (user && resulted.length > 0) {
+    const { data: rp } = await supabase
+      .from("predictions")
+      .select("event_id, prediction_type, prediction_data, points_awarded, is_correct")
+      .eq("user_id", user.id)
+      .in(
+        "event_id",
+        resulted.map((e) => e.id),
+      )
+      .limit(200);
+    resultPredictions = (rp ?? []) as LigaResultPrediction[];
+  }
+
   return (
     <main className="pt-8" style={ligaVars(league)}>
       {header}
@@ -156,6 +187,9 @@ async function PicksContent({ league }: { league: string }) {
         seasonStartEs={`La temporada comienza el ${formatDate(tournament.starts_at, "es-MX")}`}
         seasonStartEn={`Season starts ${formatDate(tournament.starts_at, "en-US")}`}
       />
+      {membership && (
+        <LigaResults events={resulted} predictions={resultPredictions} />
+      )}
     </main>
   );
 }
