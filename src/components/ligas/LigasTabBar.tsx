@@ -56,9 +56,21 @@ function IconBook() {
   );
 }
 
+function IconTeams() {
+  return (
+    <svg width={22} height={22} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.75} strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+      <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
+      <circle cx={9} cy={7} r={4} />
+      <path d="M23 21v-2a4 4 0 0 0-3-3.87" />
+      <path d="M16 3.13a4 4 0 0 1 0 7.75" />
+    </svg>
+  );
+}
+
 const LABELS: Record<string, { es: string; en: string }> = {
   liga: { es: "Liga", en: "League" },
   picks: { es: "Picks", en: "Picks" },
+  equipos: { es: "Equipos", en: "Teams" },
   tabla: { es: "Tabla", en: "Board" },
   reglas: { es: "Reglas", en: "Rules" },
 };
@@ -81,9 +93,16 @@ export function LigasTabBar() {
   const base = `/ligas-invernales/${league}`;
   const label = (k: string) => (locale === "es" ? LABELS[k].es : LABELS[k].en);
 
+  // Serie del Caribe has no standing roster (champions decided in-season), so
+  // it omits the Teams tab.
+  const showTeams = league !== "sdc";
+
   const tabs = [
     { key: "liga", href: base, icon: <IconDiamond />, isActive: (p: string) => p === base },
     { key: "picks", href: `${base}/picks`, icon: <IconCrosshair />, isActive: (p: string) => p.startsWith(`${base}/picks`) },
+    ...(showTeams
+      ? [{ key: "equipos", href: `${base}/equipos`, icon: <IconTeams />, isActive: (p: string) => p.startsWith(`${base}/equipos`) }]
+      : []),
     { key: "tabla", href: `${base}/tabla`, icon: <IconTrophy />, isActive: (p: string) => p.startsWith(`${base}/tabla`) },
     { key: "reglas", href: `${base}/reglas`, icon: <IconBook />, isActive: (p: string) => p.startsWith(`${base}/reglas`) },
   ];

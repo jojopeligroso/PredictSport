@@ -3,6 +3,8 @@ import { notFound } from "next/navigation";
 import { AuthRequired } from "@/components/AuthRequired";
 import { Bi } from "@/components/ligas/Bi";
 import { ligaVars } from "@/components/ligas/theme";
+import { ResultsFeed, type FeedGame } from "@/components/ligas/ResultsFeed";
+import { parseMatchup, slugifyTeam } from "@/lib/ligas/teams";
 import { createClient } from "@/lib/supabase/server";
 
 export const dynamic = "force-dynamic";
@@ -94,20 +96,67 @@ async function LeagueContent({ league }: { league: string }) {
 
   if (!tournament) notFound();
 
-  const [{ data: stages }, { data: bracketTemplate }] = await Promise.all([
-    supabase
-      .from("sporting_stages")
-      .select("id, slug, name, stage_order, stage_type, config")
-      .eq("tournament_id", tournament.id)
-      .order("stage_order", { ascending: true })
-      .limit(20),
-    supabase
-      .from("bracket_templates")
-      .select("config")
-      .eq("template_key", tournament.template_key)
-      .limit(1)
-      .maybeSingle(),
-  ]);
+  const [{ data: stages }, { data: bracketTemplate }, { data: liveRows }, { data: recentRows }] =
+    await Promise.all([
+      supabase
+        .from("sporting_stages")
+        .select("id, slug, name, stage_order, stage_type, config")
+        .eq("tournament_id", tournament.id)
+        .order("stage_order", { ascending: true })
+        .limit(20),
+      supabase
+        .from("bracket_templates")
+        .select("config")
+        .eq("template_key", tournament.template_key)
+        .limit(1)
+        .maybeSingle(),
+      supabase
+        .from("events")
+        .select("id, event_name, start_time, status, result_data")
+        .eq("tournament_id", tournament.id)
+        .eq("status", "live")
+        .order("start_time", { ascending: true })
+        .limit(20),
+      supabase
+        .from("events")
+        .select("id, event_name, start_time, status, result_data")
+        .eq("tournament_id", tournament.id)
+        .eq("status", "resulted")
+        .order("start_time", { ascending: false })
+        .limit(6),
+    ]);
+
+  const toFeedGame = (
+    ev: {
+      id: string;
+      event_name: string;
+      start_time: string;
+      status: string;
+      result_data: Record<string, unknown> | null;
+    },
+    hasTeams: boolean,
+  ): FeedGame | null => {
+    const m = parseMatchup(ev.event_name);
+    if (!m) return null;
+    const rd = ev.result_data ?? {};
+    const homeScore = rd["home"] != null ? Number(rd["home"]) : null;
+    const awayScore = rd["away"] != null ? Number(rd["away"]) : null;
+    return {
+      id: ev.id,
+      date: ev.start_time,
+      home: m.home,
+      away: m.away,
+      homeScore,
+      awayScore,
+      status: ev.status === "live" ? "live" : "resulted",
+      homeHref: hasTeams
+        ? `/ligas-invernales/${league}/equipos/${slugifyTeam(m.home)}`
+        : undefined,
+      awayHref: hasTeams
+        ? `/ligas-invernales/${league}/equipos/${slugifyTeam(m.away)}`
+        : undefined,
+    };
+  };
 
   const stageRows = (stages ?? []) as StageRow[];
   const teams =
@@ -117,6 +166,14 @@ async function LeagueContent({ league }: { league: string }) {
   const teamComposition = tournament.config?.["team_composition"] as
     | string
     | undefined;
+  const hasTeams = teams.length > 0;
+
+  const feedGames = [
+    ...(liveRows ?? []),
+    ...(recentRows ?? []),
+  ]
+    .map((ev) => toFeedGame(ev, hasTeams))
+    .filter((g): g is FeedGame => g !== null);
 
   const season = seasonLabel(tournament.slug);
 
@@ -173,6 +230,18 @@ async function LeagueContent({ league }: { league: string }) {
         <Bi es="Hacer mis picks" en="Make my picks" />
       </Link>
 
+      {/* Live / recent results */}
+      {feedGames.length > 0 && (
+        <section className="mt-6">
+          <h2 className="font-display text-lg font-extrabold text-ps-text">
+            <Bi es="Resultados" en="Results" />
+          </h2>
+          <div className="mt-3">
+            <ResultsFeed games={feedGames} />
+          </div>
+        </section>
+      )}
+
       {/* Competitive arc */}
       <section className="mt-6">
         <h2 className="font-display text-lg font-extrabold text-ps-text">
@@ -216,19 +285,32 @@ async function LeagueContent({ league }: { league: string }) {
         </ol>
       </section>
 
-      {/* Team roster */}
+      {/* Team roster — links to each team's page */}
       <section className="mt-6">
-        <h2 className="font-display text-lg font-extrabold text-ps-text">
-          <Bi es="Equipos" en="Teams" />
-        </h2>
-        {teams.length > 0 ? (
+        <div className="flex items-baseline justify-between">
+          <h2 className="font-display text-lg font-extrabold text-ps-text">
+            <Bi es="Equipos" en="Teams" />
+          </h2>
+          {hasTeams && (
+            <Link
+              href={`/ligas-invernales/${league}/equipos`}
+              className="font-mono text-micro font-bold uppercase tracking-[0.12em] text-liga-deep dark:text-liga"
+            >
+              <Bi es="Ver todos" en="View all" /> →
+            </Link>
+          )}
+        </div>
+        {hasTeams ? (
           <ul className="mt-3 grid grid-cols-1 gap-1.5 sm:grid-cols-2">
             {teams.map((team) => (
-              <li
-                key={team}
-                className="rounded-lg border border-ps-border bg-ps-surface px-3 py-2 text-sm font-semibold text-ps-text"
-              >
-                {team}
+              <li key={team}>
+                <Link
+                  href={`/ligas-invernales/${league}/equipos/${slugifyTeam(team)}`}
+                  className="flex items-center justify-between rounded-lg border border-ps-border bg-ps-surface px-3 py-2 text-sm font-semibold text-ps-text transition-colors hover:border-liga"
+                >
+                  <span className="truncate">{team}</span>
+                  <span className="ml-2 shrink-0 text-ps-text-ter">→</span>
+                </Link>
               </li>
             ))}
           </ul>
