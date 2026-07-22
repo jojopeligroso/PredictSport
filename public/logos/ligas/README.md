@@ -13,7 +13,23 @@ across the `/ligas-invernales` surface. No code changes are required.
 | Liga Roberto Clemente (Puerto Rico)      | `lbprc` | `lbprc.svg`(or `.png`) |
 | Serie del Caribe                         | `sdc`   | `sdc.svg`  (or `.png`) |
 
-Prefer **SVG**; fall back to a high-resolution transparent **PNG**.
+Prefer **SVG**; fall back to a high-resolution transparent **PNG** or **JPEG**.
+
+## Present (all five wired from the official media packs)
+
+| Slug    | File          | Notes                                              |
+| ------- | ------------- | -------------------------------------------------- |
+| `lmp`   | `lmp.png`     | LMP "M" emblem, cropped from the ARCO co-brand lockup |
+| `lvbp`  | `lvbp.jpeg`   | glove + ball + LVBP wordmark                        |
+| `lidom` | `lidom.jpeg`  | home-plate crest                                   |
+| `lbprc` | `lbprc.png`   | "LA PRO 21" batter emblem, cropped from the lockup |
+| `sdc`   | `sdc.jpeg`    | Serie del Caribe roundel                           |
+
+Extras kept for header/hero use: `lidom-wordmark.svg` (official `LIDOM.COM`
+vector lockup) and `sdc-cbpc.png` (CBPC confederation lockup).
+
+To replace any of these with a cleaner/transparent asset, drop a new file and
+update the `logo` path in `src/components/ligas/leagues.ts`.
 
 ## Then wire it in
 

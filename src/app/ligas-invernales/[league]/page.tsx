@@ -4,6 +4,8 @@ import { AuthRequired } from "@/components/AuthRequired";
 import { Bi } from "@/components/ligas/Bi";
 import { LEAGUE_BY_SLUG, isLeagueSlug } from "@/components/ligas/leagues";
 import { LeagueIdentity } from "@/components/ligas/LeagueLogo";
+import { TeamBadge } from "@/components/ligas/TeamBadge";
+import { TEAMS_BY_LEAGUE } from "@/components/ligas/teams";
 import { ligaVars } from "@/components/ligas/theme";
 import { createClient } from "@/lib/supabase/server";
 
@@ -98,10 +100,16 @@ async function LeagueContent({ league }: { league: string }) {
   ]);
 
   const stageRows = (stages ?? []) as StageRow[];
-  const teams =
+  const dbTeams =
     ((bracketTemplate?.config as Record<string, unknown> | null)?.[
       "leagueTeams"
     ] as string[] | undefined) ?? [];
+  // Prefer the blueprint's roster; fall back to the shared roster so the page
+  // shows the real clubs (with badges) even before the blueprint is seeded.
+  const teams =
+    dbTeams.length > 0
+      ? dbTeams
+      : (TEAMS_BY_LEAGUE[league] ?? []).map((t) => t.name);
   const teamComposition = tournament.config?.["team_composition"] as
     | string
     | undefined;
@@ -126,7 +134,7 @@ async function LeagueContent({ league }: { league: string }) {
           <span className="rounded-md bg-liga/15 px-2 py-0.5 font-mono text-micro font-bold uppercase tracking-[0.12em] text-liga-deep dark:text-liga">
             {meta.code}
           </span>
-          <h1 className="mt-1.5 font-display text-2xl font-extrabold leading-tight tracking-tight text-ps-text">
+          <h1 className="mt-1.5 font-liga text-3xl font-bold uppercase leading-[1.02] tracking-tight text-ps-text">
             {tournament.name}
           </h1>
           <p className="mt-0.5 text-sm font-semibold text-ps-text-sec">
@@ -211,13 +219,10 @@ async function LeagueContent({ league }: { league: string }) {
             {teams.map((team) => (
               <li
                 key={team}
-                className="flex items-center gap-2 rounded-lg border border-ps-border bg-ps-surface px-3 py-2 text-sm font-semibold text-ps-text"
+                className="flex items-center gap-2.5 rounded-lg border border-ps-border bg-ps-surface px-2.5 py-2 text-sm font-semibold text-ps-text"
               >
-                <span
-                  aria-hidden
-                  className="h-1.5 w-1.5 shrink-0 rounded-full bg-liga"
-                />
-                {team}
+                <TeamBadge name={team} size={30} />
+                <span className="min-w-0 truncate">{team}</span>
               </li>
             ))}
           </ul>

@@ -54,6 +54,7 @@ export const LEAGUES: LeagueMeta[] = [
     windowEn: "Oct–Jan",
     accent: LEAGUE_THEMES.lmp.accent,
     accentDeep: LEAGUE_THEMES.lmp.deep,
+    logo: "/logos/ligas/lmp.png",
   },
   {
     slug: "lvbp",
@@ -68,6 +69,7 @@ export const LEAGUES: LeagueMeta[] = [
     windowEn: "Oct–Jan",
     accent: LEAGUE_THEMES.lvbp.accent,
     accentDeep: LEAGUE_THEMES.lvbp.deep,
+    logo: "/logos/ligas/lvbp.jpeg",
   },
   {
     slug: "lidom",
@@ -82,6 +84,7 @@ export const LEAGUES: LeagueMeta[] = [
     windowEn: "Oct–Jan",
     accent: LEAGUE_THEMES.lidom.accent,
     accentDeep: LEAGUE_THEMES.lidom.deep,
+    logo: "/logos/ligas/lidom.jpeg",
   },
   {
     slug: "lbprc",
@@ -96,6 +99,7 @@ export const LEAGUES: LeagueMeta[] = [
     windowEn: "Nov–Jan",
     accent: LEAGUE_THEMES.lbprc.accent,
     accentDeep: LEAGUE_THEMES.lbprc.deep,
+    logo: "/logos/ligas/lbprc.png",
   },
   {
     slug: "sdc",
@@ -110,6 +114,7 @@ export const LEAGUES: LeagueMeta[] = [
     windowEn: "Feb",
     accent: LEAGUE_THEMES.sdc.accent,
     accentDeep: LEAGUE_THEMES.sdc.deep,
+    logo: "/logos/ligas/sdc.jpeg",
   },
 ];
 

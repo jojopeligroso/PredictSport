@@ -42,12 +42,14 @@ export function LeagueIdentity({
       "inset 0 0 0 0.75px rgba(255,255,255,0.6), 0 1px 3px rgba(0,0,0,0.16)",
   } as const;
 
-  // 1. Official logo (drop-in): contained on a neutral disc so any aspect ratio sits cleanly.
+  // 1. Official logo (drop-in): contained on a white disc so logos supplied on
+  //    a white background read cleanly in both light and dark mode. (Inline
+  //    background avoids the bg-white utility flagged for interactive elements.)
   if (meta?.logo) {
     return (
       <span
-        className={`relative inline-grid shrink-0 place-items-center overflow-hidden rounded-full bg-ps-surface ${className}`}
-        style={ringStyle}
+        className={`relative inline-grid shrink-0 place-items-center overflow-hidden rounded-full ${className}`}
+        style={{ ...ringStyle, backgroundColor: "#fff" }}
       >
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img
@@ -55,7 +57,7 @@ export function LeagueIdentity({
           alt={label}
           loading="eager"
           decoding="async"
-          className="h-[82%] w-[82%] object-contain"
+          className="h-[84%] w-[84%] object-contain"
         />
       </span>
     );

@@ -61,7 +61,7 @@ export default function LigasInvernalesHub() {
                 <Bi es={league.windowEs} en={league.windowEn} />
               </span>
             </div>
-            <h2 className="mt-3 font-display text-base font-extrabold leading-tight text-ps-text">
+            <h2 className="mt-3 font-liga text-lg font-bold uppercase leading-[1.05] tracking-tight text-ps-text">
               <Bi es={league.nameEs} en={league.nameEn} />
             </h2>
             <p className="mt-1 flex items-center gap-1.5 text-xs text-ps-text-ter">
@@ -93,7 +93,7 @@ export default function LigasInvernalesHub() {
             <p className="font-mono text-micro font-bold uppercase tracking-[0.18em] text-liga-deep dark:text-liga">
               <Bi es="La Final del Caribe" en="The Caribbean Final" />
             </p>
-            <h2 className="mt-0.5 font-display text-lg font-extrabold leading-tight text-ps-text">
+            <h2 className="mt-0.5 font-liga text-2xl font-normal uppercase leading-none tracking-wide text-ps-text">
               <Bi es={serieDelCaribe.nameEs} en={serieDelCaribe.nameEn} />
             </h2>
             <p className="mt-0.5 text-xs text-ps-text-ter">
