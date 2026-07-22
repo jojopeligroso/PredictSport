@@ -15,8 +15,10 @@ export const LBPRC_STAGE_IDS = {
 const STAGE_IDS = LBPRC_STAGE_IDS;
 
 // Regular-season per-game picks live under the Regular Season window; each
-// best-of-7 series (semifinals, final) is a synthetic series event scored via
-// head_to_head (winner) + over_under(stat=games_played) (length).
+// series is a synthetic series event scored via head_to_head (winner) +
+// over_under(stat=games_played) (length). Semifinals are best-of-7; the Serie
+// Final is best-of-9 (an LBPRC distinction — longer than the other Caribbean
+// leagues' best-of-7 finals).
 const PREDICTION_WINDOWS = [
   { name: "Regular Season", stageId: STAGE_IDS.REGULAR_SEASON, windowNumber: 1 },
   { name: "Semifinals", stageId: STAGE_IDS.SEMIFINALS, windowNumber: 2 },
@@ -34,7 +36,8 @@ interface CreateLBPRCOptions {
 
 /**
  * Creates an LBPRC (Puerto Rico) prediction game (Archetype B: round-robin
- * regular season -> 4-team best-of-7 elimination bracket; no wild card).
+ * regular season -> 4-team elimination bracket: best-of-7 semifinals into a
+ * best-of-9 Serie Final; no wild card).
  * Classifications: overall + outrights + bracket. No format-elimination.
  */
 export async function createLBPRCCompetition(
@@ -98,7 +101,8 @@ export async function createLBPRCCompetition(
         bracket_type: "series_elim",
         bracket_template_id: LBPRC_BRACKET_TEMPLATE_ID,
         opens_after: "regular_season_finalised",
-        series_best_of: 7,
+        semifinal_best_of: 7,
+        final_best_of: 9,
         reseed_each_round: false,
       },
     },

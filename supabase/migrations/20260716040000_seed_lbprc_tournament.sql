@@ -11,7 +11,7 @@
 --     - World Baseball Network (schedule + 2025-26 preview + postseason bracket)
 --     - Baseball-Reference (2025-26 Puerto Rican Winter League register)
 --   The LBPRC bracket is structurally unambiguous (no wild card; two best-of-7
---   semifinals feed one best-of-7 final, so there is no reseed question), so
+--   semifinals feed one best-of-9 final, so there is no reseed question), so
 --   cross-source corroboration is sufficient. Items not independently traceable
 --   this session are flagged "verify_before_launch": true.
 --
@@ -20,8 +20,9 @@
 --     2025-11-07 to 2025-12-28.
 --   Semifinals: best-of-7, 1v4 and 2v3, higher seed holds home advantage.
 --     ~2026-01-03 to 2026-01-11.
---   Serie Final: best-of-7 between the two semifinal winners; higher seed holds
---     home advantage. ~2026-01-13 to 2026-01-25.
+--   Serie Final: best-of-9 between the two semifinal winners; higher seed holds
+--     home advantage. ~2026-01-13 to 2026-01-25. (The best-of-9 final is an
+--     LBPRC distinction — longer than the other Caribbean leagues' best-of-7.)
 --   No wild card. Champion represents Puerto Rico at the Serie del Caribe.
 --     (2026 SdC: Estadio Panamericano de Beisbol, Zapopan/Jalisco, Mexico, Feb 1-7.)
 --   NOTE: LBPRC has used a round-robin playoff in other seasons, so the playoff
@@ -62,8 +63,10 @@ VALUES (
     "regular_season_tiebreaker_verify_before_launch": true,
     "playoff_qualify_count": 4,
     "playoff_shape": "series_elim",
-    "playoff_shape_note": "2025-26 used best-of-7 semifinals (1v4, 2v3) + best-of-7 final. LBPRC has used round-robin playoffs in other seasons — swap per season.",
-    "series_best_of": 7,
+    "playoff_shape_note": "2025-26 used best-of-7 semifinals (1v4, 2v3) + best-of-9 Serie Final. LBPRC has used round-robin playoffs in other seasons — swap per season.",
+    "semifinal_best_of": 7,
+    "final_best_of": 9,
+    "final_best_of_note": "The best-of-9 Serie Final is an LBPRC distinction — longer than the best-of-7 finals used by LIDOM/LMP/LVBP.",
     "reseed_each_round": false,
     "reseed_note": "No reseed needed: two semifinals feed one final directly.",
     "home_advantage": "higher_seed",
@@ -111,7 +114,7 @@ INSERT INTO public.sporting_stages (id, tournament_id, slug, name, stage_order, 
   ('b0000000-0000-0000-0003-000000000204', 'a0000000-0000-0000-0000-000000000204',
    'final', 'Serie Final', 3, 'knockout',
    '{"date_range": ["2026-01-13", "2026-01-25"],
-     "series_best_of": 7,
+     "series_best_of": 9,
      "home_advantage": "higher_seed",
      "seeding": {"home": "higher_seed_winner", "away": "lower_seed_winner"}}'::jsonb,
    'upcoming'),
@@ -155,7 +158,8 @@ VALUES (
   'league_plus_playoff',
   '{
     "format": "series_elim_plus_caribbean",
-    "seriesBestOf": 7,
+    "semifinalBestOf": 7,
+    "finalBestOf": 9,
     "reseedEachRound": false,
     "qualifyCount": 4,
     "seedsFromTable": true,
@@ -183,7 +187,7 @@ VALUES (
         "roundKey": "final",
         "name": "Serie Final",
         "matchCount": 1,
-        "bestOf": 7,
+        "bestOf": 9,
         "homeAdvantage": "higher_seed",
         "slotIds": ["final_1"],
         "seeding": {"final_1": {"home": "higher_seed_winner", "away": "lower_seed_winner"}}
