@@ -4,14 +4,27 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Bi } from "@/components/ligas/Bi";
 import { ScoreInput } from "@/components/ScoreInput";
+import { MarginWindowBar } from "@/components/ligas/MarginWindowBar";
 import { deriveWinnerFromScore } from "@/lib/score-format";
+import {
+  potentialPoints,
+  windowFromPredictionData,
+  windowToPredictionData,
+  WINNER_POINTS,
+  type MarginWindow,
+} from "@/lib/ligas/system-b";
 
 /**
- * LigaPicksClient — interactive picks list for a winter-league instance.
+ * LigaPicksClient — System B picks list for a winter-league instance.
+ *
+ * Each game is up to three stacked calls (see @/lib/ligas/system-b):
+ *   1. Winner — +4, the gate. No winner → the rest is locked.
+ *   2. Margin — a confidence window (the "sitting bar"), +6/+4/+3/+2 by width.
+ *   3. Exact score — doubles the whole game total.
  *
  * Baseball rule: no draw option ever. A tied committed score does NOT set a
- * winner (deriveWinnerFromScore returns null for baseball) — instead a hint
- * prompts the user to declare the winner explicitly (extra innings).
+ * winner (deriveWinnerFromScore returns null for baseball) — a hint prompts the
+ * user to declare the winner explicitly (extra innings).
  */
 
 export interface LigaPicksEpt {
@@ -49,6 +62,8 @@ interface LigaPicksClientProps {
   seasonStartEn: string;
 }
 
+type PredType = "winner" | "margin" | "exact_score";
+
 /** Winner options from the winner EPT config; fallback: parse "A vs B". Never includes "Draw". */
 function winnerOptions(event: LigaPicksEvent): string[] {
   const winnerEpt = (event.event_prediction_types ?? []).find(
@@ -69,7 +84,7 @@ function winnerOptions(event: LigaPicksEvent): string[] {
 async function postPrediction(
   competitionId: string,
   eventId: string,
-  predictionType: "winner" | "exact_score",
+  predictionType: PredType,
   predictionData: Record<string, unknown>,
 ): Promise<boolean> {
   try {
@@ -99,8 +114,9 @@ export function LigaPicksClient({
 }: LigaPicksClientProps) {
   const router = useRouter();
 
-  // Seed local winner state from existing predictions
+  // Seed local state from existing predictions.
   const initialWinners: Record<string, string | null> = {};
+  const initialWindows: Record<string, MarginWindow | null> = {};
   for (const pred of predictions ?? []) {
     if (pred?.prediction_type === "winner") {
       initialWinners[pred.event_id] =
@@ -108,10 +124,17 @@ export function LigaPicksClient({
           ? (pred.prediction_data["value"] as string)
           : null;
     }
+    if (pred?.prediction_type === "margin") {
+      initialWindows[pred.event_id] = windowFromPredictionData(
+        pred.prediction_data,
+      );
+    }
   }
 
   const [winners, setWinners] =
     useState<Record<string, string | null>>(initialWinners);
+  const [windows, setWindows] =
+    useState<Record<string, MarginWindow | null>>(initialWindows);
   const [tieHints, setTieHints] = useState<Record<string, boolean>>({});
   const [errors, setErrors] = useState<Record<string, boolean>>({});
   const [joining, setJoining] = useState(false);
@@ -173,7 +196,6 @@ export function LigaPicksClient({
     );
   }
 
-  // ── Event cards ──────────────────────────────────────────────────────
   const scorePred = (eventId: string): Record<string, unknown> | null => {
     const pred = (predictions ?? []).find(
       (p) => p?.event_id === eventId && p?.prediction_type === "exact_score",
@@ -193,7 +215,33 @@ export function LigaPicksClient({
     if (!ok) {
       setWinners((prev) => ({ ...prev, [event.id]: previous }));
       setErrors((prev) => ({ ...prev, [event.id]: true }));
+      return;
     }
+
+    // Keep the margin call attached to the (possibly new) winning team.
+    const win = windows[event.id];
+    if (win) {
+      await postPrediction(
+        competitionId,
+        event.id,
+        "margin",
+        windowToPredictionData(option, win),
+      );
+    }
+  };
+
+  const handleWindowChange = async (event: LigaPicksEvent, win: MarginWindow) => {
+    const team = winners[event.id];
+    setWindows((prev) => ({ ...prev, [event.id]: win }));
+    setErrors((prev) => ({ ...prev, [event.id]: false }));
+    if (!team) return; // gate: no winner yet, keep locally until one is chosen
+    const ok = await postPrediction(
+      competitionId,
+      event.id,
+      "margin",
+      windowToPredictionData(team, win),
+    );
+    if (!ok) setErrors((prev) => ({ ...prev, [event.id]: true }));
   };
 
   const handleScoreCommit = async (
@@ -213,17 +261,25 @@ export function LigaPicksClient({
       return;
     }
 
-    const implied = deriveWinnerFromScore(
-      { home, away },
-      event.sport,
-      options,
-    );
+    const implied = deriveWinnerFromScore({ home, away }, event.sport, options);
     if (implied) {
-      // Not tied: mirror the /wc pattern — score implies the winner
+      // Not tied: the score implies the winner — mirror the /wc pattern.
       setWinners((prev) => ({ ...prev, [event.id]: implied }));
       setTieHints((prev) => ({ ...prev, [event.id]: false }));
+      await postPrediction(competitionId, event.id, "winner", {
+        value: implied,
+      });
+      const win = windows[event.id];
+      if (win) {
+        await postPrediction(
+          competitionId,
+          event.id,
+          "margin",
+          windowToPredictionData(implied, win),
+        );
+      }
     } else if (home === away) {
-      // Tied baseball score: no derived winner — prompt an explicit declaration
+      // Tied baseball score: no derived winner — prompt an explicit declaration.
       setTieHints((prev) => ({ ...prev, [event.id]: true }));
     }
   };
@@ -238,36 +294,60 @@ export function LigaPicksClient({
           (ept) => ept?.prediction_type === "exact_score",
         );
         const selected = winners[event.id] ?? null;
+        const win = windows[event.id] ?? null;
         const locked = new Date(event.lock_time) <= new Date();
         const existingScore = scorePred(event.id);
+        const hasExact = existingScore != null;
+        const potential = potentialPoints({
+          hasWinner: Boolean(selected),
+          window: win,
+          hasExact,
+        });
 
         return (
           <article
             key={event.id}
             className="rounded-2xl border border-ps-border bg-ps-surface p-4"
           >
-            <p className="text-sm font-semibold text-ps-text">
-              {homeName}
-              <span className="text-ps-text-ter"> vs </span>
-              {awayName}
-            </p>
-            <p className="mt-0.5 font-mono text-micro text-ps-text-ter">
-              <Bi
-                es={new Date(event.start_time).toLocaleString("es-MX", {
-                  day: "numeric",
-                  month: "short",
-                  hour: "2-digit",
-                  minute: "2-digit",
-                })}
-                en={new Date(event.start_time).toLocaleString("en-US", {
-                  day: "numeric",
-                  month: "short",
-                  hour: "2-digit",
-                  minute: "2-digit",
-                })}
-              />
-            </p>
+            <div className="flex items-start justify-between gap-2">
+              <div className="min-w-0">
+                <p className="text-sm font-semibold text-ps-text">
+                  {homeName}
+                  <span className="text-ps-text-ter"> vs </span>
+                  {awayName}
+                </p>
+                <p className="mt-0.5 font-mono text-micro text-ps-text-ter">
+                  <Bi
+                    es={new Date(event.start_time).toLocaleString("es-MX", {
+                      day: "numeric",
+                      month: "short",
+                      hour: "2-digit",
+                      minute: "2-digit",
+                    })}
+                    en={new Date(event.start_time).toLocaleString("en-US", {
+                      day: "numeric",
+                      month: "short",
+                      hour: "2-digit",
+                      minute: "2-digit",
+                    })}
+                  />
+                </p>
+              </div>
+              {/* Potential points for this game */}
+              <span
+                className={[
+                  "shrink-0 rounded-lg px-2 py-1 font-mono text-micro font-bold tabular-nums",
+                  potential > 0
+                    ? "bg-liga/15 text-liga-deep dark:text-liga"
+                    : "bg-ps-bg-alt text-ps-text-ter",
+                ].join(" ")}
+                aria-label="Potential points"
+              >
+                <Bi es={`hasta ${potential}`} en={`up to ${potential}`} />
+              </span>
+            </div>
 
+            {/* 1 — Winner (the gate) */}
             <div className="mt-3 grid grid-cols-2 gap-2">
               {[homeName, awayName].map((option) => (
                 <button
@@ -286,27 +366,54 @@ export function LigaPicksClient({
               ))}
             </div>
 
-            {scoreEpt && (
-              <div className="mt-3">
-                <ScoreInput
-                  homeLabel={homeName}
-                  awayLabel={awayName}
-                  initialHome={
-                    existingScore?.["home"] != null
-                      ? String(existingScore["home"])
-                      : undefined
-                  }
-                  initialAway={
-                    existingScore?.["away"] != null
-                      ? String(existingScore["away"])
-                      : undefined
-                  }
-                  onCommit={(home, away) =>
-                    handleScoreCommit(event, options, home, away)
-                  }
+            {/* 2 — Margin window (the sitting bar). Gated on the winner. */}
+            <div className="mt-4">
+              {selected ? (
+                <MarginWindowBar
+                  value={win}
+                  onChange={(w) => handleWindowChange(event, w)}
                   disabled={locked}
-                  variant="card"
+                  teamLabel={selected}
                 />
+              ) : (
+                <div className="rounded-xl border border-dashed border-ps-border px-3 py-3">
+                  <p className="text-xs text-ps-text-ter">
+                    <Bi
+                      es={`Elige un ganador (+${WINNER_POINTS}) para abrir el margen`}
+                      en={`Call a winner (+${WINNER_POINTS}) to open the margin`}
+                    />
+                  </p>
+                </div>
+              )}
+            </div>
+
+            {/* 3 — Exact score (the multiplier). */}
+            {scoreEpt && (
+              <div className="mt-4">
+                <p className="font-mono text-micro font-bold uppercase tracking-[0.14em] text-ps-text-sec">
+                  <Bi es="Marcador exacto · ×2" en="Exact score · ×2" />
+                </p>
+                <div className="mt-2">
+                  <ScoreInput
+                    homeLabel={homeName}
+                    awayLabel={awayName}
+                    initialHome={
+                      existingScore?.["home"] != null
+                        ? String(existingScore["home"])
+                        : undefined
+                    }
+                    initialAway={
+                      existingScore?.["away"] != null
+                        ? String(existingScore["away"])
+                        : undefined
+                    }
+                    onCommit={(home, away) =>
+                      handleScoreCommit(event, options, home, away)
+                    }
+                    disabled={locked}
+                    variant="card"
+                  />
+                </div>
               </div>
             )}
 

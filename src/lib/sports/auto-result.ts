@@ -3,6 +3,7 @@ import { fetchResult, verifyResult, enrichAETFullTimeScore, type VerificationSta
 import { searchEvents } from "./search-events";
 import { getTimingForSport } from "./timing";
 import { scorePrediction, buildScoreDerivedWinnerOverrides } from "@/lib/scoring";
+import { isSystemBEvent, scoreSystemBEvent } from "@/lib/ligas/score-event";
 import type { PredictionType, EventPredictionType } from "@/types/database";
 import type { Sport } from "./types";
 import { notifyResultConfirmed } from "@/lib/notifications/result-confirmed";
@@ -747,26 +748,42 @@ async function scoreEventPredictions(
     points_awarded: number;
   }> = [];
 
-  for (const prediction of predictions ?? []) {
-    const predType = prediction.prediction_type as PredictionType;
-    const ept = eptMap.get(predType);
-    const eptData = ept ?? { points: 10, partial_points: 0, config: null };
+  // Winter-league (System B) events score winner/margin/exact_score jointly.
+  if (isSystemBEvent(winnerEpt?.config as Record<string, unknown> | null)) {
+    scores.push(
+      ...scoreSystemBEvent(
+        (predictions ?? []) as Array<{
+          id: string;
+          user_id: string;
+          prediction_type: string;
+          prediction_data: Record<string, unknown>;
+        }>,
+        resultData,
+        winnerOpts,
+      ),
+    );
+  } else {
+    for (const prediction of predictions ?? []) {
+      const predType = prediction.prediction_type as PredictionType;
+      const ept = eptMap.get(predType);
+      const eptData = ept ?? { points: 10, partial_points: 0, config: null };
 
-    // For winner predictions, use score-derived value if available
-    let predData = prediction.prediction_data as Record<string, unknown>;
-    if (predType === "winner") {
-      const override = winnerOverrides.get(prediction.user_id as string);
-      if (override) predData = override;
+      // For winner predictions, use score-derived value if available
+      let predData = prediction.prediction_data as Record<string, unknown>;
+      if (predType === "winner") {
+        const override = winnerOverrides.get(prediction.user_id as string);
+        if (override) predData = override;
+      }
+
+      const scoreResult = scorePrediction(predType, predData, resultData, eptData, winnerOpts);
+
+      scores.push({
+        id: prediction.id as string,
+        is_correct: scoreResult.is_correct,
+        is_partial: scoreResult.is_partial,
+        points_awarded: scoreResult.points_awarded,
+      });
     }
-
-    const scoreResult = scorePrediction(predType, predData, resultData, eptData, winnerOpts);
-
-    scores.push({
-      id: prediction.id as string,
-      is_correct: scoreResult.is_correct,
-      is_partial: scoreResult.is_partial,
-      points_awarded: scoreResult.points_awarded,
-    });
   }
 
   if (scores.length > 0) {

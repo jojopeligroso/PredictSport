@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { BrandMark } from "@/components/BrandMark";
 import { LigasLanguageToggle } from "@/components/ligas/LigasLanguageToggle";
+import { LigasTabBar } from "@/components/ligas/LigasTabBar";
 
 /**
  * /ligas-invernales — Caribbean winter baseball surface.
@@ -36,13 +37,18 @@ export default function LigasInvernalesLayout({
         </div>
       </nav>
 
-      <div className="mx-auto max-w-[480px] px-4 pb-16">{children}</div>
+      <div className="mx-auto max-w-[480px] px-4 pb-[calc(72px+env(safe-area-inset-bottom))]">
+        {children}
+      </div>
 
-      <footer className="flex justify-center py-8">
+      <footer className="flex justify-center pb-[calc(64px+env(safe-area-inset-bottom))] pt-8">
         <Link href="/" className="opacity-30 transition-opacity hover:opacity-50">
           <BrandMark className="h-6 w-auto" />
         </Link>
       </footer>
+
+      {/* Fixed bottom nav — only renders inside a single league. */}
+      <LigasTabBar />
     </div>
   );
 }
