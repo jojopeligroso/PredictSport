@@ -15,7 +15,7 @@ import type { StandingRow } from "@/types/tournament";
 export const dynamic = "force-dynamic";
 
 /**
- * /ligas-invernales/[league]/tabla — participant standings for the league's
+ * /ligasinvernales/[league]/tabla — participant standings for the league's
  * open prediction instance. Auth required.
  *
  * Reuses the tournament classification engine (same points source as /wc):
@@ -76,7 +76,7 @@ async function TablaContent({ league }: { league: string }) {
   const header = (
     <header>
       <Link
-        href={`/ligas-invernales/${league}`}
+        href={`/ligasinvernales/${league}`}
         className="inline-flex items-center gap-1 font-mono text-micro font-bold uppercase tracking-[0.12em] text-ps-text-ter transition-colors hover:text-ps-text-sec"
       >
         <span aria-hidden>←</span> {tournament.name}

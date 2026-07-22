@@ -10,7 +10,7 @@ import { BrandMark } from "@/components/BrandMark";
 import { LigasLanguageToggle } from "@/components/ligas/LigasLanguageToggle";
 
 /**
- * /ligas-invernales — Caribbean winter baseball surface.
+ * /ligasinvernales — Caribbean winter baseball surface.
  *
  * Own layout, separate from the WC surface. Simple branded top nav, no
  * bottom TabBar. No auth requirement here — the hub is public; sub-pages
@@ -71,7 +71,7 @@ export default function LigasInvernalesLayout({
     <div className={`min-h-screen bg-ps-bg ${ligaFontVars}`}>
       <nav className="border-b border-ps-border bg-ps-bg">
         <div className="mx-auto flex h-12 w-full max-w-[480px] items-center justify-between px-4">
-          <Link href="/ligas-invernales" className="flex items-center gap-1.5">
+          <Link href="/ligasinvernales" className="flex items-center gap-1.5">
             <BrandMark className="h-7 w-auto shrink-0" />
             <span className="font-display font-extrabold lowercase tracking-tight text-ps-text">
               ligas invernales<span className="text-ps-amber">.</span>

@@ -1,7 +1,7 @@
 import { LEAGUE_THEMES } from "@/components/ligas/theme";
 
 /**
- * Single source of truth for the winter-league surface (/ligas-invernales).
+ * Single source of truth for the winter-league surface (/ligasinvernales).
  *
  * Consolidates the per-league descriptive metadata that was previously
  * duplicated across the hub, [league] and todas pages.

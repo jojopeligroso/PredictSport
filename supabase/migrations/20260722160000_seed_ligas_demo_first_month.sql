@@ -1,4 +1,4 @@
--- Seed: /ligas-invernales demo data — first month of the 2025-26 season.
+-- Seed: /ligasinvernales demo data — first month of the 2025-26 season.
 --
 -- Purpose: make the predict -> score -> rank loop demonstrable on the LIVE open
 -- instance the picks page resolves (NOT the hardcoded uuid the backfills use).

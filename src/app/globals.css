@@ -162,7 +162,7 @@ html[data-theme="dark"] {
 
   /* Liga display font — per-league headline face set via inline --liga-font
      (see components/ligas/theme.ts ligaVars + the fonts loaded in the
-     /ligas-invernales layout). Falls back to the house Inter display face, so
+     /ligasinvernales layout). Falls back to the house Inter display face, so
      the `font-liga` utility is safe anywhere. */
   --font-liga: var(--liga-font, var(--font-inter)), system-ui, -apple-system,
     sans-serif;

@@ -4,7 +4,7 @@ import { usePathname } from "next/navigation";
 import { LanguageToggle } from "@/components/LanguageToggle";
 
 /**
- * LigasLanguageToggle — LanguageToggle for the /ligas-invernales surface.
+ * LigasLanguageToggle — LanguageToggle for the /ligasinvernales surface.
  *
  * Spanish flag is contextual: the country of the league being viewed
  * (MX / VE / DO / PR), falling back to Mexico on the hub, todas and SdC

@@ -1,7 +1,7 @@
 # Official league logo drop-zone
 
 Drop the **official** league logos here to have them appear automatically
-across the `/ligas-invernales` surface. No code changes are required.
+across the `/ligasinvernales` surface. No code changes are required.
 
 ## Filenames (exact)
 

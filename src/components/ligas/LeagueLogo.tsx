@@ -2,7 +2,7 @@ import { LEAGUE_BY_SLUG } from "@/components/ligas/leagues";
 import { LeagueMark } from "@/components/ligas/LeagueMark";
 
 /**
- * League identity for the /ligas-invernales surface.
+ * League identity for the /ligasinvernales surface.
  *
  * Mirrors MLB's "ligas invernales" treatment, where each league is fronted by
  * a large circular national flag. Resolution order:

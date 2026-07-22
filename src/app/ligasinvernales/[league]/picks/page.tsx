@@ -20,7 +20,7 @@ import type {
 export const dynamic = "force-dynamic";
 
 /**
- * /ligas-invernales/[league]/picks — picks page for the winter-league open
+ * /ligasinvernales/[league]/picks — picks page for the winter-league open
  * competition instances. Reuses the /wc prediction machinery via
  * POST /api/predictions. Baseball rule: no draw option ever; a tied entered
  * score does not auto-derive a winner — the user must declare it.
@@ -86,7 +86,7 @@ async function PicksContent({ league }: { league: string }) {
   const header = (
     <header>
       <Link
-        href={`/ligas-invernales/${league}`}
+        href={`/ligasinvernales/${league}`}
         className="font-mono text-micro font-bold uppercase tracking-[0.12em] text-liga-deep dark:text-liga"
       >
         ← {tournament.name}

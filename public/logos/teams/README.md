@@ -1,7 +1,7 @@
 # Official team logo drop-zone
 
 Drop the **official** club logos here to have them replace the monogram
-badges across the `/ligas-invernales` surface.
+badges across the `/ligasinvernales` surface.
 
 ## Path convention
 

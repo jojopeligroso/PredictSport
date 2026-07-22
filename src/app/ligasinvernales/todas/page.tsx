@@ -9,7 +9,7 @@ import { createClient } from "@/lib/supabase/server";
 export const dynamic = "force-dynamic";
 
 /**
- * /ligas-invernales/todas — unified superfan view. Auth required.
+ * /ligasinvernales/todas — unified superfan view. Auth required.
  *
  * All 5 winter-league blueprints in one combined view with an Oct→Feb
  * activity timeline. League metadata comes from the shared leagues module.
@@ -95,7 +95,7 @@ async function TodasContent() {
     <main className="pt-6">
       {/* Back link */}
       <Link
-        href="/ligas-invernales"
+        href="/ligasinvernales"
         className="inline-flex items-center gap-1 font-mono text-micro font-bold uppercase tracking-[0.12em] text-ps-text-ter transition-colors hover:text-ps-text-sec"
       >
         <span aria-hidden>←</span>
@@ -158,7 +158,7 @@ async function TodasContent() {
           return (
             <Link
               key={t.id}
-              href={`/ligas-invernales/${prefix}`}
+              href={`/ligasinvernales/${prefix}`}
               style={ligaVars(prefix)}
               className="flex items-center gap-3 rounded-2xl border border-ps-border bg-ps-surface p-4 transition-all duration-150 hover:border-liga active:scale-[0.98] motion-reduce:transition-none"
             >

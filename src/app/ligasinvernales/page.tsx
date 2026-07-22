@@ -5,7 +5,7 @@ import { LeagueIdentity } from "@/components/ligas/LeagueLogo";
 import { ligaVars } from "@/components/ligas/theme";
 
 /**
- * /ligas-invernales hub — public, no auth required.
+ * /ligasinvernales hub — public, no auth required.
  *
  * Bilingual: LatAm Spanish / English via the locale toggle. Factual copy only.
  * League metadata comes from the shared leagues module; each card carries the
@@ -51,7 +51,7 @@ export default function LigasInvernalesHub() {
         {nationalLeagues.map((league) => (
           <Link
             key={league.slug}
-            href={`/ligas-invernales/${league.slug}`}
+            href={`/ligasinvernales/${league.slug}`}
             style={ligaVars(league.slug)}
             className="group rounded-2xl border border-ps-border bg-ps-surface p-4 transition-all duration-150 hover:border-liga hover:shadow-sm active:scale-[0.98] motion-reduce:transition-none"
           >
@@ -84,7 +84,7 @@ export default function LigasInvernalesHub() {
       {/* Serie del Caribe — the championship, given its own emphasis */}
       <section className="mt-3">
         <Link
-          href={`/ligas-invernales/${serieDelCaribe.slug}`}
+          href={`/ligasinvernales/${serieDelCaribe.slug}`}
           style={ligaVars(serieDelCaribe.slug)}
           className="group flex items-center gap-4 rounded-2xl border border-liga/40 bg-liga/[0.06] p-4 transition-all duration-150 hover:border-liga active:scale-[0.99] motion-reduce:transition-none"
         >
@@ -110,7 +110,7 @@ export default function LigasInvernalesHub() {
       {/* Unified view */}
       <section className="mt-3">
         <Link
-          href="/ligas-invernales/todas"
+          href="/ligasinvernales/todas"
           className="flex items-center justify-between rounded-2xl border border-dashed border-ps-border bg-ps-surface px-4 py-3 transition-all duration-150 hover:border-ps-text-ter active:scale-[0.99] motion-reduce:transition-none"
         >
           <div>

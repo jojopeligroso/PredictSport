@@ -1,7 +1,7 @@
 /**
  * Team rosters for the winter leagues.
  *
- * Used to render team identities on the /ligas-invernales surface. Each team
+ * Used to render team identities on the /ligasinvernales surface. Each team
  * carries a short monogram (the fallback badge, e.g. "GC", "E", "T" as seen in
  * the official standings graphics) and an optional official logo path.
  *

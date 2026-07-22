@@ -12,7 +12,7 @@ import { createClient } from "@/lib/supabase/server";
 export const dynamic = "force-dynamic";
 
 /**
- * /ligas-invernales/[league] — single-league blueprint view. Auth required.
+ * /ligasinvernales/[league] — single-league blueprint view. Auth required.
  *
  * Renders the league identity (official logo when supplied, else house mark),
  * the competitive arc (stages), team roster and season dates from the
@@ -120,7 +120,7 @@ async function LeagueContent({ league }: { league: string }) {
     <main className="pt-6" style={ligaVars(league)}>
       {/* Back link */}
       <Link
-        href="/ligas-invernales"
+        href="/ligasinvernales"
         className="inline-flex items-center gap-1 font-mono text-micro font-bold uppercase tracking-[0.12em] text-ps-text-ter transition-colors hover:text-ps-text-sec"
       >
         <span aria-hidden>←</span>
@@ -161,13 +161,13 @@ async function LeagueContent({ league }: { league: string }) {
       {/* CTAs: picks (primary) + standings (secondary) */}
       <div className="mt-4 flex gap-2">
         <Link
-          href={`/ligas-invernales/${league}/picks`}
+          href={`/ligasinvernales/${league}/picks`}
           className="flex-1 rounded-xl bg-liga px-4 py-3 text-center font-display text-sm font-extrabold text-white transition-all duration-150 hover:opacity-90 active:scale-[0.98] motion-reduce:transition-none"
         >
           <Bi es="Hacer mis picks" en="Make my picks" />
         </Link>
         <Link
-          href={`/ligas-invernales/${league}/tabla`}
+          href={`/ligasinvernales/${league}/tabla`}
           className="rounded-xl border border-liga px-4 py-3 text-center font-display text-sm font-extrabold text-liga-deep transition-all duration-150 hover:bg-liga/10 active:scale-[0.98] dark:text-liga motion-reduce:transition-none"
         >
           <Bi es="Tabla" en="Standings" />

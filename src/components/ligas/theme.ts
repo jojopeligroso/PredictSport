@@ -1,7 +1,7 @@
 import type React from "react";
 
 /**
- * Per-league theming for the /ligas-invernales surface.
+ * Per-league theming for the /ligasinvernales surface.
  *
  * Two axes:
  *   - Colour: national-colour accents applied via `--liga-accent` /
@@ -9,7 +9,7 @@ import type React from "react";
  *     tokens (see globals.css @theme inline).
  *   - Typography: a per-league display face via `--liga-font`, picked up by
  *     the `font-liga` utility. The referenced `--font-liga-*` variables are
- *     defined by the next/font families loaded in the /ligas-invernales layout.
+ *     defined by the next/font families loaded in the /ligasinvernales layout.
  *
  * Unknown slugs return no vars, so the tokens fall back to the ps-amber accent
  * and the house Inter display face.
