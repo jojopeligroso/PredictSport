@@ -1,6 +1,8 @@
 import Link from "next/link";
 import { AuthRequired } from "@/components/AuthRequired";
 import { Bi } from "@/components/ligas/Bi";
+import { LEAGUE_BY_SLUG } from "@/components/ligas/leagues";
+import { LeagueIdentity } from "@/components/ligas/LeagueLogo";
 import { ligaVars } from "@/components/ligas/theme";
 import { createClient } from "@/lib/supabase/server";
 
@@ -10,23 +12,8 @@ export const dynamic = "force-dynamic";
  * /ligas-invernales/todas — unified superfan view. Auth required.
  *
  * All 5 winter-league blueprints in one combined view with an Oct→Feb
- * activity timeline.
+ * activity timeline. League metadata comes from the shared leagues module.
  */
-
-const LEAGUE_META: Record<
-  string,
-  { countryEs: string; countryEn: string; code: string }
-> = {
-  lmp: { countryEs: "México", countryEn: "Mexico", code: "MX" },
-  lvbp: { countryEs: "Venezuela", countryEn: "Venezuela", code: "VE" },
-  lidom: {
-    countryEs: "República Dominicana",
-    countryEn: "Dominican Republic",
-    code: "DO",
-  },
-  lbprc: { countryEs: "Puerto Rico", countryEn: "Puerto Rico", code: "PR" },
-  sdc: { countryEs: "Caribe", countryEn: "Caribbean", code: "SdC" },
-};
 
 const MONTHS: { es: string; en: string }[] = [
   { es: "Oct", en: "Oct" },
@@ -105,15 +92,24 @@ async function TodasContent() {
   }
 
   return (
-    <main className="pt-8">
-      <header>
+    <main className="pt-6">
+      {/* Back link */}
+      <Link
+        href="/ligas-invernales"
+        className="inline-flex items-center gap-1 font-mono text-micro font-bold uppercase tracking-[0.12em] text-ps-text-ter transition-colors hover:text-ps-text-sec"
+      >
+        <span aria-hidden>←</span>
+        <Bi es="Ligas" en="Leagues" />
+      </Link>
+
+      <header className="mt-4">
         <h1 className="font-display text-2xl font-extrabold tracking-tight text-ps-text">
           <Bi es="Todas las Ligas" en="All Leagues" />
         </h1>
       </header>
 
       {/* Combined timeline */}
-      <section className="mt-6 rounded-2xl border border-ps-border bg-ps-surface p-4">
+      <section className="mt-5 rounded-2xl border border-ps-border bg-ps-surface p-4">
         <h2 className="font-mono text-micro font-bold uppercase tracking-[0.18em] text-ps-text-sec">
           <Bi es="Calendario Oct → Feb" en="Oct → Feb Calendar" />
         </h2>
@@ -128,7 +124,7 @@ async function TodasContent() {
           ))}
           {rows.map((t) => {
             const prefix = leaguePrefix(t.slug);
-            const meta = LEAGUE_META[prefix];
+            const meta = LEAGUE_BY_SLUG[prefix];
             const start = monthIndex(t.starts_at, 0);
             const end = monthIndex(t.ends_at, 4);
             return (
@@ -155,39 +151,41 @@ async function TodasContent() {
       </section>
 
       {/* League rows */}
-      <section className="mt-6 space-y-3">
+      <section className="mt-5 space-y-3">
         {rows.map((t) => {
           const prefix = leaguePrefix(t.slug);
-          const meta = LEAGUE_META[prefix];
+          const meta = LEAGUE_BY_SLUG[prefix];
           return (
             <Link
               key={t.id}
               href={`/ligas-invernales/${prefix}`}
               style={ligaVars(prefix)}
-              className="block rounded-2xl border border-ps-border bg-ps-surface p-4 transition-all duration-150 hover:border-liga active:scale-[0.98] motion-reduce:transition-none"
+              className="flex items-center gap-3 rounded-2xl border border-ps-border bg-ps-surface p-4 transition-all duration-150 hover:border-liga active:scale-[0.98] motion-reduce:transition-none"
             >
-              <div className="flex items-center justify-between">
-                <span className="rounded-md bg-liga/15 px-2 py-0.5 font-mono text-micro font-bold uppercase tracking-[0.12em] text-liga-deep dark:text-liga">
-                  {meta?.code ?? prefix}
-                </span>
-                <span className="font-mono text-micro text-ps-text-ter">
-                  {stageCounts.get(t.id) ?? 0}{" "}
-                  <Bi es="etapas" en="stages" />
-                </span>
+              <LeagueIdentity slug={prefix} size={48} />
+              <div className="min-w-0 flex-1">
+                <div className="flex items-center gap-2">
+                  <span className="rounded bg-liga/15 px-1.5 py-0.5 font-mono text-micro font-bold uppercase tracking-[0.1em] text-liga-deep dark:text-liga">
+                    {meta?.code ?? prefix}
+                  </span>
+                  <span className="ml-auto font-mono text-micro text-ps-text-ter">
+                    {stageCounts.get(t.id) ?? 0} <Bi es="etapas" en="stages" />
+                  </span>
+                </div>
+                <h3 className="mt-1.5 truncate font-display text-base font-extrabold leading-tight text-ps-text">
+                  {t.name}
+                </h3>
+                <p className="mt-0.5 truncate text-xs text-ps-text-ter">
+                  {meta && <Bi es={meta.countryEs} en={meta.countryEn} />}
+                  {" · "}
+                  <span className="font-mono">
+                    <Bi
+                      es={formatWindow(t.starts_at, t.ends_at, "es-MX")}
+                      en={formatWindow(t.starts_at, t.ends_at, "en-US")}
+                    />
+                  </span>
+                </p>
               </div>
-              <h3 className="mt-2 font-display text-base font-extrabold leading-tight text-ps-text">
-                {t.name}
-              </h3>
-              <p className="mt-1 text-xs text-ps-text-ter">
-                {meta && <Bi es={meta.countryEs} en={meta.countryEn} />}
-                {" · "}
-                <span className="font-mono">
-                  <Bi
-                    es={formatWindow(t.starts_at, t.ends_at, "es-MX")}
-                    en={formatWindow(t.starts_at, t.ends_at, "en-US")}
-                  />
-                </span>
-              </p>
             </Link>
           );
         })}

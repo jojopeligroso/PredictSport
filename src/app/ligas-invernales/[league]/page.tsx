@@ -2,6 +2,8 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { AuthRequired } from "@/components/AuthRequired";
 import { Bi } from "@/components/ligas/Bi";
+import { LEAGUE_BY_SLUG, isLeagueSlug } from "@/components/ligas/leagues";
+import { LeagueIdentity } from "@/components/ligas/LeagueLogo";
 import { ligaVars } from "@/components/ligas/theme";
 import { createClient } from "@/lib/supabase/server";
 
@@ -10,24 +12,10 @@ export const dynamic = "force-dynamic";
 /**
  * /ligas-invernales/[league] — single-league blueprint view. Auth required.
  *
- * Renders the competitive arc (stages), team roster and season dates from the
+ * Renders the league identity (official logo when supplied, else house mark),
+ * the competitive arc (stages), team roster and season dates from the
  * tournament blueprint in Supabase.
  */
-
-const LEAGUES: Record<
-  string,
-  { countryEs: string; countryEn: string; code: string }
-> = {
-  lmp: { countryEs: "México", countryEn: "Mexico", code: "MX" },
-  lvbp: { countryEs: "Venezuela", countryEn: "Venezuela", code: "VE" },
-  lidom: {
-    countryEs: "República Dominicana",
-    countryEn: "Dominican Republic",
-    code: "DO",
-  },
-  lbprc: { countryEs: "Puerto Rico", countryEn: "Puerto Rico", code: "PR" },
-  sdc: { countryEs: "Caribe", countryEn: "Caribbean", code: "SdC" },
-};
 
 interface StageRow {
   id: string;
@@ -71,7 +59,7 @@ export default async function LeaguePage({
   params: Promise<{ league: string }>;
 }) {
   const { league } = await params;
-  if (!(league in LEAGUES)) notFound();
+  if (!isLeagueSlug(league)) notFound();
 
   return (
     <AuthRequired>
@@ -81,7 +69,7 @@ export default async function LeaguePage({
 }
 
 async function LeagueContent({ league }: { league: string }) {
-  const meta = LEAGUES[league];
+  const meta = LEAGUE_BY_SLUG[league];
   const supabase = await createClient();
 
   const { data: tournament } = (await supabase
@@ -121,20 +109,32 @@ async function LeagueContent({ league }: { league: string }) {
   const season = seasonLabel(tournament.slug);
 
   return (
-    <main className="pt-8" style={ligaVars(league)}>
+    <main className="pt-6" style={ligaVars(league)}>
+      {/* Back link */}
+      <Link
+        href="/ligas-invernales"
+        className="inline-flex items-center gap-1 font-mono text-micro font-bold uppercase tracking-[0.12em] text-ps-text-ter transition-colors hover:text-ps-text-sec"
+      >
+        <span aria-hidden>←</span>
+        <Bi es="Ligas" en="Leagues" />
+      </Link>
+
       {/* League header */}
-      <header>
-        <span className="rounded-md bg-liga/15 px-2 py-0.5 font-mono text-micro font-bold uppercase tracking-[0.12em] text-liga-deep dark:text-liga">
-          {meta.code}
-        </span>
-        <h1 className="mt-3 font-display text-2xl font-extrabold leading-tight tracking-tight text-ps-text">
-          {tournament.name}
-        </h1>
-        <p className="mt-1 text-sm font-semibold text-ps-text-sec">
-          <Bi es={meta.countryEs} en={meta.countryEn} />
-          {" · "}
-          <Bi es="Béisbol" en="Baseball" />
-        </p>
+      <header className="mt-4 flex items-center gap-4">
+        <LeagueIdentity slug={league} size={64} />
+        <div className="min-w-0 flex-1">
+          <span className="rounded-md bg-liga/15 px-2 py-0.5 font-mono text-micro font-bold uppercase tracking-[0.12em] text-liga-deep dark:text-liga">
+            {meta.code}
+          </span>
+          <h1 className="mt-1.5 font-display text-2xl font-extrabold leading-tight tracking-tight text-ps-text">
+            {tournament.name}
+          </h1>
+          <p className="mt-0.5 text-sm font-semibold text-ps-text-sec">
+            <Bi es={meta.countryEs} en={meta.countryEn} />
+            {" · "}
+            <Bi es="Béisbol" en="Baseball" />
+          </p>
+        </div>
       </header>
 
       {/* Pre-season state */}
@@ -173,7 +173,7 @@ async function LeagueContent({ league }: { league: string }) {
                 key={stage.id}
                 className="flex items-center gap-3 rounded-xl border border-ps-border bg-ps-surface px-3 py-2.5"
               >
-                <span className="w-5 shrink-0 text-center font-mono text-sm font-bold text-ps-text-ter">
+                <span className="grid h-6 w-6 shrink-0 place-items-center rounded-full bg-liga/15 font-mono text-micro font-bold text-liga-deep dark:text-liga">
                   {stage.stage_order}
                 </span>
                 <div className="min-w-0 flex-1">
@@ -211,8 +211,12 @@ async function LeagueContent({ league }: { league: string }) {
             {teams.map((team) => (
               <li
                 key={team}
-                className="rounded-lg border border-ps-border bg-ps-surface px-3 py-2 text-sm font-semibold text-ps-text"
+                className="flex items-center gap-2 rounded-lg border border-ps-border bg-ps-surface px-3 py-2 text-sm font-semibold text-ps-text"
               >
+                <span
+                  aria-hidden
+                  className="h-1.5 w-1.5 shrink-0 rounded-full bg-liga"
+                />
                 {team}
               </li>
             ))}

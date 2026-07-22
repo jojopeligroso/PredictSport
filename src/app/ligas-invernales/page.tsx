@@ -1,101 +1,37 @@
 import Link from "next/link";
 import { Bi } from "@/components/ligas/Bi";
+import { LEAGUES } from "@/components/ligas/leagues";
+import { LeagueIdentity } from "@/components/ligas/LeagueLogo";
 import { ligaVars } from "@/components/ligas/theme";
 
 /**
  * /ligas-invernales hub — public, no auth required.
  *
  * Bilingual: LatAm Spanish / English via the locale toggle. Factual copy only.
+ * League metadata comes from the shared leagues module; each card carries the
+ * league's own identity (official logo when supplied, else house mark) and
+ * national flag, tinted with the league accent.
  */
 
-interface LeagueCard {
-  slug: string;
-  code: string;
-  nameEs: string;
-  nameEn?: string;
-  countryEs: string;
-  countryEn: string;
-  teams: string;
-  windowEs: string;
-  windowEn: string;
-}
-
-const CARDS: LeagueCard[] = [
-  {
-    slug: "lmp",
-    code: "MX",
-    nameEs: "Liga Mexicana del Pacífico",
-    countryEs: "México",
-    countryEn: "Mexico",
-    teams: "10",
-    windowEs: "Oct–Ene",
-    windowEn: "Oct–Jan",
-  },
-  {
-    slug: "lvbp",
-    code: "VE",
-    nameEs: "Liga Venezolana de Béisbol Profesional",
-    countryEs: "Venezuela",
-    countryEn: "Venezuela",
-    teams: "8",
-    windowEs: "Oct–Ene",
-    windowEn: "Oct–Jan",
-  },
-  {
-    slug: "lidom",
-    code: "DO",
-    nameEs: "Liga Dominicana de Béisbol",
-    countryEs: "República Dominicana",
-    countryEn: "Dominican Republic",
-    teams: "6",
-    windowEs: "Oct–Ene",
-    windowEn: "Oct–Jan",
-  },
-  {
-    slug: "lbprc",
-    code: "PR",
-    nameEs: "Liga Roberto Clemente",
-    countryEs: "Puerto Rico",
-    countryEn: "Puerto Rico",
-    teams: "6",
-    windowEs: "Nov–Ene",
-    windowEn: "Nov–Jan",
-  },
-  {
-    slug: "sdc",
-    code: "SdC",
-    nameEs: "Serie del Caribe",
-    countryEs: "Caribe",
-    countryEn: "Caribbean",
-    teams: "6",
-    windowEs: "Feb",
-    windowEn: "Feb",
-  },
-  {
-    slug: "todas",
-    code: "ALL",
-    nameEs: "Todas las Ligas",
-    nameEn: "All Leagues",
-    countryEs: "Vista unificada",
-    countryEn: "Unified view",
-    teams: "5 ligas",
-    windowEs: "Oct–Feb",
-    windowEn: "Oct–Feb",
-  },
-];
-
 export default function LigasInvernalesHub() {
+  // The four national leagues, the Serie del Caribe, then the unified view.
+  const nationalLeagues = LEAGUES.filter((l) => l.slug !== "sdc");
+  const serieDelCaribe = LEAGUES.find((l) => l.slug === "sdc")!;
+
   return (
     <main className="pt-8">
       {/* Hero */}
       <header>
-        <h1 className="font-display text-3xl font-extrabold tracking-tight text-ps-text">
+        <p className="font-mono text-micro font-bold uppercase tracking-[0.2em] text-ps-text-ter">
+          <Bi es="Béisbol Invernal" en="Winter Baseball" />
+        </p>
+        <h1 className="mt-2 font-display text-3xl font-extrabold tracking-tight text-ps-text">
           <Bi es="Tu Liga Local" en="Your Local League" />
         </h1>
       </header>
 
       {/* Intro */}
-      <section className="mt-5 space-y-2">
+      <section className="mt-4 space-y-2">
         <p className="text-sm text-ps-text-sec">
           <Bi
             es="El béisbol invernal del Caribe: las ligas profesionales de México, Venezuela, República Dominicana y Puerto Rico juegan de octubre a enero, y sus campeones se enfrentan en la Serie del Caribe en febrero."
@@ -112,32 +48,83 @@ export default function LigasInvernalesHub() {
 
       {/* League cards */}
       <section className="mt-6 grid grid-cols-1 gap-3 sm:grid-cols-2">
-        {CARDS.map((card) => (
+        {nationalLeagues.map((league) => (
           <Link
-            key={card.slug}
-            href={`/ligas-invernales/${card.slug}`}
-            style={ligaVars(card.slug)}
-            className="rounded-2xl border border-ps-border bg-ps-surface p-4 transition-all duration-150 hover:border-liga active:scale-[0.98] motion-reduce:transition-none"
+            key={league.slug}
+            href={`/ligas-invernales/${league.slug}`}
+            style={ligaVars(league.slug)}
+            className="group rounded-2xl border border-ps-border bg-ps-surface p-4 transition-all duration-150 hover:border-liga hover:shadow-sm active:scale-[0.98] motion-reduce:transition-none"
           >
-            <div className="flex items-center justify-between">
-              <span className="rounded-md bg-liga/15 px-2 py-0.5 font-mono text-micro font-bold uppercase tracking-[0.12em] text-liga-deep dark:text-liga">
-                {card.code}
-              </span>
+            <div className="flex items-start justify-between gap-3">
+              <LeagueIdentity slug={league.slug} size={48} />
               <span className="font-mono text-micro text-ps-text-ter">
-                <Bi es={card.windowEs} en={card.windowEn} />
+                <Bi es={league.windowEs} en={league.windowEn} />
               </span>
             </div>
             <h2 className="mt-3 font-display text-base font-extrabold leading-tight text-ps-text">
-              <Bi es={card.nameEs} en={card.nameEn ?? card.nameEs} />
+              <Bi es={league.nameEs} en={league.nameEn} />
             </h2>
-            <p className="mt-1 text-xs text-ps-text-ter">
-              <Bi es={card.countryEs} en={card.countryEn} />
-              {" · "}
-              <span className="font-mono">{card.teams}</span>{" "}
-              {card.slug === "todas" ? "" : <Bi es="equipos" en="teams" />}
+            <p className="mt-1 flex items-center gap-1.5 text-xs text-ps-text-ter">
+              <span className="rounded bg-liga/15 px-1.5 py-0.5 font-mono text-micro font-bold uppercase tracking-[0.1em] text-liga-deep dark:text-liga">
+                {league.code}
+              </span>
+              <Bi es={league.countryEs} en={league.countryEn} />
+              {league.teams != null && (
+                <>
+                  {" · "}
+                  <span className="font-mono">{league.teams}</span>{" "}
+                  <Bi es="equipos" en="teams" />
+                </>
+              )}
             </p>
           </Link>
         ))}
+      </section>
+
+      {/* Serie del Caribe — the championship, given its own emphasis */}
+      <section className="mt-3">
+        <Link
+          href={`/ligas-invernales/${serieDelCaribe.slug}`}
+          style={ligaVars(serieDelCaribe.slug)}
+          className="group flex items-center gap-4 rounded-2xl border border-liga/40 bg-liga/[0.06] p-4 transition-all duration-150 hover:border-liga active:scale-[0.99] motion-reduce:transition-none"
+        >
+          <LeagueIdentity slug={serieDelCaribe.slug} size={56} />
+          <div className="min-w-0 flex-1">
+            <p className="font-mono text-micro font-bold uppercase tracking-[0.18em] text-liga-deep dark:text-liga">
+              <Bi es="La Final del Caribe" en="The Caribbean Final" />
+            </p>
+            <h2 className="mt-0.5 font-display text-lg font-extrabold leading-tight text-ps-text">
+              <Bi es={serieDelCaribe.nameEs} en={serieDelCaribe.nameEn} />
+            </h2>
+            <p className="mt-0.5 text-xs text-ps-text-ter">
+              <Bi es={serieDelCaribe.countryEs} en={serieDelCaribe.countryEn} />
+              {" · "}
+              <span className="font-mono">
+                <Bi es={serieDelCaribe.windowEs} en={serieDelCaribe.windowEn} />
+              </span>
+            </p>
+          </div>
+        </Link>
+      </section>
+
+      {/* Unified view */}
+      <section className="mt-3">
+        <Link
+          href="/ligas-invernales/todas"
+          className="flex items-center justify-between rounded-2xl border border-dashed border-ps-border bg-ps-surface px-4 py-3 transition-all duration-150 hover:border-ps-text-ter active:scale-[0.99] motion-reduce:transition-none"
+        >
+          <div>
+            <h2 className="font-display text-sm font-extrabold text-ps-text">
+              <Bi es="Todas las Ligas" en="All Leagues" />
+            </h2>
+            <p className="text-xs text-ps-text-ter">
+              <Bi es="Vista unificada · Oct–Feb" en="Unified view · Oct–Feb" />
+            </p>
+          </div>
+          <span aria-hidden className="font-mono text-lg text-ps-text-ter">
+            →
+          </span>
+        </Link>
       </section>
     </main>
   );

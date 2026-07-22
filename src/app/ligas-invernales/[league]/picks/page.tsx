@@ -2,6 +2,8 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { AuthRequired } from "@/components/AuthRequired";
 import { Bi } from "@/components/ligas/Bi";
+import { isLeagueSlug } from "@/components/ligas/leagues";
+import { LeagueIdentity } from "@/components/ligas/LeagueLogo";
 import { ligaVars } from "@/components/ligas/theme";
 import { LigaPicksClient } from "@/components/ligas/LigaPicksClient";
 import { createClient } from "@/lib/supabase/server";
@@ -18,8 +20,6 @@ export const dynamic = "force-dynamic";
  * POST /api/predictions. Baseball rule: no draw option ever; a tied entered
  * score does not auto-derive a winner — the user must declare it.
  */
-
-const LEAGUE_SLUGS = new Set(["lmp", "lvbp", "lidom", "lbprc", "sdc"]);
 
 interface TournamentRow {
   id: string;
@@ -45,7 +45,7 @@ export default async function LeaguePicksPage({
   params: Promise<{ league: string }>;
 }) {
   const { league } = await params;
-  if (!LEAGUE_SLUGS.has(league)) notFound();
+  if (!isLeagueSlug(league)) notFound();
 
   return (
     <AuthRequired>
@@ -86,9 +86,12 @@ async function PicksContent({ league }: { league: string }) {
       >
         ← {tournament.name}
       </Link>
-      <h1 className="mt-3 font-display text-2xl font-extrabold leading-tight tracking-tight text-ps-text">
-        <Bi es="Picks" en="Picks" />
-      </h1>
+      <div className="mt-3 flex items-center gap-3">
+        <LeagueIdentity slug={league} size={44} />
+        <h1 className="font-display text-2xl font-extrabold leading-tight tracking-tight text-ps-text">
+          <Bi es="Picks" en="Picks" />
+        </h1>
+      </div>
     </header>
   );
 
