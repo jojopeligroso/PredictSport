@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 30 20" width="30" height="20">
+  <defs>
+    <path id="ve-s" transform="translate(15 9.1)" d="M0-1.1.323-.106h1.045L.523.508l.322.994L0 .888l-.845.614.322-.994-.845-.614h1.045z"/>
+  </defs>
+  <rect width="30" height="20" fill="#cf142b"/>
+  <rect width="30" height="13.333" fill="#00247d"/>
+  <rect width="30" height="6.667" fill="#fc0"/>
+  <g fill="#fff">
+    <use href="#ve-s" transform="rotate(-63 15 13.3)"/>
+    <use href="#ve-s" transform="rotate(-45 15 13.3)"/>
+    <use href="#ve-s" transform="rotate(-27 15 13.3)"/>
+    <use href="#ve-s" transform="rotate(-9 15 13.3)"/>
+    <use href="#ve-s" transform="rotate(9 15 13.3)"/>
+    <use href="#ve-s" transform="rotate(27 15 13.3)"/>
+    <use href="#ve-s" transform="rotate(45 15 13.3)"/>
+    <use href="#ve-s" transform="rotate(63 15 13.3)"/>
+  </g>
+</svg>

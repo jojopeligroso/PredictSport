@@ -27,6 +27,11 @@ export const SPORT_TIMING: Record<string, SportTiming> = {
   nba:          { checkAfterHours: 2.5, windowHours: 26 },
   nhl:          { checkAfterHours: 2.5, windowHours: 26 },
   mlb:          { checkAfterHours: 3.5, windowHours: 26 },
+  // Winter leagues (LMP/LVBP/LIDOM/LBPRC/Serie del Caribe) create events with
+  // sport="baseball". Without this entry they fell to DEFAULT_TIMING (8h),
+  // which is too short for the daily results cron and left finished winter
+  // games unresolved (window_expired). Mirror the mlb window.
+  baseball:     { checkAfterHours: 3.5, windowHours: 26 },
 };
 
 export const DEFAULT_TIMING: SportTiming = { checkAfterHours: 3, windowHours: 8 };

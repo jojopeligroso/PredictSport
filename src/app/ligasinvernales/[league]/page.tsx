@@ -2,32 +2,22 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { AuthRequired } from "@/components/AuthRequired";
 import { Bi } from "@/components/ligas/Bi";
+import { LEAGUE_BY_SLUG, isLeagueSlug } from "@/components/ligas/leagues";
+import { LeagueIdentity } from "@/components/ligas/LeagueLogo";
+import { TeamBadge } from "@/components/ligas/TeamBadge";
+import { TEAMS_BY_LEAGUE } from "@/components/ligas/teams";
 import { ligaVars } from "@/components/ligas/theme";
 import { createClient } from "@/lib/supabase/server";
 
 export const dynamic = "force-dynamic";
 
 /**
- * /ligas-invernales/[league] — single-league blueprint view. Auth required.
+ * /ligasinvernales/[league] — single-league blueprint view. Auth required.
  *
- * Renders the competitive arc (stages), team roster and season dates from the
+ * Renders the league identity (official logo when supplied, else house mark),
+ * the competitive arc (stages), team roster and season dates from the
  * tournament blueprint in Supabase.
  */
-
-const LEAGUES: Record<
-  string,
-  { countryEs: string; countryEn: string; code: string }
-> = {
-  lmp: { countryEs: "México", countryEn: "Mexico", code: "MX" },
-  lvbp: { countryEs: "Venezuela", countryEn: "Venezuela", code: "VE" },
-  lidom: {
-    countryEs: "República Dominicana",
-    countryEn: "Dominican Republic",
-    code: "DO",
-  },
-  lbprc: { countryEs: "Puerto Rico", countryEn: "Puerto Rico", code: "PR" },
-  sdc: { countryEs: "Caribe", countryEn: "Caribbean", code: "SdC" },
-};
 
 interface StageRow {
   id: string;
@@ -71,7 +61,7 @@ export default async function LeaguePage({
   params: Promise<{ league: string }>;
 }) {
   const { league } = await params;
-  if (!(league in LEAGUES)) notFound();
+  if (!isLeagueSlug(league)) notFound();
 
   return (
     <AuthRequired>
@@ -81,7 +71,7 @@ export default async function LeaguePage({
 }
 
 async function LeagueContent({ league }: { league: string }) {
-  const meta = LEAGUES[league];
+  const meta = LEAGUE_BY_SLUG[league];
   const supabase = await createClient();
 
   const { data: tournament } = (await supabase
@@ -110,10 +100,16 @@ async function LeagueContent({ league }: { league: string }) {
   ]);
 
   const stageRows = (stages ?? []) as StageRow[];
-  const teams =
+  const dbTeams =
     ((bracketTemplate?.config as Record<string, unknown> | null)?.[
       "leagueTeams"
     ] as string[] | undefined) ?? [];
+  // Prefer the blueprint's roster; fall back to the shared roster so the page
+  // shows the real clubs (with badges) even before the blueprint is seeded.
+  const teams =
+    dbTeams.length > 0
+      ? dbTeams
+      : (TEAMS_BY_LEAGUE[league] ?? []).map((t) => t.name);
   const teamComposition = tournament.config?.["team_composition"] as
     | string
     | undefined;
@@ -121,20 +117,32 @@ async function LeagueContent({ league }: { league: string }) {
   const season = seasonLabel(tournament.slug);
 
   return (
-    <main className="pt-8" style={ligaVars(league)}>
+    <main className="pt-6" style={ligaVars(league)}>
+      {/* Back link */}
+      <Link
+        href="/ligasinvernales"
+        className="inline-flex items-center gap-1 font-mono text-micro font-bold uppercase tracking-[0.12em] text-ps-text-ter transition-colors hover:text-ps-text-sec"
+      >
+        <span aria-hidden>←</span>
+        <Bi es="Ligas" en="Leagues" />
+      </Link>
+
       {/* League header */}
-      <header>
-        <span className="rounded-md bg-liga/15 px-2 py-0.5 font-mono text-micro font-bold uppercase tracking-[0.12em] text-liga-deep dark:text-liga">
-          {meta.code}
-        </span>
-        <h1 className="mt-3 font-display text-2xl font-extrabold leading-tight tracking-tight text-ps-text">
-          {tournament.name}
-        </h1>
-        <p className="mt-1 text-sm font-semibold text-ps-text-sec">
-          <Bi es={meta.countryEs} en={meta.countryEn} />
-          {" · "}
-          <Bi es="Béisbol" en="Baseball" />
-        </p>
+      <header className="mt-4 flex items-center gap-4">
+        <LeagueIdentity slug={league} size={64} />
+        <div className="min-w-0 flex-1">
+          <span className="rounded-md bg-liga/15 px-2 py-0.5 font-mono text-micro font-bold uppercase tracking-[0.12em] text-liga-deep dark:text-liga">
+            {meta.code}
+          </span>
+          <h1 className="mt-1.5 font-liga text-3xl font-bold uppercase leading-[1.02] tracking-tight text-ps-text">
+            {tournament.name}
+          </h1>
+          <p className="mt-0.5 text-sm font-semibold text-ps-text-sec">
+            <Bi es={meta.countryEs} en={meta.countryEn} />
+            {" · "}
+            <Bi es="Béisbol" en="Baseball" />
+          </p>
+        </div>
       </header>
 
       {/* Pre-season state */}
@@ -150,13 +158,21 @@ async function LeagueContent({ league }: { league: string }) {
         </p>
       </section>
 
-      {/* Picks CTA */}
-      <Link
-        href={`/ligas-invernales/${league}/picks`}
-        className="mt-4 block rounded-xl bg-liga px-4 py-3 text-center font-display text-sm font-extrabold text-white transition-all duration-150 hover:opacity-90 active:scale-[0.98] motion-reduce:transition-none"
-      >
-        <Bi es="Hacer mis picks" en="Make my picks" />
-      </Link>
+      {/* CTAs: picks (primary) + standings (secondary) */}
+      <div className="mt-4 flex gap-2">
+        <Link
+          href={`/ligasinvernales/${league}/picks`}
+          className="flex-1 rounded-xl bg-liga px-4 py-3 text-center font-display text-sm font-extrabold text-white transition-all duration-150 hover:opacity-90 active:scale-[0.98] motion-reduce:transition-none"
+        >
+          <Bi es="Hacer mis picks" en="Make my picks" />
+        </Link>
+        <Link
+          href={`/ligasinvernales/${league}/tabla`}
+          className="rounded-xl border border-liga px-4 py-3 text-center font-display text-sm font-extrabold text-liga-deep transition-all duration-150 hover:bg-liga/10 active:scale-[0.98] dark:text-liga motion-reduce:transition-none"
+        >
+          <Bi es="Tabla" en="Standings" />
+        </Link>
+      </div>
 
       {/* Competitive arc */}
       <section className="mt-6">
@@ -173,7 +189,7 @@ async function LeagueContent({ league }: { league: string }) {
                 key={stage.id}
                 className="flex items-center gap-3 rounded-xl border border-ps-border bg-ps-surface px-3 py-2.5"
               >
-                <span className="w-5 shrink-0 text-center font-mono text-sm font-bold text-ps-text-ter">
+                <span className="grid h-6 w-6 shrink-0 place-items-center rounded-full bg-liga/15 font-mono text-micro font-bold text-liga-deep dark:text-liga">
                   {stage.stage_order}
                 </span>
                 <div className="min-w-0 flex-1">
@@ -211,9 +227,10 @@ async function LeagueContent({ league }: { league: string }) {
             {teams.map((team) => (
               <li
                 key={team}
-                className="rounded-lg border border-ps-border bg-ps-surface px-3 py-2 text-sm font-semibold text-ps-text"
+                className="flex items-center gap-2.5 rounded-lg border border-ps-border bg-ps-surface px-2.5 py-2 text-sm font-semibold text-ps-text"
               >
-                {team}
+                <TeamBadge name={team} size={30} />
+                <span className="min-w-0 truncate">{team}</span>
               </li>
             ))}
           </ul>

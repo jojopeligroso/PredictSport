@@ -2,24 +2,29 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { AuthRequired } from "@/components/AuthRequired";
 import { Bi } from "@/components/ligas/Bi";
+import { isLeagueSlug } from "@/components/ligas/leagues";
+import { LeagueIdentity } from "@/components/ligas/LeagueLogo";
 import { ligaVars } from "@/components/ligas/theme";
 import { LigaPicksClient } from "@/components/ligas/LigaPicksClient";
+import { LigaResults } from "@/components/ligas/LigaResults";
 import { createClient } from "@/lib/supabase/server";
 import type {
   LigaPicksEvent,
   LigaPicksPrediction,
 } from "@/components/ligas/LigaPicksClient";
+import type {
+  LigaResultEvent,
+  LigaResultPrediction,
+} from "@/components/ligas/LigaResults";
 
 export const dynamic = "force-dynamic";
 
 /**
- * /ligas-invernales/[league]/picks — picks page for the winter-league open
+ * /ligasinvernales/[league]/picks — picks page for the winter-league open
  * competition instances. Reuses the /wc prediction machinery via
  * POST /api/predictions. Baseball rule: no draw option ever; a tied entered
  * score does not auto-derive a winner — the user must declare it.
  */
-
-const LEAGUE_SLUGS = new Set(["lmp", "lvbp", "lidom", "lbprc", "sdc"]);
 
 interface TournamentRow {
   id: string;
@@ -45,7 +50,7 @@ export default async function LeaguePicksPage({
   params: Promise<{ league: string }>;
 }) {
   const { league } = await params;
-  if (!LEAGUE_SLUGS.has(league)) notFound();
+  if (!isLeagueSlug(league)) notFound();
 
   return (
     <AuthRequired>
@@ -81,14 +86,17 @@ async function PicksContent({ league }: { league: string }) {
   const header = (
     <header>
       <Link
-        href={`/ligas-invernales/${league}`}
+        href={`/ligasinvernales/${league}`}
         className="font-mono text-micro font-bold uppercase tracking-[0.12em] text-liga-deep dark:text-liga"
       >
         ← {tournament.name}
       </Link>
-      <h1 className="mt-3 font-display text-2xl font-extrabold leading-tight tracking-tight text-ps-text">
-        <Bi es="Picks" en="Picks" />
-      </h1>
+      <div className="mt-3 flex items-center gap-3">
+        <LeagueIdentity slug={league} size={44} />
+        <h1 className="font-display text-2xl font-extrabold leading-tight tracking-tight text-ps-text">
+          <Bi es="Picks" en="Picks" />
+        </h1>
+      </div>
     </header>
   );
 
@@ -142,6 +150,32 @@ async function PicksContent({ league }: { league: string }) {
     predictions = (predictionRows ?? []) as LigaPicksPrediction[];
   }
 
+  // Resulted games + how the user's picks scored — the "score" step of the loop.
+  const { data: resultedRows } = await supabase
+    .from("events")
+    .select(
+      "id, event_name, result_data, event_prediction_types (id, prediction_type, points)",
+    )
+    .eq("competition_id", instance.id)
+    .eq("status", "resulted")
+    .order("start_time", { ascending: false })
+    .limit(20);
+
+  const resulted = (resultedRows ?? []) as unknown as LigaResultEvent[];
+  let resultPredictions: LigaResultPrediction[] = [];
+  if (user && resulted.length > 0) {
+    const { data: rp } = await supabase
+      .from("predictions")
+      .select("event_id, prediction_type, prediction_data, points_awarded, is_correct")
+      .eq("user_id", user.id)
+      .in(
+        "event_id",
+        resulted.map((e) => e.id),
+      )
+      .limit(200);
+    resultPredictions = (rp ?? []) as LigaResultPrediction[];
+  }
+
   return (
     <main className="pt-8" style={ligaVars(league)}>
       {header}
@@ -153,6 +187,9 @@ async function PicksContent({ league }: { league: string }) {
         seasonStartEs={`La temporada comienza el ${formatDate(tournament.starts_at, "es-MX")}`}
         seasonStartEn={`Season starts ${formatDate(tournament.starts_at, "en-US")}`}
       />
+      {membership && (
+        <LigaResults events={resulted} predictions={resultPredictions} />
+      )}
     </main>
   );
 }

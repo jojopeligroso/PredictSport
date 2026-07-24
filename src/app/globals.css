@@ -160,6 +160,13 @@ html[data-theme="dark"] {
   --color-liga: var(--liga-accent, var(--ps-amber));
   --color-liga-deep: var(--liga-accent-deep, var(--ps-amber-deep));
 
+  /* Liga display font — per-league headline face set via inline --liga-font
+     (see components/ligas/theme.ts ligaVars + the fonts loaded in the
+     /ligasinvernales layout). Falls back to the house Inter display face, so
+     the `font-liga` utility is safe anywhere. */
+  --font-liga: var(--liga-font, var(--font-inter)), system-ui, -apple-system,
+    sans-serif;
+
   /* Shadows */
   --shadow-ps-rest: var(--ps-shadow-rest);
   --shadow-ps-raised: var(--ps-shadow-raised);
