@@ -36,8 +36,10 @@ PRODUCT_MODE=world_cup_2026_archive
 NEXT_PUBLIC_SUPABASE_URL=$SUPABASE_URL
 NEXT_PUBLIC_SUPABASE_ANON_KEY=$ANON_KEY
 SUPABASE_SERVICE_ROLE_KEY=$SERVICE_KEY
-WC_ARCHIVE_COMPETITION_ID=1a4448e5-a178-45ab-b819-a0dfab370306
-WC_ARCHIVE_DEMO_USER_ID=8c7e2e1b-0564-4d86-93e2-85ecf00f1e00
+# Display site shows WC instance #3 ("World Cup (Display)") — a purpose-built
+# anonymised clone (synthetic members), demo viewer a1c5e324 (240 predictions).
+WC_ARCHIVE_COMPETITION_ID=11b22173-a17e-48e2-895b-3c12b1d78f52
+WC_ARCHIVE_DEMO_USER_ID=a1c5e324-d2ea-4ee6-9c1b-8f30e1aaf42e
 EOF
 
 echo "Wrote $ENVFILE"
@@ -52,7 +54,7 @@ vercel deploy --prod \
   --env "SUPABASE_SERVICE_ROLE_KEY=$SERVICE_KEY" \
   --env "NEXT_PUBLIC_SUPABASE_URL=$SUPABASE_URL" \
   --env "NEXT_PUBLIC_SUPABASE_ANON_KEY=$ANON_KEY" \
-  --env WC_ARCHIVE_COMPETITION_ID=1a4448e5-a178-45ab-b819-a0dfab370306 \
-  --env WC_ARCHIVE_DEMO_USER_ID=8c7e2e1b-0564-4d86-93e2-85ecf00f1e00
+  --env WC_ARCHIVE_COMPETITION_ID=11b22173-a17e-48e2-895b-3c12b1d78f52 \
+  --env WC_ARCHIVE_DEMO_USER_ID=a1c5e324-d2ea-4ee6-9c1b-8f30e1aaf42e
 
 echo "Deploy complete. .env.production cleaned up by trap."

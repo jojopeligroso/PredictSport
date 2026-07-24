@@ -60,12 +60,18 @@ interface WcPicksHubProps {
   } | null;
   /** All rounds — used on the display site for the round index. */
   allRounds?: Array<{ id: string; name: string; round_number: number; status: string }>;
+  /**
+   * True when the tournament is over (every round scored). Defaults the hub to
+   * the Results tab so a finished competition opens on its outcomes rather than
+   * an empty Upcoming tab.
+   */
+  concluded?: boolean;
 }
 
-export function WcPicksHub({ md1, fixturesData, groupsData, allRounds }: WcPicksHubProps) {
+export function WcPicksHub({ md1, fixturesData, groupsData, allRounds, concluded }: WcPicksHubProps) {
   const t = useT();
   const searchParams = useSearchParams();
-  const initialTab = parseTab(searchParams.get("tab"));
+  const initialTab = parseTab(searchParams.get("tab"), concluded);
   const [activeTab, setActiveTab] = useState<HubTab>(initialTab);
 
   const handleTabChange = (tab: HubTab) => {
@@ -132,6 +138,20 @@ export function WcPicksHub({ md1, fixturesData, groupsData, allRounds }: WcPicks
           })}
         </div>
       </div>
+
+      {/* Concluded ribbon — factual status, shown when every round is scored */}
+      {concluded && (
+        <div className="mx-auto max-w-[480px] px-4 pt-3">
+          <div className="flex items-center justify-center gap-2 rounded-lg border border-ps-border bg-ps-surface px-3 py-2">
+            <span className="inline-flex h-4 w-4 items-center justify-center rounded-full bg-ps-green text-micro font-extrabold leading-none text-white">
+              ✓
+            </span>
+            <span className="font-mono text-micro font-bold uppercase tracking-[0.14em] text-ps-text-sec">
+              Tournament complete
+            </span>
+          </div>
+        </div>
+      )}
 
       {/* Tab content — each tab provides its own container */}
       {activeTab === "upcoming" && (
@@ -250,7 +270,9 @@ export function WcPicksHub({ md1, fixturesData, groupsData, allRounds }: WcPicks
   );
 }
 
-function parseTab(value: string | null): HubTab {
+function parseTab(value: string | null, concluded?: boolean): HubTab {
   if (value === "fixtures" || value === "results" || value === "groups") return value;
-  return "upcoming";
+  if (value === "upcoming") return "upcoming";
+  // No explicit tab: a finished tournament opens on Results, otherwise Upcoming.
+  return concluded ? "results" : "upcoming";
 }

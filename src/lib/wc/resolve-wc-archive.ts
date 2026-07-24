@@ -10,10 +10,14 @@ type ResolveResult = {
 };
 
 /**
- * Archive-mode resolver. Returns instance #1 competition using the service
+ * Archive-mode resolver. Returns the display competition using the service
  * client (no auth session exists on the display site). Returns a synthetic
  * user object with WC_ARCHIVE_DEMO_USER_ID so data fetchers pull that user's
  * predictions, group, bracket — simulating the full member experience.
+ *
+ * The display site targets WC instance #3 ("World Cup (Display)"), a
+ * purpose-built anonymised clone with synthetic members. The IDs below are the
+ * fallback; scripts/deploy-display.sh also sets them explicitly via env.
  */
 /** Instance #3 (display) competition and demo viewer — hardcoded for the display site. */
 const ARCHIVE_COMPETITION_ID = "11b22173-a17e-48e2-895b-3c12b1d78f52";

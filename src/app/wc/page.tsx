@@ -46,6 +46,7 @@ export default async function WorldCupLanding() {
 
   return (
     <WcPicksHub
+      concluded={md1Data.concluded}
       md1={{
         competitionId: md1Data.competitionId,
         events: md1Data.events,

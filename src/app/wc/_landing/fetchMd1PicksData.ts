@@ -142,6 +142,7 @@ export async function fetchMd1PicksData() {
 
   return {
     ready: true as const,
+    concluded: false as const,
     competitionId: competition.id,
     events,
     predictions,
@@ -154,6 +155,14 @@ export async function fetchMd1PicksData() {
 
 /**
  * Fallback: all group rounds scored → fetch the first actionable knockout round.
+ *
+ * If there is no actionable knockout round either, distinguish two terminal
+ * states rather than collapsing both into "not ready":
+ *  - concluded: every round is scored (the tournament is over) → return a
+ *    ready, `concluded` payload so /wc renders the finished experience
+ *    (Results / Fixtures / Groups tabs + round index) instead of the
+ *    pre-launch "coming soon" panel.
+ *  - not started: no scored rounds yet (genuinely pre-launch) → ready: false.
  */
 async function fetchKnockoutFallback(
   supabase: Awaited<ReturnType<typeof getReadClient>>,
@@ -172,7 +181,32 @@ async function fetchKnockoutFallback(
     .limit(1)
     .maybeSingle();
 
-  if (!koRound) return { ready: false as const };
+  if (!koRound) {
+    // No actionable round anywhere. Concluded iff at least one round exists
+    // and every round is scored; otherwise treat as pre-launch.
+    const { data: roundStatuses } = await supabase
+      .from("rounds")
+      .select("status")
+      .eq(ff.key, ff.value);
+    const rounds = roundStatuses ?? [];
+    const concluded =
+      rounds.length > 0 && rounds.every((r) => r.status === "scored");
+
+    if (concluded) {
+      return {
+        ready: true as const,
+        concluded: true as const,
+        competitionId,
+        events: [] as WindowEvent[],
+        predictions: [] as Prediction[],
+        fixtureByEventId: new Map<string, WcFixture>(),
+        isMember: resolvedIsMember,
+        isAuthenticated: Boolean(user),
+        windowLocked: true,
+      };
+    }
+    return { ready: false as const };
+  }
 
   const { data: eventsRaw } = await supabase
     .from("events")
@@ -226,6 +260,7 @@ async function fetchKnockoutFallback(
 
   return {
     ready: true as const,
+    concluded: false as const,
     competitionId,
     events,
     predictions,
